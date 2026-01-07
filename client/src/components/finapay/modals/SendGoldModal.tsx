@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import QRScanner from '../QRScanner';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
+import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 
 const PAYMENT_REASONS = [
   'Buying Gold / Precious Metals',
@@ -79,6 +80,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
   
+  // MPGW/FPGW wallet type selection
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  
   // Transaction PIN verification
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
@@ -110,6 +114,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setIsSendingInvite(false);
       setInviteSent(false);
       setTermsAccepted(false);
+      setSelectedWalletType('MPGW');
       
       // Fetch terms
       fetch('/api/terms/transfer')
@@ -195,6 +200,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           paymentReason,
           sourceOfFunds,
           memo,
+          goldWalletType: selectedWalletType,
         }),
       });
       
@@ -264,6 +270,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           memo: memo || null,
           paymentReason: paymentReason,
           sourceOfFunds: sourceOfFunds,
+          goldWalletType: selectedWalletType,
         }),
       });
       
@@ -414,6 +421,13 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <Mail className="w-4 h-4 text-purple-500" />
                     </div>
                   </div>
+
+                  {/* Wallet Type Selection - MPGW/FPGW */}
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                    className="mb-2"
+                  />
 
                   {/* Amount Input */}
                   <div className="space-y-1">
@@ -658,6 +672,13 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     </div>
                   </div>
+                  {/* Wallet Type Selection - MPGW/FPGW */}
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                    className="mb-2"
+                  />
+
 
                   {/* Amount Input */}
                   <div className="space-y-2">

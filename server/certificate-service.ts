@@ -18,7 +18,9 @@ export type CertificateType =
   | 'Transfer'
   | 'BNSL Lock'
   | 'Trade Lock'
-  | 'Trade Release';
+  | 'Trade Release'
+  | 'Conversion'
+  | 'Title Transfer';
 
 interface CertificateData {
   userId: string;
@@ -46,7 +48,9 @@ function generateCertificateNumber(type: CertificateType): string {
     'Transfer': 'TRC',
     'BNSL Lock': 'BLC',
     'Trade Lock': 'TLC',
-    'Trade Release': 'TRL'
+    'Trade Release': 'TRL',
+    'Conversion': 'CONV',
+    'Title Transfer': 'TTF'
   }[type];
   
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -181,25 +185,67 @@ export async function generateLockCertificate(data: CertificateData): Promise<st
  * Generate Title Transfer to Finatrades Certificate
  * Issued when user sells/withdraws gold (ownership reduced and transferred to Finatrades)
  */
-export async function generateTitleTransferCertificate(data: CertificateData): Promise<string> {
+export async function generateTitleTransferCertificate(data: CertificateData & { 
+  goldWalletType?: 'MPGW' | 'FPGW';
+  reason?: string;
+}): Promise<string> {
   const user = await storage.getUser(data.userId);
   if (!user) throw new Error('User not found');
 
   const certificateData: InsertCertificate = {
     userId: data.userId,
     transactionId: data.transactionId,
-    type: 'Trade Release',
-    certificateNumber: generateCertificateNumber('Trade Release'),
+    type: 'Title Transfer',
+    certificateNumber: generateCertificateNumber('Title Transfer'),
     goldGrams: data.grams.toString(),
     goldPriceUsdPerGram: data.goldPriceUsd?.toString() || '0',
     totalValueUsd: ((data.grams || 0) * (data.goldPriceUsd || 0)).toString(),
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
+    fromGoldWalletType: data.goldWalletType,
+    toGoldWalletType: undefined,
     issuer: 'Finatrades',
     status: 'Active'
   };
 
   const cert = await storage.createCertificate(certificateData);
-  console.log(`[Certificate] Generated Title Transfer Certificate: ${cert.certificateNumber}`);
+  console.log(`[Certificate] Generated Title Transfer Certificate: ${cert.certificateNumber} (${data.goldWalletType || 'N/A'} wallet, ${data.reason || 'withdrawal/sell'})`);
+  return cert.id;
+}
+
+/**
+ * Generate Conversion Certificate (MPGW <-> FPGW)
+ * Issued when user converts gold between Market Price and Fixed Price wallets
+ */
+export async function generateConversionCertificate(data: {
+  userId: string;
+  transactionId?: string;
+  grams: number;
+  goldPriceUsd: number;
+  fromWalletType: 'MPGW' | 'FPGW';
+  toWalletType: 'MPGW' | 'FPGW';
+  conversionPriceUsd?: number;
+  notes?: string;
+}): Promise<string> {
+  const user = await storage.getUser(data.userId);
+  if (!user) throw new Error('User not found');
+
+  const certificateData: InsertCertificate = {
+    userId: data.userId,
+    transactionId: data.transactionId,
+    type: 'Conversion',
+    certificateNumber: generateCertificateNumber('Conversion'),
+    goldGrams: data.grams.toString(),
+    goldPriceUsdPerGram: data.goldPriceUsd.toString(),
+    totalValueUsd: (data.grams * data.goldPriceUsd).toString(),
+    fromGoldWalletType: data.fromWalletType,
+    toGoldWalletType: data.toWalletType,
+    conversionPriceUsd: data.conversionPriceUsd?.toString(),
+    issuer: 'Finatrades',
+    status: 'Active'
+  };
+
+  const cert = await storage.createCertificate(certificateData);
+  console.log(`[Certificate] Generated Conversion Certificate: ${cert.certificateNumber} (${data.fromWalletType} → ${data.toWalletType})`);
   return cert.id;
 }
 

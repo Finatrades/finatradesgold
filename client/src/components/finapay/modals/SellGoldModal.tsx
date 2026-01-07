@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -30,6 +31,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   
   const [isLoading, setIsLoading] = useState(false);
   
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
       setUsd('');
       setMethod('bank');
       setIsLoading(false);
+      setSelectedWalletType('MPGW');
     }
   }, [isOpen]);
 
@@ -112,6 +115,12 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         <div className="space-y-6 py-4">
           
           {/* Amount Inputs */}
+          {/* Wallet Type Selection */}
+          <WalletTypeSelector
+            value={selectedWalletType}
+            onChange={setSelectedWalletType}
+          />
+
           <div className="space-y-4">
             <div className="flex justify-end">
               <span className="text-xs text-secondary cursor-pointer hover:underline" onClick={() => handleGramsChange(safeBalance.toString())}>

@@ -14,6 +14,7 @@ import { TradeItem } from '@/types/finabridge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useFees, FEE_KEYS } from '@/context/FeeContext';
 
+import WalletTypeSelector, { type GoldWalletType } from '../finapay/WalletTypeSelector';
 interface CreateTradeCaseProps {
   onSuccess: (newCase: TradeCase, lockAmount: number) => void;
   wallet: FinaBridgeWallet;
@@ -52,6 +53,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
 
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   const GOLD_PRICE = 85.22; // Mock price
 
   const handleTransfer = () => {
@@ -170,7 +172,8 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       riskLevel: 'Low',
-      amlStatus: 'Clear'
+      amlStatus: 'Clear',
+      goldWalletType: selectedWalletType
     };
 
     onSuccess(newCase, lockAmt);
@@ -668,6 +671,14 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
                    </div>
 
                    <div className="space-y-2">
+                   {/* Wallet Type Selection */}
+                   <div className="space-y-2 mb-2">
+                     <WalletTypeSelector
+                       value={selectedWalletType}
+                       onChange={setSelectedWalletType}
+                     />
+                   </div>
+
                      <Label>Gold to Lock (g)</Label>
                      <Input 
                        type="number" 

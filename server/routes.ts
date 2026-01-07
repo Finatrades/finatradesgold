@@ -1079,6 +1079,7 @@ ${message}
               description: inviteMetadata.originalMemo || `Claimed invitation transfer from registration`,
               referenceId: invite.referenceNumber,
               sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
               completedAt: new Date(),
             });
             
@@ -3180,6 +3181,7 @@ ${message}
         amountUsd: d.amount,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         createdAt: d.createdAt
       }));
       allPendingItems.push(...pendingDepositReqs);
@@ -3199,6 +3201,7 @@ ${message}
           amountUsd: w.amountUsd,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: w.createdAt
         }));
         allPendingItems.push(...pendingWithdrawReqs);
@@ -3219,6 +3222,7 @@ ${message}
           amountUsd: c.amountUsd,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: c.createdAt
         }));
         allPendingItems.push(...pendingCryptoReqs);
@@ -3239,6 +3243,7 @@ ${message}
           amountUsd: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: b.createdAt
         }));
         allPendingItems.push(...pendingBuyGoldReqs);
@@ -7385,6 +7390,7 @@ ${message}
         goldPriceUsdPerGram: null,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         createdAt: d.createdAt,
         completedAt: null,
         sourceTable: 'depositRequests'
@@ -7408,6 +7414,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: w.createdAt,
           completedAt: null,
           sourceTable: 'withdrawalRequests'
@@ -7432,6 +7439,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: c.createdAt,
           completedAt: null,
           sourceTable: 'cryptoPaymentRequests'
@@ -7456,6 +7464,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           createdAt: b.createdAt,
           completedAt: null,
           sourceTable: 'buyGoldRequests'
@@ -11288,6 +11297,7 @@ ${message}
               description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: request.referenceNumber,
               sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
               approvedBy: updates.processedBy,
               approvedAt: new Date(),
               completedAt: new Date(),
@@ -11678,6 +11688,7 @@ ${message}
           description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
           referenceId: request.referenceNumber,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           approvedBy: updates.processedBy,
           approvedAt: new Date(),
           updatedAt: new Date(),
@@ -11747,6 +11758,7 @@ ${message}
             description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
             referenceId: `${request.referenceNumber}-REFUND`,
             sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
             approvedBy: updates.processedBy,
             approvedAt: new Date(),
             updatedAt: new Date(),
@@ -15521,7 +15533,7 @@ ${message}
   // NOTE: Platform is gold-only. All transfers are in gold grams, USD is display-only.
   app.post("/api/finapay/send", ensureAuthenticated, checkMaintenanceMode, requirePinVerification('send_funds'), async (req, res) => {
     try {
-      const { senderId, recipientIdentifier, amountGold, channel, memo } = req.body;
+      const { senderId, recipientIdentifier, amountGold, channel, memo, goldWalletType } = req.body;
       
       // SECURITY: Verify sender matches authenticated session
       if (req.session?.userId !== senderId) {
@@ -15643,6 +15655,8 @@ ${message}
           description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
           referenceId: referenceNumber,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
+          goldWalletType: goldWalletType || 'MPGW',
         });
         
         // Record ledger entry
@@ -15778,6 +15792,8 @@ ${message}
         description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
+        goldWalletType: goldWalletType || 'MPGW',
       });
       
       // Record ledger entry
@@ -15898,7 +15914,7 @@ ${message}
   // Create money request - PROTECTED
   app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
     try {
-      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize } = req.body;
+      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize, goldWalletType } = req.body;
       
       const requester = await storage.getUser(requesterId);
       if (!requester) {
@@ -15950,6 +15966,7 @@ ${message}
         attachmentName: attachmentName || null,
         attachmentMime: attachmentMime || null,
         attachmentSize: attachmentSize || null,
+        goldWalletType: goldWalletType || 'MPGW',
       });
       
       // Generate QR code as data URL
@@ -16157,6 +16174,7 @@ ${message}
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
@@ -16171,6 +16189,7 @@ ${message}
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
@@ -16433,6 +16452,7 @@ ${message}
             description: transfer.memo || `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
             referenceId: transfer.referenceNumber,
             sourceModule: 'finapay',
+            goldWalletType: transfer.goldWalletType || 'MPGW',
             completedAt: new Date(),
           });
           
@@ -16667,6 +16687,7 @@ ${message}
           description: `Transfer to ${recipient?.firstName || 'user'} was rejected${reason ? `: ${reason}` : ''}`,
           referenceId: transfer.referenceNumber,
           sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
           completedAt: new Date(),
         });
         
@@ -17000,6 +17021,7 @@ ${message}
         description: invoice.description || `QR Payment to ${merchant.firstName} ${merchant.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
@@ -17014,6 +17036,7 @@ ${message}
         description: invoice.description || `QR Payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
@@ -17805,6 +17828,7 @@ ${message}
                   description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
                   referenceId: orderReference,
                   sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
                   completedAt: new Date(),
                 });
 
@@ -18183,6 +18207,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
             completedAt: new Date(),
           });
 
@@ -18424,6 +18449,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
             completedAt: new Date(),
           });
 
@@ -18620,6 +18646,7 @@ ${message}
               description: `Card payment via NGenius webhook - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: transaction.orderReference,
               sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
               completedAt: new Date(),
             });
 
@@ -23095,6 +23122,7 @@ ${message}
         goldPriceUsdPerGram: paymentRequest.goldPriceAtTime,
         description: `Crypto deposit - $${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(paymentRequest.goldGrams).toFixed(4)}g gold)`,
         sourceModule: 'finapay',
+            goldWalletType: request.goldWalletType || 'MPGW',
       });
       
       const goldGrams = paymentRequest.goldGrams ? parseFloat(paymentRequest.goldGrams) : 0;

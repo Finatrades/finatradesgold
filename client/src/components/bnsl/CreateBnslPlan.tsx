@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateBnslAgreement } from '@/utils/generateBnslPdf';
 
+import WalletTypeSelector, { type GoldWalletType } from '../finapay/WalletTypeSelector';
 interface TemplateVariant {
   id: string;
   tenorMonths: number;
@@ -234,6 +235,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   const noTemplatesConfigured = !loadingTemplates && templates.length === 0;
   
   useEffect(() => {
@@ -346,6 +348,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       quarterlyMarginUsd: quarterlyMargin,
       startDate: new Date().toISOString(),
       earlyTerminationFeePercent: currentTemplate ? parseFloat(currentTemplate.earlyTerminationFeePercent) : 2.00,
+      goldWalletType: selectedWalletType,
       adminFeePercent: currentTemplate ? parseFloat(currentTemplate.adminFeePercent) : 0.50,
     };
 
@@ -389,6 +392,14 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           </div>
 
           <div className="space-y-4">
+          {/* Wallet Type Selection */}
+          <div className="mb-4">
+            <WalletTypeSelector
+              value={selectedWalletType}
+              onChange={setSelectedWalletType}
+            />
+          </div>
+
             <Label className="text-base font-semibold">Gold Amount to Sell</Label>
             <div className="relative">
               <Input 

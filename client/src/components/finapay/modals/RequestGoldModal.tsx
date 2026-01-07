@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 import { Loader2, ArrowDownLeft, QrCode, Copy, Share2, Mail, Hash, CheckCircle2, Clock, Paperclip, X, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -40,6 +41,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   // Gold price for summary
   const [currentGoldPrice, setCurrentGoldPrice] = useState(0);
 
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   useEffect(() => {
     if (isOpen) {
       setAmount('');
@@ -53,6 +55,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setInvoiceFile(null);
       setTermsAccepted(false);
       
+      setSelectedWalletType('MPGW');
       // Fetch user's QR code for receiving payments
       if (user?.id) {
         fetchMyQrCode();
@@ -139,6 +142,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         attachmentName,
         attachmentMime,
         attachmentSize,
+        goldWalletType: selectedWalletType,
       });
       
       const data = await res.json();
@@ -218,6 +222,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                       />
                     </div>
                   </div>
+
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                    className="mb-2"
+                  />
 
                   <div className="space-y-2">
                     <Label>Note (Optional)</Label>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
@@ -26,12 +27,14 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
   const [swiftCode, setSwiftCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
     if (isOpen) {
       setStep('form');
+      setSelectedWalletType('MPGW');
       setAmount('');
       setBankName('');
       setAccountName('');
@@ -88,6 +91,7 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
           accountNumber,
           routingNumber: routingNumber || null,
           swiftCode: swiftCode || null,
+          goldWalletType: selectedWalletType,
         }),
       });
       
@@ -153,6 +157,14 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
                 </div>
                 
                 <div className="pt-4 border-t border-purple-200">
+                {/* Wallet Type Selection */}
+                <div className="mb-3">
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                  />
+                </div>
+
                   <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (USD) *</Label>
                   <div className="relative mt-2">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

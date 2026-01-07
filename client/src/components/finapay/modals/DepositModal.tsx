@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import HybridCardPayment from '../HybridCardPayment';
+import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 
 interface FeeInfo {
   feeKey: string;
@@ -95,6 +96,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   // Gold-first input mode state (GOLD-ONLY COMPLIANCE)
   const [inputMode, setInputMode] = useState<'gold' | 'usd'>('gold');
   const [goldAmount, setGoldAmount] = useState('');
+  
+  // MPGW/FPGW wallet type selection
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
   
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -250,6 +254,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setTransactionHash('');
     setCopiedAddress(false);
     setCryptoPaymentRequestId(null);
+    setSelectedWalletType('MPGW');
     setCryptoReceipt(null);
     setCryptoReceiptFileName('');
     setTermsAccepted(false);
@@ -497,6 +502,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         senderBankName: senderBankName || null,
         senderAccountName: senderAccountName || null,
         proofOfPayment: proofOfPayment,
+        goldWalletType: selectedWalletType,
       });
       const data = await res.json();
       
@@ -781,6 +787,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
                 {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+                {/* Wallet Type Selection - MPGW/FPGW */}
+                <WalletTypeSelector
+                  value={selectedWalletType}
+                  onChange={setSelectedWalletType}
+                  className="mb-2"
+                />
+
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -1038,6 +1051,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               
               {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+              {/* Wallet Type Selection - MPGW/FPGW */}
+              <WalletTypeSelector
+                value={selectedWalletType}
+                onChange={setSelectedWalletType}
+                className="mb-2"
+              />
               <div className="flex gap-2 mb-4">
                 <Button
                   type="button"
@@ -1192,6 +1211,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'crypto-amount' ? (
           <div className="space-y-4 py-4">
             {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+            {/* Wallet Type Selection - MPGW/FPGW */}
+            <WalletTypeSelector
+              value={selectedWalletType}
+              onChange={setSelectedWalletType}
+              className="mb-2"
+            />
+
             <div className="flex gap-2 mb-2">
               <Button
                 type="button"
