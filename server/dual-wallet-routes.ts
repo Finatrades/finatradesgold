@@ -30,18 +30,18 @@ import crypto from "crypto";
 const router = Router();
 
 function ensureAuthenticated(req: Request, res: Response, next: any) {
-  if ((req as any).isAuthenticated && (req as any).isAuthenticated()) {
-    return next();
+  if (!(req as any).session?.userId) {
+    return res.status(401).json({ message: "Authentication required" });
   }
-  res.status(401).json({ message: "Unauthorized" });
+  next();
 }
 
 router.get("/api/dual-wallet/:userId/balance", ensureAuthenticated, async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUser = (req as any).user;
+    const session = (req as any).session;
 
-    if (currentUser.id !== userId && currentUser.role !== 'admin') {
+    if (session.userId !== userId && session.userRole !== 'admin') {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -64,9 +64,9 @@ router.get("/api/dual-wallet/:userId/balance", ensureAuthenticated, async (req, 
 router.get("/api/dual-wallet/:userId/fpgw-batches", ensureAuthenticated, async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUser = (req as any).user;
+    const session = (req as any).session;
 
-    if (currentUser.id !== userId && currentUser.role !== 'admin') {
+    if (session.userId !== userId && session.userRole !== 'admin') {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -82,9 +82,9 @@ router.get("/api/dual-wallet/:userId/fpgw-batches", ensureAuthenticated, async (
 router.post("/api/dual-wallet/validate-spend", ensureAuthenticated, async (req, res) => {
   try {
     const { userId, goldGrams, walletType } = req.body;
-    const currentUser = (req as any).user;
+    const session = (req as any).session;
 
-    if (currentUser.id !== userId && currentUser.role !== 'admin') {
+    if (session.userId !== userId && session.userRole !== 'admin') {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -109,9 +109,9 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
   try {
     const parsed = internalTransferSchema.parse(req.body);
     const { userId, goldGrams, fromWalletType, toWalletType, notes } = parsed;
-    const currentUser = (req as any).user;
+    const session = (req as any).session;
 
-    if (currentUser.id !== userId && currentUser.role !== 'admin') {
+    if (session.userId !== userId && session.userRole !== 'admin') {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -250,9 +250,9 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
 router.get("/api/dual-wallet/:userId/transfers", ensureAuthenticated, async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUser = (req as any).user;
+    const session = (req as any).session;
 
-    if (currentUser.id !== userId && currentUser.role !== 'admin') {
+    if (session.userId !== userId && session.userRole !== 'admin') {
       return res.status(403).json({ error: "Access denied" });
     }
 
