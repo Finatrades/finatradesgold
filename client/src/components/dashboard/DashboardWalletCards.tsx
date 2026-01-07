@@ -63,10 +63,10 @@ export default function DashboardWalletCards({
         <div className="space-y-3">
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900 animate-count">
-              ${finaPayWallet.usdValue.toFixed(2)}
+            <p className="text-2xl font-bold text-amber-600 animate-count gold-shimmer">
+              {finaPayWallet.goldGrams.toFixed(4)}g
             </p>
-            <p className="text-xs text-fuchsia-600 font-medium gold-shimmer">~{finaPayWallet.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-muted-foreground">≈ ${finaPayWallet.usdValue.toFixed(2)} <span className="text-[10px]">(Reference)</span></p>
           </div>
           
           {/* MPGW/FPGW Dual Wallet Breakdown */}
@@ -118,10 +118,10 @@ export default function DashboardWalletCards({
           <div className="space-y-3">
             <div>
               <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-              <p className="text-2xl font-bold text-gray-900">
-                ${(finaBridgeData?.usdValue || 0).toFixed(2)}
+              <p className="text-2xl font-bold text-amber-600 gold-shimmer">
+                {(finaBridgeData?.goldGrams || 0).toFixed(4)}g
               </p>
-              <p className="text-xs text-fuchsia-600 font-medium">~{(finaBridgeData?.goldGrams || 0).toFixed(2)}g gold</p>
+              <p className="text-xs text-muted-foreground">≈ ${(finaBridgeData?.usdValue || 0).toFixed(2)} <span className="text-[10px]">(Reference)</span></p>
             </div>
             
             <div className="flex justify-between pt-3 border-t border-gray-100">
@@ -192,16 +192,16 @@ export default function DashboardWalletCards({
         <div className="space-y-3">
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900 animate-count">
-              ${bnslData.usdValue.toFixed(2)}
+            <p className="text-2xl font-bold text-amber-600 animate-count gold-shimmer">
+              {bnslData.goldGrams.toFixed(4)}g
             </p>
-            <p className="text-xs text-fuchsia-600 font-medium gold-shimmer">~{bnslData.goldGrams.toFixed(2)}g gold</p>
+            <p className="text-xs text-muted-foreground">≈ ${bnslData.usdValue.toFixed(2)} <span className="text-[10px]">(Reference)</span></p>
           </div>
           
           <div className="flex justify-between pt-3 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-500">Locked</p>
-              <p className="text-sm font-semibold text-fuchsia-600">{bnslData.lockedGrams.toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-fuchsia-600">{bnslData.lockedGrams.toFixed(4)}g</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Active Plans</p>

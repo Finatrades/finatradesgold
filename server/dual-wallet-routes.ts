@@ -275,6 +275,44 @@ router.get("/api/dual-wallet/:userId/transfers", ensureAuthenticated, async (req
   }
 });
 
+router.get("/api/dual-wallet/:userId/allocations", ensureAuthenticated, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const session = (req as any).session;
+
+    if (session.userId !== userId && session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { getAllocationSummary } = await import('./allocation-service');
+    const summary = await getAllocationSummary(userId);
+    
+    res.json(summary);
+  } catch (error: any) {
+    console.error('Allocation summary error:', error);
+    res.status(500).json({ error: error.message || "Failed to get allocations" });
+  }
+});
+
+router.get("/api/dual-wallet/:userId/certificates", ensureAuthenticated, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const session = (req as any).session;
+
+    if (session.userId !== userId && session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { getUserCertificates } = await import('./certificate-generator');
+    const certs = await getUserCertificates(userId, 100);
+    
+    res.json({ certificates: certs });
+  } catch (error: any) {
+    console.error('Certificates error:', error);
+    res.status(500).json({ error: error.message || "Failed to get certificates" });
+  }
+});
+
 export function registerDualWalletRoutes(app: any) {
   app.use(router);
   console.log('[DualWallet] Routes registered');
