@@ -1,0 +1,240 @@
+You are a senior full-stack engineer working on the FINATRADES platform inside an existing Replit codebase.
+
+This is a BANKING-STYLE, GOLD-BACKED platform.
+DO NOT treat this as crypto or token logic.
+
+========================
+CORE PRINCIPLES (MANDATORY)
+========================
+1) Gold grams are the REAL balance.
+2) USD is DISPLAY ONLY (reference price).
+3) No gold is created unless physically allocated and recorded.
+4) All movements are recorded in a CENTRAL LEDGER (FinaVault).
+5) Pending and locked gold is NEVER spendable.
+6) Every completed transaction MUST generate certificates.
+
+========================
+USER TYPES
+========================
+Personal:
+- FinaPay
+- FinaVault
+- BNSL
+
+Business:
+- All Personal features
+- FinaBridge (trade settlement)
+
+========================
+WALLET MODEL (CRITICAL)
+========================
+Implement TWO wallet types for each user:
+
+1) MPGW — Market Price Gold Wallet
+   - Gold value follows live market price.
+
+2) FPGW — Fixed Price Gold Wallet
+   - Gold value is LOCKED at a price snapshot at transaction time.
+
+Gold grams remain the same.
+Only valuation logic changes.
+
+Users must be able to:
+- Choose MPGW or FPGW for every action
+- Internally transfer MPGW ↔ FPGW anytime (available gold only)
+
+========================
+BALANCE BUCKETS (PER USER)
+========================
+- availableGrams_MPGW
+- availableGrams_FPGW
+- pendingGrams_MPGW
+- pendingGrams_FPGW
+- lockedBnslGrams_MPGW
+- lockedBnslGrams_FPGW
+- lockedTradeGrams_MPGW
+- lockedTradeGrams_FPGW
+
+========================
+TRANSACTION STATE MACHINE
+========================
+ALL credit/debit flows must follow:
+
+DRAFT
+→ PENDING_VERIFICATION
+→ APPROVED
+→ COMPLETED
+
+OR
+→ REJECTED (with reason)
+
+Rules:
+- Pending ≠ usable
+- Approved may move to pendingGrams
+- Completed moves to available or locked buckets
+- Rejected reverts everything
+
+========================
+PHYSICAL GOLD MODEL
+========================
+Create an allocations table:
+
+allocations:
+- id
+- userId
+- transactionId
+- gramsAllocated
+- vaultLocation
+- physicalProvider = "Wingold & Metals DMCC"
+- allocationBatchRef
+- storageCertificateId
+- status (ALLOCATED / RELEASED)
+- createdAt
+
+NO digital gold without allocation.
+
+========================
+CERTIFICATES (AUTO-GENERATE)
+========================
+Certificates table must include:
+
+1) DIGITAL_OWNERSHIP_CERTIFICATE
+2) PHYSICAL_STORAGE_CERTIFICATE
+3) TRANSFER_CERTIFICATE
+4) LOCK_CERTIFICATE
+5) TITLE_TRANSFER_TO_FINATRADES_CERTIFICATE
+6) CONVERSION_CERTIFICATE (MPGW ↔ FPGW)
+
+Certificates are issued:
+- ONLY after approval/completion
+- Stored as DB records (PDF optional later)
+- Linked to transactionId and wallet type
+
+========================
+FEATURE IMPLEMENTATION
+========================
+
+A) ADD FUNDS (Card / Bank / Crypto)
+- User selects MPGW or FPGW
+- Shows Pending transaction + pendingGrams
+- Admin approval:
+  - create allocation
+  - issue certificates
+  - move pending → available
+
+B) BUY GOLD BAR
+- User uploads receipt
+- Admin verifies receipt + allocation
+- Same approval logic as Add Funds
+
+C) DEPOSIT PHYSICAL GOLD
+- User submits declared grams + vault location
+- Admin verifies storage
+- Allocate + credit selected wallet
+
+D) INTERNAL TRANSFER (MPGW ↔ FPGW)
+- Available gold only
+- MPGW → FPGW:
+  - lock price snapshot
+  - issue Conversion Certificate
+- FPGW → MPGW:
+  - release locked price
+  - issue Conversion Certificate
+
+E) SEND PAYMENT
+- Sender selects wallet (MPGW/FPGW)
+- Receiver gets SAME wallet type
+- Issue:
+  - Transfer Certificate (sender)
+  - Ownership Certificate (receiver)
+
+F) REQUEST PAYMENT
+- Same as Send, initiated by receiver
+
+G) WITHDRAW / SELL GOLD
+- User selects wallet
+- Admin approval required
+- Debit availableGrams
+- Transfer title to Finatrades
+- Issue Title Transfer Certificate
+
+H) BNSL (USER CHOICE)
+- User chooses MPGW or FPGW
+- Gold moves → lockedBnslGrams
+- Issue Lock Certificate
+- Plans:
+  - 12m = 10%
+  - 24m = 11%
+  - 36m = 12%
+- On completion:
+  - User chooses MPGW or FPGW to receive
+  - Issue updated certificates
+
+I) FINABRIDGE (USER CHOICE)
+- Business only
+- User selects MPGW or FPGW for settlement
+- Gold transfers to FinaBridge wallet
+- Gold locked as settlement
+- Trade flow:
+  1) Importer creates trade
+  2) Exporters submit proposals (no personal info)
+  3) Admin reviews & shortlists
+  4) Importer accepts
+  5) Deal room opens after T&C signing
+  6) Admin monitors
+  7) On completion, gold released
+- Certificates issued at lock & release
+
+========================
+SPENDING RULES (HARD)
+========================
+- ONLY availableGrams can be spent
+- pending / locked / reserved gold is NOT spendable
+- Prevent negative balances everywhere
+
+========================
+ADMIN PANEL
+========================
+Admin must be able to:
+- Approve/Reject all pending transactions
+- Provide rejection reasons
+- Enter vault location & allocation refs
+- Manage KYC/KYB
+- Manage trades & deal rooms
+- View ledger & certificates
+- Audit all actions (immutable logs)
+
+========================
+UI REQUIREMENTS
+========================
+- Banking-style UI
+- Clear separation of:
+  Available / Pending / Locked
+- Wallet selector (MPGW / FPGW) on every action
+- Transaction history with status + certificates
+- FinaVault as single source of truth view
+
+========================
+TESTING (MANDATORY)
+========================
+Add tests to ensure:
+- Pending gold cannot be spent
+- Locked gold cannot be spent
+- State machine enforced
+- Certificates generated correctly
+- Allocations created for every credit
+- MPGW ↔ FPGW transfers correct
+- No negative balances ever
+
+========================
+DELIVERY INSTRUCTIONS
+========================
+1) Add DB migrations
+2) Extend models safely
+3) Update transaction handlers
+4) Add certificate service hooks
+5) Update admin + user UI minimally
+6) Add tests
+7) Do NOT break existing functionality
+
+Start implementing now.
