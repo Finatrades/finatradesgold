@@ -93,6 +93,7 @@ import { logActivity, notifyError } from "./system-notifications";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
+import { registerDualWalletRoutes } from "./dual-wallet-routes";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -587,6 +588,8 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
+  // Register dual wallet routes (MPGW/FPGW)
+  registerDualWalletRoutes(app);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

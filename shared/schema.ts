@@ -943,6 +943,10 @@ export const transactions = pgTable("transactions", {
   // Gold price at transaction time (for historical value calculation)
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
   
+  // MPGW/FPGW wallet selection
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'MPGW' or 'FPGW'
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW transactions, links to batch
+  
   recipientEmail: varchar("recipient_email", { length: 255 }),
   senderEmail: varchar("sender_email", { length: 255 }),
   recipientUserId: varchar("recipient_user_id", { length: 255 }),
@@ -1045,6 +1049,8 @@ export const depositRequests = pgTable("deposit_requests", {
   proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
   notes: text("notes"),
   status: depositRequestStatusEnum("status").notNull().default('Pending'),
+  // MPGW/FPGW wallet selection - which wallet to credit
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
   processedAt: timestamp("processed_at"),
   rejectionReason: text("rejection_reason"),
@@ -1074,6 +1080,11 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   bankCountry: varchar("bank_country", { length: 100 }),
   notes: text("notes"),
   status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
+  // MPGW/FPGW wallet selection - which wallet to debit
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
+  // Gold amount being withdrawn
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
+  goldPriceAtRequest: decimal("gold_price_at_request", { precision: 12, scale: 2 }),
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
   processedAt: timestamp("processed_at"),
   transactionReference: varchar("transaction_reference", { length: 255 }), // Admin's transfer reference
@@ -1206,7 +1217,9 @@ export const certificateTypeEnum = pgEnum('certificate_type', [
   'Transfer',             // Finatrades - issued when gold moves between users
   'BNSL Lock',            // Finatrades - issued when gold is locked into BNSL plan
   'Trade Lock',           // Finatrades - issued when FinaBridge reserve is created
-  'Trade Release'         // Finatrades - issued when FinaBridge trade settles
+  'Trade Release',        // Finatrades - issued when FinaBridge trade settles
+  'Conversion',           // Finatrades - issued when gold moves MPGW<->FPGW
+  'Title Transfer'        // Finatrades - issued when user sells/withdraws gold
 ]);
 export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
 
@@ -1259,6 +1272,13 @@ export const certificates = pgTable("certificates", {
   // Trade finance (FinaBridge) fields
   tradeCaseId: varchar("trade_case_id", { length: 255 }), // References tradeCases.id for Trade Lock/Release certs
   
+  // MPGW/FPGW Conversion fields
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'MPGW' or 'FPGW' - which wallet this certificate belongs to
+  fromGoldWalletType: varchar("from_gold_wallet_type", { length: 10 }), // For conversion certificates
+  toGoldWalletType: varchar("to_gold_wallet_type", { length: 10 }), // For conversion certificates
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW certificates, links to batch
+  conversionPriceUsd: decimal("conversion_price_usd", { precision: 12, scale: 2 }), // Price at time of conversion
+  
   issuedAt: timestamp("issued_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),
   cancelledAt: timestamp("cancelled_at"),
@@ -1306,7 +1326,9 @@ export const ledgerActionEnum = pgEnum('ledger_action', [
   'Vault_Transfer',             // Transfer between vault locations
   'Gift_Send',                  // Gold gift sent
   'Gift_Receive',               // Gold gift received
-  'Storage_Fee'                 // Storage fee deduction
+  'Storage_Fee',                // Storage fee deduction
+  'MPGW_To_FPGW',              // Convert from Market Price to Fixed Price wallet
+  'FPGW_To_MPGW'               // Convert from Fixed Price to Market Price wallet
 ]);
 
 // Wallet types for tracking source/destination
@@ -1315,6 +1337,25 @@ export const walletTypeEnum = pgEnum('wallet_type', [
   'BNSL',         // BNSL dedicated wallet
   'FinaBridge',   // FinaBridge trade wallet
   'External'      // External (deposits/withdrawals/escrow)
+]);
+
+// ============================================
+// MPGW/FPGW DUAL-WALLET SYSTEM
+// ============================================
+
+/**
+ * Gold Wallet Valuation Types:
+ * - MPGW (Market Price Gold Wallet): Gold value follows live market price
+ * - FPGW (Fixed Price Gold Wallet): Gold value locked at transaction time
+ */
+export const goldWalletTypeEnum = pgEnum('gold_wallet_type', ['MPGW', 'FPGW']);
+
+// Balance bucket types for tracking gold status
+export const balanceBucketEnum = pgEnum('balance_bucket', [
+  'Available',      // Ready to spend
+  'Pending',        // Awaiting verification
+  'Locked_BNSL',    // Locked in BNSL plan
+  'Reserved_Trade'  // Reserved for FinaBridge
 ]);
 
 // Central ledger tracking all gold ownership changes
@@ -1334,6 +1375,11 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   fromStatus: ownershipStatusEnum("from_status"),
   toStatus: ownershipStatusEnum("to_status"),
   
+  // MPGW/FPGW tracking
+  goldWalletType: goldWalletTypeEnum("gold_wallet_type"), // Which valuation wallet this affects
+  fromGoldWalletType: goldWalletTypeEnum("from_gold_wallet_type"), // For MPGW<->FPGW transfers
+  toGoldWalletType: goldWalletTypeEnum("to_gold_wallet_type"), // For MPGW<->FPGW transfers
+  
   // Running balance after this entry
   balanceAfterGrams: decimal("balance_after_grams", { precision: 18, scale: 6 }).notNull(),
   
@@ -1343,6 +1389,7 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   bnslPayoutId: varchar("bnsl_payout_id", { length: 255 }),
   tradeRequestId: varchar("trade_request_id", { length: 255 }),
   certificateId: varchar("certificate_id", { length: 255 }),
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW batch tracking
   
   // For transfers between users
   counterpartyUserId: varchar("counterparty_user_id", { length: 255 }).references(() => users.id),
@@ -1365,13 +1412,33 @@ export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
   // Total gold owned by user
   totalGoldGrams: decimal("total_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   
-  // Breakdown by status
+  // Breakdown by status (legacy - aggregated across both wallet types)
   availableGrams: decimal("available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   pendingGrams: decimal("pending_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   lockedBnslGrams: decimal("locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   reservedTradeGrams: decimal("reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   
-  // Breakdown by wallet
+  // ============================================
+  // MPGW (Market Price Gold Wallet) Breakdown
+  // Gold value follows live market price
+  // ============================================
+  mpgwAvailableGrams: decimal("mpgw_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  mpgwPendingGrams: decimal("mpgw_pending_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  mpgwLockedBnslGrams: decimal("mpgw_locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  mpgwReservedTradeGrams: decimal("mpgw_reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  
+  // ============================================
+  // FPGW (Fixed Price Gold Wallet) Breakdown
+  // Gold value locked at transaction time
+  // ============================================
+  fpgwAvailableGrams: decimal("fpgw_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  fpgwPendingGrams: decimal("fpgw_pending_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  fpgwLockedBnslGrams: decimal("fpgw_locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  fpgwReservedTradeGrams: decimal("fpgw_reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  // FPGW weighted average price (computed from active batches)
+  fpgwWeightedAvgPriceUsd: decimal("fpgw_weighted_avg_price_usd", { precision: 12, scale: 2 }),
+  
+  // Breakdown by wallet (FinaPay/BNSL/FinaBridge)
   finaPayGrams: decimal("finapay_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   bnslAvailableGrams: decimal("bnsl_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   bnslLockedGrams: decimal("bnsl_locked_grams", { precision: 18, scale: 6 }).notNull().default('0'),
@@ -1389,6 +1456,49 @@ export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
 export const insertVaultOwnershipSummarySchema = createInsertSchema(vaultOwnershipSummary).omit({ id: true, createdAt: true, lastUpdated: true });
 export type InsertVaultOwnershipSummary = z.infer<typeof insertVaultOwnershipSummarySchema>;
 export type VaultOwnershipSummary = typeof vaultOwnershipSummary.$inferSelect;
+
+// ============================================
+// FPGW BATCHES - Fixed Price Gold Batches
+// ============================================
+
+/**
+ * FPGW Batches track gold purchased at specific prices.
+ * When spending FPGW gold, FIFO (First-In-First-Out) is used.
+ * Each batch represents gold added at a specific price point.
+ */
+export const fpgwBatchStatusEnum = pgEnum('fpgw_batch_status', [
+  'Active',       // Batch has remaining grams
+  'Consumed',     // All grams spent/transferred
+  'Transferred'   // Transferred to another user
+]);
+
+export const fpgwBatches = pgTable("fpgw_batches", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Batch details
+  originalGrams: decimal("original_grams", { precision: 18, scale: 6 }).notNull(),
+  remainingGrams: decimal("remaining_grams", { precision: 18, scale: 6 }).notNull(),
+  lockedPriceUsd: decimal("locked_price_usd", { precision: 12, scale: 2 }).notNull(),
+  
+  // Status tracking
+  status: fpgwBatchStatusEnum("status").notNull().default('Active'),
+  balanceBucket: balanceBucketEnum("balance_bucket").notNull().default('Available'),
+  
+  // Source tracking
+  sourceTransactionId: varchar("source_transaction_id", { length: 255 }),
+  sourceType: varchar("source_type", { length: 50 }), // 'deposit', 'transfer', 'conversion'
+  fromUserId: varchar("from_user_id", { length: 255 }).references(() => users.id), // For transfers
+  
+  // Audit
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFpgwBatchSchema = createInsertSchema(fpgwBatches).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFpgwBatch = z.infer<typeof insertFpgwBatchSchema>;
+export type FpgwBatch = typeof fpgwBatches.$inferSelect;
 
 // ============================================
 // PHYSICAL GOLD ALLOCATIONS (Wingold & Metals DMCC)
