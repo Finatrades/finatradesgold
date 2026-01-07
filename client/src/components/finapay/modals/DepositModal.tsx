@@ -780,72 +780,123 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Amount ({selectedAccount?.currency || 'USD'}) *</Label>
-                  <div className="relative mt-1.5">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
-                      {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
-                    </span>
-                    <Input 
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0.00"
-                      className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
-                      data-testid="input-deposit-amount"
-                    />
-                  </div>
-                  {selectedAccount?.currency !== 'USD' && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {getRate(selectedAccount?.currency || 'USD').toFixed(4)} {selectedAccount?.currency})
-                    </p>
-                  )}
+                {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={inputMode === 'gold' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('gold')}
+                    className={`flex-1 ${inputMode === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
+                    data-testid="button-bank-input-mode-gold"
+                  >
+                    <Coins className="w-4 h-4 mr-1" /> Enter in Gold (g)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={inputMode === 'usd' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('usd')}
+                    className="flex-1"
+                    data-testid="button-bank-input-mode-usd"
+                  >
+                    <DollarSign className="w-4 h-4 mr-1" /> Enter in {selectedAccount?.currency || 'USD'}
+                  </Button>
                 </div>
 
-                {parseFloat(amount) > 0 && (
-                  <div className="border border-primary/20 rounded-xl p-4 bg-primary/5">
+                {inputMode === 'gold' ? (
+                  <div>
+                    <Label className="text-sm font-medium text-amber-700">Amount (Gold Grams) *</Label>
+                    <div className="relative mt-1.5">
+                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                      <Input 
+                        type="number"
+                        value={goldAmount}
+                        onChange={(e) => setGoldAmount(e.target.value)}
+                        placeholder="0.000"
+                        className="pl-9 h-11 border-amber-300 focus:border-amber-500"
+                        step="0.001"
+                        min="0.001"
+                        data-testid="input-deposit-gold-amount"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Current price: ${goldPrice?.pricePerGram?.toFixed(2) || '—'}/gram
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="text-sm font-medium">Amount ({selectedAccount?.currency || 'USD'}) *</Label>
+                    <div className="relative mt-1.5">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                        {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
+                      </span>
+                      <Input 
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
+                        data-testid="input-deposit-amount"
+                      />
+                    </div>
+                    {selectedAccount?.currency !== 'USD' && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {getRate(selectedAccount?.currency || 'USD').toFixed(4)} {selectedAccount?.currency})
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Deposit Summary - GOLD-FIRST */}
+                {((inputMode === 'gold' && parseFloat(goldAmount) > 0) || (inputMode === 'usd' && parseFloat(amount) > 0)) && (
+                  <div className="border border-amber-300 rounded-xl p-4 bg-gradient-to-r from-amber-50 to-yellow-50">
                     <div className="flex items-center gap-2 mb-3">
-                      <Coins className="w-5 h-5 text-primary" />
-                      <h4 className="font-semibold text-foreground">Deposit Summary</h4>
+                      <Coins className="w-5 h-5 text-amber-600" />
+                      <h4 className="font-semibold text-amber-800">Deposit Summary</h4>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Deposit Amount:</span>
-                        <span className="font-medium">{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
+                      {/* Gold amount as primary */}
+                      <div className="flex justify-between text-amber-800 font-semibold">
+                        <span className="flex items-center gap-1">
+                          <Coins className="w-4 h-4" />
+                          Gold You'll Receive:
+                        </span>
+                        <span className="text-lg">
+                          {inputMode === 'gold' 
+                            ? parseFloat(goldAmount).toFixed(4) 
+                            : getEffectiveGoldGrams().toFixed(4)}g
+                        </span>
                       </div>
-                      {selectedAccount?.currency !== 'USD' && (
+                      
+                      {/* USD/Currency as secondary */}
+                      <div className="flex justify-between text-muted-foreground border-t border-amber-200 pt-2 mt-2">
+                        <span>≈ USD Equivalent:</span>
+                        <span>
+                          ${inputMode === 'gold' 
+                            ? getEffectiveUsdAmount().toFixed(2)
+                            : (selectedAccount?.currency !== 'USD' 
+                                ? getDepositSummary().amountInUsd.toFixed(2)
+                                : parseFloat(amount).toFixed(2))}
+                        </span>
+                      </div>
+                      
+                      {inputMode === 'usd' && selectedAccount?.currency !== 'USD' && (
                         <div className="flex justify-between text-muted-foreground text-xs">
-                          <span>USD Equivalent:</span>
-                          <span>${getDepositSummary().amountInUsd.toFixed(2)}</span>
+                          <span>{selectedAccount?.currency} Amount:</span>
+                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
                         </div>
                       )}
-                      {depositFee && getDepositSummary().feeAmount > 0 && (
-                        <div className="flex justify-between text-warning">
-                          <span>Processing Fee ({depositFee.feeType === 'percentage' ? `${depositFee.feeValue}%` : `$${depositFee.feeValue}`}):</span>
-                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toFixed(2)}</span>
+                      
+                      {depositFee && getDepositSummary().feeAmount > 0 && inputMode === 'usd' && (
+                        <div className="flex justify-between text-warning text-xs">
+                          <span>Processing Fee:</span>
+                          <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
                         </div>
                       )}
-                      <div className="border-t border-primary/20 pt-2 flex justify-between font-semibold">
-                        <span>Net Credit to Wallet (USD):</span>
-                        <span className="text-success">${getDepositSummary().netDepositUsd.toFixed(2)}</span>
-                      </div>
-                      {selectedAccount?.currency !== 'USD' && (
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>({selectedAccount?.currency} equivalent):</span>
-                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().netDeposit.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {goldPrice?.pricePerGram && getDepositSummary().goldGrams > 0 && (
-                        <div className="flex justify-between text-primary mt-2 pt-2 border-t border-primary/20">
-                          <span className="flex items-center gap-1">
-                            <Coins className="w-4 h-4" />
-                            Gold Equivalent:
-                          </span>
-                          <span className="font-bold">{getDepositSummary().goldGrams.toFixed(4)}g</span>
-                        </div>
-                      )}
+                      
                       {goldPrice?.pricePerGram && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 pt-2 border-t border-amber-200">
                           Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                         </p>
                       )}
@@ -986,42 +1037,110 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
               </div>
               
-              <div>
-                <Label className="text-sm">Amount (USD) *</Label>
-                <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="pl-9 bg-white"
-                    min={platformSettings.minDeposit || 50}
-                    max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
-                    data-testid="input-card-amount"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Min: ${platformSettings.minDeposit || 50} | Max: ${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}</p>
+              {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inputMode === 'gold' ? 'default' : 'outline'}
+                  onClick={() => setInputMode('gold')}
+                  className={`flex-1 ${inputMode === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
+                  data-testid="button-card-input-mode-gold"
+                >
+                  <Coins className="w-4 h-4 mr-1" /> Enter in Gold (g)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inputMode === 'usd' ? 'default' : 'outline'}
+                  onClick={() => setInputMode('usd')}
+                  className="flex-1"
+                  data-testid="button-card-input-mode-usd"
+                >
+                  <DollarSign className="w-4 h-4 mr-1" /> Enter in USD
+                </Button>
               </div>
+              
+              {inputMode === 'gold' ? (
+                <div>
+                  <Label className="text-sm text-amber-700 font-semibold">Amount (Gold Grams) *</Label>
+                  <div className="relative mt-1">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                    <Input 
+                      type="number"
+                      value={goldAmount}
+                      onChange={(e) => setGoldAmount(e.target.value)}
+                      placeholder="0.000"
+                      className="pl-9 bg-white border-amber-300 focus:border-amber-500"
+                      step="0.001"
+                      min="0.001"
+                      data-testid="input-card-gold-amount"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current price: ${goldPrice?.pricePerGram?.toFixed(2) || '—'}/gram
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-sm">Amount (USD) *</Label>
+                  <div className="relative mt-1">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-9 bg-white"
+                      min={platformSettings.minDeposit || 50}
+                      max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
+                      data-testid="input-card-amount"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Min: ${platformSettings.minDeposit || 50} | Max: ${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}</p>
+                </div>
+              )}
 
-              {parseFloat(amount) > 0 && goldPrice?.pricePerGram && (
-                <div className="border border-success/30 rounded-lg p-3 bg-success-muted/50 mt-3">
+              {/* Equivalent Display */}
+              {((inputMode === 'gold' && parseFloat(goldAmount) > 0) || (inputMode === 'usd' && parseFloat(amount) > 0)) && goldPrice?.pricePerGram && (
+                <div className="border border-amber-300 rounded-lg p-3 bg-gradient-to-r from-amber-50 to-yellow-50 mt-3">
                   <div className="flex justify-between items-start">
-                    <span className="flex items-center gap-1 text-muted-foreground text-sm">
-                      <Coins className="w-4 h-4 text-primary" />
-                      Gold Equivalent:
+                    <span className="flex items-center gap-1 text-amber-700 text-sm font-medium">
+                      {inputMode === 'gold' ? (
+                        <><DollarSign className="w-4 h-4" /> USD Equivalent:</>
+                      ) : (
+                        <><Coins className="w-4 h-4" /> Gold You'll Receive:</>
+                      )}
                     </span>
                     <div className="text-right">
-                      <p className="font-bold text-primary text-lg">
-                        ${parseFloat(amount).toFixed(2)}
-                      </p>
-                      <p className="text-xs text-primary font-medium">
-                        ~{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g gold
-                      </p>
+                      {inputMode === 'gold' ? (
+                        <>
+                          <p className="font-bold text-amber-700 text-lg">
+                            {parseFloat(goldAmount).toFixed(4)}g gold
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ≈ ${getEffectiveUsdAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-bold text-amber-700 text-lg">
+                            {getEffectiveGoldGrams().toFixed(4)}g gold
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ≈ ${parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg flex items-start gap-2">
+              <Coins className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
+              <p>Your real balance is gold. USD is an equivalent value calculated at current market price.</p>
             </div>
             
             <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
@@ -1488,8 +1607,19 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <Button variant="outline" onClick={handleBack}>Back</Button>
               {step === 'card-amount' && (
                 <Button 
-                  onClick={handleCardPayment} 
-                  disabled={!amount || submitting}
+                  onClick={() => {
+                    // Sync USD amount from gold input for downstream use
+                    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                      const usdValue = getEffectiveUsdAmount();
+                      setAmount(usdValue.toFixed(2));
+                    }
+                    handleCardPayment();
+                  }} 
+                  disabled={
+                    inputMode === 'gold'
+                      ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                      : !amount || submitting
+                  }
                   data-testid="button-proceed-card-payment"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
@@ -1502,8 +1632,19 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <>
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
-                onClick={handleSubmit} 
-                disabled={!amount || submitting || (termsContent?.enabled && !termsAccepted)}
+                onClick={() => {
+                  // Sync USD amount from gold input for downstream use
+                  if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                    const usdValue = getEffectiveUsdAmount();
+                    setAmount(usdValue.toFixed(2));
+                  }
+                  handleSubmit();
+                }} 
+                disabled={
+                  inputMode === 'gold'
+                    ? !goldAmount || submitting || (termsContent?.enabled && !termsAccepted)
+                    : !amount || submitting || (termsContent?.enabled && !termsAccepted)
+                }
                 data-testid="button-submit-deposit"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
