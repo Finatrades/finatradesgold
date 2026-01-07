@@ -8,6 +8,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { useToast } from '@/hooks/use-toast';
 
 interface Certificate {
   id: string;
@@ -39,6 +41,8 @@ interface CertificateDetailModalProps {
 }
 
 function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
+  const { toast } = useToast();
+  
   if (!certificate) return null;
 
   const isDigitalOwnership = certificate.type === 'Digital Ownership' || certificate.type === 'BNSL Lock' || certificate.type === 'Trade Lock' || certificate.type === 'Trade Release';
@@ -49,6 +53,117 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   });
   const goldGrams = parseFloat(certificate.goldGrams || '0');
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
+  
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    if (isDigitalOwnership) {
+      // Dark background for digital ownership
+      doc.setFillColor(13, 5, 21);
+      doc.rect(0, 0, pageWidth, 297, 'F');
+      
+      doc.setTextColor(212, 175, 55);
+      doc.setFontSize(28);
+      doc.text('CERTIFICATE', pageWidth / 2, 40, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text('of Digital Ownership', pageWidth / 2, 52, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text(certificate.certificateNumber, pageWidth / 2, 62, { align: 'center' });
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.text(`This certifies that the holder is the beneficial owner of`, pageWidth / 2, 85, { align: 'center' });
+      doc.text(`${goldGrams.toFixed(4)}g of fine gold, secured in the Finatrades ledger.`, pageWidth / 2, 93, { align: 'center' });
+      
+      // Details grid
+      doc.setTextColor(212, 175, 55);
+      doc.setFontSize(10);
+      const detailsY = 115;
+      doc.text('GOLD WEIGHT', 30, detailsY);
+      doc.text('PURITY', 75, detailsY);
+      doc.text('VALUE (USD)', 120, detailsY);
+      doc.text('ISSUER', 165, detailsY);
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.text(`${goldGrams.toFixed(4)}g`, 30, detailsY + 10);
+      doc.text('999.9', 75, detailsY + 10);
+      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, detailsY + 10);
+      doc.text(certificate.issuer, 165, detailsY + 10);
+      
+      // Footer
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.text(`Issued: ${issueDate}`, pageWidth / 2, 250, { align: 'center' });
+      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 258, { align: 'center' });
+      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 264, { align: 'center' });
+    } else {
+      // White background for physical storage
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, 297, 'F');
+      
+      // Header
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(20);
+      doc.text('CERTIFICATE', pageWidth / 2, 30, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text('of Physical Storage', pageWidth / 2, 40, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(certificate.certificateNumber, pageWidth / 2, 50, { align: 'center' });
+      
+      // Main content
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`This certifies that ${goldGrams.toFixed(4)}g of physical gold is securely stored at`, pageWidth / 2, 75, { align: 'center' });
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(certificate.vaultLocation || 'N/A', pageWidth / 2, 85, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.text(`under custody of ${certificate.issuer}.`, pageWidth / 2, 95, { align: 'center' });
+      
+      // Details box
+      doc.setDrawColor(0, 0, 0);
+      doc.rect(30, 110, pageWidth - 60, 50);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text('GOLD WEIGHT', 40, 125);
+      doc.text('PURITY', 80, 125);
+      doc.text('VALUE (USD)', 120, 125);
+      doc.text('STORAGE REF', 160, 125);
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`${goldGrams.toFixed(4)}g`, 40, 140);
+      doc.text('999.9', 80, 140);
+      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, 140);
+      doc.text(certificate.wingoldStorageRef || 'N/A', 160, 140);
+      
+      // Footer
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Issued: ${issueDate}`, 40, 200);
+      doc.text(`Issuing Authority: ${certificate.issuer}`, 40, 210);
+      
+      doc.setFontSize(8);
+      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 260, { align: 'center' });
+      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 268, { align: 'center' });
+    }
+    
+    const filename = `${certificate.type.replace(/\s+/g, '_')}_${certificate.certificateNumber}.pdf`;
+    doc.save(filename);
+    
+    toast({
+      title: "Certificate Downloaded",
+      description: `${certificate.type} certificate has been saved as PDF.`
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -185,7 +300,13 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
           </div>
 
           <div className="flex justify-center gap-4 mt-8">
-            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-white/20 text-white hover:bg-white/10"
+              onClick={handleDownloadPDF}
+              data-testid="button-download-certificate-pdf"
+            >
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
