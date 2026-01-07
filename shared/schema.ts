@@ -991,6 +991,9 @@ export const platformBankAccounts = pgTable("platform_bank_accounts", {
   status: bankAccountStatusEnum("status").notNull().default('Active'),
   isDefault: boolean("is_default").notNull().default(false),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1048,6 +1051,9 @@ export const depositRequests = pgTable("deposit_requests", {
   transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
   proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   status: depositRequestStatusEnum("status").notNull().default('Pending'),
   // MPGW/FPGW wallet selection - which wallet to credit
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
@@ -1079,6 +1085,9 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   routingNumber: varchar("routing_number", { length: 50 }),
   bankCountry: varchar("bank_country", { length: 100 }),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
   // MPGW/FPGW wallet selection - which wallet to debit
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // 'MPGW' or 'FPGW'
@@ -1396,6 +1405,9 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   
   // Audit fields
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdBy: varchar("created_by", { length: 255 }), // 'system' or admin userId
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -1492,6 +1504,9 @@ export const fpgwBatches = pgTable("fpgw_batches", {
   
   // Audit
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1525,6 +1540,9 @@ export const allocations = pgTable("allocations", {
   
   // Audit
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdBy: varchar("created_by", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1711,6 +1729,9 @@ export const vaultWithdrawalRequests = pgTable("vault_withdrawal_requests", {
   walletAddress: varchar("wallet_address", { length: 255 }),
   
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   status: vaultWithdrawalStatusEnum("status").notNull().default('Submitted'),
   
   // Admin processing
@@ -1820,6 +1841,9 @@ export const bnslPlans = pgTable("bnsl_plans", {
   startDate: timestamp("start_date").notNull(),
   maturityDate: timestamp("maturity_date").notNull(),
   status: bnslPlanStatusEnum("status").notNull().default('Pending Activation'),
+
+  // MPGW/FPGW wallet selection - which wallet gold is locked from
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   
   paidMarginUsd: decimal("paid_margin_usd", { precision: 18, scale: 2 }).notNull().default('0'),
   paidMarginGrams: decimal("paid_margin_grams", { precision: 18, scale: 6 }).notNull().default('0'),
@@ -1827,6 +1851,9 @@ export const bnslPlans = pgTable("bnsl_plans", {
   
   planRiskLevel: riskLevelEnum("plan_risk_level").notNull().default('Low'),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   
   // Fee percentages (captured from template at enrollment)
   earlyTerminationFeePercent: decimal("early_termination_fee_percent", { precision: 5, scale: 2 }).notNull().default('2.00'),
@@ -1986,6 +2013,9 @@ export const tradeCases = pgTable("trade_cases", {
   riskApprovedAt: timestamp("risk_approved_at"),
   
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -2075,6 +2105,9 @@ export const tradeProposals = pgTable("trade_proposals", {
   quotePrice: decimal("quote_price", { precision: 18, scale: 2 }).notNull(),
   timelineDays: integer("timeline_days").notNull(),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   attachmentUrl: text("attachment_url"),
   
   portOfLoading: varchar("port_of_loading", { length: 255 }),
@@ -3240,6 +3273,9 @@ export const referrals = pgTable("referrals", {
   rewardCurrency: varchar("reward_currency", { length: 10 }).default('USD'),
   rewardPaidAt: timestamp("reward_paid_at"),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
 });
@@ -3603,6 +3639,9 @@ export const goldBars = pgTable("gold_bars", {
   purchaseDate: date("purchase_date"),
   assayCertificateUrl: text("assay_certificate_url"),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -3633,6 +3672,9 @@ export const storageFees = pgTable("storage_fees", {
   paymentMethod: varchar("payment_method", { length: 50 }),
   transactionId: varchar("transaction_id", { length: 255 }),
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -3788,6 +3830,9 @@ export const tradeShipments = pgTable("trade_shipments", {
   customsDocuments: text("customs_documents"),
   
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -3981,6 +4026,9 @@ export const sarReports = pgTable("sar_reports", {
   regulatorReferenceNumber: varchar("regulator_reference_number", { length: 100 }),
   
   notes: text("notes"),
+
+  // MPGW/FPGW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('MPGW'), // 'MPGW' or 'FPGW'
   attachments: json("attachments").$type<string[]>(),
   
   createdBy: varchar("created_by", { length: 255 }).notNull().references(() => users.id),
