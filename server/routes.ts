@@ -1093,7 +1093,7 @@ ${message}
               description: inviteMetadata.originalMemo || `Claimed invitation transfer from registration`,
               referenceId: invite.referenceNumber,
               sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
               completedAt: new Date(),
             });
             
@@ -3195,7 +3195,7 @@ ${message}
         amountUsd: d.amount,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         createdAt: d.createdAt
       }));
       allPendingItems.push(...pendingDepositReqs);
@@ -3215,7 +3215,7 @@ ${message}
           amountUsd: w.amountUsd,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: w.createdAt
         }));
         allPendingItems.push(...pendingWithdrawReqs);
@@ -3236,7 +3236,7 @@ ${message}
           amountUsd: c.amountUsd,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: c.createdAt
         }));
         allPendingItems.push(...pendingCryptoReqs);
@@ -3257,7 +3257,7 @@ ${message}
           amountUsd: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: b.createdAt
         }));
         allPendingItems.push(...pendingBuyGoldReqs);
@@ -7404,7 +7404,7 @@ ${message}
         goldPriceUsdPerGram: null,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         createdAt: d.createdAt,
         completedAt: null,
         sourceTable: 'depositRequests'
@@ -7428,7 +7428,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: w.createdAt,
           completedAt: null,
           sourceTable: 'withdrawalRequests'
@@ -7453,7 +7453,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: c.createdAt,
           completedAt: null,
           sourceTable: 'cryptoPaymentRequests'
@@ -7478,7 +7478,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           createdAt: b.createdAt,
           completedAt: null,
           sourceTable: 'buyGoldRequests'
@@ -11705,7 +11705,7 @@ ${message}
           description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
           referenceId: request.referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           approvedBy: updates.processedBy,
           approvedAt: new Date(),
           updatedAt: new Date(),
@@ -11775,7 +11775,7 @@ ${message}
             description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
             referenceId: `${request.referenceNumber}-REFUND`,
             sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
             approvedBy: updates.processedBy,
             approvedAt: new Date(),
             updatedAt: new Date(),
@@ -15672,7 +15672,7 @@ ${message}
           description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
           referenceId: referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           goldWalletType: goldWalletType || 'MPGW',
         });
         
@@ -15809,7 +15809,7 @@ ${message}
         description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         goldWalletType: goldWalletType || 'MPGW',
       });
       
@@ -16191,7 +16191,7 @@ ${message}
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         completedAt: new Date(),
       });
       
@@ -16206,7 +16206,7 @@ ${message}
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         completedAt: new Date(),
       });
       
@@ -16704,7 +16704,7 @@ ${message}
           description: `Transfer to ${recipient?.firstName || 'user'} was rejected${reason ? `: ${reason}` : ''}`,
           referenceId: transfer.referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
           completedAt: new Date(),
         });
         
@@ -17038,7 +17038,7 @@ ${message}
         description: invoice.description || `QR Payment to ${merchant.firstName} ${merchant.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         completedAt: new Date(),
       });
       
@@ -17053,7 +17053,7 @@ ${message}
         description: invoice.description || `QR Payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
         completedAt: new Date(),
       });
       
@@ -17845,7 +17845,7 @@ ${message}
                   description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
                   referenceId: orderReference,
                   sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
                   completedAt: new Date(),
                 });
 
@@ -18224,7 +18224,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
             completedAt: new Date(),
           });
 
@@ -18466,7 +18466,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
             completedAt: new Date(),
           });
 
@@ -18663,7 +18663,7 @@ ${message}
               description: `Card payment via NGenius webhook - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: transaction.orderReference,
               sourceModule: 'finapay',
-            goldWalletType: d.goldWalletType || 'MPGW',
+            goldWalletType: 'MPGW',
               completedAt: new Date(),
             });
 
