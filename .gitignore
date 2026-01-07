@@ -13,6 +13,12 @@ npm-debug.log*
 # Uploads (user-generated content)
 uploads/
 
+# Attached assets (screenshots, documents from development)
+attached_assets/
+
+# Test artifacts
+user_admin_test/
+
 # Cache
 .cache/
 
