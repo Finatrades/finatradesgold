@@ -4703,3 +4703,140 @@ export const workflowAuditSummaries = pgTable("workflow_audit_summaries", {
 export const insertWorkflowAuditSummarySchema = createInsertSchema(workflowAuditSummaries).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWorkflowAuditSummary = z.infer<typeof insertWorkflowAuditSummarySchema>;
 export type WorkflowAuditSummary = typeof workflowAuditSummaries.$inferSelect;
+
+// ============================================
+// B2B INTEGRATION - Wingold Receiving Orders from Finatrades
+// ============================================
+
+export const b2bOrderStatusEnum = pgEnum('b2b_order_status', [
+  'pending', 'confirmed', 'processing', 'partially_fulfilled', 'fulfilled', 'cancelled', 'failed'
+]);
+
+export const b2bCertificateTypeEnum = pgEnum('b2b_certificate_type', ['bar', 'storage']);
+
+export const b2bOrders = pgTable("b2b_orders", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  finatradesRef: varchar("finatrades_ref", { length: 100 }).notNull().unique(),
+  
+  customerExternalId: varchar("customer_external_id", { length: 255 }).notNull(),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  
+  barSize: wingoldBarSizeEnum("bar_size").notNull(),
+  barCount: integer("bar_count").notNull(),
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  usdAmount: decimal("usd_amount", { precision: 18, scale: 2 }).notNull(),
+  goldPricePerGram: decimal("gold_price_per_gram", { precision: 18, scale: 6 }).notNull(),
+  
+  preferredVaultLocationId: varchar("preferred_vault_location_id", { length: 255 }),
+  actualVaultLocationId: varchar("actual_vault_location_id", { length: 255 }),
+  
+  webhookUrl: text("webhook_url").notNull(),
+  status: b2bOrderStatusEnum("status").notNull().default('pending'),
+  
+  barsAllocated: integer("bars_allocated").notNull().default(0),
+  certificatesIssued: integer("certificates_issued").notNull().default(0),
+  
+  confirmedAt: timestamp("confirmed_at"),
+  fulfilledAt: timestamp("fulfilled_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancellationReason: text("cancellation_reason"),
+  
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertB2bOrderSchema = createInsertSchema(b2bOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertB2bOrder = z.infer<typeof insertB2bOrderSchema>;
+export type B2bOrder = typeof b2bOrders.$inferSelect;
+
+export const b2bOrderBars = pgTable("b2b_order_bars", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => b2bOrders.id),
+  
+  barId: varchar("bar_id", { length: 100 }).notNull().unique(),
+  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
+  
+  barSize: wingoldBarSizeEnum("bar_size").notNull(),
+  weightGrams: decimal("weight_grams", { precision: 18, scale: 6 }).notNull(),
+  purity: decimal("purity", { precision: 8, scale: 6 }).notNull().default('0.9999'),
+  mint: varchar("mint", { length: 255 }),
+  
+  vaultLocationId: varchar("vault_location_id", { length: 255 }).notNull(),
+  vaultLocationName: varchar("vault_location_name", { length: 255 }),
+  
+  allocatedAt: timestamp("allocated_at").notNull().defaultNow(),
+  webhookSentAt: timestamp("webhook_sent_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertB2bOrderBarSchema = createInsertSchema(b2bOrderBars).omit({ id: true, createdAt: true });
+export type InsertB2bOrderBar = z.infer<typeof insertB2bOrderBarSchema>;
+export type B2bOrderBar = typeof b2bOrderBars.$inferSelect;
+
+export const b2bCertificates = pgTable("b2b_certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => b2bOrders.id),
+  barId: varchar("bar_id", { length: 255 }).references(() => b2bOrderBars.id),
+  
+  certificateNumber: varchar("certificate_number", { length: 100 }).notNull().unique(),
+  certificateType: b2bCertificateTypeEnum("certificate_type").notNull(),
+  
+  pdfUrl: text("pdf_url"),
+  jsonData: json("json_data").$type<Record<string, any>>(),
+  
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  webhookSentAt: timestamp("webhook_sent_at"),
+  signature: text("signature"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertB2bCertificateSchema = createInsertSchema(b2bCertificates).omit({ id: true, createdAt: true });
+export type InsertB2bCertificate = z.infer<typeof insertB2bCertificateSchema>;
+export type B2bCertificate = typeof b2bCertificates.$inferSelect;
+
+export const b2bVaultLocations = pgTable("b2b_vault_locations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  country: varchar("country", { length: 100 }).notNull(),
+  address: text("address"),
+  
+  isActive: boolean("is_active").notNull().default(true),
+  capacityKg: decimal("capacity_kg", { precision: 18, scale: 2 }),
+  currentStockKg: decimal("current_stock_kg", { precision: 18, scale: 2 }).default('0'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertB2bVaultLocationSchema = createInsertSchema(b2bVaultLocations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertB2bVaultLocation = z.infer<typeof insertB2bVaultLocationSchema>;
+export type B2bVaultLocation = typeof b2bVaultLocations.$inferSelect;
+
+export const b2bWebhookLogs = pgTable("b2b_webhook_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => b2bOrders.id),
+  
+  event: varchar("event", { length: 50 }).notNull(),
+  webhookUrl: text("webhook_url").notNull(),
+  payload: json("payload").$type<Record<string, any>>(),
+  
+  httpStatus: integer("http_status"),
+  responseBody: text("response_body"),
+  
+  success: boolean("success").notNull().default(false),
+  retryCount: integer("retry_count").notNull().default(0),
+  lastAttemptAt: timestamp("last_attempt_at").notNull().defaultNow(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertB2bWebhookLogSchema = createInsertSchema(b2bWebhookLogs).omit({ id: true, createdAt: true });
+export type InsertB2bWebhookLog = z.infer<typeof insertB2bWebhookLogSchema>;
+export type B2bWebhookLog = typeof b2bWebhookLogs.$inferSelect;
