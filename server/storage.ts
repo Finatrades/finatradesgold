@@ -114,7 +114,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, desc, and, or, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray, gt } from "drizzle-orm";
 import * as schema from "@shared/schema";
 
 export type DbClient = typeof db;
@@ -4035,19 +4035,19 @@ export class DatabaseStorage implements IStorage {
     // Count users with MPGW vs FPGW
     const mpgwCountResult = await db.select({
       count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.mpgwAvailableGrams} > 0 OR ${vaultOwnershipSummary.mpgwPendingGrams} > 0`);
+    }).from(vaultOwnershipSummary).where(or(gt(vaultOwnershipSummary.mpgwAvailableGrams, '0'), gt(vaultOwnershipSummary.mpgwPendingGrams, '0')));
     const mpgwCount = parseInt(mpgwCountResult[0]?.count || '0');
 
     const fpgwCountResult = await db.select({
       count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.fpgwAvailableGrams} > 0 OR ${vaultOwnershipSummary.fpgwPendingGrams} > 0`);
+    }).from(vaultOwnershipSummary).where(or(gt(vaultOwnershipSummary.fpgwAvailableGrams, '0'), gt(vaultOwnershipSummary.fpgwPendingGrams, '0')));
     const fpgwCount = parseInt(fpgwCountResult[0]?.count || '0');
 
     // Get FPGW weighted average price from batches
     const fpgwBatchResult = await db.select({
       totalGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}), 0)`,
       totalValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams} * ${fpgwBatches.purchasePriceUsdPerGram}), 0)`,
-    }).from(fpgwBatches).where(sql`${fpgwBatches.remainingGoldGrams} > 0`);
+    }).from(fpgwBatches).where(gt(fpgwBatches.remainingGoldGrams, '0'));
 
     const fpgwBatchGrams = parseFloat(fpgwBatchResult[0]?.totalGrams || '0');
     const fpgwBatchValue = parseFloat(fpgwBatchResult[0]?.totalValue || '0');
