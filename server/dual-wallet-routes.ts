@@ -27,6 +27,7 @@ import { getGoldPricePerGram } from "./gold-price-service";
 import { emitLedgerEvent } from "./socket";
 import { z } from "zod";
 import crypto from "crypto";
+import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 const router = Router();
 
@@ -116,8 +117,30 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
       return res.status(403).json({ error: "Access denied" });
     }
 
+    const flowType: FlowType = fromWalletType === 'MPGW' 
+      ? 'INTERNAL_TRANSFER_MPGW_TO_FPGW' 
+      : 'INTERNAL_TRANSFER_FPGW_TO_MPGW';
+    const flowInstanceId = await workflowAuditService.startFlow(flowType, userId, {
+      goldGrams,
+      fromWalletType,
+      toWalletType,
+    });
+
+    const validateStepKey = fromWalletType === 'MPGW' 
+      ? 'validate_user_balance_mpgw' 
+      : 'validate_user_balance_fpgw';
+    
     const validation = await validateInternalTransfer(userId, goldGrams, fromWalletType, toWalletType);
+    
+    await workflowAuditService.recordStep(
+      flowInstanceId, flowType, validateStepKey,
+      validation.valid ? 'PASS' : 'FAIL',
+      { availableGrams: validation.availableGrams, requestedGrams: goldGrams },
+      { userId }
+    );
+    
     if (!validation.valid) {
+      await workflowAuditService.completeFlow(flowInstanceId);
       return res.status(400).json({ error: validation.error });
     }
 
@@ -143,6 +166,13 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         const actualTxId = insertedTx.id;
         generatedTxId = actualTxId;
         
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'create_pending_txn',
+          'Transaction created',
+          { transactionId: actualTxId, goldGrams },
+          { userId, transactionId: actualTxId }
+        );
+        
         await tx
           .update(vaultOwnershipSummary)
           .set({
@@ -159,10 +189,17 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           sourceTransactionId: actualTxId,
           notes: notes || `MPGW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
         });
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'fpgw_batch_created',
+          'FPGW batch created with fixed price',
+          { goldGrams, lockedPriceUsd: currentGoldPrice },
+          { userId, transactionId: actualTxId }
+        );
 
         const balanceSummary = await getBalanceSummary(userId);
         
-        await tx.insert(vaultLedgerEntries).values({
+        const [ledgerEntry] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'MPGW_To_FPGW',
           goldGrams: goldGrams.toFixed(6),
@@ -173,10 +210,24 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           balanceAfterGrams: (balanceSummary.total.totalGrams).toFixed(6),
           transactionId: actualTxId,
           notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
-        });
+        }).returning({ id: vaultLedgerEntries.id });
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'ledger_post_reclass_mpgw_to_fpgw',
+          'Ledger entry recorded',
+          { ledgerEntryId: ledgerEntry.id },
+          { userId, transactionId: actualTxId, ledgerEntryId: ledgerEntry.id }
+        );
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'balances_updated',
+          'MPGW and FPGW balances updated',
+          { newMpgwGrams: balanceSummary.mpgw.availableGrams, newFpgwGrams: balanceSummary.fpgw.availableGrams },
+          { userId, transactionId: actualTxId }
+        );
 
         const certNumber = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-        await tx.insert(certificates).values({
+        const [cert] = await tx.insert(certificates).values({
           certificateNumber: certNumber,
           userId,
           type: 'Conversion',
@@ -190,7 +241,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           status: 'Active',
           transactionId: actualTxId,
           issuedAt: now
-        });
+        }).returning({ id: certificates.id });
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'certificate_issued',
+          'Conversion certificate issued',
+          { certificateNumber: certNumber },
+          { userId, transactionId: actualTxId, certificateId: cert.id }
+        );
 
       } else if (fromWalletType === 'FPGW' && toWalletType === 'MPGW') {
         const consumption = await consumeFpgwBatches(userId, goldGrams, 'Available');
@@ -198,6 +256,13 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         if (!consumption.success) {
           throw new Error(consumption.error || 'FPGW consumption failed');
         }
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'fpgw_batches_consumed',
+          'FPGW batches consumed via FIFO',
+          { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: consumption.batchesConsumed?.length || 0 },
+          { userId }
+        );
 
         await tx
           .update(vaultOwnershipSummary)
@@ -229,7 +294,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         const actualTxIdFpgw = insertedTxFpgw.id;
         generatedTxId = actualTxIdFpgw;
         
-        await tx.insert(vaultLedgerEntries).values({
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'create_pending_txn',
+          'Transaction created',
+          { transactionId: actualTxIdFpgw, goldGrams },
+          { userId, transactionId: actualTxIdFpgw }
+        );
+        
+        const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'FPGW_To_MPGW',
           goldGrams: goldGrams.toFixed(6),
@@ -240,10 +312,24 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           balanceAfterGrams: (balanceSummaryFpgw.total.totalGrams).toFixed(6),
           transactionId: actualTxIdFpgw,
           notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
-        });
+        }).returning({ id: vaultLedgerEntries.id });
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'ledger_post_reclass_fpgw_to_mpgw',
+          'Ledger entry recorded',
+          { ledgerEntryId: ledgerEntryFpgw.id },
+          { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
+        );
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'balances_updated',
+          'FPGW and MPGW balances updated',
+          { newMpgwGrams: balanceSummaryFpgw.mpgw.availableGrams, newFpgwGrams: balanceSummaryFpgw.fpgw.availableGrams },
+          { userId, transactionId: actualTxIdFpgw }
+        );
 
         const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-        await tx.insert(certificates).values({
+        const [certFpgw] = await tx.insert(certificates).values({
           certificateNumber: certNumberFpgw,
           userId,
           type: 'Conversion',
@@ -257,7 +343,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           status: 'Active',
           transactionId: actualTxIdFpgw,
           issuedAt: now
-        });
+        }).returning({ id: certificates.id });
+        
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'certificate_issued',
+          'Conversion certificate issued',
+          { certificateNumber: certNumberFpgw },
+          { userId, transactionId: actualTxIdFpgw, certificateId: certFpgw.id }
+        );
       }
     });
 
@@ -267,6 +360,16 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
       action: `${fromWalletType}_to_${toWalletType}`,
       data: { goldGrams, timestamp: now.toISOString() }
     });
+    
+    await workflowAuditService.recordStep(
+      flowInstanceId, flowType, 'notify_user',
+      'User notified of successful transfer',
+      { goldGrams, fromWalletType, toWalletType },
+      { userId, transactionId: generatedTxId }
+    );
+    
+    const auditResult = await workflowAuditService.completeFlow(flowInstanceId, generatedTxId);
+    console.log(`[WorkflowAudit] ${flowType} completed: ${auditResult.overallResult}`);
 
     const updatedBalance = await getBalanceSummary(userId);
 
@@ -274,7 +377,8 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
       success: true,
       message: `Successfully transferred ${goldGrams.toFixed(6)}g from ${fromWalletType} to ${toWalletType}`,
       transactionId: generatedTxId,
-      balance: updatedBalance
+      balance: updatedBalance,
+      auditResult
     });
   } catch (error: any) {
     console.error('Internal transfer error:', error);
