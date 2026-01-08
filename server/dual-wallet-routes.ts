@@ -168,7 +168,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'create_pending_txn',
-          'Transaction created',
+          'PASS',
           { transactionId: actualTxId, goldGrams },
           { userId, transactionId: actualTxId }
         );
@@ -192,7 +192,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'fpgw_batch_created',
-          'FPGW batch created with fixed price',
+          'PASS',
           { goldGrams, lockedPriceUsd: currentGoldPrice },
           { userId, transactionId: actualTxId }
         );
@@ -214,14 +214,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'ledger_post_reclass_mpgw_to_fpgw',
-          'Ledger entry recorded',
+          'PASS',
           { ledgerEntryId: ledgerEntry.id },
           { userId, transactionId: actualTxId, ledgerEntryId: ledgerEntry.id }
         );
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'balances_updated',
-          'MPGW and FPGW balances updated',
+          'PASS',
           { newMpgwGrams: balanceSummary.mpgw.availableGrams, newFpgwGrams: balanceSummary.fpgw.availableGrams },
           { userId, transactionId: actualTxId }
         );
@@ -245,7 +245,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
-          'Conversion certificate issued',
+          'PASS',
           { certificateNumber: certNumber },
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
@@ -259,7 +259,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'fpgw_batches_consumed',
-          'FPGW batches consumed via FIFO',
+          'PASS',
           { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: consumption.batchesConsumed?.length || 0 },
           { userId }
         );
@@ -296,7 +296,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'create_pending_txn',
-          'Transaction created',
+          'PASS',
           { transactionId: actualTxIdFpgw, goldGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
@@ -316,14 +316,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'ledger_post_reclass_fpgw_to_mpgw',
-          'Ledger entry recorded',
+          'PASS',
           { ledgerEntryId: ledgerEntryFpgw.id },
           { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
         );
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'balances_updated',
-          'FPGW and MPGW balances updated',
+          'PASS',
           { newMpgwGrams: balanceSummaryFpgw.mpgw.availableGrams, newFpgwGrams: balanceSummaryFpgw.fpgw.availableGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
@@ -347,7 +347,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
-          'Conversion certificate issued',
+          'PASS',
           { certificateNumber: certNumberFpgw },
           { userId, transactionId: actualTxIdFpgw, certificateId: certFpgw.id }
         );
@@ -363,7 +363,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     
     await workflowAuditService.recordStep(
       flowInstanceId, flowType, 'notify_user',
-      'User notified of successful transfer',
+      'PASS',
       { goldGrams, fromWalletType, toWalletType },
       { userId, transactionId: generatedTxId }
     );

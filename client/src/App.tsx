@@ -146,6 +146,7 @@ import DocumentsManagement from "@/pages/admin/DocumentsManagement";
 import AttachmentsManagement from "@/pages/admin/AttachmentsManagement";
 import ReferralManagement from "@/pages/admin/ReferralManagement";
 import AuditLogs from "@/pages/admin/AuditLogs";
+import WorkflowAudit from "@/pages/admin/WorkflowAudit";
 import SystemHealth from "@/pages/admin/SystemHealth";
 import GoldBackingReport from "@/pages/admin/GoldBackingReport";
 import VaultDashboard from "@/pages/admin/VaultDashboard";
@@ -276,6 +277,7 @@ function Router() {
       <Route path="/admin/account-statements" component={AccountStatements} />
       <Route path="/admin/referrals" component={ReferralManagement} />
       <Route path="/admin/audit-logs" component={AuditLogs} />
+      <Route path="/admin/workflow-audit" component={WorkflowAudit} />
       <Route path="/admin/system-health" component={SystemHealth} />
       <Route path="/admin/gold-backing" component={GoldBackingReport} />
       <Route path="/admin/vault-dashboard" component={VaultDashboard} />

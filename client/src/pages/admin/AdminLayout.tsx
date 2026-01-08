@@ -83,6 +83,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/referrals': ['view_users', 'manage_users'],
   '/admin/account-deletion-requests': ['view_users', 'manage_users'],
   '/admin/audit-trail': ['view_reports'],
+  '/admin/workflow-audit': ['view_reports'],
   '/admin/daily-reconciliation': ['view_reports', 'generate_reports'],
   '/admin/risk-exposure': ['view_reports'],
   '/admin/sar-reports': ['view_kyc', 'manage_kyc'],
@@ -210,6 +211,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <Shield className="w-4 h-4" />,
       items: [
         { label: 'Audit Trail', href: '/admin/audit-trail' },
+        { label: 'Workflow Audit', href: '/admin/workflow-audit' },
         { label: 'Risk Exposure', href: '/admin/risk-exposure' },
         { label: 'SAR Reports', href: '/admin/sar-reports' },
         { label: 'Regulatory Reports', href: '/admin/regulatory-reports' },
