@@ -5877,7 +5877,8 @@ ${message}
           counterpartyUserId: tx.recipientUserId,
           createdAt: tx.createdAt,
           completedAt: tx.completedAt,
-          sourceType: 'transaction'
+          sourceType: 'transaction',
+          goldWalletType: tx.goldWalletType || null
         });
       });
       
@@ -6095,7 +6096,8 @@ ${message}
             counterpartyUserId: null,
             createdAt: cert.issuedAt,
             completedAt: cert.issuedAt,
-            sourceType: 'certificate'
+            sourceType: 'certificate',
+            goldWalletType: cert.goldWalletType || null
           });
         });
       
@@ -6215,7 +6217,8 @@ ${message}
           description: tx.description,
           createdAt: tx.createdAt,
           completedAt: tx.completedAt,
-          sourceType: 'transaction'
+          sourceType: 'transaction',
+          goldWalletType: tx.goldWalletType || null
         });
       });
       
