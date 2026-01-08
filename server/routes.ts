@@ -19044,7 +19044,7 @@ ${message}
   app.get("/api/admin/financial/overview", async (req, res) => {
     try {
       // Get live gold price for USD calculations
-      const goldPriceData = await goldPriceService.getGoldPrice();
+      const goldPriceData = await getGoldPrice();
       const GOLD_PRICE_USD = goldPriceData.pricePerGram;
 
       // Get MPGW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
