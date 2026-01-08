@@ -4032,25 +4032,18 @@ export class DatabaseStorage implements IStorage {
     const fpgwReservedTrade = parseFloat(ownershipResults[0]?.fpgwReservedTrade || '0');
     const fpgwTotal = fpgwAvailable + fpgwPending + fpgwLockedBnsl + fpgwReservedTrade;
 
-    // Count users with MPGW vs FPGW
-    const mpgwCountResult = await db.select({
-      count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(or(gt(vaultOwnershipSummary.mpgwAvailableGrams, '0'), gt(vaultOwnershipSummary.mpgwPendingGrams, '0')));
-    const mpgwCount = parseInt(mpgwCountResult[0]?.count || '0');
+    // Count users with MPGW vs FPGW - use raw SQL for reliability
+    const mpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE mpgw_available_grams > 0 OR mpgw_pending_grams > 0`);
+    const mpgwCount = parseInt((mpgwCountResult.rows[0] as any)?.count || '0');
 
-    const fpgwCountResult = await db.select({
-      count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(or(gt(vaultOwnershipSummary.fpgwAvailableGrams, '0'), gt(vaultOwnershipSummary.fpgwPendingGrams, '0')));
-    const fpgwCount = parseInt(fpgwCountResult[0]?.count || '0');
+    const fpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE fpgw_available_grams > 0 OR fpgw_pending_grams > 0`);
+    const fpgwCount = parseInt((fpgwCountResult.rows[0] as any)?.count || '0');
 
-    // Get FPGW weighted average price from batches
-    const fpgwBatchResult = await db.select({
-      totalGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}), 0)`,
-      totalValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams} * ${fpgwBatches.purchasePriceUsdPerGram}), 0)`,
-    }).from(fpgwBatches).where(gt(fpgwBatches.remainingGoldGrams, '0'));
+    // Get FPGW weighted average price from batches - use raw SQL for reliability
+    const fpgwBatchResult = await db.execute(sql`SELECT COALESCE(SUM(remaining_gold_grams), 0) as total_grams, COALESCE(SUM(remaining_gold_grams * purchase_price_usd_per_gram), 0) as total_value FROM fpgw_batches WHERE remaining_gold_grams > 0`);
 
-    const fpgwBatchGrams = parseFloat(fpgwBatchResult[0]?.totalGrams || '0');
-    const fpgwBatchValue = parseFloat(fpgwBatchResult[0]?.totalValue || '0');
+    const fpgwBatchGrams = parseFloat((fpgwBatchResult.rows[0] as any)?.total_grams || '0');
+    const fpgwBatchValue = parseFloat((fpgwBatchResult.rows[0] as any)?.total_value || '0');
     const fpgwWeightedAvgPrice = fpgwBatchGrams > 0 ? fpgwBatchValue / fpgwBatchGrams : 0;
 
     // Get BNSL wallet liabilities
