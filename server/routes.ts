@@ -25141,11 +25141,11 @@ ${message}
       let totalGoldInBnsl = 0;
       
       for (const wallet of wallets) {
-        totalGoldInWallets += parseFloat(wallet.goldBalance || '0');
+        totalGoldInWallets += parseFloat(wallet.goldGrams || '0');
       }
       
       for (const holding of vaultHoldings) {
-        totalGoldInVault += parseFloat(holding.weightGrams || '0');
+        totalGoldInVault += parseFloat(holding.goldGrams || '0');
       }
       
       for (const plan of bnslPlans) {
@@ -25204,8 +25204,8 @@ ${message}
       let withdrawalCount = 0;
       
       for (const wallet of wallets) {
-        totalGold += parseFloat(wallet.goldBalance || '0');
-        totalUsd += parseFloat(wallet.usdBalance || '0');
+        totalGold += parseFloat(wallet.goldGrams || '0');
+        totalUsd += parseFloat(wallet.goldGrams || '0') * 143; // Approximate USD value
       }
       
       for (const tx of transactions) {
@@ -25253,11 +25253,11 @@ ${message}
       let bnslObligations = 0;
       
       for (const wallet of wallets) {
-        totalGoldGrams += parseFloat(wallet.goldBalance || '0');
+        totalGoldGrams += parseFloat(wallet.goldGrams || '0');
       }
       
       for (const plan of bnslPlans) {
-        bnslObligations += parseFloat(plan.estimatedPayoutUsd || '0');
+        bnslObligations += parseFloat(plan.payoutAmountUsd || '0');
       }
       
       for (const req of withdrawalRequests) {
