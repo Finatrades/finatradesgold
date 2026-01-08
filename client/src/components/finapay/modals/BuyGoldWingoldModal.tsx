@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, CheckCircle2, Package, Minus, Plus, MapPin, Clock, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, AlertCircle, CheckCircle2, ShoppingCart, Search, SlidersHorizontal, X, MapPin, Clock, FileText, ChevronDown, Package } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface BuyGoldWingoldModalProps {
   isOpen: boolean;
@@ -31,29 +34,83 @@ interface GoldPriceData {
   pricePerOunce: number;
 }
 
+interface CartItem {
+  barSize: string;
+  grams: number;
+  label: string;
+  quantity: number;
+  priceAed: number;
+  priceUsd: number;
+  fulfillmentHours: number;
+}
+
 type BarSize = '1g' | '10g' | '100g' | '1kg';
 
-const BAR_OPTIONS: { size: BarSize; grams: number; label: string; fulfillmentHours: number }[] = [
-  { size: '1g', grams: 1, label: '1 Gram Bar', fulfillmentHours: 2 },
-  { size: '10g', grams: 10, label: '10 Gram Bar', fulfillmentHours: 2 },
-  { size: '100g', grams: 100, label: '100 Gram Bar', fulfillmentHours: 12 },
-  { size: '1kg', grams: 1000, label: '1 Kilogram Bar', fulfillmentHours: 24 },
+const USD_TO_AED = 3.67;
+
+const PRODUCTS = [
+  { 
+    size: '1g' as BarSize, 
+    grams: 1, 
+    label: '1g Gold Bar - Wingold', 
+    fulfillmentHours: 2,
+    purity: '999.9',
+    description: 'LBMA Certified pure gold bar with assay certificate',
+    inStock: true,
+    featured: false
+  },
+  { 
+    size: '10g' as BarSize, 
+    grams: 10, 
+    label: '10g Gold Bar - Wingold', 
+    fulfillmentHours: 2,
+    purity: '999.9',
+    description: 'LBMA Certified pure gold bar with assay certificate',
+    inStock: true,
+    featured: false
+  },
+  { 
+    size: '100g' as BarSize, 
+    grams: 100, 
+    label: '100g Gold Bar - Wingold', 
+    fulfillmentHours: 12,
+    purity: '999.9',
+    description: 'LBMA Certified pure gold bar with assay certificate',
+    inStock: true,
+    featured: true
+  },
+  { 
+    size: '1kg' as BarSize, 
+    grams: 1000, 
+    label: '1kg Gold Bar - Wingold', 
+    fulfillmentHours: 24,
+    purity: '999.9',
+    description: 'LBMA Certified pure gold bar with assay certificate',
+    inStock: true,
+    featured: true
+  },
 ];
 
-const COMPLIANCE_NOTICE = `Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system.`;
+const COMPLIANCE_NOTICE = `Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold.`;
 
 export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyGoldWingoldModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [step, setStep] = useState<'select' | 'confirm' | 'submitted'>('select');
-  const [selectedBarSize, setSelectedBarSize] = useState<BarSize>('10g');
-  const [barCount, setBarCount] = useState(1);
+  const [step, setStep] = useState<'shop' | 'cart' | 'checkout' | 'submitted'>('shop');
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedVaultId, setSelectedVaultId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<{ orderId: string; referenceNumber: string } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'weight'>('price-low');
+  const [weightFilters, setWeightFilters] = useState<string[]>([]);
+  const [showInStockOnly, setShowInStockOnly] = useState(true);
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: goldPriceData } = useQuery<GoldPriceData>({
     queryKey: ['gold-price'],
@@ -75,12 +132,16 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
 
   useEffect(() => {
     if (isOpen) {
-      setStep('select');
-      setSelectedBarSize('10g');
-      setBarCount(1);
+      setStep('shop');
+      setCart([]);
       setSelectedVaultId('');
       setOrderResult(null);
       setTermsAccepted(false);
+      setSearchQuery('');
+      setSortBy('price-low');
+      setWeightFilters([]);
+      setShowInStockOnly(true);
+      setShowFeaturedOnly(false);
       
       fetch('/api/terms/buy_gold')
         .then(res => res.json())
@@ -95,21 +156,97 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
     }
   }, [vaultLocationsData, selectedVaultId]);
 
-  const goldPrice = goldPriceData?.pricePerGram || 143;
-  const selectedBar = BAR_OPTIONS.find(b => b.size === selectedBarSize)!;
-  const totalGrams = selectedBar.grams * barCount;
-  const totalUsd = totalGrams * goldPrice;
+  const goldPriceUsd = goldPriceData?.pricePerGram || 143;
+  const goldPriceAed = goldPriceUsd * USD_TO_AED;
+
+  const filteredProducts = PRODUCTS.filter(product => {
+    if (searchQuery && !product.label.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (weightFilters.length > 0 && !weightFilters.includes(product.size)) {
+      return false;
+    }
+    if (showInStockOnly && !product.inStock) {
+      return false;
+    }
+    if (showFeaturedOnly && !product.featured) {
+      return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'price-low':
+        return a.grams - b.grams;
+      case 'price-high':
+        return b.grams - a.grams;
+      case 'weight':
+        return a.grams - b.grams;
+      default:
+        return 0;
+    }
+  });
+
+  const addToCart = (product: typeof PRODUCTS[0]) => {
+    const existingIndex = cart.findIndex(item => item.barSize === product.size);
+    if (existingIndex >= 0) {
+      const newCart = [...cart];
+      newCart[existingIndex].quantity += 1;
+      setCart(newCart);
+    } else {
+      setCart([...cart, {
+        barSize: product.size,
+        grams: product.grams,
+        label: product.label,
+        quantity: 1,
+        priceAed: product.grams * goldPriceAed,
+        priceUsd: product.grams * goldPriceUsd,
+        fulfillmentHours: product.fulfillmentHours,
+      }]);
+    }
+    toast({
+      title: 'Added to Cart',
+      description: `${product.label} added to your cart`,
+    });
+  };
+
+  const updateCartQuantity = (barSize: string, delta: number) => {
+    const newCart = cart.map(item => {
+      if (item.barSize === barSize) {
+        const newQty = Math.max(0, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }).filter(item => item.quantity > 0);
+    setCart(newCart);
+  };
+
+  const removeFromCart = (barSize: string) => {
+    setCart(cart.filter(item => item.barSize !== barSize));
+  };
+
+  const cartTotalGrams = cart.reduce((sum, item) => sum + (item.grams * item.quantity), 0);
+  const cartTotalAed = cart.reduce((sum, item) => sum + (item.priceAed * item.quantity), 0);
+  const cartTotalUsd = cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleSubmitOrder = async () => {
-    if (!user) return;
+    if (!user || cart.length === 0) return;
 
     setIsSubmitting(true);
     
     try {
+      const mainItem = cart.reduce((a, b) => a.grams * a.quantity > b.grams * b.quantity ? a : b);
+      const totalBars = cart.reduce((sum, item) => sum + item.quantity, 0);
+      
       const response = await apiRequest('POST', '/api/wingold/orders', {
-        barSize: selectedBarSize,
-        barCount,
+        barSize: mainItem.barSize,
+        barCount: totalBars,
         vaultLocationId: selectedVaultId || undefined,
+        cartItems: cart.map(item => ({
+          barSize: item.barSize,
+          quantity: item.quantity,
+          priceUsdPerGram: goldPriceUsd,
+        })),
       });
 
       if (!response.ok) {
@@ -146,280 +283,444 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
   const isKycApproved = user?.kycStatus === 'Approved';
   const vaultLocations = vaultLocationsData?.locations || [];
 
+  const toggleWeightFilter = (weight: string) => {
+    if (weightFilters.includes(weight)) {
+      setWeightFilters(weightFilters.filter(w => w !== weight));
+    } else {
+      setWeightFilters([...weightFilters, weight]);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-buy-gold-wingold">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-amber-500" />
-            <span>Buy Gold Bar</span>
-            <span className="text-sm font-normal text-muted-foreground">(Wingold & Metals)</span>
-          </DialogTitle>
-          <DialogDescription>
-            Purchase physical gold bars stored in secure LBMA-accredited vaults
-          </DialogDescription>
-        </DialogHeader>
-
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 overflow-hidden bg-[#0a0a0a]" data-testid="modal-buy-gold-wingold">
         {!isKycApproved ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Your KYC verification must be approved before you can purchase gold bars.
-              Please complete your KYC verification first.
-            </AlertDescription>
-          </Alert>
+          <div className="p-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Your KYC verification must be approved before you can purchase gold bars.
+                Please complete your KYC verification first.
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : step === 'submitted' && orderResult ? (
-          <div className="py-8 text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+          <div className="py-12 px-6 text-center space-y-4 bg-[#0a0a0a] text-white">
+            <div className="mx-auto w-16 h-16 bg-green-900/50 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-green-400" />
             </div>
-            <h3 className="text-lg font-semibold">Order Submitted Successfully!</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-xl font-semibold">Order Submitted Successfully!</h3>
+            <p className="text-gray-400">
               Your gold bar order is pending admin approval.
             </p>
-            <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
+            <div className="bg-[#1a1a1a] rounded-lg p-4 text-left space-y-2 max-w-md mx-auto">
               <p className="text-sm">
-                <span className="text-muted-foreground">Reference:</span>{' '}
-                <span className="font-mono font-medium">{orderResult.referenceNumber}</span>
+                <span className="text-gray-500">Reference:</span>{' '}
+                <span className="font-mono font-medium text-amber-400">{orderResult.referenceNumber}</span>
               </p>
               <p className="text-sm">
-                <span className="text-muted-foreground">Order:</span>{' '}
-                <span className="font-medium">{barCount}x {selectedBar.label}</span>
+                <span className="text-gray-500">Items:</span>{' '}
+                <span className="font-medium">{cartItemCount} bar{cartItemCount > 1 ? 's' : ''}</span>
               </p>
               <p className="text-sm">
-                <span className="text-muted-foreground">Total Gold:</span>{' '}
-                <span className="font-medium text-amber-600">{totalGrams.toLocaleString()}g</span>
+                <span className="text-gray-500">Total Gold:</span>{' '}
+                <span className="font-medium text-amber-400">{cartTotalGrams.toLocaleString()}g</span>
               </p>
               <p className="text-sm">
-                <span className="text-muted-foreground">Estimated Value:</span>{' '}
-                <span className="font-medium">${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-gray-500">Total Value:</span>{' '}
+                <span className="font-medium">AED {cartTotalAed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </p>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               You will be notified when your order is approved and processed.
             </p>
-            <Button onClick={handleClose} className="mt-4" data-testid="button-close-success">
+            <Button onClick={handleClose} className="mt-4 bg-amber-500 hover:bg-amber-600 text-black" data-testid="button-close-success">
               Close
             </Button>
           </div>
-        ) : step === 'confirm' ? (
-          <div className="space-y-4">
-            <Alert className="bg-amber-50 border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-sm text-amber-800">
-                Please review your order details before submitting.
-              </AlertDescription>
-            </Alert>
+        ) : step === 'checkout' ? (
+          <div className="bg-[#0a0a0a] text-white">
+            <div className="p-6 border-b border-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Checkout</h2>
+                <Button variant="ghost" size="icon" onClick={() => setStep('cart')} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+            
+            <ScrollArea className="h-[60vh] p-6">
+              <div className="space-y-6">
+                <div className="bg-[#1a1a1a] rounded-lg p-4">
+                  <h3 className="font-medium mb-3">Order Summary</h3>
+                  {cart.map((item) => (
+                    <div key={item.barSize} className="flex justify-between py-2 border-b border-gray-800 last:border-0">
+                      <span className="text-gray-400">{item.quantity}x {item.label}</span>
+                      <span className="text-amber-400">AED {(item.priceAed * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-3 font-semibold">
+                    <span>Total ({cartTotalGrams.toLocaleString()}g)</span>
+                    <span className="text-amber-400">AED {cartTotalAed.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
 
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bar Size</span>
-                  <span className="font-medium">{selectedBar.label}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Quantity</span>
-                  <span className="font-medium">{barCount} bar{barCount > 1 ? 's' : ''}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Gold</span>
-                  <span className="font-medium text-amber-600">{totalGrams.toLocaleString()}g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Gold Price</span>
-                  <span className="font-medium">${goldPrice.toFixed(2)}/g</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between">
-                  <span className="font-medium">Total Value</span>
-                  <span className="font-bold text-lg">${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                {selectedVaultId && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Storage Location</span>
-                    <span>{vaultLocations.find(v => v.id === selectedVaultId)?.name || 'Selected Vault'}</span>
+                {vaultLocations.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-amber-400" />
+                      Select Storage Location
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {vaultLocations.map((vault) => (
+                        <button
+                          key={vault.id}
+                          onClick={() => setSelectedVaultId(vault.id)}
+                          className={`p-3 rounded-lg border text-left transition-all ${
+                            selectedVaultId === vault.id 
+                              ? 'border-amber-500 bg-amber-500/10' 
+                              : 'border-gray-700 hover:border-gray-600'
+                          }`}
+                          data-testid={`vault-option-${vault.code}`}
+                        >
+                          <span className="font-medium text-sm block">{vault.name}</span>
+                          <span className="text-xs text-gray-500">{vault.city}, {vault.country}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>Estimated fulfillment: {selectedBar.fulfillmentHours} hours</span>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Alert className="bg-purple-50 border-purple-200">
-              <AlertDescription className="text-xs text-purple-800">
-                {COMPLIANCE_NOTICE}
-              </AlertDescription>
-            </Alert>
+                <Alert className="bg-amber-950/30 border-amber-800">
+                  <AlertDescription className="text-xs text-amber-200">
+                    {COMPLIANCE_NOTICE}
+                  </AlertDescription>
+                </Alert>
 
-            {termsContent?.enabled && (
-              <div className="border border-border rounded-lg p-3 bg-muted/30">
-                <div className="flex items-start gap-3">
-                  <Checkbox 
-                    id="buy-gold-terms"
-                    checked={termsAccepted}
-                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                    className="mt-0.5"
-                    data-testid="checkbox-terms"
-                  />
-                  <div className="flex-1">
-                    <label htmlFor="buy-gold-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      I accept the Terms & Conditions
-                    </label>
-                    <details className="mt-2">
-                      <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                      <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
-                        {termsContent.terms}
+                {termsContent?.enabled && (
+                  <div className="border border-gray-700 rounded-lg p-4 bg-[#1a1a1a]">
+                    <div className="flex items-start gap-3">
+                      <Checkbox 
+                        id="buy-gold-terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                        className="mt-0.5 border-gray-600"
+                        data-testid="checkbox-terms"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="buy-gold-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-amber-400" />
+                          I accept the Terms & Conditions
+                        </label>
+                        <details className="mt-2">
+                          <summary className="text-xs text-amber-400 cursor-pointer hover:underline">View Terms</summary>
+                          <div className="mt-2 text-xs text-gray-400 whitespace-pre-line bg-[#0a0a0a] p-2 rounded border border-gray-800 max-h-32 overflow-y-auto">
+                            {termsContent.terms}
+                          </div>
+                        </details>
                       </div>
-                    </details>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </ScrollArea>
 
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setStep('select')} data-testid="button-back">
-                Back
+            <div className="p-6 border-t border-gray-800 flex gap-3">
+              <Button variant="outline" onClick={() => setStep('cart')} className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800">
+                Back to Cart
               </Button>
               <Button
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting || (termsContent?.enabled && !termsAccepted)}
-                className="bg-amber-500 hover:bg-amber-600"
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold"
                 data-testid="button-confirm-order"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
+                    Processing...
                   </>
                 ) : (
-                  'Confirm Order'
+                  'Place Order'
                 )}
               </Button>
-            </DialogFooter>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Select Bar Size</Label>
-              <RadioGroup
-                value={selectedBarSize}
-                onValueChange={(value) => setSelectedBarSize(value as BarSize)}
-                className="grid grid-cols-2 gap-3"
-              >
-                {BAR_OPTIONS.map((option) => (
-                  <div key={option.size} className="relative">
-                    <RadioGroupItem
-                      value={option.size}
-                      id={`bar-${option.size}`}
-                      className="peer sr-only"
-                    />
-                    <label
-                      htmlFor={`bar-${option.size}`}
-                      className="flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all peer-data-[state=checked]:border-amber-500 peer-data-[state=checked]:bg-amber-50 hover:border-amber-300"
-                      data-testid={`bar-option-${option.size}`}
-                    >
-                      <span className="font-semibold">{option.label}</span>
-                      <span className="text-sm text-muted-foreground">
-                        ${(option.grams * goldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-xs text-muted-foreground mt-1">
-                        ~{option.fulfillmentHours}h fulfillment
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </RadioGroup>
             </div>
-
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Quantity</Label>
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setBarCount(Math.max(1, barCount - 1))}
-                  disabled={barCount <= 1}
-                  data-testid="button-decrease-quantity"
-                >
-                  <Minus className="w-4 h-4" />
-                </Button>
-                <span className="text-2xl font-bold w-12 text-center" data-testid="text-quantity">
-                  {barCount}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setBarCount(barCount + 1)}
-                  disabled={barCount >= 100}
-                  data-testid="button-increase-quantity"
-                >
-                  <Plus className="w-4 h-4" />
+          </div>
+        ) : step === 'cart' ? (
+          <div className="bg-[#0a0a0a] text-white">
+            <div className="p-6 border-b border-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-amber-400" />
+                  Your Cart ({cartItemCount})
+                </h2>
+                <Button variant="ghost" size="icon" onClick={() => setStep('shop')} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </div>
-
-            {vaultLocations.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Storage Location
-                </Label>
-                <RadioGroup
-                  value={selectedVaultId}
-                  onValueChange={setSelectedVaultId}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  {vaultLocations.map((vault) => (
-                    <div key={vault.id} className="relative">
-                      <RadioGroupItem
-                        value={vault.id}
-                        id={`vault-${vault.id}`}
-                        className="peer sr-only"
-                      />
-                      <label
-                        htmlFor={`vault-${vault.id}`}
-                        className="flex flex-col p-3 border rounded-lg cursor-pointer transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 hover:border-primary/50"
-                        data-testid={`vault-option-${vault.code}`}
+            
+            <ScrollArea className="h-[50vh] p-6">
+              {cart.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Your cart is empty</p>
+                  <Button variant="outline" onClick={() => setStep('shop')} className="mt-4 border-gray-700">
+                    Continue Shopping
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item) => (
+                    <div key={item.barSize} className="flex items-center gap-4 bg-[#1a1a1a] rounded-lg p-4">
+                      <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg flex items-center justify-center">
+                        <Package className="w-8 h-8 text-amber-900" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{item.label}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="bg-gray-800 text-gray-300">{item.grams}g</Badge>
+                          <Badge variant="secondary" className="bg-gray-800 text-gray-300">999.9</Badge>
+                        </div>
+                        <p className="text-amber-400 font-semibold mt-2">
+                          AED {item.priceAed.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8 border-gray-700"
+                          onClick={() => updateCartQuantity(item.barSize, -1)}
+                        >
+                          -
+                        </Button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8 border-gray-700"
+                          onClick={() => updateCartQuantity(item.barSize, 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-gray-500 hover:text-red-400"
+                        onClick={() => removeFromCart(item.barSize)}
                       >
-                        <span className="font-medium text-sm">{vault.name}</span>
-                        <span className="text-xs text-muted-foreground">{vault.city}, {vault.country}</span>
-                      </label>
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   ))}
-                </RadioGroup>
+                </div>
+              )}
+            </ScrollArea>
+
+            {cart.length > 0 && (
+              <div className="p-6 border-t border-gray-800">
+                <div className="flex justify-between mb-4">
+                  <span className="text-gray-400">Total ({cartTotalGrams.toLocaleString()}g gold)</span>
+                  <span className="text-xl font-bold text-amber-400">
+                    AED {cartTotalAed.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setStep('shop')} className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800">
+                    Continue Shopping
+                  </Button>
+                  <Button onClick={() => setStep('checkout')} className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold">
+                    Proceed to Checkout
+                  </Button>
+                </div>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="flex h-[80vh] bg-[#0a0a0a] text-white">
+            {/* Sidebar Filters */}
+            <div className={`w-64 border-r border-gray-800 p-4 flex-shrink-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filters
+                </h3>
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowFilters(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
 
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Total Gold</span>
-                  <span className="text-xl font-bold text-amber-600">{totalGrams.toLocaleString()}g</span>
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-sm text-gray-400 mb-2 block">Price Range</Label>
+                  <div className="text-xs text-gray-500 flex justify-between">
+                    <span>AED 0.00</span>
+                    <span>AED 7,345,000.00</span>
+                  </div>
+                  <div className="h-1 bg-amber-500 rounded-full mt-2" />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Estimated Value</span>
-                  <span className="text-lg font-semibold">${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  * Final price confirmed at time of approval
-                </p>
-              </CardContent>
-            </Card>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose} data-testid="button-cancel">
-                Cancel
-              </Button>
-              <Button
-                onClick={() => setStep('confirm')}
-                className="bg-amber-500 hover:bg-amber-600"
-                data-testid="button-proceed"
-              >
-                Proceed to Review
-              </Button>
-            </DialogFooter>
+                <div>
+                  <Label className="text-sm text-gray-400 mb-3 block">Weight</Label>
+                  <div className="space-y-2">
+                    {['1kg', '1g', '10g', '100g'].map((weight) => (
+                      <div key={weight} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`weight-${weight}`}
+                          checked={weightFilters.includes(weight === '1kg' ? '1kg' : weight)}
+                          onCheckedChange={() => toggleWeightFilter(weight === '1kg' ? '1kg' : weight)}
+                          className="border-gray-600"
+                        />
+                        <label htmlFor={`weight-${weight}`} className="text-sm cursor-pointer">{weight}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm text-gray-400 mb-3 block">Availability</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="radio" 
+                        id="in-stock" 
+                        name="availability"
+                        checked={showInStockOnly}
+                        onChange={() => { setShowInStockOnly(true); setShowFeaturedOnly(false); }}
+                        className="accent-amber-500"
+                      />
+                      <label htmlFor="in-stock" className="text-sm cursor-pointer">In Stock</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="radio" 
+                        id="featured" 
+                        name="availability"
+                        checked={showFeaturedOnly}
+                        onChange={() => { setShowFeaturedOnly(true); setShowInStockOnly(false); }}
+                        className="accent-amber-500"
+                      />
+                      <label htmlFor="featured" className="text-sm cursor-pointer">Featured Only</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-800 flex items-center gap-4">
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowFilters(true)}>
+                  <SlidersHorizontal className="w-5 h-5" />
+                </Button>
+                
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Input 
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-[#1a1a1a] border-gray-700 text-white placeholder:text-gray-500"
+                    data-testid="input-search"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 hidden sm:inline">Sort by:</span>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                    <SelectTrigger className="w-40 bg-[#1a1a1a] border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a1a] border-gray-700">
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                      <SelectItem value="weight">Weight</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  variant="outline" 
+                  className="relative border-gray-700 hover:bg-gray-800"
+                  onClick={() => cart.length > 0 ? setStep('cart') : null}
+                  data-testid="button-view-cart"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 rounded-full text-xs flex items-center justify-center text-black font-bold">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+
+              {/* Product Grid */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredProducts.map((product) => (
+                    <Card key={product.size} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.size}`}>
+                      <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="relative">
+                            {/* Gold bar image placeholder */}
+                            <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
+                              <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
+                              <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-900 text-xs font-bold">
+                                Au {product.grams}g
+                              </div>
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
+                                FINE GOLD
+                              </div>
+                              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
+                                999.9
+                              </div>
+                            </div>
+                            {/* Certificate */}
+                            <div className="absolute -right-8 -top-4 w-24 h-32 bg-white rounded shadow-lg transform rotate-12 p-2">
+                              <div className="text-[6px] text-gray-800 font-bold mb-1">WINGOLD</div>
+                              <div className="text-[5px] text-gray-600 leading-tight">
+                                Certificate of Authenticity<br/>
+                                LBMA Certified<br/>
+                                {product.grams}g Pure Gold<br/>
+                                Purity: 999.9
+                              </div>
+                              <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                                <span className="text-[4px] text-amber-800">✓</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {product.featured && (
+                          <Badge className="absolute top-2 left-2 bg-amber-500 text-black">Featured</Badge>
+                        )}
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-white mb-2">{product.label}</h3>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.grams}g</Badge>
+                          <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.purity}</Badge>
+                        </div>
+                        <p className="text-amber-400 font-bold text-lg mb-1">
+                          AED {(product.grams * goldPriceAed).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">LBMA Certified</p>
+                        <Button 
+                          onClick={() => addToCart(product)}
+                          className="w-full bg-transparent border border-amber-500 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
+                          data-testid={`button-add-to-cart-${product.size}`}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add to Cart
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         )}
       </DialogContent>
