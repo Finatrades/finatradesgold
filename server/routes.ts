@@ -17674,11 +17674,14 @@ ${message}
   // Create NGenius card deposit order
   app.post("/api/ngenius/create-order", async (req, res) => {
     try {
-      const { userId, amount, currency = 'USD', returnUrl, cancelUrl } = req.body;
+      const { userId, amount, currency = 'USD', returnUrl, cancelUrl, goldWalletType = 'MPGW' } = req.body;
       
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized - userId required" });
       }
+      
+      // Validate wallet type
+      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -17743,7 +17746,7 @@ ${message}
 
       const paymentUrl = ngeniusService.extractPaymentPageUrl(orderResponse);
 
-      // Store transaction in database
+      // Store transaction in database with wallet type for later use
       const ngeniusTx = await storage.createNgeniusTransaction({
         userId: user.id,
         orderReference,
@@ -17753,6 +17756,7 @@ ${message}
         currency,
         paymentUrl,
         description,
+        goldWalletType: walletType,
       });
 
       await storage.createAuditLog({
@@ -17834,6 +17838,9 @@ ${message}
                   goldGrams: (currentGold + goldGrams).toFixed(6),
                 });
 
+                // Get wallet type from stored transaction
+                const storedWalletType = transaction.goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
+                
                 // Create transaction record (type='Buy' like crypto)
                 const walletTx = await storage.createTransaction({
                   userId: transaction.userId,
@@ -17845,7 +17852,7 @@ ${message}
                   description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
                   referenceId: orderReference,
                   sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+                  goldWalletType: storedWalletType,
                   completedAt: new Date(),
                 });
 
@@ -17861,12 +17868,51 @@ ${message}
                   goldGrams: goldGrams,
                   goldPriceUsdPerGram: goldPricePerGram,
                   fromWallet: 'External',
-                  toWallet: 'FinaPay',
+                  toWallet: storedWalletType === 'FPGW' ? 'FPGW' : 'MPGW',
                   toStatus: 'Available',
                   transactionId: walletTx.id,
-                  notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
+                  notes: `Card payment (${storedWalletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
                   createdBy: 'system',
                 });
+                
+                // Update dual-wallet buckets in vaultOwnershipSummary
+                let vaultSummary = await storage.getVaultOwnershipSummary(transaction.userId);
+                if (!vaultSummary) {
+                  vaultSummary = await storage.createVaultOwnershipSummary({
+                    userId: transaction.userId,
+                    mpgwAvailableGrams: '0',
+                    mpgwPendingGrams: '0',
+                    mpgwLockedBnslGrams: '0',
+                    mpgwReservedTradeGrams: '0',
+                    fpgwAvailableGrams: '0',
+                    fpgwPendingGrams: '0',
+                    fpgwLockedBnslGrams: '0',
+                    fpgwReservedTradeGrams: '0',
+                  });
+                }
+                
+                if (storedWalletType === 'MPGW') {
+                  const currentMpgw = parseFloat(vaultSummary.mpgwAvailableGrams || '0');
+                  await storage.updateVaultOwnershipSummary(vaultSummary.id, {
+                    mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
+                  });
+                } else {
+                  const currentFpgw = parseFloat(vaultSummary.fpgwAvailableGrams || '0');
+                  await storage.updateVaultOwnershipSummary(vaultSummary.id, {
+                    fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
+                  });
+                  
+                  // Create FPGW batch for fixed-price tracking
+                  const { fpgwBatchService } = await import('./fpgw-batch-service');
+                  await fpgwBatchService.createBatch({
+                    userId: transaction.userId,
+                    goldGrams,
+                    lockedPriceUsdPerGram: goldPricePerGram,
+                    sourceType: 'card_payment',
+                    sourceTransactionId: walletTx.id,
+                    notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g`,
+                  });
+                }
 
                 // Get or create vault holding (like crypto) - use getUserVaultHoldings
                 const userHoldings = await storage.getUserVaultHoldings(transaction.userId);
@@ -18352,7 +18398,7 @@ ${message}
   // Process payment with session ID from frontend SDK (NGenius Hosted Sessions)
   app.post("/api/ngenius/process-hosted-payment", async (req, res) => {
     try {
-      const { userId, sessionId, amount } = req.body;
+      const { userId, sessionId, amount, goldWalletType = 'MPGW' } = req.body;
       
       if (!userId || !sessionId || !amount) {
         return res.status(400).json({ 
@@ -18360,6 +18406,9 @@ ${message}
           message: "Missing required fields (userId, sessionId, amount)" 
         });
       }
+      
+      // Validate wallet type
+      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -18466,7 +18515,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: walletType,
             completedAt: new Date(),
           });
 
@@ -18482,12 +18531,51 @@ ${message}
             goldGrams: goldGrams,
             goldPriceUsdPerGram: goldPricePerGram,
             fromWallet: 'External',
-            toWallet: 'FinaPay',
+            toWallet: walletType === 'FPGW' ? 'FPGW' : 'MPGW',
             toStatus: 'Available',
             transactionId: walletTx.id,
-            notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
+            notes: `Card payment (${walletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
             createdBy: 'system',
           });
+          
+          // Update dual-wallet buckets in vaultOwnershipSummary
+          let vaultSummary = await storage.getVaultOwnershipSummary(userId);
+          if (!vaultSummary) {
+            vaultSummary = await storage.createVaultOwnershipSummary({
+              userId,
+              mpgwAvailableGrams: '0',
+              mpgwPendingGrams: '0',
+              mpgwLockedBnslGrams: '0',
+              mpgwReservedTradeGrams: '0',
+              fpgwAvailableGrams: '0',
+              fpgwPendingGrams: '0',
+              fpgwLockedBnslGrams: '0',
+              fpgwReservedTradeGrams: '0',
+            });
+          }
+          
+          if (walletType === 'MPGW') {
+            const currentMpgw = parseFloat(vaultSummary.mpgwAvailableGrams || '0');
+            await storage.updateVaultOwnershipSummary(vaultSummary.id, {
+              mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
+            });
+          } else {
+            const currentFpgw = parseFloat(vaultSummary.fpgwAvailableGrams || '0');
+            await storage.updateVaultOwnershipSummary(vaultSummary.id, {
+              fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
+            });
+            
+            // Create FPGW batch for fixed-price tracking
+            const { fpgwBatchService } = await import('./fpgw-batch-service');
+            await fpgwBatchService.createBatch({
+              userId,
+              goldGrams,
+              lockedPriceUsdPerGram: goldPricePerGram,
+              sourceType: 'card_payment',
+              sourceTransactionId: walletTx.id,
+              notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g`,
+            });
+          }
 
           // Get or create vault holding - use getUserVaultHoldings
           const userHoldings = await storage.getUserVaultHoldings(userId);

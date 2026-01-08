@@ -7,13 +7,14 @@ import { toast } from 'sonner';
 
 interface HybridCardPaymentProps {
   amount: number;
+  goldWalletType?: 'MPGW' | 'FPGW';
   onSuccess: (result: { goldGrams: string; amountUsd: number }) => void;
   onError: (error: string) => void;
   onCancel: () => void;
 }
 
 
-export default function HybridCardPayment({ amount, onSuccess, onError, onCancel }: HybridCardPaymentProps) {
+export default function HybridCardPayment({ amount, goldWalletType = 'MPGW', onSuccess, onError, onCancel }: HybridCardPaymentProps) {
   const { user } = useAuth();
   const [mode, setMode] = useState<'checking' | 'embedded' | 'iframe'>('checking');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           userId: user?.id,
           amount,
           currency: 'USD',
+          goldWalletType,
         }),
       });
       
@@ -416,6 +418,7 @@ export default function HybridCardPayment({ amount, onSuccess, onError, onCancel
           userId: user?.id,
           sessionId,
           amount,
+          goldWalletType,
         }),
       });
 

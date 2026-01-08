@@ -1187,6 +1187,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <HybridCardPayment
               key={`card-form-${cardFormKey}`}
               amount={parseFloat(amount) || 0}
+              goldWalletType={selectedWalletType}
               onSuccess={handleCardSuccess}
               onError={handleCardError}
               onCancel={() => setStep('card-amount')}

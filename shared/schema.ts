@@ -2863,6 +2863,9 @@ export const ngeniusTransactions = pgTable("ngenius_transactions", {
   webhookReceivedAt: timestamp("webhook_received_at"),
   webhookPayload: json("webhook_payload"),
   
+  // Dual-wallet support
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('MPGW'), // MPGW or FPGW
+  
   // Metadata
   description: text("description"),
   errorMessage: text("error_message"),
