@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import HybridCardPayment from '../HybridCardPayment';
-import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 
 interface FeeInfo {
   feeKey: string;
@@ -787,12 +786,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
                 {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-                {/* Wallet Type Selection - MPGW/FPGW */}
-                <WalletTypeSelector
-                  value={selectedWalletType}
-                  onChange={setSelectedWalletType}
-                  className="mb-2"
-                />
+                {/* Deposits always go to MPGW - user can transfer to FPGW later */}
 
                 <div className="flex gap-2">
                   <Button
@@ -918,7 +912,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           <p className="font-medium text-warning-muted-foreground text-xs mb-1">Important Notice:</p>
                           <p className="text-warning-muted-foreground text-xs leading-relaxed">
                             Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
-                            After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.
+                            After verification, gold will be deposited to your Market Price Gold Wallet (MPGW) at the final confirmed rate.
                           </p>
                         </div>
                       )}
@@ -1005,7 +999,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 
                 <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                    <p className="font-semibold mb-1">Important Notice</p>
-                   <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
+                   <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your Market Price Gold Wallet (MPGW) at the final confirmed rate.</p>
                 </div>
                 
                 {/* Terms and Conditions Checkbox */}
@@ -1051,12 +1045,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               
               {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-              {/* Wallet Type Selection - MPGW/FPGW */}
-              <WalletTypeSelector
-                value={selectedWalletType}
-                onChange={setSelectedWalletType}
-                className="mb-2"
-              />
+              {/* Deposits always go to MPGW - user can transfer to FPGW later */}
               <div className="flex gap-2 mb-4">
                 <Button
                   type="button"
@@ -1169,7 +1158,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             
             <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
-               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your Market Price Gold Wallet (MPGW) at the final confirmed rate.</p>
             </div>
           </div>
         ) : step === 'card-processing' ? (
@@ -1199,7 +1188,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div>
               <h3 className="text-2xl font-bold text-foreground">Payment Successful!</h3>
               <p className="text-muted-foreground mt-2">
-                Your gold has been credited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'}.
+                Your gold has been credited to your Market Price Gold Wallet (MPGW).
               </p>
             </div>
             <Button 
@@ -1212,12 +1201,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'crypto-amount' ? (
           <div className="space-y-4 py-4">
             {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-            {/* Wallet Type Selection - MPGW/FPGW */}
-            <WalletTypeSelector
-              value={selectedWalletType}
-              onChange={setSelectedWalletType}
-              className="mb-2"
-            />
+            {/* Deposits always go to MPGW - user can transfer to FPGW later */}
 
             <div className="flex gap-2 mb-2">
               <Button
@@ -1329,7 +1313,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             
             <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
-               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your Market Price Gold Wallet (MPGW) at the final confirmed rate.</p>
             </div>
           </div>
         ) : step === 'crypto-select-wallet' ? (
