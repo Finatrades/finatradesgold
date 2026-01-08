@@ -56,6 +56,37 @@ interface GoldBackingReport {
   surplus: number;
 }
 
+interface EnhancedGoldBackingReport {
+  physicalGold: { 
+    totalGrams: number; 
+    holdings: any[];
+    byLocation: Record<string, number>;
+  };
+  customerLiabilities: {
+    totalGrams: number;
+    mpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number };
+    fpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number; weightedAvgPriceUsd: number };
+    bnsl: { count: number; availableGrams: number; lockedGrams: number };
+  };
+  certificates: { total: number; byStatus: Record<string, number>; byType: Record<string, number> };
+  backing: {
+    overallRatio: number;
+    overallSurplus: number;
+    mpgwRatio: number;
+    mpgwSurplus: number;
+    fpgwRatio: number;
+    fpgwSurplus: number;
+  };
+  compliance: {
+    lastReconciliationDate: string | null;
+    totalReconciliations: number;
+    pendingReviews: number;
+    digitalCertificates: number;
+    physicalCertificates: number;
+  };
+  generatedAt: string;
+}
+
 interface UserHolding {
   userId: string;
   email: string;
@@ -102,8 +133,15 @@ export default function GoldBackingReport() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
+  const [reportMode, setReportMode] = useState<'summary' | 'segmented'>('summary');
+
   const { data, isLoading, refetch, isFetching } = useQuery<GoldBackingReport>({
     queryKey: ['/api/admin/gold-backing-report'],
+    refetchInterval: 60000,
+  });
+
+  const { data: enhancedData, isLoading: isLoadingEnhanced, refetch: refetchEnhanced } = useQuery<EnhancedGoldBackingReport>({
+    queryKey: ['/api/admin/gold-backing-report/enhanced'],
     refetchInterval: 60000,
   });
 
@@ -216,8 +254,16 @@ export default function GoldBackingReport() {
     window.print();
   };
 
+  const handleRefresh = () => {
+    refetch();
+    refetchEnhanced();
+  };
+
   const backingStatus = data ? getBackingStatus(data.backingRatio) : null;
   const StatusIcon = backingStatus?.icon || AlertTriangle;
+  
+  const enhancedBackingStatus = enhancedData ? getBackingStatus(enhancedData.backing.overallRatio) : null;
+  const EnhancedStatusIcon = enhancedBackingStatus?.icon || AlertTriangle;
 
   const currentUsers = modalType === 'finapay' ? finapayUsers?.users :
                        modalType === 'bnsl' ? bnslUsers?.users :
@@ -264,239 +310,584 @@ export default function GoldBackingReport() {
               Print
             </Button>
             <Button 
-              onClick={() => refetch()} 
+              onClick={handleRefresh} 
               variant="outline" 
-              disabled={isFetching}
+              disabled={isFetching || isLoadingEnhanced}
               data-testid="button-refresh-report"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${(isFetching || isLoadingEnhanced) ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader className="pb-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/2" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : data ? (
-          <>
-            <Card 
-              data-testid="card-backing-status"
-              className={`border-2 ${
-              backingStatus?.color === 'green' ? 'border-green-200 bg-green-50' :
-              backingStatus?.color === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
-              'border-red-200 bg-red-50'
-            }`}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <StatusIcon className={`h-12 w-12 ${
-                      backingStatus?.color === 'green' ? 'text-green-600' :
-                      backingStatus?.color === 'yellow' ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`} />
-                    <div>
-                      <h2 className="text-2xl font-bold" data-testid="text-backing-status">{backingStatus?.label}</h2>
-                      <p className="text-gray-600" data-testid="text-backing-ratio">
-                        {data.backingRatio.toFixed(2)}% of customer gold is backed by physical holdings
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold" data-testid="text-surplus">
-                      {data.surplus >= 0 ? (
-                        <span className="text-green-600 flex items-center gap-2">
-                          <TrendingUp className="h-6 w-6" />
-                          +{formatGrams(data.surplus)}g
-                        </span>
-                      ) : (
-                        <span className="text-red-600 flex items-center gap-2">
-                          <TrendingDown className="h-6 w-6" />
-                          {formatGrams(Math.abs(data.surplus))}g
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      {data.surplus >= 0 ? 'Surplus' : 'Deficit'}
-                    </p>
-                  </div>
-                </div>
-                <Progress 
-                  value={Math.min(data.backingRatio, 100)} 
-                  className="mt-4 h-3"
-                  data-testid="progress-backing-ratio"
-                />
-              </CardContent>
-            </Card>
+        <Tabs value={reportMode} onValueChange={(v) => setReportMode(v as 'summary' | 'segmented')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
+            <TabsTrigger value="summary" data-testid="tab-summary">Summary View</TabsTrigger>
+            <TabsTrigger value="segmented" data-testid="tab-segmented">MPGW / FPGW Breakdown</TabsTrigger>
+          </TabsList>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Vault className="h-5 w-5 text-purple-600" />
-                    Physical Gold in Vault
-                  </CardTitle>
-                  <Badge variant="outline" className="bg-purple-50">
-                    {data.physicalGold.holdings.length} Holdings
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600" data-testid="text-physical-gold">
-                    {formatGrams(data.physicalGold.totalGrams)}g
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Total physical gold stored</p>
-                  
-                  {data.physicalGold.holdings.length > 0 && (
-                    <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-                      {data.physicalGold.holdings.map((holding) => (
-                        <button
-                          key={holding.id}
-                          onClick={() => handleOpenUserList('vault', holding.vaultLocation)}
-                          className="w-full flex justify-between items-center text-sm border-b pb-2 hover:bg-purple-50 p-2 rounded transition-colors cursor-pointer"
-                          data-testid={`button-vault-${holding.id}`}
-                        >
-                          <span className="text-gray-600 flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            {holding.vaultLocation}
-                          </span>
-                          <span className="font-medium flex items-center gap-2">
-                            {formatGrams(holding.goldGrams)}g
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-blue-600" />
-                    Customer Liabilities
-                  </CardTitle>
-                  <Badge variant="outline" className="bg-blue-50">
-                    {data.customerLiabilities.wallets.count + data.customerLiabilities.bnslWallets.count} Accounts
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600" data-testid="text-liabilities">
-                    {formatGrams(data.customerLiabilities.totalGrams)}g
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Total gold owed to customers</p>
-                  
-                  <div className="mt-4 space-y-2">
-                    <button
-                      onClick={() => handleOpenUserList('finapay')}
-                      className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border"
-                      data-testid="button-finapay-users"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <CreditCard className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div className="text-left">
-                          <span className="text-sm font-medium text-gray-900">FinaPay Wallets</span>
-                          <p className="text-xs text-gray-500">{data.customerLiabilities.wallets.count} accounts</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-blue-600">{formatGrams(data.customerLiabilities.wallets.totalGrams)}g</span>
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenUserList('bnsl')}
-                      className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer border"
-                      data-testid="button-bnsl-users"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <Clock className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div className="text-left">
-                          <span className="text-sm font-medium text-gray-900">BNSL Accounts</span>
-                          <p className="text-xs text-gray-500">{data.customerLiabilities.bnslWallets.count} accounts</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-right">
+          <TabsContent value="summary">
+            {isLoading ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-2">
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : data ? (
+              <>
+                <Card 
+                  data-testid="card-backing-status"
+                  className={`border-2 ${
+                    backingStatus?.color === 'green' ? 'border-green-200 bg-green-50' :
+                    backingStatus?.color === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
+                    'border-red-200 bg-red-50'
+                  }`}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <StatusIcon className={`h-12 w-12 ${
+                          backingStatus?.color === 'green' ? 'text-green-600' :
+                          backingStatus?.color === 'yellow' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`} />
                         <div>
-                          <span className="font-bold text-green-600">
-                            {formatGrams(data.customerLiabilities.bnslWallets.availableGrams + data.customerLiabilities.bnslWallets.lockedGrams)}g
-                          </span>
-                          <p className="text-xs text-gray-400">
-                            {formatGrams(data.customerLiabilities.bnslWallets.lockedGrams)}g locked
+                          <h2 className="text-2xl font-bold" data-testid="text-backing-status">{backingStatus?.label}</h2>
+                          <p className="text-gray-600" data-testid="text-backing-ratio">
+                            {data.backingRatio.toFixed(2)}% of customer gold is backed by physical holdings
                           </p>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
                       </div>
-                    </button>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold" data-testid="text-surplus">
+                          {data.surplus >= 0 ? (
+                            <span className="text-green-600 flex items-center gap-2">
+                              <TrendingUp className="h-6 w-6" />
+                              +{formatGrams(data.surplus)}g
+                            </span>
+                          ) : (
+                            <span className="text-red-600 flex items-center gap-2">
+                              <TrendingDown className="h-6 w-6" />
+                              {formatGrams(Math.abs(data.surplus))}g
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {data.surplus >= 0 ? 'Surplus' : 'Deficit'}
+                        </p>
+                      </div>
+                    </div>
+                    <Progress 
+                      value={Math.min(data.backingRatio, 100)} 
+                      className="mt-4 h-3"
+                      data-testid="progress-backing-ratio"
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-6 md:grid-cols-2 mt-6">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Vault className="h-5 w-5 text-purple-600" />
+                        Physical Gold in Vault
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-purple-50">
+                        {data.physicalGold.holdings.length} Holdings
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-purple-600" data-testid="text-physical-gold">
+                        {formatGrams(data.physicalGold.totalGrams)}g
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Total physical gold stored</p>
+                      
+                      {data.physicalGold.holdings.length > 0 && (
+                        <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
+                          {data.physicalGold.holdings.map((holding) => (
+                            <button
+                              key={holding.id}
+                              onClick={() => handleOpenUserList('vault', holding.vaultLocation)}
+                              className="w-full flex justify-between items-center text-sm border-b pb-2 hover:bg-purple-50 p-2 rounded transition-colors cursor-pointer"
+                              data-testid={`button-vault-${holding.id}`}
+                            >
+                              <span className="text-gray-600 flex items-center gap-2">
+                                <Building className="h-4 w-4" />
+                                {holding.vaultLocation}
+                              </span>
+                              <span className="font-medium flex items-center gap-2">
+                                {formatGrams(holding.goldGrams)}g
+                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Wallet className="h-5 w-5 text-blue-600" />
+                        Customer Liabilities
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-blue-50">
+                        {data.customerLiabilities.wallets.count + data.customerLiabilities.bnslWallets.count} Accounts
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-blue-600" data-testid="text-liabilities">
+                        {formatGrams(data.customerLiabilities.totalGrams)}g
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Total gold owed to customers</p>
+                      
+                      <div className="mt-4 space-y-2">
+                        <button
+                          onClick={() => handleOpenUserList('finapay')}
+                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border"
+                          data-testid="button-finapay-users"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <CreditCard className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div className="text-left">
+                              <span className="text-sm font-medium text-gray-900">FinaPay Wallets</span>
+                              <p className="text-xs text-gray-500">{data.customerLiabilities.wallets.count} accounts</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-blue-600">{formatGrams(data.customerLiabilities.wallets.totalGrams)}g</span>
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenUserList('bnsl')}
+                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer border"
+                          data-testid="button-bnsl-users"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                              <Clock className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div className="text-left">
+                              <span className="text-sm font-medium text-gray-900">BNSL Accounts</span>
+                              <p className="text-xs text-gray-500">{data.customerLiabilities.bnslWallets.count} accounts</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-right">
+                            <div>
+                              <span className="font-bold text-green-600">
+                                {formatGrams(data.customerLiabilities.bnslWallets.availableGrams + data.customerLiabilities.bnslWallets.lockedGrams)}g
+                              </span>
+                              <p className="text-xs text-gray-400">
+                                {formatGrams(data.customerLiabilities.bnslWallets.lockedGrams)}g locked
+                              </p>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileCheck className="h-5 w-5 text-orange-600" />
+                      Certificates Overview
+                    </CardTitle>
+                    <CardDescription>
+                      Gold storage and ownership certificates issued
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <div className="text-2xl font-bold" data-testid="text-total-certificates">{data.certificates.total}</div>
+                      <span className="text-gray-500">Total Certificates</span>
+                    </div>
+                    {Object.keys(data.certificates.byStatus).length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {Object.entries(data.certificates.byStatus).map(([status, count]) => (
+                          <Badge 
+                            key={status} 
+                            variant="outline"
+                            className="capitalize"
+                          >
+                            {status}: {count}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="text-xs text-gray-400 text-center mt-4">
+                  Report generated at {format(new Date(), 'PPpp')}
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <AlertTriangle className="h-12 w-12 text-yellow-500" />
+                    <p className="text-gray-500">Unable to load gold backing report. Please try again.</p>
+                    <Button variant="outline" onClick={handleRefresh} data-testid="button-retry-report">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
+          </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileCheck className="h-5 w-5 text-orange-600" />
-                  Certificates Overview
-                </CardTitle>
-                <CardDescription>
-                  Gold storage and ownership certificates issued
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl font-bold" data-testid="text-total-certificates">{data.certificates.total}</div>
-                  <span className="text-gray-500">Total Certificates</span>
-                </div>
-                {Object.keys(data.certificates.byStatus).length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {Object.entries(data.certificates.byStatus).map(([status, count]) => (
-                      <Badge 
-                        key={status} 
-                        variant="outline"
-                        className="capitalize"
-                      >
-                        {status}: {count}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="text-xs text-gray-400 text-center">
-              Report generated at {format(new Date(), 'PPpp')}
-            </div>
-          </>
-        ) : (
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <AlertTriangle className="h-12 w-12 text-yellow-500" />
-                <p className="text-gray-500">Unable to load gold backing report. Please try again.</p>
-                <Button variant="outline" onClick={() => refetch()} data-testid="button-retry-report">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
-                </Button>
+          <TabsContent value="segmented">
+            {isLoadingEnhanced ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-2">
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : enhancedData ? (
+              <>
+                <Card 
+                  data-testid="card-enhanced-backing-status"
+                  className={`border-2 mb-6 ${
+                  enhancedBackingStatus?.color === 'green' ? 'border-green-200 bg-green-50' :
+                  enhancedBackingStatus?.color === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
+                  'border-red-200 bg-red-50'
+                }`}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <EnhancedStatusIcon className={`h-12 w-12 ${
+                          enhancedBackingStatus?.color === 'green' ? 'text-green-600' :
+                          enhancedBackingStatus?.color === 'yellow' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`} />
+                        <div>
+                          <h2 className="text-2xl font-bold" data-testid="text-enhanced-backing-status">{enhancedBackingStatus?.label}</h2>
+                          <p className="text-gray-600" data-testid="text-enhanced-backing-ratio">
+                            {enhancedData.backing.overallRatio.toFixed(2)}% of customer gold is backed by physical holdings
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold" data-testid="text-enhanced-surplus">
+                          {enhancedData.backing.overallSurplus >= 0 ? (
+                            <span className="text-green-600 flex items-center gap-2">
+                              <TrendingUp className="h-6 w-6" />
+                              +{formatGrams(enhancedData.backing.overallSurplus)}g
+                            </span>
+                          ) : (
+                            <span className="text-red-600 flex items-center gap-2">
+                              <TrendingDown className="h-6 w-6" />
+                              {formatGrams(Math.abs(enhancedData.backing.overallSurplus))}g
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {enhancedData.backing.overallSurplus >= 0 ? 'Surplus' : 'Deficit'}
+                        </p>
+                      </div>
+                    </div>
+                    <Progress 
+                      value={Math.min(enhancedData.backing.overallRatio, 100)} 
+                      className="mt-4 h-3"
+                      data-testid="progress-enhanced-backing-ratio"
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-6 md:grid-cols-2 mb-6">
+                  <Card className="border-amber-200 bg-amber-50/30">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-amber-600" />
+                        MPGW (Market Price Gold Wallet)
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-amber-100 text-amber-700">
+                        {enhancedData.customerLiabilities.mpgw.count} Users
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-amber-600" data-testid="text-mpgw-total">
+                        {formatGrams(enhancedData.customerLiabilities.mpgw.totalGrams)}g
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Gold valued at live market price</p>
+                      
+                      <div className="mt-4 space-y-2 text-sm">
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Available</span>
+                          <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.mpgw.available)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Pending</span>
+                          <span className="font-medium text-yellow-600">{formatGrams(enhancedData.customerLiabilities.mpgw.pending)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Locked (BNSL)</span>
+                          <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.mpgw.lockedBnsl)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Reserved (Trade)</span>
+                          <span className="font-medium text-blue-600">{formatGrams(enhancedData.customerLiabilities.mpgw.reservedTrade)}g</span>
+                        </div>
+                      </div>
+
+                      <Separator className="my-4" />
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Backing Ratio</span>
+                        <div className="flex items-center gap-2">
+                          <Badge className={enhancedData.backing.mpgwRatio >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                            {enhancedData.backing.mpgwRatio.toFixed(2)}%
+                          </Badge>
+                          {enhancedData.backing.mpgwSurplus >= 0 ? (
+                            <span className="text-xs text-green-600">+{formatGrams(enhancedData.backing.mpgwSurplus)}g</span>
+                          ) : (
+                            <span className="text-xs text-red-600">{formatGrams(enhancedData.backing.mpgwSurplus)}g</span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-blue-200 bg-blue-50/30">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-blue-600" />
+                        FPGW (Fixed Price Gold Wallet)
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-blue-100 text-blue-700">
+                        {enhancedData.customerLiabilities.fpgw.count} Users
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-blue-600" data-testid="text-fpgw-total">
+                        {formatGrams(enhancedData.customerLiabilities.fpgw.totalGrams)}g
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Gold value locked at purchase price</p>
+                      
+                      <div className="mt-4 space-y-2 text-sm">
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Available</span>
+                          <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.fpgw.available)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Pending</span>
+                          <span className="font-medium text-yellow-600">{formatGrams(enhancedData.customerLiabilities.fpgw.pending)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Locked (BNSL)</span>
+                          <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.fpgw.lockedBnsl)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-white rounded">
+                          <span className="text-gray-600">Reserved (Trade)</span>
+                          <span className="font-medium text-blue-600">{formatGrams(enhancedData.customerLiabilities.fpgw.reservedTrade)}g</span>
+                        </div>
+                      </div>
+
+                      <Separator className="my-4" />
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Weighted Avg Price</span>
+                          <span className="font-medium">${enhancedData.customerLiabilities.fpgw.weightedAvgPriceUsd.toFixed(2)}/g</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Backing Ratio</span>
+                          <div className="flex items-center gap-2">
+                            <Badge className={enhancedData.backing.fpgwRatio >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                              {enhancedData.backing.fpgwRatio.toFixed(2)}%
+                            </Badge>
+                            {enhancedData.backing.fpgwSurplus >= 0 ? (
+                              <span className="text-xs text-green-600">+{formatGrams(enhancedData.backing.fpgwSurplus)}g</span>
+                            ) : (
+                              <span className="text-xs text-red-600">{formatGrams(enhancedData.backing.fpgwSurplus)}g</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-3 mb-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Vault className="h-4 w-4 text-purple-600" />
+                        Physical Gold by Location
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-600 mb-4">
+                        {formatGrams(enhancedData.physicalGold.totalGrams)}g
+                      </div>
+                      <div className="space-y-2">
+                        {Object.entries(enhancedData.physicalGold.byLocation).map(([location, grams]) => (
+                          <div key={location} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                            <span className="text-gray-600">{location}</span>
+                            <span className="font-medium">{formatGrams(grams)}g</span>
+                          </div>
+                        ))}
+                        {Object.keys(enhancedData.physicalGold.byLocation).length === 0 && (
+                          <p className="text-gray-400 text-sm">No vault holdings</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-green-600" />
+                        BNSL Liabilities
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600 mb-4">
+                        {formatGrams(safeNumber(enhancedData.customerLiabilities.bnsl.availableGrams) + safeNumber(enhancedData.customerLiabilities.bnsl.lockedGrams))}g
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-gray-600">Available</span>
+                          <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.bnsl.availableGrams)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-gray-600">Locked</span>
+                          <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.bnsl.lockedGrams)}g</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-gray-600">Accounts</span>
+                          <Badge variant="outline">{enhancedData.customerLiabilities.bnsl.count}</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <FileCheck className="h-4 w-4 text-orange-600" />
+                        Compliance Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Last Reconciliation</span>
+                          <span className="font-medium">
+                            {enhancedData.compliance.lastReconciliationDate 
+                              ? format(new Date(enhancedData.compliance.lastReconciliationDate), 'PP')
+                              : 'Never'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Total Reconciliations</span>
+                          <Badge variant="outline">{enhancedData.compliance.totalReconciliations}</Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Pending Reviews</span>
+                          <Badge variant={enhancedData.compliance.pendingReviews > 0 ? 'destructive' : 'outline'}>
+                            {enhancedData.compliance.pendingReviews}
+                          </Badge>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Digital Certificates</span>
+                          <span className="font-medium">{enhancedData.compliance.digitalCertificates}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Physical Certificates</span>
+                          <span className="font-medium">{enhancedData.compliance.physicalCertificates}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="mb-4">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileCheck className="h-5 w-5 text-orange-600" />
+                      Certificates Overview
+                    </CardTitle>
+                    <CardDescription>
+                      Gold storage and ownership certificates by status and type
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500 mb-2">By Status</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(enhancedData.certificates.byStatus).map(([status, count]) => (
+                            <Badge key={status} variant="outline" className="capitalize">
+                              {status}: {count}
+                            </Badge>
+                          ))}
+                          {Object.keys(enhancedData.certificates.byStatus).length === 0 && (
+                            <span className="text-gray-400 text-sm">No certificates</span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500 mb-2">By Type</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(enhancedData.certificates.byType).map(([type, count]) => (
+                            <Badge key={type} variant="secondary" className="capitalize">
+                              {type}: {count}
+                            </Badge>
+                          ))}
+                          {Object.keys(enhancedData.certificates.byType).length === 0 && (
+                            <span className="text-gray-400 text-sm">No certificates</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="text-xs text-gray-400 text-center">
+                  Enhanced report generated at {enhancedData.generatedAt ? format(new Date(enhancedData.generatedAt), 'PPpp') : format(new Date(), 'PPpp')}
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <AlertTriangle className="h-12 w-12 text-yellow-500" />
+                    <p className="text-gray-500">Unable to load enhanced gold backing report. Please try again.</p>
+                    <Button variant="outline" onClick={handleRefresh} data-testid="button-retry-enhanced-report">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={modalType !== null} onOpenChange={(open) => !open && handleCloseModal()}>
