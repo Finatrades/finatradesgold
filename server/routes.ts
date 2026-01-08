@@ -19037,9 +19037,15 @@ ${message}
   // ============================================================================
 
   // Financial Overview - total revenue, AUM, liabilities, net position
+  // GOLD-FIRST ARCHITECTURE: All balances are gold grams, USD computed dynamically
   app.get("/api/admin/financial/overview", async (req, res) => {
     try {
-      const GOLD_PRICE_USD = 93.50; // Price per gram in USD
+      // Get live gold price for USD calculations
+      const goldPriceData = await goldPriceService.getGoldPrice();
+      const GOLD_PRICE_USD = goldPriceData.pricePerGram;
+
+      // Get MPGW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
+      const goldBackingReport = await storage.getGoldBackingReport();
 
       // Get platform config for accurate fee calculations
       const platformConfigs = await storage.getAllPlatformConfigs();
@@ -19054,43 +19060,22 @@ ${message}
       const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
-      // Get all wallets to calculate AUM
-      const allUsers = await storage.getAllUsers();
-      const allWallets = await Promise.all(
-        allUsers.map(user => storage.getWallet(user.id))
-      );
+      // MPGW/FPGW gold holdings from vault ownership summary (authoritative source)
+      const mpgwTotalGrams = goldBackingReport.liabilities.mpgw.totalGrams;
+      const fpgwTotalGrams = goldBackingReport.liabilities.fpgw.totalGrams;
+      const totalGoldGrams = mpgwTotalGrams + fpgwTotalGrams;
 
-      // Calculate total gold and fiat in wallets
-      let totalGoldGrams = 0;
-      let totalFiatUsd = 0;
-      for (const wallet of allWallets) {
-        if (wallet) {
-          totalGoldGrams += parseFloat(wallet.goldGrams || '0');
-          totalFiatUsd += parseFloat(wallet.usdBalance || '0');
-          totalFiatUsd += parseFloat(wallet.eurBalance || '0') * 1.08; // EUR to USD
-        }
-      }
+      // Physical gold backing
+      const physicalGoldGrams = goldBackingReport.physicalGold.totalGrams;
 
-      // Get vault holdings (physical gold bars in FinaVault - separate from wallet gold)
-      // Note: Vault holdings are for physical gold storage, wallet gold is digital
-      // Only count vault holdings that are marked as physically deposited to avoid double-counting
-      const vaultHoldings = await storage.getAllVaultHoldings();
-      let vaultGoldGrams = 0;
-      for (const holding of vaultHoldings) {
-        // Only count physically deposited vault holdings to avoid double-counting with wallet gold
-        if (holding.isPhysicallyDeposited) {
-          vaultGoldGrams += parseFloat(holding.goldGrams || '0');
-        }
-      }
-
-      // Get all BNSL plans
+      // Get all BNSL plans for BNSL-specific metrics
       const bnslPlans = await storage.getAllBnslPlans();
-      let bnslPrincipalUsd = 0;
+      let bnslPrincipalGrams = 0;
       let bnslInterestUsd = 0;
       let pendingPayoutsUsd = 0;
       for (const plan of bnslPlans) {
         if (plan.status === 'Active' || plan.status === 'Pending Activation') {
-          bnslPrincipalUsd += parseFloat(plan.basePriceComponentUsd || '0');
+          bnslPrincipalGrams += parseFloat(plan.goldGrams || '0');
           // Estimate interest earned (simplified) using agreed margin
           const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
           const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
@@ -19124,32 +19109,68 @@ ${message}
       totalRevenue += bnslInterestUsd;
       
       // Add storage fees from platform config (annual % on vault holdings)
-      const storageFeeRevenue = vaultGoldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
+      const storageFeeRevenue = physicalGoldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
       totalRevenue += storageFeeRevenue;
 
-      // Calculate totals
-      const goldValueUsd = (totalGoldGrams + vaultGoldGrams) * GOLD_PRICE_USD;
-      const totalAUM = goldValueUsd + totalFiatUsd;
+      // Calculate USD values dynamically from gold grams
+      const mpgwValueUsd = mpgwTotalGrams * GOLD_PRICE_USD;
+      // FPGW uses weighted average price from batches, not live price
+      const fpgwValueUsd = fpgwTotalGrams * (goldBackingReport.liabilities.fpgw.weightedAvgPriceUsd || GOLD_PRICE_USD);
+      const totalGoldValueUsd = mpgwValueUsd + fpgwValueUsd;
+      const physicalGoldValueUsd = physicalGoldGrams * GOLD_PRICE_USD;
+      const totalAUM = totalGoldValueUsd;
       
       // Liabilities = gold owed to users + pending BNSL payouts
-      const goldLiabilityGrams = totalGoldGrams + vaultGoldGrams;
-      const totalLiabilities = (goldLiabilityGrams * GOLD_PRICE_USD) + pendingPayoutsUsd;
+      const totalLiabilities = totalGoldValueUsd + pendingPayoutsUsd;
 
       // Expenses estimate (30% of revenue for simplicity)
       const totalExpenses = totalRevenue * 0.30;
       const netProfit = totalRevenue - totalExpenses;
 
       res.json({
+        // Gold-first: primary metrics in grams
+        goldHoldingsGrams: totalGoldGrams,
+        physicalGoldGrams,
+        goldPriceUsd: GOLD_PRICE_USD,
+        
+        // MPGW/FPGW breakdown (gold grams are primary, USD is derived)
+        mpgw: {
+          totalGrams: mpgwTotalGrams,
+          availableGrams: goldBackingReport.liabilities.mpgw.availableGrams,
+          pendingGrams: goldBackingReport.liabilities.mpgw.pendingGrams,
+          lockedBnslGrams: goldBackingReport.liabilities.mpgw.lockedBnslGrams,
+          reservedTradeGrams: goldBackingReport.liabilities.mpgw.reservedTradeGrams,
+          valueUsd: mpgwValueUsd, // ≈ equivalent at current price
+          userCount: goldBackingReport.liabilities.mpgw.userCount,
+        },
+        fpgw: {
+          totalGrams: fpgwTotalGrams,
+          availableGrams: goldBackingReport.liabilities.fpgw.availableGrams,
+          pendingGrams: goldBackingReport.liabilities.fpgw.pendingGrams,
+          lockedBnslGrams: goldBackingReport.liabilities.fpgw.lockedBnslGrams,
+          reservedTradeGrams: goldBackingReport.liabilities.fpgw.reservedTradeGrams,
+          valueUsd: fpgwValueUsd, // ≈ equivalent at weighted avg price
+          weightedAvgPriceUsd: goldBackingReport.liabilities.fpgw.weightedAvgPriceUsd,
+          userCount: goldBackingReport.liabilities.fpgw.userCount,
+        },
+        
+        // Backing ratio from Gold Backing Report
+        backingRatio: goldBackingReport.backingRatios.overall,
+        backingSurplusGrams: goldBackingReport.backingRatios.overallSurplus,
+        
+        // Financial metrics (derived from gold)
         totalRevenue,
         totalExpenses,
         netProfit,
         totalAUM,
-        goldHoldingsGrams: totalGoldGrams + vaultGoldGrams,
-        goldValueUsd,
-        fiatBalancesUsd: totalFiatUsd,
+        goldValueUsd: totalGoldValueUsd,
+        physicalGoldValueUsd,
         totalLiabilities,
-        goldLiabilityGrams,
-        pendingPayoutsUsd
+        goldLiabilityGrams: totalGoldGrams,
+        pendingPayoutsUsd,
+        
+        // Disclaimer for UI
+        disclaimer: "USD values are ≈ equivalents. Your real balance is gold grams.",
       });
     } catch (error) {
       console.error("Failed to get financial overview:", error);

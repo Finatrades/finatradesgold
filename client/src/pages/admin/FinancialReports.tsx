@@ -30,17 +30,36 @@ import {
   type FinancialReportData 
 } from '@/lib/exportUtils';
 
+interface WalletBreakdown {
+  totalGrams: number;
+  availableGrams: number;
+  pendingGrams: number;
+  lockedBnslGrams: number;
+  reservedTradeGrams: number;
+  valueUsd: number;
+  userCount: number;
+  weightedAvgPriceUsd?: number;
+}
+
 interface FinancialOverview {
   totalRevenue: number;
   totalExpenses: number;
   netProfit: number;
   totalAUM: number;
   goldHoldingsGrams: number;
+  physicalGoldGrams: number;
+  goldPriceUsd: number;
   goldValueUsd: number;
-  fiatBalancesUsd: number;
+  physicalGoldValueUsd: number;
   totalLiabilities: number;
   goldLiabilityGrams: number;
   pendingPayoutsUsd: number;
+  backingRatio: number;
+  backingSurplusGrams: number;
+  disclaimer: string;
+  mpgw: WalletBreakdown;
+  fpgw: WalletBreakdown;
+  fiatBalancesUsd?: number;
 }
 
 interface ProductMetrics {
