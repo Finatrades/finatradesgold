@@ -3793,6 +3793,173 @@ export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertifica
 export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
 
 // ============================================
+// WINGOLD INTEGRATION - B2B GOLD PURCHASING
+// ============================================
+
+export const wingoldBarSizeEnum = pgEnum('wingold_bar_size', ['1g', '10g', '100g', '1kg']);
+export const wingoldOrderStatusEnum = pgEnum('wingold_order_status', [
+  'pending', 'submitted', 'confirmed', 'processing', 'fulfilled', 'cancelled', 'failed'
+]);
+export const wingoldBarCustodyStatusEnum = pgEnum('wingold_bar_custody_status', [
+  'in_vault', 'reserved', 'released', 'transferred'
+]);
+export const wingoldCertificateTypeEnum = pgEnum('wingold_certificate_type', ['bar', 'storage']);
+
+// Wingold purchase orders - orders sent to Wingold for physical gold
+export const wingoldPurchaseOrders = pgTable("wingold_purchase_orders", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  
+  barSize: wingoldBarSizeEnum("bar_size").notNull(),
+  barCount: integer("bar_count").notNull(),
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  usdAmount: decimal("usd_amount", { precision: 18, scale: 2 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
+  
+  status: wingoldOrderStatusEnum("status").notNull().default('pending'),
+  wingoldOrderId: varchar("wingold_order_id", { length: 255 }),
+  wingoldVaultLocationId: varchar("wingold_vault_location_id", { length: 255 }),
+  
+  submittedAt: timestamp("submitted_at"),
+  confirmedAt: timestamp("confirmed_at"),
+  fulfilledAt: timestamp("fulfilled_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  
+  errorMessage: text("error_message"),
+  metadata: json("metadata"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWingoldPurchaseOrderSchema = createInsertSchema(wingoldPurchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWingoldPurchaseOrder = z.infer<typeof insertWingoldPurchaseOrderSchema>;
+export type WingoldPurchaseOrder = typeof wingoldPurchaseOrders.$inferSelect;
+
+// Wingold bar lots - individual bars received from Wingold
+export const wingoldBarLots = pgTable("wingold_bar_lots", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => wingoldPurchaseOrders.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  barId: varchar("bar_id", { length: 100 }).notNull().unique(),
+  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
+  barSize: wingoldBarSizeEnum("bar_size").notNull(),
+  weightGrams: decimal("weight_grams", { precision: 18, scale: 6 }).notNull(),
+  purity: decimal("purity", { precision: 5, scale: 4 }).notNull().default('0.9999'),
+  mint: varchar("mint", { length: 100 }),
+  
+  vaultLocationId: varchar("vault_location_id", { length: 255 }),
+  vaultLocationName: varchar("vault_location_name", { length: 255 }),
+  
+  custodyStatus: wingoldBarCustodyStatusEnum("custody_status").notNull().default('in_vault'),
+  
+  barCertificateId: varchar("bar_certificate_id", { length: 255 }),
+  storageCertificateId: varchar("storage_certificate_id", { length: 255 }),
+  
+  vaultHoldingId: varchar("vault_holding_id", { length: 255 }).references(() => vaultHoldings.id),
+  ledgerEntryId: varchar("ledger_entry_id", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWingoldBarLotSchema = createInsertSchema(wingoldBarLots).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWingoldBarLot = z.infer<typeof insertWingoldBarLotSchema>;
+export type WingoldBarLot = typeof wingoldBarLots.$inferSelect;
+
+// Wingold certificates - bar and storage certificates from Wingold
+export const wingoldCertificates = pgTable("wingold_certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => wingoldPurchaseOrders.id),
+  barLotId: varchar("bar_lot_id", { length: 255 }).references(() => wingoldBarLots.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  certificateType: wingoldCertificateTypeEnum("certificate_type").notNull(),
+  certificateNumber: varchar("certificate_number", { length: 100 }).notNull().unique(),
+  
+  providerHash: varchar("provider_hash", { length: 255 }),
+  pdfUrl: text("pdf_url"),
+  jsonData: json("json_data"),
+  signature: text("signature"),
+  
+  issuedAt: timestamp("issued_at").notNull(),
+  verifiedAt: timestamp("verified_at"),
+  verifiedBy: varchar("verified_by", { length: 255 }),
+  
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldCertificateSchema = createInsertSchema(wingoldCertificates).omit({ id: true, createdAt: true });
+export type InsertWingoldCertificate = z.infer<typeof insertWingoldCertificateSchema>;
+export type WingoldCertificate = typeof wingoldCertificates.$inferSelect;
+
+// Wingold vault locations - cache of Wingold's vault locations
+export const wingoldVaultLocations = pgTable("wingold_vault_locations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  wingoldLocationId: varchar("wingold_location_id", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 50 }),
+  city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }).notNull(),
+  address: text("address"),
+  isActive: boolean("is_active").notNull().default(true),
+  metadata: json("metadata"),
+  syncedAt: timestamp("synced_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldVaultLocationSchema = createInsertSchema(wingoldVaultLocations).omit({ id: true, createdAt: true });
+export type InsertWingoldVaultLocation = z.infer<typeof insertWingoldVaultLocationSchema>;
+export type WingoldVaultLocation = typeof wingoldVaultLocations.$inferSelect;
+
+// Wingold API credentials - for B2B API authentication
+export const wingoldApiCredentials = pgTable("wingold_api_credentials", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  apiKeyId: varchar("api_key_id", { length: 255 }).notNull().unique(),
+  description: varchar("description", { length: 255 }),
+  publicKey: text("public_key"),
+  allowedIps: text("allowed_ips"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  lastRotatedAt: timestamp("last_rotated_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldApiCredentialSchema = createInsertSchema(wingoldApiCredentials).omit({ id: true, createdAt: true });
+export type InsertWingoldApiCredential = z.infer<typeof insertWingoldApiCredentialSchema>;
+export type WingoldApiCredential = typeof wingoldApiCredentials.$inferSelect;
+
+// Wingold reconciliation records - for daily reconciliation with Wingold
+export const wingoldReconciliations = pgTable("wingold_reconciliations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  reconciliationDate: date("reconciliation_date").notNull(),
+  
+  wingoldTotalBars: integer("wingold_total_bars"),
+  wingoldTotalGrams: decimal("wingold_total_grams", { precision: 18, scale: 6 }),
+  finatradesTotalBars: integer("finatrades_total_bars"),
+  finatradesTotalGrams: decimal("finatrades_total_grams", { precision: 18, scale: 6 }),
+  
+  isMatched: boolean("is_matched").notNull().default(false),
+  discrepancyGrams: decimal("discrepancy_grams", { precision: 18, scale: 6 }),
+  discrepancyNotes: text("discrepancy_notes"),
+  
+  rawPayload: json("raw_payload"),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldReconciliationSchema = createInsertSchema(wingoldReconciliations).omit({ id: true, createdAt: true });
+export type InsertWingoldReconciliation = z.infer<typeof insertWingoldReconciliationSchema>;
+export type WingoldReconciliation = typeof wingoldReconciliations.$inferSelect;
+
+// ============================================
 // FINABRIDGE - SHIPMENT TRACKING
 // ============================================
 
