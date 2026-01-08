@@ -25,7 +25,25 @@ function getPrivateKey(): string {
   if (!privateKey) {
     throw new Error("FINATRADES_PRIVATE_KEY environment variable is required for SSO functionality");
   }
-  return privateKey.replace(/\\n/g, '\n');
+  
+  let formattedKey = privateKey
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '')
+    .trim();
+  
+  if (!formattedKey.includes('-----BEGIN')) {
+    formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+  }
+  
+  if (!formattedKey.includes('\n')) {
+    const header = '-----BEGIN PRIVATE KEY-----';
+    const footer = '-----END PRIVATE KEY-----';
+    const keyContent = formattedKey.replace(header, '').replace(footer, '').trim();
+    const chunks = keyContent.match(/.{1,64}/g) || [];
+    formattedKey = `${header}\n${chunks.join('\n')}\n${footer}`;
+  }
+  
+  return formattedKey;
 }
 
 function ensureAuthenticated(req: Request, res: Response, next: any) {
