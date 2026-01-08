@@ -252,39 +252,58 @@ export default function FinaVault() {
   const transactions = transactionsData?.transactions || [];
   const depositRequests = depositRequestsData?.requests || [];
   
+  // Helper to format wallet destination with wallet type
+  const formatWalletWithType = (wallet: string, walletType?: string) => {
+    if (wallet === 'FinaPay' && walletType) {
+      return `FinaPay-${walletType}`;
+    }
+    return wallet;
+  };
+
   // Convert transactions to ledger-like format for display
-  const transactionRecords = transactions.map((tx: any) => ({
-    id: tx.id,
-    createdAt: tx.createdAt,
-    action: tx.type,
-    status: tx.status,
-    fromWallet: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? 'External' : 'FinaPay',
-    toWallet: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? 'External' : 'FinaPay',
-    fromStatus: tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy' ? null : 'Available',
-    toStatus: tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell' ? null : 'Available',
-    goldGrams: tx.amountGold || tx.goldGrams || '0',
-    valueUsd: tx.amountUsd || '0',
-    balanceAfterGrams: tx.balanceAfterGrams || '0',
-    isTransaction: true,
-    transactionId: tx.id,
-  }));
+  const transactionRecords = transactions.map((tx: any) => {
+    const isInbound = tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy';
+    const isOutbound = tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell';
+    const walletType = tx.goldWalletType || 'MPGW';
+    
+    return {
+      id: tx.id,
+      createdAt: tx.createdAt,
+      action: tx.type,
+      status: tx.status,
+      fromWallet: isInbound ? 'External' : formatWalletWithType('FinaPay', walletType),
+      toWallet: isOutbound ? 'External' : formatWalletWithType('FinaPay', walletType),
+      fromStatus: isInbound ? null : 'Available',
+      toStatus: isOutbound ? null : 'Available',
+      goldGrams: tx.amountGold || tx.goldGrams || '0',
+      valueUsd: tx.amountUsd || '0',
+      balanceAfterGrams: tx.balanceAfterGrams || '0',
+      isTransaction: true,
+      transactionId: tx.id,
+      goldWalletType: walletType,
+    };
+  });
 
   // Convert deposit requests (bank deposits) to ledger-like format
-  const depositRecords = depositRequests.map((dep: any) => ({
-    id: dep.id,
-    createdAt: dep.createdAt,
-    action: 'Bank Deposit',
-    status: dep.status,
-    fromWallet: 'Bank Transfer',
-    toWallet: 'FinaPay',
-    fromStatus: null,
-    toStatus: 'Available',
-    goldGrams: '0',
-    valueUsd: dep.amountUsd || '0',
-    balanceAfterGrams: '0',
-    isDepositRequest: true,
-    referenceNumber: dep.referenceNumber,
-  }));
+  const depositRecords = depositRequests.map((dep: any) => {
+    const walletType = dep.goldWalletType || 'MPGW';
+    return {
+      id: dep.id,
+      createdAt: dep.createdAt,
+      action: 'Bank Deposit',
+      status: dep.status,
+      fromWallet: 'Bank Transfer',
+      toWallet: formatWalletWithType('FinaPay', walletType),
+      fromStatus: null,
+      toStatus: 'Available',
+      goldGrams: '0',
+      valueUsd: dep.amountUsd || '0',
+      balanceAfterGrams: '0',
+      isDepositRequest: true,
+      referenceNumber: dep.referenceNumber,
+      goldWalletType: walletType,
+    };
+  });
 
   // Convert certificates to ledger-like format
   // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates
@@ -302,22 +321,31 @@ export default function FinaVault() {
       if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
       return false;
     })
-    .map((cert: any) => ({
-      id: cert.id,
-      createdAt: cert.issuedAt,
-      action: cert.type === 'Trade Release' ? 'Trade Release Received' : cert.type,
-      status: cert.status === 'Active' ? 'Completed' : cert.status,
-      fromWallet: cert.type === 'Trade Release' ? 'FinaBridge Trade' : (cert.type === 'Physical Storage' ? 'Wingold & Metals' : 'FinaVault'),
-      toWallet: cert.type === 'Trade Release' ? 'FinaBridge Wallet' : (cert.type === 'Digital Ownership' ? 'FinaPay' : 'FinaVault'),
-      fromStatus: null,
-      toStatus: 'Available',
-      goldGrams: cert.goldGrams || '0',
-      valueUsd: cert.totalValueUsd || '0',
-      balanceAfterGrams: '0',
-      isCertificate: true,
-      certificateNumber: cert.certificateNumber,
-      transactionId: cert.transactionId || cert.transaction_id || cert.ledgerTransactionId,
-    }));
+    .map((cert: any) => {
+      const walletType = cert.goldWalletType || 'MPGW';
+      const toWallet = cert.type === 'Trade Release' 
+        ? 'FinaBridge Wallet' 
+        : (cert.type === 'Digital Ownership' 
+          ? formatWalletWithType('FinaPay', walletType) 
+          : 'FinaVault');
+      return {
+        id: cert.id,
+        createdAt: cert.issuedAt,
+        action: cert.type === 'Trade Release' ? 'Trade Release Received' : cert.type,
+        status: cert.status === 'Active' ? 'Completed' : cert.status,
+        fromWallet: cert.type === 'Trade Release' ? 'FinaBridge Trade' : (cert.type === 'Physical Storage' ? 'Wingold & Metals' : 'FinaVault'),
+        toWallet,
+        fromStatus: null,
+        toStatus: 'Available',
+        goldGrams: cert.goldGrams || '0',
+        valueUsd: cert.totalValueUsd || '0',
+        balanceAfterGrams: '0',
+        isCertificate: true,
+        certificateNumber: cert.certificateNumber,
+        transactionId: cert.transactionId || cert.transaction_id || cert.ledgerTransactionId,
+        goldWalletType: walletType,
+      };
+    });
   
   // Combine all records and sort by date (newest first)
   const allRecords = [...transactionRecords, ...depositRecords, ...certificateRecords].sort((a, b) => 
@@ -325,11 +353,21 @@ export default function FinaVault() {
   );
   
   // Always include certificate records, plus ledger entries or other records
-  // Normalize ledger entries to have consistent transactionId field
-  const normalizedLedgerEntries = ledgerEntries.map((entry: any) => ({
-    ...entry,
-    transactionId: entry.transactionId || entry.transaction_id || entry.ledgerTransactionId,
-  }));
+  // Normalize ledger entries to have consistent transactionId field and wallet type display
+  const normalizedLedgerEntries = ledgerEntries.map((entry: any) => {
+    const walletType = entry.goldWalletType || 'MPGW';
+    // Update toWallet to show wallet type if it's FinaPay
+    let toWallet = entry.toWallet;
+    if (toWallet === 'FinaPay') {
+      toWallet = formatWalletWithType('FinaPay', walletType);
+    }
+    return {
+      ...entry,
+      transactionId: entry.transactionId || entry.transaction_id || entry.ledgerTransactionId,
+      toWallet,
+      goldWalletType: walletType,
+    };
+  });
   
   // Use ledger entries if available, otherwise use transaction/deposit records
   const baseRecords = normalizedLedgerEntries.length > 0 ? normalizedLedgerEntries : [...transactionRecords, ...depositRecords];
