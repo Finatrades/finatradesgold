@@ -36,9 +36,22 @@ interface VaultDashboardData {
   alerts: { type: string; message: string; severity: string }[];
 }
 
+interface VaultLocation {
+  id: string;
+  name: string;
+  code: string;
+  current_holdings_kg: string;
+  is_active: boolean;
+}
+
 export default function VaultDashboard() {
   const { data, isLoading, refetch, isFetching } = useQuery<VaultDashboardData>({
     queryKey: ['/api/admin/vault-management/overview'],
+    refetchInterval: 60000,
+  });
+
+  const { data: locationsData } = useQuery<{ locations: VaultLocation[] }>({
+    queryKey: ['/api/admin/vault-management/locations'],
     refetchInterval: 60000,
   });
 
