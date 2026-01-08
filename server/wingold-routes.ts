@@ -1,11 +1,23 @@
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import { WingoldIntegrationService } from './wingold-integration-service';
 import { WingoldUserSyncService } from './wingold-user-sync-service';
 import { db } from './db';
-import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations, wingoldProducts } from '@shared/schema';
+import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations, wingoldProducts, users } from '@shared/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
 
 const router = Router();
+
+// Helper function to get user from session
+async function getSessionUser(req: Request): Promise<{ id: string; role: string } | null> {
+  if (!req.session?.userId) {
+    return null;
+  }
+  const [user] = await db.select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.id, req.session.userId))
+    .limit(1);
+  return user || null;
+}
 
 const WINGOLD_API_URL = process.env.WINGOLD_API_URL || 'https://wingoldandmetals--imcharanpratap.replit.app';
 const FINATRADES_API_KEY = process.env.FINATRADES_API_KEY;
@@ -35,7 +47,8 @@ router.post('/webhooks', express.raw({ type: 'application/json' }), async (req: 
 
 router.post('/orders', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -56,7 +69,7 @@ router.post('/orders', async (req: Request, res: Response) => {
     const usdAmount = (parseFloat(totalGrams) * goldPricePerGram).toFixed(2);
 
     const { orderId, referenceNumber } = await WingoldIntegrationService.createPurchaseOrder({
-      userId: (req.user as any).id,
+      userId: user.id,
       barSize,
       barCount,
       totalGrams,
@@ -82,12 +95,13 @@ router.post('/orders', async (req: Request, res: Response) => {
 
 router.get('/orders/:userId', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
     const userId = req.params.userId;
-    if ((req.user as any).id !== userId && (req.user as any).role !== 'admin') {
+    if (user.id !== userId && user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -105,7 +119,8 @@ router.get('/orders/:userId', async (req: Request, res: Response) => {
 
 router.post('/orders/:orderId/approve', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -141,7 +156,8 @@ router.post('/orders/:orderId/approve', async (req: Request, res: Response) => {
 
 router.post('/orders/:orderId/reject', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -183,7 +199,8 @@ router.post('/orders/:orderId/reject', async (req: Request, res: Response) => {
 
 router.get('/admin/pending-orders', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -201,7 +218,8 @@ router.get('/admin/pending-orders', async (req: Request, res: Response) => {
 
 router.get('/admin/all-orders', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -219,11 +237,12 @@ router.get('/admin/all-orders', async (req: Request, res: Response) => {
 
 router.get('/orders', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const orders = await WingoldIntegrationService.getUserOrders((req.user as any).id);
+    const orders = await WingoldIntegrationService.getUserOrders(user.id);
     res.json(orders);
   } catch (error) {
     console.error('[Wingold] Failed to fetch orders:', error);
@@ -233,7 +252,8 @@ router.get('/orders', async (req: Request, res: Response) => {
 
 router.get('/orders/:orderId', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -243,7 +263,7 @@ router.get('/orders/:orderId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (orderStatus.order.userId !== (req.user as any).id) {
+    if (orderStatus.order.userId !== user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -269,7 +289,8 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
 
 router.post('/vault-locations/sync', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -285,7 +306,8 @@ router.post('/vault-locations/sync', async (req: Request, res: Response) => {
 
 router.get('/certificates/:orderId', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -293,7 +315,7 @@ router.get('/certificates/:orderId', async (req: Request, res: Response) => {
       .from(wingoldCertificates)
       .where(and(
         eq(wingoldCertificates.orderId, req.params.orderId),
-        eq(wingoldCertificates.userId, (req.user as any).id)
+        eq(wingoldCertificates.userId, user.id)
       ));
     
     res.json(certificates);
@@ -305,7 +327,8 @@ router.get('/certificates/:orderId', async (req: Request, res: Response) => {
 
 router.get('/bars/:orderId', async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    const user = await getSessionUser(req);
+    if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -313,7 +336,7 @@ router.get('/bars/:orderId', async (req: Request, res: Response) => {
       .from(wingoldBarLots)
       .where(and(
         eq(wingoldBarLots.orderId, req.params.orderId),
-        eq(wingoldBarLots.userId, (req.user as any).id)
+        eq(wingoldBarLots.userId, user.id)
       ));
     
     res.json(bars);
@@ -325,7 +348,8 @@ router.get('/bars/:orderId', async (req: Request, res: Response) => {
 
 router.post('/reconciliation/run', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -339,7 +363,8 @@ router.post('/reconciliation/run', async (req: Request, res: Response) => {
 
 router.get('/stats', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -369,7 +394,8 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 router.post('/users/sync-all', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -443,7 +469,8 @@ router.get('/products', async (req: Request, res: Response) => {
 
 router.post('/products/sync', async (req: Request, res: Response) => {
   try {
-    if (!req.user || (req.user as any).role !== 'admin') {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
