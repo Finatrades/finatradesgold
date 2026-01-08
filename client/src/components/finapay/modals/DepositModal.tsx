@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import HybridCardPayment from '../HybridCardPayment';
+import { type GoldWalletType } from '../WalletTypeSelector';
 
 interface FeeInfo {
   feeKey: string;
