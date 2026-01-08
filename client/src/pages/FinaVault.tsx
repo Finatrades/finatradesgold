@@ -233,6 +233,10 @@ export default function FinaVault() {
   const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
   
+  // Dual-wallet breakdown (MPGW/FPGW)
+  const mpgwAvailableGrams = ownership ? safeParseFloat(ownership.mpgwAvailableGrams) : 0;
+  const fpgwAvailableGrams = ownership ? safeParseFloat(ownership.fpgwAvailableGrams) : 0;
+  
   // USD balance from wallet
   const usdBalance = safeParseFloat(walletData?.wallet?.usdBalance);
   
@@ -648,6 +652,60 @@ export default function FinaVault() {
             </div>
 
           </div>
+
+          {/* Dual-Wallet Breakdown (MPGW/FPGW) */}
+          {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
+            <div className="mt-6 pt-6 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Wallet Type Breakdown</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* MPGW - Market Price Gold Wallet */}
+                <div className="relative p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white overflow-hidden" data-testid="card-mpgw-balance">
+                  <div className="absolute right-2 bottom-2 opacity-10">
+                    <TrendingUp className="w-16 h-16 text-amber-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">MPGW - Market Price</p>
+                    </div>
+                    <p className="text-2xl font-bold text-amber-600 mb-0.5">
+                      {mpgwAvailableGrams.toFixed(4)}g
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      ≈ ${(mpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Reference
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Value follows live market price
+                    </p>
+                  </div>
+                </div>
+
+                {/* FPGW - Fixed Price Gold Wallet */}
+                <div className="relative p-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden" data-testid="card-fpgw-balance">
+                  <div className="absolute right-2 bottom-2 opacity-10">
+                    <Lock className="w-16 h-16 text-blue-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">FPGW - Fixed Price</p>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-600 mb-0.5">
+                      {fpgwAvailableGrams.toFixed(4)}g
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      ≈ ${(fpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Reference
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Value locked at purchase price
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
