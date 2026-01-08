@@ -2,6 +2,27 @@
 
 This guide explains how to add SSO login support to the Wingold platform so users from Finatrades can seamlessly log in.
 
+**Security Model:** RSA Asymmetric Cryptography (RS256)
+- Finatrades holds the PRIVATE key (signs tokens)
+- Wingold only needs the PUBLIC key (verifies tokens)
+- Wingold CANNOT forge tokens even if compromised
+
+## Finatrades Public Key
+
+Copy this public key and save it as `SSO_PUBLIC_KEY` in Wingold's Secrets:
+
+```
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1nNPcfGib5JbG9a9N7p/
+KAvw3T06h4Xe3GZSey0kgW2c6EGSKSeu5w2xtdxyE27wZ18H9QXgQeorFcbqUDXI
+qyLLnaa07fqBVTezQyrjg1m0pPrpfdky7WiVwnGfzSWOTpMTa9Ytgk6LtIlJtWh2
+Lr8r7pGmjqSfuiv859IKFRZGXgE12sWGaPq5AazeK0EcM6JgPv2OK4+pU3z7Lrdz
+UUtHoXeeTNv8xU/Alt/z0w2JUiK11lKgFgANaPIakkQI9vPLtWLIhWsplhIVHVCY
+s821vOPZRLIeVeknNw9bM592n3F/KDAdYVbFWLS5RL8BdZG4GArambNXVqZWzSNk
+BQIDAQAB
+-----END PUBLIC KEY-----
+```
+
 ## Step 1: Install jsonwebtoken
 
 In your Wingold Replit, run:
@@ -9,13 +30,25 @@ In your Wingold Replit, run:
 npm install jsonwebtoken @types/jsonwebtoken
 ```
 
-## Step 2: Add SSO Route to Wingold
+## Step 2: Set Environment Variable
 
-Create a new file `server/sso-routes.ts` (or add to your existing routes):
+In Wingold's Secrets tab, add:
+- **Key:** `SSO_PUBLIC_KEY`
+- **Value:** The public key above (copy the entire block including BEGIN/END lines)
+
+**TIP:** When pasting multi-line keys in Replit secrets, replace newlines with `\n`:
+```
+-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1nNPcfGib5JbG9a9N7p/\nKAvw3T06h4Xe3GZSey0kgW2c6EGSKSeu5w2xtdxyE27wZ18H9QXgQeorFcbqUDXI\nqyLLnaa07fqBVTezQyrjg1m0pPrpfdky7WiVwnGfzSWOTpMTa9Ytgk6LtIlJtWh2\nLr8r7pGmjqSfuiv859IKFRZGXgE12sWGaPq5AazeK0EcM6JgPv2OK4+pU3z7Lrdz\nUUtHoXeeTNv8xU/Alt/z0w2JUiK11lKgFgANaPIakkQI9vPLtWLIhWsplhIVHVCY\ns821vOPZRLIeVeknNw9bM592n3F/KDAdYVbFWLS5RL8BdZG4GArambNXVqZWzSNk\nBQIDAQAB\n-----END PUBLIC KEY-----
+```
+
+## Step 3: Add SSO Route to Wingold
+
+Create a new file `server/sso-routes.ts`:
 
 ```typescript
 /**
  * SSO Routes - Accept login from Finatrades
+ * Uses RSA public key verification (RS256)
  */
 
 import { Router, Request, Response } from "express";
@@ -26,17 +59,13 @@ import { users } from "@shared/schema";
 
 const router = Router();
 
-// IMPORTANT: SSO_SHARED_SECRET is REQUIRED - SSO will not work without it
-// This MUST match the secret set in Finatrades
-function getSsoSecret(): string {
-  const secret = process.env.SSO_SHARED_SECRET;
-  if (!secret) {
-    throw new Error("SSO_SHARED_SECRET environment variable is required");
+function getPublicKey(): string {
+  const publicKey = process.env.SSO_PUBLIC_KEY;
+  if (!publicKey) {
+    throw new Error("SSO_PUBLIC_KEY environment variable is required");
   }
-  return secret;
+  return publicKey.replace(/\\n/g, '\n');
 }
-
-const FINATRADES_URL = "https://yourfinatradesreplit.replit.app";
 
 interface SSOPayload {
   sub: string;           // Finatrades user ID
@@ -47,6 +76,7 @@ interface SSOPayload {
   accountType: string;
   source: string;        // Always "finatrades"
   iat: number;
+  exp: number;
 }
 
 // SSO Login endpoint - Finatrades redirects users here
@@ -58,10 +88,11 @@ router.get("/sso-login", async (req: Request, res: Response) => {
       return res.redirect("/login?error=missing_token");
     }
 
-    // Verify the token
+    // Verify the token using PUBLIC key (RS256)
     let payload: SSOPayload;
     try {
-      payload = jwt.verify(token, getSsoSecret(), {
+      payload = jwt.verify(token, getPublicKey(), {
+        algorithms: ["RS256"],
         issuer: "finatrades.com",
         audience: "wingoldandmetals.com"
       }) as SSOPayload;
@@ -143,7 +174,7 @@ export function registerSsoRoutes(app: any) {
 }
 ```
 
-## Step 3: Register SSO Routes
+## Step 4: Register SSO Routes
 
 In your main routes file (e.g., `server/routes.ts` or `server/index.ts`), add:
 
@@ -154,7 +185,7 @@ import { registerSsoRoutes } from "./sso-routes";
 registerSsoRoutes(app);
 ```
 
-## Step 4: Add Schema Fields (if needed)
+## Step 5: Add Schema Fields (if needed)
 
 If your users table doesn't have these fields, add them to `shared/schema.ts`:
 
@@ -168,23 +199,6 @@ Then run migrations:
 ```bash
 npx drizzle-kit push
 ```
-
-## Step 5: Environment Variable (REQUIRED)
-
-**CRITICAL SECURITY REQUIREMENT:** You MUST set the shared secret in Wingold's Secrets.
-
-**Do NOT use hardcoded fallback values - the SSO will fail without this secret.**
-
-Set the shared secret in Wingold's Secrets:
-- **Key:** `SSO_SHARED_SECRET`
-- **Value:** Generate a secure random string (minimum 32 characters)
-
-Example to generate a secure secret:
-```bash
-openssl rand -base64 32
-```
-
-**IMPORTANT:** Use the SAME secret value on both Finatrades and Wingold platforms.
 
 ## Step 6: Handle Login Page Errors (Optional)
 
@@ -211,6 +225,6 @@ if (error === 'token_expired') {
 ## Security Notes
 
 - Tokens expire after 5 minutes
+- Uses RS256 asymmetric encryption (Wingold cannot forge tokens)
 - Always use HTTPS in production
-- Change the SSO_SHARED_SECRET to a strong random value
-- Consider IP validation for additional security
+- Public key can be safely shared - only Finatrades can sign tokens

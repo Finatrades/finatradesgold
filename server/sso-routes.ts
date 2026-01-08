@@ -1,11 +1,13 @@
 /**
  * SSO Routes - Single Sign-On Integration with Wingold & Metals
  * 
- * JWT-based SSO flow:
- * 1. User clicks "Access Wingold Portal" on Finatrades
- * 2. Finatrades generates a signed JWT token with user info
- * 3. User is redirected to Wingold with the token
- * 4. Wingold verifies the token and logs user in
+ * Uses RSA asymmetric cryptography (RS256):
+ * - Finatrades holds the PRIVATE key (signs tokens)
+ * - Wingold only needs the PUBLIC key (verifies tokens)
+ * 
+ * This is more secure than shared secrets because:
+ * - Wingold cannot forge tokens even if compromised
+ * - Key rotation is simpler (just share new public key)
  */
 
 import { Router, Request, Response } from "express";
@@ -18,12 +20,12 @@ const router = Router();
 
 const WINGOLD_URL = "https://wingoldandmetals--imcharanpratap.replit.app";
 
-function getSsoSecret(): string {
-  const secret = process.env.SSO_SHARED_SECRET;
-  if (!secret) {
-    throw new Error("SSO_SHARED_SECRET environment variable is required for SSO functionality");
+function getPrivateKey(): string {
+  const privateKey = process.env.SSO_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error("SSO_PRIVATE_KEY environment variable is required for SSO functionality");
   }
-  return secret;
+  return privateKey.replace(/\\n/g, '\n');
 }
 
 function ensureAuthenticated(req: Request, res: Response, next: any) {
@@ -55,10 +57,10 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       fullName,
       accountType: user.accountType,
       source: "finatrades",
-      iat: Math.floor(Date.now() / 1000),
     };
 
-    const token = jwt.sign(payload, getSsoSecret(), { 
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
       expiresIn: "5m",
       issuer: "finatrades.com",
       audience: "wingoldandmetals.com"
@@ -99,10 +101,10 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
       fullName,
       accountType: user.accountType,
       source: "finatrades",
-      iat: Math.floor(Date.now() / 1000),
     };
 
-    const token = jwt.sign(payload, getSsoSecret(), { 
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
       expiresIn: "5m",
       issuer: "finatrades.com",
       audience: "wingoldandmetals.com"
@@ -116,8 +118,20 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
   }
 });
 
+router.get("/api/sso/public-key", (req, res) => {
+  const publicKey = process.env.SSO_PUBLIC_KEY;
+  if (!publicKey) {
+    return res.status(500).json({ error: "Public key not configured" });
+  }
+  res.json({ 
+    publicKey: publicKey.replace(/\\n/g, '\n'),
+    algorithm: "RS256",
+    issuer: "finatrades.com"
+  });
+});
+
 export function registerSsoRoutes(app: any) {
   app.use(router);
 }
 
-export { getSsoSecret, WINGOLD_URL };
+export { getPrivateKey, WINGOLD_URL };
