@@ -43,7 +43,12 @@ export default function VaultLocations() {
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   const { data: locationsData, isLoading: loadingLocations, refetch: refetchLocations } = useQuery<{ locations: VaultLocation[] }>({
-    queryKey: ['/api/admin/vault/locations'],
+    queryKey: ['/api/admin/vault-management/locations'],
+    refetchInterval: 60000,
+  });
+
+  const { data: routingData, isLoading: loadingRouting } = useQuery<{ rules: any[] }>({
+    queryKey: ['/api/admin/vault-management/routing-rules'],
     refetchInterval: 60000,
   });
 

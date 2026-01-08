@@ -4314,3 +4314,147 @@ export const announcements = pgTable("announcements", {
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type Announcement = typeof announcements.$inferSelect;
+
+// ============================================
+// VAULT MANAGEMENT SYSTEM
+// ============================================
+
+// Third-Party Vault Locations (WinGold, Brinks, etc.)
+export const thirdPartyVaultLocations = pgTable("third_party_vault_locations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }).notNull(),
+  countryCode: varchar("country_code", { length: 3 }).notNull(),
+  
+  capacityKg: decimal("capacity_kg", { precision: 20, scale: 6 }),
+  currentHoldingsKg: decimal("current_holdings_kg", { precision: 20, scale: 6 }).notNull().default('0'),
+  
+  insuranceProvider: varchar("insurance_provider", { length: 255 }),
+  insuranceCoverageUsd: decimal("insurance_coverage_usd", { precision: 20, scale: 2 }),
+  insuranceExpiryDate: date("insurance_expiry_date"),
+  
+  securityLevel: varchar("security_level", { length: 50 }).default('Standard'),
+  
+  contactName: varchar("contact_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  
+  isActive: boolean("is_active").notNull().default(true),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertThirdPartyVaultLocationSchema = createInsertSchema(thirdPartyVaultLocations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertThirdPartyVaultLocation = z.infer<typeof insertThirdPartyVaultLocationSchema>;
+export type ThirdPartyVaultLocation = typeof thirdPartyVaultLocations.$inferSelect;
+
+// Country Routing Rules - Maps user countries to vault locations
+export const vaultCountryRoutingRules = pgTable("vault_country_routing_rules", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  countryCode: varchar("country_code", { length: 3 }).notNull(),
+  countryName: varchar("country_name", { length: 100 }).notNull(),
+  
+  primaryVaultId: varchar("primary_vault_id", { length: 255 }).references(() => thirdPartyVaultLocations.id).notNull(),
+  fallbackVaultId: varchar("fallback_vault_id", { length: 255 }).references(() => thirdPartyVaultLocations.id),
+  
+  priority: integer("priority").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  
+  notes: text("notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertVaultCountryRoutingRuleSchema = createInsertSchema(vaultCountryRoutingRules).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertVaultCountryRoutingRule = z.infer<typeof insertVaultCountryRoutingRuleSchema>;
+export type VaultCountryRoutingRule = typeof vaultCountryRoutingRules.$inferSelect;
+
+// Physical Storage Certificates - WinGold bar inventory
+export const physicalStorageCertificateStatusEnum = pgEnum('physical_storage_certificate_status', ['Active', 'Linked', 'Voided', 'Transferred']);
+
+export const physicalStorageCertificates = pgTable("physical_storage_certificates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  physicalStorageRef: varchar("physical_storage_ref", { length: 255 }).notNull().unique(),
+  
+  issuer: varchar("issuer", { length: 255 }).notNull().default('Wingold & Metals DMCC'),
+  goldGrams: decimal("gold_grams", { precision: 20, scale: 6 }).notNull(),
+  goldPurity: decimal("gold_purity", { precision: 5, scale: 4 }).notNull().default('0.9999'),
+  
+  barSerialNumber: varchar("bar_serial_number", { length: 255 }),
+  barWeight: decimal("bar_weight", { precision: 20, scale: 6 }),
+  barType: varchar("bar_type", { length: 50 }),
+  
+  vaultLocationId: varchar("vault_location_id", { length: 255 }).references(() => thirdPartyVaultLocations.id),
+  countryCode: varchar("country_code", { length: 3 }),
+  
+  status: physicalStorageCertificateStatusEnum("status").notNull().default('Active'),
+  
+  linkedVaultCertificateId: varchar("linked_vault_certificate_id", { length: 255 }).references(() => certificates.id),
+  linkedAt: timestamp("linked_at"),
+  linkedBy: varchar("linked_by", { length: 255 }).references(() => users.id),
+  
+  documentUrl: text("document_url"),
+  
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  voidedAt: timestamp("voided_at"),
+  voidedBy: varchar("voided_by", { length: 255 }).references(() => users.id),
+  voidReason: text("void_reason"),
+  
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPhysicalStorageCertificateSchema = createInsertSchema(physicalStorageCertificates).omit({ id: true, createdAt: true, updatedAt: true, issuedAt: true });
+export type InsertPhysicalStorageCertificate = z.infer<typeof insertPhysicalStorageCertificateSchema>;
+export type PhysicalStorageCertificate = typeof physicalStorageCertificates.$inferSelect;
+
+// Vault Reconciliation Runs - Audit trail of reconciliation checks
+export const vaultReconciliationStatusEnum = pgEnum('vault_reconciliation_status', ['success', 'warning', 'error']);
+
+export const vaultReconciliationRuns = pgTable("vault_reconciliation_runs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  runDate: timestamp("run_date").notNull().defaultNow(),
+  runBy: varchar("run_by", { length: 255 }).references(() => users.id),
+  
+  status: vaultReconciliationStatusEnum("status").notNull(),
+  
+  totalDigitalGrams: decimal("total_digital_grams", { precision: 20, scale: 6 }).notNull(),
+  totalPhysicalGrams: decimal("total_physical_grams", { precision: 20, scale: 6 }).notNull(),
+  discrepancyGrams: decimal("discrepancy_grams", { precision: 20, scale: 6 }).notNull(),
+  
+  mpgwGrams: decimal("mpgw_grams", { precision: 20, scale: 6 }).notNull().default('0'),
+  fpgwGrams: decimal("fpgw_grams", { precision: 20, scale: 6 }).notNull().default('0'),
+  
+  unlinkedDeposits: integer("unlinked_deposits").notNull().default(0),
+  countryMismatches: integer("country_mismatches").notNull().default(0),
+  negativeBalances: integer("negative_balances").notNull().default(0),
+  
+  issuesJson: json("issues_json").$type<Array<{
+    id: string;
+    type: string;
+    severity: string;
+    description: string;
+    affectedEntity: string;
+    affectedEntityId: string;
+    resolved: boolean;
+  }>>(),
+  
+  reportUrl: text("report_url"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVaultReconciliationRunSchema = createInsertSchema(vaultReconciliationRuns).omit({ id: true, createdAt: true, runDate: true });
+export type InsertVaultReconciliationRun = z.infer<typeof insertVaultReconciliationRunSchema>;
+export type VaultReconciliationRun = typeof vaultReconciliationRuns.$inferSelect;

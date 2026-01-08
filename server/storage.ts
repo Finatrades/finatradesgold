@@ -5045,6 +5045,290 @@ export class DatabaseStorage implements IStorage {
     `);
     return result.rows;
   }
+
+  // ============================================
+  // VAULT MANAGEMENT SYSTEM
+  // ============================================
+
+  // Third-Party Vault Locations
+  async getVaultLocations(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT * FROM third_party_vault_locations ORDER BY is_primary DESC, name ASC
+    `);
+    return result.rows;
+  }
+
+  async getVaultLocation(id: string): Promise<any | null> {
+    const result = await db.execute(sql`
+      SELECT * FROM third_party_vault_locations WHERE id = ${id}
+    `);
+    return result.rows[0] || null;
+  }
+
+  async createVaultLocation(data: any): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO third_party_vault_locations (
+        code, name, address, city, country, country_code,
+        capacity_kg, insurance_provider, insurance_coverage_usd, insurance_expiry_date,
+        security_level, contact_name, contact_email, contact_phone, is_active, is_primary
+      ) VALUES (
+        ${data.code}, ${data.name}, ${data.address || null}, ${data.city || null},
+        ${data.country}, ${data.countryCode}, ${data.capacityKg || null},
+        ${data.insuranceProvider || null}, ${data.insuranceCoverageUsd || null}, ${data.insuranceExpiryDate || null},
+        ${data.securityLevel || 'Standard'}, ${data.contactName || null}, ${data.contactEmail || null}, ${data.contactPhone || null},
+        ${data.isActive !== false}, ${data.isPrimary === true}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async updateVaultLocation(id: string, data: any): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE third_party_vault_locations SET
+        name = COALESCE(${data.name || null}, name),
+        address = COALESCE(${data.address || null}, address),
+        city = COALESCE(${data.city || null}, city),
+        country = COALESCE(${data.country || null}, country),
+        country_code = COALESCE(${data.countryCode || null}, country_code),
+        capacity_kg = COALESCE(${data.capacityKg || null}, capacity_kg),
+        insurance_provider = COALESCE(${data.insuranceProvider || null}, insurance_provider),
+        insurance_coverage_usd = COALESCE(${data.insuranceCoverageUsd || null}, insurance_coverage_usd),
+        security_level = COALESCE(${data.securityLevel || null}, security_level),
+        contact_name = COALESCE(${data.contactName || null}, contact_name),
+        contact_email = COALESCE(${data.contactEmail || null}, contact_email),
+        contact_phone = COALESCE(${data.contactPhone || null}, contact_phone),
+        is_active = COALESCE(${data.isActive}, is_active),
+        is_primary = COALESCE(${data.isPrimary}, is_primary),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async deleteVaultLocation(id: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      DELETE FROM third_party_vault_locations WHERE id = ${id} RETURNING id
+    `);
+    return result.rows.length > 0;
+  }
+
+  // Country Routing Rules
+  async getVaultRoutingRules(): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT r.*, 
+        pv.name as primary_vault_name, pv.code as primary_vault_code,
+        fv.name as fallback_vault_name, fv.code as fallback_vault_code
+      FROM vault_country_routing_rules r
+      LEFT JOIN third_party_vault_locations pv ON r.primary_vault_id = pv.id
+      LEFT JOIN third_party_vault_locations fv ON r.fallback_vault_id = fv.id
+      ORDER BY r.priority ASC, r.country_name ASC
+    `);
+    return result.rows;
+  }
+
+  async createVaultRoutingRule(data: any): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO vault_country_routing_rules (
+        country_code, country_name, primary_vault_id, fallback_vault_id, priority, is_active, notes
+      ) VALUES (
+        ${data.countryCode}, ${data.countryName}, ${data.primaryVaultId},
+        ${data.fallbackVaultId || null}, ${data.priority || 0}, ${data.isActive !== false}, ${data.notes || null}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async updateVaultRoutingRule(id: string, data: any): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE vault_country_routing_rules SET
+        country_code = COALESCE(${data.countryCode || null}, country_code),
+        country_name = COALESCE(${data.countryName || null}, country_name),
+        primary_vault_id = COALESCE(${data.primaryVaultId || null}, primary_vault_id),
+        fallback_vault_id = ${data.fallbackVaultId || null},
+        priority = COALESCE(${data.priority}, priority),
+        is_active = COALESCE(${data.isActive}, is_active),
+        notes = ${data.notes || null},
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async deleteVaultRoutingRule(id: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      DELETE FROM vault_country_routing_rules WHERE id = ${id} RETURNING id
+    `);
+    return result.rows.length > 0;
+  }
+
+  // Physical Storage Certificates
+  async getPhysicalStorageCertificates(filters?: { status?: string; vaultLocationId?: string }): Promise<any[]> {
+    let query = sql`
+      SELECT psc.*, v.name as vault_location_name, v.code as vault_location_code
+      FROM physical_storage_certificates psc
+      LEFT JOIN third_party_vault_locations v ON psc.vault_location_id = v.id
+      WHERE 1=1
+    `;
+    
+    if (filters?.status) {
+      query = sql`${query} AND psc.status = ${filters.status}`;
+    }
+    if (filters?.vaultLocationId) {
+      query = sql`${query} AND psc.vault_location_id = ${filters.vaultLocationId}`;
+    }
+    
+    query = sql`${query} ORDER BY psc.issued_at DESC`;
+    const result = await db.execute(query);
+    return result.rows;
+  }
+
+  async createPhysicalStorageCertificate(data: any): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO physical_storage_certificates (
+        physical_storage_ref, issuer, gold_grams, gold_purity,
+        bar_serial_number, bar_weight, bar_type,
+        vault_location_id, country_code, status, document_url
+      ) VALUES (
+        ${data.physicalStorageRef}, ${data.issuer || 'Wingold & Metals DMCC'},
+        ${data.goldGrams}, ${data.goldPurity || 0.9999},
+        ${data.barSerialNumber || null}, ${data.barWeight || null}, ${data.barType || null},
+        ${data.vaultLocationId || null}, ${data.countryCode || null},
+        ${data.status || 'Active'}, ${data.documentUrl || null}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  async linkPhysicalCertificate(id: string, linkedVaultCertificateId: string, linkedBy: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE physical_storage_certificates SET
+        linked_vault_certificate_id = ${linkedVaultCertificateId},
+        linked_at = NOW(),
+        linked_by = ${linkedBy},
+        status = 'Linked',
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  async voidPhysicalCertificate(id: string, voidedBy: string, voidReason: string): Promise<any> {
+    const result = await db.execute(sql`
+      UPDATE physical_storage_certificates SET
+        status = 'Voided',
+        voided_at = NOW(),
+        voided_by = ${voidedBy},
+        void_reason = ${voidReason},
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `);
+    return result.rows[0] || null;
+  }
+
+  // Vault Reconciliation
+  async getVaultReconciliationRuns(limit: number = 10): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT r.*, u.email as run_by_email, u.first_name as run_by_name
+      FROM vault_reconciliation_runs r
+      LEFT JOIN users u ON r.run_by = u.id
+      ORDER BY r.run_date DESC
+      LIMIT ${limit}
+    `);
+    return result.rows;
+  }
+
+  async getLatestVaultReconciliation(): Promise<any | null> {
+    const result = await db.execute(sql`
+      SELECT r.*, u.email as run_by_email, u.first_name as run_by_name
+      FROM vault_reconciliation_runs r
+      LEFT JOIN users u ON r.run_by = u.id
+      ORDER BY r.run_date DESC
+      LIMIT 1
+    `);
+    return result.rows[0] || null;
+  }
+
+  async createVaultReconciliationRun(data: any): Promise<any> {
+    const result = await db.execute(sql`
+      INSERT INTO vault_reconciliation_runs (
+        run_by, status, total_digital_grams, total_physical_grams, discrepancy_grams,
+        mpgw_grams, fpgw_grams, unlinked_deposits, country_mismatches, negative_balances,
+        issues_json, report_url
+      ) VALUES (
+        ${data.runBy || null}, ${data.status}, ${data.totalDigitalGrams}, ${data.totalPhysicalGrams},
+        ${data.discrepancyGrams}, ${data.mpgwGrams || 0}, ${data.fpgwGrams || 0},
+        ${data.unlinkedDeposits || 0}, ${data.countryMismatches || 0}, ${data.negativeBalances || 0},
+        ${JSON.stringify(data.issuesJson || [])}, ${data.reportUrl || null}
+      ) RETURNING *
+    `);
+    return result.rows[0];
+  }
+
+  // Vault Overview Data for Dashboard
+  async getVaultOverviewData(): Promise<any> {
+    const digitalResult = await db.execute(sql`
+      SELECT 
+        COALESCE(SUM(CASE WHEN gold_wallet_type = 'MPGW' OR gold_wallet_type IS NULL THEN gold_balance_grams ELSE 0 END), 0) as mpgw_grams,
+        COUNT(CASE WHEN gold_wallet_type = 'MPGW' OR gold_wallet_type IS NULL THEN 1 END) as mpgw_count,
+        COALESCE(SUM(CASE WHEN gold_wallet_type = 'FPGW' THEN gold_balance_grams ELSE 0 END), 0) as fpgw_grams,
+        COUNT(CASE WHEN gold_wallet_type = 'FPGW' THEN 1 END) as fpgw_count,
+        COALESCE(SUM(gold_balance_grams), 0) as total_digital_grams
+      FROM wallets
+    `);
+
+    const physicalResult = await db.execute(sql`
+      SELECT COALESCE(SUM(gold_grams), 0) as total_physical_grams
+      FROM physical_storage_certificates
+      WHERE status IN ('Active', 'Linked')
+    `);
+
+    const byLocationResult = await db.execute(sql`
+      SELECT v.name, COALESCE(SUM(psc.gold_grams), 0) as grams
+      FROM third_party_vault_locations v
+      LEFT JOIN physical_storage_certificates psc ON psc.vault_location_id = v.id AND psc.status IN ('Active', 'Linked')
+      WHERE v.is_active = true
+      GROUP BY v.id, v.name
+      ORDER BY grams DESC
+    `);
+
+    const unlinkedResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM physical_storage_certificates
+      WHERE status = 'Active' AND linked_vault_certificate_id IS NULL
+    `);
+
+    const digital = digitalResult.rows[0] || {};
+    const physical = physicalResult.rows[0] || {};
+
+    return {
+      totalDigitalLiability: parseFloat(digital.total_digital_grams || '0'),
+      totalPhysicalCustody: parseFloat(physical.total_physical_grams || '0'),
+      mpgw: {
+        totalGrams: parseFloat(digital.mpgw_grams || '0'),
+        count: parseInt(digital.mpgw_count || '0')
+      },
+      fpgw: {
+        totalGrams: parseFloat(digital.fpgw_grams || '0'),
+        count: parseInt(digital.fpgw_count || '0'),
+        weightedAvgPrice: 0 // TODO: Calculate from batches
+      },
+      byBucket: {
+        available: parseFloat(digital.total_digital_grams || '0'),
+        reservedP2P: 0,
+        lockedBNSL: 0,
+        allocatedTrade: 0
+      },
+      byVaultLocation: Object.fromEntries(
+        byLocationResult.rows.map((r: any) => [r.name, parseFloat(r.grams || '0')])
+      ),
+      unlinkedDeposits: parseInt(unlinkedResult.rows[0]?.count || '0'),
+      alerts: []
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

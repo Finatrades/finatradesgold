@@ -9060,6 +9060,226 @@ ${message}
   });
 
   // ============================================================================
+  // VAULT MANAGEMENT SYSTEM (New Architecture)
+  // ============================================================================
+
+  // Vault Management: Overview Dashboard
+  app.get("/api/admin/vault/overview", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const overview = await storage.getVaultOverviewData();
+      res.json(overview);
+    } catch (error) {
+      console.error("[Vault] Error getting overview:", error);
+      res.status(500).json({ message: "Failed to get vault overview" });
+    }
+  });
+
+  // Vault Management: Third-Party Vault Locations
+  app.get("/api/admin/vault-management/locations", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const locations = await storage.getVaultLocations();
+      res.json({ locations });
+    } catch (error) {
+      console.error("[Vault] Error getting locations:", error);
+      res.status(500).json({ message: "Failed to get vault locations" });
+    }
+  });
+
+  app.post("/api/admin/vault-management/locations", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const location = await storage.createVaultLocation(req.body);
+      res.json({ location, message: "Vault location created" });
+    } catch (error) {
+      console.error("[Vault] Error creating location:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create vault location" });
+    }
+  });
+
+  app.patch("/api/admin/vault-management/locations/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const location = await storage.updateVaultLocation(req.params.id, req.body);
+      if (!location) {
+        return res.status(404).json({ message: "Vault location not found" });
+      }
+      res.json({ location, message: "Vault location updated" });
+    } catch (error) {
+      console.error("[Vault] Error updating location:", error);
+      res.status(400).json({ message: "Failed to update vault location" });
+    }
+  });
+
+  app.delete("/api/admin/vault-management/locations/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const deleted = await storage.deleteVaultLocation(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Vault location not found" });
+      }
+      res.json({ message: "Vault location deleted" });
+    } catch (error) {
+      console.error("[Vault] Error deleting location:", error);
+      res.status(400).json({ message: "Failed to delete vault location" });
+    }
+  });
+
+  // Vault Management: Country Routing Rules
+  app.get("/api/admin/vault-management/routing-rules", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const rules = await storage.getVaultRoutingRules();
+      res.json({ rules });
+    } catch (error) {
+      console.error("[Vault] Error getting routing rules:", error);
+      res.status(500).json({ message: "Failed to get routing rules" });
+    }
+  });
+
+  app.post("/api/admin/vault-management/routing-rules", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const rule = await storage.createVaultRoutingRule(req.body);
+      res.json({ rule, message: "Routing rule created" });
+    } catch (error) {
+      console.error("[Vault] Error creating routing rule:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create routing rule" });
+    }
+  });
+
+  // Vault Management: Physical Storage Certificates
+  app.get("/api/admin/vault/physical-registry", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const { status, vaultLocationId } = req.query;
+      const certificates = await storage.getPhysicalStorageCertificates({
+        status: status as string,
+        vaultLocationId: vaultLocationId as string
+      });
+      res.json({ certificates });
+    } catch (error) {
+      console.error("[Vault] Error getting physical certificates:", error);
+      res.status(500).json({ message: "Failed to get physical certificates" });
+    }
+  });
+
+  app.post("/api/admin/vault/physical-registry", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const certificate = await storage.createPhysicalStorageCertificate(req.body);
+      res.json({ certificate, message: "Physical certificate created" });
+    } catch (error) {
+      console.error("[Vault] Error creating physical certificate:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create physical certificate" });
+    }
+  });
+
+  app.post("/api/admin/vault/physical-registry/:id/link", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const { linkedVaultCertificateId } = req.body;
+      const adminId = req.session?.userId;
+      if (!linkedVaultCertificateId || !adminId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      const certificate = await storage.linkPhysicalCertificate(req.params.id, linkedVaultCertificateId, adminId);
+      if (!certificate) {
+        return res.status(404).json({ message: "Physical certificate not found" });
+      }
+      res.json({ certificate, message: "Physical certificate linked" });
+    } catch (error) {
+      console.error("[Vault] Error linking physical certificate:", error);
+      res.status(400).json({ message: "Failed to link physical certificate" });
+    }
+  });
+
+  // Vault Management: Reconciliation
+  app.get("/api/admin/vault/reconciliation", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
+    try {
+      const latest = await storage.getLatestVaultReconciliation();
+      if (!latest) {
+        return res.json(null);
+      }
+      res.json({
+        runId: latest.id,
+        runDate: latest.run_date,
+        status: latest.status,
+        totalDigitalGrams: parseFloat(latest.total_digital_grams || '0'),
+        totalPhysicalGrams: parseFloat(latest.total_physical_grams || '0'),
+        discrepancyGrams: parseFloat(latest.discrepancy_grams || '0'),
+        unlinkedDeposits: latest.unlinked_deposits || 0,
+        countryMismatches: latest.country_mismatches || 0,
+        negativeBalances: latest.negative_balances || 0,
+        issues: latest.issues_json || []
+      });
+    } catch (error) {
+      console.error("[Vault] Error getting reconciliation:", error);
+      res.status(500).json({ message: "Failed to get reconciliation data" });
+    }
+  });
+
+  app.post("/api/admin/vault/reconciliation/run", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
+    try {
+      const adminId = req.session?.userId;
+      const overview = await storage.getVaultOverviewData();
+      
+      const totalDigital = overview.totalDigitalLiability;
+      const totalPhysical = overview.totalPhysicalCustody;
+      const discrepancy = totalPhysical - totalDigital;
+      
+      let status: 'success' | 'warning' | 'error' = 'success';
+      const issues: any[] = [];
+      
+      if (Math.abs(discrepancy) > 0.01) {
+        status = discrepancy < 0 ? 'error' : 'warning';
+        issues.push({
+          id: crypto.randomUUID(),
+          type: 'discrepancy',
+          severity: discrepancy < 0 ? 'high' : 'low',
+          description: `Gold ${discrepancy < 0 ? 'deficit' : 'surplus'} of ${Math.abs(discrepancy).toFixed(6)}g detected`,
+          affectedEntity: 'System',
+          affectedEntityId: 'global',
+          resolved: false
+        });
+      }
+      
+      if (overview.unlinkedDeposits > 0) {
+        status = status === 'success' ? 'warning' : status;
+        issues.push({
+          id: crypto.randomUUID(),
+          type: 'unlinked',
+          severity: 'medium',
+          description: `${overview.unlinkedDeposits} unlinked physical certificates found`,
+          affectedEntity: 'Physical Certificates',
+          affectedEntityId: 'unlinked',
+          resolved: false
+        });
+      }
+      
+      const run = await storage.createVaultReconciliationRun({
+        runBy: adminId,
+        status,
+        totalDigitalGrams: totalDigital.toString(),
+        totalPhysicalGrams: totalPhysical.toString(),
+        discrepancyGrams: discrepancy.toString(),
+        mpgwGrams: overview.mpgw.totalGrams.toString(),
+        fpgwGrams: overview.fpgw.totalGrams.toString(),
+        unlinkedDeposits: overview.unlinkedDeposits,
+        countryMismatches: 0,
+        negativeBalances: 0,
+        issuesJson: issues
+      });
+      
+      res.json({
+        runId: run.id,
+        runDate: run.run_date,
+        status: run.status,
+        totalDigitalGrams: parseFloat(run.total_digital_grams || '0'),
+        totalPhysicalGrams: parseFloat(run.total_physical_grams || '0'),
+        discrepancyGrams: parseFloat(run.discrepancy_grams || '0'),
+        unlinkedDeposits: run.unlinked_deposits || 0,
+        issues: run.issues_json || []
+      });
+    } catch (error) {
+      console.error("[Vault] Error running reconciliation:", error);
+      res.status(500).json({ message: "Failed to run reconciliation" });
+    }
+  });
+
+
+  // ============================================================================
   // FINAVAULT - VAULT TRANSFERS
   // ============================================================================
 
