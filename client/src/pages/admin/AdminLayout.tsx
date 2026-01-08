@@ -63,6 +63,11 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/fees': ['manage_fees'],
   '/admin/finapay': ['view_transactions', 'manage_deposits', 'manage_withdrawals'],
   '/admin/vault': ['view_vault', 'manage_vault'],
+  '/admin/vault-dashboard': ['view_vault', 'manage_vault'],
+  '/admin/vault-physical-registry': ['view_vault', 'manage_vault'],
+  '/admin/vault-locations': ['view_vault', 'manage_vault'],
+  '/admin/vault-routing': ['view_vault', 'manage_vault'],
+  '/admin/vault-reconciliation': ['view_vault', 'manage_vault'],
   '/admin/finabridge': ['view_finabridge', 'manage_finabridge'],
   '/admin/bnsl': ['view_bnsl', 'manage_bnsl'],
   '/admin/documents': ['view_reports'],
@@ -208,6 +213,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Risk Exposure', href: '/admin/risk-exposure' },
         { label: 'SAR Reports', href: '/admin/sar-reports' },
         { label: 'Regulatory Reports', href: '/admin/regulatory-reports' },
+      ]
+    },
+    {
+      title: 'Vault Management',
+      icon: <Scale className="w-4 h-4" />,
+      items: [
+        { label: 'Vault Dashboard', href: '/admin/vault-dashboard' },
+        { label: 'Physical Registry', href: '/admin/vault-physical-registry' },
+        { label: 'Vault Locations', href: '/admin/vault-locations' },
+        { label: 'Routing Rules', href: '/admin/vault-routing' },
+        { label: 'Reconciliation', href: '/admin/vault-reconciliation' },
       ]
     },
     {
