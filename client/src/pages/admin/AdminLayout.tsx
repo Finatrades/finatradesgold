@@ -226,6 +226,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Vault Locations', href: '/admin/vault-locations' },
         { label: 'Routing Rules', href: '/admin/vault-routing' },
         { label: 'Reconciliation', href: '/admin/vault-reconciliation' },
+        { label: 'Gold Bar Orders', href: '/admin/wingold-orders' },
       ]
     },
     {

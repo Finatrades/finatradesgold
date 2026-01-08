@@ -167,6 +167,7 @@ import ApiLogs from "@/pages/admin/ApiLogs";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
+import WingoldOrders from "@/pages/admin/WingoldOrders";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
 import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
@@ -289,6 +290,7 @@ function Router() {
       
       {/* Operations & Finance */}
       <Route path="/admin/interest-calculator" component={InterestCalculator} />
+      <Route path="/admin/wingold-orders" component={WingoldOrders} />
       
       {/* Analytics & Business Intelligence */}
       
