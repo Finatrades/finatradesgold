@@ -3959,6 +3959,32 @@ export const insertWingoldReconciliationSchema = createInsertSchema(wingoldRecon
 export type InsertWingoldReconciliation = z.infer<typeof insertWingoldReconciliationSchema>;
 export type WingoldReconciliation = typeof wingoldReconciliations.$inferSelect;
 
+// Wingold products catalog - synced from B2B API
+export const wingoldProducts = pgTable("wingold_products", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  wingoldProductId: varchar("wingold_product_id", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  weight: varchar("weight", { length: 50 }).notNull(), // e.g., "1kg", "100g"
+  weightGrams: decimal("weight_grams", { precision: 18, scale: 4 }).notNull(),
+  purity: varchar("purity", { length: 20 }).notNull().default('999.9'),
+  livePrice: decimal("live_price", { precision: 18, scale: 2 }),
+  pricePerGram: decimal("price_per_gram", { precision: 18, scale: 6 }),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  stock: integer("stock").notNull().default(0),
+  inStock: boolean("in_stock").notNull().default(true),
+  category: varchar("category", { length: 100 }).default('bars'),
+  imageUrl: text("image_url"),
+  description: text("description"),
+  metadata: json("metadata"),
+  syncedAt: timestamp("synced_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWingoldProductSchema = createInsertSchema(wingoldProducts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWingoldProduct = z.infer<typeof insertWingoldProductSchema>;
+export type WingoldProduct = typeof wingoldProducts.$inferSelect;
+
 // ============================================
 // FINABRIDGE - SHIPMENT TRACKING
 // ============================================

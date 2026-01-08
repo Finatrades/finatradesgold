@@ -35,6 +35,7 @@ interface GoldPriceData {
 }
 
 interface CartItem {
+  productId: string;
   barSize: string;
   grams: number;
   label: string;
@@ -44,52 +45,31 @@ interface CartItem {
   fulfillmentHours: number;
 }
 
-type BarSize = '1g' | '10g' | '100g' | '1kg';
+interface WingoldProduct {
+  productId: string;
+  name: string;
+  weight: string;
+  weightGrams: string;
+  purity: string;
+  livePrice: string;
+  livePriceAed: string;
+  stock: number;
+  inStock: boolean;
+  imageUrl?: string;
+  description?: string;
+  category?: string;
+}
+
+interface ProductsResponse {
+  timestamp: string;
+  spotPrice: number;
+  pricePerGram: string;
+  currency: string;
+  totalProducts: number;
+  products: WingoldProduct[];
+}
 
 const USD_TO_AED = 3.67;
-
-const PRODUCTS = [
-  { 
-    size: '1g' as BarSize, 
-    grams: 1, 
-    label: '1g Gold Bar - Wingold', 
-    fulfillmentHours: 2,
-    purity: '999.9',
-    description: 'LBMA Certified pure gold bar with assay certificate',
-    inStock: true,
-    featured: false
-  },
-  { 
-    size: '10g' as BarSize, 
-    grams: 10, 
-    label: '10g Gold Bar - Wingold', 
-    fulfillmentHours: 2,
-    purity: '999.9',
-    description: 'LBMA Certified pure gold bar with assay certificate',
-    inStock: true,
-    featured: false
-  },
-  { 
-    size: '100g' as BarSize, 
-    grams: 100, 
-    label: '100g Gold Bar - Wingold', 
-    fulfillmentHours: 12,
-    purity: '999.9',
-    description: 'LBMA Certified pure gold bar with assay certificate',
-    inStock: true,
-    featured: true
-  },
-  { 
-    size: '1kg' as BarSize, 
-    grams: 1000, 
-    label: '1kg Gold Bar - Wingold', 
-    fulfillmentHours: 24,
-    purity: '999.9',
-    description: 'LBMA Certified pure gold bar with assay certificate',
-    inStock: true,
-    featured: true
-  },
-];
 
 const COMPLIANCE_NOTICE = `Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold.`;
 
@@ -130,6 +110,17 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
     },
   });
 
+  const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useQuery<ProductsResponse>({
+    queryKey: ['wingold-products'],
+    queryFn: async () => {
+      const res = await fetch('/api/wingold/products?inStock=true&category=bars');
+      if (!res.ok) throw new Error('Failed to fetch products');
+      return res.json();
+    },
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     if (isOpen) {
       setStep('shop');
@@ -158,54 +149,64 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
 
   const goldPriceUsd = goldPriceData?.pricePerGram || 143;
   const goldPriceAed = goldPriceUsd * USD_TO_AED;
+  
+  const products = productsData?.products || [];
+  
+  const getFulfillmentHours = (weight: string): number => {
+    if (weight === '1g' || weight === '10g') return 2;
+    if (weight === '100g') return 12;
+    if (weight === '1kg') return 24;
+    return 24;
+  };
 
-  const filteredProducts = PRODUCTS.filter(product => {
-    if (searchQuery && !product.label.toLowerCase().includes(searchQuery.toLowerCase())) {
+  const filteredProducts = products.filter((product: WingoldProduct) => {
+    if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    if (weightFilters.length > 0 && !weightFilters.includes(product.size)) {
+    if (weightFilters.length > 0 && !weightFilters.includes(product.weight)) {
       return false;
     }
     if (showInStockOnly && !product.inStock) {
       return false;
     }
-    if (showFeaturedOnly && !product.featured) {
-      return false;
-    }
     return true;
-  }).sort((a, b) => {
+  }).sort((a: WingoldProduct, b: WingoldProduct) => {
+    const aGrams = parseFloat(a.weightGrams);
+    const bGrams = parseFloat(b.weightGrams);
     switch (sortBy) {
       case 'price-low':
-        return a.grams - b.grams;
+        return aGrams - bGrams;
       case 'price-high':
-        return b.grams - a.grams;
+        return bGrams - aGrams;
       case 'weight':
-        return a.grams - b.grams;
+        return aGrams - bGrams;
       default:
         return 0;
     }
   });
 
-  const addToCart = (product: typeof PRODUCTS[0]) => {
-    const existingIndex = cart.findIndex(item => item.barSize === product.size);
+  const addToCart = (product: WingoldProduct) => {
+    const grams = parseFloat(product.weightGrams);
+    const existingIndex = cart.findIndex(item => item.productId === product.productId);
     if (existingIndex >= 0) {
       const newCart = [...cart];
       newCart[existingIndex].quantity += 1;
       setCart(newCart);
     } else {
       setCart([...cart, {
-        barSize: product.size,
-        grams: product.grams,
-        label: product.label,
+        productId: product.productId,
+        barSize: product.weight,
+        grams,
+        label: product.name,
         quantity: 1,
-        priceAed: product.grams * goldPriceAed,
-        priceUsd: product.grams * goldPriceUsd,
-        fulfillmentHours: product.fulfillmentHours,
+        priceAed: grams * goldPriceAed,
+        priceUsd: grams * goldPriceUsd,
+        fulfillmentHours: getFulfillmentHours(product.weight),
       }]);
     }
     toast({
       title: 'Added to Cart',
-      description: `${product.label} added to your cart`,
+      description: `${product.name} added to your cart`,
     });
   };
 
@@ -659,66 +660,81 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
 
               {/* Product Grid */}
               <ScrollArea className="flex-1 p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredProducts.map((product) => (
-                    <Card key={product.size} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.size}`}>
-                      <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="relative">
-                            {/* Gold bar image placeholder */}
-                            <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
-                              <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
-                              <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-900 text-xs font-bold">
-                                Au {product.grams}g
-                              </div>
-                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
-                                FINE GOLD
-                              </div>
-                              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
-                                999.9
+                {productsLoading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+                    <span className="ml-2 text-gray-400">Loading products from Wingold...</span>
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                    <Package className="w-12 h-12 mb-4 opacity-50" />
+                    <p>No products found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProducts.map((product: WingoldProduct) => {
+                      const grams = parseFloat(product.weightGrams);
+                      return (
+                        <Card key={product.productId} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.weight}`}>
+                          <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="relative">
+                                {/* Gold bar image placeholder */}
+                                <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
+                                  <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
+                                  <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-900 text-xs font-bold">
+                                    Au {product.weight}
+                                  </div>
+                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
+                                    FINE GOLD
+                                  </div>
+                                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
+                                    {product.purity}
+                                  </div>
+                                </div>
+                                {/* Certificate */}
+                                <div className="absolute -right-8 -top-4 w-24 h-32 bg-white rounded shadow-lg transform rotate-12 p-2">
+                                  <div className="text-[6px] text-gray-800 font-bold mb-1">WINGOLD</div>
+                                  <div className="text-[5px] text-gray-600 leading-tight">
+                                    Certificate of Authenticity<br/>
+                                    LBMA Certified<br/>
+                                    {product.weight} Pure Gold<br/>
+                                    Purity: {product.purity}
+                                  </div>
+                                  <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                                    <span className="text-[4px] text-amber-800">✓</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            {/* Certificate */}
-                            <div className="absolute -right-8 -top-4 w-24 h-32 bg-white rounded shadow-lg transform rotate-12 p-2">
-                              <div className="text-[6px] text-gray-800 font-bold mb-1">WINGOLD</div>
-                              <div className="text-[5px] text-gray-600 leading-tight">
-                                Certificate of Authenticity<br/>
-                                LBMA Certified<br/>
-                                {product.grams}g Pure Gold<br/>
-                                Purity: 999.9
-                              </div>
-                              <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                                <span className="text-[4px] text-amber-800">✓</span>
-                              </div>
-                            </div>
+                            {product.stock > 50 && (
+                              <Badge className="absolute top-2 left-2 bg-amber-500 text-black">In Stock</Badge>
+                            )}
                           </div>
-                        </div>
-                        {product.featured && (
-                          <Badge className="absolute top-2 left-2 bg-amber-500 text-black">Featured</Badge>
-                        )}
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold text-white mb-2">{product.label}</h3>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.grams}g</Badge>
-                          <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.purity}</Badge>
-                        </div>
-                        <p className="text-amber-400 font-bold text-lg mb-1">
-                          AED {(product.grams * goldPriceAed).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-gray-500 mb-4">LBMA Certified</p>
-                        <Button 
-                          onClick={() => addToCart(product)}
-                          className="w-full bg-transparent border border-amber-500 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
-                          data-testid={`button-add-to-cart-${product.size}`}
-                        >
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Add to Cart
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                          <CardContent className="p-4">
+                            <h3 className="font-semibold text-white mb-2">{product.name}</h3>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.weight}</Badge>
+                              <Badge variant="secondary" className="bg-gray-800 text-gray-300 text-xs">{product.purity}</Badge>
+                            </div>
+                            <p className="text-amber-400 font-bold text-lg mb-1">
+                              AED {(grams * goldPriceAed).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-xs text-gray-500 mb-4">LBMA Certified</p>
+                            <Button 
+                              onClick={() => addToCart(product)}
+                              className="w-full bg-transparent border border-amber-500 text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
+                              data-testid={`button-add-to-cart-${product.weight}`}
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-2" />
+                              Add to Cart
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
               </ScrollArea>
             </div>
           </div>
