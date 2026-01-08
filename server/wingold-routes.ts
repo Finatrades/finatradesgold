@@ -1,5 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 import { WingoldIntegrationService } from './wingold-integration-service';
+import { WingoldUserSyncService } from './wingold-user-sync-service';
 import { db } from './db';
 import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations } from '@shared/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
@@ -219,6 +220,26 @@ router.get('/stats', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Wingold] Failed to fetch stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+router.post('/users/sync-all', async (req: Request, res: Response) => {
+  try {
+    if (!req.user || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    console.log('[Wingold] Starting bulk user sync to Wingold...');
+    const result = await WingoldUserSyncService.syncAllUsers();
+    
+    res.json({ 
+      success: true, 
+      message: `Synced ${result.synced} users to Wingold, ${result.failed} failed`,
+      ...result
+    });
+  } catch (error) {
+    console.error('[Wingold] Bulk user sync failed:', error);
+    res.status(500).json({ error: 'Bulk user sync failed' });
   }
 });
 

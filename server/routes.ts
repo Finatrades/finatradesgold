@@ -96,6 +96,7 @@ import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
 import { registerSsoRoutes } from "./sso-routes";
 import wingoldRoutes from "./wingold-routes";
+import { WingoldUserSyncService } from "./wingold-user-sync-service";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 // ============================================================================
@@ -1049,6 +1050,9 @@ ${message}
         usdBalance: "0",
         eurBalance: "0",
       });
+
+      // Sync new user to Wingold (non-blocking)
+      WingoldUserSyncService.onUserRegistered(user.id).catch(err => console.error("[WingoldSync] Registration sync failed:", err));
       
       // Check for pending invitation transfers to this email
       let inviteSenderReferralCode: string | undefined;
@@ -4724,6 +4728,9 @@ ${message}
               link: '/dashboard',
               read: false,
             });
+
+            // Sync KYC approval to Wingold (non-blocking)
+            WingoldUserSyncService.onKycApproved(submission.userId).catch(err => console.error("[WingoldSync] KYC approval sync failed:", err));
           } else if (req.body.status === 'Rejected') {
             const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_REJECTED, {
               user_name: `${user.firstName} ${user.lastName}`,
@@ -4741,6 +4748,9 @@ ${message}
               link: '/kyc',
               read: false,
             });
+
+            // Sync KYC rejection to Wingold (non-blocking)
+            WingoldUserSyncService.onKycRejected(submission.userId).catch(err => console.error("[WingoldSync] KYC rejection sync failed:", err));
           }
         }
         
