@@ -94,6 +94,7 @@ import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
+import { registerSsoRoutes } from "./sso-routes";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 // ============================================================================
@@ -591,6 +592,8 @@ export async function registerRoutes(
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
   // Register dual wallet routes (MPGW/FPGW)
   registerDualWalletRoutes(app);
+  // Register SSO routes for Wingold integration
+  registerSsoRoutes(app);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

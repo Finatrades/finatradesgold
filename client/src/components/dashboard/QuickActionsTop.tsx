@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
+import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp, ExternalLink } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -65,6 +65,16 @@ const actions = [
     hoverGradient: 'hover:from-violet-600 hover:to-purple-700',
     requiresKyc: true,
     isModal: false
+  },
+  {
+    title: 'Wingold Portal',
+    path: '',
+    icon: <ExternalLink className="w-4 h-4" />,
+    gradient: 'from-amber-500 to-yellow-600',
+    hoverGradient: 'hover:from-amber-600 hover:to-yellow-700',
+    requiresKyc: true,
+    isModal: true,
+    isExternalSSO: true
   }
 ];
 
@@ -91,6 +101,25 @@ export default function QuickActionsTop() {
 
   const walletBalance = parseFloat(walletData?.wallet?.usdBalance || '0');
   const goldBalance = parseFloat(walletData?.wallet?.goldGrams || '0');
+
+  const handleWingoldSSO = async () => {
+    try {
+      toast.info('Connecting to Wingold Portal...');
+      const res = await apiRequest('GET', '/api/sso/wingold');
+      const data = await res.json();
+      
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank');
+      } else {
+        throw new Error('No redirect URL received');
+      }
+    } catch (error: any) {
+      console.error('SSO error:', error);
+      toast.error('Connection Failed', {
+        description: 'Unable to connect to Wingold Portal. Please try again.',
+      });
+    }
+  };
 
   const handleAction = (action: typeof actions[0]) => {
     if (action.requiresKyc && !isKycApproved) {
@@ -125,6 +154,10 @@ export default function QuickActionsTop() {
       }
       if (action.title === 'Request Payment') {
         setRequestModalOpen(true);
+        return;
+      }
+      if (action.title === 'Wingold Portal') {
+        handleWingoldSSO();
         return;
       }
     }
