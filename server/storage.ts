@@ -3962,6 +3962,212 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async getGoldBackingReportEnhanced(): Promise<{
+    physicalGold: { totalGrams: number; holdings: any[]; byLocation: Record<string, number> };
+    customerLiabilities: {
+      totalGrams: number;
+      mpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number };
+      fpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number; weightedAvgPriceUsd: number };
+      bnsl: { count: number; availableGrams: number; lockedGrams: number };
+    };
+    certificates: { total: number; byStatus: Record<string, number>; byType: Record<string, number> };
+    backing: {
+      overallRatio: number;
+      overallSurplus: number;
+      mpgwRatio: number;
+      mpgwSurplus: number;
+      fpgwRatio: number;
+      fpgwSurplus: number;
+    };
+    compliance: {
+      lastReconciliationDate: string | null;
+      totalReconciliations: number;
+      pendingReviews: number;
+      digitalCertificates: number;
+      physicalCertificates: number;
+    };
+    generatedAt: string;
+  }> {
+    // Get physical gold in vault
+    const vaultResults = await db.select({
+      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
+    }).from(vaultHoldings);
+    const physicalGoldGrams = vaultResults[0]?.totalGrams ? parseFloat(vaultResults[0].totalGrams) : 0;
+
+    // Get vault holdings by location
+    const holdingsByLocation = await db.select({
+      location: vaultHoldings.vaultLocation,
+      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
+    }).from(vaultHoldings).groupBy(vaultHoldings.vaultLocation);
+
+    const byLocation: Record<string, number> = {};
+    for (const h of holdingsByLocation) {
+      byLocation[h.location] = parseFloat(h.totalGrams || '0');
+    }
+
+    // Get all vault holdings
+    const holdings = await db.select().from(vaultHoldings);
+
+    // Get MPGW/FPGW breakdown from vault_ownership_summary
+    const ownershipResults = await db.select({
+      mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}::numeric), 0)`,
+      mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}::numeric), 0)`,
+      mpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwLockedBnslGrams}::numeric), 0)`,
+      mpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwReservedTradeGrams}::numeric), 0)`,
+      fpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwAvailableGrams}::numeric), 0)`,
+      fpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwPendingGrams}::numeric), 0)`,
+      fpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwLockedBnslGrams}::numeric), 0)`,
+      fpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwReservedTradeGrams}::numeric), 0)`,
+    }).from(vaultOwnershipSummary);
+
+    const mpgwAvailable = parseFloat(ownershipResults[0]?.mpgwAvailable || '0');
+    const mpgwPending = parseFloat(ownershipResults[0]?.mpgwPending || '0');
+    const mpgwLockedBnsl = parseFloat(ownershipResults[0]?.mpgwLockedBnsl || '0');
+    const mpgwReservedTrade = parseFloat(ownershipResults[0]?.mpgwReservedTrade || '0');
+    const mpgwTotal = mpgwAvailable + mpgwPending + mpgwLockedBnsl + mpgwReservedTrade;
+
+    const fpgwAvailable = parseFloat(ownershipResults[0]?.fpgwAvailable || '0');
+    const fpgwPending = parseFloat(ownershipResults[0]?.fpgwPending || '0');
+    const fpgwLockedBnsl = parseFloat(ownershipResults[0]?.fpgwLockedBnsl || '0');
+    const fpgwReservedTrade = parseFloat(ownershipResults[0]?.fpgwReservedTrade || '0');
+    const fpgwTotal = fpgwAvailable + fpgwPending + fpgwLockedBnsl + fpgwReservedTrade;
+
+    // Count users with MPGW vs FPGW
+    const mpgwCountResult = await db.select({
+      count: sql<string>`COUNT(*)`,
+    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.mpgwAvailableGrams}::numeric > 0 OR ${vaultOwnershipSummary.mpgwPendingGrams}::numeric > 0`);
+    const mpgwCount = parseInt(mpgwCountResult[0]?.count || '0');
+
+    const fpgwCountResult = await db.select({
+      count: sql<string>`COUNT(*)`,
+    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.fpgwAvailableGrams}::numeric > 0 OR ${vaultOwnershipSummary.fpgwPendingGrams}::numeric > 0`);
+    const fpgwCount = parseInt(fpgwCountResult[0]?.count || '0');
+
+    // Get FPGW weighted average price from batches
+    const fpgwBatchResult = await db.select({
+      totalGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}::numeric), 0)`,
+      totalValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}::numeric * ${fpgwBatches.purchasePriceUsdPerGram}::numeric), 0)`,
+    }).from(fpgwBatches).where(sql`${fpgwBatches.remainingGoldGrams}::numeric > 0`);
+
+    const fpgwBatchGrams = parseFloat(fpgwBatchResult[0]?.totalGrams || '0');
+    const fpgwBatchValue = parseFloat(fpgwBatchResult[0]?.totalValue || '0');
+    const fpgwWeightedAvgPrice = fpgwBatchGrams > 0 ? fpgwBatchValue / fpgwBatchGrams : 0;
+
+    // Get BNSL wallet liabilities
+    const bnslResults = await db.select({
+      count: sql<string>`COUNT(*)`,
+      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}::numeric), 0)`,
+      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}::numeric), 0)`,
+    }).from(bnslWallets);
+
+    const bnslCount = parseInt(bnslResults[0]?.count || '0');
+    const bnslAvailableGrams = parseFloat(bnslResults[0]?.availableGrams || '0');
+    const bnslLockedGrams = parseFloat(bnslResults[0]?.lockedGrams || '0');
+    const bnslTotalGrams = bnslAvailableGrams + bnslLockedGrams;
+
+    const totalLiabilities = mpgwTotal + fpgwTotal + bnslTotalGrams;
+
+    // Get certificates breakdown by status and type
+    const certStatusResults = await db.select({
+      status: certificates.status,
+      count: sql<string>`COUNT(*)`,
+    }).from(certificates).groupBy(certificates.status);
+
+    const certByStatus: Record<string, number> = {};
+    let totalCerts = 0;
+    for (const row of certStatusResults) {
+      const count = parseInt(row.count || '0');
+      certByStatus[row.status] = count;
+      totalCerts += count;
+    }
+
+    const certTypeResults = await db.select({
+      type: certificates.type,
+      count: sql<string>`COUNT(*)`,
+    }).from(certificates).groupBy(certificates.type);
+
+    const certByType: Record<string, number> = {};
+    let digitalCerts = 0;
+    let physicalCerts = 0;
+    for (const row of certTypeResults) {
+      const count = parseInt(row.count || '0');
+      certByType[row.type] = count;
+      if (row.type === 'Digital Ownership') digitalCerts = count;
+      if (row.type === 'Physical Storage') physicalCerts = count;
+    }
+
+    // Get reconciliation data
+    const reconResults = await db.select({
+      count: sql<string>`COUNT(*)`,
+      lastDate: sql<string>`MAX(${reconciliationReports.reportDate})`,
+      pendingReviews: sql<string>`COUNT(*) FILTER (WHERE ${reconciliationReports.status} = 'pending_review')`,
+    }).from(reconciliationReports);
+
+    const totalReconciliations = parseInt(reconResults[0]?.count || '0');
+    const lastReconciliationDate = reconResults[0]?.lastDate || null;
+    const pendingReviews = parseInt(reconResults[0]?.pendingReviews || '0');
+
+    // Calculate backing ratios
+    const overallRatio = totalLiabilities > 0 ? (physicalGoldGrams / totalLiabilities) * 100 : 100;
+    const overallSurplus = physicalGoldGrams - totalLiabilities;
+
+    // For per-wallet-type ratios, we assume physical gold is allocated proportionally
+    const mpgwRatio = mpgwTotal > 0 ? Math.min((physicalGoldGrams * (mpgwTotal / totalLiabilities)) / mpgwTotal * 100, overallRatio) : 100;
+    const fpgwRatio = fpgwTotal > 0 ? Math.min((physicalGoldGrams * (fpgwTotal / totalLiabilities)) / fpgwTotal * 100, overallRatio) : 100;
+    const mpgwSurplus = totalLiabilities > 0 ? overallSurplus * (mpgwTotal / totalLiabilities) : 0;
+    const fpgwSurplus = totalLiabilities > 0 ? overallSurplus * (fpgwTotal / totalLiabilities) : 0;
+
+    const parsedHoldings = holdings.map(h => ({
+      id: h.id,
+      userId: h.userId,
+      vaultLocation: h.vaultLocation,
+      goldGrams: h.goldGrams ? parseFloat(h.goldGrams) : 0,
+      isPhysicallyDeposited: h.isPhysicallyDeposited,
+    }));
+
+    return {
+      physicalGold: { totalGrams: physicalGoldGrams, holdings: parsedHoldings, byLocation },
+      customerLiabilities: {
+        totalGrams: totalLiabilities,
+        mpgw: {
+          totalGrams: mpgwTotal,
+          available: mpgwAvailable,
+          pending: mpgwPending,
+          lockedBnsl: mpgwLockedBnsl,
+          reservedTrade: mpgwReservedTrade,
+          count: mpgwCount,
+        },
+        fpgw: {
+          totalGrams: fpgwTotal,
+          available: fpgwAvailable,
+          pending: fpgwPending,
+          lockedBnsl: fpgwLockedBnsl,
+          reservedTrade: fpgwReservedTrade,
+          count: fpgwCount,
+          weightedAvgPriceUsd: parseFloat(fpgwWeightedAvgPrice.toFixed(2)),
+        },
+        bnsl: { count: bnslCount, availableGrams: bnslAvailableGrams, lockedGrams: bnslLockedGrams },
+      },
+      certificates: { total: totalCerts, byStatus: certByStatus, byType: certByType },
+      backing: {
+        overallRatio: parseFloat(overallRatio.toFixed(2)),
+        overallSurplus: parseFloat(overallSurplus.toFixed(6)),
+        mpgwRatio: parseFloat(mpgwRatio.toFixed(2)),
+        mpgwSurplus: parseFloat(mpgwSurplus.toFixed(6)),
+        fpgwRatio: parseFloat(fpgwRatio.toFixed(2)),
+        fpgwSurplus: parseFloat(fpgwSurplus.toFixed(6)),
+      },
+      compliance: {
+        lastReconciliationDate,
+        totalReconciliations,
+        pendingReviews,
+        digitalCertificates: digitalCerts,
+        physicalCertificates: physicalCerts,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
   // ============================================
   // GOLD BACKING DRILL-DOWN METHODS
   // ============================================

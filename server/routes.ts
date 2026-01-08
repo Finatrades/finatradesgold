@@ -3468,6 +3468,17 @@ ${message}
     }
   });
 
+  // Enhanced Gold Backing Report with MPGW/FPGW segmentation (Admin)
+  app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, async (req, res) => {
+    try {
+      const report = await storage.getGoldBackingReportEnhanced();
+      res.json(report);
+    } catch (error) {
+      console.error("Failed to get enhanced gold backing report:", error);
+      res.status(500).json({ message: "Failed to get enhanced gold backing report" });
+    }
+  });
+
   // Gold Backing Drill-Down: FinaPay Users with Holdings
   app.get("/api/admin/gold-backing/finapay-users", ensureAdminAsync, async (req, res) => {
     try {
