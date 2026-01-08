@@ -19,15 +19,15 @@ import { format } from 'date-fns';
 
 interface PhysicalCertificate {
   id: string;
-  physicalStorageRef: string;
+  physical_storage_ref: string;
   issuer: string;
-  goldGrams: number;
-  countryCode: string;
-  vaultLocationId: string;
-  vaultLocationName: string;
-  issuedAt: string;
+  gold_grams: string | number | null;
+  country_code: string | null;
+  vault_location_id: string | null;
+  vault_location_name: string | null;
+  issued_at: string | null;
   status: 'Active' | 'Voided' | 'Linked';
-  linkedVaultCertificateId: string | null;
+  linked_vault_certificate_id: string | null;
 }
 
 export default function VaultPhysicalRegistry() {
@@ -43,10 +43,16 @@ export default function VaultPhysicalRegistry() {
     return grams.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
   };
 
+  const parseGrams = (val: string | number | null | undefined): number => {
+    if (val === null || val === undefined) return 0;
+    const parsed = typeof val === 'string' ? parseFloat(val) : val;
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const filteredCertificates = (data?.certificates || []).filter(cert => {
     const matchesSearch = searchQuery === '' || 
-      cert.physicalStorageRef.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cert.issuer.toLowerCase().includes(searchQuery.toLowerCase());
+      cert.physical_storage_ref?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cert.issuer?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || cert.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -116,7 +122,7 @@ export default function VaultPhysicalRegistry() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-amber-600">
-                {formatGrams(data?.certificates?.reduce((sum, c) => sum + c.goldGrams, 0) || 0)}g
+                {formatGrams(data?.certificates?.reduce((sum, c) => sum + parseGrams(c.gold_grams), 0) || 0)}g
               </div>
               <p className="text-sm text-gray-500">Total Gold</p>
             </CardContent>
@@ -189,15 +195,15 @@ export default function VaultPhysicalRegistry() {
                   <tbody className="divide-y">
                     {filteredCertificates.map((cert) => (
                       <tr key={cert.id} className="hover:bg-gray-50">
-                        <td className="p-3 font-mono text-xs">{cert.physicalStorageRef}</td>
+                        <td className="p-3 font-mono text-xs">{cert.physical_storage_ref}</td>
                         <td className="p-3">{cert.issuer}</td>
-                        <td className="p-3 text-right font-medium">{formatGrams(cert.goldGrams)}</td>
+                        <td className="p-3 text-right font-medium">{formatGrams(parseGrams(cert.gold_grams))}</td>
                         <td className="p-3">
-                          <span className="text-gray-600">{cert.vaultLocationName}</span>
-                          <span className="text-xs text-gray-400 ml-1">({cert.countryCode})</span>
+                          <span className="text-gray-600">{cert.vault_location_name || 'N/A'}</span>
+                          <span className="text-xs text-gray-400 ml-1">({cert.country_code || '-'})</span>
                         </td>
                         <td className="p-3 text-gray-500">
-                          {format(new Date(cert.issuedAt), 'MMM dd, yyyy')}
+                          {cert.issued_at ? format(new Date(cert.issued_at), 'MMM dd, yyyy') : 'N/A'}
                         </td>
                         <td className="p-3 text-center">{getStatusBadge(cert.status)}</td>
                         <td className="p-3 text-center">

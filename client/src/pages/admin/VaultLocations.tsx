@@ -217,15 +217,45 @@ export default function VaultLocations() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">No Routing Rules</h3>
-                  <p className="text-gray-500 mt-1">Configure country-to-vault routing rules to automate deposit allocation.</p>
-                  <Button className="mt-4" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Routing Rule
-                  </Button>
-                </div>
+                {loadingRouting ? (
+                  <div className="text-center py-8 text-gray-500">Loading...</div>
+                ) : (routingData?.rules?.length || 0) === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900">No Routing Rules</h3>
+                    <p className="text-gray-500 mt-1">Configure country-to-vault routing rules to automate deposit allocation.</p>
+                    <Button className="mt-4" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Routing Rule
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {routingData?.rules?.map((rule: any) => (
+                      <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-lg font-bold text-blue-600">{rule.country_code}</span>
+                          </div>
+                          <div>
+                            <p className="font-medium">{rule.country_name}</p>
+                            <p className="text-sm text-gray-500">Priority: {rule.priority}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {rule.is_active ? (
+                            <Badge className="bg-green-100 text-green-700">Active</Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
+                          )}
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
