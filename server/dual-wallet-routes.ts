@@ -13,7 +13,8 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { 
   vaultOwnershipSummary, 
   vaultLedgerEntries, 
-  certificates
+  certificates,
+  transactions
 } from "@shared/schema";
 import { getBalanceSummary, validateSpend, validateInternalTransfer, type GoldWalletType } from "./spend-guard";
 import { 
@@ -121,11 +122,27 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     }
 
     const currentGoldPrice = await getGoldPricePerGram();
-    const transactionId = crypto.randomUUID();
     const now = new Date();
+    let generatedTxId: string = '';
 
     await db.transaction(async (tx) => {
       if (fromWalletType === 'MPGW' && toWalletType === 'FPGW') {
+        const [insertedTx] = await tx.insert(transactions).values({
+          userId,
+          type: 'Swap',
+          status: 'Completed',
+          amountGold: goldGrams.toFixed(6),
+          amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          goldWalletType: 'MPGW',
+          description: `MPGW to FPGW conversion: ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`,
+          sourceModule: 'dual-wallet',
+          createdAt: now
+        }).returning({ id: transactions.id });
+        
+        const actualTxId = insertedTx.id;
+        generatedTxId = actualTxId;
+        
         await tx
           .update(vaultOwnershipSummary)
           .set({
@@ -139,11 +156,12 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           goldGrams,
           lockedPriceUsd: currentGoldPrice,
           sourceType: 'conversion',
-          sourceTransactionId: transactionId,
+          sourceTransactionId: actualTxId,
           notes: notes || `MPGW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
         });
 
         const balanceSummary = await getBalanceSummary(userId);
+        
         await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'MPGW_To_FPGW',
@@ -153,7 +171,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           fromGoldWalletType: 'MPGW',
           toGoldWalletType: 'FPGW',
           balanceAfterGrams: (balanceSummary.total.totalGrams).toFixed(6),
-          transactionId,
+          transactionId: actualTxId,
           notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
         });
 
@@ -170,7 +188,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           toGoldWalletType: 'FPGW',
           conversionPriceUsd: currentGoldPrice.toFixed(2),
           status: 'Active',
-          transactionId,
+          transactionId: actualTxId,
           issuedAt: now
         });
 
@@ -194,6 +212,23 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           : currentGoldPrice;
 
         const balanceSummaryFpgw = await getBalanceSummary(userId);
+        
+        const [insertedTxFpgw] = await tx.insert(transactions).values({
+          userId,
+          type: 'Swap',
+          status: 'Completed',
+          amountGold: goldGrams.toFixed(6),
+          amountUsd: consumption.weightedValueUsd.toFixed(2),
+          goldPriceUsdPerGram: avgPrice.toFixed(2),
+          goldWalletType: 'FPGW',
+          description: `FPGW to MPGW conversion: ${goldGrams.toFixed(6)}g (cost basis: $${avgPrice.toFixed(2)}/g)`,
+          sourceModule: 'dual-wallet',
+          createdAt: now
+        }).returning({ id: transactions.id });
+        
+        const actualTxIdFpgw = insertedTxFpgw.id;
+        generatedTxId = actualTxIdFpgw;
+        
         await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'FPGW_To_MPGW',
@@ -203,7 +238,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           fromGoldWalletType: 'FPGW',
           toGoldWalletType: 'MPGW',
           balanceAfterGrams: (balanceSummaryFpgw.total.totalGrams).toFixed(6),
-          transactionId,
+          transactionId: actualTxIdFpgw,
           notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
         });
 
@@ -220,7 +255,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           toGoldWalletType: 'MPGW',
           conversionPriceUsd: avgPrice.toFixed(2),
           status: 'Active',
-          transactionId,
+          transactionId: actualTxIdFpgw,
           issuedAt: now
         });
       }
@@ -238,7 +273,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     res.json({
       success: true,
       message: `Successfully transferred ${goldGrams.toFixed(6)}g from ${fromWalletType} to ${toWalletType}`,
-      transactionId,
+      transactionId: generatedTxId,
       balance: updatedBalance
     });
   } catch (error: any) {
