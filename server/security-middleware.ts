@@ -24,6 +24,8 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/gold-price',
   '/api/platform-config/public',
   '/api/cms/',
+  '/api/b2b/',
+  '/api/wingold/webhooks',
 ];
 
 // Generate secure CSRF token

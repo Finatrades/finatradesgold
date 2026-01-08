@@ -333,6 +333,9 @@ app.use((req, res, next) => {
     '/api/binancepay/webhook',
     '/api/ngenius/webhook',
     '/api/stripe/webhook',
+    // B2B API (uses API key authentication)
+    '/api/b2b/',
+    '/api/wingold/webhooks',
   ];
   
   const isExempt = csrfExemptPaths.some(path => req.path.startsWith(path));

@@ -50,6 +50,8 @@ defaultBucketID = "replit-objstore-d6d25417-a9e4-4875-87ad-0dabe61bcc99"
 [userenv.shared]
 NGENIUS_OUTLET_REF = "e1dd74c3-7c14-46f0-9875-53ff4a517617"
 AWS_RDS_RELAXED_SSL = "true"
+FINATRADES_API_KEY = "ft-test-api-key-2025"
+WINGOLD_WEBHOOK_SECRET = "wg-webhook-secret-2025"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
