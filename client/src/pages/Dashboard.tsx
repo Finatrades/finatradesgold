@@ -16,7 +16,6 @@ import CreditCardPreview from '@/components/dashboard/CreditCardPreview';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { DualWalletSummary } from '@/components/dashboard/DualWalletSummary';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import { useDashboardTour } from '@/hooks/useDashboardTour';
 import { TourButton } from '@/components/tour/TourProvider';
@@ -321,11 +320,6 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-        </section>
-
-        {/* MPGW/FPGW Dual Wallet Summary */}
-        <section data-testid="dual-wallet-section">
-          <DualWalletSummary userId={user.id} />
         </section>
 
         {/* Wallet Cards Section */}
