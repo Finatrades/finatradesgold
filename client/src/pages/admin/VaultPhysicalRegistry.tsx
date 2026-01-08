@@ -35,7 +35,7 @@ export default function VaultPhysicalRegistry() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data, isLoading, refetch, isFetching } = useQuery<{ certificates: PhysicalCertificate[] }>({
-    queryKey: ['/api/admin/vault/physical-registry'],
+    queryKey: ['/api/admin/vault-management/physical-registry'],
     refetchInterval: 60000,
   });
 
