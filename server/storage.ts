@@ -9,7 +9,7 @@ import {
   contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
-  vaultDepositRequests, vaultWithdrawalRequests,
+  vaultDepositRequests, vaultWithdrawalRequests, vaultOwnershipSummary,
   binanceTransactions,
   ngeniusTransactions,
   paymentGatewaySettings,
