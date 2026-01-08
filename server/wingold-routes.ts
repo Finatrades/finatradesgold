@@ -36,7 +36,7 @@ router.post('/orders', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { barSize, barCount, usdAmount, goldPricePerGram, transactionId, preferredVaultLocation } = req.body;
+    const { barSize, barCount, vaultLocationId } = req.body;
 
     const sizeToGrams: Record<string, number> = { '1g': 1, '10g': 10, '100g': 100, '1kg': 1000 };
     const gramsPerBar = sizeToGrams[barSize];
@@ -47,29 +47,170 @@ router.post('/orders', async (req: Request, res: Response) => {
 
     const totalGrams = (gramsPerBar * barCount).toFixed(6);
 
+    const goldPriceRes = await fetch(`http://localhost:5000/api/gold-price`);
+    const goldPriceData = await goldPriceRes.json();
+    const goldPricePerGram = goldPriceData?.pricePerGram || 142;
+    const usdAmount = (parseFloat(totalGrams) * goldPricePerGram).toFixed(2);
+
     const { orderId, referenceNumber } = await WingoldIntegrationService.createPurchaseOrder({
       userId: (req.user as any).id,
       barSize,
       barCount,
       totalGrams,
       usdAmount,
-      goldPricePerGram,
-      transactionId,
-      preferredVaultLocation
+      goldPricePerGram: goldPricePerGram.toFixed(6),
+      preferredVaultLocation: vaultLocationId
     });
 
-    const submitResult = await WingoldIntegrationService.submitOrderToWingold(orderId);
+    console.log(`[Wingold] Order ${referenceNumber} created - awaiting admin approval`);
 
-    res.json({
+    res.status(201).json({
       success: true,
       orderId,
       referenceNumber,
-      wingoldOrderId: submitResult.orderId,
-      estimatedFulfillmentTime: submitResult.estimatedFulfillmentTime
+      status: 'pending',
+      message: 'Order submitted for admin approval'
     });
   } catch (error) {
     console.error('[Wingold] Order creation failed:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Order creation failed' });
+  }
+});
+
+router.get('/orders/:userId', async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.params.userId;
+    if ((req.user as any).id !== userId && (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const orders = await db.select()
+      .from(wingoldPurchaseOrders)
+      .where(eq(wingoldPurchaseOrders.userId, userId))
+      .orderBy(desc(wingoldPurchaseOrders.createdAt));
+
+    res.json({ orders });
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch user orders:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+router.post('/orders/:orderId/approve', async (req: Request, res: Response) => {
+  try {
+    if (!req.user || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orderId = req.params.orderId;
+    
+    const [order] = await db.select()
+      .from(wingoldPurchaseOrders)
+      .where(eq(wingoldPurchaseOrders.id, orderId));
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: `Order is already ${order.status}` });
+    }
+
+    const submitResult = await WingoldIntegrationService.submitOrderToWingold(orderId);
+
+    console.log(`[Wingold] Order ${order.referenceNumber} approved by admin and submitted to Wingold`);
+
+    res.json({
+      success: true,
+      message: 'Order approved and submitted to Wingold',
+      wingoldOrderId: submitResult.orderId,
+      estimatedFulfillmentTime: submitResult.estimatedFulfillmentTime
+    });
+  } catch (error) {
+    console.error('[Wingold] Order approval failed:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Order approval failed' });
+  }
+});
+
+router.post('/orders/:orderId/reject', async (req: Request, res: Response) => {
+  try {
+    if (!req.user || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orderId = req.params.orderId;
+    const { reason } = req.body;
+    
+    const [order] = await db.select()
+      .from(wingoldPurchaseOrders)
+      .where(eq(wingoldPurchaseOrders.id, orderId));
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: `Order is already ${order.status}` });
+    }
+
+    await db.update(wingoldPurchaseOrders)
+      .set({
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        errorMessage: reason || 'Rejected by admin',
+        updatedAt: new Date()
+      })
+      .where(eq(wingoldPurchaseOrders.id, orderId));
+
+    console.log(`[Wingold] Order ${order.referenceNumber} rejected by admin: ${reason || 'No reason provided'}`);
+
+    res.json({
+      success: true,
+      message: 'Order rejected'
+    });
+  } catch (error) {
+    console.error('[Wingold] Order rejection failed:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Order rejection failed' });
+  }
+});
+
+router.get('/admin/pending-orders', async (req: Request, res: Response) => {
+  try {
+    if (!req.user || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orders = await db.select()
+      .from(wingoldPurchaseOrders)
+      .where(eq(wingoldPurchaseOrders.status, 'pending'))
+      .orderBy(desc(wingoldPurchaseOrders.createdAt));
+
+    res.json({ orders });
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch pending orders:', error);
+    res.status(500).json({ error: 'Failed to fetch pending orders' });
+  }
+});
+
+router.get('/admin/all-orders', async (req: Request, res: Response) => {
+  try {
+    if (!req.user || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orders = await db.select()
+      .from(wingoldPurchaseOrders)
+      .orderBy(desc(wingoldPurchaseOrders.createdAt))
+      .limit(100);
+
+    res.json({ orders });
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch all orders:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
 
@@ -116,7 +257,7 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
       .from(wingoldVaultLocations)
       .where(eq(wingoldVaultLocations.isActive, true));
     
-    res.json(locations);
+    res.json({ locations });
   } catch (error) {
     console.error('[Wingold] Failed to fetch vault locations:', error);
     res.status(500).json({ error: 'Failed to fetch vault locations' });
