@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
-import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText, CheckCircle, AlertCircle, XCircle, X, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Briefcase, Loader2, Lock, Clock, Award, FileText, CheckCircle, AlertCircle, XCircle, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
@@ -11,7 +11,6 @@ import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
 import VaultActivityList from '@/components/finavault/VaultActivityList';
 import CertificatesView from '@/components/finavault/CertificatesView';
-import BuyGoldBars from '@/components/finavault/BuyGoldBars';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -794,14 +793,6 @@ export default function FinaVault() {
                     Cash Out
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="buy-gold-bars"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                    data-testid="tab-buy-gold-bars"
-                  >
-                    <Package className="w-4 h-4 mr-2" />
-                    Buy Gold Bars
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="ownership-ledger"
                     className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
                     data-testid="tab-ownership-ledger"
@@ -842,9 +833,6 @@ export default function FinaVault() {
                   <CashOutForm vaultBalance={totalVaultGold} />
                 </TabsContent>
 
-                <TabsContent value="buy-gold-bars">
-                  <BuyGoldBars />
-                </TabsContent>
 
                 <TabsContent value="ownership-ledger" className="mt-0">
                   <div className="space-y-6">
