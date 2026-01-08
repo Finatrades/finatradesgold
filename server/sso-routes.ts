@@ -71,6 +71,14 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+      },
       iss: "finatrades.com",
     };
 
@@ -110,6 +118,14 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+      },
       iss: "finatrades.com",
     };
 
@@ -144,6 +160,14 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
       firstName: user.firstName,
       lastName: user.lastName,
       finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+      },
       iss: "finatrades.com",
     };
 
