@@ -47,7 +47,7 @@ export default function VaultReconciliation() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch, isFetching } = useQuery<ReconciliationResult>({
-    queryKey: ['/api/admin/vault-management/reconciliation'],
+    queryKey: ['/api/admin/vault/reconciliation'],
   });
 
   const formatGrams = (grams: number) => {

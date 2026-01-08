@@ -46,7 +46,7 @@ interface VaultLocation {
 
 export default function VaultDashboard() {
   const { data, isLoading, refetch, isFetching } = useQuery<VaultDashboardData>({
-    queryKey: ['/api/admin/vault-management/overview'],
+    queryKey: ['/api/admin/vault/overview'],
     refetchInterval: 60000,
   });
 

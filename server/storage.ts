@@ -5270,13 +5270,15 @@ export class DatabaseStorage implements IStorage {
 
   // Vault Overview Data for Dashboard
   async getVaultOverviewData(): Promise<any> {
+    // Query existing wallets table for total gold held by users
+    // Currently all balances are treated as MPGW until dual-wallet system is fully implemented
     const digitalResult = await db.execute(sql`
       SELECT 
-        COALESCE(SUM(CASE WHEN gold_wallet_type = 'MPGW' OR gold_wallet_type IS NULL THEN gold_balance_grams ELSE 0 END), 0) as mpgw_grams,
-        COUNT(CASE WHEN gold_wallet_type = 'MPGW' OR gold_wallet_type IS NULL THEN 1 END) as mpgw_count,
-        COALESCE(SUM(CASE WHEN gold_wallet_type = 'FPGW' THEN gold_balance_grams ELSE 0 END), 0) as fpgw_grams,
-        COUNT(CASE WHEN gold_wallet_type = 'FPGW' THEN 1 END) as fpgw_count,
-        COALESCE(SUM(gold_balance_grams), 0) as total_digital_grams
+        COALESCE(SUM(gold_grams), 0) as mpgw_grams,
+        COUNT(CASE WHEN gold_grams > 0 THEN 1 END) as mpgw_count,
+        0 as fpgw_grams,
+        0 as fpgw_count,
+        COALESCE(SUM(gold_grams), 0) as total_digital_grams
       FROM wallets
     `);
 
