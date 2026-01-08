@@ -94,6 +94,7 @@ import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
+import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -25982,6 +25983,109 @@ ${message}
     } catch (error) {
       console.error('Get active announcements error:', error);
       res.status(500).json({ error: 'Failed to get announcements' });
+    }
+  });
+
+
+  // ============================================================================
+  // WORKFLOW AUDIT ENDPOINTS (Admin)
+  // ============================================================================
+  
+  // Get workflow audit summaries with filtering
+  app.get("/api/admin/workflow-audit/summaries", ensureAdminAsync, async (req, res) => {
+    try {
+      const { flowType, result, userId, limit } = req.query;
+      
+      const summaries = await workflowAuditService.getFlowSummaries({
+        flowType: flowType as FlowType | undefined,
+        overallResult: result as 'PASS' | 'FAIL' | undefined,
+        userId: userId as string | undefined,
+        limit: limit ? parseInt(limit as string) : 100,
+      });
+      
+      res.json({ summaries });
+    } catch (error: any) {
+      console.error('Get workflow audit summaries error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get summaries' });
+    }
+  });
+  
+  // Get workflow audit details for a specific flow instance
+  app.get("/api/admin/workflow-audit/flow/:flowInstanceId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { flowInstanceId } = req.params;
+      
+      const details = await workflowAuditService.getFlowDetails(flowInstanceId);
+      
+      if (!details.summary) {
+        return res.status(404).json({ error: 'Flow not found' });
+      }
+      
+      res.json(details);
+    } catch (error: any) {
+      console.error('Get workflow audit details error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get details' });
+    }
+  });
+  
+  // Compare a flow against expected steps
+  app.get("/api/admin/workflow-audit/compare/:flowInstanceId", ensureAdminAsync, async (req, res) => {
+    try {
+      const { flowInstanceId } = req.params;
+      
+      const comparison = await workflowAuditService.compareFlow(flowInstanceId);
+      
+      res.json(comparison);
+    } catch (error: any) {
+      console.error('Compare workflow flow error:', error);
+      res.status(500).json({ error: error.message || 'Failed to compare' });
+    }
+  });
+  
+  // Get expected steps for a flow type (for reference)
+  app.get("/api/admin/workflow-audit/expected-steps/:flowType", ensureAdminAsync, async (req, res) => {
+    try {
+      const flowType = req.params.flowType as FlowType;
+      
+      const expectedSteps = workflowAuditService.getExpectedSteps(flowType);
+      
+      if (expectedSteps.length === 0) {
+        return res.status(404).json({ error: 'Flow type not found' });
+      }
+      
+      res.json({ flowType, expectedSteps });
+    } catch (error: any) {
+      console.error('Get expected steps error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get expected steps' });
+    }
+  });
+  
+  // Get workflow audit statistics
+  app.get("/api/admin/workflow-audit/stats", ensureAdminAsync, async (req, res) => {
+    try {
+      const allSummaries = await workflowAuditService.getFlowSummaries({ limit: 1000 });
+      
+      const stats = {
+        total: allSummaries.length,
+        passed: allSummaries.filter(s => s.overallResult === 'PASS').length,
+        failed: allSummaries.filter(s => s.overallResult === 'FAIL').length,
+        pending: allSummaries.filter(s => s.overallResult === 'PENDING').length,
+        byFlowType: {} as Record<string, { total: number; passed: number; failed: number }>,
+      };
+      
+      for (const summary of allSummaries) {
+        if (!stats.byFlowType[summary.flowType]) {
+          stats.byFlowType[summary.flowType] = { total: 0, passed: 0, failed: 0 };
+        }
+        stats.byFlowType[summary.flowType].total++;
+        if (summary.overallResult === 'PASS') stats.byFlowType[summary.flowType].passed++;
+        if (summary.overallResult === 'FAIL') stats.byFlowType[summary.flowType].failed++;
+      }
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Get workflow audit stats error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get stats' });
     }
   });
 
