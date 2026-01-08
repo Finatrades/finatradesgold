@@ -27,14 +27,16 @@ interface VaultLocation {
   address: string;
   city: string;
   country: string;
-  capacityKg: number;
-  currentHoldingsKg: number;
-  insuranceProvider: string;
-  insuranceCoverageUsd: number;
-  securityLevel: string;
-  isActive: boolean;
-  contactEmail: string;
-  contactPhone: string;
+  country_code: string;
+  capacity_kg: string;
+  current_holdings_kg: string;
+  insurance_provider: string | null;
+  insurance_coverage_usd: string | null;
+  security_level: string;
+  is_active: boolean;
+  is_primary: boolean;
+  contact_email: string | null;
+  contact_phone: string | null;
 }
 
 export default function VaultLocations() {
@@ -52,16 +54,19 @@ export default function VaultLocations() {
     refetchInterval: 60000,
   });
 
-  const formatWeight = (kg: number) => {
-    if (kg >= 1000) {
-      return `${(kg / 1000).toFixed(2)} tonnes`;
+  const formatWeight = (kg: string | number | null | undefined) => {
+    const kgNum = typeof kg === 'string' ? parseFloat(kg) : (kg || 0);
+    if (kgNum >= 1000) {
+      return `${(kgNum / 1000).toFixed(2)} tonnes`;
     }
-    return `${kg.toFixed(2)} kg`;
+    return `${kgNum.toFixed(2)} kg`;
   };
 
-  const getUtilization = (current: number, capacity: number) => {
-    if (!capacity) return 0;
-    return (current / capacity) * 100;
+  const getUtilization = (current: string | number | null | undefined, capacity: string | number | null | undefined) => {
+    const currentNum = typeof current === 'string' ? parseFloat(current) : (current || 0);
+    const capacityNum = typeof capacity === 'string' ? parseFloat(capacity) : (capacity || 0);
+    if (!capacityNum) return 0;
+    return (currentNum / capacityNum) * 100;
   };
 
   return (
@@ -122,21 +127,24 @@ export default function VaultLocations() {
               </Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {locationsData?.locations?.map((location) => {
-                  const utilization = getUtilization(location.currentHoldingsKg, location.capacityKg);
+                {locationsData?.locations?.map((loc) => {
+                  const utilization = getUtilization(loc.current_holdings_kg, loc.capacity_kg);
                   return (
-                    <Card key={location.id} className={`${!location.isActive ? 'opacity-60' : ''}`}>
+                    <Card key={loc.id} className={`${!loc.is_active ? 'opacity-60' : ''}`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-purple-600" />
-                              {location.name}
+                              {loc.name}
                             </CardTitle>
-                            <CardDescription className="font-mono text-xs">{location.code}</CardDescription>
+                            <CardDescription className="font-mono text-xs">{loc.code}</CardDescription>
                           </div>
                           <div className="flex items-center gap-1">
-                            {location.isActive ? (
+                            {loc.is_primary && (
+                              <Badge className="bg-purple-100 text-purple-700 border-purple-200">Primary</Badge>
+                            )}
+                            {loc.is_active ? (
                               <Badge className="bg-green-100 text-green-700 border-green-200">Active</Badge>
                             ) : (
                               <Badge className="bg-gray-100 text-gray-700 border-gray-200">Inactive</Badge>
@@ -146,18 +154,18 @@ export default function VaultLocations() {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="text-sm text-gray-600">
-                          <p>{location.address}</p>
-                          <p>{location.city}, {location.country}</p>
+                          <p>{loc.address}</p>
+                          <p>{loc.city}, {loc.country}</p>
                         </div>
 
                         <div className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Capacity</span>
-                            <span className="font-medium">{formatWeight(location.capacityKg)}</span>
+                            <span className="font-medium">{formatWeight(loc.capacity_kg)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Current Holdings</span>
-                            <span className="font-medium">{formatWeight(location.currentHoldingsKg)}</span>
+                            <span className="font-medium">{formatWeight(loc.current_holdings_kg)}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                             <div
@@ -171,21 +179,21 @@ export default function VaultLocations() {
                         <div className="pt-2 border-t">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Shield className="h-4 w-4" />
-                            <span>{location.securityLevel}</span>
+                            <span>{loc.security_level}</span>
                           </div>
-                          {location.insuranceProvider && (
+                          {loc.insurance_provider && (
                             <p className="text-xs text-gray-500 mt-1">
-                              Insured by {location.insuranceProvider} (${(location.insuranceCoverageUsd / 1000000).toFixed(1)}M)
+                              Insured by {loc.insurance_provider}
                             </p>
                           )}
                         </div>
 
                         <div className="flex gap-2 pt-2">
-                          <Button variant="outline" size="sm" className="flex-1" data-testid={`button-edit-${location.id}`}>
+                          <Button variant="outline" size="sm" className="flex-1" data-testid={`button-edit-${loc.id}`}>
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" data-testid={`button-delete-${location.id}`}>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" data-testid={`button-delete-${loc.id}`}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
