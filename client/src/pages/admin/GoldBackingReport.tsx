@@ -450,29 +450,73 @@ export default function GoldBackingReport() {
                       <p className="text-sm text-gray-500 mt-1">Total gold owed to customers</p>
                       
                       <div className="mt-4 space-y-2">
+                        {/* MPGW - Market Price Gold Wallet */}
                         <button
                           onClick={() => handleOpenUserList('finapay')}
-                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border"
-                          data-testid="button-finapay-users"
+                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border border-blue-200"
+                          data-testid="button-mpgw-users"
                         >
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-100 rounded-lg">
-                              <CreditCard className="h-4 w-4 text-blue-600" />
+                              <TrendingUp className="h-4 w-4 text-blue-600" />
                             </div>
                             <div className="text-left">
-                              <span className="text-sm font-medium text-gray-900">FinaPay Wallets</span>
-                              <p className="text-xs text-gray-500">{data.customerLiabilities.wallets.count} accounts</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">MPGW</span>
+                                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Market Price</Badge>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {enhancedData?.customerLiabilities?.mpgw?.count || data.customerLiabilities.wallets.count} accounts
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-blue-600">{formatGrams(data.customerLiabilities.wallets.totalGrams)}g</span>
+                            <span className="font-bold text-blue-600">
+                              {formatGrams(enhancedData?.customerLiabilities?.mpgw?.totalGrams || data.customerLiabilities.wallets.totalGrams)}g
+                            </span>
                             <ChevronRight className="h-4 w-4 text-gray-400" />
                           </div>
                         </button>
 
+                        {/* FPGW - Fixed Price Gold Wallet */}
+                        <button
+                          onClick={() => handleOpenUserList('finapay')}
+                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer border border-amber-200"
+                          data-testid="button-fpgw-users"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-100 rounded-lg">
+                              <Shield className="h-4 w-4 text-amber-600" />
+                            </div>
+                            <div className="text-left">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">FPGW</span>
+                                <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Fixed Price</Badge>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {enhancedData?.customerLiabilities?.fpgw?.count || 0} accounts
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-right">
+                            <div>
+                              <span className="font-bold text-amber-600">
+                                {formatGrams(enhancedData?.customerLiabilities?.fpgw?.totalGrams || 0)}g
+                              </span>
+                              {enhancedData?.customerLiabilities?.fpgw?.weightedAvgPriceUsd ? (
+                                <p className="text-xs text-gray-400">
+                                  @ ${enhancedData.customerLiabilities.fpgw.weightedAvgPriceUsd.toFixed(2)}/g avg
+                                </p>
+                              ) : null}
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </button>
+
+                        {/* BNSL Accounts */}
                         <button
                           onClick={() => handleOpenUserList('bnsl')}
-                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer border"
+                          className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer border border-green-200"
                           data-testid="button-bnsl-users"
                         >
                           <div className="flex items-center gap-3">
