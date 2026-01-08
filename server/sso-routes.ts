@@ -21,9 +21,9 @@ const router = Router();
 const WINGOLD_URL = "https://wingoldandmetals--imcharanpratap.replit.app";
 
 function getPrivateKey(): string {
-  const privateKey = process.env.SSO_PRIVATE_KEY;
+  const privateKey = process.env.FINATRADES_PRIVATE_KEY || process.env.SSO_PRIVATE_KEY;
   if (!privateKey) {
-    throw new Error("SSO_PRIVATE_KEY environment variable is required for SSO functionality");
+    throw new Error("FINATRADES_PRIVATE_KEY environment variable is required for SSO functionality");
   }
   return privateKey.replace(/\\n/g, '\n');
 }
@@ -48,25 +48,20 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const fullName = `${user.firstName} ${user.lastName}`.trim();
     const payload = {
-      sub: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      fullName,
-      accountType: user.accountType,
-      source: "finatrades",
+      finatradesId: user.id,
+      iss: "finatrades.com",
     };
 
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
       expiresIn: "5m",
-      issuer: "finatrades.com",
-      audience: "wingoldandmetals.com"
     });
 
-    const redirectUrl = `${WINGOLD_URL}/sso-login?token=${encodeURIComponent(token)}`;
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
 
     res.json({ 
       redirectUrl,
@@ -76,6 +71,40 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
   } catch (error: any) {
     console.error("SSO token generation error:", error);
     res.status(500).json({ error: "Failed to generate SSO token" });
+  }
+});
+
+router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.redirect("/login?error=user_not_found");
+    }
+
+    const payload = {
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      iss: "finatrades.com",
+    };
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "5m",
+    });
+
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
+    res.redirect(redirectUrl);
+  } catch (error: any) {
+    console.error("SSO redirect error:", error);
+    res.redirect("/dashboard?error=sso_failed");
   }
 });
 
@@ -92,25 +121,20 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
       return res.redirect("/login?error=user_not_found");
     }
 
-    const fullName = `${user.firstName} ${user.lastName}`.trim();
     const payload = {
-      sub: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      fullName,
-      accountType: user.accountType,
-      source: "finatrades",
+      finatradesId: user.id,
+      iss: "finatrades.com",
     };
 
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
       expiresIn: "5m",
-      issuer: "finatrades.com",
-      audience: "wingoldandmetals.com"
     });
 
-    const redirectUrl = `${WINGOLD_URL}/sso-login?token=${encodeURIComponent(token)}`;
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
     res.redirect(redirectUrl);
   } catch (error: any) {
     console.error("SSO redirect error:", error);
