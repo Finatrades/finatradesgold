@@ -864,6 +864,7 @@ export class DatabaseStorage implements IStorage {
       recipientEmail: transactions.recipientEmail,
       referenceId: transactions.referenceId,
       sourceModule: transactions.sourceModule,
+      goldWalletType: transactions.goldWalletType,
       createdAt: transactions.createdAt,
       completedAt: transactions.completedAt,
     };
@@ -903,6 +904,7 @@ export class DatabaseStorage implements IStorage {
       sourceModule: transactions.sourceModule,
       createdAt: transactions.createdAt,
       completedAt: transactions.completedAt,
+      goldWalletType: transactions.goldWalletType,
     };
     const conditions: any[] = [eq(transactions.userId, userId)];
     if (status && status !== "all") conditions.push(eq(transactions.status, status as any));

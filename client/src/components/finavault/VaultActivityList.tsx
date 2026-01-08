@@ -24,6 +24,7 @@ interface VaultTransaction {
   createdAt: string;
   completedAt: string | null;
   rejectionReason?: string | null;
+  goldWalletType?: 'MPGW' | 'FPGW' | null;
   certificates: {
     id: string;
     certificateNumber: string;
@@ -635,6 +636,18 @@ export default function VaultActivityList() {
                           ? 'Acquire Gold'
                           : tx.type
                       }</span>
+                      {tx.goldWalletType && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            tx.goldWalletType === 'MPGW' 
+                              ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                              : 'bg-amber-100 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          {tx.goldWalletType}
+                        </Badge>
+                      )}
                       {tx.certificates.length > 0 && (
                         <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
                           <Award className="w-3 h-3 mr-1" />
