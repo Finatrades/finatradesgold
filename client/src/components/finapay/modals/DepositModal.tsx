@@ -918,7 +918,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           <p className="font-medium text-warning-muted-foreground text-xs mb-1">Important Notice:</p>
                           <p className="text-warning-muted-foreground text-xs leading-relaxed">
                             Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
-                            After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
+                            After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.
                           </p>
                         </div>
                       )}
@@ -1005,7 +1005,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 
                 <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                    <p className="font-semibold mb-1">Important Notice</p>
-                   <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
+                   <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
                 </div>
                 
                 {/* Terms and Conditions Checkbox */}
@@ -1169,7 +1169,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             
             <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
-               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
             </div>
           </div>
         ) : step === 'card-processing' ? (
@@ -1199,7 +1199,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div>
               <h3 className="text-2xl font-bold text-foreground">Payment Successful!</h3>
               <p className="text-muted-foreground mt-2">
-                Your gold has been credited to your FinaPay wallet.
+                Your gold has been credited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'}.
               </p>
             </div>
             <Button 
@@ -1329,7 +1329,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             
             <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
                <p className="font-semibold mb-1">Important Notice</p>
-               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your {selectedWalletType === 'MPGW' ? 'Market Price Gold Wallet (MPGW)' : 'Fixed Price Gold Wallet (FPGW)'} at the final confirmed rate.</p>
             </div>
           </div>
         ) : step === 'crypto-select-wallet' ? (
