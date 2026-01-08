@@ -4458,3 +4458,81 @@ export const vaultReconciliationRuns = pgTable("vault_reconciliation_runs", {
 export const insertVaultReconciliationRunSchema = createInsertSchema(vaultReconciliationRuns).omit({ id: true, createdAt: true, runDate: true });
 export type InsertVaultReconciliationRun = z.infer<typeof insertVaultReconciliationRunSchema>;
 export type VaultReconciliationRun = typeof vaultReconciliationRuns.$inferSelect;
+
+// ============================================
+// WORKFLOW AUDIT SYSTEM - Replication & Compare
+// ============================================
+
+export const workflowFlowTypeEnum = pgEnum('workflow_flow_type', [
+  'ADD_FUNDS',
+  'INTERNAL_TRANSFER_MPGW_TO_FPGW',
+  'INTERNAL_TRANSFER_FPGW_TO_MPGW',
+  'TRANSFER_USER_TO_USER',
+  'WITHDRAWAL',
+  'BNSL_ACTIVATION',
+  'BNSL_PAYOUT',
+  'FINABRIDGE_LOCK'
+]);
+
+export const workflowStepResultEnum = pgEnum('workflow_step_result', ['PASS', 'FAIL', 'PENDING', 'SKIPPED']);
+
+export const workflowAuditLogs = pgTable("workflow_audit_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  flowType: workflowFlowTypeEnum("flow_type").notNull(),
+  flowInstanceId: varchar("flow_instance_id", { length: 255 }).notNull(),
+  
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  depositRequestId: varchar("deposit_request_id", { length: 255 }),
+  
+  stepKey: varchar("step_key", { length: 100 }).notNull(),
+  stepOrder: integer("step_order").notNull(),
+  
+  expected: text("expected"),
+  actual: text("actual"),
+  
+  result: workflowStepResultEnum("result").notNull().default('PENDING'),
+  mismatchReason: text("mismatch_reason"),
+  
+  payloadJson: json("payload_json").$type<Record<string, any>>(),
+  
+  walletCredited: varchar("wallet_credited", { length: 20 }),
+  ledgerEntryId: varchar("ledger_entry_id", { length: 255 }),
+  certificateId: varchar("certificate_id", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWorkflowAuditLogSchema = createInsertSchema(workflowAuditLogs).omit({ id: true, createdAt: true });
+export type InsertWorkflowAuditLog = z.infer<typeof insertWorkflowAuditLogSchema>;
+export type WorkflowAuditLog = typeof workflowAuditLogs.$inferSelect;
+
+export const workflowAuditSummaries = pgTable("workflow_audit_summaries", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  flowType: workflowFlowTypeEnum("flow_type").notNull(),
+  flowInstanceId: varchar("flow_instance_id", { length: 255 }).notNull().unique(),
+  
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }),
+  
+  totalSteps: integer("total_steps").notNull().default(0),
+  passedSteps: integer("passed_steps").notNull().default(0),
+  failedSteps: integer("failed_steps").notNull().default(0),
+  pendingSteps: integer("pending_steps").notNull().default(0),
+  
+  overallResult: workflowStepResultEnum("overall_result").notNull().default('PENDING'),
+  
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWorkflowAuditSummarySchema = createInsertSchema(workflowAuditSummaries).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWorkflowAuditSummary = z.infer<typeof insertWorkflowAuditSummarySchema>;
+export type WorkflowAuditSummary = typeof workflowAuditSummaries.$inferSelect;
