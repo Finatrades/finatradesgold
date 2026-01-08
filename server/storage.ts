@@ -4010,14 +4010,14 @@ export class DatabaseStorage implements IStorage {
 
     // Get MPGW/FPGW breakdown from vault_ownership_summary
     const ownershipResults = await db.select({
-      mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}::numeric), 0)`,
-      mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}::numeric), 0)`,
-      mpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwLockedBnslGrams}::numeric), 0)`,
-      mpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwReservedTradeGrams}::numeric), 0)`,
-      fpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwAvailableGrams}::numeric), 0)`,
-      fpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwPendingGrams}::numeric), 0)`,
-      fpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwLockedBnslGrams}::numeric), 0)`,
-      fpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwReservedTradeGrams}::numeric), 0)`,
+      mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}), 0)`,
+      mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}), 0)`,
+      mpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwLockedBnslGrams}), 0)`,
+      mpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwReservedTradeGrams}), 0)`,
+      fpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwAvailableGrams}), 0)`,
+      fpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwPendingGrams}), 0)`,
+      fpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwLockedBnslGrams}), 0)`,
+      fpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwReservedTradeGrams}), 0)`,
     }).from(vaultOwnershipSummary);
 
     const mpgwAvailable = parseFloat(ownershipResults[0]?.mpgwAvailable || '0');
@@ -4035,19 +4035,19 @@ export class DatabaseStorage implements IStorage {
     // Count users with MPGW vs FPGW
     const mpgwCountResult = await db.select({
       count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.mpgwAvailableGrams}::numeric > 0 OR ${vaultOwnershipSummary.mpgwPendingGrams}::numeric > 0`);
+    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.mpgwAvailableGrams} > 0 OR ${vaultOwnershipSummary.mpgwPendingGrams} > 0`);
     const mpgwCount = parseInt(mpgwCountResult[0]?.count || '0');
 
     const fpgwCountResult = await db.select({
       count: sql<string>`COUNT(*)`,
-    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.fpgwAvailableGrams}::numeric > 0 OR ${vaultOwnershipSummary.fpgwPendingGrams}::numeric > 0`);
+    }).from(vaultOwnershipSummary).where(sql`${vaultOwnershipSummary.fpgwAvailableGrams} > 0 OR ${vaultOwnershipSummary.fpgwPendingGrams} > 0`);
     const fpgwCount = parseInt(fpgwCountResult[0]?.count || '0');
 
     // Get FPGW weighted average price from batches
     const fpgwBatchResult = await db.select({
-      totalGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}::numeric), 0)`,
-      totalValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}::numeric * ${fpgwBatches.purchasePriceUsdPerGram}::numeric), 0)`,
-    }).from(fpgwBatches).where(sql`${fpgwBatches.remainingGoldGrams}::numeric > 0`);
+      totalGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams}), 0)`,
+      totalValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGoldGrams} * ${fpgwBatches.purchasePriceUsdPerGram}), 0)`,
+    }).from(fpgwBatches).where(sql`${fpgwBatches.remainingGoldGrams} > 0`);
 
     const fpgwBatchGrams = parseFloat(fpgwBatchResult[0]?.totalGrams || '0');
     const fpgwBatchValue = parseFloat(fpgwBatchResult[0]?.totalValue || '0');
@@ -4056,8 +4056,8 @@ export class DatabaseStorage implements IStorage {
     // Get BNSL wallet liabilities
     const bnslResults = await db.select({
       count: sql<string>`COUNT(*)`,
-      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}::numeric), 0)`,
-      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}::numeric), 0)`,
+      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}), 0)`,
+      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}), 0)`,
     }).from(bnslWallets);
 
     const bnslCount = parseInt(bnslResults[0]?.count || '0');
