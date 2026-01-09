@@ -15819,6 +15819,14 @@ ${message}
         return res.status(403).json({ message: "Not authorized to send from this account" });
       }
       
+      
+      // P2P RULE: Direct SEND must use MPGW only
+      // Payment Requests can specify MPGW or FPGW, but direct sends are MPGW-only
+      if (goldWalletType && goldWalletType !== 'MPGW') {
+        return res.status(400).json({ 
+          message: "Direct P2P sends must use Market Price Gold Wallet (MPGW). To transfer from FPGW, create a payment request instead."
+        });
+      }
       // Validate gold amount is provided (platform is gold-only)
       if (!amountGold || parseFloat(amountGold) <= 0) {
         return res.status(400).json({ message: "Gold amount is required for transfers" });
