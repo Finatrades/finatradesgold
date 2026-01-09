@@ -27,6 +27,8 @@ interface Certificate {
   vaultLocation: string | null;
   wingoldStorageRef: string | null;
   goldWalletType: 'MPGW' | 'FPGW' | null;
+  fromGoldWalletType: 'MPGW' | 'FPGW' | null;
+  toGoldWalletType: 'MPGW' | 'FPGW' | null;
   fromUserId: string | null;
   toUserId: string | null;
   fromUserName: string | null;
@@ -211,13 +213,39 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               {isDigitalOwnership ? 'of Digital Ownership' : 'of Physical Storage'}
             </h3>
             <p className="text-white/40 text-sm font-mono">{certificate.certificateNumber}</p>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <Badge variant={certificate.status === 'Active' ? 'default' : 'secondary'} className={
                 certificate.status === 'Active' ? 'bg-green-600' : ''
               }>
                 {certificate.status}
               </Badge>
-              {certificate.goldWalletType && (
+              
+              {certificate.type === 'Conversion' && certificate.fromGoldWalletType && certificate.toGoldWalletType ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`px-3 py-1 ${
+                      certificate.fromGoldWalletType === 'FPGW' 
+                        ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
+                        : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                    }`}>
+                      {certificate.fromGoldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                    </Badge>
+                    <ArrowRight className="w-4 h-4 text-white/60" />
+                    <Badge variant="outline" className={`px-3 py-1 ${
+                      certificate.toGoldWalletType === 'FPGW' 
+                        ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
+                        : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                    }`}>
+                      {certificate.toGoldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-white/50 max-w-xs text-center">
+                    {certificate.toGoldWalletType === 'FPGW' 
+                      ? 'Converted to fixed price • Value locked at conversion rate' 
+                      : 'Converted to market price • Value now follows live gold price'}
+                  </p>
+                </div>
+              ) : certificate.goldWalletType ? (
                 <div className="flex flex-col items-center gap-1">
                   <Badge variant="outline" className={`px-3 py-1 ${
                     certificate.goldWalletType === 'FPGW' 
@@ -232,7 +260,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
                       : 'Value follows live gold price • Backed by physical gold'}
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
             
             {hasPartialSurrender && (
@@ -484,7 +512,25 @@ export default function CertificatesView() {
                         }`}>
                           {cert.status}
                         </Badge>
-                        {cert.goldWalletType && (
+                        {cert.type === 'Conversion' && cert.fromGoldWalletType && cert.toGoldWalletType ? (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className={`text-xs ${
+                              cert.fromGoldWalletType === 'FPGW' 
+                                ? 'border-blue-500 text-blue-600 bg-blue-50' 
+                                : 'border-amber-500 text-amber-600 bg-amber-50'
+                            }`}>
+                              {cert.fromGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                            </Badge>
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <Badge variant="outline" className={`text-xs ${
+                              cert.toGoldWalletType === 'FPGW' 
+                                ? 'border-blue-500 text-blue-600 bg-blue-50' 
+                                : 'border-amber-500 text-amber-600 bg-amber-50'
+                            }`}>
+                              {cert.toGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                            </Badge>
+                          </div>
+                        ) : cert.goldWalletType ? (
                           <Badge variant="outline" className={`text-xs ${
                             cert.goldWalletType === 'FPGW' 
                               ? 'border-blue-500 text-blue-600 bg-blue-50' 
@@ -492,7 +538,7 @@ export default function CertificatesView() {
                           }`}>
                             {cert.goldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
                       {isTransfer && (cert.fromUserName || cert.toUserName) ? (
                         <p className="text-sm truncate">
