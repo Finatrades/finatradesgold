@@ -34,6 +34,7 @@ interface VaultTransaction {
     goldWalletType?: 'MPGW' | 'FPGW' | null;
     fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
     toGoldWalletType?: 'MPGW' | 'FPGW' | null;
+    issuer?: string;
   }[];
 }
 
@@ -513,6 +514,7 @@ export default function VaultActivityList() {
           type: c.type,
           status: c.status,
           goldGrams: c.goldGrams,
+          issuer: c.issuer,
         })),
       };
     });
@@ -872,7 +874,7 @@ export default function VaultActivityList() {
                           </div>
                           <div>
                             <p className="text-muted-foreground text-xs">Issuer</p>
-                            <p className="font-medium text-xs">{cert.type === 'Digital Ownership' ? 'Finatrades SA' : 'Wingold & Metals DMCC'}</p>
+                            <p className="font-medium text-xs">{cert.issuer || 'Wingold Metals DMCC'}</p>
                           </div>
                         </div>
                         <div className="flex gap-2">
