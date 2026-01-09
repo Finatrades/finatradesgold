@@ -140,6 +140,7 @@ export default function AdminDashboard() {
             gradient="from-blue-500 to-indigo-600"
             loading={isLoading}
             percentChange={stats?.userGrowthChange ?? 0}
+            href="/admin/users"
           />
           <GlassStatsCard 
             title="Total Volume" 
@@ -149,6 +150,7 @@ export default function AdminDashboard() {
             gradient="from-purple-500 to-pink-600"
             loading={isLoading}
             percentChange={stats?.volumeChange ?? 0}
+            href="/admin/transactions"
           />
           <GlassStatsCard 
             title="Pending KYC" 
@@ -157,6 +159,7 @@ export default function AdminDashboard() {
             icon={<ShieldCheck className="w-6 h-6" />} 
             gradient="from-purple-500 to-red-500"
             loading={isLoading}
+            href="/admin/kyc"
           />
           <GlassStatsCard 
             title="Revenue" 
@@ -166,6 +169,7 @@ export default function AdminDashboard() {
             gradient="from-emerald-500 to-teal-600"
             loading={isLoading}
             percentChange={stats?.revenueChange ?? 0}
+            href="/admin/financial-reports"
           />
         </div>
 
@@ -444,7 +448,7 @@ export default function AdminDashboard() {
   );
 }
 
-function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, percentChange }: { 
+function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, percentChange, href }: { 
   title: string; 
   value: string; 
   subtitle: string; 
@@ -452,11 +456,12 @@ function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, perce
   gradient: string; 
   loading: boolean;
   percentChange?: number;
+  href?: string;
 }) {
-  return (
+  const content = (
     <div className="relative group">
       <div className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity duration-500`} />
-      <Card className="relative overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+      <Card className={`relative overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${href ? 'cursor-pointer' : ''}`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -493,6 +498,11 @@ function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, perce
       </Card>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+  return content;
 }
 
 function StatusItem({ label, status, color }: any) {
