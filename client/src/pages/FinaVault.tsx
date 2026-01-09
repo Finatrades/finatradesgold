@@ -769,54 +769,57 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-muted border border-border p-1 mb-8 w-full md:w-auto flex flex-wrap">
-                  <TabsTrigger 
-                    value="vault-activity"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                    data-testid="tab-vault-activity"
-                  >
-                    <History className="w-4 h-4 mr-2" />
-                    Vault Activity
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="new-request"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                  >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    New Deposit
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="cash-out"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                  >
-                    <Banknote className="w-4 h-4 mr-2" />
-                    Cash Out
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="ownership-ledger"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                    data-testid="tab-ownership-ledger"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    Ownership Ledger
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="certificates"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                    data-testid="tab-certificates"
-                  >
-                    <Award className="w-4 h-4 mr-2" />
-                    Certificates
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="terms"
-                    className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md"
-                    data-testid="tab-terms"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Terms & Conditions
-                  </TabsTrigger>
-                </TabsList>
+                {/* Horizontally scrollable tabs for mobile */}
+                <div className="-mx-4 px-4 md:mx-0 md:px-0 mb-6">
+                  <TabsList className="bg-muted/50 border border-border/50 p-1.5 inline-flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 min-w-full md:min-w-0 md:flex-wrap">
+                    <TabsTrigger 
+                      value="vault-activity"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      data-testid="tab-vault-activity"
+                    >
+                      <History className="w-4 h-4 mr-1.5" />
+                      <span className="hidden sm:inline">Vault </span>Activity
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="new-request"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-1.5" />
+                      <span className="hidden sm:inline">New </span>Deposit
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="cash-out"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
+                    >
+                      <Banknote className="w-4 h-4 mr-1.5" />
+                      Cash Out
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="ownership-ledger"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      data-testid="tab-ownership-ledger"
+                    >
+                      <Lock className="w-4 h-4 mr-1.5" />
+                      Ledger
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="certificates"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      data-testid="tab-certificates"
+                    >
+                      <Award className="w-4 h-4 mr-1.5" />
+                      Certs
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="terms"
+                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      data-testid="tab-terms"
+                    >
+                      <FileText className="w-4 h-4 mr-1.5" />
+                      Terms
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
                 <TabsContent value="vault-activity" className="mt-0">
                   <VaultActivityList />
