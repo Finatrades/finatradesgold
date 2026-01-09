@@ -281,16 +281,7 @@ export default function FinaVaultHistory() {
                                 </div>
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
-                                {isConversion ? (
-                                  <div>
-                                    <span className="text-red-600 font-medium">
-                                      {Math.abs(goldAmount).toFixed(4)}
-                                    </span>
-                                    <div className="text-xs text-muted-foreground">
-                                      {entry.action === 'MPGW_To_FPGW' ? '📈 MPGW' : '🔒 FPGW'}
-                                    </div>
-                                  </div>
-                                ) : isDebit ? (
+                                {isConversion || isDebit ? (
                                   <span className="text-red-600 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
@@ -299,16 +290,7 @@ export default function FinaVaultHistory() {
                                 )}
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
-                                {isConversion ? (
-                                  <div>
-                                    <span className="text-green-600 font-medium">
-                                      {Math.abs(goldAmount).toFixed(4)}
-                                    </span>
-                                    <div className="text-xs text-muted-foreground">
-                                      {entry.action === 'MPGW_To_FPGW' ? '🔒 FPGW' : '📈 MPGW'}
-                                    </div>
-                                  </div>
-                                ) : isCredit && !isDebit ? (
+                                {isConversion || (isCredit && !isDebit) ? (
                                   <span className="text-green-600 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
