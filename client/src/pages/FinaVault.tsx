@@ -769,54 +769,59 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Horizontally scrollable tabs for mobile */}
+                {/* Horizontally scrollable tabs for mobile, wrapped on desktop */}
                 <div className="-mx-4 px-4 md:mx-0 md:px-0 mb-6">
                   <TabsList className="bg-muted/50 border border-border/50 p-1.5 inline-flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 min-w-full md:min-w-0 md:flex-wrap">
                     <TabsTrigger 
                       value="vault-activity"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
                       data-testid="tab-vault-activity"
                     >
                       <History className="w-4 h-4 mr-1.5" />
-                      <span className="hidden sm:inline">Vault </span>Activity
+                      <span className="md:hidden">Activity</span>
+                      <span className="hidden md:inline">Vault Activity</span>
                     </TabsTrigger>
                     <TabsTrigger 
                       value="new-request"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
                     >
                       <PlusCircle className="w-4 h-4 mr-1.5" />
-                      <span className="hidden sm:inline">New </span>Deposit
+                      <span className="md:hidden">Deposit</span>
+                      <span className="hidden md:inline">New Deposit</span>
                     </TabsTrigger>
                     <TabsTrigger 
                       value="cash-out"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
                     >
                       <Banknote className="w-4 h-4 mr-1.5" />
                       Cash Out
                     </TabsTrigger>
                     <TabsTrigger 
                       value="ownership-ledger"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
                       data-testid="tab-ownership-ledger"
                     >
                       <Lock className="w-4 h-4 mr-1.5" />
-                      Ledger
+                      <span className="md:hidden">Ledger</span>
+                      <span className="hidden md:inline">Ownership Ledger</span>
                     </TabsTrigger>
                     <TabsTrigger 
                       value="certificates"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
                       data-testid="tab-certificates"
                     >
                       <Award className="w-4 h-4 mr-1.5" />
-                      Certs
+                      <span className="md:hidden">Certs</span>
+                      <span className="hidden md:inline">Certificates</span>
                     </TabsTrigger>
                     <TabsTrigger 
                       value="terms"
-                      className="whitespace-nowrap shrink-0 rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
                       data-testid="tab-terms"
                     >
                       <FileText className="w-4 h-4 mr-1.5" />
-                      Terms
+                      <span className="md:hidden">Terms</span>
+                      <span className="hidden md:inline">Terms & Conditions</span>
                     </TabsTrigger>
                   </TabsList>
                 </div>
