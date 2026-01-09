@@ -5099,3 +5099,221 @@ export const platformExposureSnapshots = pgTable("platform_exposure_snapshots", 
 export const insertPlatformExposureSnapshotSchema = createInsertSchema(platformExposureSnapshots).omit({ id: true, createdAt: true });
 export type InsertPlatformExposureSnapshot = z.infer<typeof insertPlatformExposureSnapshotSchema>;
 export type PlatformExposureSnapshot = typeof platformExposureSnapshots.$inferSelect;
+
+// ============================================
+// UNIFIED GOLD TALLY SYSTEM
+// ============================================
+
+// Transaction type for unified tally
+export const unifiedTallyTxnTypeEnum = pgEnum('unified_tally_txn_type', [
+  'FIAT_CRYPTO_DEPOSIT',    // Card, Bank, or Crypto payment for gold
+  'VAULT_GOLD_DEPOSIT'      // Physical gold deposited into vault
+]);
+
+// Source method for deposits
+export const unifiedTallySourceMethodEnum = pgEnum('unified_tally_source_method', [
+  'CARD',        // Credit/Debit card payment
+  'BANK',        // Bank wire transfer
+  'CRYPTO',      // Cryptocurrency payment
+  'VAULT_GOLD'   // Physical gold deposit
+]);
+
+// Pricing mode for gold rate
+export const unifiedTallyPricingModeEnum = pgEnum('unified_tally_pricing_mode', [
+  'MARKET',   // Market price at time of approval
+  'FIXED'     // Fixed price (FPGW)
+]);
+
+// Status enum for unified tally lifecycle
+export const unifiedTallyStatusEnum = pgEnum('unified_tally_status', [
+  'PENDING_PAYMENT',       // Awaiting payment confirmation
+  'PAYMENT_CONFIRMED',     // Payment received, awaiting physical allocation
+  'PHYSICAL_ORDERED',      // Order placed with Wingold
+  'PHYSICAL_ALLOCATED',    // Physical gold allocated (bars assigned)
+  'CERT_RECEIVED',         // Storage certificate received
+  'CREDITED',              // Wallet credited, awaiting completion
+  'COMPLETED',             // Fully completed
+  'REJECTED',              // Rejected by admin
+  'FAILED'                 // Failed (payment failed, etc.)
+]);
+
+// Unified Gold Tally Transactions - Single source of truth for all gold deposits
+export const unifiedTallyTransactions = pgTable("unified_tally_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Core transaction info
+  txnId: varchar("txn_id", { length: 50 }).notNull().unique(), // Human-readable ID like UGT-2026-001234
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  userName: varchar("user_name", { length: 255 }), // Denormalized for display
+  userEmail: varchar("user_email", { length: 255 }), // Denormalized for display
+  
+  // Transaction classification
+  txnType: unifiedTallyTxnTypeEnum("txn_type").notNull(),
+  sourceMethod: unifiedTallySourceMethodEnum("source_method").notNull(),
+  walletType: goldWalletTypeEnum("wallet_type").notNull().default('MPGW'),
+  status: unifiedTallyStatusEnum("status").notNull().default('PENDING_PAYMENT'),
+  
+  // Money In (for FIAT/CRYPTO deposits)
+  depositCurrency: varchar("deposit_currency", { length: 10 }).default('USD'),
+  depositAmount: decimal("deposit_amount", { precision: 18, scale: 2 }).default('0'),
+  feeAmount: decimal("fee_amount", { precision: 18, scale: 2 }).default('0'),
+  feeCurrency: varchar("fee_currency", { length: 10 }).default('USD'),
+  netAmount: decimal("net_amount", { precision: 18, scale: 2 }).default('0'), // deposit - fee
+  
+  // Payment reference
+  paymentReference: varchar("payment_reference", { length: 255 }),
+  paymentConfirmedAt: timestamp("payment_confirmed_at"),
+  
+  // Rate & Digital Credit calculation
+  pricingMode: unifiedTallyPricingModeEnum("pricing_mode").default('MARKET'),
+  goldRateValue: decimal("gold_rate_value", { precision: 12, scale: 4 }), // USD per gram
+  rateTimestamp: timestamp("rate_timestamp"),
+  goldEquivalentG: decimal("gold_equivalent_g", { precision: 18, scale: 6 }), // net_amount / rate
+  goldCreditedG: decimal("gold_credited_g", { precision: 18, scale: 6 }), // Actual grams credited
+  goldCreditedValueUsd: decimal("gold_credited_value_usd", { precision: 18, scale: 2 }), // Display value
+  
+  // FinaVault deposit (for VAULT_GOLD_DEPOSIT only)
+  vaultGoldDepositedG: decimal("vault_gold_deposited_g", { precision: 18, scale: 6 }),
+  vaultDepositCertificateId: varchar("vault_deposit_certificate_id", { length: 255 }),
+  vaultDepositVerifiedBy: varchar("vault_deposit_verified_by", { length: 255 }),
+  vaultDepositVerifiedAt: timestamp("vault_deposit_verified_at"),
+  
+  // Wingold & Metals procurement (physical proof)
+  wingoldOrderId: varchar("wingold_order_id", { length: 100 }),
+  wingoldSupplierInvoiceId: varchar("wingold_supplier_invoice_id", { length: 100 }),
+  physicalGoldAllocatedG: decimal("physical_gold_allocated_g", { precision: 18, scale: 6 }),
+  wingoldBuyRate: decimal("wingold_buy_rate", { precision: 12, scale: 4 }), // USD per gram Wingold bought at
+  wingoldCostUsd: decimal("wingold_cost_usd", { precision: 18, scale: 2 }), // Total cost to Wingold
+  barLotSerialsJson: json("bar_lot_serials_json").$type<Array<{
+    serial: string;
+    purity: number;
+    weightG: number;
+    notes?: string;
+  }>>(),
+  vaultLocation: varchar("vault_location", { length: 255 }),
+  
+  // Certificate (required for approval)
+  storageCertificateId: varchar("storage_certificate_id", { length: 255 }),
+  certificateFileUrl: text("certificate_file_url"),
+  certificateDate: timestamp("certificate_date"),
+  
+  // Costs & Profit calculation
+  gatewayCostUsd: decimal("gateway_cost_usd", { precision: 18, scale: 2 }).default('0'),
+  bankCostUsd: decimal("bank_cost_usd", { precision: 18, scale: 2 }).default('0'),
+  networkCostUsd: decimal("network_cost_usd", { precision: 18, scale: 2 }).default('0'),
+  opsCostUsd: decimal("ops_cost_usd", { precision: 18, scale: 2 }).default('0'),
+  totalCostsUsd: decimal("total_costs_usd", { precision: 18, scale: 2 }).default('0'),
+  netProfitUsd: decimal("net_profit_usd", { precision: 18, scale: 2 }).default('0'),
+  
+  // Audit trail
+  approvedBy: varchar("approved_by", { length: 255 }).references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
+  notes: text("notes"),
+  
+  // Metadata
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUnifiedTallyTransactionSchema = createInsertSchema(unifiedTallyTransactions)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    barLotSerialsJson: z.array(z.object({
+      serial: z.string(),
+      purity: z.number().default(999.9),
+      weightG: z.number(),
+      notes: z.string().optional(),
+    })).nullable().optional(),
+  });
+export type InsertUnifiedTallyTransaction = z.infer<typeof insertUnifiedTallyTransactionSchema>;
+export type UnifiedTallyTransaction = typeof unifiedTallyTransactions.$inferSelect;
+
+// Unified Tally Events - Audit trail for status changes
+export const unifiedTallyEventTypeEnum = pgEnum('unified_tally_event_type', [
+  'CREATED',
+  'PAYMENT_CONFIRMED',
+  'PHYSICAL_ORDERED',
+  'PHYSICAL_ALLOCATED',
+  'BARS_ASSIGNED',
+  'CERT_RECEIVED',
+  'APPROVED',
+  'CREDITED',
+  'COMPLETED',
+  'REJECTED',
+  'FAILED',
+  'NOTE_ADDED',
+  'MODIFIED'
+]);
+
+export const unifiedTallyEvents = pgTable("unified_tally_events", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tallyId: varchar("tally_id", { length: 255 }).notNull().references(() => unifiedTallyTransactions.id),
+  eventType: unifiedTallyEventTypeEnum("event_type").notNull(),
+  
+  // Event details
+  previousStatus: unifiedTallyStatusEnum("previous_status"),
+  newStatus: unifiedTallyStatusEnum("new_status"),
+  details: json("details").$type<Record<string, any>>(),
+  notes: text("notes"),
+  
+  // Who triggered this event
+  triggeredBy: varchar("triggered_by", { length: 255 }).references(() => users.id),
+  triggeredByName: varchar("triggered_by_name", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUnifiedTallyEventSchema = createInsertSchema(unifiedTallyEvents).omit({ id: true, createdAt: true });
+export type InsertUnifiedTallyEvent = z.infer<typeof insertUnifiedTallyEventSchema>;
+export type UnifiedTallyEvent = typeof unifiedTallyEvents.$inferSelect;
+
+// Wingold Allocations - Track physical gold allocated per user
+export const wingoldAllocations = pgTable("wingold_allocations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Links
+  tallyId: varchar("tally_id", { length: 255 }).references(() => unifiedTallyTransactions.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Allocation details
+  allocatedG: decimal("allocated_g", { precision: 18, scale: 6 }).notNull(),
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull(),
+  certificateId: varchar("certificate_id", { length: 255 }),
+  
+  // Wingold order info
+  wingoldOrderId: varchar("wingold_order_id", { length: 100 }),
+  wingoldInvoiceId: varchar("wingold_invoice_id", { length: 100 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWingoldAllocationSchema = createInsertSchema(wingoldAllocations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWingoldAllocation = z.infer<typeof insertWingoldAllocationSchema>;
+export type WingoldAllocation = typeof wingoldAllocations.$inferSelect;
+
+// Wingold Bars - Individual bar tracking
+export const wingoldBars = pgTable("wingold_bars", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Links
+  allocationId: varchar("allocation_id", { length: 255 }).references(() => wingoldAllocations.id),
+  tallyId: varchar("tally_id", { length: 255 }).references(() => unifiedTallyTransactions.id),
+  
+  // Bar details
+  serial: varchar("serial", { length: 100 }).notNull().unique(),
+  purity: decimal("purity", { precision: 5, scale: 2 }).notNull().default('999.9'),
+  weightG: decimal("weight_g", { precision: 18, scale: 6 }).notNull(),
+  vaultLocation: varchar("vault_location", { length: 255 }).notNull(),
+  
+  // Additional info
+  notes: text("notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldBarSchema = createInsertSchema(wingoldBars).omit({ id: true, createdAt: true });
+export type InsertWingoldBar = z.infer<typeof insertWingoldBarSchema>;
+export type WingoldBar = typeof wingoldBars.$inferSelect;
