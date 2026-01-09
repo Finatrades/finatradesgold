@@ -7,16 +7,22 @@ const router = Router();
 
 const listQuerySchema = z.object({
   page: z.string().optional().transform(v => v ? parseInt(v) : 1),
-  pageSize: z.string().optional().transform(v => v ? parseInt(v) : 25),
+  pageSize: z.string().optional().transform(v => v ? parseInt(v) : undefined),
+  limit: z.string().optional().transform(v => v ? parseInt(v) : undefined),
   status: z.string().optional(),
   txnType: z.string().optional(),
   sourceMethod: z.string().optional(),
+  depositMethod: z.string().optional(),
   walletType: z.string().optional(),
   userId: z.string().optional(),
   search: z.string().optional(),
   fromDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
   toDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
-});
+}).transform(data => ({
+  ...data,
+  pageSize: data.pageSize || data.limit || 25,
+  sourceMethod: data.sourceMethod || data.depositMethod,
+}));
 
 const createTallySchema = z.object({
   userId: z.string(),
@@ -226,6 +232,47 @@ router.get('/:txnId/wingold-form', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/:txnId/place-order', async (req: Request, res: Response) => {
+  try {
+    const { txnId } = req.params;
+    const { wingoldOrderId, notes } = req.body;
+
+    const transaction = await storage.getUnifiedTallyTransaction(txnId);
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    if (transaction.status !== 'PAYMENT_CONFIRMED') {
+      return res.status(400).json({ 
+        error: 'Payment must be confirmed before placing physical order',
+        code: 'INVALID_STATUS'
+      });
+    }
+
+    const previousStatus = transaction.status;
+    const updated = await storage.updateUnifiedTallyTransaction(txnId, {
+      status: 'PHYSICAL_ORDERED',
+      wingoldOrderId: wingoldOrderId || transaction.wingoldOrderId,
+      notes: notes || transaction.notes,
+    });
+
+    await storage.createUnifiedTallyEvent({
+      tallyId: transaction.id,
+      eventType: 'PHYSICAL_ORDERED',
+      previousStatus,
+      newStatus: 'PHYSICAL_ORDERED',
+      details: { wingoldOrderId: wingoldOrderId || 'pending' } as any,
+      triggeredBy: (req as any).user?.id,
+      triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    console.error('Error placing physical order:', error);
+    res.status(500).json({ error: error.message || 'Failed to place physical order' });
+  }
+});
+
 router.post('/:txnId/wingold-form/save-draft', async (req: Request, res: Response) => {
   try {
     const { txnId } = req.params;
@@ -271,10 +318,12 @@ router.post('/:txnId/wingold-form/submit', async (req: Request, res: Response) =
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
-    if (!['PAYMENT_CONFIRMED', 'PHYSICAL_ORDERED'].includes(transaction.status)) {
+    if (transaction.status !== 'PHYSICAL_ORDERED') {
       return res.status(400).json({ 
-        error: 'Cannot submit allocation - payment must be confirmed first',
-        code: 'INVALID_STATUS'
+        error: 'Physical order must be placed before submitting allocation. Use place-order endpoint first.',
+        code: 'INVALID_STATUS',
+        currentStatus: transaction.status,
+        requiredStatus: 'PHYSICAL_ORDERED'
       });
     }
 
