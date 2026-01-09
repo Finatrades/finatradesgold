@@ -26,6 +26,8 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/cms/',
   '/api/b2b/',
   '/api/wingold/webhooks',
+  '/api/certificates/verify',
+  '/api/verify-certificate',
 ];
 
 // Generate secure CSRF token
