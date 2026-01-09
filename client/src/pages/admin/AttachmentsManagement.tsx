@@ -16,6 +16,12 @@ import {
   Paperclip, Filter, User, Calendar
 } from 'lucide-react';
 
+interface DocumentRef {
+  id: string;
+  type: 'Invoice' | 'Certificate' | string;
+  name: string;
+}
+
 interface Attachment {
   id: string;
   source: string;
@@ -25,10 +31,25 @@ interface Attachment {
   userEmail: string;
   fileName: string;
   fileType: 'image' | 'document';
-  fileUrl: string;
+  fileUrl: string | DocumentRef;
   uploadedAt: string;
   status: string;
 }
+
+const getDocumentDownloadUrl = (fileUrl: string | DocumentRef, inline: boolean = false): string | null => {
+  if (typeof fileUrl === 'string') {
+    return fileUrl;
+  }
+  if (fileUrl && typeof fileUrl === 'object' && fileUrl.id && fileUrl.type) {
+    const docType = fileUrl.type.toLowerCase();
+    if (docType === 'invoice') {
+      return `/api/admin/documents/invoices/${fileUrl.id}/download${inline ? '?inline=1' : ''}`;
+    } else if (docType === 'certificate') {
+      return `/api/admin/documents/certificates/${fileUrl.id}/download${inline ? '?inline=1' : ''}`;
+    }
+  }
+  return null;
+};
 
 export default function AttachmentsManagement() {
   const { user } = useAuth();
@@ -66,6 +87,19 @@ export default function AttachmentsManagement() {
   const sources = Array.from(new Set(attachments.map(a => a.source)));
 
   const handlePrint = (attachment: Attachment) => {
+    const documentUrl = getDocumentDownloadUrl(attachment.fileUrl, true);
+    const isImage = attachment.fileType === 'image' && typeof attachment.fileUrl === 'string';
+    
+    if (attachment.fileType === 'document' && documentUrl) {
+      const printWindow = window.open(documentUrl, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => printWindow.print(), 500);
+        };
+      }
+      return;
+    }
+    
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -127,13 +161,13 @@ export default function AttachmentsManagement() {
               </div>
             </div>
             <div class="content">
-              ${attachment.fileType === 'image' 
+              ${isImage
                 ? `<img src="${attachment.fileUrl}" alt="${attachment.fileName}" onload="window.print();" />`
-                : `<p>Document: ${attachment.fileName}</p><a href="${attachment.fileUrl}" target="_blank">Open Document</a>`
+                : `<p>Document: ${attachment.fileName}</p><p class="no-print">The PDF will open in a new tab for printing.</p>`
               }
             </div>
             <script>
-              ${attachment.fileType !== 'image' ? 'window.print();' : ''}
+              ${!isImage ? 'setTimeout(function(){ window.print(); }, 100);' : ''}
             </script>
           </body>
         </html>
@@ -333,7 +367,7 @@ export default function AttachmentsManagement() {
                   {filteredAttachments.map((attachment) => (
                     <TableRow key={attachment.id} data-testid={`row-attachment-${attachment.id}`}>
                       <TableCell>
-                        {attachment.fileType === 'image' && attachment.fileUrl.startsWith('data:image') ? (
+                        {attachment.fileType === 'image' && typeof attachment.fileUrl === 'string' && attachment.fileUrl.startsWith('data:image') ? (
                           <img 
                             src={attachment.fileUrl} 
                             alt={attachment.fileName}
@@ -448,24 +482,32 @@ export default function AttachmentsManagement() {
               </div>
               
               <div className="border rounded-lg p-4 bg-white">
-                {selectedAttachment.fileType === 'image' && selectedAttachment.fileUrl.startsWith('data:image') ? (
+                {selectedAttachment.fileType === 'image' && typeof selectedAttachment.fileUrl === 'string' && selectedAttachment.fileUrl.startsWith('data:image') ? (
                   <img 
                     src={selectedAttachment.fileUrl} 
                     alt={selectedAttachment.fileName}
                     className="max-w-full max-h-[60vh] object-contain mx-auto"
                   />
+                ) : selectedAttachment.fileType === 'document' && getDocumentDownloadUrl(selectedAttachment.fileUrl, true) ? (
+                  <iframe 
+                    src={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || ''}
+                    className="w-full h-[60vh] border-0"
+                    title={selectedAttachment.fileName}
+                  />
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                     <p className="text-muted-foreground">Document preview not available</p>
-                    <a 
-                      href={selectedAttachment.fileUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-purple-600 hover:underline"
-                    >
-                      Open Document
-                    </a>
+                    {getDocumentDownloadUrl(selectedAttachment.fileUrl) && (
+                      <a 
+                        href={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || '#'}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline"
+                      >
+                        Open Document
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
@@ -482,10 +524,13 @@ export default function AttachmentsManagement() {
                 <Button 
                   variant="outline"
                   onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = selectedAttachment.fileUrl;
-                    link.download = selectedAttachment.fileName;
-                    link.click();
+                    const downloadUrl = getDocumentDownloadUrl(selectedAttachment.fileUrl);
+                    if (downloadUrl) {
+                      const link = document.createElement('a');
+                      link.href = downloadUrl;
+                      link.download = selectedAttachment.fileName;
+                      link.click();
+                    }
                   }}
                   data-testid="button-download"
                 >
