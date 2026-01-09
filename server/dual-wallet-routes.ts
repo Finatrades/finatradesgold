@@ -318,10 +318,43 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
             ));
         }
         
+        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events
+        // Physical Storage certs remain unchanged (goldWalletType=MPGW) but we record the reclassification
+        const physicalStorageCerts = await tx.select()
+          .from(certificates)
+          .where(and(
+            eq(certificates.userId, userId),
+            eq(certificates.type, 'Physical Storage'),
+            eq(certificates.status, 'Active')
+          ))
+          .orderBy(certificates.issuedAt);
+        
+        // Create WALLET_RECLASSIFICATION events for Physical Storage certificates (FIFO)
+        let physicalReclassRemaining = goldGrams;
+        for (const psCert of physicalStorageCerts) {
+          if (physicalReclassRemaining <= 0) break;
+          
+          const psGrams = parseFloat(psCert.goldGrams);
+          const reclassAmount = Math.min(physicalReclassRemaining, psGrams);
+          
+          await tx.insert(certificateEvents).values({
+            certificateId: psCert.id,
+            eventType: 'WALLET_RECLASSIFICATION',
+            gramsAffected: reclassAmount.toFixed(6),
+            gramsBefore: psGrams.toFixed(6),
+            gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
+            transactionId: actualTxId,
+            childCertificateId: newFpgwCert?.id,
+            notes: `Physical storage backing reclassified: MPGW → FPGW (${reclassAmount.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g, locked rate)`
+          });
+          
+          physicalReclassRemaining -= reclassAmount;
+        }
+        
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber, parentCertId },
+          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber, parentCertId, physicalReclassCount: physicalStorageCerts.length },
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
 
@@ -419,10 +452,114 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           issuedAt: now
         }).returning({ id: certificates.id });
         
+        // Find existing FPGW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
+        const fpgwCerts = await tx.select()
+          .from(certificates)
+          .where(and(
+            eq(certificates.userId, userId),
+            eq(certificates.type, 'Digital Ownership'),
+            eq(certificates.status, 'Active'),
+            eq(certificates.goldWalletType, 'FPGW')
+          ))
+          .orderBy(certificates.issuedAt);
+        
+        let remainingToDeductFpgw = goldGrams;
+        let parentCertIdFpgw: string | null = null;
+        
+        // Reduce remaining grams from existing FPGW certificates (FIFO order)
+        for (const fpgwCert of fpgwCerts) {
+          if (remainingToDeductFpgw <= 0) break;
+          
+          const currentRemainingFpgw = parseFloat(fpgwCert.remainingGrams || fpgwCert.goldGrams);
+          if (currentRemainingFpgw <= 0) continue;
+          
+          const deductAmountFpgw = Math.min(remainingToDeductFpgw, currentRemainingFpgw);
+          const newRemainingFpgw = currentRemainingFpgw - deductAmountFpgw;
+          
+          // Update the certificate's remaining grams
+          await tx.update(certificates)
+            .set({ remainingGrams: newRemainingFpgw.toFixed(6) })
+            .where(eq(certificates.id, fpgwCert.id));
+          
+          // Create partial surrender event
+          await tx.insert(certificateEvents).values({
+            certificateId: fpgwCert.id,
+            eventType: 'PARTIAL_SURRENDER',
+            gramsAffected: deductAmountFpgw.toFixed(6),
+            gramsBefore: currentRemainingFpgw.toFixed(6),
+            gramsAfter: newRemainingFpgw.toFixed(6),
+            transactionId: actualTxIdFpgw,
+            notes: `${deductAmountFpgw.toFixed(6)}g converted from FPGW to MPGW (FPGW cost: $${avgPrice.toFixed(2)}/g, market: $${currentGoldPrice.toFixed(2)}/g)`
+          });
+          
+          if (!parentCertIdFpgw) parentCertIdFpgw = fpgwCert.id;
+          remainingToDeductFpgw -= deductAmountFpgw;
+        }
+        
+        // Generate Digital Ownership Certificate for the MPGW unlock
+        const digitalCertNumberMpgw = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        const [newMpgwCert] = await tx.insert(certificates).values({
+          certificateNumber: digitalCertNumberMpgw,
+          userId,
+          type: 'Digital Ownership',
+          goldGrams: goldGrams.toFixed(6),
+          remainingGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          issuer: 'Wingold Metals DMCC',
+          goldWalletType: 'MPGW',
+          parentCertificateId: parentCertIdFpgw,
+          status: 'Active',
+          transactionId: actualTxIdFpgw,
+          issuedAt: now
+        } as any).returning({ id: certificates.id });
+        
+        // Update the partial surrender event with child certificate ID
+        if (parentCertIdFpgw && newMpgwCert) {
+          await tx.update(certificateEvents)
+            .set({ childCertificateId: newMpgwCert.id })
+            .where(and(
+              eq(certificateEvents.transactionId, actualTxIdFpgw),
+              eq(certificateEvents.eventType, 'PARTIAL_SURRENDER')
+            ));
+        }
+        
+        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events (FPGW -> MPGW)
+        const physicalStorageCertsFpgw = await tx.select()
+          .from(certificates)
+          .where(and(
+            eq(certificates.userId, userId),
+            eq(certificates.type, 'Physical Storage'),
+            eq(certificates.status, 'Active')
+          ))
+          .orderBy(certificates.issuedAt);
+        
+        // Create WALLET_RECLASSIFICATION events for Physical Storage certificates (FIFO)
+        let physicalReclassRemainingFpgw = goldGrams;
+        for (const psCert of physicalStorageCertsFpgw) {
+          if (physicalReclassRemainingFpgw <= 0) break;
+          
+          const psGrams = parseFloat(psCert.goldGrams);
+          const reclassAmount = Math.min(physicalReclassRemainingFpgw, psGrams);
+          
+          await tx.insert(certificateEvents).values({
+            certificateId: psCert.id,
+            eventType: 'WALLET_RECLASSIFICATION',
+            gramsAffected: reclassAmount.toFixed(6),
+            gramsBefore: psGrams.toFixed(6),
+            gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
+            transactionId: actualTxIdFpgw,
+            childCertificateId: newMpgwCert?.id,
+            notes: `Physical storage backing reclassified: FPGW → MPGW (${reclassAmount.toFixed(6)}g unlocked to market price)`
+          });
+          
+          physicalReclassRemainingFpgw -= reclassAmount;
+        }
+        
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { certificateNumber: certNumberFpgw },
+          { certificateNumber: certNumberFpgw, digitalOwnershipCertNumber: digitalCertNumberMpgw, parentCertId: parentCertIdFpgw, physicalReclassCount: physicalStorageCertsFpgw.length },
           { userId, transactionId: actualTxIdFpgw, certificateId: certFpgw.id }
         );
       }

@@ -1304,7 +1304,8 @@ export const certificateEventTypeEnum = pgEnum('certificate_event_type', [
   'PARTIAL_SURRENDER',   // Portion of certificate converted/transferred
   'FULL_SURRENDER',      // Full certificate converted/transferred
   'CANCELLED',           // Certificate cancelled
-  'UPDATED'              // Certificate details updated
+  'UPDATED',             // Certificate details updated
+  'WALLET_RECLASSIFICATION' // Physical storage backing reclassified between MPGW/FPGW
 ]);
 
 export const certificateEvents = pgTable("certificate_events", {
