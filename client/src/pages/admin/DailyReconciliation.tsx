@@ -202,17 +202,20 @@ export default function DailyReconciliation() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle>Gold Distribution</CardTitle>
+              <CardTitle>Gold Reconciliation</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">User Wallets</span>
-                  <span className="font-mono">{formatGold(summary?.totalGoldInWallets || 0)}</span>
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Physical Gold (Asset)</div>
+                <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                  <span className="text-sm font-medium text-green-700">Vault Storage</span>
+                  <span className="font-mono font-bold text-green-700">{formatGold(summary?.totalGoldInVault || 0)}</span>
                 </div>
+                <hr />
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Digital Claims (Liabilities)</div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Vault Storage</span>
-                  <span className="font-mono">{formatGold(summary?.totalGoldInVault || 0)}</span>
+                  <span className="text-sm">User Wallets (MPGW+FPGW)</span>
+                  <span className="font-mono">{formatGold(summary?.totalGoldInWallets || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">BNSL Locked</span>
@@ -222,10 +225,18 @@ export default function DailyReconciliation() {
                   <span className="text-sm">Trade Finance</span>
                   <span className="font-mono">{formatGold(summary?.totalGoldInTrades || 0)}</span>
                 </div>
+                <div className="flex items-center justify-between bg-blue-50 p-2 rounded">
+                  <span className="text-sm font-medium text-blue-700">Total Claims</span>
+                  <span className="font-mono font-bold text-blue-700">{formatGold((summary?.totalGoldInWallets || 0) + (summary?.totalGoldInBnsl || 0) + (summary?.totalGoldInTrades || 0))}</span>
+                </div>
                 <hr />
-                <div className="flex items-center justify-between font-bold">
-                  <span>Total</span>
-                  <span className="font-mono">{formatGold(summary?.totalGoldInSystem || 0)}</span>
+                <div className={`flex items-center justify-between p-2 rounded ${(summary?.difference || 0) === 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                  <span className={`text-sm font-bold ${(summary?.difference || 0) === 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {(summary?.difference || 0) >= 0 ? 'Surplus' : 'Shortfall'}
+                  </span>
+                  <span className={`font-mono font-bold ${(summary?.difference || 0) === 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatGold(summary?.difference || 0)}
+                  </span>
                 </div>
               </div>
             </CardContent>

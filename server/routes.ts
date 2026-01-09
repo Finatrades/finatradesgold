@@ -25430,7 +25430,11 @@ ${message}
         }
       }
       
-      const totalGoldInSystem = totalGoldInWallets + totalGoldInVault + totalGoldInBnsl;
+      // Physical gold in vault is the actual gold in system
+      // Wallets + BNSL are claims on that gold (liabilities)
+      const totalDigitalClaims = totalGoldInWallets + totalGoldInBnsl;
+      const totalGoldInSystem = totalGoldInVault; // Physical gold is the source of truth
+      const difference = totalGoldInVault - totalDigitalClaims; // Should be 0 if properly backed
       
       res.json({
         totalGoldInSystem,
@@ -25438,7 +25442,7 @@ ${message}
         totalGoldInVault,
         totalGoldInBnsl,
         totalGoldInTrades: 0,
-        difference: 0,
+        difference,
         lastReconciliation: new Date().toISOString(),
         pendingReviews: 0,
       });
