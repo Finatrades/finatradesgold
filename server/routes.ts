@@ -23677,6 +23677,7 @@ ${message}
           goldGrams: goldGrams.toString(),
           vaultLocation: vaultLocation,
           goldPriceUsdPerGram: goldPrice.toString(),
+          issuer: vaultLocation || 'Wingold & Metals DMCC',
         });
       } catch (certError) {
         console.error('[DEBUG] Certificate creation failed:', certError);
@@ -23703,6 +23704,7 @@ ${message}
         amountGold: goldGrams.toString(),
         amountUsd: paymentRequest.amountUsd,
         goldPriceUsdPerGram: goldPrice.toString(),
+          issuer: vaultLocation || 'Wingold & Metals DMCC',
         description: `Crypto deposit - $${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g)`,
         sourceModule: 'finapay',
         goldWalletType: walletType,
@@ -23970,6 +23972,7 @@ ${message}
         goldGrams: goldGrams.toString(),
         vaultLocation: 'Dubai - Wingold & Metals DMCC',
         goldPriceUsdPerGram: goldPrice.toString(),
+          issuer: vaultLocation || 'Wingold & Metals DMCC',
       });
       generatedCertificates.push(digitalCert);
       
@@ -23985,6 +23988,7 @@ ${message}
         goldGrams: goldGrams.toString(),
         vaultLocation: 'Dubai - Wingold & Metals DMCC',
         goldPriceUsdPerGram: goldPrice.toString(),
+          issuer: vaultLocation || 'Wingold & Metals DMCC',
       });
       generatedCertificates.push(storageCert);
       
