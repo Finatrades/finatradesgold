@@ -9,11 +9,12 @@ import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Clock, LogOut, User, Settings } from 'lucide-react';
+import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-// Light mode only - ThemeToggle removed
+import { useQuery } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'wouter';
 import { format } from 'date-fns';
@@ -23,12 +24,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { accountType, setAccountType } = useAccountType();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
   const [, setLocation] = useLocation();
   
   const { showWarning, remainingSeconds, stayActive, logout: idleLogout } = useIdleTimeout({
     timeoutMinutes: 30,
     warningMinutes: 2,
   });
+
+  const { data: goldPriceData } = useQuery({
+    queryKey: ['/api/gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const goldPrice = goldPriceData?.pricePerGram || 0;
+  const goldPriceSource = goldPriceData?.source || '';
+  const isGoldPriceLive = goldPriceSource && !goldPriceSource.includes('fallback');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,8 +63,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
         
-        <header className={`sticky top-0 z-30 h-16 transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-background border-b border-border'}`}>
-          <div className="h-full px-6 flex items-center justify-between">
+        <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-background border-b border-border'}`}>
+          {/* Top Info Bar with Gold Price, Settlement Assurance, 2FA */}
+          <div className="h-8 bg-gradient-to-r from-green-50 via-emerald-50 to-purple-50 border-b border-green-200 flex items-center justify-between px-4 text-xs">
+            {/* Gold Price */}
+            <div className="flex items-center gap-1.5 text-green-700 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
+            </div>
+            
+            {/* Settlement Assurance */}
+            <div 
+              className="flex items-center gap-1.5 text-green-700 cursor-pointer hover:text-green-900 transition-colors"
+              onClick={() => setShowAssuranceDialog(true)}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Settlement Assurance</span>
+              <span className="hidden md:inline text-green-600">• Backed by USD 42.134 Billion</span>
+            </div>
+            
+            {/* 2FA Reminder */}
+            {!user.mfaEnabled && (
+              <Link href="/security">
+                <div className="flex items-center gap-1.5 text-red-600 hover:text-red-800 cursor-pointer transition-colors">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Enable 2FA</span>
+                </div>
+              </Link>
+            )}
+          </div>
+          
+          {/* Main Header */}
+          <div className="h-14 px-6 flex items-center justify-between">
             
             <div className="flex items-center gap-4">
               <button 
@@ -144,6 +190,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onStayActive={stayActive}
           onLogout={idleLogout}
         />
+
+        {/* Settlement Assurance Dialog */}
+        <Dialog open={showAssuranceDialog} onOpenChange={setShowAssuranceDialog}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-white" />
+                </div>
+                <DialogTitle className="text-xl font-bold text-green-800">
+                  Guarantee of Settlement Assurance
+                </DialogTitle>
+              </div>
+              <DialogDescription className="sr-only">
+                Learn about our settlement assurance backed by verified gold reserves
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 text-sm text-gray-700">
+              <p>
+                <strong>Finatrades</strong> ensures complete settlement assurance through our partnership with verified geological gold reserves.
+              </p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">Key Highlights:</h4>
+                <ul className="list-disc list-inside space-y-1 text-green-700">
+                  <li>Backed by USD 42.134 Billion in verified geological gold reserves</li>
+                  <li>Third-party audited gold custody</li>
+                  <li>Real-time settlement tracking</li>
+                  <li>Regulatory compliant operations</li>
+                </ul>
+              </div>
+              <p className="text-xs text-gray-500">
+                All gold holdings are fully allocated and audited quarterly by independent auditors.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>
