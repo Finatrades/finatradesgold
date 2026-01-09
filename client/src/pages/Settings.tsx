@@ -289,7 +289,7 @@ export default function Settings() {
 
             <div className="space-y-4">
               <Label className="text-base">Theme</Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Button
                   variant={localPrefs.theme === 'light' ? 'default' : 'outline'}
                   className="h-auto py-4 flex-col gap-2"

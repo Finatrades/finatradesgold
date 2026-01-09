@@ -86,7 +86,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-purple-100 rounded-lg">
             <Layers className="w-5 h-5 text-fuchsia-600" />
@@ -96,24 +96,27 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             <p className="text-xs text-muted-foreground">MPGW (Market Price) & FPGW (Fixed Price)</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             size="sm" 
             variant="outline"
             onClick={() => setShowTransferModal(true)}
             data-testid="btn-transfer-wallets"
+            className="text-xs sm:text-sm"
           >
-            <ArrowRightLeft className="w-4 h-4 mr-2" />
-            Transfer Between Wallets
+            <ArrowRightLeft className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Transfer Between Wallets</span>
+            <span className="sm:hidden">Transfer</span>
           </Button>
           {onTransferFromVault && (
             <Button 
               size="sm" 
-              className="bg-purple-500 hover:bg-fuchsia-600 text-white" 
+              className="bg-purple-500 hover:bg-fuchsia-600 text-white text-xs sm:text-sm" 
               onClick={onTransferFromVault}
               data-testid="btn-transfer-vault"
             >
-              Transfer from FinaVault
+              <span className="hidden sm:inline">Transfer from FinaVault</span>
+              <span className="sm:hidden">From Vault</span>
             </Button>
           )}
         </div>

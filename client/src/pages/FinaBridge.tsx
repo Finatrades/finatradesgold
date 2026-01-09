@@ -238,7 +238,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto">
                           <div className="bg-muted/30 rounded-lg border border-border p-4 mb-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="text-muted-foreground">Agreement ID:</span>
                                 <span className="ml-2 font-semibold">{agreement.id.slice(0, 8)}...</span>
@@ -1927,7 +1927,7 @@ export default function FinaBridge() {
                             <h4 className="text-sm font-medium text-purple-800 mb-3 flex items-center gap-2">
                               <Shield className="w-4 h-4" /> Insurance
                             </h4>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <p className="text-xs text-muted-foreground">Coverage Type</p>
                                 <p className="font-medium text-sm">{request.insuranceCoverage || 'Not specified'}</p>
@@ -2135,7 +2135,7 @@ export default function FinaBridge() {
               
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-800 mb-3">Company Information</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Company Name *</label>
                     <input
@@ -2199,7 +2199,7 @@ export default function FinaBridge() {
 
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <h4 className="font-medium text-green-800 mb-3">Pricing & Terms</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quote Price (USD) *</label>
                     <input
@@ -2256,7 +2256,7 @@ export default function FinaBridge() {
 
               <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <h4 className="font-medium text-purple-800 mb-3">Shipping Details</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Port of Loading *</label>
                     <input
@@ -2448,7 +2448,7 @@ export default function FinaBridge() {
               </div>
             )}
             <form onSubmit={handleUpdateProposal} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Quote Price (USD) *</label>
                   <input
@@ -2471,7 +2471,7 @@ export default function FinaBridge() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Port of Loading</label>
                   <input
@@ -2495,7 +2495,7 @@ export default function FinaBridge() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Incoterms</label>
                   <select
@@ -2555,7 +2555,7 @@ export default function FinaBridge() {
                 Transfer gold from your main FinaPay wallet to your FinaBridge wallet for trade settlements.
               </p>
               
-              <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-xs text-muted-foreground">FinaPay Balance</p>
                   <p className="font-semibold text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
@@ -2614,7 +2614,7 @@ export default function FinaBridge() {
             </DialogHeader>
             {viewingProposal && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/5 rounded-lg border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-secondary/5 rounded-lg border">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Quote Price</p>
                     <p className="text-2xl font-bold text-primary">${parseFloat(viewingProposal.quotePrice).toLocaleString()}</p>
@@ -2627,7 +2627,7 @@ export default function FinaBridge() {
 
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Company Information</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground">Company Name</p>
                       <p className="font-medium">{viewingProposal.companyName || 'Not provided'}</p>
@@ -2645,7 +2645,7 @@ export default function FinaBridge() {
 
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground border-b pb-2">Shipping Details</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground">Port of Loading</p>
                       <p className="font-medium">{viewingProposal.portOfLoading || 'Not specified'}</p>

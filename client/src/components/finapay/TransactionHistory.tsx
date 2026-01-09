@@ -69,10 +69,10 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
               Transaction History
             </CardTitle>
             
-            <div className="flex gap-2">
-               <div className="relative">
+            <div className="flex flex-wrap gap-2">
+               <div className="relative flex-1 sm:flex-none">
                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                 <Input placeholder="Search ref..." className="h-8 w-[140px] pl-8 bg-background border-input text-xs" />
+                 <Input placeholder="Search ref..." className="h-8 w-full sm:w-[140px] pl-8 bg-background border-input text-xs" />
                </div>
                
                <DropdownMenu>

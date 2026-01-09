@@ -146,12 +146,12 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900">Welcome back, {userName}</h1>
             <p className="text-gray-500 text-sm">Here's an overview of your portfolio performance</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <TourButton tourId={tourId} className="border-purple-200 text-purple-700 hover:bg-purple-50" />
             {user.finatradesId && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-xl">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Finatrades ID</span>
-                <span className="text-sm font-bold text-purple-700 font-mono">{user.finatradesId}</span>
+              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-lg sm:rounded-xl">
+                <span className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">ID</span>
+                <span className="text-xs sm:text-sm font-bold text-purple-700 font-mono">{user.finatradesId}</span>
               </div>
             )}
           </div>

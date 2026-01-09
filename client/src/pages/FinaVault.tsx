@@ -602,9 +602,9 @@ export default function FinaVault() {
         {/* FinaVault Wallet Card */}
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
+              <div className="p-2 bg-purple-100 rounded-lg shrink-0">
                 <Database className="w-5 h-5 text-fuchsia-600" />
               </div>
               <h2 className="text-lg font-bold text-foreground">FinaVault Wallet</h2>
