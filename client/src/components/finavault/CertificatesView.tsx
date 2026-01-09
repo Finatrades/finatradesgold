@@ -218,13 +218,20 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
                 {certificate.status}
               </Badge>
               {certificate.goldWalletType && (
-                <Badge variant="outline" className={
-                  certificate.goldWalletType === 'FPGW' 
-                    ? 'border-blue-500 text-blue-400' 
-                    : 'border-purple-500 text-purple-400'
-                }>
-                  {certificate.goldWalletType === 'FPGW' ? 'Fixed Price Gold' : 'Market Price Gold'}
-                </Badge>
+                <div className="flex flex-col items-center gap-1">
+                  <Badge variant="outline" className={`px-3 py-1 ${
+                    certificate.goldWalletType === 'FPGW' 
+                      ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
+                      : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                  }`}>
+                    {certificate.goldWalletType === 'FPGW' ? '🔒 FPGW - Fixed Price Gold' : '📈 MPGW - Market Price Gold'}
+                  </Badge>
+                  <p className="text-xs text-white/50 max-w-xs text-center">
+                    {certificate.goldWalletType === 'FPGW' 
+                      ? 'Value locked at purchase price • Backed by cash reserve' 
+                      : 'Value follows live gold price • Backed by physical gold'}
+                  </p>
+                </div>
               )}
             </div>
             
@@ -480,10 +487,10 @@ export default function CertificatesView() {
                         {cert.goldWalletType && (
                           <Badge variant="outline" className={`text-xs ${
                             cert.goldWalletType === 'FPGW' 
-                              ? 'border-blue-500 text-blue-600' 
-                              : 'border-purple-500 text-purple-600'
+                              ? 'border-blue-500 text-blue-600 bg-blue-50' 
+                              : 'border-amber-500 text-amber-600 bg-amber-50'
                           }`}>
-                            {cert.goldWalletType}
+                            {cert.goldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
                           </Badge>
                         )}
                       </div>
