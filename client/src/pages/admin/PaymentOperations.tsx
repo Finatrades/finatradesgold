@@ -1277,19 +1277,23 @@ export default function FinaPayManagement() {
               <DialogDescription>Review and process this crypto payment request</DialogDescription>
             </DialogHeader>
             {selectedCrypto && (
-              <div className="grid grid-cols-2 gap-6">
-                {/* LEFT PANEL - Payment Details */}
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border">
-                    <h3 className="font-semibold text-sm text-gray-700 mb-3">Payment Information</h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-3 gap-4">
+                {/* PANEL 1 - Payment Info */}
+                <div className="space-y-3">
+                  <div className="p-3 bg-gray-50 rounded-lg border">
+                    <h3 className="font-semibold text-xs text-gray-600 mb-2 uppercase tracking-wide">Payment Info</h3>
+                    <div className="space-y-2">
                       <div>
-                        <p className="text-gray-500 text-xs">Amount (USD)</p>
-                        <p className="font-bold text-xl">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
+                        <p className="text-gray-500 text-xs">Amount</p>
+                        <p className="font-bold text-lg">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-xs">Original Gold</p>
-                        <p className="font-bold text-xl text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
+                        <p className="font-bold text-lg text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Original Price</p>
+                        <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-xs">Network</p>
@@ -1304,26 +1308,26 @@ export default function FinaPayManagement() {
                           {selectedCrypto.status}
                         </Badge>
                       </div>
-                      <div>
-                        <p className="text-gray-500 text-xs">Original Price</p>
-                        <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-xs">User</p>
-                        <p className="font-medium">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
-                        <p className="text-xs text-gray-400">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
-                      </div>
                     </div>
                   </div>
 
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-xs text-blue-600 mb-2 uppercase tracking-wide">User</h3>
+                    <p className="font-medium text-sm">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
+                    <p className="text-xs text-gray-500">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
+                  </div>
+                </div>
+
+                {/* PANEL 2 - Transaction Details */}
+                <div className="space-y-3">
                   {selectedCrypto.transactionHash && (
                     <div className="p-3 bg-gray-50 rounded-lg border">
-                      <p className="text-gray-500 text-xs mb-1">Transaction Hash</p>
-                      <p className="font-mono text-xs break-all">{selectedCrypto.transactionHash}</p>
+                      <h3 className="font-semibold text-xs text-gray-600 mb-2 uppercase tracking-wide">Transaction</h3>
+                      <p className="font-mono text-xs break-all mb-2">{selectedCrypto.transactionHash}</p>
                       <Button 
                         variant="link" 
                         size="sm" 
-                        className="p-0 h-auto mt-1 text-blue-600"
+                        className="p-0 h-auto text-blue-600"
                         onClick={() => {
                           const explorerUrls: Record<string, string> = {
                             'Bitcoin': 'https://blockchair.com/bitcoin/transaction/',
@@ -1343,12 +1347,37 @@ export default function FinaPayManagement() {
 
                   {selectedCrypto.walletConfig && (
                     <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-purple-700 text-xs mb-1">Receiving Wallet</p>
+                      <h3 className="font-semibold text-xs text-purple-600 mb-2 uppercase tracking-wide">Receiving Wallet</h3>
                       <p className="font-mono text-xs break-all">{selectedCrypto.walletConfig.walletAddress}</p>
                     </div>
                   )}
 
-                  {selectedCrypto.reviewNotes && (
+                  {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Review Notes</Label>
+                        <Textarea 
+                          value={cryptoReviewNotes}
+                          onChange={e => setCryptoReviewNotes(e.target.value)}
+                          placeholder="Add notes..."
+                          className="h-20 text-sm"
+                          data-testid="input-crypto-review-notes"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-red-600">Rejection Reason</Label>
+                        <Textarea 
+                          value={cryptoRejectionReason}
+                          onChange={e => setCryptoRejectionReason(e.target.value)}
+                          placeholder="Required if rejecting..."
+                          className="h-20 text-sm"
+                          data-testid="input-crypto-rejection-reason"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCrypto.reviewNotes && selectedCrypto.status !== 'Pending' && selectedCrypto.status !== 'Under Review' && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-blue-700 text-xs mb-1">Admin Notes</p>
                       <p className="text-sm">{selectedCrypto.reviewNotes}</p>
@@ -1363,144 +1392,113 @@ export default function FinaPayManagement() {
                   )}
                 </div>
 
-                {/* RIGHT PANEL - Approval Form */}
-                <div className="space-y-4">
+                {/* PANEL 3 - Approval Form */}
+                <div className="space-y-3">
                   {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
-                      <p className="text-green-800 text-sm font-bold">Streamlined Approval - Allocate & Credit</p>
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200 space-y-3">
+                      <h3 className="font-semibold text-xs text-green-700 uppercase tracking-wide">Allocate & Credit</h3>
                       
-                      <div className="space-y-2">
-                        <Label className="text-xs text-green-700 font-medium">Pricing Mode</Label>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-green-700">Pricing Mode</Label>
                         <RadioGroup 
                           value={cryptoPricingMode} 
                           onValueChange={(v) => setCryptoPricingMode(v as 'LIVE' | 'MANUAL')}
-                          className="flex gap-4"
+                          className="flex gap-3"
                         >
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1">
                             <RadioGroupItem value="LIVE" id="pricing-live" />
-                            <Label htmlFor="pricing-live" className="cursor-pointer text-sm font-medium">Live Gold Price</Label>
+                            <Label htmlFor="pricing-live" className="cursor-pointer text-xs font-medium">Live</Label>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1">
                             <RadioGroupItem value="MANUAL" id="pricing-manual" />
-                            <Label htmlFor="pricing-manual" className="cursor-pointer text-sm font-medium">Manual Override</Label>
+                            <Label htmlFor="pricing-manual" className="cursor-pointer text-xs font-medium">Manual</Label>
                           </div>
                         </RadioGroup>
                       </div>
 
                       {cryptoPricingMode === 'LIVE' && (
-                        <div className="p-3 bg-white rounded-lg border border-green-300">
+                        <div className="p-2 bg-white rounded border border-green-300">
                           {fetchingLivePrice ? (
                             <div className="flex items-center gap-2 text-green-700">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span className="text-sm">Fetching live gold price...</span>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span className="text-xs">Fetching...</span>
                             </div>
                           ) : liveGoldPrice ? (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
                               <div>
-                                <p className="text-xs text-green-600">Live Gold Price</p>
-                                <p className="font-bold text-lg text-green-800">${liveGoldPrice.toFixed(2)}/g</p>
+                                <p className="text-xs text-green-600">Price</p>
+                                <p className="font-bold text-green-800">${liveGoldPrice.toFixed(2)}/g</p>
                               </div>
                               <div>
                                 <p className="text-xs text-green-600">Gold to Credit</p>
-                                <p className="font-bold text-lg text-green-800">{getLiveCalculatedGrams().toFixed(6)}g</p>
+                                <p className="font-bold text-green-800">{getLiveCalculatedGrams().toFixed(6)}g</p>
                               </div>
                             </div>
                           ) : (
-                            <p className="text-red-600 text-sm">Failed to fetch live price. Try manual mode.</p>
+                            <p className="text-red-600 text-xs">Failed. Try manual.</p>
                           )}
                         </div>
                       )}
 
                       {cryptoPricingMode === 'MANUAL' && (
-                        <div className="p-3 bg-white rounded-lg border border-amber-300 space-y-2">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
-                              <Input 
-                                type="number"
-                                step="0.01"
-                                value={cryptoAdminPrice}
-                                onChange={e => handleCryptoAdminPriceChange(e.target.value)}
-                                placeholder="Price per gram"
-                                className="bg-white h-9"
-                                data-testid="input-crypto-admin-price"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
-                              <Input 
-                                type="number"
-                                step="0.000001"
-                                value={cryptoAdminGrams}
-                                onChange={e => handleCryptoAdminGramsChange(e.target.value)}
-                                placeholder="Grams to credit"
-                                className="bg-white h-9"
-                                data-testid="input-crypto-admin-grams"
-                              />
-                            </div>
+                        <div className="p-2 bg-white rounded border border-amber-300 space-y-2">
+                          <div>
+                            <Label className="text-xs text-amber-700">Price ($/g)</Label>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              value={cryptoAdminPrice}
+                              onChange={e => handleCryptoAdminPriceChange(e.target.value)}
+                              placeholder="0.00"
+                              className="bg-white h-8 text-sm"
+                              data-testid="input-crypto-admin-price"
+                            />
                           </div>
-                          <p className="text-xs text-amber-600">
-                            Changing price recalculates grams and vice versa.
-                          </p>
+                          <div>
+                            <Label className="text-xs text-amber-700">Gold (g)</Label>
+                            <Input 
+                              type="number"
+                              step="0.000001"
+                              value={cryptoAdminGrams}
+                              onChange={e => handleCryptoAdminGramsChange(e.target.value)}
+                              placeholder="0.0000"
+                              className="bg-white h-8 text-sm"
+                              data-testid="input-crypto-admin-grams"
+                            />
+                          </div>
                         </div>
                       )}
 
-                      <div className="space-y-2">
-                        <Label className="text-xs text-green-700 font-medium">Vault Location</Label>
+                      <div>
+                        <Label className="text-xs text-green-700">Vault Location</Label>
                         <Select value={cryptoVaultLocation} onValueChange={setCryptoVaultLocation}>
-                          <SelectTrigger className="bg-white h-9" data-testid="select-vault-location">
+                          <SelectTrigger className="bg-white h-8 text-sm" data-testid="select-vault-location">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Wingold & Metals DMCC">Wingold & Metals DMCC</SelectItem>
-                            <SelectItem value="Dubai Multi Commodities Centre">Dubai Multi Commodities Centre</SelectItem>
+                            <SelectItem value="Dubai Multi Commodities Centre">Dubai DMCC</SelectItem>
                             <SelectItem value="Emirates Gold">Emirates Gold</SelectItem>
                             <SelectItem value="Brinks Dubai">Brinks Dubai</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-xs text-green-700 font-medium">Wingold Order ID (Optional)</Label>
+                      <div>
+                        <Label className="text-xs text-green-700">Wingold Order ID</Label>
                         <Input 
                           value={cryptoWingoldOrderId}
                           onChange={e => setCryptoWingoldOrderId(e.target.value)}
-                          placeholder="e.g., WG-2026-001234"
-                          className="bg-white h-9"
+                          placeholder="Optional"
+                          className="bg-white h-8 text-sm"
                           data-testid="input-wingold-order-id"
                         />
                       </div>
 
                       <div className="p-2 bg-green-100 rounded text-xs text-green-700">
-                        <strong>On Approval:</strong> Physical Storage Certificate auto-generated, Unified Gold Tally auto-filled with COMPLETED status, user wallet credited immediately.
+                        <strong>On Approval:</strong> Certificate auto-generated, Tally auto-filled, wallet credited.
                       </div>
                     </div>
-                  )}
-
-                  {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
-                    <>
-                      <div>
-                        <Label className="text-sm">Review Notes</Label>
-                        <Textarea 
-                          value={cryptoReviewNotes}
-                          onChange={e => setCryptoReviewNotes(e.target.value)}
-                          placeholder="Add notes about this payment..."
-                          className="h-16"
-                          data-testid="input-crypto-review-notes"
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-sm text-red-600">Rejection Reason (if rejecting)</Label>
-                        <Textarea 
-                          value={cryptoRejectionReason}
-                          onChange={e => setCryptoRejectionReason(e.target.value)}
-                          placeholder="Required if rejecting..."
-                          className="h-16"
-                          data-testid="input-crypto-rejection-reason"
-                        />
-                      </div>
-                    </>
                   )}
                 </div>
               </div>
