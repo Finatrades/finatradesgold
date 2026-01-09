@@ -323,12 +323,13 @@ router.post('/:txnId/wingold-form/submit', async (req: Request, res: Response) =
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
-    if (transaction.status !== 'PHYSICAL_ORDERED') {
+    // Allow submission from PENDING_ALLOCATION (simplified workflow) or PHYSICAL_ORDERED (full workflow)
+    if (!['PENDING_ALLOCATION', 'PHYSICAL_ORDERED'].includes(transaction.status)) {
       return res.status(400).json({ 
-        error: 'Physical order must be placed before submitting allocation. Use place-order endpoint first.',
+        error: 'Transaction must be in PENDING_ALLOCATION or PHYSICAL_ORDERED status',
         code: 'INVALID_STATUS',
         currentStatus: transaction.status,
-        requiredStatus: 'PHYSICAL_ORDERED'
+        allowedStatuses: ['PENDING_ALLOCATION', 'PHYSICAL_ORDERED']
       });
     }
 
@@ -509,16 +510,21 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
       });
     }
 
-    if (transaction.status !== 'CERT_RECEIVED') {
+    // Allow from PHYSICAL_ALLOCATED (simplified) or CERT_RECEIVED (full workflow)
+    if (!['PHYSICAL_ALLOCATED', 'CERT_RECEIVED'].includes(transaction.status)) {
       return res.status(400).json({ 
-        error: 'Certificate must be received before approval',
-        code: 'INVALID_STATUS'
+        error: 'Transaction must be in PHYSICAL_ALLOCATED or CERT_RECEIVED status',
+        code: 'INVALID_STATUS',
+        currentStatus: transaction.status,
+        allowedStatuses: ['PHYSICAL_ALLOCATED', 'CERT_RECEIVED']
       });
     }
 
-    if (!transaction.storageCertificateId) {
+    // Certificate is optional for simplified workflow (PHYSICAL_ALLOCATED status)
+    // Required only for full workflow (CERT_RECEIVED status)
+    if (transaction.status === 'CERT_RECEIVED' && !transaction.storageCertificateId) {
       return res.status(400).json({ 
-        error: 'Storage certificate is required for approval',
+        error: 'Storage certificate is required for approval from CERT_RECEIVED status',
         code: 'MISSING_CERTIFICATE'
       });
     }
