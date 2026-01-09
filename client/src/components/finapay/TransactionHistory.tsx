@@ -151,14 +151,20 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
                       <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit</th>
                       <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Credit</th>
+                      <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Balance USD</th>
                       <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Status</th>
                       <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filteredTransactions.map((tx, index) => {
+                    {(() => {
+                      let runningBalance = 0;
+                      return filteredTransactions.map((tx, index) => {
                       const isDebit = tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal';
                       const isCredit = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
+                      
+                      if (isCredit) runningBalance += tx.amountUsd;
+                      else if (isDebit) runningBalance -= tx.amountUsd;
                       const transactionLabel = tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
                         : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
@@ -226,6 +232,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                               <span className="text-muted-foreground">—</span>
                             )}
                           </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            <div>
+                              <span className="font-medium text-foreground">
+                                ${Math.abs(runningBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                              <div className="text-xs text-muted-foreground">≈ {(runningBalance / goldPrice).toFixed(2)}g</div>
+                            </div>
+                          </td>
                           <td className="py-3 px-4">
                             <div className="flex justify-center">
                               <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
@@ -242,7 +256,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                           </td>
                         </tr>
                       );
-                    })}
+                    });
+                    })()}
                   </tbody>
                 </table>
               </div>
