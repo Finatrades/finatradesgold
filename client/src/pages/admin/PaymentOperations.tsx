@@ -1271,230 +1271,238 @@ export default function FinaPayManagement() {
         </Tabs>
 
         <Dialog open={cryptoDialogOpen} onOpenChange={setCryptoDialogOpen}>
-          <DialogContent className="max-w-xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Crypto Payment Details</DialogTitle>
               <DialogDescription>Review and process this crypto payment request</DialogDescription>
             </DialogHeader>
             {selectedCrypto && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Amount (USD)</p>
-                    <p className="font-bold text-xl">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
+              <div className="grid grid-cols-2 gap-6">
+                {/* LEFT PANEL - Payment Details */}
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg border">
+                    <h3 className="font-semibold text-sm text-gray-700 mb-3">Payment Information</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-gray-500 text-xs">Amount (USD)</p>
+                        <p className="font-bold text-xl">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Original Gold</p>
+                        <p className="font-bold text-xl text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Network</p>
+                        <p className="font-medium">{selectedCrypto.walletConfig?.networkLabel || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Status</p>
+                        <Badge variant={
+                          selectedCrypto.status === 'Credited' ? 'default' :
+                          selectedCrypto.status === 'Rejected' ? 'destructive' : 'secondary'
+                        }>
+                          {selectedCrypto.status}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Original Price</p>
+                        <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">User</p>
+                        <p className="font-medium">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
+                        <p className="text-xs text-gray-400">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Gold to Credit</p>
-                    <p className="font-bold text-xl text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Network</p>
-                    <p className="font-medium">{selectedCrypto.walletConfig?.networkLabel || 'Unknown'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Status</p>
-                    <Badge variant={
-                      selectedCrypto.status === 'Credited' ? 'default' :
-                      selectedCrypto.status === 'Rejected' ? 'destructive' : 'secondary'
-                    }>
-                      {selectedCrypto.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Original Gold Price</p>
-                    <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">User</p>
-                    <p className="font-medium">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
-                    <p className="text-xs text-gray-400">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
-                  </div>
+
+                  {selectedCrypto.transactionHash && (
+                    <div className="p-3 bg-gray-50 rounded-lg border">
+                      <p className="text-gray-500 text-xs mb-1">Transaction Hash</p>
+                      <p className="font-mono text-xs break-all">{selectedCrypto.transactionHash}</p>
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="p-0 h-auto mt-1 text-blue-600"
+                        onClick={() => {
+                          const explorerUrls: Record<string, string> = {
+                            'Bitcoin': 'https://blockchair.com/bitcoin/transaction/',
+                            'Ethereum': 'https://etherscan.io/tx/',
+                            'USDT (TRC20)': 'https://tronscan.org/#/transaction/',
+                            'USDT (ERC20)': 'https://etherscan.io/tx/',
+                          };
+                          const network = selectedCrypto.walletConfig?.networkLabel || '';
+                          const baseUrl = explorerUrls[network] || 'https://blockchair.com/search?q=';
+                          window.open(`${baseUrl}${selectedCrypto.transactionHash}`, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" /> View on Explorer
+                      </Button>
+                    </div>
+                  )}
+
+                  {selectedCrypto.walletConfig && (
+                    <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <p className="text-purple-700 text-xs mb-1">Receiving Wallet</p>
+                      <p className="font-mono text-xs break-all">{selectedCrypto.walletConfig.walletAddress}</p>
+                    </div>
+                  )}
+
+                  {selectedCrypto.reviewNotes && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-blue-700 text-xs mb-1">Admin Notes</p>
+                      <p className="text-sm">{selectedCrypto.reviewNotes}</p>
+                    </div>
+                  )}
+
+                  {selectedCrypto.rejectionReason && selectedCrypto.status !== 'Pending' && selectedCrypto.status !== 'Under Review' && (
+                    <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-red-700 text-xs mb-1">Rejection Reason</p>
+                      <p className="text-sm">{selectedCrypto.rejectionReason}</p>
+                    </div>
+                  )}
                 </div>
 
-                {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
-                    <p className="text-green-800 text-sm font-bold">Streamlined Approval - Allocate & Credit</p>
-                    
-                    {/* Pricing Mode Selection */}
-                    <div className="space-y-2">
-                      <Label className="text-xs text-green-700 font-medium">Pricing Mode</Label>
-                      <RadioGroup 
-                        value={cryptoPricingMode} 
-                        onValueChange={(v) => setCryptoPricingMode(v as 'LIVE' | 'MANUAL')}
-                        className="flex gap-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="LIVE" id="pricing-live" />
-                          <Label htmlFor="pricing-live" className="cursor-pointer font-medium">Live Gold Price</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="MANUAL" id="pricing-manual" />
-                          <Label htmlFor="pricing-manual" className="cursor-pointer font-medium">Manual Override</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {/* LIVE Pricing Display */}
-                    {cryptoPricingMode === 'LIVE' && (
-                      <div className="p-3 bg-white rounded-lg border border-green-300">
-                        {fetchingLivePrice ? (
-                          <div className="flex items-center gap-2 text-green-700">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Fetching live gold price...</span>
+                {/* RIGHT PANEL - Approval Form */}
+                <div className="space-y-4">
+                  {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
+                      <p className="text-green-800 text-sm font-bold">Streamlined Approval - Allocate & Credit</p>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-xs text-green-700 font-medium">Pricing Mode</Label>
+                        <RadioGroup 
+                          value={cryptoPricingMode} 
+                          onValueChange={(v) => setCryptoPricingMode(v as 'LIVE' | 'MANUAL')}
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="LIVE" id="pricing-live" />
+                            <Label htmlFor="pricing-live" className="cursor-pointer text-sm font-medium">Live Gold Price</Label>
                           </div>
-                        ) : liveGoldPrice ? (
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="MANUAL" id="pricing-manual" />
+                            <Label htmlFor="pricing-manual" className="cursor-pointer text-sm font-medium">Manual Override</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {cryptoPricingMode === 'LIVE' && (
+                        <div className="p-3 bg-white rounded-lg border border-green-300">
+                          {fetchingLivePrice ? (
+                            <div className="flex items-center gap-2 text-green-700">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="text-sm">Fetching live gold price...</span>
+                            </div>
+                          ) : liveGoldPrice ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-xs text-green-600">Live Gold Price</p>
+                                <p className="font-bold text-lg text-green-800">${liveGoldPrice.toFixed(2)}/g</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-green-600">Gold to Credit</p>
+                                <p className="font-bold text-lg text-green-800">{getLiveCalculatedGrams().toFixed(6)}g</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-red-600 text-sm">Failed to fetch live price. Try manual mode.</p>
+                          )}
+                        </div>
+                      )}
+
+                      {cryptoPricingMode === 'MANUAL' && (
+                        <div className="p-3 bg-white rounded-lg border border-amber-300 space-y-2">
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <p className="text-xs text-green-600">Live Gold Price</p>
-                              <p className="font-bold text-lg text-green-800">${liveGoldPrice.toFixed(2)}/g</p>
+                              <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                value={cryptoAdminPrice}
+                                onChange={e => handleCryptoAdminPriceChange(e.target.value)}
+                                placeholder="Price per gram"
+                                className="bg-white h-9"
+                                data-testid="input-crypto-admin-price"
+                              />
                             </div>
                             <div>
-                              <p className="text-xs text-green-600">Gold to Credit (Auto-Calculated)</p>
-                              <p className="font-bold text-lg text-green-800">{getLiveCalculatedGrams().toFixed(6)}g</p>
+                              <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
+                              <Input 
+                                type="number"
+                                step="0.000001"
+                                value={cryptoAdminGrams}
+                                onChange={e => handleCryptoAdminGramsChange(e.target.value)}
+                                placeholder="Grams to credit"
+                                className="bg-white h-9"
+                                data-testid="input-crypto-admin-grams"
+                              />
                             </div>
                           </div>
-                        ) : (
-                          <p className="text-red-600 text-sm">Failed to fetch live price. Try manual mode.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* MANUAL Pricing Inputs */}
-                    {cryptoPricingMode === 'MANUAL' && (
-                      <div className="p-3 bg-white rounded-lg border border-amber-300 space-y-3">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
-                            <Input 
-                              type="number"
-                              step="0.01"
-                              value={cryptoAdminPrice}
-                              onChange={e => handleCryptoAdminPriceChange(e.target.value)}
-                              placeholder="Price per gram"
-                              className="bg-white"
-                              data-testid="input-crypto-admin-price"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
-                            <Input 
-                              type="number"
-                              step="0.000001"
-                              value={cryptoAdminGrams}
-                              onChange={e => handleCryptoAdminGramsChange(e.target.value)}
-                              placeholder="Grams to credit"
-                              className="bg-white"
-                              data-testid="input-crypto-admin-grams"
-                            />
-                          </div>
+                          <p className="text-xs text-amber-600">
+                            Changing price recalculates grams and vice versa.
+                          </p>
                         </div>
-                        <p className="text-xs text-amber-600">
-                          Changing price recalculates grams and vice versa.
-                        </p>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-green-700 font-medium">Vault Location</Label>
+                        <Select value={cryptoVaultLocation} onValueChange={setCryptoVaultLocation}>
+                          <SelectTrigger className="bg-white h-9" data-testid="select-vault-location">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Wingold & Metals DMCC">Wingold & Metals DMCC</SelectItem>
+                            <SelectItem value="Dubai Multi Commodities Centre">Dubai Multi Commodities Centre</SelectItem>
+                            <SelectItem value="Emirates Gold">Emirates Gold</SelectItem>
+                            <SelectItem value="Brinks Dubai">Brinks Dubai</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    )}
 
-                    {/* Vault Location Dropdown */}
-                    <div className="space-y-2">
-                      <Label className="text-xs text-green-700 font-medium">Vault Location</Label>
-                      <Select value={cryptoVaultLocation} onValueChange={setCryptoVaultLocation}>
-                        <SelectTrigger className="bg-white" data-testid="select-vault-location">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Wingold & Metals DMCC">Wingold & Metals DMCC</SelectItem>
-                          <SelectItem value="Dubai Multi Commodities Centre">Dubai Multi Commodities Centre</SelectItem>
-                          <SelectItem value="Emirates Gold">Emirates Gold</SelectItem>
-                          <SelectItem value="Brinks Dubai">Brinks Dubai</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-green-700 font-medium">Wingold Order ID (Optional)</Label>
+                        <Input 
+                          value={cryptoWingoldOrderId}
+                          onChange={e => setCryptoWingoldOrderId(e.target.value)}
+                          placeholder="e.g., WG-2026-001234"
+                          className="bg-white h-9"
+                          data-testid="input-wingold-order-id"
+                        />
+                      </div>
+
+                      <div className="p-2 bg-green-100 rounded text-xs text-green-700">
+                        <strong>On Approval:</strong> Physical Storage Certificate auto-generated, Unified Gold Tally auto-filled with COMPLETED status, user wallet credited immediately.
+                      </div>
                     </div>
+                  )}
 
-                    {/* Wingold Order ID (Optional) */}
-                    <div className="space-y-2">
-                      <Label className="text-xs text-green-700 font-medium">Wingold Order ID (Optional)</Label>
-                      <Input 
-                        value={cryptoWingoldOrderId}
-                        onChange={e => setCryptoWingoldOrderId(e.target.value)}
-                        placeholder="e.g., WG-2026-001234"
-                        className="bg-white"
-                        data-testid="input-wingold-order-id"
-                      />
-                    </div>
+                  {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
+                    <>
+                      <div>
+                        <Label className="text-sm">Review Notes</Label>
+                        <Textarea 
+                          value={cryptoReviewNotes}
+                          onChange={e => setCryptoReviewNotes(e.target.value)}
+                          placeholder="Add notes about this payment..."
+                          className="h-16"
+                          data-testid="input-crypto-review-notes"
+                        />
+                      </div>
 
-                    <div className="p-2 bg-green-100 rounded text-xs text-green-700">
-                      <strong>On Approval:</strong> Physical Storage Certificate will be auto-generated, Unified Gold Tally auto-filled with COMPLETED status, and user wallet credited immediately.
-                    </div>
-                  </div>
-                )}
-
-                {selectedCrypto.transactionHash && (
-                  <div className="p-3 bg-gray-50 rounded-lg border">
-                    <p className="text-gray-500 text-xs mb-1">Transaction Hash</p>
-                    <p className="font-mono text-sm break-all">{selectedCrypto.transactionHash}</p>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className="p-0 h-auto mt-1 text-blue-600"
-                      onClick={() => {
-                        const explorerUrls: Record<string, string> = {
-                          'Bitcoin': 'https://blockchair.com/bitcoin/transaction/',
-                          'Ethereum': 'https://etherscan.io/tx/',
-                          'USDT (TRC20)': 'https://tronscan.org/#/transaction/',
-                          'USDT (ERC20)': 'https://etherscan.io/tx/',
-                        };
-                        const network = selectedCrypto.walletConfig?.networkLabel || '';
-                        const baseUrl = explorerUrls[network] || 'https://blockchair.com/search?q=';
-                        window.open(`${baseUrl}${selectedCrypto.transactionHash}`, '_blank');
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" /> View on Explorer
-                    </Button>
-                  </div>
-                )}
-
-                {selectedCrypto.walletConfig && (
-                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <p className="text-purple-700 text-xs mb-1">Receiving Wallet</p>
-                    <p className="font-mono text-sm break-all">{selectedCrypto.walletConfig.walletAddress}</p>
-                  </div>
-                )}
-
-                {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
-                  <div>
-                    <Label>Review Notes</Label>
-                    <Textarea 
-                      value={cryptoReviewNotes}
-                      onChange={e => setCryptoReviewNotes(e.target.value)}
-                      placeholder="Add notes about this payment..."
-                      data-testid="input-crypto-review-notes"
-                    />
-                  </div>
-                )}
-
-                {selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review' ? (
-                  <div>
-                    <Label>Rejection Reason (if rejecting)</Label>
-                    <Textarea 
-                      value={cryptoRejectionReason}
-                      onChange={e => setCryptoRejectionReason(e.target.value)}
-                      placeholder="Required if rejecting..."
-                      data-testid="input-crypto-rejection-reason"
-                    />
-                  </div>
-                ) : selectedCrypto.rejectionReason && (
-                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-red-700 text-xs mb-1">Rejection Reason</p>
-                    <p className="text-sm">{selectedCrypto.rejectionReason}</p>
-                  </div>
-                )}
-
-                {selectedCrypto.reviewNotes && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-blue-700 text-xs mb-1">Admin Notes</p>
-                    <p className="text-sm">{selectedCrypto.reviewNotes}</p>
-                  </div>
-                )}
+                      <div>
+                        <Label className="text-sm text-red-600">Rejection Reason (if rejecting)</Label>
+                        <Textarea 
+                          value={cryptoRejectionReason}
+                          onChange={e => setCryptoRejectionReason(e.target.value)}
+                          placeholder="Required if rejecting..."
+                          className="h-16"
+                          data-testid="input-crypto-rejection-reason"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
             <DialogFooter>
