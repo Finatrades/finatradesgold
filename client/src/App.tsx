@@ -150,6 +150,7 @@ import WorkflowAudit from "@/pages/admin/WorkflowAudit";
 import SystemHealth from "@/pages/admin/SystemHealth";
 import GoldBackingReport from "@/pages/admin/GoldBackingReport";
 import VaultDashboard from "@/pages/admin/VaultDashboard";
+import VaultExposure from "@/pages/admin/VaultExposure";
 import VaultPhysicalRegistry from "@/pages/admin/VaultPhysicalRegistry";
 import VaultLocations from "@/pages/admin/VaultLocations";
 import VaultReconciliation from "@/pages/admin/VaultReconciliation";
@@ -282,6 +283,7 @@ function Router() {
       <Route path="/admin/system-health" component={SystemHealth} />
       <Route path="/admin/gold-backing" component={GoldBackingReport} />
       <Route path="/admin/vault-dashboard" component={VaultDashboard} />
+      <Route path="/admin/vault-exposure" component={VaultExposure} />
       <Route path="/admin/vault-physical-registry" component={VaultPhysicalRegistry} />
       <Route path="/admin/vault-locations" component={VaultLocations} />
       <Route path="/admin/vault-routing" component={VaultLocations} />
