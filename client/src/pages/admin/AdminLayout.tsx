@@ -64,6 +64,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/finapay': ['view_transactions', 'manage_deposits', 'manage_withdrawals'],
   '/admin/vault': ['view_vault', 'manage_vault'],
   '/admin/vault-dashboard': ['view_vault', 'manage_vault'],
+  '/admin/vault-exposure': ['view_vault', 'manage_vault'],
   '/admin/vault-physical-registry': ['view_vault', 'manage_vault'],
   '/admin/vault-locations': ['view_vault', 'manage_vault'],
   '/admin/vault-routing': ['view_vault', 'manage_vault'],
@@ -222,6 +223,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <Scale className="w-4 h-4" />,
       items: [
         { label: 'Vault Dashboard', href: '/admin/vault-dashboard' },
+        { label: 'Platform Exposure', href: '/admin/vault-exposure' },
         { label: 'Physical Registry', href: '/admin/vault-physical-registry' },
         { label: 'Vault Locations', href: '/admin/vault-locations' },
         { label: 'Routing Rules', href: '/admin/vault-routing' },
