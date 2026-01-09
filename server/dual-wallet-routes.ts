@@ -243,10 +243,27 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           issuedAt: now
         }).returning({ id: certificates.id });
         
+        // Also generate Digital Ownership Certificate for the FPGW lock
+        const digitalCertNumber = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        await tx.insert(certificates).values({
+          certificateNumber: digitalCertNumber,
+          userId,
+          type: 'Digital Ownership',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          issuer: 'Finatrades',
+          goldWalletType: 'FPGW',
+          status: 'Active',
+          transactionId: actualTxId,
+          issuedAt: now,
+          notes: `Digital Gold Lock - Fixed at $${currentGoldPrice.toFixed(2)}/g`
+        } as any);
+        
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { certificateNumber: certNumber },
+          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber },
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
 
@@ -260,7 +277,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'fpgw_batches_consumed',
           'PASS',
-          { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: consumption.batchesConsumed?.length || 0 },
+          { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: (consumption as any).batchesConsumed?.length || 0 },
           { userId }
         );
 

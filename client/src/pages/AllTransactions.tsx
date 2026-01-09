@@ -437,35 +437,99 @@ export default function AllTransactions() {
                     {/* Expanded Details Row */}
                     {expandedRows.has(tx.id) && (
                       <div className="px-4 pb-4 pt-0 bg-muted/30 border-t border-dashed">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border mt-2">
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
-                            <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
+                        {/* Special display for MPGW to FPGW conversions */}
+                        {tx.description?.includes('MPGW to FPGW') ? (
+                          <div className="space-y-3 mt-2">
+                            {/* Full Reference ID */}
+                            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
+                              <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
+                              <div className="flex items-center gap-4 mt-2 text-sm">
+                                <span className="text-muted-foreground">Date & Time:</span>
+                                <span className="font-medium">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</span>
+                              </div>
+                            </div>
+                            
+                            {/* Sell Gold from MPGW */}
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <ArrowUpRight className="w-4 h-4 text-red-600" />
+                                <span className="font-semibold text-red-700">Sell Gold (from MPGW)</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Gold Amount</p>
+                                  <p className="font-semibold text-red-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Market Price</p>
+                                  <p className="font-semibold">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Value</p>
+                                  <p className="font-semibold">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Credit Gold to FPGW */}
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                                <span className="font-semibold text-green-700">Credit Gold (to FPGW - Fixed Price Locked)</span>
+                                <Badge className="bg-amber-100 text-amber-700 text-xs">Digital Gold Lock</Badge>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Gold Amount</p>
+                                  <p className="font-semibold text-green-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Locked Price</p>
+                                  <p className="font-semibold text-amber-600">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Locked Value</p>
+                                  <p className="font-semibold text-amber-600">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
+                                </div>
+                              </div>
+                              <p className="text-xs text-green-600 mt-2">
+                                Digital Ownership Certificate generated for this lock
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Date & Time</p>
-                            <p className="text-sm text-foreground">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</p>
+                        ) : (
+                          /* Standard expanded details for other transactions */
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border mt-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
+                              <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Date & Time</p>
+                              <p className="text-sm text-foreground">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gold Price at Transaction</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {tx.usdPerGram ? `$${parseFloat(tx.usdPerGram).toFixed(2)}/g` : 'N/A'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Wallet Type</p>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  (tx.goldWalletType || 'MPGW') === 'MPGW' 
+                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                                    : 'bg-amber-50 text-amber-600 border-amber-200'
+                                }`}
+                              >
+                                {tx.goldWalletType === 'FPGW' ? 'FPGW (Fixed Price)' : 'MPGW (Market Price)'}
+                              </Badge>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gold Price at Transaction</p>
-                            <p className="text-sm font-semibold text-foreground">
-                              {tx.usdPerGram ? `$${parseFloat(tx.usdPerGram).toFixed(2)}/g` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Wallet Type</p>
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${
-                                (tx.goldWalletType || 'MPGW') === 'MPGW' 
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                                  : 'bg-amber-50 text-amber-600 border-amber-200'
-                              }`}
-                            >
-                              {tx.goldWalletType === 'FPGW' ? 'FPGW (Fixed Price)' : 'MPGW (Market Price)'}
-                            </Badge>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
