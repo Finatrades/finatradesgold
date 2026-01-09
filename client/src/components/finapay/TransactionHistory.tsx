@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
   const [filter, setFilter] = useState('All');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   
-  const getIcon = (type: string, asset: string = 'USD') => {
+  const getIcon = (type: string, asset: string = 'USD', isSwap: boolean = false) => {
+    if (isSwap) return <ArrowLeftRight className="w-4 h-4" />;
     switch (type) {
       case 'Buy': return <ShoppingCart className="w-4 h-4" />;
       case 'Deposit': return <ArrowDownLeft className="w-4 h-4" />;
@@ -31,7 +32,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
     }
   };
 
-  const getColor = (type: string) => {
+  const getColor = (type: string, isSwap: boolean = false) => {
+    if (isSwap) return 'bg-purple-500/10 text-purple-600';
     switch (type) {
       case 'Buy': return 'bg-green-500/10 text-green-500';
       case 'Deposit': return 'bg-green-500/10 text-green-500';
@@ -160,12 +162,16 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                     {(() => {
                       let runningBalance = 0;
                       return filteredTransactions.map((tx, index) => {
-                      const isDebit = tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal';
-                      const isCredit = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
+                      const isSwap = tx.type === 'Swap' || tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW');
+                      const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
+                      const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       
                       if (isCredit) runningBalance += tx.amountUsd;
                       else if (isDebit) runningBalance -= tx.amountUsd;
-                      const transactionLabel = tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
+                      
+                      const transactionLabel = isSwap
+                        ? 'Swap Gold'
+                        : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
                         : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
                         ? 'Acquire Gold' 
@@ -188,8 +194,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type)}`}>
-                                {getIcon(tx.type, tx.assetType)}
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap)}`}>
+                                {getIcon(tx.type, tx.assetType, isSwap)}
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
@@ -205,7 +211,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                             </div>
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {isDebit ? (
+                            {isSwap ? (
+                              <div>
+                                <span className="text-amber-600 font-medium">
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
+                                </span>
+                                <div className="text-xs text-muted-foreground">from MPGW</div>
+                              </div>
+                            ) : isDebit ? (
                               <div>
                                 <span className="text-red-600 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
@@ -219,7 +232,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                             )}
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {isCredit ? (
+                            {isSwap ? (
+                              <div>
+                                <span className="text-green-600 font-medium">
+                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
+                                </span>
+                                <div className="text-xs text-muted-foreground">to FPGW</div>
+                              </div>
+                            ) : isCredit ? (
                               <div>
                                 <span className="text-green-600 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
