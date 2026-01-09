@@ -372,16 +372,16 @@ export default function AllTransactions() {
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
                           {getTransferBadges(tx)}
-                          {tx.goldWalletType && (
+                          {(tx.goldWalletType || tx.module === 'finapay') && (
                             <Badge 
                               variant="outline" 
                               className={`text-xs ${
-                                tx.goldWalletType === 'MPGW' 
+                                (tx.goldWalletType || 'MPGW') === 'MPGW' 
                                   ? 'bg-blue-50 text-blue-600 border-blue-200' 
                                   : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}
                             >
-                              {tx.goldWalletType}
+                              {tx.goldWalletType || 'MPGW'}
                             </Badge>
                           )}
                         </div>
