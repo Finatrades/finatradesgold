@@ -16495,7 +16495,111 @@ ${message}
         recipientTransactionId: recipientTx.id,
       });
       
-      // Update request status
+      
+      // Generate P2P certificates for both parties
+      const walletType = (request as any).goldWalletType || 'MPGW';
+      const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const wingoldRef = generateWingoldRef();
+      
+      // Helper to generate certificate number
+      const genCertNum = (prefix: string) => `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // 1. Digital Ownership Certificate for requester (gold recipient)
+      await storage.createCertificate({
+        certificateNumber: genCertNum('DOC'),
+        userId: requester.id,
+        transactionId: recipientTx.id,
+        type: 'Digital Ownership',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
+        issuer: 'Finatrades Finance SA',
+        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        wingoldStorageRef: wingoldRef,
+        goldWalletType: walletType,
+      });
+      
+      // 2. Physical Storage Certificate for requester (gold recipient)
+      await storage.createCertificate({
+        certificateNumber: genCertNum('PSC'),
+        userId: requester.id,
+        transactionId: recipientTx.id,
+        type: 'Physical Storage',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
+        issuer: 'Wingold and Metals DMCC',
+        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        wingoldStorageRef: wingoldRef,
+        goldWalletType: 'MPGW', // Physical storage always MPGW
+      });
+      
+      // 3. Transfer Certificate for payer (gold sender)
+      await storage.createCertificate({
+        certificateNumber: genCertNum('TRC'),
+        userId: payer.id,
+        transactionId: senderTx.id,
+        type: 'Transfer',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
+        issuer: 'Finatrades Finance SA',
+        fromUserId: payer.id,
+        toUserId: requester.id,
+        goldWalletType: walletType,
+      });
+      
+      // 4. Transfer Certificate for requester (gold recipient)
+      await storage.createCertificate({
+        certificateNumber: genCertNum('TRC'),
+        userId: requester.id,
+        transactionId: recipientTx.id,
+        type: 'Transfer',
+        status: 'Active',
+        goldGrams: goldGrams.toFixed(6),
+        goldPriceUsdPerGram: pricePerGram.toFixed(2),
+        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
+        issuer: 'Finatrades Finance SA',
+        fromUserId: payer.id,
+        toUserId: requester.id,
+        goldWalletType: walletType,
+      });
+      
+      // Record ledger entries
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: payer.id,
+        action: 'Transfer_Send',
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: pricePerGram,
+        fromWallet: 'FinaPay',
+        toWallet: 'External',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        transactionId: senderTx.id,
+        counterpartyUserId: requester.id,
+        notes: `Paid payment request to ${requester.firstName} ${requester.lastName}`,
+        createdBy: 'system',
+      });
+      
+      await vaultLedgerService.recordLedgerEntry({
+        userId: requester.id,
+        action: 'Transfer_Receive',
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: pricePerGram,
+        fromWallet: 'FinaPay',
+        toWallet: 'FinaPay',
+        fromStatus: 'Available',
+        toStatus: 'Available',
+        transactionId: recipientTx.id,
+        counterpartyUserId: payer.id,
+        notes: `Received payment from ${payer.firstName} ${payer.lastName}`,
+        createdBy: 'system',
+      });
+
       await storage.updatePeerRequest(request.id, {
         status: 'Fulfilled',
         fulfilledTransferId: transfer.id,
