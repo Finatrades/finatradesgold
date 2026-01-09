@@ -299,7 +299,7 @@ export async function generateTransferCertificates(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades SA',
+      issuer: 'Wingold Metals DMCC',
       fromUserId,
       toUserId,
     };
@@ -313,7 +313,7 @@ export async function generateTransferCertificates(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades SA',
+      issuer: 'Wingold Metals DMCC',
       fromUserId,
       toUserId,
     };
@@ -401,7 +401,7 @@ export async function generateBNSLLockCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades SA',
+      issuer: 'Wingold Metals DMCC',
       bnslPlanId,
     };
 
@@ -438,7 +438,7 @@ export async function generateTradeLockCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades SA',
+      issuer: 'Wingold Metals DMCC',
       tradeCaseId,
     };
 
@@ -476,7 +476,7 @@ export async function generateTradeReleaseCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades SA',
+      issuer: 'Wingold Metals DMCC',
       tradeCaseId,
       relatedCertificateId: relatedLockCertificateId,
     };
