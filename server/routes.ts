@@ -6546,7 +6546,7 @@ ${message}
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: usdAmount.toFixed(2),
-              issuer: 'Wingold Metals DMCC',
+              issuer: 'Finatrades Finance SA',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: wingoldRef
             });
@@ -6564,7 +6564,7 @@ ${message}
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: usdAmount.toFixed(2),
-              issuer: 'Wingold & Metals DMCC',
+              issuer: 'Wingold and Metals DMCC',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: wingoldRef
             });
@@ -6852,7 +6852,7 @@ ${message}
             goldGrams: grams.toFixed(6),
             goldPriceUsdPerGram: price.toFixed(2),
             totalValueUsd: (grams * price).toFixed(2),
-            issuer: 'Wingold Metals DMCC',
+            issuer: 'Finatrades Finance SA',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             wingoldStorageRef: wingoldRef
           });
@@ -6870,7 +6870,7 @@ ${message}
             goldGrams: grams.toFixed(6),
             goldPriceUsdPerGram: price.toFixed(2),
             totalValueUsd: (grams * price).toFixed(2),
-            issuer: 'Wingold & Metals DMCC',
+            issuer: 'Wingold and Metals DMCC',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             wingoldStorageRef: wingoldRef
           });
@@ -8278,7 +8278,7 @@ ${message}
           goldGrams: finalWeightGrams.toString(),
           goldPriceUsdPerGram: pricePerGram.toString(),
           totalValueUsd: totalValue.toFixed(2),
-          issuer: 'Wingold Metals DMCC',
+          issuer: 'Finatrades Finance SA',
           vaultLocation: request.vaultLocation,
         });
         
@@ -8293,7 +8293,7 @@ ${message}
           goldGrams: finalWeightGrams.toString(),
           goldPriceUsdPerGram: pricePerGram.toString(),
           totalValueUsd: totalValue.toFixed(2),
-          issuer: 'Wingold & Metals DMCC',
+          issuer: 'Wingold and Metals DMCC',
           vaultLocation: request.vaultLocation,
         });
 
@@ -10429,7 +10429,7 @@ ${message}
         goldGrams: goldGrams.toFixed(6),
         goldPriceUsdPerGram: planData.enrollmentPriceUsdPerGram,
         totalValueUsd: planData.basePriceComponentUsd,
-        issuer: 'Wingold Metals DMCC',
+        issuer: 'Finatrades Finance SA',
         vaultLocation: 'Dubai - Wingold & Metals DMCC',
         wingoldStorageRef: `BNSL-${plan.contractId}`
       });
@@ -11667,7 +11667,7 @@ ${message}
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Wingold Metals DMCC',
+              issuer: 'Finatrades Finance SA',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               issuedAt: new Date(),
             }).returning();
@@ -11683,7 +11683,7 @@ ${message}
               status: 'Active',
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              issuer: 'Wingold & Metals DMCC',
+              issuer: 'Wingold and Metals DMCC',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               issuedAt: new Date(),
             }).returning();
@@ -16682,7 +16682,7 @@ ${message}
               goldGrams: grams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Wingold Metals DMCC',
+              issuer: 'Finatrades Finance SA',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: wingoldRef
             });
@@ -16699,7 +16699,7 @@ ${message}
               goldGrams: grams.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Wingold & Metals DMCC',
+              issuer: 'Wingold and Metals DMCC',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: wingoldRef
             });
@@ -16786,7 +16786,7 @@ ${message}
               goldGrams: goldAmount.toFixed(6),
               goldPriceUsdPerGram: goldPrice.toFixed(2),
               totalValueUsd: (goldAmount * goldPrice).toFixed(2),
-              issuer: 'Wingold Metals DMCC',
+              issuer: 'Finatrades Finance SA',
               fromUserId: sender.id,
               toUserId: recipient.id,
               issuedAt: new Date(),
@@ -16804,7 +16804,7 @@ ${message}
             goldGrams: goldAmount.toFixed(6),
             goldPriceUsdPerGram: goldPrice.toFixed(2),
             totalValueUsd: (goldAmount * goldPrice).toFixed(2),
-            issuer: 'Wingold Metals DMCC',
+            issuer: 'Finatrades Finance SA',
             fromUserId: sender.id,
             toUserId: recipient.id,
             issuedAt: new Date(),
@@ -18201,7 +18201,7 @@ ${message}
                   goldGrams: goldGrams.toFixed(6),
                   goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
                   totalValueUsd: depositAmount.toFixed(2),
-                  issuer: 'Wingold Metals DMCC',
+                  issuer: 'Finatrades Finance SA',
                   vaultLocation: 'Dubai - Wingold & Metals DMCC',
                   issuedAt: new Date(),
                 });
@@ -18218,7 +18218,7 @@ ${message}
                   goldGrams: goldGrams.toFixed(6),
                   goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
                   totalValueUsd: depositAmount.toFixed(2),
-                  issuer: 'Wingold & Metals DMCC',
+                  issuer: 'Wingold and Metals DMCC',
                   vaultLocation: 'Dubai - Wingold & Metals DMCC',
                   issuedAt: new Date(),
                 });
@@ -18581,7 +18581,7 @@ ${message}
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: depositAmount.toFixed(2),
-            issuer: 'Wingold Metals DMCC',
+            issuer: 'Finatrades Finance SA',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
           });
@@ -18598,7 +18598,7 @@ ${message}
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: depositAmount.toFixed(2),
-            issuer: 'Wingold & Metals DMCC',
+            issuer: 'Wingold and Metals DMCC',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
           });
@@ -18864,7 +18864,7 @@ ${message}
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: amountUsd.toFixed(2),
-            issuer: 'Wingold Metals DMCC',
+            issuer: 'Finatrades Finance SA',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
           });
@@ -18881,7 +18881,7 @@ ${message}
             goldGrams: goldGrams.toFixed(6),
             goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
             totalValueUsd: amountUsd.toFixed(2),
-            issuer: 'Wingold & Metals DMCC',
+            issuer: 'Wingold and Metals DMCC',
             vaultLocation: 'Dubai - Wingold & Metals DMCC',
             issuedAt: new Date(),
           });
@@ -19061,7 +19061,7 @@ ${message}
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmount.toFixed(2),
-              issuer: 'Wingold Metals DMCC',
+              issuer: 'Finatrades Finance SA',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               issuedAt: new Date(),
             });
@@ -19078,7 +19078,7 @@ ${message}
               goldGrams: goldGrams.toFixed(6),
               goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
               totalValueUsd: depositAmount.toFixed(2),
-              issuer: 'Wingold & Metals DMCC',
+              issuer: 'Wingold and Metals DMCC',
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               issuedAt: new Date(),
             });
@@ -19202,7 +19202,7 @@ ${message}
           goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
           totalValueUsd: depositAmount.toFixed(2),
-          issuer: 'Wingold Metals DMCC',
+          issuer: 'Finatrades Finance SA',
           vaultLocation: 'Dubai - Wingold & Metals DMCC',
           issuedAt: transaction.createdAt || new Date(),
         });
@@ -19223,7 +19223,7 @@ ${message}
           goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
           totalValueUsd: depositAmount.toFixed(2),
-          issuer: 'Wingold & Metals DMCC',
+          issuer: 'Wingold and Metals DMCC',
           vaultLocation: 'Dubai - Wingold & Metals DMCC',
           issuedAt: transaction.createdAt || new Date(),
         });
@@ -23591,7 +23591,7 @@ ${message}
       const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
       const digitalCert = await storage.createCertificate({
         type: 'Digital Ownership',
-        issuer: 'Wingold Metals DMCC',
+        issuer: 'Finatrades Finance SA',
         userId: paymentRequest.userId,
         transactionId: transaction.id,
         vaultHoldingId: holding.id,
@@ -23606,7 +23606,7 @@ ${message}
       const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
       const storageCert = await storage.createCertificate({
         type: 'Physical Storage',
-        issuer: 'Wingold & Metals DMCC',
+        issuer: 'Wingold and Metals DMCC',
         userId: paymentRequest.userId,
         transactionId: transaction.id,
         vaultHoldingId: holding.id,
@@ -24016,7 +24016,7 @@ ${message}
           goldGrams: finalGoldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPrice.toFixed(2),
           totalValueUsd: finalAmountUsd.toFixed(2),
-          issuer: 'Wingold Metals DMCC',
+          issuer: 'Finatrades Finance SA',
           vaultLocation: 'Dubai - Wingold & Metals DMCC',
           wingoldStorageRef: wingoldRef
         });
@@ -24034,7 +24034,7 @@ ${message}
           goldGrams: finalGoldGrams.toFixed(6),
           goldPriceUsdPerGram: goldPrice.toFixed(2),
           totalValueUsd: finalAmountUsd.toFixed(2),
-          issuer: 'Wingold & Metals DMCC',
+          issuer: 'Wingold and Metals DMCC',
           vaultLocation: 'Dubai - Wingold & Metals DMCC',
           wingoldStorageRef: wingoldRef
         });

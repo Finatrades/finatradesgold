@@ -78,7 +78,7 @@ export async function generateDigitalOwnershipCertificate(data: CertificateData 
     totalValueUsd: ((data.grams || 0) * (data.goldPriceUsd || 0)).toString(),
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     goldWalletType: walletType,
-    issuer: 'Wingold Metals DMCC',
+    issuer: 'Finatrades Finance SA',
     status: 'Active'
   };
 
@@ -107,7 +107,7 @@ export async function generatePhysicalStorageCertificate(data: CertificateData):
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     wingoldStorageRef: data.allocationBatchRef,
     goldWalletType: 'MPGW', // Physical gold is always MPGW
-    issuer: 'Wingold & Metals DMCC',
+    issuer: 'Wingold and Metals DMCC',
     status: 'Active'
   };
 
