@@ -165,8 +165,8 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending</p>
-                  <p className="text-2xl font-bold">{stats?.pending || 0}</p>
+                  <p className="text-sm text-gray-500">Pending Payment</p>
+                  <p className="text-2xl font-bold">{stats?.pendingPayment || 0}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
               </div>
@@ -176,8 +176,8 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">In Progress</p>
-                  <p className="text-2xl font-bold">{stats?.inProgress || 0}</p>
+                  <p className="text-sm text-gray-500">Pending Allocation</p>
+                  <p className="text-2xl font-bold">{(stats?.pendingAllocation || 0) + (stats?.pendingCert || 0)}</p>
                 </div>
                 <Package className="w-8 h-8 text-blue-500" />
               </div>
@@ -198,8 +198,8 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Gold (g)</p>
-                  <p className="text-2xl font-bold">{Number(stats?.totalGoldCreditedG || 0).toFixed(2)}</p>
+                  <p className="text-sm text-gray-500">Total Volume</p>
+                  <p className="text-2xl font-bold">${Number(stats?.totalVolumeUsd || 0).toLocaleString()}</p>
                 </div>
                 <Coins className="w-8 h-8 text-amber-500" />
               </div>
@@ -269,45 +269,41 @@ export default function UnifiedGoldTally() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {transactions?.data?.length === 0 ? (
+                      {(transactions?.items?.length === 0 || !transactions?.items) ? (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                             No transactions found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        transactions?.data?.map((txn: UnifiedTallyTransaction) => (
+                        transactions?.items?.map((txn: any) => (
                           <TableRow key={txn.id} className="cursor-pointer hover:bg-gray-50" onClick={() => openTransactionDrawer(txn)}>
-                            <TableCell className="font-mono text-xs">{txn.id.slice(0, 8)}...</TableCell>
+                            <TableCell className="font-mono text-xs">{txn.txn_id || txn.id?.slice(0, 8)}...</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {txn.user?.accountType === 'business' ? (
-                                  <Building className="w-4 h-4 text-purple-500" />
-                                ) : (
-                                  <User className="w-4 h-4 text-blue-500" />
-                                )}
+                                <User className="w-4 h-4 text-blue-500" />
                                 <div>
-                                  <p className="text-sm font-medium">{txn.user?.firstName} {txn.user?.lastName}</p>
-                                  <p className="text-xs text-gray-500">{txn.user?.email}</p>
+                                  <p className="text-sm font-medium">{txn.user_name}</p>
+                                  <p className="text-xs text-gray-500">{txn.user_email}</p>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={txn.walletType === 'MPGW' ? 'secondary' : 'outline'}>
-                                {txn.walletType}
+                              <Badge variant={txn.wallet_type === 'MPGW' ? 'secondary' : 'outline'}>
+                                {txn.wallet_type}
                               </Badge>
                             </TableCell>
-                            <TableCell>{DEPOSIT_METHOD_LABELS[txn.depositMethod]}</TableCell>
-                            <TableCell>{formatCurrency(txn.depositAmount, txn.depositCurrency)}</TableCell>
-                            <TableCell className="font-mono">{formatGold(txn.goldEquivalentG || txn.physicalGoldAllocatedG)}</TableCell>
+                            <TableCell>{DEPOSIT_METHOD_LABELS[txn.source_method as DepositMethod] || txn.source_method}</TableCell>
+                            <TableCell>{formatCurrency(txn.deposit_amount, txn.deposit_currency)}</TableCell>
+                            <TableCell className="font-mono">{formatGold(txn.gold_equivalent_g || txn.physical_gold_allocated_g)}</TableCell>
                             <TableCell>
-                              <Badge variant={STATUS_CONFIG[txn.status].variant} className="gap-1">
-                                {STATUS_CONFIG[txn.status].icon}
-                                {STATUS_CONFIG[txn.status].label}
+                              <Badge variant={STATUS_CONFIG[txn.status as TallyStatus]?.variant || 'secondary'} className="gap-1">
+                                {STATUS_CONFIG[txn.status as TallyStatus]?.icon}
+                                {STATUS_CONFIG[txn.status as TallyStatus]?.label || txn.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">
-                              {format(new Date(txn.createdAt), 'MMM d, yyyy')}
+                              {format(new Date(txn.created_at), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button variant="ghost" size="sm" data-testid={`view-txn-${txn.id}`}>
@@ -338,7 +334,7 @@ export default function UnifiedGoldTally() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!transactions?.data || transactions.data.length < limit}
+                      disabled={!transactions?.items || transactions.items.length < limit}
                       onClick={() => setPage(p => p + 1)}
                     >
                       <ChevronRight className="w-4 h-4" />
