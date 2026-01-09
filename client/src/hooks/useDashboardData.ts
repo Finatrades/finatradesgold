@@ -44,7 +44,11 @@ interface Certificate {
   type: string;
   status: string;
   goldGrams: string;
-  createdAt: string;
+  issuer: string;
+  issuedAt: string;
+  goldWalletType?: 'MPGW' | 'FPGW' | null;
+  fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
+  toGoldWalletType?: 'MPGW' | 'FPGW' | null;
 }
 
 interface CertificateSummary {

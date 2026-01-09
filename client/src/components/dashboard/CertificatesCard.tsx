@@ -1,6 +1,4 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,27 +9,21 @@ interface Certificate {
   id: string;
   certificateNumber: string;
   type: string;
-  status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred';
+  status: string;
   goldGrams: string;
   issuer: string;
   issuedAt: string;
+  goldWalletType?: 'MPGW' | 'FPGW' | null;
+  fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
+  toGoldWalletType?: 'MPGW' | 'FPGW' | null;
 }
 
-export default function CertificatesCard() {
-  const { user } = useAuth();
+interface CertificatesCardProps {
+  certificates?: Certificate[];
+  isLoading?: boolean;
+}
 
-  const { data: certificates = [], isLoading } = useQuery({
-    queryKey: ['certificates', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const res = await fetch(`/api/certificates/${user.id}`);
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.certificates || [];
-    },
-    enabled: !!user?.id,
-  });
-
+export default function CertificatesCard({ certificates = [], isLoading = false }: CertificatesCardProps) {
   const recentCertificates = Array.isArray(certificates) ? certificates.slice(0, 4) : [];
 
   return (

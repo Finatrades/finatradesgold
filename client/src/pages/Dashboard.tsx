@@ -81,7 +81,7 @@ function KpiBox({ title, value, subtitle, secondaryValue, tertiaryValue, icon, i
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts, finaBridge } = useDashboardData();
+  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts, finaBridge, certificates } = useDashboardData();
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { startTour, tourId } = useDashboardTour();
 
@@ -279,7 +279,7 @@ export default function Dashboard() {
         {/* Recent Transactions & Certificates */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
-          <CertificatesCard />
+          <CertificatesCard certificates={certificates?.recent || []} isLoading={isLoading} />
         </section>
 
       </div>
