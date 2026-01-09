@@ -31,6 +31,9 @@ interface VaultTransaction {
     type: string;
     status: string;
     goldGrams: string;
+    goldWalletType?: 'MPGW' | 'FPGW' | null;
+    fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
+    toGoldWalletType?: 'MPGW' | 'FPGW' | null;
   }[];
 }
 
@@ -72,6 +75,9 @@ export default function VaultActivityList() {
     type: string;
     status: string;
     goldGrams: string;
+    goldWalletType?: 'MPGW' | 'FPGW' | null;
+    fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
+    toGoldWalletType?: 'MPGW' | 'FPGW' | null;
   }[] | null>(null);
   const [certTab, setCertTab] = useState('ownership');
 
@@ -838,9 +844,26 @@ export default function VaultActivityList() {
                               <p className="font-mono text-xs text-muted-foreground">{cert.certificateNumber}</p>
                             </div>
                           </div>
-                          <Badge className={cert.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                            {cert.status}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className={cert.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                              {cert.status}
+                            </Badge>
+                            {cert.type === 'Conversion' && cert.fromGoldWalletType && cert.toGoldWalletType ? (
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className={`text-xs ${cert.fromGoldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                  {cert.fromGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">→</span>
+                                <Badge variant="outline" className={`text-xs ${cert.toGoldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                  {cert.toGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                                </Badge>
+                              </div>
+                            ) : cert.goldWalletType && (
+                              <Badge variant="outline" className={`text-xs ${cert.goldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                {cert.goldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                           <div>
