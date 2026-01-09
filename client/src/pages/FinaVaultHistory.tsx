@@ -160,7 +160,15 @@ export default function FinaVaultHistory() {
       // Bank/card/crypto purchases
       return 'Acquire Gold';
     }
-    return action.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+    // Handle MPGW/FPGW conversion actions
+    if (action === 'MPGW_To_FPGW') {
+      return 'MPGW → FPGW Conversion';
+    }
+    if (action === 'FPGW_To_MPGW') {
+      return 'FPGW → MPGW Conversion';
+    }
+    // For other actions, add spaces before uppercase letters that follow lowercase
+    return action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
   };
 
   if (!user) return null;
