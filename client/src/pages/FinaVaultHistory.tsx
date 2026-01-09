@@ -188,11 +188,11 @@ export default function FinaVaultHistory() {
         </div>
 
         <Tabs defaultValue="ledger" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/80 p-1 rounded-xl border border-border">
+          <TabsList className="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 gap-1">
             <TabsTrigger 
               value="ledger" 
               data-testid="tab-ledger"
-              className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 font-medium transition-all"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
               <Wallet className="w-4 h-4 mr-2" />
               Ledger History
@@ -200,7 +200,7 @@ export default function FinaVaultHistory() {
             <TabsTrigger 
               value="physical" 
               data-testid="tab-physical"
-              className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg py-3 font-medium transition-all"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
               <History className="w-4 h-4 mr-2" />
               Physical Deposits/Withdrawals
