@@ -33,6 +33,7 @@ interface CertificateVerificationResult {
     certificateNumber: string;
     type: string;
     goldGrams: string;
+    remainingGrams: string;
     goldPriceUsdPerGram: string | null;
     totalValueUsd: string | null;
     issuer: string;
@@ -304,10 +305,15 @@ export default function VerifyCertificate() {
                           </p>
                         </div>
                         <div>
-                          <span className="text-sm text-muted-foreground">Gold Amount</span>
+                          <span className="text-sm text-muted-foreground">Current Gold Balance</span>
                           <p className="font-medium text-primary" data-testid="text-cert-gold">
-                            {parseFloat(result.certificate.goldGrams).toFixed(6)} grams
+                            {parseFloat(result.certificate.remainingGrams || result.certificate.goldGrams).toFixed(6)} grams
                           </p>
+                          {parseFloat(result.certificate.remainingGrams || result.certificate.goldGrams) < parseFloat(result.certificate.goldGrams) && (
+                            <p className="text-xs text-muted-foreground">
+                              of {parseFloat(result.certificate.goldGrams).toFixed(6)}g original
+                            </p>
+                          )}
                         </div>
                         <div>
                           <span className="text-sm text-muted-foreground">USD Value</span>
