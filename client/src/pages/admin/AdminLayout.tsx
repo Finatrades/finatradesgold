@@ -96,7 +96,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, adminPortal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState('Overview');
 
   const { data: employeeData } = useQuery({
@@ -360,7 +360,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 return (
                   <button
                     key={section.title}
-                    onClick={() => setActiveSection(section.title)}
+                    onClick={() => {
+                      setActiveSection(section.title);
+                      if (visibleItems.length > 0) {
+                        setLocation(visibleItems[0].href);
+                      }
+                    }}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       isSectionActive 
                         ? 'bg-primary text-primary-foreground' 
