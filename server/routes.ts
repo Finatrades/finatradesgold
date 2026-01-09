@@ -23468,7 +23468,7 @@ ${message}
     console.log('[DEBUG] Approve crypto payment - Route entered, id:', req.params.id);
     try {
       const { id } = req.params;
-      const { reviewNotes } = req.body;
+      const { reviewNotes, goldPriceAtTime: adminGoldPrice, goldGrams: adminGoldGrams } = req.body;
       const adminUser = (req as any).adminUser;
       console.log('[DEBUG] Approve crypto payment - adminUser:', adminUser?.id, 'reviewNotes:', reviewNotes);
       
@@ -23488,8 +23488,12 @@ ${message}
       }
       
       // Credit the gold to user's wallet
+      // Use admin-set values if provided, otherwise use original request values
+      const finalGoldGrams = adminGoldGrams ? adminGoldGrams : paymentRequest.goldGrams;
+      const finalGoldPrice = adminGoldPrice ? adminGoldPrice : paymentRequest.goldPriceAtTime;
+      
       const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
-      const newGoldGrams = currentGoldGrams + parseFloat(paymentRequest.goldGrams);
+      const newGoldGrams = currentGoldGrams + parseFloat(finalGoldGrams);
       await storage.updateWallet(wallet.id, {
         goldGrams: newGoldGrams.toString(),
       });
@@ -23500,16 +23504,16 @@ ${message}
         userId: paymentRequest.userId,
         type: 'Deposit',
         status: 'Completed',
-        amountGold: paymentRequest.goldGrams,
+        amountGold: finalGoldGrams,
         amountUsd: paymentRequest.amountUsd,
-        goldPriceUsdPerGram: paymentRequest.goldPriceAtTime,
-        description: `Crypto deposit - $${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(paymentRequest.goldGrams).toFixed(4)}g gold)`,
+        goldPriceUsdPerGram: finalGoldPrice,
+        description: `Crypto deposit - $${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(finalGoldGrams).toFixed(4)}g gold at $${parseFloat(finalGoldPrice).toFixed(2)}/g)`,
         sourceModule: 'finapay',
         goldWalletType: (paymentRequest as any).goldWalletType || 'MPGW',
       });
       
-      const goldGrams = paymentRequest.goldGrams ? parseFloat(paymentRequest.goldGrams) : 0;
-      const goldPrice = paymentRequest.goldPriceAtTime ? parseFloat(paymentRequest.goldPriceAtTime) : 0;
+      const goldGrams = finalGoldGrams ? parseFloat(finalGoldGrams) : 0;
+      const goldPrice = finalGoldPrice ? parseFloat(finalGoldPrice) : 0;
       const usdAmount = paymentRequest.amountUsd ? parseFloat(paymentRequest.amountUsd) : 0;
       
       console.log('[DEBUG] Crypto approval values:', { goldGrams, goldPrice, usdAmount });
@@ -23622,6 +23626,8 @@ ${message}
         reviewedAt: new Date(),
         reviewNotes: reviewNotes || null,
         creditedTransactionId: transaction.id,
+        goldGrams: finalGoldGrams,
+        goldPriceAtTime: finalGoldPrice,
       });
       
       await storage.createAuditLog({

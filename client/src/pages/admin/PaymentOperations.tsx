@@ -175,6 +175,8 @@ export default function FinaPayManagement() {
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoPaymentRequest | null>(null);
   const [cryptoReviewNotes, setCryptoReviewNotes] = useState('');
   const [cryptoRejectionReason, setCryptoRejectionReason] = useState('');
+  const [cryptoAdminPrice, setCryptoAdminPrice] = useState('');
+  const [cryptoAdminGrams, setCryptoAdminGrams] = useState('');
   
   const [buyGoldDialogOpen, setBuyGoldDialogOpen] = useState(false);
   const [selectedBuyGold, setSelectedBuyGold] = useState<BuyGoldRequest | null>(null);
@@ -415,7 +417,33 @@ export default function FinaPayManagement() {
     setSelectedCrypto(payment);
     setCryptoReviewNotes(payment.reviewNotes || '');
     setCryptoRejectionReason('');
+    setCryptoAdminPrice(payment.goldPriceAtTime || '');
+    setCryptoAdminGrams(payment.goldGrams || '');
     setCryptoDialogOpen(true);
+  };
+
+  const handleCryptoAdminPriceChange = (newPrice: string) => {
+    setCryptoAdminPrice(newPrice);
+    if (selectedCrypto && newPrice) {
+      const priceNum = parseFloat(newPrice);
+      const amountUsd = parseFloat(selectedCrypto.amountUsd);
+      if (!isNaN(priceNum) && priceNum > 0 && !isNaN(amountUsd)) {
+        const newGrams = (amountUsd / priceNum).toFixed(6);
+        setCryptoAdminGrams(newGrams);
+      }
+    }
+  };
+
+  const handleCryptoAdminGramsChange = (newGrams: string) => {
+    setCryptoAdminGrams(newGrams);
+    if (selectedCrypto && newGrams) {
+      const gramsNum = parseFloat(newGrams);
+      const amountUsd = parseFloat(selectedCrypto.amountUsd);
+      if (!isNaN(gramsNum) && gramsNum > 0 && !isNaN(amountUsd)) {
+        const newPrice = (amountUsd / gramsNum).toFixed(2);
+        setCryptoAdminPrice(newPrice);
+      }
+    }
   };
 
   const handleCryptoAction = async (action: 'Credited' | 'Rejected') => {
@@ -430,7 +458,11 @@ export default function FinaPayManagement() {
         : `/api/admin/crypto-payments/${selectedCrypto.id}/reject`;
       
       const body = action === 'Credited'
-        ? { reviewNotes: cryptoReviewNotes }
+        ? { 
+            reviewNotes: cryptoReviewNotes,
+            goldPriceAtTime: cryptoAdminPrice,
+            goldGrams: cryptoAdminGrams
+          }
         : { rejectionReason: cryptoRejectionReason, reviewNotes: cryptoReviewNotes };
       
       console.log('[handleCryptoAction] Sending request:', { endpoint, userId: currentUser.id, body });
@@ -1228,7 +1260,7 @@ export default function FinaPayManagement() {
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-gray-500">Gold Price at Time</p>
+                    <p className="text-gray-500">Original Gold Price</p>
                     <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
                   </div>
                   <div>
@@ -1237,6 +1269,41 @@ export default function FinaPayManagement() {
                     <p className="text-xs text-gray-400">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
                   </div>
                 </div>
+
+                {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
+                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                    <p className="text-amber-800 text-sm font-medium">Admin Price Override</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
+                        <Input 
+                          type="number"
+                          step="0.01"
+                          value={cryptoAdminPrice}
+                          onChange={e => handleCryptoAdminPriceChange(e.target.value)}
+                          placeholder="Price per gram"
+                          className="bg-white"
+                          data-testid="input-crypto-admin-price"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
+                        <Input 
+                          type="number"
+                          step="0.000001"
+                          value={cryptoAdminGrams}
+                          onChange={e => handleCryptoAdminGramsChange(e.target.value)}
+                          placeholder="Grams to credit"
+                          className="bg-white"
+                          data-testid="input-crypto-admin-grams"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600">
+                      Adjust the gold price or grams to credit. Changing one will recalculate the other based on the deposit amount.
+                    </p>
+                  </div>
+                )}
 
                 {selectedCrypto.transactionHash && (
                   <div className="p-3 bg-gray-50 rounded-lg border">
