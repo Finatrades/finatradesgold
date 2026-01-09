@@ -134,7 +134,28 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className={`max-w-7xl mx-auto ${compactMode ? 'space-y-3' : 'space-y-6'}`}>
 
-        {/* Settlement Assurance Rotating Banner */}
+        {/* Gold Price Status Banner - First */}
+        {goldPriceSource && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+            isGoldPriceLive 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-purple-50 text-fuchsia-700 border border-purple-200'
+          }`}>
+            {isGoldPriceLive ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-4 h-4" />
+                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Using estimated price</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Settlement Assurance Rotating Banner - Second */}
         <div 
           className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border border-green-300 cursor-pointer hover:shadow-md transition-all group"
           onClick={() => setShowAssuranceDialog(true)}
@@ -165,7 +186,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 2FA Reminder Banner */}
+        {/* 2FA Reminder Banner - Third */}
         {twoFactorReminder && !user.mfaEnabled && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-red-50 border border-red-300" data-testid="banner-2fa-reminder">
             <div className="flex items-center gap-3">
@@ -190,27 +211,6 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-sm">
             <EyeOff className="w-4 h-4" />
             <span>Balances are hidden. Go to Settings to show them.</span>
-          </div>
-        )}
-
-        {/* Gold Price Status Banner */}
-        {goldPriceSource && (
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
-            isGoldPriceLive 
-              ? 'bg-green-50 text-green-700 border border-green-200' 
-              : 'bg-purple-50 text-fuchsia-700 border border-purple-200'
-          }`}>
-            {isGoldPriceLive ? (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="w-4 h-4" />
-                <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong> - Using estimated price</span>
-              </>
-            )}
           </div>
         )}
 
