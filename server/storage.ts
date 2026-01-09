@@ -110,7 +110,12 @@ import {
   type EmailNotificationSetting, type InsertEmailNotificationSetting,
   type EmailLog, type InsertEmailLog,
   accountDeletionRequests,
-  type AccountDeletionRequest, type InsertAccountDeletionRequest
+  type AccountDeletionRequest, type InsertAccountDeletionRequest,
+  unifiedTallyTransactions, unifiedTallyEvents, wingoldAllocations, wingoldBars,
+  type UnifiedTallyTransaction, type InsertUnifiedTallyTransaction,
+  type UnifiedTallyEvent, type InsertUnifiedTallyEvent,
+  type WingoldAllocation, type InsertWingoldAllocation,
+  type WingoldBar, type InsertWingoldBar
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -5329,6 +5334,330 @@ export class DatabaseStorage implements IStorage {
       ),
       unlinkedDeposits: parseInt(unlinkedResult.rows[0]?.count || '0'),
       alerts: []
+    };
+  }
+
+  // ============================================
+  // UNIFIED GOLD TALLY SYSTEM
+  // ============================================
+
+  async generateUnifiedTallyTxnId(): Promise<string> {
+    const year = new Date().getFullYear();
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count FROM unified_tally_transactions 
+      WHERE EXTRACT(YEAR FROM created_at) = ${year}
+    `);
+    const count = parseInt(result.rows[0]?.count || '0') + 1;
+    return `UGT-${year}-${String(count).padStart(6, '0')}`;
+  }
+
+  async createUnifiedTallyTransaction(data: InsertUnifiedTallyTransaction): Promise<UnifiedTallyTransaction> {
+    const txnId = await this.generateUnifiedTallyTxnId();
+    const [transaction] = await db.insert(unifiedTallyTransactions).values({
+      ...data,
+      txnId,
+    }).returning();
+    return transaction;
+  }
+
+  async getUnifiedTallyTransaction(id: string): Promise<UnifiedTallyTransaction | undefined> {
+    const [transaction] = await db.select().from(unifiedTallyTransactions).where(
+      or(eq(unifiedTallyTransactions.id, id), eq(unifiedTallyTransactions.txnId, id))
+    );
+    return transaction || undefined;
+  }
+
+  async updateUnifiedTallyTransaction(id: string, updates: Partial<UnifiedTallyTransaction>): Promise<UnifiedTallyTransaction | undefined> {
+    const [transaction] = await db.update(unifiedTallyTransactions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(or(eq(unifiedTallyTransactions.id, id), eq(unifiedTallyTransactions.txnId, id)))
+      .returning();
+    return transaction || undefined;
+  }
+
+  async listUnifiedTallyTransactions(params: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    txnType?: string;
+    sourceMethod?: string;
+    walletType?: string;
+    userId?: string;
+    search?: string;
+    fromDate?: Date;
+    toDate?: Date;
+  }): Promise<{ items: UnifiedTallyTransaction[]; total: number; page: number; pageSize: number }> {
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 25;
+    const offset = (page - 1) * pageSize;
+
+    let whereConditions: any[] = [];
+    
+    if (params.status) {
+      whereConditions.push(sql`status = ${params.status}`);
+    }
+    if (params.txnType) {
+      whereConditions.push(sql`txn_type = ${params.txnType}`);
+    }
+    if (params.sourceMethod) {
+      whereConditions.push(sql`source_method = ${params.sourceMethod}`);
+    }
+    if (params.walletType) {
+      whereConditions.push(sql`wallet_type = ${params.walletType}`);
+    }
+    if (params.userId) {
+      whereConditions.push(sql`user_id = ${params.userId}`);
+    }
+    if (params.fromDate) {
+      whereConditions.push(sql`created_at >= ${params.fromDate}`);
+    }
+    if (params.toDate) {
+      whereConditions.push(sql`created_at <= ${params.toDate}`);
+    }
+    if (params.search) {
+      const searchTerm = `%${params.search}%`;
+      whereConditions.push(sql`(
+        txn_id ILIKE ${searchTerm} OR 
+        user_name ILIKE ${searchTerm} OR 
+        user_email ILIKE ${searchTerm} OR
+        wingold_order_id ILIKE ${searchTerm}
+      )`);
+    }
+
+    const whereClause = whereConditions.length > 0 
+      ? sql`WHERE ${sql.join(whereConditions, sql` AND `)}` 
+      : sql``;
+
+    const countResult = await db.execute(sql`
+      SELECT COUNT(*) as total FROM unified_tally_transactions ${whereClause}
+    `);
+    const total = parseInt(countResult.rows[0]?.total || '0');
+
+    const items = await db.execute(sql`
+      SELECT * FROM unified_tally_transactions 
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `);
+
+    return {
+      items: items.rows as UnifiedTallyTransaction[],
+      total,
+      page,
+      pageSize
+    };
+  }
+
+  async createUnifiedTallyEvent(data: InsertUnifiedTallyEvent): Promise<UnifiedTallyEvent> {
+    const [event] = await db.insert(unifiedTallyEvents).values(data).returning();
+    return event;
+  }
+
+  async getUnifiedTallyEvents(tallyId: string): Promise<UnifiedTallyEvent[]> {
+    return await db.select().from(unifiedTallyEvents)
+      .where(eq(unifiedTallyEvents.tallyId, tallyId))
+      .orderBy(desc(unifiedTallyEvents.createdAt));
+  }
+
+  async createWingoldAllocation(data: InsertWingoldAllocation): Promise<WingoldAllocation> {
+    const [allocation] = await db.insert(wingoldAllocations).values(data).returning();
+    return allocation;
+  }
+
+  async getWingoldAllocationsByUser(userId: string): Promise<WingoldAllocation[]> {
+    return await db.select().from(wingoldAllocations)
+      .where(eq(wingoldAllocations.userId, userId))
+      .orderBy(desc(wingoldAllocations.createdAt));
+  }
+
+  async getWingoldAllocationsByTally(tallyId: string): Promise<WingoldAllocation[]> {
+    return await db.select().from(wingoldAllocations)
+      .where(eq(wingoldAllocations.tallyId, tallyId));
+  }
+
+  async createWingoldBar(data: InsertWingoldBar): Promise<WingoldBar> {
+    const [bar] = await db.insert(wingoldBars).values(data).returning();
+    return bar;
+  }
+
+  async createWingoldBars(bars: InsertWingoldBar[]): Promise<WingoldBar[]> {
+    if (bars.length === 0) return [];
+    return await db.insert(wingoldBars).values(bars).returning();
+  }
+
+  async getWingoldBarsByTally(tallyId: string): Promise<WingoldBar[]> {
+    return await db.select().from(wingoldBars)
+      .where(eq(wingoldBars.tallyId, tallyId))
+      .orderBy(wingoldBars.createdAt);
+  }
+
+  async checkBarSerialUniqueness(serials: string[]): Promise<{ serial: string; exists: boolean }[]> {
+    if (serials.length === 0) return [];
+    
+    const result = await db.execute(sql`
+      SELECT serial FROM wingold_bars WHERE serial = ANY(${serials})
+    `);
+    const existingSerials = new Set(result.rows.map((r: any) => r.serial));
+    
+    return serials.map(serial => ({
+      serial,
+      exists: existingSerials.has(serial)
+    }));
+  }
+
+  async generateWingoldBarSerials(count: number, prefix: string = 'WG', year?: number): Promise<string[]> {
+    const currentYear = year || new Date().getFullYear();
+    const serials: string[] = [];
+    let attempts = 0;
+    const maxAttempts = count * 3;
+
+    while (serials.length < count && attempts < maxAttempts) {
+      const randomPart = require('crypto').randomBytes(3).toString('hex').toUpperCase();
+      const sequence = String(serials.length + 1).padStart(3, '0');
+      const serial = `${prefix}-${currentYear}-${randomPart}-${sequence}`;
+      
+      const exists = await this.checkBarSerialUniqueness([serial]);
+      if (!exists[0].exists && !serials.includes(serial)) {
+        serials.push(serial);
+      }
+      attempts++;
+    }
+
+    return serials;
+  }
+
+  async getUserHoldingsSnapshot(userId: string): Promise<{
+    user: { id: string; name: string; email: string };
+    finapay: {
+      mpgw: { balanceG: number; usdEquivalent: number; updatedAt: Date | null };
+      fpgw: { balanceG: number; usdEquivalent: number; updatedAt: Date | null };
+    };
+    finavault: {
+      totalG: number;
+      barsCount: number;
+      custodians: string[];
+      certificatesCount: number;
+    };
+    currency: {
+      usdCashBalance: number;
+      pendingDeposits: number;
+      pendingWithdrawals: number;
+    };
+    wingold: {
+      allocatedTotalGForUser: number;
+      latestCertificateId: string | null;
+    };
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const walletResult = await db.execute(sql`
+      SELECT gold_grams, updated_at FROM wallets WHERE user_id = ${userId}
+    `);
+    const wallet = walletResult.rows[0];
+
+    const fpgwResult = await db.execute(sql`
+      SELECT COALESCE(SUM(gold_grams), 0) as fpgw_grams
+      FROM fpgw_batches 
+      WHERE user_id = ${userId} AND status = 'active'
+    `);
+
+    const vaultResult = await db.execute(sql`
+      SELECT COALESCE(SUM(gold_grams), 0) as total_g FROM vault_holdings WHERE user_id = ${userId}
+    `);
+
+    const barsResult = await db.execute(sql`
+      SELECT COUNT(*) as count, array_agg(DISTINCT vault_location) as locations
+      FROM wingold_bars wb
+      JOIN wingold_allocations wa ON wb.allocation_id = wa.id
+      WHERE wa.user_id = ${userId}
+    `);
+
+    const certsResult = await db.execute(sql`
+      SELECT COUNT(*) as count FROM certificates 
+      WHERE user_id = ${userId} AND status = 'Active'
+    `);
+
+    const pendingDeposits = await db.execute(sql`
+      SELECT COUNT(*) as count FROM deposit_requests 
+      WHERE user_id = ${userId} AND status = 'Pending'
+    `);
+
+    const pendingWithdrawals = await db.execute(sql`
+      SELECT COUNT(*) as count FROM withdrawal_requests 
+      WHERE user_id = ${userId} AND status IN ('Pending', 'Processing')
+    `);
+
+    const wingoldResult = await db.execute(sql`
+      SELECT COALESCE(SUM(allocated_g), 0) as total_g, MAX(certificate_id) as latest_cert
+      FROM wingold_allocations WHERE user_id = ${userId}
+    `);
+
+    const mpgwGrams = parseFloat(wallet?.gold_grams || '0');
+    const fpgwGrams = parseFloat(fpgwResult.rows[0]?.fpgw_grams || '0');
+
+    return {
+      user: {
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email
+      },
+      finapay: {
+        mpgw: {
+          balanceG: mpgwGrams,
+          usdEquivalent: 0,
+          updatedAt: wallet?.updated_at || null
+        },
+        fpgw: {
+          balanceG: fpgwGrams,
+          usdEquivalent: 0,
+          updatedAt: null
+        }
+      },
+      finavault: {
+        totalG: parseFloat(vaultResult.rows[0]?.total_g || '0'),
+        barsCount: parseInt(barsResult.rows[0]?.count || '0'),
+        custodians: barsResult.rows[0]?.locations?.filter(Boolean) || [],
+        certificatesCount: parseInt(certsResult.rows[0]?.count || '0')
+      },
+      currency: {
+        usdCashBalance: 0,
+        pendingDeposits: parseInt(pendingDeposits.rows[0]?.count || '0'),
+        pendingWithdrawals: parseInt(pendingWithdrawals.rows[0]?.count || '0')
+      },
+      wingold: {
+        allocatedTotalGForUser: parseFloat(wingoldResult.rows[0]?.total_g || '0'),
+        latestCertificateId: wingoldResult.rows[0]?.latest_cert || null
+      }
+    };
+  }
+
+  async getUnifiedTallyStats(): Promise<{
+    pendingPayment: number;
+    pendingAllocation: number;
+    pendingCert: number;
+    completed: number;
+    totalVolumeUsd: number;
+  }> {
+    const result = await db.execute(sql`
+      SELECT 
+        COUNT(CASE WHEN status = 'PENDING_PAYMENT' THEN 1 END) as pending_payment,
+        COUNT(CASE WHEN status IN ('PAYMENT_CONFIRMED', 'PHYSICAL_ORDERED') THEN 1 END) as pending_allocation,
+        COUNT(CASE WHEN status = 'PHYSICAL_ALLOCATED' THEN 1 END) as pending_cert,
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed,
+        COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN deposit_amount END), 0) as total_volume
+      FROM unified_tally_transactions
+    `);
+
+    const row = result.rows[0] || {};
+    return {
+      pendingPayment: parseInt(row.pending_payment || '0'),
+      pendingAllocation: parseInt(row.pending_allocation || '0'),
+      pendingCert: parseInt(row.pending_cert || '0'),
+      completed: parseInt(row.completed || '0'),
+      totalVolumeUsd: parseFloat(row.total_volume || '0')
     };
   }
 }
