@@ -181,6 +181,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           .update(vaultOwnershipSummary)
           .set({
             mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGrams}`,
+            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} + ${goldGrams}`,
             lastUpdated: now
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
@@ -342,6 +343,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           .update(vaultOwnershipSummary)
           .set({
             mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${goldGrams}`,
+            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${goldGrams}`,
             lastUpdated: now
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
