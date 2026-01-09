@@ -16461,7 +16461,7 @@ ${message}
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: (request as any).goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
@@ -16476,7 +16476,7 @@ ${message}
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: (request as any).goldWalletType || 'MPGW',
         completedAt: new Date(),
       });
       
