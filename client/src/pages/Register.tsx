@@ -409,7 +409,7 @@ export default function Register() {
             </div>
 
             <div className="border rounded-lg p-4">
-              <Label className="mb-3 block">Profile Selfie <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label className="mb-3 block">Profile Selfie</Label>
               
               {!profilePhoto && !cameraStream && (
                 <div className="text-center">
