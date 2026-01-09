@@ -2,6 +2,11 @@ import { Router, Request, Response } from 'express';
 import { storage } from './storage';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { VaultLedgerService } from './vault-ledger-service';
+import { createFpgwBatch } from './fpgw-batch-service';
+import { db } from './db';
+
+const vaultLedgerService = new VaultLedgerService();
 
 const router = Router();
 
@@ -497,6 +502,13 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
+    if (transaction.status === 'COMPLETED' || transaction.status === 'CREDITED') {
+      return res.status(400).json({ 
+        error: 'Transaction already credited',
+        code: 'ALREADY_CREDITED'
+      });
+    }
+
     if (transaction.status !== 'CERT_RECEIVED') {
       return res.status(400).json({ 
         error: 'Certificate must be received before approval',
@@ -547,40 +559,114 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
     const netProfitUsd = depositAmount - wingoldCostUsd - totalCostsUsd;
 
     const previousStatus = transaction.status;
-    const updated = await storage.updateUnifiedTallyTransaction(txnId, {
-      pricingMode: data.pricingMode,
-      goldRateValue: String(goldRateValue),
-      rateTimestamp: new Date(),
-      goldEquivalentG: String(goldEquivalentG),
-      goldCreditedG: String(physicalGoldAllocatedG),
-      goldCreditedValueUsd: String(physicalGoldAllocatedG * goldRateValue),
-      gatewayCostUsd: String(gatewayCostUsd),
-      bankCostUsd: String(bankCostUsd),
-      networkCostUsd: String(networkCostUsd),
-      opsCostUsd: String(opsCostUsd),
-      totalCostsUsd: String(totalCostsUsd),
-      netProfitUsd: String(netProfitUsd),
-      status: 'COMPLETED',
-      approvedBy: (req as any).user?.id,
-      approvedAt: new Date(),
+    const adminId = (req as any).user?.id || 'system';
+    const adminName = (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin';
+
+    const result = await db.transaction(async (tx) => {
+      await vaultLedgerService.creditWalletDeposit({
+        userId: transaction.userId,
+        goldGrams: physicalGoldAllocatedG,
+        goldPriceUsdPerGram: goldRateValue,
+        walletType: transaction.walletType as 'MPGW' | 'FPGW',
+        transactionId: transaction.id,
+        certificateId: transaction.storageCertificateId || undefined,
+        notes: `Unified Tally Credit: ${physicalGoldAllocatedG.toFixed(6)}g to ${transaction.walletType} wallet from ${transaction.sourceMethod} deposit`,
+        createdBy: adminId,
+        tx: tx as any,
+      });
+
+      if (transaction.walletType === 'FPGW') {
+        await createFpgwBatch({
+          userId: transaction.userId,
+          goldGrams: physicalGoldAllocatedG,
+          lockedPriceUsd: goldRateValue,
+          sourceType: 'deposit',
+          sourceTransactionId: transaction.id,
+          notes: `FPGW batch from ${transaction.sourceMethod} deposit - Certificate: ${transaction.storageCertificateId}`,
+          tx: tx as any,
+        });
+      }
+
+      await storage.createUnifiedTallyEvent({
+        tallyId: transaction.id,
+        eventType: 'CREDITED',
+        previousStatus,
+        newStatus: 'CREDITED',
+        details: { 
+          goldCreditedG: physicalGoldAllocatedG,
+          walletType: transaction.walletType,
+          action: 'Deposit',
+          goldRateValue,
+        } as any,
+        triggeredBy: adminId,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      const updated = await storage.updateUnifiedTallyTransaction(txnId, {
+        pricingMode: data.pricingMode,
+        goldRateValue: String(goldRateValue),
+        rateTimestamp: new Date(),
+        goldEquivalentG: String(goldEquivalentG),
+        goldCreditedG: String(physicalGoldAllocatedG),
+        goldCreditedValueUsd: String(physicalGoldAllocatedG * goldRateValue),
+        gatewayCostUsd: String(gatewayCostUsd),
+        bankCostUsd: String(bankCostUsd),
+        networkCostUsd: String(networkCostUsd),
+        opsCostUsd: String(opsCostUsd),
+        totalCostsUsd: String(totalCostsUsd),
+        netProfitUsd: String(netProfitUsd),
+        status: 'COMPLETED',
+        approvedBy: adminId,
+        approvedAt: new Date(),
+      }, tx as any);
+
+      await storage.createUnifiedTallyEvent({
+        tallyId: transaction.id,
+        eventType: 'COMPLETED',
+        previousStatus: 'CREDITED',
+        newStatus: 'COMPLETED',
+        details: { 
+          goldCreditedG: physicalGoldAllocatedG,
+          goldRateValue,
+          totalCostsUsd,
+          netProfitUsd,
+          wingoldOrderId: transaction.wingoldOrderId,
+          certificateId: transaction.storageCertificateId,
+          vaultLocation: transaction.vaultLocation,
+        } as any,
+        triggeredBy: adminId,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      await storage.recordWingoldAllocationCredit({
+        tallyId: transaction.id,
+        userId: transaction.userId,
+        goldGrams: physicalGoldAllocatedG,
+        wingoldOrderId: transaction.wingoldOrderId,
+        certificateId: transaction.storageCertificateId,
+        vaultLocation: transaction.vaultLocation,
+        barLotSerialsJson: transaction.barLotSerialsJson,
+        creditedAt: new Date(),
+        creditedBy: adminId,
+        tx: tx as any,
+      });
+
+      return updated;
     });
 
-    await storage.createUnifiedTallyEvent({
-      tallyId: transaction.id,
-      eventType: 'APPROVED',
-      previousStatus,
-      newStatus: 'COMPLETED',
-      details: { 
+    const holdingsSnapshot = await storage.getUserHoldingsSnapshot(transaction.userId);
+
+    res.json({
+      transaction: result,
+      holdingsSnapshot,
+      creditDetails: {
+        walletType: transaction.walletType,
         goldCreditedG: physicalGoldAllocatedG,
         goldRateValue,
-        totalCostsUsd,
-        netProfitUsd
-      } as any,
-      triggeredBy: (req as any).user?.id,
-      triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
+        ledgerAction: 'Deposit',
+        certificateId: transaction.storageCertificateId,
+      }
     });
-
-    res.json(updated);
   } catch (error: any) {
     console.error('Error approving credit:', error);
     res.status(500).json({ error: error.message || 'Failed to approve credit' });
@@ -635,6 +721,72 @@ router.get('/user/:userId/holdings-snapshot', async (req: Request, res: Response
   } catch (error: any) {
     console.error('Error getting user holdings snapshot:', error);
     res.status(500).json({ error: error.message || 'Failed to get holdings snapshot' });
+  }
+});
+
+router.get('/:txnId/projection', async (req: Request, res: Response) => {
+  try {
+    const { txnId } = req.params;
+    const transaction = await storage.getUnifiedTallyTransaction(txnId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    const currentSnapshot = await storage.getUserHoldingsSnapshot(transaction.userId);
+    
+    const goldToCredit = parseFloat(transaction.physicalGoldAllocatedG || transaction.goldEquivalentG || '0');
+    const goldRateValue = parseFloat(transaction.goldRateValue || '0') || 65; // Default rate if not set
+    const usdEquivalent = goldToCredit * goldRateValue;
+    
+    const isMPGW = transaction.walletType === 'MPGW';
+    
+    const projection = {
+      current: currentSnapshot,
+      transaction: {
+        id: transaction.id,
+        walletType: transaction.walletType,
+        goldToCredit,
+        usdEquivalent,
+        sourceMethod: transaction.sourceMethod,
+        certificateId: transaction.storageCertificateId,
+        status: transaction.status,
+      },
+      after: {
+        finapay: {
+          mpgw: {
+            balanceG: currentSnapshot.finapay.mpgw.balanceG + (isMPGW ? goldToCredit : 0),
+            usdEquivalent: currentSnapshot.finapay.mpgw.usdEquivalent + (isMPGW ? usdEquivalent : 0),
+          },
+          fpgw: {
+            balanceG: currentSnapshot.finapay.fpgw.balanceG + (!isMPGW ? goldToCredit : 0),
+            usdEquivalent: currentSnapshot.finapay.fpgw.usdEquivalent + (!isMPGW ? usdEquivalent : 0),
+          },
+        },
+        finavault: {
+          totalG: currentSnapshot.finavault.totalG + goldToCredit,
+          barsCount: currentSnapshot.finavault.barsCount + (transaction.barLotSerialsJson?.length || 1),
+        },
+        wingold: {
+          allocatedTotalGForUser: currentSnapshot.wingold.allocatedTotalGForUser + goldToCredit,
+          latestCertificateId: transaction.storageCertificateId || currentSnapshot.wingold.latestCertificateId,
+        },
+      },
+      delta: {
+        mpgwDeltaG: isMPGW ? goldToCredit : 0,
+        fpgwDeltaG: !isMPGW ? goldToCredit : 0,
+        vaultDeltaG: goldToCredit,
+        wingoldDeltaG: goldToCredit,
+      },
+      readyToApprove: transaction.status === 'CERT_RECEIVED' && 
+                       goldToCredit > 0 && 
+                       !!transaction.storageCertificateId,
+    };
+
+    res.json(projection);
+  } catch (error: any) {
+    console.error('Error getting projection:', error);
+    res.status(500).json({ error: error.message || 'Failed to get projection' });
   }
 });
 

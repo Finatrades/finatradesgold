@@ -34,7 +34,11 @@ export type LedgerAction =
   | 'Vault_Transfer'
   | 'Gift_Send'
   | 'Gift_Receive'
-  | 'Storage_Fee';
+  | 'Storage_Fee'
+  | 'MPGW_To_FPGW'
+  | 'FPGW_To_MPGW';
+
+export type GoldWalletType = 'MPGW' | 'FPGW';
 
 export type WalletType = 'FinaPay' | 'BNSL' | 'FinaBridge' | 'External';
 export type OwnershipStatus = 'Available' | 'Locked_BNSL' | 'Reserved_Trade' | 'Pending_Deposit' | 'Pending_Withdrawal';
@@ -60,11 +64,11 @@ interface LedgerEntryParams {
 
 export class VaultLedgerService {
   
-  async getOrCreateOwnershipSummary(userId: string): Promise<VaultOwnershipSummary> {
-    const [existing] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
+  async getOrCreateOwnershipSummary(userId: string, dbClient: typeof db = db): Promise<VaultOwnershipSummary> {
+    const [existing] = await dbClient.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
     if (existing) return existing;
     
-    const [created] = await db.insert(vaultOwnershipSummary).values({ userId }).returning();
+    const [created] = await dbClient.insert(vaultOwnershipSummary).values({ userId }).returning();
     return created;
   }
 
@@ -337,11 +341,88 @@ export class VaultLedgerService {
           finaPayGrams: (parseFloat(summary.finaPayGrams) - grams).toFixed(6),
         };
         break;
+
     }
 
     await db.update(vaultOwnershipSummary)
       .set(updates)
       .where(eq(vaultOwnershipSummary.userId, userId));
+  }
+
+  async creditWalletDeposit(params: {
+    userId: string;
+    goldGrams: number;
+    goldPriceUsdPerGram: number;
+    walletType: 'MPGW' | 'FPGW';
+    transactionId?: string;
+    certificateId?: string;
+    notes?: string;
+    createdBy?: string;
+    tx?: typeof db;
+  }): Promise<VaultLedgerEntry> {
+    const { userId, goldGrams, goldPriceUsdPerGram, walletType, transactionId, certificateId, notes, createdBy, tx } = params;
+    const dbClient = tx || db;
+    
+    const summary = await this.getOrCreateOwnershipSummary(userId, dbClient);
+    const grams = parseFloat(goldGrams.toFixed(6));
+    
+    const isMPGW = walletType === 'MPGW';
+    const walletTypeLabel = isMPGW ? 'MPGW' : 'FPGW';
+    
+    const walletResult = await dbClient.update(wallets)
+      .set({
+        goldGrams: sql`${wallets.goldGrams} + ${grams}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(wallets.userId, userId))
+      .returning();
+    
+    if (walletResult.length === 0) {
+      await dbClient.insert(wallets).values({ userId, goldGrams: grams.toFixed(6), usdBalance: '0', eurBalance: '0' });
+    }
+    
+    const summaryResult = await dbClient.update(vaultOwnershipSummary)
+      .set({
+        totalGoldGrams: (parseFloat(summary.totalGoldGrams) + grams).toFixed(6),
+        availableGrams: (parseFloat(summary.availableGrams) + grams).toFixed(6),
+        finaPayGrams: (parseFloat(summary.finaPayGrams) + grams).toFixed(6),
+        mpgwAvailableGrams: isMPGW 
+          ? (parseFloat(summary.mpgwAvailableGrams) + grams).toFixed(6) 
+          : summary.mpgwAvailableGrams,
+        fpgwAvailableGrams: !isMPGW 
+          ? (parseFloat(summary.fpgwAvailableGrams) + grams).toFixed(6) 
+          : summary.fpgwAvailableGrams,
+        lastUpdated: new Date(),
+      })
+      .where(eq(vaultOwnershipSummary.userId, userId))
+      .returning();
+    
+    if (summaryResult.length === 0) {
+      throw new Error(`Failed to update vault ownership summary for user ${userId}`);
+    }
+    
+    const currentBalance = parseFloat(summary.totalGoldGrams);
+    const newBalance = currentBalance + grams;
+    
+    const entry: InsertVaultLedgerEntry = {
+      userId,
+      action: 'Deposit',
+      goldGrams: grams.toFixed(6),
+      goldPriceUsdPerGram: goldPriceUsdPerGram.toFixed(2),
+      valueUsd: (grams * goldPriceUsdPerGram).toFixed(2),
+      toWallet: 'FinaPay',
+      toStatus: 'Available',
+      goldWalletType: walletType,
+      toGoldWalletType: walletType,
+      balanceAfterGrams: newBalance.toFixed(6),
+      transactionId,
+      certificateId,
+      notes: notes || `${walletTypeLabel} Deposit: +${grams.toFixed(6)}g`,
+      createdBy: createdBy || 'system',
+    };
+
+    const [ledgerEntry] = await dbClient.insert(vaultLedgerEntries).values(entry).returning();
+    return ledgerEntry;
   }
 
   async transferFinaPayToBnsl(userId: string, goldGrams: number, goldPriceUsd: number): Promise<VaultLedgerEntry> {

@@ -5367,8 +5367,9 @@ export class DatabaseStorage implements IStorage {
     return transaction || undefined;
   }
 
-  async updateUnifiedTallyTransaction(id: string, updates: Partial<UnifiedTallyTransaction>): Promise<UnifiedTallyTransaction | undefined> {
-    const [transaction] = await db.update(unifiedTallyTransactions)
+  async updateUnifiedTallyTransaction(id: string, updates: Partial<UnifiedTallyTransaction>, tx?: typeof db): Promise<UnifiedTallyTransaction | undefined> {
+    const dbClient = tx || db;
+    const [transaction] = await dbClient.update(unifiedTallyTransactions)
       .set({ ...updates, updatedAt: new Date() })
       .where(or(eq(unifiedTallyTransactions.id, id), eq(unifiedTallyTransactions.txnId, id)))
       .returning();
@@ -5448,8 +5449,9 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createUnifiedTallyEvent(data: InsertUnifiedTallyEvent): Promise<UnifiedTallyEvent> {
-    const [event] = await db.insert(unifiedTallyEvents).values(data).returning();
+  async createUnifiedTallyEvent(data: InsertUnifiedTallyEvent, tx?: typeof db): Promise<UnifiedTallyEvent> {
+    const dbClient = tx || db;
+    const [event] = await dbClient.insert(unifiedTallyEvents).values(data).returning();
     return event;
   }
 
@@ -5659,6 +5661,40 @@ export class DatabaseStorage implements IStorage {
       completed: parseInt(row.completed || '0'),
       totalVolumeUsd: parseFloat(row.total_volume || '0')
     };
+  }
+
+  async recordWingoldAllocationCredit(params: {
+    tallyId: string;
+    userId: string;
+    goldGrams: number;
+    wingoldOrderId: string | null;
+    certificateId: string | null;
+    vaultLocation: string | null;
+    barLotSerialsJson: any;
+    creditedAt: Date;
+    creditedBy: string;
+    tx?: typeof db;
+  }): Promise<void> {
+    const allocationId = `WA-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const dbClient = params.tx || db;
+    
+    await dbClient.execute(sql`
+      INSERT INTO wingold_allocations (
+        id, user_id, tally_id, allocated_g, wingold_order_id, 
+        certificate_id, vault_location, bar_serials_json, 
+        credited_at, credited_by, created_at
+      ) VALUES (
+        ${allocationId}, ${params.userId}, ${params.tallyId}, 
+        ${params.goldGrams.toFixed(6)}, ${params.wingoldOrderId}, 
+        ${params.certificateId}, ${params.vaultLocation}, 
+        ${JSON.stringify(params.barLotSerialsJson || [])}, 
+        ${params.creditedAt}, ${params.creditedBy}, NOW()
+      )
+      ON CONFLICT (tally_id) DO UPDATE SET
+        allocated_g = EXCLUDED.allocated_g,
+        credited_at = EXCLUDED.credited_at,
+        credited_by = EXCLUDED.credited_by
+    `);
   }
 }
 

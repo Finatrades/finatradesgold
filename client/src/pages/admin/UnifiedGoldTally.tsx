@@ -45,12 +45,14 @@ import {
   Coins,
   DollarSign,
   Building,
-  User
+  User,
+  ArrowRight,
+  CreditCard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-type TallyStatus = 'PENDING_PAYMENT' | 'PAYMENT_CONFIRMED' | 'PHYSICAL_ORDERED' | 'PHYSICAL_ALLOCATED' | 'CERT_RECEIVED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+type TallyStatus = 'PENDING_PAYMENT' | 'PAYMENT_CONFIRMED' | 'PHYSICAL_ORDERED' | 'PHYSICAL_ALLOCATED' | 'CERT_RECEIVED' | 'CREDITED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
 
 interface UnifiedTallyTransaction {
@@ -84,6 +86,7 @@ const STATUS_CONFIG: Record<TallyStatus, { label: string; variant: 'default' | '
   PHYSICAL_ORDERED: { label: 'Physical Ordered', variant: 'secondary', icon: <Package className="w-3 h-3" /> },
   PHYSICAL_ALLOCATED: { label: 'Physical Allocated', variant: 'secondary', icon: <Coins className="w-3 h-3" /> },
   CERT_RECEIVED: { label: 'Certificate Received', variant: 'secondary', icon: <FileCheck className="w-3 h-3" /> },
+  CREDITED: { label: 'Credited', variant: 'default', icon: <CreditCard className="w-3 h-3" /> },
   COMPLETED: { label: 'Completed', variant: 'default', icon: <CheckCircle className="w-3 h-3" /> },
   REJECTED: { label: 'Rejected', variant: 'destructive', icon: <XCircle className="w-3 h-3" /> },
   CANCELLED: { label: 'Cancelled', variant: 'outline', icon: <XCircle className="w-3 h-3" /> },
@@ -401,6 +404,17 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     enabled: !!transaction?.userId && open,
   });
 
+  const { data: projection } = useQuery({
+    queryKey: ['/api/admin/unified-tally', transaction?.id, 'projection'],
+    queryFn: async () => {
+      if (!transaction?.id) return null;
+      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/projection`);
+      if (!res.ok) throw new Error('Failed to fetch projection');
+      return res.json();
+    },
+    enabled: !!transaction?.id && open,
+  });
+
   const handleConfirmPayment = async () => {
     if (!transaction) return;
     setLoading(true);
@@ -610,51 +624,120 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
             </TabsContent>
 
             <TabsContent value="holdings" className="m-0 space-y-4">
-              {holdingsSnapshot ? (
+              {projection ? (
                 <>
-                  <Card>
+                  <Card className="border-purple-200 bg-purple-50/50">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Current Wallet Balances</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4 text-purple-500" />
+                        Transaction Impact Preview
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">MPGW Balance</span>
-                        <span className="text-sm font-mono font-medium">{formatGold(holdingsSnapshot.wallets?.mpgw)}</span>
+                    <CardContent className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Wallet Type</span>
+                        <Badge variant="secondary">{projection.transaction?.walletType}</Badge>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">FPGW Balance</span>
-                        <span className="text-sm font-mono font-medium">{formatGold(holdingsSnapshot.wallets?.fpgw)}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Gold to Credit</span>
+                        <span className="text-sm font-mono font-bold text-green-600">+{formatGold(projection.transaction?.goldToCredit)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">USD Equivalent</span>
+                        <span className="text-sm text-gray-500">≈ {formatCurrency(projection.transaction?.usdEquivalent)}</span>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Vault Holdings</CardTitle>
+                      <CardTitle className="text-sm">FinaPay Wallets (Before → After)</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Total Vault Gold</span>
-                        <span className="text-sm font-mono font-medium">{formatGold(holdingsSnapshot.vaultHoldings?.totalGrams)}</span>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">MPGW Balance</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono">{formatGold(projection.current?.finapay?.mpgw?.balanceG)}</span>
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finapay?.mpgw?.balanceG)}</span>
+                            {projection.delta?.mpgwDeltaG > 0 && (
+                              <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta.mpgwDeltaG)}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">FPGW Balance</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono">{formatGold(projection.current?.finapay?.fpgw?.balanceG)}</span>
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finapay?.fpgw?.balanceG)}</span>
+                            {projection.delta?.fpgwDeltaG > 0 && (
+                              <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta.fpgwDeltaG)}</Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Pending Transactions</CardTitle>
+                      <CardTitle className="text-sm">FinaVault Holdings (Before → After)</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Pending Deposits</span>
-                        <span className="text-sm font-medium">{holdingsSnapshot.pendingDeposits || 0}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Total Gold</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono">{formatGold(projection.current?.finavault?.totalG)}</span>
+                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finavault?.totalG)}</span>
+                          <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta?.vaultDeltaG)}</Badge>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Pending Withdrawals</span>
-                        <span className="text-sm font-medium">{holdingsSnapshot.pendingWithdrawals || 0}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Bars Count</span>
+                        <div className="flex items-center gap-2">
+                          <span>{projection.current?.finavault?.barsCount || 0}</span>
+                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <span className="font-medium">{projection.after?.finavault?.barsCount || 0}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Wingold Physical (Before → After)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Allocated Total</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono">{formatGold(projection.current?.wingold?.allocatedTotalGForUser)}</span>
+                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.wingold?.allocatedTotalGForUser)}</span>
+                          <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta?.wingoldDeltaG)}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Certificate</span>
+                        <span className="font-mono text-xs">{projection.after?.wingold?.latestCertificateId || '-'}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {projection.readyToApprove && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-700 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        All 4 ledgers will reconcile after approval
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="flex items-center justify-center py-8 text-gray-500">

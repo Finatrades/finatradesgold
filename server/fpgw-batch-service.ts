@@ -58,7 +58,7 @@ interface TransferBatchParams {
 /**
  * Create a new FPGW batch when gold enters the Fixed Price wallet
  */
-export async function createFpgwBatch(params: CreateBatchParams): Promise<FpgwBatch> {
+export async function createFpgwBatch(params: CreateBatchParams & { tx?: typeof db }): Promise<FpgwBatch> {
   const {
     userId,
     goldGrams,
@@ -67,10 +67,13 @@ export async function createFpgwBatch(params: CreateBatchParams): Promise<FpgwBa
     sourceType,
     fromUserId,
     balanceBucket = 'Available',
-    notes
+    notes,
+    tx
   } = params;
 
-  const [batch] = await db
+  const dbClient = tx || db;
+
+  const [batch] = await dbClient
     .insert(fpgwBatches)
     .values({
       userId,
