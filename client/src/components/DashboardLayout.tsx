@@ -72,14 +72,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
             </div>
             
-            {/* Settlement Assurance */}
+            {/* Settlement Assurance with animation */}
             <div 
-              className="flex items-center gap-1.5 text-green-700 cursor-pointer hover:text-green-900 transition-colors"
+              className="flex items-center gap-1.5 text-green-700 cursor-pointer hover:text-green-900 transition-colors group"
               onClick={() => setShowAssuranceDialog(true)}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </motion.div>
               <span className="hidden sm:inline">Settlement Assurance</span>
-              <span className="hidden md:inline text-green-600">• Backed by USD 42.134 Billion</span>
+              <motion.span 
+                className="hidden md:inline text-green-600 font-medium"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                • Backed by USD 42.134 Billion
+              </motion.span>
             </div>
             
             {/* 2FA Reminder */}
