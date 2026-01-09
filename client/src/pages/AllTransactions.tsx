@@ -275,36 +275,37 @@ export default function AllTransactions() {
   return (
     <DashboardLayout>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">All Transactions</h1>
-          <p className="text-sm text-muted-foreground">View all your transactions across all modules</p>
-        </div>
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div className="flex items-center justify-between sm:justify-start gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">All Transactions</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">View all your transactions across all modules</p>
+          </div>
           {getSyncStatusIndicator()}
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            data-testid="button-refresh"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
         </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          data-testid="button-refresh"
+          className="w-full sm:w-auto"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <Card className="shadow-lg">
         <CardHeader className="pb-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <Tabs value={selectedModule} onValueChange={setSelectedModule} className="w-full lg:w-auto">
-              <TabsList className="grid grid-cols-5 w-full lg:w-auto" data-testid="tabs-module">
-                <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-                <TabsTrigger value="finapay" data-testid="tab-finapay">FinaPay</TabsTrigger>
-                <TabsTrigger value="finavault" data-testid="tab-finavault">FinaVault</TabsTrigger>
-                <TabsTrigger value="bnsl" data-testid="tab-bnsl">BNSL</TabsTrigger>
-                <TabsTrigger value="finabridge" data-testid="tab-finabridge">FinaBridge</TabsTrigger>
+              <TabsList className="flex flex-wrap h-auto gap-1 p-1 w-full lg:w-auto" data-testid="tabs-module">
+                <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3" data-testid="tab-all">All</TabsTrigger>
+                <TabsTrigger value="finapay" className="text-xs sm:text-sm px-2 sm:px-3" data-testid="tab-finapay">FinaPay</TabsTrigger>
+                <TabsTrigger value="finavault" className="text-xs sm:text-sm px-2 sm:px-3" data-testid="tab-finavault">FinaVault</TabsTrigger>
+                <TabsTrigger value="bnsl" className="text-xs sm:text-sm px-2 sm:px-3" data-testid="tab-bnsl">BNSL</TabsTrigger>
+                <TabsTrigger value="finabridge" className="text-xs sm:text-sm px-2 sm:px-3" data-testid="tab-finabridge">FinaBridge</TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -321,7 +322,7 @@ export default function AllTransactions() {
               </div>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[130px] h-9" data-testid="select-status">
+                <SelectTrigger className="w-full sm:w-[130px] h-9" data-testid="select-status">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -334,7 +335,7 @@ export default function AllTransactions() {
               </Select>
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[130px] h-9" data-testid="select-type">
+                <SelectTrigger className="w-full sm:w-[130px] h-9" data-testid="select-type">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -370,8 +371,8 @@ export default function AllTransactions() {
               </div>
             ) : (
               <div>
-                {/* Banking-style Table Header */}
-                <div className="grid grid-cols-14 gap-3 px-4 py-3 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {/* Banking-style Table Header - Hidden on mobile */}
+                <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-3 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <div className="col-span-2">Date</div>
                   <div className="col-span-3">Description</div>
                   <div className="col-span-2 text-right">Debit</div>
@@ -400,9 +401,65 @@ export default function AllTransactions() {
                   
                   return (
                   <div key={tx.id} data-testid={`row-tx-${tx.id}`}>
+                    {/* Mobile Card Layout */}
                     <div
                       onClick={() => toggleRowExpand(tx.id)}
-                      className="grid grid-cols-14 gap-3 px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                      className="md:hidden px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full shrink-0 ${
+                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                        }`}>
+                          {isSwap ? (
+                            <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                          ) : isCredit ? (
+                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                          ) : isDebit ? (
+                            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                          ) : (
+                            getActionIcon(tx.actionType)
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground text-sm truncate">
+                                {isSwap ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(tx.createdAt), 'MMM dd, yyyy')} · {format(new Date(tx.createdAt), 'hh:mm a')}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              {isSwap ? (
+                                <p className="font-semibold text-amber-600 text-sm">{goldAmount.toFixed(4)}g</p>
+                              ) : isCredit && goldAmount > 0 ? (
+                                <p className="font-semibold text-green-600 text-sm">+{goldAmount.toFixed(4)}g</p>
+                              ) : isDebit && goldAmount > 0 ? (
+                                <p className="font-semibold text-foreground text-sm">-{goldAmount.toFixed(4)}g</p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">—</p>
+                              )}
+                              {usdAmount > 0 && (
+                                <p className="text-xs text-muted-foreground">${usdAmount.toFixed(2)}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            {getStatusBadge(tx.status)}
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <span>Balance: ${Math.abs(runningBalance).toFixed(2)}</span>
+                              {expandedRows.has(tx.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Table Row Layout */}
+                    <div
+                      onClick={() => toggleRowExpand(tx.id)}
+                      className="hidden md:grid grid-cols-14 gap-3 px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
                     >
                       {/* DATE Column */}
                       <div className="col-span-2">
@@ -521,8 +578,8 @@ export default function AllTransactions() {
                             {/* Full Reference ID */}
                             <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
-                              <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
-                              <div className="flex items-center gap-4 mt-2 text-sm">
+                              <p className="text-xs sm:text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-xs sm:text-sm">
                                 <span className="text-muted-foreground">Date & Time:</span>
                                 <span className="font-medium">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</span>
                               </div>
@@ -534,7 +591,7 @@ export default function AllTransactions() {
                                 <ArrowUpRight className="w-4 h-4 text-red-600" />
                                 <span className="font-semibold text-red-700">Sell Gold (from MPGW)</span>
                               </div>
-                              <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
                                   <p className="font-semibold text-red-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
@@ -552,12 +609,12 @@ export default function AllTransactions() {
                             
                             {/* Credit Gold to FPGW */}
                             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
                                 <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                                <span className="font-semibold text-green-700">Credit Gold (to FPGW - Fixed Price Locked)</span>
+                                <span className="font-semibold text-green-700 text-sm">Credit Gold (to FPGW)</span>
                                 <Badge className="bg-amber-100 text-amber-700 text-xs">Digital Gold Lock</Badge>
                               </div>
-                              <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
                                   <p className="font-semibold text-green-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
