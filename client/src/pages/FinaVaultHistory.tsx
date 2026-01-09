@@ -127,8 +127,11 @@ export default function FinaVaultHistory() {
     const creditActions = ['Deposit', 'Transfer_Receive', 'Payout_Credit', 'Adjustment'];
     const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
     const transferActions = ['FinaPay_To_BNSL', 'BNSL_To_FinaPay', 'FinaPay_To_Trade', 'Trade_To_FinaPay'];
+    const conversionActions = ['MPGW_To_FPGW', 'FPGW_To_MPGW'];
     
-    if (creditActions.includes(action)) {
+    if (conversionActions.includes(action)) {
+      return <ArrowLeftRight className="w-5 h-5 text-purple-600" />;
+    } else if (creditActions.includes(action)) {
       return <ArrowDownRight className="w-5 h-5 text-green-600" />;
     } else if (debitActions.includes(action)) {
       return <ArrowUpRight className="w-5 h-5 text-red-600" />;
@@ -239,9 +242,10 @@ export default function FinaVaultHistory() {
                       <tbody className="divide-y divide-border">
                         {ledgerEntries.map((entry, index) => {
                           const goldAmount = parseFloat(entry.goldGrams);
-                          const isCredit = goldAmount >= 0;
                           const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
                           const isDebit = debitActions.includes(entry.action) || goldAmount < 0;
+                          const isConversion = entry.action === 'MPGW_To_FPGW' || entry.action === 'FPGW_To_MPGW';
+                          const isCredit = (goldAmount >= 0 && !isDebit) || isConversion;
                           
                           return (
                             <tr 
@@ -260,7 +264,7 @@ export default function FinaVaultHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100' : 'bg-red-100'
+                                    isConversion ? 'bg-purple-100' : isCredit ? 'bg-green-100' : 'bg-red-100'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -277,7 +281,16 @@ export default function FinaVaultHistory() {
                                 </div>
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
-                                {isDebit ? (
+                                {isConversion ? (
+                                  <div>
+                                    <span className="text-red-600 font-medium">
+                                      {Math.abs(goldAmount).toFixed(4)}
+                                    </span>
+                                    <div className="text-xs text-muted-foreground">
+                                      {entry.action === 'MPGW_To_FPGW' ? '📈 MPGW' : '🔒 FPGW'}
+                                    </div>
+                                  </div>
+                                ) : isDebit ? (
                                   <span className="text-red-600 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
@@ -286,7 +299,16 @@ export default function FinaVaultHistory() {
                                 )}
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
-                                {isCredit && !isDebit ? (
+                                {isConversion ? (
+                                  <div>
+                                    <span className="text-green-600 font-medium">
+                                      {Math.abs(goldAmount).toFixed(4)}
+                                    </span>
+                                    <div className="text-xs text-muted-foreground">
+                                      {entry.action === 'MPGW_To_FPGW' ? '🔒 FPGW' : '📈 MPGW'}
+                                    </div>
+                                  </div>
+                                ) : isCredit && !isDebit ? (
                                   <span className="text-green-600 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>

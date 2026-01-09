@@ -211,7 +211,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           toGoldWalletType: 'FPGW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxId,
-          notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
+          notes: `MPGW → FPGW: Debit ${goldGrams.toFixed(6)}g from MPGW, Credit ${goldGrams.toFixed(6)}g to FPGW`
         }).returning({ id: vaultLedgerEntries.id });
         
         await workflowAuditService.recordStep(
