@@ -293,17 +293,19 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                     </p>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-purple-50 cursor-pointer">
-                  <RadioGroupItem value="FPGW_to_MPGW" id="fpgw-to-mpgw" />
-                  <Label htmlFor="fpgw-to-mpgw" className="flex-1 cursor-pointer">
-                    <span className="font-semibold text-purple-700">FPGW</span>
-                    <span className="mx-2">→</span>
-                    <span className="font-semibold text-amber-700">MPGW</span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Convert to market price valuation (FIFO consumption)
-                    </p>
-                  </Label>
-                </div>
+                {balance.fpgw.availableGrams > 0.000001 && (
+                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-purple-50 cursor-pointer">
+                    <RadioGroupItem value="FPGW_to_MPGW" id="fpgw-to-mpgw" />
+                    <Label htmlFor="fpgw-to-mpgw" className="flex-1 cursor-pointer">
+                      <span className="font-semibold text-purple-700">FPGW</span>
+                      <span className="mx-2">→</span>
+                      <span className="font-semibold text-amber-700">MPGW</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Convert to market price valuation (FIFO consumption)
+                      </p>
+                    </Label>
+                  </div>
+                )}
               </RadioGroup>
             </div>
             
