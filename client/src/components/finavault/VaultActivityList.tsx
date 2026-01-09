@@ -692,15 +692,16 @@ export default function VaultActivityList() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    {/* Swap transactions: show conversion amount */}
+                    {/* Swap transactions: show conversion amount with Locked price */}
                     {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
                       <>
                         <p className="font-bold text-amber-600">
                           {parseFloat(tx.amountGold).toFixed(4)}g
                         </p>
-                        {tx.amountUsd && (
-                          <p className="text-sm text-muted-foreground">
-                            Locked @ ${(parseFloat(tx.amountUsd) / parseFloat(tx.amountGold)).toFixed(2)}/g
+                        {tx.goldPriceUsdPerGram && (
+                          <p className="text-sm text-amber-500 font-medium">
+                            <span className="bg-amber-100 px-1.5 py-0.5 rounded text-xs mr-1">Locked</span>
+                            ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
                           </p>
                         )}
                       </>
