@@ -4,6 +4,8 @@
  */
 
 import { sendEmailDirect } from './email';
+import { db } from './db';
+import { systemLogs } from '@shared/schema';
 
 const SYSTEM_EMAIL = 'System@finatrades.com';
 
@@ -215,11 +217,27 @@ async function flushActivityBuffer(): Promise<void> {
 /**
  * Log a platform activity event
  * Events are batched and sent every 5 minutes to avoid email flooding
+ * Also writes to the system_logs database table for the admin dashboard
  */
 export function logActivity(event: ActivityEvent): void {
   event.timestamp = event.timestamp || new Date();
   event.severity = event.severity || 'info';
   activityBuffer.push(event);
+
+  // Write to database for admin dashboard visibility
+  const dbLevel = event.severity === 'critical' ? 'error' : 
+                  event.severity === 'warning' ? 'warn' : 'info';
+  
+  db.insert(systemLogs).values({
+    level: dbLevel,
+    source: 'api',
+    action: event.type,
+    message: event.title,
+    details: event.details ? JSON.stringify(event.details) : event.description,
+    createdAt: event.timestamp
+  }).catch(err => {
+    console.error('[System Notifications] Failed to write log to database:', err);
+  });
 
   // Schedule flush if not already scheduled
   if (!activityFlushTimeout) {
@@ -242,15 +260,32 @@ export function logActivity(event: ActivityEvent): void {
 /**
  * Send an immediate error notification
  * Throttled to prevent spam - same error only sent once per 15 minutes
+ * Also writes to the system_logs database table for the admin dashboard
  */
 export async function notifyError(event: ErrorEvent): Promise<void> {
   event.timestamp = event.timestamp || new Date();
   
   // Create throttle key from error message and context
   const errorMessage = event.error instanceof Error ? event.error.message : String(event.error);
+  const errorStack = event.error instanceof Error ? event.error.stack : undefined;
   const throttleKey = `${event.context}:${errorMessage.substring(0, 100)}`;
   
-  // Check throttle
+  // Always write to database (but throttle emails)
+  db.insert(systemLogs).values({
+    level: 'error',
+    source: 'api',
+    route: event.route,
+    action: event.context,
+    message: errorMessage,
+    details: event.requestData ? JSON.stringify(event.requestData) : undefined,
+    errorStack: errorStack,
+    userId: event.userId,
+    createdAt: event.timestamp
+  }).catch(err => {
+    console.error('[System Notifications] Failed to write error log to database:', err);
+  });
+  
+  // Check throttle for email
   const lastSent = errorThrottle.get(throttleKey);
   if (lastSent && Date.now() - lastSent < ERROR_THROTTLE_MS) {
     console.log(`[System Notifications] Error throttled (sent ${Math.round((Date.now() - lastSent) / 1000 / 60)}min ago): ${throttleKey.substring(0, 50)}`);
