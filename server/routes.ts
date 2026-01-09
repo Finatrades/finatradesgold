@@ -16381,7 +16381,7 @@ ${message}
   });
 
   // Pay a money request - PROTECTED
-  app.post("/api/finapay/requests/:id/pay", ensureAuthenticated, async (req, res) => {
+  app.post("/api/finapay/requests/:id/pay", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const { payerId } = req.body;
       const request = await storage.getPeerRequest(req.params.id);
@@ -16732,7 +16732,7 @@ ${message}
   });
 
   // Accept a pending transfer - PROTECTED: requires authentication
-  app.post("/api/finapay/pending/:id/accept", ensureAuthenticated, async (req, res) => {
+  app.post("/api/finapay/pending/:id/accept", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
     try {
       const transfer = await storage.getPeerTransfer(req.params.id);
       
