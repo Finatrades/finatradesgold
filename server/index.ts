@@ -215,6 +215,10 @@ app.use(csrfProtection);
 // CSRF token endpoint - frontend fetches this on load
 app.get('/api/csrf-token', getCsrfTokenHandler);
 
+// General API rate limiting - protect against abuse (100 requests/minute)
+// Note: Specific endpoints have stricter limits (auth, OTP, password reset, withdrawals)
+app.use('/api', apiRateLimiter);
+
 // System Settings Cache (in-memory with short TTL)
 interface SystemSettingsCache {
   maintenanceMode: boolean;
@@ -493,10 +497,16 @@ app.use((req, res, next) => {
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const isServerError = status >= 500;
+    const isProd = process.env.NODE_ENV === 'production';
+    
+    // In production, don't expose internal error messages for 5xx errors
+    const clientMessage = isServerError && isProd 
+      ? "An unexpected error occurred. Please try again later."
+      : (err.message || "Internal Server Error");
 
     // Send error notification for server errors (5xx)
-    if (status >= 500) {
+    if (isServerError) {
       import('./system-notifications').then(({ notifyError }) => {
         notifyError({
           error: err,
@@ -513,8 +523,9 @@ app.use((req, res, next) => {
       }).catch(console.error);
     }
 
-    res.status(status).json({ message });
-    console.error(`[Error] ${req.method} ${req.path}:`, message);
+    res.status(status).json({ message: clientMessage });
+    // Log full error details on server (never sent to client in production)
+    console.error(`[Error] ${req.method} ${req.path}:`, isProd ? err.message : err);
   });
 
   // importantly only setup vite in development and after
