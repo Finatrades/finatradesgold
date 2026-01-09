@@ -26,6 +26,7 @@ interface Certificate {
   issuer: string;
   vaultLocation: string | null;
   wingoldStorageRef: string | null;
+  goldWalletType: 'MPGW' | 'FPGW' | null;
   fromUserId: string | null;
   toUserId: string | null;
   fromUserName: string | null;
@@ -210,11 +211,22 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               {isDigitalOwnership ? 'of Digital Ownership' : 'of Physical Storage'}
             </h3>
             <p className="text-white/40 text-sm font-mono">{certificate.certificateNumber}</p>
-            <Badge variant={certificate.status === 'Active' ? 'default' : 'secondary'} className={
-              certificate.status === 'Active' ? 'bg-green-600' : ''
-            }>
-              {certificate.status}
-            </Badge>
+            <div className="flex items-center justify-center gap-2">
+              <Badge variant={certificate.status === 'Active' ? 'default' : 'secondary'} className={
+                certificate.status === 'Active' ? 'bg-green-600' : ''
+              }>
+                {certificate.status}
+              </Badge>
+              {certificate.goldWalletType && (
+                <Badge variant="outline" className={
+                  certificate.goldWalletType === 'FPGW' 
+                    ? 'border-blue-500 text-blue-400' 
+                    : 'border-purple-500 text-purple-400'
+                }>
+                  {certificate.goldWalletType === 'FPGW' ? 'Fixed Price Gold' : 'Market Price Gold'}
+                </Badge>
+              )}
+            </div>
             
             {hasPartialSurrender && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mt-4 text-sm">
@@ -456,7 +468,7 @@ export default function CertificatesView() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className={`font-semibold ${isTransfer ? 'text-orange-600' : isDigital ? 'text-fuchsia-600' : 'text-gray-600'}`}>
                           {cert.type}
                         </span>
@@ -465,6 +477,15 @@ export default function CertificatesView() {
                         }`}>
                           {cert.status}
                         </Badge>
+                        {cert.goldWalletType && (
+                          <Badge variant="outline" className={`text-xs ${
+                            cert.goldWalletType === 'FPGW' 
+                              ? 'border-blue-500 text-blue-600' 
+                              : 'border-purple-500 text-purple-600'
+                          }`}>
+                            {cert.goldWalletType}
+                          </Badge>
+                        )}
                       </div>
                       {isTransfer && (cert.fromUserName || cert.toUserName) ? (
                         <p className="text-sm truncate">

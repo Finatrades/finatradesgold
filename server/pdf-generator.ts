@@ -134,7 +134,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'DIGITAL OWNERSHIP CERTIFICATE',
         subtitle: 'Gold Ownership Verification',
         primaryColor: FINATRADES_ORANGE,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'is the verified digital owner of the following gold holdings:',
         footerText: 'This certificate verifies digital ownership rights to the specified gold holdings on the Finatrades platform.'
       };
@@ -154,7 +154,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'GOLD TRANSFER CERTIFICATE',
         subtitle: 'Digital Ownership Transfer',
         primaryColor: FINATRADES_ORANGE,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'has received the following gold transfer:',
         footerText: 'This certificate documents the transfer of digital gold ownership between users on the Finatrades platform.'
       };
@@ -164,7 +164,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'BNSL GOLD LOCK CERTIFICATE',
         subtitle: 'Buy Now Sell Later - Gold Lockup',
         primaryColor: BNSL_BLUE,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'has locked the following gold holdings under a BNSL plan:',
         footerText: 'This certificate confirms that the specified gold is locked under a Buy Now Sell Later agreement. The gold will be released according to the plan terms.'
       };
@@ -174,7 +174,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'TRADE SETTLEMENT LOCK CERTIFICATE',
         subtitle: 'FinaBridge Trade Reserve',
         primaryColor: TRADE_GREEN,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'has reserved the following gold as collateral for trade settlement:',
         footerText: 'This certificate confirms that the specified gold is held as reserve for a trade finance transaction through FinaBridge.'
       };
@@ -184,7 +184,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'TRADE SETTLEMENT RELEASE CERTIFICATE',
         subtitle: 'FinaBridge Trade Completion',
         primaryColor: TRADE_GREEN,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'has completed settlement and released the following gold holdings:',
         footerText: 'This certificate confirms the successful settlement and release of gold from a FinaBridge trade finance transaction.'
       };
@@ -194,7 +194,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
         title: 'GOLD CERTIFICATE',
         subtitle: 'Certificate of Holdings',
         primaryColor: FINATRADES_ORANGE,
-        issuerName: 'Finatrades',
+        issuerName: 'Finatrades SA',
         certificationText: 'holds the following gold:',
         footerText: 'This certificate verifies the gold holdings on the Finatrades platform.'
       };

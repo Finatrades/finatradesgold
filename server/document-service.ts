@@ -299,7 +299,7 @@ export async function generateTransferCertificates(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades',
+      issuer: 'Finatrades SA',
       fromUserId,
       toUserId,
     };
@@ -313,7 +313,7 @@ export async function generateTransferCertificates(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades',
+      issuer: 'Finatrades SA',
       fromUserId,
       toUserId,
     };
@@ -401,7 +401,7 @@ export async function generateBNSLLockCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades',
+      issuer: 'Finatrades SA',
       bnslPlanId,
     };
 
@@ -438,7 +438,7 @@ export async function generateTradeLockCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades',
+      issuer: 'Finatrades SA',
       tradeCaseId,
     };
 
@@ -476,7 +476,7 @@ export async function generateTradeReleaseCertificate(
       goldGrams: goldGrams.toFixed(6),
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
-      issuer: 'Finatrades',
+      issuer: 'Finatrades SA',
       tradeCaseId,
       relatedCertificateId: relatedLockCertificateId,
     };

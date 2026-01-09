@@ -75,7 +75,7 @@ export async function generateDigitalOwnershipCertificate(data: CertificateData)
     goldPriceUsdPerGram: data.goldPriceUsd?.toString() || '0',
     totalValueUsd: ((data.grams || 0) * (data.goldPriceUsd || 0)).toString(),
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
-    issuer: 'Finatrades',
+    issuer: 'Finatrades SA',
     status: 'Active'
   };
 
@@ -141,7 +141,7 @@ export async function generateTransferCertificate(data: CertificateData): Promis
     toUserId: data.recipientUserId,
     fromUserName: senderName,
     toUserName: recipientName,
-    issuer: 'Finatrades',
+    issuer: 'Finatrades SA',
     status: 'Active'
   };
 
@@ -172,7 +172,7 @@ export async function generateLockCertificate(data: CertificateData): Promise<st
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     bnslPlanId: data.bnslPlanId,
     tradeCaseId: data.tradeCaseId,
-    issuer: 'Finatrades',
+    issuer: 'Finatrades SA',
     status: 'Active'
   };
 
@@ -203,7 +203,7 @@ export async function generateTitleTransferCertificate(data: CertificateData & {
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     fromGoldWalletType: data.goldWalletType,
     toGoldWalletType: undefined,
-    issuer: 'Finatrades',
+    issuer: 'Finatrades SA',
     status: 'Active'
   };
 
@@ -240,7 +240,7 @@ export async function generateConversionCertificate(data: {
     fromGoldWalletType: data.fromWalletType,
     toGoldWalletType: data.toWalletType,
     conversionPriceUsd: data.conversionPriceUsd?.toString(),
-    issuer: 'Finatrades',
+    issuer: 'Finatrades SA',
     status: 'Active'
   };
 
