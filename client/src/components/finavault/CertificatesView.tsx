@@ -20,6 +20,7 @@ interface Certificate {
   type: string;
   status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred';
   goldGrams: string;
+  remainingGrams: string | null;
   goldPriceUsdPerGram: string | null;
   totalValueUsd: string | null;
   issuer: string;
@@ -32,6 +33,7 @@ interface Certificate {
   issuedAt: string;
   expiresAt: string | null;
   cancelledAt: string | null;
+  parentCertificateId: string | null;
 }
 
 interface CertificateDetailModalProps {
@@ -51,7 +53,10 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
     month: 'long', 
     year: 'numeric' 
   });
-  const goldGrams = parseFloat(certificate.goldGrams || '0');
+  const originalGrams = parseFloat(certificate.goldGrams || '0');
+  const remainingGrams = parseFloat(certificate.remainingGrams || certificate.goldGrams || '0');
+  const goldGrams = remainingGrams; // Use remaining grams for display
+  const hasPartialSurrender = remainingGrams < originalGrams;
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
   
   const handleDownloadPDF = () => {
@@ -210,6 +215,17 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
             }>
               {certificate.status}
             </Badge>
+            
+            {hasPartialSurrender && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mt-4 text-sm">
+                <p className="text-amber-400">
+                  Partial Surrender: {(originalGrams - remainingGrams).toFixed(4)}g converted to FPGW
+                </p>
+                <p className="text-white/60 text-xs mt-1">
+                  Original: {originalGrams.toFixed(4)}g → Current: {remainingGrams.toFixed(4)}g
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6 text-center relative z-10">
@@ -412,7 +428,10 @@ export default function CertificatesView() {
               {filteredCertificates.map((cert) => {
                 const isDigital = cert.type !== 'Physical Storage';
                 const isTransfer = cert.type === 'Transfer';
-                const goldGrams = parseFloat(cert.goldGrams || '0');
+                const originalGrams = parseFloat(cert.goldGrams || '0');
+                const remainingGrams = parseFloat(cert.remainingGrams || cert.goldGrams || '0');
+                const goldGrams = remainingGrams;
+                const hasPartialSurrender = remainingGrams < originalGrams;
                 const totalValue = parseFloat(cert.totalValueUsd || '0');
                 
                 return (
@@ -461,6 +480,9 @@ export default function CertificatesView() {
                     
                     <div className="text-right">
                       <p className="font-bold text-foreground">{goldGrams.toFixed(4)}g</p>
+                      {hasPartialSurrender && (
+                        <p className="text-amber-500 text-xs">of {originalGrams.toFixed(4)}g</p>
+                      )}
                       <p className="text-muted-foreground text-sm">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     

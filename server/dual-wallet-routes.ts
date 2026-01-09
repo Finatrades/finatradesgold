@@ -245,7 +245,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           issuedAt: now
         }).returning({ id: certificates.id });
         
-        // Find existing MPGW Digital Ownership certificates to reduce remaining grams
+        // Find existing MPGW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
         const mpgwCerts = await tx.select()
           .from(certificates)
           .where(and(
@@ -254,7 +254,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
             eq(certificates.status, 'Active'),
             sql`(${certificates.goldWalletType} = 'MPGW' OR ${certificates.goldWalletType} IS NULL)`
           ))
-          .orderBy(desc(certificates.issuedAt));
+          .orderBy(certificates.issuedAt);
         
         let remainingToDeduct = goldGrams;
         let parentCertId: string | null = null;
