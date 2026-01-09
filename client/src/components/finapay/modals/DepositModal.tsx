@@ -325,28 +325,16 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     
     setSubmitting(true);
     try {
-      const response = await fetch('/api/crypto-payments', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: user.id,
-          walletConfigId: selectedCryptoWallet.id,
-          amountUsd: amountNum.toFixed(2),
-          goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
-          goldPriceAtTime: goldPrice?.pricePerGram.toFixed(2) || '0',
-          paymentType: 'deposit',
-        }),
+      const response = await apiRequest('POST', '/api/crypto-payments', {
+        userId: user.id,
+        walletConfigId: selectedCryptoWallet.id,
+        amountUsd: amountNum.toFixed(2),
+        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+        goldPriceAtTime: goldPrice?.pricePerGram.toFixed(2) || '0',
+        paymentType: 'deposit',
       });
       
       const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create payment request');
-      }
       
       setCryptoPaymentRequestId(data.paymentRequest.id);
       setStep('crypto-address');
@@ -365,17 +353,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/crypto-payments/${cryptoPaymentRequestId}/submit-proof`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          transactionHash: transactionHash.trim(),
-          proofImageUrl: cryptoReceipt,
-        }),
+      const response = await apiRequest('PATCH', `/api/crypto-payments/${cryptoPaymentRequestId}/submit-proof`, {
+        transactionHash: transactionHash.trim(),
+        proofImageUrl: cryptoReceipt,
       });
       
       if (!response.ok) {
@@ -1339,26 +1319,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     }
                     setSubmitting(true);
                     try {
-                      const response = await fetch('/api/crypto-payments', {
-                        method: 'POST',
-                        headers: { 
-                          'Content-Type': 'application/json',
-                          'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({
-                          userId: user.id,
-                          walletConfigId: wallet.id,
-                          amountUsd: amountNum.toFixed(2),
-                          goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
-                          goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
-                          paymentType: 'deposit',
-                        }),
+                      const response = await apiRequest('POST', '/api/crypto-payments', {
+                        userId: user.id,
+                        walletConfigId: wallet.id,
+                        amountUsd: amountNum.toFixed(2),
+                        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+                        goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
+                        paymentType: 'deposit',
                       });
                       const data = await response.json();
-                      if (!response.ok) {
-                        throw new Error(data.message || 'Failed to create payment request');
-                      }
                       setCryptoPaymentRequestId(data.paymentRequest.id);
                       setStep('crypto-address');
                     } catch (error) {
