@@ -5218,7 +5218,7 @@ export const unifiedTallyTransactions = pgTable("unified_tally_transactions", {
 });
 
 export const insertUnifiedTallyTransactionSchema = createInsertSchema(unifiedTallyTransactions)
-  .omit({ id: true, createdAt: true, updatedAt: true })
+  .omit({ id: true, txnId: true, createdAt: true, updatedAt: true })
   .extend({
     barLotSerialsJson: z.array(z.object({
       serial: z.string(),
