@@ -91,6 +91,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/regulatory-reports': ['view_reports', 'generate_reports'],
   '/admin/scheduled-jobs': ['manage_settings'],
   '/admin/api-logs': ['manage_settings'],
+  '/admin/unified-gold-tally': ['view_vault', 'manage_vault'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -229,6 +230,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Routing Rules', href: '/admin/vault-routing' },
         { label: 'Reconciliation', href: '/admin/vault-reconciliation' },
         { label: 'Gold Bar Orders', href: '/admin/wingold-orders' },
+        { label: 'Unified Gold Tally', href: '/admin/unified-gold-tally' },
       ]
     },
     {
