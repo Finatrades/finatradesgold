@@ -29,7 +29,7 @@ import {
   tradeRequests, tradeProposals, settlementHolds,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
   sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements,
-  depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable,
+  depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions,
   wallets as walletsTable, transactions as transactionsTable,
   bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable
 } from "@shared/schema";
@@ -23661,7 +23661,7 @@ ${message}
       // Generate unique UTT transaction ID
       const year = new Date().getFullYear();
       const existingCount = await db.select({ count: sql<number>`count(*)` })
-        .from(unifiedGoldTally)
+        .from(unifiedTallyTransactions)
         .where(sql`EXTRACT(YEAR FROM created_at) = ${year}`);
       const seqNum = (parseInt(existingCount[0]?.count as any) || 0) + 1;
       const txnId = `UTT-${year}-${String(seqNum).padStart(4, '0')}`;
@@ -23748,7 +23748,7 @@ ${message}
       }
       
       // 6. Create Unified Gold Tally entry with COMPLETED status (all data auto-filled)
-      const [tallyEntry] = await db.insert(unifiedGoldTally).values({
+      const [tallyEntry] = await db.insert(unifiedTallyTransactions).values({
         id: crypto.randomUUID(),
         txnId,
         userId: paymentRequest.userId,
