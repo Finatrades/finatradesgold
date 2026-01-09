@@ -435,15 +435,8 @@ export default function FinaPayManagement() {
       
       console.log('[handleCryptoAction] Sending request:', { endpoint, userId: currentUser.id, body });
       
-      const response = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': String(currentUser.id)
-        },
-        credentials: 'include',
-        body: JSON.stringify(body)
+      const response = await apiRequest('PATCH', endpoint, body, {
+        'X-Admin-User-Id': String(currentUser.id)
       });
       
       console.log('[handleCryptoAction] Response status:', response.status);
@@ -492,15 +485,8 @@ export default function FinaPayManagement() {
             adminNotes: buyGoldAdminNotes 
           };
       
-      const response = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': String(currentUser.id)
-        },
-        credentials: 'include',
-        body: JSON.stringify(body)
+      const response = await apiRequest('PATCH', endpoint, body, {
+        'X-Admin-User-Id': String(currentUser.id)
       });
       
       if (!response.ok) {
