@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowUpRight, ArrowDownLeft, RefreshCw, Search, Filter, Download } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, RefreshCw, Search, Filter, Download, ArrowLeftRight, ChevronDown, ChevronRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { format } from 'date-fns';
 
@@ -37,20 +37,25 @@ const getStatusBadge = (status: string) => {
   return <Badge className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5">{status}</Badge>;
 };
 
+const isSwapType = (description: string | null) => {
+  return description?.includes('MPGW to FPGW') || description?.includes('FPGW to MPGW');
+};
+
 const isDebitType = (type: string, description: string | null) => {
+  if (isSwapType(description)) return false;
   const t = type?.toLowerCase() || '';
-  return t === 'send' || t === 'sell' || t === 'withdraw' || t === 'lock' || 
-         description?.includes('MPGW to FPGW');
+  return t === 'send' || t === 'sell' || t === 'withdraw' || t === 'lock';
 };
 
 const isCreditType = (type: string, description: string | null) => {
+  if (isSwapType(description)) return false;
   const t = type?.toLowerCase() || '';
   return t === 'receive' || t === 'buy' || t === 'deposit' || t === 'unlock' || t === 'add_funds' ||
          description?.includes('Crypto deposit');
 };
 
 const getTransactionLabel = (type: string, description: string | null) => {
-  if (description?.includes('MPGW to FPGW')) return 'Swap Gold';
+  if (isSwapType(description)) return 'Swap Gold';
   if (description?.includes('Crypto deposit')) return 'Acquire Gold';
   if (description?.includes('FinaVault') || description?.includes('physical gold')) return 'Deposit Physical Gold';
   
@@ -64,16 +69,20 @@ const getTransactionLabel = (type: string, description: string | null) => {
 
 const getShortDescription = (type: string, description: string | null, goldAmount: number, usdAmount: number) => {
   if (description?.includes('MPGW to FPGW')) {
-    return `MPGW to FPGW conversion: ${goldAmount.toFixed(1)}...`;
+    return `MPGW to FPGW conversion: ${goldAmount.toFixed(2)}g`;
+  }
+  if (description?.includes('FPGW to MPGW')) {
+    return `FPGW to MPGW conversion: ${goldAmount.toFixed(2)}g`;
   }
   if (description?.includes('Crypto deposit')) {
-    return `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(1)}...`;
+    return `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`;
   }
   return description || '-';
 };
 
 export default function TransactionsTable({ transactions = [], goldPrice = 85 }: TransactionsTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const recentTransactions = transactions.slice(0, 10);
   
   const filteredTransactions = recentTransactions.filter(tx => {
@@ -82,6 +91,35 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
     return tx.description?.toLowerCase().includes(query) || 
            tx.type.toLowerCase().includes(query) ||
            tx.id.toLowerCase().includes(query);
+  });
+
+  const toggleRowExpand = (txId: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(txId)) {
+        next.delete(txId);
+      } else {
+        next.add(txId);
+      }
+      return next;
+    });
+  };
+
+  let runningBalanceUsd = 0;
+  const transactionsWithBalance = filteredTransactions.map(tx => {
+    const goldAmount = parseFloat(tx.amountGold || '0');
+    const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
+    const isSwap = isSwapType(tx.description);
+    const isCredit = isCreditType(tx.type, tx.description);
+    const isDebit = isDebitType(tx.type, tx.description);
+    
+    if (isCredit) {
+      runningBalanceUsd += usdAmount;
+    } else if (isDebit) {
+      runningBalanceUsd -= usdAmount;
+    }
+    
+    return { ...tx, goldAmount, usdAmount, isSwap, isCredit, isDebit, balanceUsd: runningBalanceUsd };
   });
 
   return (
@@ -114,34 +152,32 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
       </div>
 
       {/* Banking-style Table Header */}
-      <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-t-lg">
+      <div className="grid grid-cols-14 gap-2 px-3 py-2 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-t-lg">
         <div className="col-span-2">Date</div>
-        <div className="col-span-4">Description</div>
+        <div className="col-span-3">Description</div>
         <div className="col-span-2 text-right">Debit</div>
         <div className="col-span-2 text-right">Credit</div>
-        <div className="col-span-1 text-center">Status</div>
+        <div className="col-span-2 text-right">Balance USD</div>
+        <div className="col-span-2 text-center">Status</div>
         <div className="col-span-1 text-center">Action</div>
       </div>
 
       <div className="overflow-y-auto flex-1 custom-scrollbar">
-        {filteredTransactions.length === 0 ? (
+        {transactionsWithBalance.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
             <RefreshCw className="w-6 h-6 mb-2 opacity-50" />
             <p className="text-sm">No transactions yet</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {filteredTransactions.map((tx) => {
-              const goldAmount = parseFloat(tx.amountGold || '0');
-              const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
-              const isDebit = isDebitType(tx.type, tx.description);
-              const isCredit = isCreditType(tx.type, tx.description);
+            {transactionsWithBalance.map((tx) => {
+              const isExpanded = expandedRows.has(tx.id);
               
               return (
-                <Link key={tx.id} href="/transactions">
+                <div key={tx.id} data-testid={`transaction-row-${tx.id}`}>
                   <div 
-                    className="grid grid-cols-12 gap-2 px-3 py-3 hover:bg-muted/30 transition-colors cursor-pointer items-center"
-                    data-testid={`transaction-row-${tx.id}`}
+                    onClick={() => tx.isSwap ? toggleRowExpand(tx.id) : null}
+                    className={`grid grid-cols-14 gap-2 px-3 py-3 hover:bg-muted/30 transition-colors items-center ${tx.isSwap ? 'cursor-pointer' : ''}`}
                   >
                     {/* DATE Column */}
                     <div className="col-span-2">
@@ -154,33 +190,45 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                     </div>
                     
                     {/* DESCRIPTION Column */}
-                    <div className="col-span-4 flex items-center gap-2">
+                    <div className="col-span-3 flex items-center gap-2">
                       <div className={`p-1.5 rounded-full ${
-                        isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                        tx.isSwap ? 'bg-purple-100' : tx.isCredit ? 'bg-green-100' : tx.isDebit ? 'bg-gray-100' : 'bg-purple-100'
                       }`}>
-                        {isCredit ? (
+                        {tx.isSwap ? (
+                          <ArrowLeftRight className="w-3.5 h-3.5 text-purple-600" />
+                        ) : tx.isCredit ? (
                           <ArrowDownLeft className="w-3.5 h-3.5 text-green-600" />
                         ) : (
                           <ArrowUpRight className="w-3.5 h-3.5 text-gray-600" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm text-foreground truncate">
-                          {getTransactionLabel(tx.type, tx.description)}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="font-semibold text-sm text-foreground truncate">
+                            {getTransactionLabel(tx.type, tx.description)}
+                          </p>
+                          {tx.isSwap && (
+                            isExpanded ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {getShortDescription(tx.type, tx.description, goldAmount, usdAmount)}
+                          {getShortDescription(tx.type, tx.description, tx.goldAmount, tx.usdAmount)}
                         </p>
                       </div>
                     </div>
                     
                     {/* DEBIT Column */}
                     <div className="col-span-2 text-right">
-                      {isDebit && goldAmount > 0 ? (
+                      {tx.isSwap ? (
                         <>
-                          <p className="font-semibold text-foreground text-sm">{goldAmount.toFixed(4)} g</p>
-                          {usdAmount > 0 && (
-                            <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          <p className="font-semibold text-amber-600 text-sm">{tx.goldAmount.toFixed(4)} g</p>
+                          <p className="text-xs text-muted-foreground">from MPGW</p>
+                        </>
+                      ) : tx.isDebit && tx.goldAmount > 0 ? (
+                        <>
+                          <p className="font-semibold text-foreground text-sm">{tx.goldAmount.toFixed(4)} g</p>
+                          {tx.usdAmount > 0 && (
+                            <p className="text-xs text-muted-foreground">${tx.usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           )}
                         </>
                       ) : (
@@ -190,11 +238,16 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                     
                     {/* CREDIT Column */}
                     <div className="col-span-2 text-right">
-                      {isCredit && goldAmount > 0 ? (
+                      {tx.isSwap ? (
                         <>
-                          <p className="font-semibold text-green-600 text-sm">{goldAmount.toFixed(4)} g</p>
-                          {usdAmount > 0 && (
-                            <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          <p className="font-semibold text-green-600 text-sm">{tx.goldAmount.toFixed(4)} g</p>
+                          <p className="text-xs text-muted-foreground">to FPGW</p>
+                        </>
+                      ) : tx.isCredit && tx.goldAmount > 0 ? (
+                        <>
+                          <p className="font-semibold text-green-600 text-sm">{tx.goldAmount.toFixed(4)} g</p>
+                          {tx.usdAmount > 0 && (
+                            <p className="text-xs text-muted-foreground">${tx.usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           )}
                         </>
                       ) : (
@@ -202,23 +255,61 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                       )}
                     </div>
                     
+                    {/* BALANCE USD Column */}
+                    <div className="col-span-2 text-right">
+                      <p className="font-semibold text-foreground text-sm">
+                        ${Math.abs(tx.balanceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">≈ {(tx.balanceUsd / goldPrice).toFixed(2)}g</p>
+                    </div>
+                    
                     {/* STATUS Column */}
-                    <div className="col-span-1 flex justify-center">
+                    <div className="col-span-2 flex justify-center">
                       {getStatusBadge(tx.status)}
                     </div>
                     
                     {/* ACTION Column */}
                     <div className="col-span-1 flex justify-center">
-                      <button className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <circle cx="10" cy="4" r="1.5" />
-                          <circle cx="10" cy="10" r="1.5" />
-                          <circle cx="10" cy="16" r="1.5" />
-                        </svg>
-                      </button>
+                      <Link href="/transactions">
+                        <button className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <circle cx="10" cy="4" r="1.5" />
+                            <circle cx="10" cy="10" r="1.5" />
+                            <circle cx="10" cy="16" r="1.5" />
+                          </svg>
+                        </button>
+                      </Link>
                     </div>
                   </div>
-                </Link>
+                  
+                  {/* Expanded Swap Details */}
+                  {tx.isSwap && isExpanded && (
+                    <div className="px-4 pb-4 bg-purple-50/50 border-t border-dashed border-purple-200">
+                      <div className="grid grid-cols-2 gap-4 p-4">
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ArrowUpRight className="w-4 h-4 text-amber-600" />
+                            <span className="font-semibold text-amber-700 text-sm">From MPGW (Market Price)</span>
+                          </div>
+                          <p className="text-lg font-bold text-amber-600">{tx.goldAmount.toFixed(6)} g</p>
+                          <p className="text-xs text-muted-foreground">Sold at market price</p>
+                        </div>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            <span className="font-semibold text-green-700 text-sm">To FPGW (Fixed Price)</span>
+                          </div>
+                          <p className="text-lg font-bold text-green-600">{tx.goldAmount.toFixed(6)} g</p>
+                          <p className="text-xs text-muted-foreground">Locked at ${(tx.usdAmount / tx.goldAmount).toFixed(2)}/g</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-xs text-purple-600">
+                        <Badge className="bg-purple-100 text-purple-700 text-xs">Internal Conversion</Badge>
+                        <span>Gold transferred between wallets • No external movement</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

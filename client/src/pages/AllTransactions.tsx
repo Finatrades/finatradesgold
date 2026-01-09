@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { 
   Search, RefreshCw, ArrowUpRight, ArrowDownLeft, Lock, Unlock, 
   Plus, Wallet, Shield, TrendingUp, CheckCircle2, Clock, XCircle,
-  ChevronRight, ChevronDown, Filter, Calendar, AlertCircle
+  ChevronRight, ChevronDown, Filter, Calendar, AlertCircle, ArrowLeftRight
 } from 'lucide-react';
 
 interface UnifiedTransaction {
@@ -371,32 +371,38 @@ export default function AllTransactions() {
             ) : (
               <div>
                 {/* Banking-style Table Header */}
-                <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="grid grid-cols-14 gap-3 px-4 py-3 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <div className="col-span-2">Date</div>
-                  <div className="col-span-4">Description</div>
+                  <div className="col-span-3">Description</div>
                   <div className="col-span-2 text-right">Debit</div>
                   <div className="col-span-2 text-right">Credit</div>
-                  <div className="col-span-1 text-center">Status</div>
+                  <div className="col-span-2 text-right">Balance USD</div>
+                  <div className="col-span-2 text-center">Status</div>
                   <div className="col-span-1 text-center">Action</div>
                 </div>
                 
                 {/* Transaction Rows */}
                 <div className="divide-y divide-border">
-                {filteredTransactions.map((tx) => {
-                  const isDebit = ['SEND', 'Send', 'WITHDRAW', 'Withdrawal', 'SELL', 'Sell', 'LOCK'].includes(tx.actionType) ||
-                                  tx.description?.includes('MPGW to FPGW');
-                  const isCredit = ['ADD_FUNDS', 'Deposit', 'RECEIVE', 'Receive', 'BUY', 'Buy', 'UNLOCK'].includes(tx.actionType) ||
+                {(() => {
+                  let runningBalance = 0;
+                  return filteredTransactions.map((tx) => {
+                  const isSwap = tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW');
+                  const isDebit = !isSwap && ['SEND', 'Send', 'WITHDRAW', 'Withdrawal', 'SELL', 'Sell', 'LOCK'].includes(tx.actionType);
+                  const isCredit = !isSwap && (['ADD_FUNDS', 'Deposit', 'RECEIVE', 'Receive', 'BUY', 'Buy', 'UNLOCK'].includes(tx.actionType) ||
                                    tx.actionType === 'ADD_FUNDS' ||
-                                   tx.description?.includes('Crypto deposit');
+                                   tx.description?.includes('Crypto deposit'));
                   
                   const goldAmount = tx.grams ? parseFloat(tx.grams) : (tx.usd && currentGoldPrice > 0 ? parseFloat(tx.usd) / currentGoldPrice : 0);
                   const usdAmount = tx.usd ? parseFloat(tx.usd) : 0;
+                  
+                  if (isCredit) runningBalance += usdAmount;
+                  else if (isDebit) runningBalance -= usdAmount;
                   
                   return (
                   <div key={tx.id} data-testid={`row-tx-${tx.id}`}>
                     <div
                       onClick={() => toggleRowExpand(tx.id)}
-                      className="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                      className="grid grid-cols-14 gap-3 px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
                     >
                       {/* DATE Column */}
                       <div className="col-span-2">
@@ -409,11 +415,13 @@ export default function AllTransactions() {
                       </div>
                       
                       {/* DESCRIPTION Column */}
-                      <div className="col-span-4 flex items-center gap-3">
+                      <div className="col-span-3 flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
-                          isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
                         }`}>
-                          {isCredit ? (
+                          {isSwap ? (
+                            <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                          ) : isCredit ? (
                             <ArrowDownLeft className="w-4 h-4 text-green-600" />
                           ) : isDebit ? (
                             <ArrowUpRight className="w-4 h-4 text-gray-600" />
@@ -422,14 +430,17 @@ export default function AllTransactions() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-foreground truncate">
-                            {tx.description?.includes('MPGW to FPGW') ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
-                          </p>
+                          <div className="flex items-center gap-1">
+                            <p className="font-semibold text-foreground truncate">
+                              {isSwap ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
+                            </p>
+                            {expandedRows.has(tx.id) ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
-                            {tx.description?.includes('MPGW to FPGW') 
-                              ? `MPGW to FPGW conversion: ${goldAmount.toFixed(1)}...` 
+                            {isSwap 
+                              ? `MPGW to FPGW conversion: ${goldAmount.toFixed(2)}g` 
                               : tx.description?.includes('Crypto deposit')
-                                ? `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(1)}...`
+                                ? `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`
                                 : tx.description || tx.referenceId || '-'}
                           </p>
                         </div>
@@ -437,7 +448,12 @@ export default function AllTransactions() {
                       
                       {/* DEBIT Column */}
                       <div className="col-span-2 text-right">
-                        {isDebit && goldAmount > 0 ? (
+                        {isSwap ? (
+                          <>
+                            <p className="font-semibold text-amber-600">{goldAmount.toFixed(4)} g</p>
+                            <p className="text-xs text-muted-foreground">from MPGW</p>
+                          </>
+                        ) : isDebit && goldAmount > 0 ? (
                           <>
                             <p className="font-semibold text-foreground">{goldAmount.toFixed(4)} g</p>
                             {usdAmount > 0 && (
@@ -451,7 +467,12 @@ export default function AllTransactions() {
                       
                       {/* CREDIT Column */}
                       <div className="col-span-2 text-right">
-                        {isCredit && goldAmount > 0 ? (
+                        {isSwap ? (
+                          <>
+                            <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
+                            <p className="text-xs text-muted-foreground">to FPGW</p>
+                          </>
+                        ) : isCredit && goldAmount > 0 ? (
                           <>
                             <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
                             {usdAmount > 0 && (
@@ -463,8 +484,16 @@ export default function AllTransactions() {
                         )}
                       </div>
                       
+                      {/* BALANCE USD Column */}
+                      <div className="col-span-2 text-right">
+                        <p className="font-semibold text-foreground">
+                          ${Math.abs(runningBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">≈ {(runningBalance / currentGoldPrice).toFixed(2)}g</p>
+                      </div>
+                      
                       {/* STATUS Column */}
-                      <div className="col-span-1 flex justify-center">
+                      <div className="col-span-2 flex justify-center">
                         {getStatusBadge(tx.status)}
                       </div>
                       
@@ -583,7 +612,8 @@ export default function AllTransactions() {
                     )}
                   </div>
                   );
-                })}
+                });
+                })()}
                 </div>
               </div>
             )}
