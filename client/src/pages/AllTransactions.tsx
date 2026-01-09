@@ -369,68 +369,117 @@ export default function AllTransactions() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border">
-                {filteredTransactions.map((tx) => (
+              <div>
+                {/* Banking-style Table Header */}
+                <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-2">Date</div>
+                  <div className="col-span-4">Description</div>
+                  <div className="col-span-2 text-right">Debit</div>
+                  <div className="col-span-2 text-right">Credit</div>
+                  <div className="col-span-1 text-center">Status</div>
+                  <div className="col-span-1 text-center">Action</div>
+                </div>
+                
+                {/* Transaction Rows */}
+                <div className="divide-y divide-border">
+                {filteredTransactions.map((tx) => {
+                  const isDebit = ['SEND', 'Send', 'WITHDRAW', 'Withdrawal', 'SELL', 'Sell', 'LOCK'].includes(tx.actionType) ||
+                                  tx.description?.includes('MPGW to FPGW');
+                  const isCredit = ['ADD_FUNDS', 'Deposit', 'RECEIVE', 'Receive', 'BUY', 'Buy', 'UNLOCK'].includes(tx.actionType) ||
+                                   tx.actionType === 'ADD_FUNDS' ||
+                                   tx.description?.includes('Crypto deposit');
+                  
+                  const goldAmount = tx.grams ? parseFloat(tx.grams) : (tx.usd && currentGoldPrice > 0 ? parseFloat(tx.usd) / currentGoldPrice : 0);
+                  const usdAmount = tx.usd ? parseFloat(tx.usd) : 0;
+                  
+                  return (
                   <div key={tx.id} data-testid={`row-tx-${tx.id}`}>
                     <div
                       onClick={() => toggleRowExpand(tx.id)}
-                      className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                      className="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
                     >
-                      <div className="flex items-center gap-4">
-                        <button 
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                          onClick={(e) => { e.stopPropagation(); toggleRowExpand(tx.id); }}
-                        >
-                          {expandedRows.has(tx.id) ? (
-                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      {/* DATE Column */}
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(tx.createdAt), 'hh:mm a')}
+                        </p>
+                      </div>
+                      
+                      {/* DESCRIPTION Column */}
+                      <div className="col-span-4 flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${
+                          isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                        }`}>
+                          {isCredit ? (
+                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                          ) : isDebit ? (
+                            <ArrowUpRight className="w-4 h-4 text-gray-600" />
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            getActionIcon(tx.actionType)
                           )}
-                        </button>
-                        <div className={`p-2.5 rounded-xl ${getModuleColor(tx.module)}`}>
-                          {getActionIcon(tx.actionType)}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
-                            {getTransferBadges(tx)}
-                            {(tx.goldWalletType || tx.module === 'finapay') && (
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs ${
-                                  (tx.goldWalletType || 'MPGW') === 'MPGW' 
-                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                                    : 'bg-amber-50 text-amber-600 border-amber-200'
-                                }`}
-                              >
-                                {tx.goldWalletType || 'MPGW'}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{tx.description || tx.referenceId || 'No description'}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground truncate">
+                            {tx.description?.includes('MPGW to FPGW') ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {tx.description?.includes('MPGW to FPGW') 
+                              ? `MPGW to FPGW conversion: ${goldAmount.toFixed(1)}...` 
+                              : tx.description?.includes('Crypto deposit')
+                                ? `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(1)}...`
+                                : tx.description || tx.referenceId || '-'}
+                          </p>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          {tx.grams ? (
-                            <p className="font-semibold text-foreground">{parseFloat(tx.grams).toFixed(4)}g</p>
-                          ) : tx.usd && currentGoldPrice > 0 ? (
-                            <p className="font-semibold text-foreground">~{(parseFloat(tx.usd) / currentGoldPrice).toFixed(2)}g</p>
-                          ) : null}
-                          {tx.usd && (
-                            <p className="text-sm text-muted-foreground">${parseFloat(tx.usd).toFixed(2)}</p>
-                          )}
-                          {!tx.grams && !tx.usd && (
-                            <p className="text-sm text-muted-foreground">-</p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {getStatusBadge(tx.status)}
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(tx.createdAt), 'MMM d, yyyy HH:mm')}
-                          </span>
-                        </div>
+                      
+                      {/* DEBIT Column */}
+                      <div className="col-span-2 text-right">
+                        {isDebit && goldAmount > 0 ? (
+                          <>
+                            <p className="font-semibold text-foreground">{goldAmount.toFixed(4)} g</p>
+                            {usdAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">—</p>
+                        )}
+                      </div>
+                      
+                      {/* CREDIT Column */}
+                      <div className="col-span-2 text-right">
+                        {isCredit && goldAmount > 0 ? (
+                          <>
+                            <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
+                            {usdAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">—</p>
+                        )}
+                      </div>
+                      
+                      {/* STATUS Column */}
+                      <div className="col-span-1 flex justify-center">
+                        {getStatusBadge(tx.status)}
+                      </div>
+                      
+                      {/* ACTION Column */}
+                      <div className="col-span-1 flex justify-center">
+                        <button 
+                          className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                          onClick={(e) => { e.stopPropagation(); toggleRowExpand(tx.id); }}
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <circle cx="10" cy="4" r="1.5" />
+                            <circle cx="10" cy="10" r="1.5" />
+                            <circle cx="10" cy="16" r="1.5" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                     
@@ -533,7 +582,9 @@ export default function AllTransactions() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
+                </div>
               </div>
             )}
           </ScrollArea>

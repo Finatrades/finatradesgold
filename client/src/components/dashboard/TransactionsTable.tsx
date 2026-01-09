@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, ArrowDownLeft, RefreshCw, ShoppingCart, DollarSign, Loader2, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowUpRight, ArrowDownLeft, RefreshCw, Search, Filter, Download } from 'lucide-react';
 import { Link } from 'wouter';
+import { format } from 'date-fns';
 
 interface Transaction {
   id: string;
@@ -21,118 +23,214 @@ interface TransactionsTableProps {
   goldPrice?: number;
 }
 
-const getIcon = (type: string) => {
-  const t = type?.toLowerCase() || '';
-  if (t === 'buy') return <ShoppingCart className="w-4 h-4 text-emerald-600" />;
-  if (t === 'deposit') return <ArrowDownLeft className="w-4 h-4 text-emerald-600" />;
-  if (t === 'sell') return <DollarSign className="w-4 h-4 text-rose-600" />;
-  if (t === 'send') return <ArrowUpRight className="w-4 h-4 text-fuchsia-600" />;
-  if (t === 'receive') return <ArrowDownLeft className="w-4 h-4 text-sky-600" />;
-  return <RefreshCw className="w-4 h-4 text-[#D4AF37]" />;
-};
-
-const getBgColor = (type: string) => {
-  const t = type?.toLowerCase() || '';
-  if (t === 'buy') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5';
-  if (t === 'deposit') return 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/5';
-  if (t === 'sell') return 'bg-gradient-to-br from-rose-500/15 to-rose-600/5';
-  if (t === 'send') return 'bg-gradient-to-br from-purple-500/15 to-fuchsia-600/5';
-  if (t === 'receive') return 'bg-gradient-to-br from-sky-500/15 to-sky-600/5';
-  return 'bg-gradient-to-br from-[#D4AF37]/15 to-[#F4E4BC]/10';
-};
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  } else if (diffDays === 1) {
-    return `Yesterday, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const getStatusBadge = (status: string) => {
+  const s = status?.toLowerCase() || '';
+  if (s === 'completed' || s === 'complete') {
+    return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs px-2 py-0.5">Completed</Badge>;
   }
-}
+  if (s === 'pending' || s === 'under review') {
+    return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2 py-0.5">Pending</Badge>;
+  }
+  if (s === 'failed' || s === 'rejected') {
+    return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2 py-0.5">Failed</Badge>;
+  }
+  return <Badge className="bg-gray-100 text-gray-700 border-gray-200 text-xs px-2 py-0.5">{status}</Badge>;
+};
+
+const isDebitType = (type: string, description: string | null) => {
+  const t = type?.toLowerCase() || '';
+  return t === 'send' || t === 'sell' || t === 'withdraw' || t === 'lock' || 
+         description?.includes('MPGW to FPGW');
+};
+
+const isCreditType = (type: string, description: string | null) => {
+  const t = type?.toLowerCase() || '';
+  return t === 'receive' || t === 'buy' || t === 'deposit' || t === 'unlock' || t === 'add_funds' ||
+         description?.includes('Crypto deposit');
+};
+
+const getTransactionLabel = (type: string, description: string | null) => {
+  if (description?.includes('MPGW to FPGW')) return 'Swap Gold';
+  if (description?.includes('Crypto deposit')) return 'Acquire Gold';
+  if (description?.includes('FinaVault') || description?.includes('physical gold')) return 'Deposit Physical Gold';
+  
+  const t = type?.toLowerCase() || '';
+  if (t === 'deposit' || t === 'buy') return 'Acquire Gold';
+  if (t === 'send') return 'Send Gold';
+  if (t === 'receive') return 'Receive Gold';
+  if (t === 'sell') return 'Sell Gold';
+  return `${type} Gold`;
+};
+
+const getShortDescription = (type: string, description: string | null, goldAmount: number, usdAmount: number) => {
+  if (description?.includes('MPGW to FPGW')) {
+    return `MPGW to FPGW conversion: ${goldAmount.toFixed(1)}...`;
+  }
+  if (description?.includes('Crypto deposit')) {
+    return `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(1)}...`;
+  }
+  return description || '-';
+};
 
 export default function TransactionsTable({ transactions = [], goldPrice = 85 }: TransactionsTableProps) {
+  const [searchQuery, setSearchQuery] = useState('');
   const recentTransactions = transactions.slice(0, 10);
+  
+  const filteredTransactions = recentTransactions.filter(tx => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return tx.description?.toLowerCase().includes(query) || 
+           tx.type.toLowerCase().includes(query) ||
+           tx.id.toLowerCase().includes(query);
+  });
 
   return (
-    <Card className="p-6 bg-white/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 min-h-[300px] max-h-[450px] flex flex-col rounded-2xl">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
-        <Link href="/transactions">
-          <Button variant="link" className="text-[#D4AF37] h-auto p-0 hover:text-[#D4AF37]/80" data-testid="link-view-all-transactions">
-            View all
+    <Card className="p-6 bg-white/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 min-h-[300px] flex flex-col rounded-2xl">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-lg font-bold text-foreground">Transaction History</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-32">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              placeholder="Search ref..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-7 h-8 text-xs"
+              data-testid="input-search-transactions"
+            />
+          </div>
+          <Button variant="outline" size="sm" className="h-8 text-xs gap-1" data-testid="button-filter">
+            <Filter className="w-3 h-3" />
+            All
           </Button>
-        </Link>
+          <Button variant="outline" size="sm" className="h-8 text-xs gap-1" data-testid="button-export">
+            <Download className="w-3 h-3" />
+            Export
+          </Button>
+        </div>
       </div>
 
-      <div className="overflow-y-auto flex-1 pr-2 space-y-3 custom-scrollbar">
-        {recentTransactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <RefreshCw className="w-8 h-8 mb-2 opacity-50" />
+      {/* Banking-style Table Header */}
+      <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-t-lg">
+        <div className="col-span-2">Date</div>
+        <div className="col-span-4">Description</div>
+        <div className="col-span-2 text-right">Debit</div>
+        <div className="col-span-2 text-right">Credit</div>
+        <div className="col-span-1 text-center">Status</div>
+        <div className="col-span-1 text-center">Action</div>
+      </div>
+
+      <div className="overflow-y-auto flex-1 custom-scrollbar">
+        {filteredTransactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+            <RefreshCw className="w-6 h-6 mb-2 opacity-50" />
             <p className="text-sm">No transactions yet</p>
           </div>
         ) : (
-          recentTransactions.map((tx) => {
-            const goldAmount = parseFloat(tx.amountGold || '0');
-            const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
-            const isPositive = tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit';
-            const isPending = tx.status === 'Pending' || tx.status === 'Under Review';
-            const hasNoAmount = usdAmount === 0 && goldAmount === 0;
-            
-            return (
-              <Link key={tx.id} href="/transactions">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-all duration-200 group hover:scale-[1.01] border border-transparent hover:border-border/50 cursor-pointer" data-testid={`transaction-row-${tx.id}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getBgColor(tx.type)} ring-2 ring-white/50`}>
-                      {getIcon(tx.type)}
+          <div className="divide-y divide-border">
+            {filteredTransactions.map((tx) => {
+              const goldAmount = parseFloat(tx.amountGold || '0');
+              const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
+              const isDebit = isDebitType(tx.type, tx.description);
+              const isCredit = isCreditType(tx.type, tx.description);
+              
+              return (
+                <Link key={tx.id} href="/transactions">
+                  <div 
+                    className="grid grid-cols-12 gap-2 px-3 py-3 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                    data-testid={`transaction-row-${tx.id}`}
+                  >
+                    {/* DATE Column */}
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-foreground">
+                        {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(tx.createdAt), 'hh:mm a')}
+                      </p>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{
-                          // Deposit Physical Gold for FinaVault physical deposits
-                          tx.description?.includes('FinaVault') || tx.description?.includes('physical gold') 
-                            ? 'Deposit Physical Gold'
-                            // Acquire Gold for bank/card/crypto deposits that result in gold
-                            : (tx.type === 'Deposit' || tx.type === 'Buy') && parseFloat(tx.amountGold || '0') > 0 
-                            ? 'Acquire Gold' 
-                            : `${tx.type} Gold`
-                        }{tx.sourceModule === 'bnsl' ? ' (BNSL)' : tx.sourceModule === 'Wingold' ? ' Bar' : ''}</p>
-                        {isPending && (
-                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-warning-muted text-warning-muted-foreground border-warning/30">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {tx.status}
-                          </Badge>
+                    
+                    {/* DESCRIPTION Column */}
+                    <div className="col-span-4 flex items-center gap-2">
+                      <div className={`p-1.5 rounded-full ${
+                        isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                      }`}>
+                        {isCredit ? (
+                          <ArrowDownLeft className="w-3.5 h-3.5 text-green-600" />
+                        ) : (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-gray-600" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-foreground truncate">
+                          {getTransactionLabel(tx.type, tx.description)}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {getShortDescription(tx.type, tx.description, goldAmount, usdAmount)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* DEBIT Column */}
+                    <div className="col-span-2 text-right">
+                      {isDebit && goldAmount > 0 ? (
+                        <>
+                          <p className="font-semibold text-foreground text-sm">{goldAmount.toFixed(4)} g</p>
+                          {usdAmount > 0 && (
+                            <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </div>
+                    
+                    {/* CREDIT Column */}
+                    <div className="col-span-2 text-right">
+                      {isCredit && goldAmount > 0 ? (
+                        <>
+                          <p className="font-semibold text-green-600 text-sm">{goldAmount.toFixed(4)} g</p>
+                          {usdAmount > 0 && (
+                            <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </div>
+                    
+                    {/* STATUS Column */}
+                    <div className="col-span-1 flex justify-center">
+                      {getStatusBadge(tx.status)}
+                    </div>
+                    
+                    {/* ACTION Column */}
+                    <div className="col-span-1 flex justify-center">
+                      <button className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <circle cx="10" cy="4" r="1.5" />
+                          <circle cx="10" cy="10" r="1.5" />
+                          <circle cx="10" cy="16" r="1.5" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  <div className="text-right">
-                    {hasNoAmount && isPending ? (
-                      <p className="text-sm font-medium text-muted-foreground">Awaiting Review</p>
-                    ) : (
-                      <>
-                        <p className={`text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isPositive ? '+' : '-'}${Math.abs(usdAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        {goldAmount > 0 ? (
-                          <p className="text-xs text-muted-foreground">{goldAmount.toFixed(3)} g</p>
-                        ) : usdAmount > 0 && goldPrice > 0 ? (
-                          <p className="text-xs text-muted-foreground">~{(usdAmount / goldPrice).toFixed(2)} g</p>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })
+                </Link>
+              );
+            })}
+          </div>
         )}
+      </div>
+      
+      <div className="pt-3 border-t mt-auto">
+        <Link href="/transactions">
+          <Button variant="link" className="text-[#D4AF37] h-auto p-0 hover:text-[#D4AF37]/80 text-sm" data-testid="link-view-all-transactions">
+            View all transactions →
+          </Button>
+        </Link>
       </div>
     </Card>
   );
