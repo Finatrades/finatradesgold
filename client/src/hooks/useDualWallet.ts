@@ -81,9 +81,20 @@ export function useInternalTransfer() {
       return res.json();
     },
     onSuccess: (_, variables) => {
+      // Invalidate all wallet-related queries
       queryClient.invalidateQueries({ queryKey: ['dual-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      // Invalidate vault queries for FinaVault page updates
+      queryClient.invalidateQueries({ queryKey: ['vault-ownership'] });
+      queryClient.invalidateQueries({ queryKey: ['vault-ledger'] });
+      queryClient.invalidateQueries({ queryKey: ['vault-holdings'] });
+      // Invalidate transaction history
+      queryClient.invalidateQueries({ queryKey: ['user-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-transactions'] });
+      // Invalidate certificates
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
     }
   });
 }

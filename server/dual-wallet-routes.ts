@@ -21,7 +21,8 @@ import {
   createFpgwBatch, 
   consumeFpgwBatches, 
   transferFpgwBatches, 
-  getFpgwBalanceSummary
+  getFpgwBalanceSummary,
+  updateFpgwOwnershipSummary
 } from "./fpgw-batch-service";
 import { getGoldPricePerGram } from "./gold-price-service";
 import { emitLedgerEvent } from "./socket";
@@ -388,6 +389,9 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     const auditResult = await workflowAuditService.completeFlow(flowInstanceId, generatedTxId);
     console.log(`[WorkflowAudit] ${flowType} completed: ${auditResult.overallResult}`);
 
+    // Update the FPGW ownership summary to sync with batches
+    await updateFpgwOwnershipSummary(userId);
+    
     const updatedBalance = await getBalanceSummary(userId);
 
     res.json({

@@ -638,6 +638,17 @@ export class VaultLedgerService {
     const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
     const [bnslWallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
     const [bridgeWallet] = await db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId));
+    
+    // Get existing ownership summary to preserve MPGW/FPGW split
+    const [existingSummary] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
+    
+    // Preserve the existing MPGW and FPGW values if they exist
+    const mpgwAvailableGrams = parseFloat(existingSummary?.mpgwAvailableGrams || '0');
+    const fpgwAvailableGrams = parseFloat(existingSummary?.fpgwAvailableGrams || '0');
+    const fpgwPendingGrams = parseFloat(existingSummary?.fpgwPendingGrams || '0');
+    const fpgwLockedBnslGrams = parseFloat(existingSummary?.fpgwLockedBnslGrams || '0');
+    const fpgwReservedTradeGrams = parseFloat(existingSummary?.fpgwReservedTradeGrams || '0');
+    const fpgwWeightedAvgPriceUsd = existingSummary?.fpgwWeightedAvgPriceUsd || null;
 
     const finaPayGrams = parseFloat(wallet?.goldGrams || '0');
     const bnslAvailable = parseFloat(bnslWallet?.availableGoldGrams || '0');
@@ -661,6 +672,13 @@ export class VaultLedgerService {
         bnslLockedGrams: bnslLocked.toFixed(6),
         finaBridgeAvailableGrams: bridgeAvailable.toFixed(6),
         finaBridgeReservedGrams: bridgeLocked.toFixed(6),
+        // Preserve MPGW/FPGW dual-wallet data
+        mpgwAvailableGrams: mpgwAvailableGrams.toFixed(6),
+        fpgwAvailableGrams: fpgwAvailableGrams.toFixed(6),
+        fpgwPendingGrams: fpgwPendingGrams.toFixed(6),
+        fpgwLockedBnslGrams: fpgwLockedBnslGrams.toFixed(6),
+        fpgwReservedTradeGrams: fpgwReservedTradeGrams.toFixed(6),
+        fpgwWeightedAvgPriceUsd: fpgwWeightedAvgPriceUsd,
         lastUpdated: new Date(),
       })
       .where(eq(vaultOwnershipSummary.userId, userId))
@@ -679,6 +697,11 @@ export class VaultLedgerService {
           bnslLockedGrams: bnslLocked.toFixed(6),
           finaBridgeAvailableGrams: bridgeAvailable.toFixed(6),
           finaBridgeReservedGrams: bridgeLocked.toFixed(6),
+          mpgwAvailableGrams: '0',
+          fpgwAvailableGrams: '0',
+          fpgwPendingGrams: '0',
+          fpgwLockedBnslGrams: '0',
+          fpgwReservedTradeGrams: '0',
         })
         .returning();
       return created;
