@@ -5563,7 +5563,7 @@ export class DatabaseStorage implements IStorage {
     const fpgwResult = await db.execute(sql`
       SELECT COALESCE(SUM(remaining_grams), 0) as fpgw_grams
       FROM fpgw_batches 
-      WHERE user_id = ${userId} AND status = 'active'
+      WHERE user_id = ${userId} AND status = 'Active'
     `);
 
     const vaultResult = await db.execute(sql`
