@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
-import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
 interface VaultTransaction {
   id: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal' | 'Bank Deposit';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal' | 'Bank Deposit' | 'Swap';
   status: string;
   amountGold: string | null;
   amountUsd: string | null;
@@ -375,6 +375,7 @@ export default function VaultActivityList() {
       case 'Receive': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Deposit': return <ArrowDownLeft className="w-4 h-4" />;
       case 'Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
+      case 'Swap': return <ArrowLeftRight className="w-4 h-4" />;
       case 'Vault Deposit': return <Box className="w-4 h-4" />;
       case 'Vault Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
       case 'Bank Deposit': return <ArrowDownLeft className="w-4 h-4" />;
@@ -390,6 +391,7 @@ export default function VaultActivityList() {
       case 'Receive': return 'bg-purple-100 text-purple-700';
       case 'Deposit': return 'bg-emerald-100 text-emerald-700';
       case 'Withdrawal': return 'bg-purple-100 text-fuchsia-700';
+      case 'Swap': return 'bg-amber-100 text-amber-700';
       case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
       case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
       case 'Bank Deposit': return 'bg-blue-100 text-blue-700';
@@ -587,6 +589,7 @@ export default function VaultActivityList() {
                 <SelectItem value="Receive">Receive</SelectItem>
                 <SelectItem value="Deposit">Deposit</SelectItem>
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
+                <SelectItem value="Swap">Swap (MPGW↔FPGW)</SelectItem>
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
                 <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
@@ -625,8 +628,11 @@ export default function VaultActivityList() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{
-                        // Deposit Physical Gold for actual physical vault deposits
-                        tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
+                        // Swap Gold for MPGW<->FPGW conversions
+                        tx.type === 'Swap' || tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW')
+                          ? 'Swap Gold'
+                          // Deposit Physical Gold for actual physical vault deposits
+                          : tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
                           ? 'Deposit Physical Gold'
                           // Physical deposits with 1 cert (only Physical Storage, no Digital Ownership pair from purchase)
                           : tx.type === 'Vault Deposit' && tx.certificates.length === 1 && tx.certificates[0]?.type === 'Physical Storage'
@@ -636,7 +642,31 @@ export default function VaultActivityList() {
                           ? 'Acquire Gold'
                           : tx.type
                       }</span>
-                      {tx.goldWalletType && (
+                      {/* Show wallet type badges - for Swap show direction based on description */}
+                      {tx.type === 'Swap' ? (
+                        tx.description?.includes('MPGW to FPGW') ? (
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300"
+                          >
+                            MPGW → FPGW
+                          </Badge>
+                        ) : tx.description?.includes('FPGW to MPGW') ? (
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300"
+                          >
+                            FPGW → MPGW
+                          </Badge>
+                        ) : (
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-amber-100 text-amber-700 border-amber-300"
+                          >
+                            Swap
+                          </Badge>
+                        )
+                      ) : tx.goldWalletType && (
                         <Badge 
                           variant="outline" 
                           className={`text-xs ${
@@ -662,7 +692,19 @@ export default function VaultActivityList() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    {tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
+                    {/* Swap transactions: show conversion amount */}
+                    {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
+                      <>
+                        <p className="font-bold text-amber-600">
+                          {parseFloat(tx.amountGold).toFixed(4)}g
+                        </p>
+                        {tx.amountUsd && (
+                          <p className="text-sm text-muted-foreground">
+                            Locked @ ${(parseFloat(tx.amountUsd) / parseFloat(tx.amountGold)).toFixed(2)}/g
+                          </p>
+                        )}
+                      </>
+                    ) : tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
                       <>
                         <p className="font-bold text-green-600">
                           +${parseFloat(tx.amountUsd).toFixed(2)}

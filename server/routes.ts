@@ -7679,7 +7679,7 @@ ${message}
       const vaultDepositRefs = new Set(vaultDepositReqs.map(dep => dep.referenceNumber));
       
       // Filter to vault-relevant transaction types, excluding duplicates from vault deposits
-      const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal'];
+      const vaultTypes = ['Buy', 'Sell', 'Send', 'Receive', 'Deposit', 'Withdrawal', 'Swap'];
       const vaultTransactions = allTransactions.filter(tx => {
         // Include only vault-relevant types
         if (!vaultTypes.includes(tx.type)) return false;
