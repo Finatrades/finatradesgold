@@ -145,8 +145,77 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">No transactions found</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full" data-testid="finapay-transactions-table">
+              <div>
+                {/* Mobile Card Layout */}
+                <div className="md:hidden divide-y divide-border">
+                  {(() => {
+                    let runningBalance = 0;
+                    return filteredTransactions.map((tx, index) => {
+                      const isSwap = tx.type === 'Swap' || tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW');
+                      const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
+                      const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
+                      
+                      if (isCredit) runningBalance += tx.amountUsd;
+                      else if (isDebit) runningBalance -= tx.amountUsd;
+                      
+                      const transactionLabel = isSwap
+                        ? 'Swap Gold'
+                        : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
+                        ? 'Deposit Physical Gold'
+                        : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
+                        ? 'Acquire Gold' 
+                        : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
+                      
+                      return (
+                        <div 
+                          key={tx.id}
+                          onClick={() => setSelectedTx(tx)}
+                          className="px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                          data-testid={`transaction-card-${tx.id}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap)}`}>
+                              {getIcon(tx.type, tx.assetType, isSwap)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-foreground text-sm truncate">{transactionLabel}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} · {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  {isSwap ? (
+                                    <p className="font-semibold text-amber-600 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
+                                  ) : isCredit ? (
+                                    <p className="font-semibold text-green-600 text-sm">+{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
+                                  ) : isDebit ? (
+                                    <p className="font-semibold text-red-600 text-sm">-{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">—</p>
+                                  )}
+                                  {tx.amountGrams && tx.amountGrams > 0 && (
+                                    <p className="text-xs text-muted-foreground">${tx.amountUsd.toFixed(2)}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
+                                  {tx.status}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Bal: ${Math.abs(runningBalance).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Desktop Table - Hidden on mobile */}
+                <table className="w-full hidden md:table" data-testid="finapay-transactions-table">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-muted/50 border-b border-border">
                       <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>

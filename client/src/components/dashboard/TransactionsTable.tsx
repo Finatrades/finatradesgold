@@ -124,35 +124,35 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
 
   return (
     <Card className="p-6 bg-white/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 min-h-[300px] flex flex-col rounded-2xl">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-lg font-bold text-foreground">Transaction History</h3>
+          <h3 className="text-base sm:text-lg font-bold text-foreground">Transaction History</h3>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-32">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 sm:flex-none sm:w-32">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <Input
-              placeholder="Search ref..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-7 h-8 text-xs"
+              className="pl-7 h-8 text-xs w-full"
               data-testid="input-search-transactions"
             />
           </div>
           <Button variant="outline" size="sm" className="h-8 text-xs gap-1" data-testid="button-filter">
             <Filter className="w-3 h-3" />
-            All
+            <span className="hidden sm:inline">All</span>
           </Button>
           <Button variant="outline" size="sm" className="h-8 text-xs gap-1" data-testid="button-export">
             <Download className="w-3 h-3" />
-            Export
+            <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </div>
 
-      {/* Banking-style Table Header */}
-      <div className="grid grid-cols-14 gap-2 px-3 py-2 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-t-lg">
+      {/* Banking-style Table Header - Hidden on Mobile */}
+      <div className="hidden md:grid grid-cols-14 gap-2 px-3 py-2 bg-muted/40 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-t-lg">
         <div className="col-span-2">Date</div>
         <div className="col-span-3">Description</div>
         <div className="col-span-2 text-right">Debit</div>
@@ -175,9 +175,63 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
               
               return (
                 <div key={tx.id} data-testid={`transaction-row-${tx.id}`}>
+                  {/* Mobile Card Layout */}
                   <div 
                     onClick={() => tx.isSwap ? toggleRowExpand(tx.id) : null}
-                    className={`grid grid-cols-14 gap-2 px-3 py-3 hover:bg-muted/30 transition-colors items-center ${tx.isSwap ? 'cursor-pointer' : ''}`}
+                    className={`md:hidden px-3 py-3 hover:bg-muted/30 transition-colors ${tx.isSwap ? 'cursor-pointer' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-full shrink-0 ${
+                        tx.isSwap ? 'bg-purple-100' : tx.isCredit ? 'bg-green-100' : tx.isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                      }`}>
+                        {tx.isSwap ? (
+                          <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                        ) : tx.isCredit ? (
+                          <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-foreground text-sm truncate">
+                              {getTransactionLabel(tx.type, tx.description)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(tx.createdAt), 'MMM dd')} · {format(new Date(tx.createdAt), 'hh:mm a')}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            {tx.isSwap ? (
+                              <p className="font-semibold text-amber-600 text-sm">{tx.goldAmount.toFixed(4)}g</p>
+                            ) : tx.isCredit && tx.goldAmount > 0 ? (
+                              <p className="font-semibold text-green-600 text-sm">+{tx.goldAmount.toFixed(4)}g</p>
+                            ) : tx.isDebit && tx.goldAmount > 0 ? (
+                              <p className="font-semibold text-foreground text-sm">-{tx.goldAmount.toFixed(4)}g</p>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">—</p>
+                            )}
+                            {tx.usdAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">${tx.usdAmount.toFixed(2)}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          {getStatusBadge(tx.status)}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>Bal: ${Math.abs(tx.balanceUsd).toFixed(2)}</span>
+                            {tx.isSwap && (isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Table Row */}
+                  <div 
+                    onClick={() => tx.isSwap ? toggleRowExpand(tx.id) : null}
+                    className={`hidden md:grid grid-cols-14 gap-2 px-3 py-3 hover:bg-muted/30 transition-colors items-center ${tx.isSwap ? 'cursor-pointer' : ''}`}
                   >
                     {/* DATE Column */}
                     <div className="col-span-2">
