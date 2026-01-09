@@ -7,7 +7,7 @@
  * - Spend validation
  */
 
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { 
@@ -32,6 +32,75 @@ import crypto from "crypto";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 const router = Router();
+
+// In-memory idempotency store for conversion requests
+interface ConversionIdempotencyEntry {
+  inProgress: boolean;
+  result?: { status: number; body: unknown };
+  timestamp: number;
+}
+const conversionIdempotencyStore = new Map<string, ConversionIdempotencyEntry>();
+const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+// Cleanup expired entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of conversionIdempotencyStore.entries()) {
+    if (now - entry.timestamp > IDEMPOTENCY_TTL) {
+      conversionIdempotencyStore.delete(key);
+    }
+  }
+}, 60 * 60 * 1000); // Cleanup every hour
+
+function conversionIdempotencyMiddleware(req: Request, res: Response, next: NextFunction) {
+  const idempotencyKey = req.headers['x-idempotency-key'] as string;
+  
+  if (!idempotencyKey) {
+    return next();
+  }
+  
+  if (!/^[a-zA-Z0-9-_]{8,64}$/.test(idempotencyKey)) {
+    return res.status(400).json({ error: 'Invalid idempotency key format' });
+  }
+  
+  const userId = (req as any).session?.userId || 'anonymous';
+  const compositeKey = `conversion:${userId}:${idempotencyKey}`;
+  
+  const existing = conversionIdempotencyStore.get(compositeKey);
+  
+  if (existing) {
+    if (existing.result) {
+      console.log(`[Conversion Idempotency] Returning cached response for key: ${idempotencyKey}`);
+      return res.status(existing.result.status).json(existing.result.body);
+    }
+    if (existing.inProgress) {
+      return res.status(409).json({ error: 'Conversion request already in progress. Please wait.' });
+    }
+  }
+  
+  // Mark as in progress
+  conversionIdempotencyStore.set(compositeKey, { inProgress: true, timestamp: Date.now() });
+  
+  // Capture response
+  const originalJson = res.json.bind(res);
+  res.json = function(body: unknown) {
+    conversionIdempotencyStore.set(compositeKey, { 
+      inProgress: false, 
+      result: { status: res.statusCode, body },
+      timestamp: Date.now()
+    });
+    return originalJson(body);
+  };
+  
+  // Handle errors
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      conversionIdempotencyStore.delete(compositeKey);
+    }
+  });
+  
+  next();
+}
 
 function ensureAuthenticated(req: Request, res: Response, next: any) {
   if (!(req as any).session?.userId) {
@@ -109,7 +178,7 @@ const internalTransferSchema = z.object({
   notes: z.string().optional()
 });
 
-router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) => {
+router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempotencyMiddleware, async (req, res) => {
   try {
     const parsed = internalTransferSchema.parse(req.body);
     const { userId, goldGrams, fromWalletType, toWalletType, notes } = parsed;
