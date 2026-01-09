@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote, Bitcoin, ExternalLink } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CheckCircle2, XCircle, ArrowDownLeft, ArrowUpRight, DollarSign, Clock, RefreshCw, TrendingUp, Coins, Send, Eye, Building2, Plus, Edit2, Trash2, CreditCard, Banknote, Bitcoin, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
@@ -177,6 +178,11 @@ export default function FinaPayManagement() {
   const [cryptoRejectionReason, setCryptoRejectionReason] = useState('');
   const [cryptoAdminPrice, setCryptoAdminPrice] = useState('');
   const [cryptoAdminGrams, setCryptoAdminGrams] = useState('');
+  const [cryptoPricingMode, setCryptoPricingMode] = useState<'LIVE' | 'MANUAL'>('LIVE');
+  const [cryptoVaultLocation, setCryptoVaultLocation] = useState('Wingold & Metals DMCC');
+  const [cryptoWingoldOrderId, setCryptoWingoldOrderId] = useState('');
+  const [liveGoldPrice, setLiveGoldPrice] = useState<number | null>(null);
+  const [fetchingLivePrice, setFetchingLivePrice] = useState(false);
   
   const [buyGoldDialogOpen, setBuyGoldDialogOpen] = useState(false);
   const [selectedBuyGold, setSelectedBuyGold] = useState<BuyGoldRequest | null>(null);
@@ -419,7 +425,12 @@ export default function FinaPayManagement() {
     setCryptoRejectionReason('');
     setCryptoAdminPrice(payment.goldPriceAtTime || '');
     setCryptoAdminGrams(payment.goldGrams || '');
+    setCryptoPricingMode('LIVE');
+    setCryptoVaultLocation('Wingold & Metals DMCC');
+    setCryptoWingoldOrderId('');
     setCryptoDialogOpen(true);
+    // Fetch live gold price when dialog opens
+    fetchLiveGoldPrice();
   };
 
   const handleCryptoAdminPriceChange = (newPrice: string) => {
@@ -446,6 +457,28 @@ export default function FinaPayManagement() {
     }
   };
 
+  // Fetch live gold price when dialog opens
+  const fetchLiveGoldPrice = async () => {
+    setFetchingLivePrice(true);
+    try {
+      const response = await fetch('/api/gold-price');
+      const data = await response.json();
+      setLiveGoldPrice(data.pricePerGram);
+    } catch (error) {
+      console.error('Failed to fetch live gold price:', error);
+      toast.error('Failed to fetch live gold price');
+    } finally {
+      setFetchingLivePrice(false);
+    }
+  };
+
+  // Calculate grams for LIVE pricing mode
+  const getLiveCalculatedGrams = () => {
+    if (!selectedCrypto || !liveGoldPrice) return 0;
+    const amountUsd = parseFloat(selectedCrypto.amountUsd || '0');
+    return amountUsd / liveGoldPrice;
+  };
+
   const handleCryptoAction = async (action: 'Credited' | 'Rejected') => {
     if (!selectedCrypto || !currentUser) {
       console.error('[handleCryptoAction] Missing selectedCrypto or currentUser', { selectedCrypto, currentUser });
@@ -460,8 +493,11 @@ export default function FinaPayManagement() {
       const body = action === 'Credited'
         ? { 
             reviewNotes: cryptoReviewNotes,
-            goldPriceAtTime: cryptoAdminPrice,
-            goldGrams: cryptoAdminGrams
+            pricingMode: cryptoPricingMode,
+            manualGoldPrice: cryptoPricingMode === 'MANUAL' ? cryptoAdminPrice : undefined,
+            manualGoldGrams: cryptoPricingMode === 'MANUAL' ? cryptoAdminGrams : undefined,
+            vaultLocation: cryptoVaultLocation,
+            wingoldOrderId: cryptoWingoldOrderId || undefined,
           }
         : { rejectionReason: cryptoRejectionReason, reviewNotes: cryptoReviewNotes };
       
@@ -479,9 +515,14 @@ export default function FinaPayManagement() {
         throw new Error(errorData.message || 'Request failed');
       }
       
-      toast.success(`Crypto payment ${action === 'Credited' ? 'approved and credited' : 'rejected'}`);
+      const result = await response.json();
+      toast.success(`Payment approved! ${result.transaction?.goldGrams || ''}g gold credited to user wallet`);
       setCryptoDialogOpen(false);
       setSelectedCrypto(null);
+      // Reset state
+      setCryptoPricingMode('LIVE');
+      setCryptoVaultLocation('Wingold & Metals DMCC');
+      setCryptoWingoldOrderId('');
       fetchData();
     } catch (error) {
       console.error('[handleCryptoAction] Caught error:', error);
@@ -1271,37 +1312,119 @@ export default function FinaPayManagement() {
                 </div>
 
                 {(selectedCrypto.status === 'Pending' || selectedCrypto.status === 'Under Review') && (
-                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
-                    <p className="text-amber-800 text-sm font-medium">Admin Price Override</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
-                        <Input 
-                          type="number"
-                          step="0.01"
-                          value={cryptoAdminPrice}
-                          onChange={e => handleCryptoAdminPriceChange(e.target.value)}
-                          placeholder="Price per gram"
-                          className="bg-white"
-                          data-testid="input-crypto-admin-price"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
-                        <Input 
-                          type="number"
-                          step="0.000001"
-                          value={cryptoAdminGrams}
-                          onChange={e => handleCryptoAdminGramsChange(e.target.value)}
-                          placeholder="Grams to credit"
-                          className="bg-white"
-                          data-testid="input-crypto-admin-grams"
-                        />
-                      </div>
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
+                    <p className="text-green-800 text-sm font-bold">Streamlined Approval - Allocate & Credit</p>
+                    
+                    {/* Pricing Mode Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-green-700 font-medium">Pricing Mode</Label>
+                      <RadioGroup 
+                        value={cryptoPricingMode} 
+                        onValueChange={(v) => setCryptoPricingMode(v as 'LIVE' | 'MANUAL')}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="LIVE" id="pricing-live" />
+                          <Label htmlFor="pricing-live" className="cursor-pointer font-medium">Live Gold Price</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="MANUAL" id="pricing-manual" />
+                          <Label htmlFor="pricing-manual" className="cursor-pointer font-medium">Manual Override</Label>
+                        </div>
+                      </RadioGroup>
                     </div>
-                    <p className="text-xs text-amber-600">
-                      Adjust the gold price or grams to credit. Changing one will recalculate the other based on the deposit amount.
-                    </p>
+
+                    {/* LIVE Pricing Display */}
+                    {cryptoPricingMode === 'LIVE' && (
+                      <div className="p-3 bg-white rounded-lg border border-green-300">
+                        {fetchingLivePrice ? (
+                          <div className="flex items-center gap-2 text-green-700">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Fetching live gold price...</span>
+                          </div>
+                        ) : liveGoldPrice ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-green-600">Live Gold Price</p>
+                              <p className="font-bold text-lg text-green-800">${liveGoldPrice.toFixed(2)}/g</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-green-600">Gold to Credit (Auto-Calculated)</p>
+                              <p className="font-bold text-lg text-green-800">{getLiveCalculatedGrams().toFixed(6)}g</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-red-600 text-sm">Failed to fetch live price. Try manual mode.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* MANUAL Pricing Inputs */}
+                    {cryptoPricingMode === 'MANUAL' && (
+                      <div className="p-3 bg-white rounded-lg border border-amber-300 space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-xs text-amber-700">Gold Price ($/g)</Label>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              value={cryptoAdminPrice}
+                              onChange={e => handleCryptoAdminPriceChange(e.target.value)}
+                              placeholder="Price per gram"
+                              className="bg-white"
+                              data-testid="input-crypto-admin-price"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-amber-700">Gold to Credit (g)</Label>
+                            <Input 
+                              type="number"
+                              step="0.000001"
+                              value={cryptoAdminGrams}
+                              onChange={e => handleCryptoAdminGramsChange(e.target.value)}
+                              placeholder="Grams to credit"
+                              className="bg-white"
+                              data-testid="input-crypto-admin-grams"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-amber-600">
+                          Changing price recalculates grams and vice versa.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Vault Location Dropdown */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-green-700 font-medium">Vault Location</Label>
+                      <Select value={cryptoVaultLocation} onValueChange={setCryptoVaultLocation}>
+                        <SelectTrigger className="bg-white" data-testid="select-vault-location">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Wingold & Metals DMCC">Wingold & Metals DMCC</SelectItem>
+                          <SelectItem value="Dubai Multi Commodities Centre">Dubai Multi Commodities Centre</SelectItem>
+                          <SelectItem value="Emirates Gold">Emirates Gold</SelectItem>
+                          <SelectItem value="Brinks Dubai">Brinks Dubai</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Wingold Order ID (Optional) */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-green-700 font-medium">Wingold Order ID (Optional)</Label>
+                      <Input 
+                        value={cryptoWingoldOrderId}
+                        onChange={e => setCryptoWingoldOrderId(e.target.value)}
+                        placeholder="e.g., WG-2026-001234"
+                        className="bg-white"
+                        data-testid="input-wingold-order-id"
+                      />
+                    </div>
+
+                    <div className="p-2 bg-green-100 rounded text-xs text-green-700">
+                      <strong>On Approval:</strong> Physical Storage Certificate will be auto-generated, Unified Gold Tally auto-filled with COMPLETED status, and user wallet credited immediately.
+                    </div>
                   </div>
                 )}
 

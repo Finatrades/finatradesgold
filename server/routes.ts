@@ -23581,13 +23581,22 @@ ${message}
   });
 
   // Admin: Approve crypto payment
+  // STREAMLINED CRYPTO APPROVAL: Single step with pricing mode + vault + auto-certificate + wallet credit
   app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, async (req, res) => {
-    console.log('[DEBUG] Approve crypto payment - Route entered, id:', req.params.id);
+    console.log('[DEBUG] Streamlined crypto approval - Route entered, id:', req.params.id);
     try {
       const { id } = req.params;
-      const { reviewNotes, goldPriceAtTime: adminGoldPrice, goldGrams: adminGoldGrams } = req.body;
+      const { 
+        reviewNotes, 
+        pricingMode = 'LIVE',  // 'LIVE' or 'MANUAL'
+        manualGoldPrice,       // Required if MANUAL
+        manualGoldGrams,       // Required if MANUAL  
+        vaultLocation = 'Wingold & Metals DMCC',
+        wingoldOrderId,
+      } = req.body;
       const adminUser = (req as any).adminUser;
-      console.log('[DEBUG] Approve crypto payment - adminUser:', adminUser?.id, 'reviewNotes:', reviewNotes);
+      
+      console.log('[DEBUG] Crypto approval params:', { pricingMode, manualGoldPrice, manualGoldGrams, vaultLocation });
       
       const paymentRequest = await storage.getCryptoPaymentRequest(id);
       if (!paymentRequest) {
@@ -23598,28 +23607,58 @@ ${message}
         return res.status(400).json({ message: "Payment request cannot be approved in current status" });
       }
       
-      // Get user's wallet for validation
       const wallet = await storage.getWallet(paymentRequest.userId);
       if (!wallet) {
         return res.status(400).json({ message: "User wallet not found" });
       }
       
-      // GOLDEN RULE: Do NOT credit wallet yet - Create Unified Gold Tally entry
-      // Wallet credit happens ONLY when admin completes Wingold form with physical allocation
-      const finalGoldGrams = adminGoldGrams ? adminGoldGrams : paymentRequest.goldGrams;
-      const finalGoldPrice = adminGoldPrice ? adminGoldPrice : paymentRequest.goldPriceAtTime;
+      const usdAmount = parseFloat(paymentRequest.amountUsd || '0');
+      let goldPrice: number;
+      let goldGrams: number;
       
-      const goldGrams = finalGoldGrams ? parseFloat(finalGoldGrams) : 0;
-      const goldPrice = finalGoldPrice ? parseFloat(finalGoldPrice) : 0;
-      const usdAmount = paymentRequest.amountUsd ? parseFloat(paymentRequest.amountUsd) : 0;
+      // Determine gold price and grams based on pricing mode
+      if (pricingMode === 'MANUAL') {
+        if (!manualGoldPrice || !manualGoldGrams) {
+          return res.status(400).json({ message: "Manual mode requires both gold price and gold grams" });
+        }
+        goldPrice = parseFloat(manualGoldPrice);
+        goldGrams = parseFloat(manualGoldGrams);
+      } else {
+        // LIVE mode - fetch current gold price with defensive error handling
+        try {
+          const { getGoldPrice } = await import('./gold-price-service');
+          const livePrice = await getGoldPrice();
+          if (!livePrice || !livePrice.pricePerGram || livePrice.pricePerGram <= 0) {
+            return res.status(500).json({ message: "Failed to fetch live gold price. Please try manual mode." });
+          }
+          goldPrice = livePrice.pricePerGram;
+          goldGrams = usdAmount / goldPrice;
+        } catch (priceError) {
+          console.error('[DEBUG] LIVE price fetch failed:', priceError);
+          return res.status(500).json({ message: "Failed to fetch live gold price. Please use manual mode." });
+        }
+      }
       
-      console.log('[DEBUG] Crypto approval - GOLDEN RULE: Creating UTT with PENDING_ALLOCATION (no wallet credit yet)');
-      console.log('[DEBUG] Crypto approval values:', { goldGrams, goldPrice, usdAmount });
+      console.log('[DEBUG] Final values:', { pricingMode, goldPrice, goldGrams, usdAmount });
       
-      // Get user info for Unified Gold Tally entry
+      // GOLDEN RULE VALIDATION: Ensure valid allocation before proceeding
+      if (!goldPrice || isNaN(goldPrice) || goldPrice <= 0) {
+        return res.status(400).json({ message: "Invalid gold price. Cannot proceed with allocation." });
+      }
+      if (!goldGrams || isNaN(goldGrams) || goldGrams <= 0) {
+        return res.status(400).json({ message: "Invalid gold grams. Gold allocation must be greater than 0." });
+      }
+      // Enforce Golden Rule tolerance check
+      const tolerance = 0.0001; // 0.0001g tolerance
+      if (goldGrams < tolerance) {
+        return res.status(400).json({ message: `Golden Rule violation: goldGrams (${goldGrams.toFixed(6)}g) must be > ${tolerance}g` });
+      }
+      console.log('[DEBUG] Golden Rule validation passed:', { goldPrice, goldGrams });
+      
       const tallyUser = await storage.getUser(paymentRequest.userId);
+      const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
       
-      // Generate unique transaction ID for UTT
+      // Generate unique UTT transaction ID
       const year = new Date().getFullYear();
       const existingCount = await db.select({ count: sql<number>`count(*)` })
         .from(unifiedGoldTally)
@@ -23627,8 +23666,88 @@ ${message}
       const seqNum = (parseInt(existingCount[0]?.count as any) || 0) + 1;
       const txnId = `UTT-${year}-${String(seqNum).padStart(4, '0')}`;
       
-      // Create Unified Gold Tally entry with PENDING_ALLOCATION status
-      const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+      // 1. Generate Physical Storage Certificate
+      let storageCert;
+      try {
+        storageCert = await storage.createCertificate({
+          userId: paymentRequest.userId,
+          type: 'Physical Storage',
+          certificateNumber: `SSC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          status: 'Active',
+          goldGrams: goldGrams.toString(),
+          vaultLocation: vaultLocation,
+          goldPriceUsdPerGram: goldPrice.toString(),
+        });
+      } catch (certError) {
+        console.error('[DEBUG] Certificate creation failed:', certError);
+        return res.status(500).json({ message: "Failed to generate Physical Storage Certificate. Allocation aborted." });
+      }
+      
+      // GOLDEN RULE: Verify certificate exists before wallet credit
+      if (!storageCert || !storageCert.certificateNumber) {
+        console.error('[DEBUG] Golden Rule violation: Certificate missing');
+        return res.status(500).json({ message: "Golden Rule violation: Storage certificate required before wallet credit." });
+      }
+      console.log('[DEBUG] Generated Physical Storage Certificate:', storageCert.id, storageCert.certificateNumber);
+      
+      // 2. Credit user wallet (GOLDEN RULE: certificate verified above)
+      const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
+      const newGoldGrams = currentGoldGrams + goldGrams;
+      await storage.updateWallet(wallet.id, { goldGrams: newGoldGrams.toString() });
+      
+      // 3. Create transaction record
+      const transaction = await storage.createTransaction({
+        userId: paymentRequest.userId,
+        type: 'Deposit',
+        status: 'Completed',
+        amountGold: goldGrams.toString(),
+        amountUsd: paymentRequest.amountUsd,
+        goldPriceUsdPerGram: goldPrice.toString(),
+        description: `Crypto deposit - $${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g)`,
+        sourceModule: 'finapay',
+        goldWalletType: walletType,
+      });
+      
+      // 4. Record vault ledger entry
+      const { vaultLedgerService } = await import('./vault-ledger-service');
+      await vaultLedgerService.recordLedgerEntry({
+        userId: paymentRequest.userId,
+        action: 'Deposit',
+        goldGrams: goldGrams,
+        goldPriceUsdPerGram: goldPrice,
+        fromWallet: 'External',
+        toWallet: 'FinaPay',
+        toStatus: 'Available',
+        transactionId: transaction.id,
+        notes: `Crypto deposit: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g (USD $${usdAmount.toFixed(2)})`,
+        createdBy: adminUser?.id || 'system',
+      });
+      
+      // 5. Update vault ownership summary
+      const [existingSummary] = await db.select().from(vaultOwnershipSummary)
+        .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+      
+      if (existingSummary) {
+        if (walletType === 'FPGW') {
+          const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6), lastUpdated: new Date() })
+            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+        } else {
+          const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6), lastUpdated: new Date() })
+            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
+        }
+      } else {
+        await db.insert(vaultOwnershipSummary).values({
+          userId: paymentRequest.userId,
+          mpgwAvailableGrams: walletType === 'MPGW' ? goldGrams.toFixed(6) : '0',
+          fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
+        });
+      }
+      
+      // 6. Create Unified Gold Tally entry with COMPLETED status (all data auto-filled)
       const [tallyEntry] = await db.insert(unifiedGoldTally).values({
         id: crypto.randomUUID(),
         txnId,
@@ -23638,7 +23757,7 @@ ${message}
         txnType: 'FIAT_CRYPTO_DEPOSIT',
         sourceMethod: 'CRYPTO',
         walletType,
-        status: 'PENDING_ALLOCATION',
+        status: 'COMPLETED',
         depositCurrency: 'USD',
         depositAmount: paymentRequest.amountUsd,
         feeAmount: '0.00',
@@ -23646,68 +23765,93 @@ ${message}
         netAmount: paymentRequest.amountUsd,
         paymentReference: `CRYPTO-${id.substring(0, 8)}`,
         paymentConfirmedAt: new Date(),
-        pricingMode: 'MARKET',
+        pricingMode: pricingMode === 'MANUAL' ? 'FIXED' : 'MARKET',
         goldRateValue: goldPrice.toFixed(4),
-        rateTimestamp: paymentRequest.createdAt,
+        rateTimestamp: new Date(),
         goldEquivalentG: goldGrams.toFixed(6),
-        goldCreditedG: null,
-        goldCreditedValueUsd: null,
-        physicalGoldAllocatedG: null,
-        vaultLocation: null,
-        storageCertificateId: null,
+        goldCreditedG: goldGrams.toFixed(6),
+        goldCreditedValueUsd: (goldGrams * goldPrice).toFixed(2),
+        physicalGoldAllocatedG: goldGrams.toFixed(6),
+        vaultLocation: vaultLocation,
+        storageCertificateId: storageCert.certificateNumber,
+        wingoldOrderId: wingoldOrderId || null,
         gatewayCostUsd: '0.00',
         bankCostUsd: '0.00',
         networkCostUsd: '0.00',
         opsCostUsd: '0.00',
         totalCostsUsd: '0.00',
-        netProfitUsd: '0.00',
-        notes: 'Awaiting Wingold physical gold allocation',
+        netProfitUsd: usdAmount.toFixed(2),
+        approvedBy: adminUser?.id,
+        approvedAt: new Date(),
+        notes: `Streamlined approval - ${pricingMode} pricing`,
         createdBy: adminUser?.id,
       }).returning();
       
-      console.log('[DEBUG] Created Unified Gold Tally entry:', tallyEntry.id, 'status:', tallyEntry.status);
+      console.log('[DEBUG] Created COMPLETED Unified Gold Tally entry:', tallyEntry.id);
       
-      // Update payment request status
+      // 7. Update crypto payment request status
       await storage.updateCryptoPaymentRequest(id, {
-        status: 'Pending Allocation',
+        status: 'Credited',
         reviewerId: adminUser.id,
         reviewedAt: new Date(),
-        reviewNotes: reviewNotes || 'Payment verified - awaiting Wingold allocation',
-        goldGrams: finalGoldGrams,
-        goldPriceAtTime: finalGoldPrice,
+        reviewNotes: reviewNotes || `Approved with ${pricingMode} pricing`,
+        goldGrams: goldGrams.toString(),
+        goldPriceAtTime: goldPrice.toString(),
+        creditedTransactionId: transaction.id,
       });
       
-      // Create audit log
+      // 8. Create audit log
       await storage.createAuditLog({
         entityType: "crypto_payment_request",
         entityId: id,
         actionType: "approve",
         actor: adminUser.id,
         actorRole: "admin",
-        details: `Payment verified - created UTT ${txnId} for Wingold allocation: ${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g gold)`,
+        details: `Approved crypto payment: $${usdAmount.toFixed(2)} → ${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g (${pricingMode} pricing)`,
       });
       
-      // Notify user
+      // 9. Notify user
       await storage.createNotification({
         userId: paymentRequest.userId,
-        title: "Payment Verified",
-        message: `Your crypto payment of ${usdAmount.toFixed(2)} has been verified. Gold will be credited once physical allocation is complete.`,
-        type: "info",
+        title: "Payment Approved - Gold Credited!",
+        message: `Your crypto payment of $${usdAmount.toFixed(2)} has been approved. ${goldGrams.toFixed(4)}g gold has been credited to your wallet.`,
+        type: "success",
         read: false,
+      });
+      
+      // 10. Emit real-time sync event
+      emitLedgerEvent(paymentRequest.userId, {
+        type: 'balance_update',
+        module: 'finapay',
+        action: 'crypto_payment_approved',
+        data: { goldGrams, amountUsd: usdAmount },
       });
       
       return res.json({
         success: true,
-        message: "Payment verified - awaiting Wingold physical allocation",
-        tallyId: tallyEntry.id,
-        txnId: tallyEntry.txnId,
-        status: 'PENDING_ALLOCATION',
+        message: "Payment approved - Gold credited to user wallet",
+        transaction: {
+          id: transaction.id,
+          goldGrams: goldGrams.toFixed(6),
+          goldPrice: goldPrice.toFixed(2),
+          pricingMode,
+        },
+        certificate: {
+          id: storageCert.id,
+          number: storageCert.certificateNumber,
+        },
+        tally: {
+          id: tallyEntry.id,
+          txnId: tallyEntry.txnId,
+          status: 'COMPLETED',
+        },
       });
     } catch (error) {
       console.error("[DEBUG] Failed to approve crypto payment:", error);
-      return res.status(500).json({ message: "Failed to approve crypto payment" });
+      return res.status(500).json({ message: "Failed to approve crypto payment", error: String(error) });
     }
   });
+
 
   // LEGACY: Old crypto payment approval code - kept for reference but replaced by GOLDEN RULE workflow above
   app.patch("/api/admin/crypto-payments/:id/approve-legacy-disabled", ensureAdminAsync, async (req, res) => {
