@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { 
   Search, RefreshCw, ArrowUpRight, ArrowDownLeft, Lock, Unlock, 
   Plus, Wallet, Shield, TrendingUp, CheckCircle2, Clock, XCircle,
-  ChevronRight, Filter, Calendar, AlertCircle
+  ChevronRight, ChevronDown, Filter, Calendar, AlertCircle
 } from 'lucide-react';
 
 interface UnifiedTransaction {
@@ -64,8 +64,21 @@ export default function AllTransactions() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<UnifiedTransaction | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'updated' | 'error'>('updated');
+
+  const toggleRowExpand = (txId: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(txId)) {
+        next.delete(txId);
+      } else {
+        next.add(txId);
+      }
+      return next;
+    });
+  };
 
   const { data, isLoading, isFetching, refetch, error } = useQuery<{
     transactions: UnifiedTransaction[];
@@ -358,21 +371,89 @@ export default function AllTransactions() {
             ) : (
               <div className="divide-y divide-border">
                 {filteredTransactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    onClick={() => setSelectedTx(tx)}
-                    className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-                    data-testid={`row-tx-${tx.id}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2.5 rounded-xl ${getModuleColor(tx.module)}`}>
-                        {getActionIcon(tx.actionType)}
+                  <div key={tx.id} data-testid={`row-tx-${tx.id}`}>
+                    <div
+                      onClick={() => toggleRowExpand(tx.id)}
+                      className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <button 
+                          className="p-1 hover:bg-muted rounded transition-colors"
+                          onClick={(e) => { e.stopPropagation(); toggleRowExpand(tx.id); }}
+                        >
+                          {expandedRows.has(tx.id) ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        <div className={`p-2.5 rounded-xl ${getModuleColor(tx.module)}`}>
+                          {getActionIcon(tx.actionType)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
+                            {getTransferBadges(tx)}
+                            {(tx.goldWalletType || tx.module === 'finapay') && (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  (tx.goldWalletType || 'MPGW') === 'MPGW' 
+                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                                    : 'bg-amber-50 text-amber-600 border-amber-200'
+                                }`}
+                              >
+                                {tx.goldWalletType || 'MPGW'}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{tx.description || tx.referenceId || 'No description'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-semibold text-foreground">{getActionLabel(tx.actionType, tx.module)}</span>
-                          {getTransferBadges(tx)}
-                          {(tx.goldWalletType || tx.module === 'finapay') && (
+
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          {tx.grams ? (
+                            <p className="font-semibold text-foreground">{parseFloat(tx.grams).toFixed(4)}g</p>
+                          ) : tx.usd && currentGoldPrice > 0 ? (
+                            <p className="font-semibold text-foreground">~{(parseFloat(tx.usd) / currentGoldPrice).toFixed(2)}g</p>
+                          ) : null}
+                          {tx.usd && (
+                            <p className="text-sm text-muted-foreground">${parseFloat(tx.usd).toFixed(2)}</p>
+                          )}
+                          {!tx.grams && !tx.usd && (
+                            <p className="text-sm text-muted-foreground">-</p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {getStatusBadge(tx.status)}
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(tx.createdAt), 'MMM d, yyyy HH:mm')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Expanded Details Row */}
+                    {expandedRows.has(tx.id) && (
+                      <div className="px-4 pb-4 pt-0 bg-muted/30 border-t border-dashed">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border mt-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
+                            <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Date & Time</p>
+                            <p className="text-sm text-foreground">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gold Price at Transaction</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {tx.usdPerGram ? `$${parseFloat(tx.usdPerGram).toFixed(2)}/g` : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Wallet Type</p>
                             <Badge 
                               variant="outline" 
                               className={`text-xs ${
@@ -381,36 +462,12 @@ export default function AllTransactions() {
                                   : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}
                             >
-                              {tx.goldWalletType || 'MPGW'}
+                              {tx.goldWalletType === 'FPGW' ? 'FPGW (Fixed Price)' : 'MPGW (Market Price)'}
                             </Badge>
-                          )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{tx.description || tx.referenceId || 'No description'}</p>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        {tx.grams ? (
-                          <p className="font-semibold text-foreground">{parseFloat(tx.grams).toFixed(4)}g</p>
-                        ) : tx.usd && currentGoldPrice > 0 ? (
-                          <p className="font-semibold text-foreground">~{(parseFloat(tx.usd) / currentGoldPrice).toFixed(2)}g</p>
-                        ) : null}
-                        {tx.usd && (
-                          <p className="text-sm text-muted-foreground">${parseFloat(tx.usd).toFixed(2)}</p>
-                        )}
-                        {!tx.grams && !tx.usd && (
-                          <p className="text-sm text-muted-foreground">-</p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {getStatusBadge(tx.status)}
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(tx.createdAt), 'MMM d, yyyy HH:mm')}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
