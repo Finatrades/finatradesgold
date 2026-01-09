@@ -617,16 +617,16 @@ export default function VaultActivityList() {
             {filteredTransactions.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
                 onClick={() => setSelectedTx(tx)}
                 data-testid={`row-vault-tx-${tx.id}`}
               >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
+                <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                  <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
                     {getTypeIcon(tx.type)}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium">{
                         // Swap Gold for MPGW<->FPGW conversions
                         tx.type === 'Swap' || tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW')
@@ -685,13 +685,13 @@ export default function VaultActivityList() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
                       {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : new Date(tx.createdAt).toLocaleString())}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
+                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 ml-13 sm:ml-0">
+                  <div className="text-left sm:text-right">
                     {/* Swap transactions: show conversion amount with Locked price */}
                     {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
                       <>
@@ -699,8 +699,8 @@ export default function VaultActivityList() {
                           {parseFloat(tx.amountGold).toFixed(4)}g
                         </p>
                         {tx.goldPriceUsdPerGram && (
-                          <p className="text-sm text-amber-500 font-medium">
-                            <span className="bg-amber-100 px-1.5 py-0.5 rounded text-xs mr-1">Locked</span>
+                          <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
+                            <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
                             ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
                           </p>
                         )}
@@ -711,8 +711,8 @@ export default function VaultActivityList() {
                           +${parseFloat(tx.amountUsd).toFixed(2)}
                         </p>
                         {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
-                          <p className="text-sm text-fuchsia-600 font-medium">
-                            {parseFloat(tx.amountGold).toFixed(4)}g gold
+                          <p className="text-xs sm:text-sm text-fuchsia-600 font-medium">
+                            {parseFloat(tx.amountGold).toFixed(4)}g
                           </p>
                         )}
                       </>
@@ -723,7 +723,7 @@ export default function VaultActivityList() {
                           {parseFloat(tx.amountGold).toFixed(4)}g
                         </p>
                         {tx.amountUsd && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             ${parseFloat(tx.amountUsd).toFixed(2)}
                           </p>
                         )}
@@ -737,13 +737,13 @@ export default function VaultActivityList() {
                       <p className="text-sm text-muted-foreground">--</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     {getStatusBadge(tx.status, tx.rejectionReason)}
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button size="icon" variant="ghost">
+                  <Button size="icon" variant="ghost" className="shrink-0 hidden sm:flex">
                     <Eye className="w-4 h-4" />
                   </Button>
                 </div>
