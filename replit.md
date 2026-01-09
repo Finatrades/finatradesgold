@@ -1,244 +1,100 @@
 # Finatrades Platform
 
-## Author
-
-**Charan Pratap Singh**  
-Contact: +971568474843
-
 ## Overview
 
-Finatrades is a gold-backed digital financial platform offering integrated services for personal and business users. Its core purpose is to enable users to buy, sell, store, and trade physical gold through digital wallets. Key capabilities include FinaVault for secure gold storage, FinaPay for digital gold transactions, BNSL (Buy Now Sell Later) for deferred gold sales, FinaBridge for trade finance, and upcoming FinaCard debit card functionality. The platform aims to provide a robust and versatile digital financial ecosystem centered around gold as an asset.
+Finatrades is a gold-backed digital financial platform offering integrated services for personal and business users. Its core purpose is to enable users to buy, sell, store, and trade physical gold through digital wallets. Key capabilities include secure gold storage (FinaVault), digital gold transactions (FinaPay), deferred gold sales (BNSL), trade finance (FinaBridge), and upcoming debit card functionality (FinaCard). The platform aims to provide a robust and versatile digital financial ecosystem centered around gold as an asset.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-
-**System Reports Email:** System@finatrades.com  
-All system-generated reports (security audits, CSRF reports, compliance reports, etc.) should be sent to this email address.
+System Reports Email: System@finatrades.com. All system-generated reports (security audits, CSRF reports, compliance reports, etc.) should be sent to this email address.
 
 ## System Architecture
 
-The platform uses a client-server architecture with a React frontend and an Express Node.js backend. Data persistence is handled by PostgreSQL.
+The platform employs a client-server architecture with a React frontend and an Express Node.js backend, utilizing PostgreSQL for data persistence.
 
-**Core Calculation Rule - GOLD-ONLY COMPLIANCE (Updated Jan 2026):**
-- **Single Source of Truth**: Gold grams is the ONLY authoritative balance. USD is computed dynamically.
-- **Storage**: All ledgers, wallets, locks, and certificates record gold grams ONLY.
-- **Display**: UI shows gold as primary (amber styling), with USD as "≈ equivalent" below.
-- **Disclaimer**: All balance displays include: "USD is an equivalent value. Your real balance is gold."
-- **Historical Records**: Transactions may store USD for audit purposes (value at time of transaction).
-- **Deprecated Fields**: `usdBalance`, `eurBalance`, `bnslLockedUsd`, `finaBridgeLockedUsd` - marked deprecated, will be removed.
-- **Utility Functions**: Use `shared/gold-utils.ts` for conversions (usdToGold, goldToUsd, formatGoldGrams).
-
-**Gold-Only UI Pattern:**
-```typescript
-// PRIMARY: Gold grams displayed prominently (amber styling)
-const goldGrams = wallet.goldBalanceGrams;  // Single source of truth
-
-// SECONDARY: USD computed dynamically from gold × current price
-const usdEquivalent = goldGrams * currentGoldPrice;
-// Always prefix with "≈" to indicate it's an equivalent, not stored value
-```
+**Core Calculation Rule - GOLD-ONLY COMPLIANCE:**
+All balances, ledgers, wallets, locks, and certificates exclusively record gold grams. USD values are dynamically computed and displayed as "≈ equivalent" with a disclaimer that gold is the real balance. Historical transactions may store USD for audit purposes.
 
 **Frontend:**
-- **Framework & Libraries**: React 18 with TypeScript, Vite, Wouter for routing, React Context API for state management, shadcn/ui (Radix UI) for components, Tailwind CSS v4 for styling, TanStack React Query for data fetching, Framer Motion for animations.
+- **Frameworks**: React 18 with TypeScript, Vite, Wouter (routing), React Context API (state), shadcn/ui (components), Tailwind CSS v4, TanStack React Query (data fetching), Framer Motion (animations).
 - **Real-time**: Socket.IO client for live features.
-- **Data Sync Strategy**: Event-driven architecture with centralized cache invalidation:
-  1. **Socket Events**: Server emits `ledger:sync` events on data changes (wallet updates, transactions, etc.)
-  2. **DataSyncProvider** (`client/src/hooks/useDataSync.tsx`): Central listener that maps socket events to React Query invalidation
-  3. **Query Key Mapping**: Events auto-invalidate related queries (e.g., `balance_update` invalidates `['dashboard']`, `['wallet']`, `['user']`)
-  4. **Deduplication**: Uses `syncVersion` timestamps to prevent duplicate invalidations
-  5. **Fallback**: React Query's `refetchOnWindowFocus: true` provides backup sync on tab focus
+- **Data Sync**: Event-driven architecture using Socket.IO `ledger:sync` events to invalidate React Query caches via a `DataSyncProvider`.
 
 **Backend:**
-- **Technology**: Node.js with Express, TypeScript (ESM modules).
+- **Technology**: Node.js with Express, TypeScript (ESM).
 - **API**: RESTful endpoints.
 - **Authentication**: Session-based with bcrypt hashing.
 - **Real-time**: Socket.IO server.
 - **Database Access**: Drizzle ORM with PostgreSQL.
 
 **Security Hardening:**
-- **Helmet.js**: Security headers configured in `server/index.ts`:
-  - CSP: Strict in production, disabled in development for hot reload
-  - HSTS: 1-year max-age in production
-  - X-Frame-Options: deny (clickjacking protection)
-  - X-Content-Type-Options: nosniff
-  - Referrer-Policy: strict-origin-when-cross-origin
-- **CSRF Protection**: Custom header validation requiring `X-Requested-With: XMLHttpRequest` for all state-changing requests. Frontend adds this header via `apiRequest` in `client/src/lib/queryClient.ts`.
-  - **CSRF-exempt endpoints**: Authentication flows (login, register, password reset), webhooks (BinancePay, Ngenius, Stripe), public info endpoints
-- **Idempotency Middleware**: Applied to critical payment routes using atomic Redis SETNX (24-hour TTL, 30-second lock). Protected routes: `/api/transactions`, `/api/deposit-requests`, `/api/withdrawal-requests`, `/api/bnsl/plans`, `/api/bnsl/wallet/transfer`, `/api/bnsl/wallet/withdraw`, `/api/buy-gold/submit`. Client integrations should supply stable `X-Idempotency-Key` headers for retries.
-- **Rate Limiting**: Express-rate-limit middleware protects sensitive endpoints:
-  - **Auth endpoints** (login, register): 10 requests per 15 minutes
-  - **OTP endpoints** (verify-email, otp/request, otp/verify): 5 requests per 5 minutes
-  - **Password reset**: 5 requests per hour
-  - **Withdrawals**: 10 requests per hour per user
-  - **General API**: 100 requests per minute (not yet applied globally)
+- HTTPS enforcement, Helmet.js for security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).
+- CSRF protection via double-submit cookie pattern with `x-csrf-token` header validation.
+- Authenticated access required for `/uploads` directory.
+- Request sanitization (`sanitizeRequest` middleware) and idempotency middleware for critical payment routes using Redis.
+- Rate limiting on sensitive endpoints (auth, OTP, password reset, withdrawals, general API).
+- PostgreSQL-backed session store with secure cookie flags and session rotation.
+- PII handling includes bcrypt for passwords, authenticated access for KYC documents, environment variables for API keys, and audit logging.
 
-**Data Storage (2-Database Architecture - Updated Jan 2026):**
-- **Database**: PostgreSQL with Drizzle ORM.
-- **Production Database**: AWS RDS PostgreSQL - set via `AWS_PROD_DATABASE_URL`
-- **Development/Backup Database**: Replit PostgreSQL - set via `DATABASE_URL` (managed by Replit)
+**Data Storage (2-Database Architecture):**
+- **Production Database**: AWS RDS PostgreSQL.
+- **Development/Backup Database**: Replit PostgreSQL.
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
-- **Key Entities**: Users, Wallets, Transactions, Vault Holdings, KYC Submissions, BNSL Plans/Payouts, Trade Cases/Documents, Chat Sessions/Messages, Audit Logs.
-
-**Environment Variable Configuration:**
-| Variable | Purpose | Environment |
-|----------|---------|-------------|
-| `AWS_PROD_DATABASE_URL` | Production database (real users) | Production only |
-| `DATABASE_URL` | Replit PostgreSQL (dev + backup) | Development |
-
-**Database Safety Architecture (Updated Jan 2026):**
-- **Hourly Backup Sync**: AWS Production → Replit PostgreSQL (requires `DB_SYNC_ENABLED=true` and `ALLOW_DESTRUCTIVE_SYNC=true`)
-- **Manual Backups**: Use `scripts/database-backup.ts` for safe backup/restore operations.
-- **Safety Guards**: 
-  - Minimum 50 tables required in source before sync allowed
-  - `DB_SYNC_ENABLED=true` required to enable hourly backup sync
-  - `ALLOW_DESTRUCTIVE_SYNC=true` required for DROP operations
-  - Production restore requires `CONFIRM_PRODUCTION_RESTORE=yes`
-- **Backup Commands**:
-  - `npx tsx scripts/database-backup.ts status` - Check all database status
-  - `npx tsx scripts/database-backup.ts backup prod` - Backup AWS Production
-  - `npx tsx scripts/database-backup.ts backup backup` - Backup Replit
-  - `npx tsx scripts/database-backup.ts push-schema prod` - Push schema to AWS Production
-- **Schema Push**: When deploying, always run schema push to AWS before starting app:
-  - Generate: `npx drizzle-kit generate`
-  - Push to Production: `npx tsx scripts/database-backup.ts push-schema prod`
-
-**Hourly Backup Configuration:**
-To enable automatic hourly backup from AWS Production to Replit PostgreSQL:
-1. Set environment variables: `DB_SYNC_ENABLED=true` and `ALLOW_DESTRUCTIVE_SYNC=true`
-2. The scheduler will sync every hour from AWS_PROD_DATABASE_URL → DATABASE_URL (Replit)
-3. Safety checks ensure source has at least 50 tables before syncing
+- **Safety**: Hourly backup sync from AWS Production to Replit PostgreSQL (configurable), manual backup scripts, and safety guards for destructive operations.
 
 **Authentication & Authorization:**
-- **Method**: Email/password authentication.
-- **Email Verification**: Mandatory before login (6-digit OTP, 10-minute expiry).
-- **Session Storage**: PostgreSQL.
-- **Roles**: `user` and `admin`.
-- **KYC Levels**: Multi-tier status (Not Started, In Progress, Approved, Rejected).
+- Email/password authentication with mandatory email verification (OTP).
+- Session storage in PostgreSQL.
+- Roles: `user` and `admin`.
+- Multi-tier KYC levels (Not Started, In Progress, Approved, Rejected).
 
 **KYC System:**
-- Supports two modes: `kycAml` (tiered verification: Basic, Enhanced, Corporate) and `Finatrades` (personal info + documents + liveness verification). Configurable via admin settings, including country restrictions.
+Supports `kycAml` (tiered verification) and `Finatrades` (personal info + documents + liveness) modes, configurable via admin settings.
 
 **Centralized Platform Configuration:**
-- All fees, limits, and system settings are managed via a `platform_config` database table.
-- An admin interface (`/admin/platform-config`) allows management of 12 categories: Gold Pricing, Transaction Limits, Deposits, Withdrawals, P2P Transfers, BNSL, FinaBridge, Payment Methods, KYC, System, Vault Inventory, Referrals.
-- Settings are exposed to the frontend via `PlatformContext`.
+All fees, limits, and system settings are managed via a `platform_config` database table and an admin interface. Settings are exposed to the frontend via `PlatformContext`.
 
 **Email Notification Management:**
-- Comprehensive system with `email_notification_settings` (toggleable types) and `email_logs` (audit trail) tables.
-- Admin interface (`/admin/email-notifications`) to manage notification toggles, seed defaults, and view email history/statistics.
-- `sendEmail` function logs all attempts.
+Comprehensive system with toggleable `email_notification_settings` and `email_logs` for audit trails. Admin interface for management and history.
 
 **UI/UX Design:**
-- **Theme**: Purple gradient aesthetic for light mode (rebranded from orange in Dec 2025).
+- **Theme**: Purple gradient aesthetic (light mode).
 - **Design Tokens**: Centralized in `client/src/index.css` using CSS variables.
-- **Color Palette**: 
-  - Primary purple: #8A2BE2
-  - Dark purple: #4B0082
-  - Light purple: #A342FF
-  - Pink accent: #FF2FBF
-  - Header gradient: from #0D001E via #2A0055 to #4B0082
+- **Color Palette**: Primary purple (`#8A2BE2`), dark purple, light purple, pink accent, header gradient.
 - **Typography**: Inter font family.
-- **Component Patterns**: Standardized sidebar, cards, buttons, and status badges using defined tokens.
-- **Custom Scrollbar**: Purple/pink gradient scrollbar styling globally applied.
+- **Component Patterns**: Standardized sidebar, cards, buttons, and status badges using defined tokens. Custom purple/pink gradient scrollbar.
 
 ## External Dependencies
 
 **Database:**
-- **PostgreSQL**: Primary database.
-- **Drizzle ORM**: For database interactions.
-- **connect-pg-simple**: PostgreSQL session store.
+- PostgreSQL
+- Drizzle ORM
+- connect-pg-simple (PostgreSQL session store)
 
 **UI Framework:**
-- **Radix UI**: Accessible component primitives.
-- **shadcn/ui**: Pre-built component library.
-- **Lucide React**: Icon library.
+- Radix UI
+- shadcn/ui
+- Lucide React (Icon library)
 
 **Real-time Communication:**
-- **Socket.IO**: For WebSocket-based chat and notifications.
+- Socket.IO
 
 **Build & Development:**
-- **Vite**: Frontend build tool.
-- **esbuild**: Server-side bundling.
-- **TypeScript**: For full-stack type safety.
+- Vite (frontend)
+- esbuild (server-side bundling)
+- TypeScript
 
 **Validation:**
-- **Zod**: Schema validation.
-- **drizzle-zod**: Zod schemas from Drizzle tables.
-- **@hookform/resolvers**: Form validation integration.
+- Zod
+- drizzle-zod
+- @hookform/resolvers
 
 **Payment Integrations:**
-- **Binance Pay**: Integrated for crypto payments via API and webhooks. Requires `BINANCE_PAY_API_KEY`, `BINANCE_PAY_SECRET_KEY`, and `BINANCE_PAY_MERCHANT_ID`.
+- Binance Pay (crypto payments via API and webhooks)
 
-**Gold Price API (Metals-API.com):**
-- **Plan**: Copper Pack ($199/year) - 2,500 calls/month, 60 req/min, 10-minute updates
-- **Smart Caching Strategy** (`server/gold-price-service.ts`):
-  - Default cache: 10 minutes (matches API update frequency)
-  - Off-peak hours (10PM-3AM UTC): Cache extended to 15 minutes
-  - Usage-based throttling: Extends cache when usage exceeds month progress
-  - ETag support: Reduces bandwidth for unchanged prices
-  - Fallback chain: metals-api.com → gold-api.com (free) → last known price → default
-- **API Usage Tracking**: Monitors monthly call count with warnings at 80% usage
-- **Environment Variable**: `METALS_API_KEY` (secret)
+**Gold Price API:**
+- Metals-API.com (Copper Pack) with smart caching, usage-based throttling, ETag support, and fallback chain (gold-api.com, last known price).
 
 **Mobile App (Capacitor):**
-- Configured for iOS and Android builds.
-- **Installed Plugins**: `@capacitor/camera`, `@capacitor/push-notifications`, `@capacitor/haptics`, `@capacitor/status-bar`, `@capacitor/splash-screen`, `@capacitor/filesystem`, `@capacitor/preferences`.
-
-## UI Theme Report
-
-### Design Token System
-
-**Primary Token Location**: `client/src/index.css`
-- `:root` selector - light mode tokens
-- `.dark` selector - dark mode tokens  
-- `@theme inline` block - maps CSS vars to Tailwind utility classes
-
-### Token Reference
-
-#### Core Colors
-| CSS Variable | Light | Dark | Tailwind | Usage |
-|--------------|-------|------|----------|-------|
-| `--primary` | #8A2BE2 | #A342FF | `bg-primary` | Brand purple |
-| `--background` | #FAFBFF | #0D001E | `bg-background` | Page background |
-| `--foreground` | #0D0D0D | #f9fafb | `text-foreground` | Primary text |
-| `--muted` | #F4F6FC | #2A0055 | `bg-muted` | Subtle backgrounds |
-| `--border` | #e5e7eb | #4B0082 | `border-border` | Borders |
-| `--destructive` | #dc2626 | #dc2626 | `bg-destructive` | Danger actions |
-
-#### Semantic Status Colors
-| Status | Base | Muted (Light) | Muted (Dark) |
-|--------|------|---------------|--------------|
-| Success | #22c55e | #f0fdf4 | #052e16 |
-| Warning | #f59e0b | #fffbeb | #451a03 |
-| Info | #3b82f6 | #eff6ff | #172554 |
-| Error | (aliases destructive) | #fef2f2 | #450a0a |
-
-### Component Patterns
-
-**Sidebar**: `w-72`, `bg-background`, `border-r border-border`
-- Active: `bg-primary text-primary-foreground rounded-xl`
-- Hover: `hover:bg-secondary`
-
-**Cards**: `bg-card`, `border-border`, `rounded-lg`, `shadow-sm`, `p-4`
-
-**Status Badges**: Use semantic tokens
-- Success: `bg-success-muted text-success-muted-foreground`
-- Warning: `bg-warning-muted text-warning-muted-foreground`
-- Info: `bg-info-muted text-info-muted-foreground`
-- Error: `bg-error-muted text-error-muted-foreground`
-
-### Migration Guide
-
-| Legacy Pattern | Semantic Pattern |
-|----------------|------------------|
-| `bg-green-100 text-green-700` | `bg-success-muted text-success-muted-foreground` |
-| `bg-yellow-100 text-yellow-700` | `bg-warning-muted text-warning-muted-foreground` |
-| `bg-blue-100 text-blue-700` | `bg-info-muted text-info-muted-foreground` |
-| `bg-red-100 text-red-700` | `bg-error-muted text-error-muted-foreground` |
-
-**Note**: `--error` aliases `--destructive` for consistency. Use either `bg-destructive` or `bg-error`.
-
-## Documentation
-
-- **Technical Details Report**: `docs/TECHNICAL_DETAILS.md` - Contains detailed information about notification systems (55 email templates, 25+ bell notification types, 10 push notification events), preference controls, and other technical specifications.
+- Configured for iOS and Android builds with various Capacitor plugins (camera, push-notifications, haptics, status-bar, splash-screen, filesystem, preferences).

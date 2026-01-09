@@ -13,6 +13,8 @@ import { pool } from "./db";
 import { getRedisClient } from "./redis-client";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import { csrfProtection, getCsrfTokenHandler, sanitizeRequest } from "./security-middleware";
 
 // Rate limiting configurations for different security levels
 // Uses default IP-based key generator which properly handles IPv6
@@ -61,12 +63,13 @@ export const apiRateLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 
-// Extend express-session types
 declare module "express-session" {
   interface SessionData {
-    userId: string;
-    userRole: "user" | "admin";
+    userId?: string;
+    userRole?: "user" | "admin";
     adminPortal?: boolean;
+    permissions?: Record<string, Record<string, boolean>>;
+    permissionsCachedAt?: number;
   }
 }
 
@@ -75,6 +78,17 @@ const app = express();
 // Trust proxy for production (required for secure cookies behind Replit's reverse proxy)
 app.set('trust proxy', 1);
 
+// HTTPS enforcement in production - redirect HTTP to HTTPS
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Check X-Forwarded-Proto header set by Replit's proxy
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
 // Security headers with helmet
 const isProduction = process.env.NODE_ENV === 'production';
 app.use(helmet({
@@ -82,9 +96,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: [
-        "'self'", 
-        "'unsafe-inline'", 
-        "'unsafe-eval'",
+        "'self'",
+        // Nonces preferred but payment providers require inline scripts
+        "'unsafe-inline'",
         "https://paypage.ngenius-payments.com",
         "https://paypage-uat.ngenius-payments.com",
         "https://static.cloudflareinsights.com",
@@ -110,6 +124,7 @@ app.use(helmet({
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'", "https://paypage.ngenius-payments.com", "https://paypage-uat.ngenius-payments.com"],
+      upgradeInsecureRequests: [],
     },
   } : false,
   crossOriginEmbedderPolicy: false,
@@ -158,10 +173,16 @@ app.use(
   })
 );
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Serve uploaded files with authentication - protects sensitive documents
+app.use('/uploads', (req, res, next) => {
+  // Check if user is authenticated
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: 'Authentication required to access documents' });
+  }
+  next();
+}, express.static(path.join(process.cwd(), 'uploads')));
 
-// Serve attached_assets for product images
+// Serve attached_assets for product images (public assets only, no sensitive data)
 app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 const httpServer = createServer(app);
 
@@ -181,6 +202,18 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Cookie parser for CSRF tokens
+app.use(cookieParser());
+
+// Request sanitization (prototype pollution protection)
+app.use(sanitizeRequest);
+
+// CSRF protection - applied globally to all state-changing requests
+app.use(csrfProtection);
+
+// CSRF token endpoint - frontend fetches this on load
+app.get('/api/csrf-token', getCsrfTokenHandler);
 
 // System Settings Cache (in-memory with short TTL)
 interface SystemSettingsCache {

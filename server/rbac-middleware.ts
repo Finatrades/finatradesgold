@@ -1,15 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 
-declare module 'express-session' {
-  interface SessionData {
-    userId?: string;
-    userRole?: string;
-    permissions?: Record<string, Record<string, boolean>>;
-    permissionsCachedAt?: number;
-  }
-}
-
 const PERMISSION_CACHE_TTL = 5 * 60 * 1000;
 
 export async function loadUserPermissions(userId: string): Promise<Record<string, Record<string, boolean>>> {

@@ -52,6 +52,29 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get CSRF token from cookie
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/csrf_token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+// Fetch CSRF token if not present
+async function ensureCsrfToken(): Promise<string | null> {
+  let token = getCsrfToken();
+  if (!token) {
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        token = data.csrfToken;
+      }
+    } catch (e) {
+      console.warn('[CSRF] Failed to fetch token:', e);
+    }
+  }
+  return token;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -62,6 +85,14 @@ export async function apiRequest(
   };
   if (data) {
     headers['Content-Type'] = 'application/json';
+  }
+  
+  // Add CSRF token for state-changing requests
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+    const csrfToken = await ensureCsrfToken();
+    if (csrfToken) {
+      headers['x-csrf-token'] = csrfToken;
+    }
   }
   
   const res = await fetch(url, {

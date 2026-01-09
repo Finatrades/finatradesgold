@@ -9307,7 +9307,7 @@ ${message}
   // ============================================================================
 
   // User: Request vault transfer
-  app.post("/api/vault/transfers", ensureAuthenticated, requireKycApproved, async (req, res) => {
+  app.post("/api/vault/transfers", ensureAuthenticated, requireKycApproved, idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, goldGrams, fromLocation, toLocation, reason } = req.body;
       
@@ -15805,7 +15805,7 @@ ${message}
 
   // Send gold to another user - PROTECTED: requires authentication + sender verification + PIN
   // NOTE: Platform is gold-only. All transfers are in gold grams, USD is display-only.
-  app.post("/api/finapay/send", ensureAuthenticated, checkMaintenanceMode, requirePinVerification('send_funds'), async (req, res) => {
+  app.post("/api/finapay/send", ensureAuthenticated, checkMaintenanceMode, idempotencyMiddleware, requirePinVerification('send_funds'), async (req, res) => {
     try {
       const { senderId, recipientIdentifier, amountGold, channel, memo, goldWalletType } = req.body;
       
