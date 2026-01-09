@@ -37,8 +37,16 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - PostgreSQL-backed session store with secure cookie flags and session rotation.
 - PII handling includes bcrypt for passwords, authenticated access for KYC documents, environment variables for API keys, and audit logging.
 
+**Production Security (Jan 2026):**
+- **HTTPS Enforcement**: Automatic redirect via X-Forwarded-Proto in production
+- **API Rate Limiting**: Global 100 req/min on /api, stricter limits on auth/OTP/withdrawals
+- **Error Handling**: 5xx errors return generic message in production, no stack traces exposed
+- **Database SSL**: AWS RDS requires CA bundle verification in production, fails securely if missing
+- **Logging**: No sensitive data (passwords, tokens, secrets) logged
+- **Session Security**: PostgreSQL store, secure cookies, httpOnly, sameSite=lax
+
 **Data Storage (2-Database Architecture):**
-- **Production Database**: AWS RDS PostgreSQL.
+- **Production Database**: AWS RDS PostgreSQL with SSL/TLS (CA bundle required).
 - **Development/Backup Database**: Replit PostgreSQL.
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Safety**: Hourly backup sync from AWS Production to Replit PostgreSQL (configurable), manual backup scripts, and safety guards for destructive operations.
