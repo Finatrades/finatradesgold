@@ -14,6 +14,7 @@ import {
   vaultOwnershipSummary, 
   vaultLedgerEntries, 
   certificates,
+  certificateEvents,
   transactions
 } from "@shared/schema";
 import { getBalanceSummary, validateSpend, validateInternalTransfer, type GoldWalletType } from "./spend-guard";
@@ -244,27 +245,82 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           issuedAt: now
         }).returning({ id: certificates.id });
         
-        // Also generate Digital Ownership Certificate for the FPGW lock
+        // Find existing MPGW Digital Ownership certificates to reduce remaining grams
+        const mpgwCerts = await tx.select()
+          .from(certificates)
+          .where(and(
+            eq(certificates.userId, userId),
+            eq(certificates.type, 'Digital Ownership'),
+            eq(certificates.status, 'Active'),
+            sql`(${certificates.goldWalletType} = 'MPGW' OR ${certificates.goldWalletType} IS NULL)`
+          ))
+          .orderBy(desc(certificates.issuedAt));
+        
+        let remainingToDeduct = goldGrams;
+        let parentCertId: string | null = null;
+        
+        // Reduce remaining grams from existing certificates (FIFO order)
+        for (const mpgwCert of mpgwCerts) {
+          if (remainingToDeduct <= 0) break;
+          
+          const currentRemaining = parseFloat(mpgwCert.remainingGrams || mpgwCert.goldGrams);
+          if (currentRemaining <= 0) continue;
+          
+          const deductAmount = Math.min(remainingToDeduct, currentRemaining);
+          const newRemaining = currentRemaining - deductAmount;
+          
+          // Update the certificate's remaining grams
+          await tx.update(certificates)
+            .set({ remainingGrams: newRemaining.toFixed(6) })
+            .where(eq(certificates.id, mpgwCert.id));
+          
+          // Create partial surrender event
+          await tx.insert(certificateEvents).values({
+            certificateId: mpgwCert.id,
+            eventType: 'PARTIAL_SURRENDER',
+            gramsAffected: deductAmount.toFixed(6),
+            gramsBefore: currentRemaining.toFixed(6),
+            gramsAfter: newRemaining.toFixed(6),
+            transactionId: actualTxId,
+            notes: `${deductAmount.toFixed(6)}g converted from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
+          });
+          
+          if (!parentCertId) parentCertId = mpgwCert.id;
+          remainingToDeduct -= deductAmount;
+        }
+        
+        // Generate Digital Ownership Certificate for the FPGW lock
         const digitalCertNumber = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-        await tx.insert(certificates).values({
+        const [newFpgwCert] = await tx.insert(certificates).values({
           certificateNumber: digitalCertNumber,
           userId,
           type: 'Digital Ownership',
           goldGrams: goldGrams.toFixed(6),
+          remainingGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           issuer: 'Finatrades',
           goldWalletType: 'FPGW',
+          parentCertificateId: parentCertId,
           status: 'Active',
           transactionId: actualTxId,
-          issuedAt: now,
-          notes: `Digital Gold Lock - Fixed at $${currentGoldPrice.toFixed(2)}/g`
-        } as any);
+          issuedAt: now
+        } as any).returning({ id: certificates.id });
+        
+        // Update the partial surrender event with child certificate ID
+        if (parentCertId && newFpgwCert) {
+          await tx.update(certificateEvents)
+            .set({ childCertificateId: newFpgwCert.id })
+            .where(and(
+              eq(certificateEvents.transactionId, actualTxId),
+              eq(certificateEvents.eventType, 'PARTIAL_SURRENDER')
+            ));
+        }
         
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber },
+          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber, parentCertId },
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
 

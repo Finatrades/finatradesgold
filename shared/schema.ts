@@ -1284,6 +1284,10 @@ export const certificates = pgTable("certificates", {
   fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW certificates, links to batch
   conversionPriceUsd: decimal("conversion_price_usd", { precision: 12, scale: 2 }), // Price at time of conversion
   
+  // Certificate lineage - track remaining grams after partial conversions
+  remainingGrams: decimal("remaining_grams", { precision: 18, scale: 6 }), // Current active grams (may be less than goldGrams due to conversions)
+  parentCertificateId: varchar("parent_certificate_id", { length: 255 }), // For child certificates created from partial surrender
+  
   issuedAt: timestamp("issued_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),
   cancelledAt: timestamp("cancelled_at"),
@@ -1293,6 +1297,38 @@ export const certificates = pgTable("certificates", {
 export const insertCertificateSchema = createInsertSchema(certificates).omit({ id: true, issuedAt: true });
 export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type Certificate = typeof certificates.$inferSelect;
+
+// Certificate Events - Audit trail for certificate lifecycle changes
+export const certificateEventTypeEnum = pgEnum('certificate_event_type', [
+  'ISSUED',              // Certificate created
+  'PARTIAL_SURRENDER',   // Portion of certificate converted/transferred
+  'FULL_SURRENDER',      // Full certificate converted/transferred
+  'CANCELLED',           // Certificate cancelled
+  'UPDATED'              // Certificate details updated
+]);
+
+export const certificateEvents = pgTable("certificate_events", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  certificateId: varchar("certificate_id", { length: 255 }).notNull().references(() => certificates.id),
+  eventType: certificateEventTypeEnum("event_type").notNull(),
+  
+  // Amount details
+  gramsAffected: decimal("grams_affected", { precision: 18, scale: 6 }).notNull(),
+  gramsBefore: decimal("grams_before", { precision: 18, scale: 6 }).notNull(),
+  gramsAfter: decimal("grams_after", { precision: 18, scale: 6 }).notNull(),
+  
+  // Linked entities
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  childCertificateId: varchar("child_certificate_id", { length: 255 }), // New certificate created from partial surrender
+  
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCertificateEventSchema = createInsertSchema(certificateEvents).omit({ id: true, createdAt: true });
+export type InsertCertificateEvent = z.infer<typeof insertCertificateEventSchema>;
+export type CertificateEvent = typeof certificateEvents.$inferSelect;
 
 // ============================================
 // FINAVAULT - CENTRAL OWNERSHIP LEDGER
