@@ -5571,7 +5571,7 @@ export class DatabaseStorage implements IStorage {
     `);
 
     const barsResult = await db.execute(sql`
-      SELECT COUNT(*) as count, array_agg(DISTINCT vault_location) as locations
+      SELECT COUNT(*) as count, array_agg(DISTINCT wb.vault_location) as locations
       FROM wingold_bars wb
       JOIN wingold_allocations wa ON wb.allocation_id = wa.id
       WHERE wa.user_id = ${userId}
