@@ -4866,3 +4866,200 @@ export const b2bWebhookLogs = pgTable("b2b_webhook_logs", {
 export const insertB2bWebhookLogSchema = createInsertSchema(b2bWebhookLogs).omit({ id: true, createdAt: true });
 export type InsertB2bWebhookLog = z.infer<typeof insertB2bWebhookLogSchema>;
 export type B2bWebhookLog = typeof b2bWebhookLogs.$inferSelect;
+
+
+// ============================================
+// ADMIN VAULT MANAGEMENT - MPGW/FPGW SYSTEM
+// ============================================
+
+// Wallet Conversion Status
+export const walletConversionStatusEnum = pgEnum('wallet_conversion_status', [
+  'pending',           // Awaiting admin approval
+  'approved',          // Admin approved, processing
+  'completed',         // Conversion complete
+  'rejected',          // Admin rejected
+  'cancelled'          // User cancelled
+]);
+
+// Wallet Conversion Direction
+export const walletConversionDirectionEnum = pgEnum('wallet_conversion_direction', [
+  'MPGW_TO_FPGW',     // Market Price to Fixed Price (locks value, backend sells gold exposure)
+  'FPGW_TO_MPGW'      // Fixed Price to Market Price (unlocks, backend buys gold exposure)
+]);
+
+// WALLET CONVERSIONS - Track all MPGW↔FPGW conversion requests
+export const walletConversions = pgTable("wallet_conversions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Conversion details
+  direction: walletConversionDirectionEnum("direction").notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  // Price at time of request
+  spotPriceUsdPerGram: decimal("spot_price_usd_per_gram", { precision: 12, scale: 4 }).notNull(),
+  lockedValueUsd: decimal("locked_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Fee/spread (configurable)
+  feePercentage: decimal("fee_percentage", { precision: 5, scale: 4 }).default('0'),
+  feeAmountUsd: decimal("fee_amount_usd", { precision: 12, scale: 2 }).default('0'),
+  
+  // Final execution price (may differ from request if admin adjusts)
+  executionPriceUsdPerGram: decimal("execution_price_usd_per_gram", { precision: 12, scale: 4 }),
+  executionValueUsd: decimal("execution_value_usd", { precision: 18, scale: 2 }),
+  
+  // Status and approval
+  status: walletConversionStatusEnum("status").notNull().default('pending'),
+  requestedAt: timestamp("requested_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  completedAt: timestamp("completed_at"),
+  
+  // Admin notes
+  adminNotes: text("admin_notes"),
+  rejectionReason: text("rejection_reason"),
+  
+  // Links to ledger entries created
+  ledgerDebitId: varchar("ledger_debit_id", { length: 255 }),
+  ledgerCreditId: varchar("ledger_credit_id", { length: 255 }),
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }).references(() => fpgwBatches.id),
+  cashLedgerEntryId: varchar("cash_ledger_entry_id", { length: 255 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWalletConversionSchema = createInsertSchema(walletConversions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWalletConversion = z.infer<typeof insertWalletConversionSchema>;
+export type WalletConversion = typeof walletConversions.$inferSelect;
+
+// Cash Safety Ledger Entry Type
+export const cashLedgerEntryTypeEnum = pgEnum('cash_ledger_entry_type', [
+  'FPGW_LOCK',           // Cash credited when user locks MPGW→FPGW
+  'FPGW_UNLOCK',         // Cash debited when user unlocks FPGW→MPGW
+  'BANK_DEPOSIT',        // Manual deposit from bank
+  'BANK_WITHDRAWAL',     // Manual withdrawal to bank
+  'ADJUSTMENT',          // Admin adjustment
+  'FEE_REVENUE'          // Fee collected from conversions
+]);
+
+// CASH SAFETY LEDGER - Track cash backing for FPGW positions
+export const cashSafetyLedger = pgTable("cash_safety_ledger", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Entry details
+  entryType: cashLedgerEntryTypeEnum("entry_type").notNull(),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  direction: varchar("direction", { length: 10 }).notNull(), // 'credit' or 'debit'
+  
+  // Running balance after this entry
+  runningBalanceUsd: decimal("running_balance_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Reference to what triggered this entry
+  conversionId: varchar("conversion_id", { length: 255 }).references(() => walletConversions.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  
+  // Bank transaction details (for manual deposits/withdrawals)
+  bankReference: varchar("bank_reference", { length: 255 }),
+  bankAccountLast4: varchar("bank_account_last4", { length: 4 }),
+  
+  // Admin who created (for manual entries)
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  notes: text("notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCashSafetyLedgerSchema = createInsertSchema(cashSafetyLedger).omit({ id: true, createdAt: true });
+export type InsertCashSafetyLedger = z.infer<typeof insertCashSafetyLedgerSchema>;
+export type CashSafetyLedger = typeof cashSafetyLedger.$inferSelect;
+
+// Reconciliation Alert Severity
+export const reconciliationAlertSeverityEnum = pgEnum('reconciliation_alert_severity', [
+  'info',              // Informational
+  'warning',           // Needs attention
+  'critical'           // Immediate action required
+]);
+
+// Reconciliation Alert Type
+export const reconciliationAlertTypeEnum = pgEnum('reconciliation_alert_type', [
+  'MPGW_EXCEEDS_PHYSICAL',       // Total MPGW > physical inventory
+  'FPGW_EXCEEDS_CASH',           // Total FPGW value > cash safety balance
+  'INVENTORY_MISMATCH',          // Wingold inventory doesn't match our records
+  'LARGE_CONVERSION',            // Conversion > threshold (e.g., 100g)
+  'CASH_LOW',                    // Cash safety account running low
+  'MANUAL_ADJUSTMENT'            // Admin made manual adjustment
+]);
+
+// RECONCILIATION ALERTS - Alert when platform exposure is out of balance
+export const reconciliationAlerts = pgTable("reconciliation_alerts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  alertType: reconciliationAlertTypeEnum("alert_type").notNull(),
+  severity: reconciliationAlertSeverityEnum("severity").notNull(),
+  
+  // Alert details
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  
+  // Numeric data for dashboard
+  expectedValue: decimal("expected_value", { precision: 18, scale: 6 }),
+  actualValue: decimal("actual_value", { precision: 18, scale: 6 }),
+  differenceValue: decimal("difference_value", { precision: 18, scale: 6 }),
+  differencePercentage: decimal("difference_percentage", { precision: 8, scale: 4 }),
+  
+  // Resolution
+  isResolved: boolean("is_resolved").notNull().default(false),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by", { length: 255 }).references(() => users.id),
+  resolutionNotes: text("resolution_notes"),
+  
+  // Metadata
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReconciliationAlertSchema = createInsertSchema(reconciliationAlerts).omit({ id: true, createdAt: true });
+export type InsertReconciliationAlert = z.infer<typeof insertReconciliationAlertSchema>;
+export type ReconciliationAlert = typeof reconciliationAlerts.$inferSelect;
+
+// PLATFORM EXPOSURE SNAPSHOT - Daily snapshots for audit trail
+export const platformExposureSnapshots = pgTable("platform_exposure_snapshots", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  snapshotDate: timestamp("snapshot_date").notNull(),
+  
+  // MPGW exposure (physical gold liability)
+  totalMpgwGrams: decimal("total_mpgw_grams", { precision: 18, scale: 6 }).notNull(),
+  totalMpgwValueUsd: decimal("total_mpgw_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // FPGW exposure (cash liability)
+  totalFpgwGrams: decimal("total_fpgw_grams", { precision: 18, scale: 6 }).notNull(),
+  totalFpgwLockedValueUsd: decimal("total_fpgw_locked_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Physical inventory
+  physicalInventoryGrams: decimal("physical_inventory_grams", { precision: 18, scale: 6 }).notNull(),
+  physicalInventoryValueUsd: decimal("physical_inventory_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Cash safety account
+  cashSafetyBalanceUsd: decimal("cash_safety_balance_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Gold price at snapshot
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 4 }).notNull(),
+  goldPriceUsdPerOunce: decimal("gold_price_usd_per_ounce", { precision: 12, scale: 2 }).notNull(),
+  
+  // Coverage ratios
+  mpgwCoverageRatio: decimal("mpgw_coverage_ratio", { precision: 8, scale: 4 }).notNull(), // physical / MPGW
+  fpgwCoverageRatio: decimal("fpgw_coverage_ratio", { precision: 8, scale: 4 }).notNull(), // cash / FPGW value
+  
+  // User counts
+  totalUsersWithMpgw: integer("total_users_with_mpgw").notNull().default(0),
+  totalUsersWithFpgw: integer("total_users_with_fpgw").notNull().default(0),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPlatformExposureSnapshotSchema = createInsertSchema(platformExposureSnapshots).omit({ id: true, createdAt: true });
+export type InsertPlatformExposureSnapshot = z.infer<typeof insertPlatformExposureSnapshotSchema>;
+export type PlatformExposureSnapshot = typeof platformExposureSnapshots.$inferSelect;
