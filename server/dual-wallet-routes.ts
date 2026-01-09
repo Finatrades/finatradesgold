@@ -149,6 +149,8 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
     const currentGoldPrice = await getGoldPricePerGram();
     const now = new Date();
     let generatedTxId: string = '';
+    
+    const preTransferBalance = await getBalanceSummary(userId);
 
     await db.transaction(async (tx) => {
       if (fromWalletType === 'MPGW' && toWalletType === 'FPGW') {
@@ -199,8 +201,6 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           { userId, transactionId: actualTxId }
         );
 
-        const balanceSummary = await getBalanceSummary(userId);
-        
         const [ledgerEntry] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'MPGW_To_FPGW',
@@ -209,7 +209,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           fromGoldWalletType: 'MPGW',
           toGoldWalletType: 'FPGW',
-          balanceAfterGrams: (balanceSummary.total.totalGrams).toFixed(6),
+          balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxId,
           notes: `Converted ${goldGrams.toFixed(6)}g from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
         }).returning({ id: vaultLedgerEntries.id });
@@ -224,7 +224,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
-          { newMpgwGrams: balanceSummary.mpgw.availableGrams, newFpgwGrams: balanceSummary.fpgw.availableGrams },
+          { newMpgwGrams: preTransferBalance.mpgw.availableGrams - goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams + goldGrams },
           { userId, transactionId: actualTxId }
         );
 
@@ -349,8 +349,6 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         const avgPrice = consumption.totalGramsConsumed > 0 
           ? consumption.weightedValueUsd / consumption.totalGramsConsumed 
           : currentGoldPrice;
-
-        const balanceSummaryFpgw = await getBalanceSummary(userId);
         
         const [insertedTxFpgw] = await tx.insert(transactions).values({
           userId,
@@ -383,7 +381,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
           valueUsd: consumption.weightedValueUsd.toFixed(2),
           fromGoldWalletType: 'FPGW',
           toGoldWalletType: 'MPGW',
-          balanceAfterGrams: (balanceSummaryFpgw.total.totalGrams).toFixed(6),
+          balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxIdFpgw,
           notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
         }).returning({ id: vaultLedgerEntries.id });
@@ -398,7 +396,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, async (req, res) =
         await workflowAuditService.recordStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
-          { newMpgwGrams: balanceSummaryFpgw.mpgw.availableGrams, newFpgwGrams: balanceSummaryFpgw.fpgw.availableGrams },
+          { newMpgwGrams: preTransferBalance.mpgw.availableGrams + goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - goldGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
 
