@@ -1240,170 +1240,92 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
               </div>
 
-              {/* Panel 2 - Dual Amount Inputs */}
+              {/* Panel 2 - Deposit Summary (Read-only from Step 1) */}
               <div className="space-y-4">
                 <div className="text-center mb-2">
-                  <h4 className="font-semibold text-foreground text-sm">Deposit Amount</h4>
-                  <p className="text-xs text-muted-foreground">Enter in Gold or USD</p>
+                  <h4 className="font-semibold text-foreground text-sm">Deposit Summary</h4>
+                  <p className="text-xs text-muted-foreground">Your deposit details</p>
                 </div>
                 
-                {/* Gold Input */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
-                    <Coins className="w-3.5 h-3.5" />
-                    Gold (grams)
-                  </Label>
-                  <div className="relative">
-                    <div className={`absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-lg transition-opacity ${inputMode === 'gold' ? 'opacity-30' : 'opacity-10'}`}></div>
-                    <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-amber-400' : 'border-amber-200'}`}>
-                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        placeholder="0.0000"
-                        value={goldAmount}
-                        onChange={(e) => {
-                          setInputMode('gold');
-                          setGoldAmount(e.target.value);
-                          if (goldPrice?.pricePerGram && e.target.value) {
-                            const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
-                            setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
-                          } else {
-                            setAmount('');
-                          }
-                        }}
-                        onFocus={() => setInputMode('gold')}
-                        className="pl-10 pr-6 h-12 text-lg font-bold border-0 focus-visible:ring-0 bg-transparent"
-                        data-testid="input-gold-amount-step3"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-amber-600">g</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* USD Input */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    USD Amount
-                  </Label>
-                  <div className="relative">
-                    <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-lg transition-opacity ${inputMode === 'usd' ? 'opacity-30' : 'opacity-10'}`}></div>
-                    <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200'}`}>
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={amount}
-                        onChange={(e) => {
-                          setInputMode('usd');
-                          setAmount(e.target.value);
-                          if (goldPrice?.pricePerGram && e.target.value) {
-                            const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
-                            setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
-                          } else {
-                            setGoldAmount('');
-                          }
-                        }}
-                        onFocus={() => setInputMode('usd')}
-                        className="pl-10 pr-10 h-12 text-lg font-bold border-0 focus-visible:ring-0 bg-transparent"
-                        data-testid="input-usd-amount-step3"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-emerald-600">USD</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Deposit Summary - Compact */}
-                {((inputMode === 'gold' && parseFloat(goldAmount) > 0) || (inputMode === 'usd' && parseFloat(amount) > 0)) && (
-                  <div className="border border-amber-300 rounded-lg p-3 bg-gradient-to-r from-amber-50 to-yellow-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Coins className="w-4 h-4 text-amber-600" />
-                      <h4 className="font-semibold text-amber-800 text-sm">Summary</h4>
-                    </div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between bg-white/80 rounded p-2 border border-amber-200">
-                        <span className="text-amber-700">Gold:</span>
-                        <span className="font-bold text-amber-700">
-                          {(inputMode === 'gold' 
-                            ? parseFloat(goldAmount) 
-                            : getEffectiveGoldGrams()).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
-                        </span>
+                {/* Gold Amount - Read Only */}
+                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                        <Coins className="w-4 h-4 text-white" />
                       </div>
-                      
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Value:</span>
-                        <span>
-                          ${(inputMode === 'gold' 
-                            ? getEffectiveUsdAmount()
-                            : (selectedAccount?.currency !== 'USD' 
-                                ? getDepositSummary().amountInUsd
-                                : parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      
-                      {depositFee && (
-                        <div className="flex justify-between text-orange-600">
-                          <span>Fee ({depositFee.feeValue}%):</span>
-                          <span>
-                            +${(inputMode === 'gold' 
-                              ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
-                              : calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
-                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {depositFee && (
-                        <div className="flex items-center justify-between bg-emerald-50 rounded p-2 border border-emerald-200">
-                          <span className="text-emerald-700 font-medium">Total:</span>
-                          <span className="font-bold text-emerald-700">
-                            ${(inputMode === 'gold' 
-                              ? (parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
-                              : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
-                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {goldPrice?.pricePerGram && (
-                        <p className="text-[10px] text-muted-foreground pt-1 border-t border-amber-200 flex items-center gap-1">
-                          <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
-                          ${goldPrice.pricePerGram.toFixed(2)}/gram
-                        </p>
-                      )}
+                      <span className="text-sm font-semibold text-amber-800">Gold You'll Receive</span>
                     </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setStep('amount')}
+                      className="text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100 h-6 px-2"
+                      data-testid="button-edit-amount"
+                    >
+                      Edit
+                    </Button>
                   </div>
-                )}
+                  <p className="text-2xl font-bold text-amber-800 text-center">
+                    {(inputMode === 'gold' 
+                      ? parseFloat(goldAmount || '0') 
+                      : getEffectiveGoldGrams()).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
+                  </p>
+                </div>
+                
+                {/* Fee Breakdown */}
+                <div className="border border-amber-300 rounded-lg p-3 bg-white space-y-2 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Gold Value:</span>
+                    <span className="font-medium">
+                      ${(inputMode === 'gold' 
+                        ? getEffectiveUsdAmount()
+                        : (selectedAccount?.currency !== 'USD' 
+                            ? getDepositSummary().amountInUsd
+                            : parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {depositFee && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>Processing Fee ({depositFee.feeValue}%):</span>
+                      <span className="font-medium">
+                        +${(inputMode === 'gold' 
+                          ? calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
+                          : calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 mt-2">
+                    <span className="flex items-center gap-2 text-emerald-700 font-semibold">
+                      <DollarSign className="w-4 h-4" />
+                      Total to Pay:
+                    </span>
+                    <span className="text-lg font-bold text-emerald-700">
+                      ${(inputMode === 'gold' 
+                        ? (parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
+                        : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
+                      ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {goldPrice?.pricePerGram && (
+                    <p className="text-xs text-muted-foreground pt-2 border-t border-amber-200 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                      Live gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Panel 3 - Payment Details & Upload */}
+              {/* Panel 3 - Upload Proof */}
               <div className="space-y-3">
                 <div className="text-center mb-2">
-                  <h4 className="font-semibold text-foreground text-sm">Payment Details</h4>
-                  <p className="text-xs text-muted-foreground">Your bank info & proof</p>
-                </div>
-                
-                <div>
-                  <Label className="text-xs">Your Bank Name</Label>
-                  <Input 
-                    value={senderBankName}
-                    onChange={(e) => setSenderBankName(e.target.value)}
-                    placeholder="e.g., Chase Bank"
-                    className="mt-1 h-9 text-sm"
-                    data-testid="input-sender-bank"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Your Account Name</Label>
-                  <Input 
-                    value={senderAccountName}
-                    onChange={(e) => setSenderAccountName(e.target.value)}
-                    placeholder="e.g., John Doe"
-                    className="mt-1 h-9 text-sm"
-                    data-testid="input-sender-account"
-                  />
+                  <h4 className="font-semibold text-foreground text-sm">Upload Proof</h4>
+                  <p className="text-xs text-muted-foreground">Transfer confirmation</p>
                 </div>
 
                 <div>
