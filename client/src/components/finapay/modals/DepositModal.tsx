@@ -827,10 +827,19 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   </div>
                   
                   {/* Important Notice */}
-                  <div className="bg-amber-100/50 border border-amber-200 rounded-lg p-3 mt-2">
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      <strong>Note:</strong> Gold price is tentative. Final rate will be confirmed upon fund receipt.
-                    </p>
+                  <div className="bg-gradient-to-r from-amber-100 to-orange-50 border border-amber-300 rounded-lg p-4 mt-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-4 h-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-amber-800 text-sm mb-1">Important Notice</p>
+                        <p className="text-xs text-amber-700 leading-relaxed">
+                          Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
+                          After verification, gold will be deposited to your <strong>Market Price Gold Wallet (MPGW)</strong> at the final confirmed rate.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
