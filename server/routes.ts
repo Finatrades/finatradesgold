@@ -29,7 +29,7 @@ import {
   tradeRequests, tradeProposals, settlementHolds,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
   sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements,
-  depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions,
+  depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions, unifiedTallyEvents,
   wallets as walletsTable, transactions as transactionsTable,
   bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable
 } from "@shared/schema";
@@ -23789,7 +23789,69 @@ ${message}
         createdBy: adminUser?.id,
       }).returning();
       
+      
       console.log('[DEBUG] Created COMPLETED Unified Gold Tally entry:', tallyEntry.id);
+      
+      // Create timeline events for this tally entry
+      await db.insert(unifiedTallyEvents).values([
+        {
+          id: crypto.randomUUID(),
+          tallyId: tallyEntry.id,
+          eventType: 'PAYMENT_RECEIVED',
+          newStatus: 'PENDING_ALLOCATION',
+          details: { 
+            amount: usdAmount.toFixed(2), 
+            currency: 'USD',
+            method: 'Crypto',
+            transactionHash: paymentRequest.transactionHash 
+          },
+          notes: `Payment of $${usdAmount.toFixed(2)} received via crypto`,
+          triggeredBy: paymentRequest.userId,
+          triggeredByName: tallyUser ? `${tallyUser.firstName || ''} ${tallyUser.lastName || ''}`.trim() : 'User',
+        },
+        {
+          id: crypto.randomUUID(),
+          tallyId: tallyEntry.id,
+          eventType: 'GOLD_ALLOCATED',
+          previousStatus: 'PENDING_ALLOCATION',
+          newStatus: 'ALLOCATED',
+          details: { 
+            goldGrams: goldGrams.toFixed(6),
+            goldPrice: goldPrice.toFixed(4),
+            vaultLocation: vaultLocation 
+          },
+          notes: `${goldGrams.toFixed(4)}g physical gold allocated at ${vaultLocation}`,
+          triggeredBy: adminUser?.id,
+          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
+        },
+        {
+          id: crypto.randomUUID(),
+          tallyId: tallyEntry.id,
+          eventType: 'CERTIFICATE_ISSUED',
+          details: { 
+            certificateNumber: storageCert.certificateNumber,
+            issuer: vaultLocation 
+          },
+          notes: `Physical Storage Certificate ${storageCert.certificateNumber} issued`,
+          triggeredBy: adminUser?.id,
+          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
+        },
+        {
+          id: crypto.randomUUID(),
+          tallyId: tallyEntry.id,
+          eventType: 'WALLET_CREDITED',
+          previousStatus: 'ALLOCATED',
+          newStatus: 'COMPLETED',
+          details: { 
+            goldGrams: goldGrams.toFixed(6),
+            walletType: walletType,
+            transactionId: transaction.id 
+          },
+          notes: `${goldGrams.toFixed(4)}g gold credited to ${walletType} wallet`,
+          triggeredBy: adminUser?.id,
+          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
+        }
+      ]);
       
       // 7. Update crypto payment request status
       await storage.updateCryptoPaymentRequest(id, {
