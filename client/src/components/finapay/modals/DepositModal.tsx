@@ -705,71 +705,75 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">Enter amount in gold grams or USD. We'll convert it at live market rates.</p>
             </div>
             
-            {/* Input Mode Toggle - Premium Design */}
-            <div className="flex items-center justify-center p-1.5 bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl border border-border/50">
-              <button
-                onClick={() => setInputMode('gold')}
-                className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  inputMode === 'gold' 
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md transform scale-[1.02]' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/50'
-                }`}
-                data-testid="button-input-gold-mode"
-              >
-                <Coins className="w-4 h-4 inline mr-2" />
-                Gold (grams)
-              </button>
-              <button
-                onClick={() => setInputMode('usd')}
-                className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  inputMode === 'usd' 
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md transform scale-[1.02]' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/50'
-                }`}
-                data-testid="button-input-usd-mode"
-              >
-                <DollarSign className="w-4 h-4 inline mr-2" />
-                USD Amount
-              </button>
-            </div>
-
-            {/* Amount Input - Enhanced */}
-            <div className="space-y-2">
-              {inputMode === 'gold' ? (
+            {/* Dual Amount Inputs - Both Visible with Auto-Conversion */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Gold Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-amber-700 flex items-center gap-2">
+                  <Coins className="w-4 h-4" />
+                  Gold (grams)
+                </Label>
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                  <div className="relative bg-white rounded-lg border-2 border-amber-200 focus-within:border-amber-400 transition-colors">
-                    <Coins className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-amber-500" />
+                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-xl transition-opacity ${inputMode === 'gold' ? 'opacity-30' : 'opacity-10'}`}></div>
+                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-amber-400' : 'border-amber-200'}`}>
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
                     <Input
                       type="number"
                       step="0.0001"
                       placeholder="0.0000"
                       value={goldAmount}
-                      onChange={(e) => setGoldAmount(e.target.value)}
-                      className="pl-14 pr-14 h-16 text-2xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      onChange={(e) => {
+                        setInputMode('gold');
+                        setGoldAmount(e.target.value);
+                        if (goldPrice?.pricePerGram && e.target.value) {
+                          const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
+                          setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+                        } else {
+                          setAmount('');
+                        }
+                      }}
+                      onFocus={() => setInputMode('gold')}
+                      className="pl-11 pr-8 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
                       data-testid="input-gold-amount"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-amber-600">g</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-amber-600">g</span>
                   </div>
                 </div>
-              ) : (
+              </div>
+              
+              {/* USD Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-emerald-700 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  USD Amount
+                </Label>
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                  <div className="relative bg-white rounded-lg border-2 border-emerald-200 focus-within:border-emerald-400 transition-colors">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500" />
+                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl transition-opacity ${inputMode === 'usd' ? 'opacity-30' : 'opacity-10'}`}></div>
+                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200'}`}>
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                     <Input
                       type="number"
                       step="0.01"
                       placeholder="0.00"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="pl-14 pr-16 h-16 text-2xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      onChange={(e) => {
+                        setInputMode('usd');
+                        setAmount(e.target.value);
+                        if (goldPrice?.pricePerGram && e.target.value) {
+                          const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
+                          setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
+                        } else {
+                          setGoldAmount('');
+                        }
+                      }}
+                      onFocus={() => setInputMode('usd')}
+                      className="pl-11 pr-12 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
                       data-testid="input-usd-amount"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-emerald-600">USD</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-emerald-600">USD</span>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Deposit Summary Preview - Step 1 */}
