@@ -3481,7 +3481,7 @@ ${message}
   // Gold Backing Report (Admin)
   app.get("/api/admin/gold-backing-report", ensureAdminAsync, async (req, res) => {
     try {
-      const report = await storage.getGoldBackingReport();
+      const report = await storage.getGoldBackingReportEnhanced();
       res.json(report);
     } catch (error) {
       console.error("Failed to get gold backing report:", error);
@@ -3566,7 +3566,7 @@ ${message}
     try {
       const { generateGoldBackingReportPDF } = await import('./pdf-generator');
       
-      const report = await storage.getGoldBackingReport();
+      const report = await storage.getGoldBackingReportEnhanced();
       const finapayUsers = await storage.getUsersWithFinaPayHoldings();
       const bnslUsers = await storage.getUsersWithBnslHoldings();
       
@@ -3606,9 +3606,9 @@ ${message}
             }))
           },
           bnsl: {
-            count: report.customerLiabilities.bnslWallets.count,
-            availableGrams: report.customerLiabilities.bnslWallets.availableGrams,
-            lockedGrams: report.customerLiabilities.bnslWallets.lockedGrams,
+            count: report.customerLiabilities.bnsl.count,
+            availableGrams: report.customerLiabilities.bnsl.availableGrams,
+            lockedGrams: report.customerLiabilities.bnsl.lockedGrams,
             users: bnslUsers.map((u: any) => ({
               name: `${u.firstName} ${u.lastName}`,
               email: u.email,
@@ -4569,7 +4569,7 @@ ${message}
         result.error,
         {
           preRestoreBackupId: result.preRestoreBackupId,
-          userCount: result.userCount,
+          userCount: result.count,
           transactionCount: result.transactionCount
         }
       );
@@ -4585,7 +4585,7 @@ ${message}
         message: "Database restored successfully",
         preRestoreBackupId: result.preRestoreBackupId,
         restoredFromBackupId: result.restoredFromBackupId,
-        userCount: result.userCount,
+        userCount: result.count,
         transactionCount: result.transactionCount,
         lastTransactionDate: result.lastTransactionDate
       });
@@ -19410,7 +19410,7 @@ ${message}
       const GOLD_PRICE_USD = goldPriceData.pricePerGram;
 
       // Get MPGW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
-      const goldBackingReport = await storage.getGoldBackingReport();
+      const goldBackingReport = await storage.getGoldBackingReportEnhanced();
 
       // Get platform config for accurate fee calculations
       const platformConfigs = await storage.getAllPlatformConfigs();
@@ -19426,8 +19426,8 @@ ${message}
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
       // MPGW/FPGW gold holdings from vault ownership summary (authoritative source)
-      const mpgwTotalGrams = goldBackingReport.liabilities.mpgw.totalGrams;
-      const fpgwTotalGrams = goldBackingReport.liabilities.fpgw.totalGrams;
+      const mpgwTotalGrams = goldBackingReport.customerLiabilities.mpgw.totalGrams;
+      const fpgwTotalGrams = goldBackingReport.customerLiabilities.fpgw.totalGrams;
       const totalGoldGrams = mpgwTotalGrams + fpgwTotalGrams;
 
       // Physical gold backing
@@ -19480,7 +19480,7 @@ ${message}
       // Calculate USD values dynamically from gold grams
       const mpgwValueUsd = mpgwTotalGrams * GOLD_PRICE_USD;
       // FPGW uses weighted average price from batches, not live price
-      const fpgwValueUsd = fpgwTotalGrams * (goldBackingReport.liabilities.fpgw.weightedAvgPriceUsd || GOLD_PRICE_USD);
+      const fpgwValueUsd = fpgwTotalGrams * (goldBackingReport.customerLiabilities.fpgw.weightedAvgPriceUsd || GOLD_PRICE_USD);
       const totalGoldValueUsd = mpgwValueUsd + fpgwValueUsd;
       const physicalGoldValueUsd = physicalGoldGrams * GOLD_PRICE_USD;
       const totalAUM = totalGoldValueUsd;
@@ -19501,27 +19501,27 @@ ${message}
         // MPGW/FPGW breakdown (gold grams are primary, USD is derived)
         mpgw: {
           totalGrams: mpgwTotalGrams,
-          availableGrams: goldBackingReport.liabilities.mpgw.availableGrams,
-          pendingGrams: goldBackingReport.liabilities.mpgw.pendingGrams,
-          lockedBnslGrams: goldBackingReport.liabilities.mpgw.lockedBnslGrams,
-          reservedTradeGrams: goldBackingReport.liabilities.mpgw.reservedTradeGrams,
+          availableGrams: goldBackingReport.customerLiabilities.mpgw.available,
+          pendingGrams: goldBackingReport.customerLiabilities.mpgw.pending,
+          lockedBnslGrams: goldBackingReport.customerLiabilities.mpgw.lockedBnsl,
+          reservedTradeGrams: goldBackingReport.customerLiabilities.mpgw.reservedTrade,
           valueUsd: mpgwValueUsd, // ≈ equivalent at current price
-          userCount: goldBackingReport.liabilities.mpgw.userCount,
+          userCount: goldBackingReport.customerLiabilities.mpgw.count,
         },
         fpgw: {
           totalGrams: fpgwTotalGrams,
-          availableGrams: goldBackingReport.liabilities.fpgw.availableGrams,
-          pendingGrams: goldBackingReport.liabilities.fpgw.pendingGrams,
-          lockedBnslGrams: goldBackingReport.liabilities.fpgw.lockedBnslGrams,
-          reservedTradeGrams: goldBackingReport.liabilities.fpgw.reservedTradeGrams,
+          availableGrams: goldBackingReport.customerLiabilities.fpgw.available,
+          pendingGrams: goldBackingReport.customerLiabilities.fpgw.pending,
+          lockedBnslGrams: goldBackingReport.customerLiabilities.fpgw.lockedBnsl,
+          reservedTradeGrams: goldBackingReport.customerLiabilities.fpgw.reservedTrade,
           valueUsd: fpgwValueUsd, // ≈ equivalent at weighted avg price
-          weightedAvgPriceUsd: goldBackingReport.liabilities.fpgw.weightedAvgPriceUsd,
-          userCount: goldBackingReport.liabilities.fpgw.userCount,
+          weightedAvgPriceUsd: goldBackingReport.customerLiabilities.fpgw.weightedAvgPriceUsd,
+          userCount: goldBackingReport.customerLiabilities.fpgw.count,
         },
         
         // Backing ratio from Gold Backing Report
-        backingRatio: goldBackingReport.backingRatios.overall,
-        backingSurplusGrams: goldBackingReport.backingRatios.overallSurplus,
+        backingRatio: goldBackingReport.backing.overallRatio,
+        backingSurplusGrams: goldBackingReport.backing.overallSurplus,
         
         // Financial metrics (derived from gold)
         totalRevenue,
