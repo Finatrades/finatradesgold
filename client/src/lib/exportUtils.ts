@@ -9,7 +9,7 @@ export interface FinancialReportData {
     totalAUM: number;
     goldHoldingsGrams: number;
     goldValueUsd: number;
-    fiatBalancesUsd: number;
+    fiatBalancesUsd?: number;
     totalLiabilities: number;
     goldLiabilityGrams: number;
     pendingPayoutsUsd: number;
@@ -66,7 +66,7 @@ export function exportFinancialReportToCSV(data: FinancialReportData, filename: 
     rows.push(['Net Profit', `$${data.overview.netProfit.toLocaleString()}`]);
     rows.push(['Assets Under Management', `$${data.overview.totalAUM.toLocaleString()}`]);
     rows.push(['Gold Holdings', `${data.overview.goldHoldingsGrams.toFixed(4)}g ($${data.overview.goldValueUsd.toLocaleString()})`]);
-    rows.push(['Fiat Balances', `$${data.overview.fiatBalancesUsd.toLocaleString()}`]);
+    rows.push(['Fiat Balances', `$${(data.overview.fiatBalancesUsd || 0).toLocaleString()}`]);
     rows.push(['Total Liabilities', `$${data.overview.totalLiabilities.toLocaleString()}`]);
     rows.push(['Gold Liability', `${data.overview.goldLiabilityGrams.toFixed(4)}g`]);
     rows.push(['Pending Payouts', `$${data.overview.pendingPayoutsUsd.toLocaleString()}`]);
