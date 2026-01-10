@@ -18,7 +18,8 @@ import {
   X,
   Gift,
   HelpCircle,
-  Settings
+  Settings,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
@@ -43,6 +44,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     { icon: <Wallet className="w-5 h-5" />, label: 'Wallet', href: '/finapay' },
     { icon: <Database className="w-5 h-5" />, label: 'Gold Storage', href: '/finavault' },
     { icon: <History className="w-5 h-5" />, label: 'Storage History', href: '/finavault/history' },
+    { icon: <Download className="w-5 h-5" />, label: 'Deposit Physical Gold', href: '/physical-gold-deposit' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'Buy Now, Sell Later', href: '/bnsl' },
     { icon: <History className="w-5 h-5" />, label: 'BNSL History', href: '/bnsl/history' },
   ];
