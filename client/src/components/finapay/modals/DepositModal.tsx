@@ -1157,70 +1157,70 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'details' && selectedAccount ? (
           <div className="py-4">
-            <div className="grid md:grid-cols-3 gap-4">
-              {/* Panel 1 - Premium Bank Details Card */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-4 shadow-xl">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left Panel - Premium Bank Details Card (Horizontal Layout) */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 shadow-xl">
                 {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl -translate-y-8 translate-x-8"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-xl translate-y-4 -translate-x-4"></div>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-xl translate-y-6 -translate-x-6"></div>
                 
                 {/* Header */}
-                <div className="relative flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-                      <Building className="w-5 h-5 text-white" />
+                <div className="relative flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                      <Building className="w-7 h-7 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-white text-sm">Transfer To</h4>
-                      <p className="text-xs text-slate-400">{selectedAccount.bankName}</p>
+                      <h4 className="font-bold text-white text-lg">Transfer To</h4>
+                      <p className="text-sm text-slate-400">{selectedAccount.bankName}</p>
                     </div>
                   </div>
-                  <span className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold rounded-full shadow-lg">
+                  <span className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-bold rounded-full shadow-lg">
                     {selectedAccount.currency}
                   </span>
                 </div>
                 
-                {/* Bank Details */}
-                <div className="relative space-y-3">
+                {/* Bank Details - Horizontal Grid */}
+                <div className="relative grid grid-cols-2 gap-4">
                   <div className="group">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Beneficiary</span>
-                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
-                      <span className="font-mono text-sm text-white truncate mr-2">{selectedAccount.accountName}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
-                        <Copy className="w-3.5 h-3.5" />
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">Beneficiary</span>
+                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-2 hover:bg-white/10 transition-colors">
+                      <span className="font-mono text-base text-white truncate mr-2">{selectedAccount.accountName}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
+                        <Copy className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
                   <div className="group">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Account Number</span>
-                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
-                      <span className="font-mono text-sm text-white">{selectedAccount.accountNumber}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
-                        <Copy className="w-3.5 h-3.5" />
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">Account Number</span>
+                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-2 hover:bg-white/10 transition-colors">
+                      <span className="font-mono text-base text-white">{selectedAccount.accountNumber}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
+                        <Copy className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
                   {selectedAccount.swiftCode && (
                     <div className="group">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">SWIFT Code</span>
-                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
-                        <span className="font-mono text-sm text-white">{selectedAccount.swiftCode}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
-                          <Copy className="w-3.5 h-3.5" />
+                      <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">SWIFT Code</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-2 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-base text-white">{selectedAccount.swiftCode}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   )}
 
                   {selectedAccount.iban && (
-                    <div className="group">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">IBAN</span>
-                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
-                        <span className="font-mono text-xs text-white truncate mr-2">{selectedAccount.iban}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
-                          <Copy className="w-3.5 h-3.5" />
+                    <div className="group col-span-2">
+                      <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">IBAN</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-2 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-base text-white truncate mr-2">{selectedAccount.iban}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -1228,21 +1228,22 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
                   {selectedAccount.routingNumber && (
                     <div className="group">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Routing Number</span>
-                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
-                        <span className="font-mono text-sm text-white">{selectedAccount.routingNumber}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
-                          <Copy className="w-3.5 h-3.5" />
+                      <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">Routing Number</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-2 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-base text-white">{selectedAccount.routingNumber}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Panel 2 - Deposit Summary (Read-only from Step 1) */}
+              
+              {/* Right Panel - Summary + Upload (Vertical Stack) */}
               <div className="space-y-4">
-                <div className="text-center mb-2">
+                {/* Deposit Summary */}
+                <div className="text-center">
                   <h4 className="font-semibold text-foreground text-sm">Deposit Summary</h4>
                   <p className="text-xs text-muted-foreground">Your deposit details</p>
                 </div>
@@ -1314,16 +1315,14 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   
                   {goldPrice?.pricePerGram && (
                     <p className="text-xs text-muted-foreground pt-2 border-t border-amber-200 flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       Live gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                     </p>
                   )}
                 </div>
-              </div>
 
-              {/* Panel 3 - Upload Proof */}
-              <div className="space-y-3">
-                <div className="text-center mb-2">
+                {/* Upload Proof Section */}
+                <div className="text-center">
                   <h4 className="font-semibold text-foreground text-sm">Upload Proof</h4>
                   <p className="text-xs text-muted-foreground">Transfer confirmation</p>
                 </div>
