@@ -458,7 +458,7 @@ export default function GoldBackingReport() {
                         Customer Liabilities
                       </CardTitle>
                       <Badge variant="outline" className="bg-blue-50">
-                        {data.customerLiabilities.wallets.count + data.customerLiabilities.bnslWallets.count} Accounts
+                        {(data.customerLiabilities.mpgw?.count || 0) + (data.customerLiabilities.bnsl?.count || 0)} Accounts
                       </Badge>
                     </CardHeader>
                     <CardContent>
@@ -484,13 +484,13 @@ export default function GoldBackingReport() {
                                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Market Price</Badge>
                               </div>
                               <p className="text-xs text-gray-500">
-                                {enhancedData?.customerLiabilities?.mpgw?.count || data.customerLiabilities.wallets.count} accounts
+                                {data.customerLiabilities.mpgw?.count || 0} accounts
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-blue-600">
-                              {formatGrams(enhancedData?.customerLiabilities?.mpgw?.totalGrams || data.customerLiabilities.wallets.totalGrams)}g
+                              {formatGrams(data.customerLiabilities.mpgw?.totalGrams || 0)}g
                             </span>
                             <ChevronRight className="h-4 w-4 text-gray-400" />
                           </div>
@@ -543,16 +543,16 @@ export default function GoldBackingReport() {
                             </div>
                             <div className="text-left">
                               <span className="text-sm font-medium text-gray-900">BNSL Accounts</span>
-                              <p className="text-xs text-gray-500">{data.customerLiabilities.bnslWallets.count} accounts</p>
+                              <p className="text-xs text-gray-500">{data.customerLiabilities.bnsl?.count || 0} accounts</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-right">
                             <div>
                               <span className="font-bold text-green-600">
-                                {formatGrams(data.customerLiabilities.bnslWallets.availableGrams + data.customerLiabilities.bnslWallets.lockedGrams)}g
+                                {formatGrams((data.customerLiabilities.bnsl?.availableGrams || 0) + (data.customerLiabilities.bnsl?.lockedGrams || 0))}g
                               </span>
                               <p className="text-xs text-gray-400">
-                                {formatGrams(data.customerLiabilities.bnslWallets.lockedGrams)}g locked
+                                {formatGrams(data.customerLiabilities.bnsl?.lockedGrams || 0)}g locked
                               </p>
                             </div>
                             <ChevronRight className="h-4 w-4 text-gray-400" />
