@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatform } from '@/context/PlatformContext';
-import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock, FileText } from 'lucide-react';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock, FileText, Sparkles, Shield, Zap, Globe, TrendingUp, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
@@ -590,6 +590,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     } else if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet') {
       setStep('method');
       setPaymentMethod(null);
+      setSelectedCryptoWallet(null);
     } else if (step === 'details') {
       setStep('select');
     } else if (step === 'crypto-address') {
@@ -597,6 +598,37 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       setSelectedCryptoWallet(null);
     } else if (step === 'crypto-submit-proof') {
       setStep('crypto-address');
+    }
+  };
+
+  const handleCryptoConfirm = async () => {
+    if (!user || !selectedCryptoWallet) return;
+    
+    const amountNum = parseFloat(amount);
+    const minDepositForCrypto = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDepositForCrypto) {
+      toast.error(`Minimum deposit amount is $${minDepositForCrypto}`);
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await apiRequest('POST', '/api/crypto-payments', {
+        userId: user.id,
+        walletConfigId: selectedCryptoWallet.id,
+        amountUsd: amountNum.toFixed(2),
+        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+        goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
+        paymentType: 'deposit',
+      });
+      const data = await response.json();
+      setCryptoPaymentRequestId(data.paymentRequest.id);
+      setStep('crypto-address');
+      refreshTransactions();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -635,18 +667,41 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
         {step === 'amount' ? (
           <div className="space-y-6 py-4">
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">Enter the amount you want to deposit</p>
+            {/* Progress Stepper */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
+              </div>
             </div>
             
-            {/* Input Mode Toggle */}
-            <div className="flex items-center justify-center gap-4 p-1 bg-muted/30 rounded-lg">
+            {/* Hero Section */}
+            <div className="text-center space-y-3 pb-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                <Coins className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">How much gold would you like?</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">Enter amount in gold grams or USD. We'll convert it at live market rates.</p>
+            </div>
+            
+            {/* Input Mode Toggle - Premium Design */}
+            <div className="flex items-center justify-center p-1.5 bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl border border-border/50">
               <button
                 onClick={() => setInputMode('gold')}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   inputMode === 'gold' 
-                    ? 'bg-primary text-primary-foreground shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md transform scale-[1.02]' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/50'
                 }`}
                 data-testid="button-input-gold-mode"
               >
@@ -655,10 +710,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </button>
               <button
                 onClick={() => setInputMode('usd')}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   inputMode === 'usd' 
-                    ? 'bg-primary text-primary-foreground shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md transform scale-[1.02]' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/50'
                 }`}
                 data-testid="button-input-usd-mode"
               >
@@ -667,64 +722,133 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </button>
             </div>
 
-            {/* Amount Input */}
+            {/* Amount Input - Enhanced */}
             <div className="space-y-2">
               {inputMode === 'gold' ? (
-                <div className="relative">
-                  <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    placeholder="Enter gold quantity (grams)"
-                    value={goldAmount}
-                    onChange={(e) => setGoldAmount(e.target.value)}
-                    className="pl-10 h-14 text-lg"
-                    data-testid="input-gold-amount"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">g</span>
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                  <div className="relative bg-white rounded-lg border-2 border-amber-200 focus-within:border-amber-400 transition-colors">
+                    <Coins className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-amber-500" />
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      placeholder="0.0000"
+                      value={goldAmount}
+                      onChange={(e) => setGoldAmount(e.target.value)}
+                      className="pl-14 pr-14 h-16 text-2xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      data-testid="input-gold-amount"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-amber-600">g</span>
+                  </div>
                 </div>
               ) : (
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter USD amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="pl-10 h-14 text-lg"
-                    data-testid="input-usd-amount"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">USD</span>
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                  <div className="relative bg-white rounded-lg border-2 border-emerald-200 focus-within:border-emerald-400 transition-colors">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="pl-14 pr-16 h-16 text-2xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      data-testid="input-usd-amount"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-emerald-600">USD</span>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Conversion Display */}
+            {/* Live Conversion Display - Premium Card */}
             {goldPrice && (
-              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Current Gold Price</span>
-                  <span className="font-medium">${goldPrice.pricePerGram.toFixed(2)}/gram</span>
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
+                {/* Live Price Indicator */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Live Gold Price</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                    <span className="font-bold text-amber-700">${goldPrice.pricePerGram.toFixed(2)}<span className="text-xs font-normal text-muted-foreground">/gram</span></span>
+                  </div>
                 </div>
-                {inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0 && (
-                  <div className="flex justify-between text-sm border-t border-border pt-2">
-                    <span className="text-muted-foreground">Equivalent USD</span>
-                    <span className="font-bold text-success">≈ ${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</span>
+                
+                {/* Conversion Result */}
+                {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+                  (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+                  <div className="bg-white rounded-lg p-4 border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {inputMode === 'gold' ? (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                              <Coins className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">You're buying</p>
+                              <p className="text-lg font-bold text-foreground">{parseFloat(goldAmount).toFixed(4)}g gold</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <DollarSign className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">You're depositing</p>
+                              <p className="text-lg font-bold text-foreground">${parseFloat(amount).toFixed(2)} USD</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <div className="text-right">
+                        {inputMode === 'gold' ? (
+                          <>
+                            <p className="text-xs text-muted-foreground">Estimated cost</p>
+                            <p className="text-lg font-bold text-emerald-600">≈ ${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-muted-foreground">You'll receive</p>
+                            <p className="text-lg font-bold text-amber-600">≈ {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
-                {inputMode === 'usd' && amount && parseFloat(amount) > 0 && (
-                  <div className="flex justify-between text-sm border-t border-border pt-2">
-                    <span className="text-muted-foreground">Equivalent Gold</span>
-                    <span className="font-bold text-primary">≈ {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
-                  </div>
-                )}
+
+                {/* Wallet Destination Badge */}
+                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-primary/5 rounded-lg border border-primary/10">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-medium text-primary">Gold will be credited to your Market Price Gold Wallet (MPGW)</span>
+                </div>
               </div>
             )}
 
+            {/* Trust Indicators */}
+            <div className="flex items-center justify-center gap-6 pt-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Shield className="w-3.5 h-3.5 text-green-600" />
+                <span>Secure Payment</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Zap className="w-3.5 h-3.5 text-amber-600" />
+                <span>Instant Processing</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                <span>Live Rates</span>
+              </div>
+            </div>
+
             {/* Minimum Deposit Notice */}
-            <p className="text-xs text-center text-muted-foreground">
-              Minimum deposit: ${platformSettings.minDeposit || 50} USD
+            <p className="text-xs text-center text-muted-foreground pt-2">
+              Minimum deposit: <span className="font-semibold">${platformSettings.minDeposit || 50} USD</span>
             </p>
           </div>
         ) : (loading || checkingNgenius) && step === 'method' ? (
@@ -732,61 +856,164 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : step === 'method' ? (
-          <div className="space-y-4 py-4">
-            <button
-              onClick={() => handleSelectMethod('bank')}
-              className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
-              data-testid="button-select-bank-transfer"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-info-muted rounded-full flex items-center justify-center">
-                  <Building className="w-6 h-6 text-info" />
+          <div className="space-y-6 py-4">
+            {/* Progress Stepper */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-foreground">Bank Transfer</h4>
-                  <p className="text-sm text-muted-foreground">Transfer from your bank account (1-3 business days)</p>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-primary hidden sm:inline">Amount</span>
               </div>
-            </button>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
+              </div>
+            </div>
 
-            {ngeniusEnabled && (
+            {/* Amount Summary Card */}
+            <div className="bg-gradient-to-r from-primary/5 to-amber-50 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Coins className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Deposit Amount</p>
+                    <p className="text-lg font-bold text-foreground">
+                      {inputMode === 'gold' ? `${parseFloat(goldAmount || '0').toFixed(4)}g gold` : `$${parseFloat(amount || '0').toFixed(2)} USD`}
+                    </p>
+                  </div>
+                </div>
+                {goldPrice && (
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">≈ Equivalent</p>
+                    <p className="text-sm font-semibold text-primary">
+                      {inputMode === 'gold' 
+                        ? `$${(parseFloat(goldAmount || '0') * goldPrice.pricePerGram).toFixed(2)} USD`
+                        : `${(parseFloat(amount || '0') / goldPrice.pricePerGram).toFixed(4)}g gold`
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <h3 className="text-sm font-semibold text-foreground text-center">Choose your payment method</h3>
+            
+            {/* Payment Method Cards - Premium Design */}
+            <div className="space-y-3">
+              {/* Bank Transfer */}
               <button
-                onClick={() => handleSelectMethod('card')}
-                className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
-                data-testid="button-select-card-payment"
+                onClick={() => handleSelectMethod('bank')}
+                className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                data-testid="button-select-bank-transfer"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-success-muted rounded-full flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-success" />
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:shadow-blue-300 transition-shadow">
+                    <Building className="w-7 h-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-foreground">Card Payment</h4>
-                    <p className="text-sm text-muted-foreground">Pay with Visa or Mastercard (instant)</p>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-foreground text-lg">Bank Transfer</h4>
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full uppercase">Recommended</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">Transfer from your bank account</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>1-3 business days</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <Check className="w-3 h-3" />
+                        <span>No fees</span>
+                      </div>
+                    </div>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
                 </div>
               </button>
-            )}
 
-            {cryptoWallets.length > 0 && (
-              <button
-                onClick={() => handleSelectMethod('crypto')}
-                className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
-                data-testid="button-select-crypto-payment"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Bitcoin className="w-6 h-6 text-primary" />
+              {/* Card Payment */}
+              {ngeniusEnabled && (
+                <button
+                  onClick={() => handleSelectMethod('card')}
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                  data-testid="button-select-card-payment"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:shadow-emerald-300 transition-shadow">
+                      <CreditCard className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-foreground text-lg">Card Payment</h4>
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-full uppercase flex items-center gap-0.5">
+                          <Zap className="w-2.5 h-2.5" />
+                          Instant
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">Pay with Visa or Mastercard</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>Instant credit</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Shield className="w-3 h-3" />
+                          <span>3D Secure</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">Crypto Payment</h4>
-                    <p className="text-sm text-muted-foreground">Pay with cryptocurrency (manual verification)</p>
+                </button>
+              )}
+
+              {/* Crypto Payment */}
+              {cryptoWallets.length > 0 && (
+                <button
+                  onClick={() => handleSelectMethod('crypto')}
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-orange-400 hover:bg-orange-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                  data-testid="button-select-crypto-payment"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-200 group-hover:shadow-orange-300 transition-shadow">
+                      <Bitcoin className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-foreground text-lg">Cryptocurrency</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">Bitcoin, Ethereum, USDT & more</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>Manual verification</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Globe className="w-3 h-3" />
+                          <span>Multiple networks</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
                   </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                </div>
-              </button>
-            )}
+                </button>
+              )}
+            </div>
+
+            {/* Trust Badge */}
+            <div className="flex items-center justify-center gap-2 pt-3 text-xs text-muted-foreground">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span>All transactions are secured with industry-standard encryption</span>
+            </div>
           </div>
         ) : step === 'select' ? (
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
@@ -1426,66 +1653,162 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </div>
           </div>
         ) : step === 'crypto-select-wallet' ? (
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            {/* Progress Stepper */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Network</span>
+              </div>
+            </div>
+
+            {/* Amount Summary */}
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Coins className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Deposit Amount</p>
+                    <p className="text-lg font-bold text-foreground">
+                      {inputMode === 'gold' ? `${parseFloat(goldAmount || '0').toFixed(4)}g gold` : `$${parseFloat(amount || '0').toFixed(2)} USD`}
+                    </p>
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 bg-orange-100 rounded-full">
+                  <span className="text-xs font-semibold text-orange-700">Crypto Payment</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">Select Cryptocurrency Network</h3>
+              <p className="text-sm text-muted-foreground">Choose your preferred network to make the payment</p>
+            </div>
+
             {cryptoWallets.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p>No crypto wallets available at this time.</p>
               </div>
             ) : (
-              cryptoWallets.map((wallet) => (
-                <button
-                  key={wallet.id}
-                  onClick={async () => {
-                    setSelectedCryptoWallet(wallet);
-                    if (!user || !amount) return;
-                    const amountNum = parseFloat(amount);
-                    const minDepositForCrypto = platformSettings.minDeposit || 50;
-                    if (isNaN(amountNum) || amountNum < minDepositForCrypto) {
-                      toast.error(`Minimum deposit amount is $${minDepositForCrypto}`);
-                      return;
+              <div className="grid grid-cols-2 gap-3">
+                {cryptoWallets.map((wallet) => {
+                  const getCryptoStyle = (network: string, currency: string) => {
+                    const n = network.toLowerCase();
+                    const c = currency.toLowerCase();
+                    if (n.includes('bitcoin') || c === 'btc') {
+                      return { 
+                        bg: 'from-orange-500 to-orange-600', 
+                        border: 'border-orange-300 hover:border-orange-400',
+                        hoverBg: 'hover:bg-orange-50',
+                        icon: '₿',
+                        color: 'text-orange-600'
+                      };
                     }
-                    setSubmitting(true);
-                    try {
-                      const response = await apiRequest('POST', '/api/crypto-payments', {
-                        userId: user.id,
-                        walletConfigId: wallet.id,
-                        amountUsd: amountNum.toFixed(2),
-                        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
-                        goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
-                        paymentType: 'deposit',
-                      });
-                      const data = await response.json();
-                      setCryptoPaymentRequestId(data.paymentRequest.id);
-                      setStep('crypto-address');
-                      refreshTransactions();
-                    } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
-                    } finally {
-                      setSubmitting(false);
+                    if (n.includes('ethereum') || c === 'eth') {
+                      return { 
+                        bg: 'from-indigo-500 to-indigo-600', 
+                        border: 'border-indigo-300 hover:border-indigo-400',
+                        hoverBg: 'hover:bg-indigo-50',
+                        icon: 'Ξ',
+                        color: 'text-indigo-600'
+                      };
                     }
-                  }}
-                  disabled={submitting}
-                  className={`w-full border rounded-xl p-4 transition-colors text-left ${
-                    selectedCryptoWallet?.id === wallet.id 
-                      ? 'border-primary bg-primary/10' 
-                      : 'border-border bg-muted/10 hover:bg-muted/30'
-                  }`}
-                  data-testid={`button-select-crypto-${wallet.id}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-foreground">{wallet.networkLabel}</h4>
-                      <p className="text-sm text-muted-foreground">{wallet.currency}</p>
-                    </div>
-                    {submitting && selectedCryptoWallet?.id === wallet.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    ) : (
-                      <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                </button>
-              ))
+                    if (c === 'usdt' || c.includes('tether')) {
+                      return { 
+                        bg: 'from-teal-500 to-teal-600', 
+                        border: 'border-teal-300 hover:border-teal-400',
+                        hoverBg: 'hover:bg-teal-50',
+                        icon: '₮',
+                        color: 'text-teal-600'
+                      };
+                    }
+                    if (c === 'usdc') {
+                      return { 
+                        bg: 'from-blue-500 to-blue-600', 
+                        border: 'border-blue-300 hover:border-blue-400',
+                        hoverBg: 'hover:bg-blue-50',
+                        icon: '$',
+                        color: 'text-blue-600'
+                      };
+                    }
+                    if (n.includes('binance') || n.includes('bep20') || n.includes('bnb')) {
+                      return { 
+                        bg: 'from-yellow-500 to-yellow-600', 
+                        border: 'border-yellow-300 hover:border-yellow-400',
+                        hoverBg: 'hover:bg-yellow-50',
+                        icon: 'B',
+                        color: 'text-yellow-600'
+                      };
+                    }
+                    if (n.includes('tron') || n.includes('trc')) {
+                      return { 
+                        bg: 'from-red-500 to-red-600', 
+                        border: 'border-red-300 hover:border-red-400',
+                        hoverBg: 'hover:bg-red-50',
+                        icon: 'T',
+                        color: 'text-red-600'
+                      };
+                    }
+                    return { 
+                      bg: 'from-gray-500 to-gray-600', 
+                      border: 'border-gray-300 hover:border-gray-400',
+                      hoverBg: 'hover:bg-gray-50',
+                      icon: '◇',
+                      color: 'text-gray-600'
+                    };
+                  };
+                  
+                  const style = getCryptoStyle(wallet.network, wallet.currency);
+                  
+                  return (
+                    <button
+                      key={wallet.id}
+                      onClick={() => setSelectedCryptoWallet(wallet)}
+                      disabled={submitting}
+                      className={`group relative border-2 rounded-xl p-4 transition-all duration-200 text-left bg-white ${style.border} ${style.hoverBg} ${
+                        selectedCryptoWallet?.id === wallet.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''
+                      }`}
+                      data-testid={`button-select-crypto-${wallet.id}`}
+                    >
+                      <div className="flex flex-col items-center text-center gap-3">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${style.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                          <span className="text-2xl font-bold text-white">{style.icon}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-foreground text-sm">{wallet.networkLabel}</h4>
+                          <p className={`text-xs font-medium ${style.color}`}>{wallet.currency}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>~10-30 min</span>
+                        </div>
+                        {selectedCryptoWallet?.id === wallet.id && (
+                          <div className="absolute top-2 right-2">
+                            <Check className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         ) : step === 'crypto-address' && selectedCryptoWallet ? (
@@ -1807,7 +2130,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </>
           )}
           {step === 'crypto-select-wallet' && (
-            <Button variant="outline" onClick={handleBack}>Back</Button>
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={handleCryptoConfirm}
+                disabled={!selectedCryptoWallet || submitting}
+                data-testid="button-continue-crypto"
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                )}
+                Continue
+              </Button>
+            </>
           )}
           {step === 'crypto-address' && (
             <>
