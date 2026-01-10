@@ -32,7 +32,7 @@ const actions = [
   },
   {
     title: 'Deposit Gold',
-    path: '/finavault?tab=new-request&highlight=deposit',
+    path: '/physical-gold-deposit',
     icon: <Database className="w-4 h-4" />,
     gradient: 'from-teal-500 to-cyan-600',
     hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',
