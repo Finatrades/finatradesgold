@@ -47,6 +47,7 @@ const COUNTRIES = [
 
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
 
 interface PlatformConfig {
   id: string;
@@ -212,15 +213,8 @@ export default function PlatformConfiguration() {
         return;
       }
 
-      const res = await fetch('/api/admin/platform-config/bulk-update', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include',
-        body: JSON.stringify({ updates })
+      const res = await apiRequest('POST', '/api/admin/platform-config/bulk-update', { updates }, {
+        'X-Admin-User-Id': user?.id || ''
       });
       if (!res.ok) throw new Error('Failed to save');
       toast.success(`Updated ${updates.length} configuration(s)`);
