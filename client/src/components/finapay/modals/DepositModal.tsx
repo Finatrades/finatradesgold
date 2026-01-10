@@ -807,12 +807,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                   </div>
                   
-                  {/* Processing Fee (if applicable) */}
-                  {depositFee && inputMode === 'usd' && parseFloat(amount) > 0 && (
+                  {/* Processing Fee (if applicable) - Show in both modes */}
+                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
                     <div className="flex items-center justify-between text-sm text-orange-600">
                       <span>Processing Fee ({depositFee.feeValue}%):</span>
                       <span className="font-medium">
-                        -${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        -${(inputMode === 'gold' 
+                          ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
+                          : calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
