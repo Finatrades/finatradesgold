@@ -92,6 +92,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/scheduled-jobs': ['manage_settings'],
   '/admin/api-logs': ['manage_settings'],
   '/admin/unified-gold-tally': ['view_vault', 'manage_vault'],
+  '/admin/unified-payments': ['manage_deposits', 'manage_withdrawals'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -143,6 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const getBadgeCount = (href: string): number => {
     if (!pendingCounts) return 0;
     const finapayTotal = (pendingCounts.pendingDeposits || 0) + (pendingCounts.pendingWithdrawals || 0) + (pendingCounts.pendingCryptoPayments || 0) + (pendingCounts.pendingBuyGold || 0);
+    const unifiedPaymentsTotal = (pendingCounts.pendingDeposits || 0) + (pendingCounts.pendingCryptoPayments || 0);
     const countMap: Record<string, number> = {
       '/admin/users': 0,
       '/admin/employees': 0,
@@ -154,6 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       '/admin/account-statements': 0,
       '/admin/payment-gateways': 0,
       '/admin/fees': 0,
+      '/admin/unified-payments': unifiedPaymentsTotal,
       '/admin/finapay': finapayTotal,
       '/admin/vault': pendingCounts.pendingVaultRequests || 0,
       '/admin/finabridge': pendingCounts.pendingTradeCases || 0,
@@ -200,6 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'Finance',
       icon: <DollarSign className="w-4 h-4" />,
       items: [
+        { label: 'Unified Payments', href: '/admin/unified-payments' },
         { label: 'Transactions', href: '/admin/transactions' },
         { label: 'Account Statements', href: '/admin/account-statements' },
         { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
