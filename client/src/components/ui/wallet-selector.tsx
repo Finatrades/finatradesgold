@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-export type GoldWalletType = 'MPGW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FPGW';
 
 interface WalletSelectorProps {
   value: GoldWalletType;
@@ -41,9 +41,9 @@ export function WalletSelector({
       <label className="text-sm font-medium text-muted-foreground">Select Gold Wallet</label>
       <div className="grid grid-cols-2 gap-3">
         <WalletCard
-          type="MPGW"
-          selected={value === 'MPGW'}
-          onClick={() => !disabled && onChange('MPGW')}
+          type="LGPW"
+          selected={value === 'LGPW'}
+          onClick={() => !disabled && onChange('LGPW')}
           balance={mpgwBalance}
           price={currentGoldPrice}
           disabled={disabled}
@@ -74,9 +74,9 @@ interface WalletCardProps {
 }
 
 function WalletCard({ type, selected, onClick, balance, price, disabled, showBalance }: WalletCardProps) {
-  const isMPGW = type === 'MPGW';
-  const title = isMPGW ? 'Market Price' : 'Fixed Price';
-  const description = isMPGW 
+  const isLGPW = type === 'LGPW';
+  const title = isLGPW ? 'Market Price' : 'Fixed Price';
+  const description = isLGPW 
     ? 'Value follows live gold price' 
     : 'Value locked at purchase price';
   const usdValue = balance * price;
@@ -106,7 +106,7 @@ function WalletCard({ type, selected, onClick, balance, price, disabled, showBal
             )}
             
             <div className="flex items-center gap-2 mb-2">
-              {isMPGW ? (
+              {isLGPW ? (
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               ) : (
                 <Lock className="h-5 w-5 text-amber-500" />
@@ -132,7 +132,7 @@ function WalletCard({ type, selected, onClick, balance, price, disabled, showBal
         <TooltipContent side="bottom" className="max-w-xs">
           <p className="font-medium">{title} Gold Wallet ({type})</p>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
-          {isMPGW ? (
+          {isLGPW ? (
             <p className="text-xs mt-1">Your gold's USD value changes with the live market price.</p>
           ) : (
             <p className="text-xs mt-1">Your gold's USD value is locked at the price you paid (FIFO).</p>
@@ -151,7 +151,7 @@ interface WalletDropdownProps {
 }
 
 export function WalletDropdown({ value, onChange, disabled, className }: WalletDropdownProps) {
-  const isMPGW = value === 'MPGW';
+  const isLGPW = value === 'LGPW';
   
   return (
     <DropdownMenu>
@@ -162,7 +162,7 @@ export function WalletDropdown({ value, onChange, disabled, className }: WalletD
           data-testid="wallet-dropdown-trigger"
         >
           <span className="flex items-center gap-2">
-            {isMPGW ? (
+            {isLGPW ? (
               <TrendingUp className="h-4 w-4 text-emerald-500" />
             ) : (
               <Lock className="h-4 w-4 text-amber-500" />
@@ -174,12 +174,12 @@ export function WalletDropdown({ value, onChange, disabled, className }: WalletD
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem 
-          onClick={() => onChange('MPGW')}
+          onClick={() => onChange('LGPW')}
           data-testid="wallet-option-mpgw"
         >
           <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
           <div className="flex flex-col">
-            <span className="font-medium">MPGW</span>
+            <span className="font-medium">LGPW</span>
             <span className="text-xs text-muted-foreground">Market Price Wallet</span>
           </div>
         </DropdownMenuItem>

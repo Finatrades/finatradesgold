@@ -80,7 +80,7 @@ interface ExposureData {
 interface ConversionRequest {
   id: string;
   userId: string;
-  direction: 'MPGW_TO_FPGW' | 'FPGW_TO_MPGW' | 'mpgw_to_fpgw' | 'fpgw_to_mpgw';
+  direction: 'LGPW_TO_FPGW' | 'FPGW_TO_LGPW' | 'mpgw_to_fpgw' | 'fpgw_to_mpgw';
   goldGrams: string;
   spotPriceUsdPerGram?: string;
   status: 'pending' | 'completed' | 'rejected';
@@ -195,11 +195,11 @@ export default function VaultExposure() {
   };
 
   const isMpgwToFpgw = (direction: string) => {
-    return direction.toUpperCase() === 'MPGW_TO_FPGW';
+    return direction.toUpperCase() === 'LGPW_TO_FPGW';
   };
 
   const formatDirection = (direction: string) => {
-    return isMpgwToFpgw(direction) ? 'MPGW → FPGW' : 'FPGW → MPGW';
+    return isMpgwToFpgw(direction) ? 'LGPW → FPGW' : 'FPGW → LGPW';
   };
 
   const mpgwTotal = parseFloat(exposure?.mpgw?.totalGrams || '0');
@@ -227,7 +227,7 @@ export default function VaultExposure() {
               Platform Exposure Dashboard
             </h1>
             <p className="text-gray-500 mt-1">
-              MPGW (Physical Gold) vs FPGW (Cash-Backed) wallet exposure management
+              LGPW (Physical Gold) vs FPGW (Cash-Backed) wallet exposure management
             </p>
           </div>
           <Button 
@@ -268,7 +268,7 @@ export default function VaultExposure() {
                       )}
                       <div>
                         <h2 className="text-xl font-bold" data-testid="text-mpgw-coverage-status">
-                          {isMpgwFullyBacked ? 'MPGW Fully Backed' : 'MPGW Under-Backed'}
+                          {isMpgwFullyBacked ? 'LGPW Fully Backed' : 'LGPW Under-Backed'}
                         </h2>
                         <p className="text-gray-600 text-sm" data-testid="text-mpgw-coverage-ratio">
                           {mpgwCoverage.toFixed(2)}% physical gold coverage
@@ -277,7 +277,7 @@ export default function VaultExposure() {
                     </div>
                     <div className="text-right text-xs text-gray-500">
                       <p>Physical: {formatGrams(physicalInventory)} g</p>
-                      <p>MPGW: {formatGrams(mpgwTotal)} g</p>
+                      <p>LGPW: {formatGrams(mpgwTotal)} g</p>
                     </div>
                   </div>
                 </CardContent>
@@ -313,7 +313,7 @@ export default function VaultExposure() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">MPGW Total</CardTitle>
+                  <CardTitle className="text-sm font-medium">LGPW Total</CardTitle>
                   <Vault className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
@@ -427,7 +427,7 @@ export default function VaultExposure() {
               <CardHeader>
                 <CardTitle>Pending Conversion Requests</CardTitle>
                 <CardDescription>
-                  Review and approve/reject MPGW ↔ FPGW conversion requests
+                  Review and approve/reject LGPW ↔ FPGW conversion requests
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -524,7 +524,7 @@ export default function VaultExposure() {
             <Card>
               <CardHeader>
                 <CardTitle>Conversion History</CardTitle>
-                <CardDescription>All processed MPGW ↔ FPGW conversions</CardDescription>
+                <CardDescription>All processed LGPW ↔ FPGW conversions</CardDescription>
               </CardHeader>
               <CardContent>
                 {!allConversions?.conversions?.length ? (

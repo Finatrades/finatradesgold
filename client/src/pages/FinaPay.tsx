@@ -339,7 +339,7 @@ export default function FinaPay() {
           </div>
         </div>
 
-        {/* Dual Wallet Display - MPGW/FPGW */}
+        {/* Dual Wallet Display - LGPW/FPGW */}
         {user && <DualWalletDisplay userId={user.id} />}
 
         {/* KYC Warning Banner */}

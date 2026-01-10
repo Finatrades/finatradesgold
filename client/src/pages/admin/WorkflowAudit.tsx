@@ -63,8 +63,8 @@ interface AuditStats {
 
 const FLOW_TYPE_LABELS: Record<string, string> = {
   'ADD_FUNDS': 'Add Funds',
-  'INTERNAL_TRANSFER_MPGW_TO_FPGW': 'MPGW → FPGW Transfer',
-  'INTERNAL_TRANSFER_FPGW_TO_MPGW': 'FPGW → MPGW Transfer',
+  'INTERNAL_TRANSFER_LGPW_TO_FPGW': 'LGPW → FPGW Transfer',
+  'INTERNAL_TRANSFER_FPGW_TO_LGPW': 'FPGW → LGPW Transfer',
   'TRANSFER_USER_TO_USER': 'P2P Transfer',
   'WITHDRAWAL': 'Withdrawal',
   'BNSL_ACTIVATION': 'BNSL Activation',

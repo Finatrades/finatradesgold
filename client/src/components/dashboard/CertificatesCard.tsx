@@ -13,9 +13,9 @@ interface Certificate {
   goldGrams: string;
   issuer: string;
   issuedAt: string;
-  goldWalletType?: 'MPGW' | 'FPGW' | null;
-  fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
-  toGoldWalletType?: 'MPGW' | 'FPGW' | null;
+  goldWalletType?: 'LGPW' | 'FPGW' | null;
+  fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
+  toGoldWalletType?: 'LGPW' | 'FPGW' | null;
 }
 
 interface CertificatesCardProps {

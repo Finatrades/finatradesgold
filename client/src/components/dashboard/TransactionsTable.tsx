@@ -38,7 +38,7 @@ const getStatusBadge = (status: string) => {
 };
 
 const isSwapType = (description: string | null) => {
-  return description?.includes('MPGW to FPGW') || description?.includes('FPGW to MPGW');
+  return description?.includes('LGPW to FPGW') || description?.includes('FPGW to LGPW');
 };
 
 const isDebitType = (type: string, description: string | null) => {
@@ -68,11 +68,11 @@ const getTransactionLabel = (type: string, description: string | null) => {
 };
 
 const getShortDescription = (type: string, description: string | null, goldAmount: number, usdAmount: number) => {
-  if (description?.includes('MPGW to FPGW')) {
-    return `MPGW to FPGW conversion: ${goldAmount.toFixed(2)}g`;
+  if (description?.includes('LGPW to FPGW')) {
+    return `LGPW to FPGW conversion: ${goldAmount.toFixed(2)}g`;
   }
-  if (description?.includes('FPGW to MPGW')) {
-    return `FPGW to MPGW conversion: ${goldAmount.toFixed(2)}g`;
+  if (description?.includes('FPGW to LGPW')) {
+    return `FPGW to LGPW conversion: ${goldAmount.toFixed(2)}g`;
   }
   if (description?.includes('Crypto deposit')) {
     return `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`;
@@ -276,7 +276,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                       {tx.isSwap ? (
                         <>
                           <p className="font-semibold text-amber-600 text-sm">{tx.goldAmount.toFixed(4)} g</p>
-                          <p className="text-xs text-muted-foreground">from MPGW</p>
+                          <p className="text-xs text-muted-foreground">from LGPW</p>
                         </>
                       ) : tx.isDebit && tx.goldAmount > 0 ? (
                         <>
@@ -343,7 +343,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <ArrowUpRight className="w-4 h-4 text-amber-600" />
-                            <span className="font-semibold text-amber-700 text-sm">From MPGW (Market Price)</span>
+                            <span className="font-semibold text-amber-700 text-sm">From LGPW (Market Price)</span>
                           </div>
                           <p className="text-lg font-bold text-amber-600">{tx.goldAmount.toFixed(6)} g</p>
                           <p className="text-xs text-muted-foreground">Sold at market price</p>

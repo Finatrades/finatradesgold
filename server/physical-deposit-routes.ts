@@ -800,7 +800,7 @@ router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) =
       goldPriceUsdPerGram: goldPriceUsd.toFixed(2),
       status: 'Completed',
       description: `Physical gold deposit - ${deposit.referenceNumber}`,
-      goldWalletType: 'MPGW',
+      goldWalletType: 'LGPW',
       sourceModule: 'finavault',
     });
 

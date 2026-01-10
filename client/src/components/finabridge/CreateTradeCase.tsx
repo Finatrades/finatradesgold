@@ -53,7 +53,7 @@ export default function CreateTradeCase({ onSuccess, wallet, currentRole, finaPa
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
 
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   const GOLD_PRICE = 85.22; // Mock price
 
   const handleTransfer = () => {

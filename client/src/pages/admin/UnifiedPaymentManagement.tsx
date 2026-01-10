@@ -74,7 +74,7 @@ export default function UnifiedPaymentManagement() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [pricingMode, setPricingMode] = useState<'LIVE' | 'MANUAL'>('LIVE');
   const [manualGoldPrice, setManualGoldPrice] = useState('');
-  const [walletType, setWalletType] = useState<'MPGW' | 'FPGW'>('MPGW');
+  const [walletType, setWalletType] = useState<'LGPW' | 'FPGW'>('LGPW');
   const [vaultLocation, setVaultLocation] = useState('Wingold & Metals DMCC');
   const [approvalNotes, setApprovalNotes] = useState('');
   
@@ -141,7 +141,7 @@ export default function UnifiedPaymentManagement() {
   const resetApprovalForm = () => {
     setPricingMode('LIVE');
     setManualGoldPrice('');
-    setWalletType('MPGW');
+    setWalletType('LGPW');
     setVaultLocation('Wingold & Metals DMCC');
     setApprovalNotes('');
     setWingoldOrderId('');
@@ -154,7 +154,7 @@ export default function UnifiedPaymentManagement() {
 
   const openApprovalDialog = (payment: PendingPayment) => {
     setSelectedPayment(payment);
-    setWalletType(payment.walletType as 'MPGW' | 'FPGW');
+    setWalletType(payment.walletType as 'LGPW' | 'FPGW');
     setApprovalDialogOpen(true);
   };
 
@@ -451,12 +451,12 @@ export default function UnifiedPaymentManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label>Target Wallet</Label>
-                    <Select value={walletType} onValueChange={(v) => setWalletType(v as 'MPGW' | 'FPGW')}>
+                    <Select value={walletType} onValueChange={(v) => setWalletType(v as 'LGPW' | 'FPGW')}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MPGW">MPGW (Market Price)</SelectItem>
+                        <SelectItem value="LGPW">LGPW (Market Price)</SelectItem>
                         <SelectItem value="FPGW">FPGW (Fixed Price)</SelectItem>
                       </SelectContent>
                     </Select>

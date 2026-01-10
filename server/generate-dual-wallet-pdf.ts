@@ -23,8 +23,8 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.text('Finatrades provides two wallet types to address both needs:');
   doc.moveDown();
 
-  // MPGW
-  doc.fontSize(13).fillColor('#D4AF37').text('MPGW - Market Price Gold Wallet');
+  // LGPW
+  doc.fontSize(13).fillColor('#D4AF37').text('LGPW - Live Gold Price Wallet');
   doc.fontSize(10).fillColor('#333');
   doc.text('• Value fluctuates with live gold market prices');
   doc.text('• If gold price rises, your value increases');
@@ -64,7 +64,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.fontSize(16).fillColor('#4B0082').text('3. The Four Balance Buckets');
   doc.moveDown(0.5);
   doc.fontSize(10).fillColor('#333');
-  doc.text('Each wallet type (MPGW and FPGW) has four separate buckets:');
+  doc.text('Each wallet type (LGPW and FPGW) has four separate buckets:');
   doc.moveDown(0.5);
 
   const buckets = [
@@ -89,7 +89,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.fontSize(10).fillColor('#333');
   doc.text('When sending gold to another user:');
   doc.moveDown(0.5);
-  doc.text('1. Sender chooses wallet type (MPGW or FPGW) and amount');
+  doc.text('1. Sender chooses wallet type (LGPW or FPGW) and amount');
   doc.text('2. Sender\'s Available → Reserved (gold is held)');
   doc.text('3. Receiver sees request with [Accept] [Reject] + 24hr timer');
   doc.text('4. If Accept: Receiver\'s Available increases (same wallet type)');
@@ -105,7 +105,7 @@ export async function generateDualWalletGuide(): Promise<string> {
 
   const tables = [
     { name: 'wallets', purpose: 'Legacy total gold balance' },
-    { name: 'vaultOwnershipSummary', purpose: 'Dual-wallet buckets (MPGW/FPGW × 4 statuses)' },
+    { name: 'vaultOwnershipSummary', purpose: 'Dual-wallet buckets (LGPW/FPGW × 4 statuses)' },
     { name: 'fpgw_batches', purpose: 'Individual FPGW batches with locked prices' },
     { name: 'vaultLedgerEntries', purpose: 'Audit trail of all movements' },
     { name: 'transactions', purpose: 'Transaction history' },
@@ -128,7 +128,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.text('• Storage: All ledgers, wallets, locks store gold grams ONLY');
   doc.text('• Display: UI shows gold as primary, USD as "≈ equivalent"');
   doc.text('• Disclaimer: "USD is an equivalent value. Your real balance is gold."');
-  doc.text('• MPGW: USD = gold grams × current market price');
+  doc.text('• LGPW: USD = gold grams × current market price');
   doc.text('• FPGW: USD = gold grams × locked purchase price');
 
   doc.moveDown(3);

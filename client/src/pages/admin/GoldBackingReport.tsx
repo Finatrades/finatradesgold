@@ -291,7 +291,7 @@ export default function GoldBackingReport() {
                          modalType === 'bnsl' ? loadingBnsl :
                          modalType === 'vault' ? loadingVault : false;
 
-  const modalTitle = modalType === 'finapay' ? 'MPGW Holders (Market Price Gold Wallet)' :
+  const modalTitle = modalType === 'finapay' ? 'LGPW Holders (Live Gold Price Wallet)' :
                      modalType === 'bnsl' ? 'BNSL Account Holders' :
                      modalType === 'vault' ? `Vault: ${selectedVaultLocation}` : '';
 
@@ -342,7 +342,7 @@ export default function GoldBackingReport() {
         <Tabs value={reportMode} onValueChange={(v) => setReportMode(v as 'summary' | 'segmented')} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md mb-6">
             <TabsTrigger value="summary" data-testid="tab-summary">Summary View</TabsTrigger>
-            <TabsTrigger value="segmented" data-testid="tab-segmented">MPGW / FPGW Breakdown</TabsTrigger>
+            <TabsTrigger value="segmented" data-testid="tab-segmented">LGPW / FPGW Breakdown</TabsTrigger>
           </TabsList>
 
           <TabsContent value="summary">
@@ -468,7 +468,7 @@ export default function GoldBackingReport() {
                       <p className="text-sm text-gray-500 mt-1">Total gold owed to customers</p>
                       
                       <div className="mt-4 space-y-2">
-                        {/* MPGW - Market Price Gold Wallet */}
+                        {/* LGPW - Live Gold Price Wallet */}
                         <button
                           onClick={() => handleOpenUserList('finapay')}
                           className="w-full flex justify-between items-center p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border border-blue-200"
@@ -480,7 +480,7 @@ export default function GoldBackingReport() {
                             </div>
                             <div className="text-left">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">MPGW</span>
+                                <span className="text-sm font-medium text-gray-900">LGPW</span>
                                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Market Price</Badge>
                               </div>
                               <p className="text-xs text-gray-500">
@@ -684,7 +684,7 @@ export default function GoldBackingReport() {
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <TrendingUp className="h-5 w-5 text-amber-600" />
-                        MPGW (Market Price Gold Wallet)
+                        LGPW (Live Gold Price Wallet)
                       </CardTitle>
                       <Badge variant="outline" className="bg-amber-100 text-amber-700">
                         {enhancedData.customerLiabilities.mpgw.count} Users
@@ -1164,7 +1164,7 @@ function UserProfileView({
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-blue-600" />
-                  MPGW (Market Price)
+                  LGPW (Market Price)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1182,7 +1182,7 @@ function UserProfileView({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No MPGW wallet</p>
+                  <p className="text-gray-400 text-sm">No LGPW wallet</p>
                 )}
               </CardContent>
             </Card>

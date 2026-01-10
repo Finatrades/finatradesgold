@@ -26,9 +26,9 @@ interface Certificate {
   issuer: string;
   vaultLocation: string | null;
   wingoldStorageRef: string | null;
-  goldWalletType: 'MPGW' | 'FPGW' | null;
-  fromGoldWalletType: 'MPGW' | 'FPGW' | null;
-  toGoldWalletType: 'MPGW' | 'FPGW' | null;
+  goldWalletType: 'LGPW' | 'FPGW' | null;
+  fromGoldWalletType: 'LGPW' | 'FPGW' | null;
+  toGoldWalletType: 'LGPW' | 'FPGW' | null;
   fromUserId: string | null;
   toUserId: string | null;
   fromUserName: string | null;
@@ -252,7 +252,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
                       ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
                       : 'border-amber-500 text-amber-400 bg-amber-500/10'
                   }`}>
-                    {certificate.goldWalletType === 'FPGW' ? '🔒 FPGW - Fixed Price Gold' : '📈 MPGW - Market Price Gold'}
+                    {certificate.goldWalletType === 'FPGW' ? '🔒 FPGW - Fixed Price Gold' : '📈 LGPW - Market Price Gold'}
                   </Badge>
                   <p className="text-xs text-white/50 max-w-xs text-center">
                     {certificate.goldWalletType === 'FPGW' 

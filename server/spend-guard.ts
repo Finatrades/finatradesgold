@@ -12,7 +12,7 @@ import { vaultOwnershipSummary } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { validateSpendableFpgw, getFpgwBalanceSummary } from "./fpgw-batch-service";
 
-export type GoldWalletType = 'MPGW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FPGW';
 
 export interface SpendValidationResult {
   valid: boolean;
@@ -45,7 +45,7 @@ export interface BalanceSummary {
 }
 
 /**
- * Get the complete balance summary for a user (MPGW + FPGW)
+ * Get the complete balance summary for a user (LGPW + FPGW)
  */
 export async function getBalanceSummary(userId: string): Promise<BalanceSummary> {
   // Get ownership summary from database
@@ -114,7 +114,7 @@ export async function validateSpend(
     };
   }
 
-  // MPGW validation
+  // LGPW validation
   const summary = await getBalanceSummary(userId);
   
   if (summary.mpgw.availableGrams >= goldGrams) {
@@ -131,12 +131,12 @@ export async function validateSpend(
     availableGrams: summary.mpgw.availableGrams,
     requestedGrams: goldGrams,
     walletType,
-    error: `Insufficient MPGW balance. Available: ${summary.mpgw.availableGrams.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g. Pending/Locked gold cannot be spent.`
+    error: `Insufficient LGPW balance. Available: ${summary.mpgw.availableGrams.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g. Pending/Locked gold cannot be spent.`
   };
 }
 
 /**
- * Check if user can perform an internal transfer between MPGW and FPGW
+ * Check if user can perform an internal transfer between LGPW and FPGW
  */
 export async function validateInternalTransfer(
   userId: string,

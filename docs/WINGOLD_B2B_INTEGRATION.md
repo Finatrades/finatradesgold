@@ -53,7 +53,7 @@ This document explains how the Finatrades ↔ Wingold B2B integration works for 
 │  ┌──────────────────────┐           ┌─────────────────────────┐    │
 │  │ handleOrderFulfilled │           │                         │    │
 │  │                      │──────────>│ FinaVault: +2 bars      │    │
-│  │ • Verify signature   │           │ MPGW Wallet: +20g       │    │
+│  │ • Verify signature   │           │ LGPW Wallet: +20g       │    │
 │  │ • Update vault       │           │ Certificates: 3 added   │    │
 │  └──────────────────────┘           └─────────────────────────┘    │
 │                                                                     │

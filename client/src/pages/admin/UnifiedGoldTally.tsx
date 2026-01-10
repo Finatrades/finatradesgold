@@ -64,7 +64,7 @@ type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
 interface UnifiedTallyTransaction {
   id: string;
   userId: string;
-  walletType: 'MPGW' | 'FPGW';
+  walletType: 'LGPW' | 'FPGW';
   depositMethod: DepositMethod;
   status: TallyStatus;
   depositAmount: string;
@@ -336,7 +336,7 @@ export default function UnifiedGoldTally() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={txn.wallet_type === 'MPGW' ? 'secondary' : 'outline'}>
+                              <Badge variant={txn.wallet_type === 'LGPW' ? 'secondary' : 'outline'}>
                                 {txn.wallet_type}
                               </Badge>
                             </TableCell>
@@ -1262,7 +1262,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     <CardContent className="space-y-3">
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">MPGW Balance</span>
+                          <span className="text-gray-500">LGPW Balance</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{formatGold(projection.current?.finapay?.mpgw?.balanceG)}</span>
                             <ArrowRight className="w-3 h-3 text-gray-400" />

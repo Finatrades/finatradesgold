@@ -235,7 +235,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   const noTemplatesConfigured = !loadingTemplates && templates.length === 0;
   
   useEffect(() => {

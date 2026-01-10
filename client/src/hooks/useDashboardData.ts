@@ -46,9 +46,9 @@ interface Certificate {
   goldGrams: string;
   issuer: string;
   issuedAt: string;
-  goldWalletType?: 'MPGW' | 'FPGW' | null;
-  fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
-  toGoldWalletType?: 'MPGW' | 'FPGW' | null;
+  goldWalletType?: 'LGPW' | 'FPGW' | null;
+  fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
+  toGoldWalletType?: 'LGPW' | 'FPGW' | null;
 }
 
 interface CertificateSummary {
@@ -91,7 +91,7 @@ interface DashboardResponse {
     activeBnslPlans: number;
     pendingGoldGrams: number;
     pendingDepositUsd: number;
-    // MPGW/FPGW breakdown
+    // LGPW/FPGW breakdown
     mpgwAvailableGrams: number;
     mpgwPendingGrams: number;
     mpgwLockedBnslGrams: number;
@@ -135,7 +135,7 @@ interface DashboardData {
     activeBnslPlans: number;
     pendingGoldGrams: number;
     pendingDepositUsd: number;
-    // MPGW/FPGW breakdown
+    // LGPW/FPGW breakdown
     mpgwAvailableGrams: number;
     mpgwPendingGrams: number;
     mpgwLockedBnslGrams: number;

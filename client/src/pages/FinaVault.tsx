@@ -231,7 +231,7 @@ export default function FinaVault() {
   const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
   
-  // Dual-wallet breakdown (MPGW/FPGW)
+  // Dual-wallet breakdown (LGPW/FPGW)
   const mpgwAvailableGrams = ownership ? safeParseFloat(ownership.mpgwAvailableGrams) : 0;
   const fpgwAvailableGrams = ownership ? safeParseFloat(ownership.fpgwAvailableGrams) : 0;
   
@@ -262,7 +262,7 @@ export default function FinaVault() {
   const transactionRecords = transactions.map((tx: any) => {
     const isInbound = tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Buy';
     const isOutbound = tx.type === 'Send' || tx.type === 'Withdrawal' || tx.type === 'Sell';
-    const walletType = tx.goldWalletType || 'MPGW';
+    const walletType = tx.goldWalletType || 'LGPW';
     
     return {
       id: tx.id,
@@ -284,7 +284,7 @@ export default function FinaVault() {
 
   // Convert deposit requests (bank deposits) to ledger-like format
   const depositRecords = depositRequests.map((dep: any) => {
-    const walletType = dep.goldWalletType || 'MPGW';
+    const walletType = dep.goldWalletType || 'LGPW';
     return {
       id: dep.id,
       createdAt: dep.createdAt,
@@ -320,7 +320,7 @@ export default function FinaVault() {
       return false;
     })
     .map((cert: any) => {
-      const walletType = cert.goldWalletType || 'MPGW';
+      const walletType = cert.goldWalletType || 'LGPW';
       const toWallet = cert.type === 'Trade Release' 
         ? 'FinaBridge Wallet' 
         : (cert.type === 'Digital Ownership' 
@@ -353,7 +353,7 @@ export default function FinaVault() {
   // Always include certificate records, plus ledger entries or other records
   // Normalize ledger entries to have consistent transactionId field and wallet type display
   const normalizedLedgerEntries = ledgerEntries.map((entry: any) => {
-    const walletType = entry.goldWalletType || 'MPGW';
+    const walletType = entry.goldWalletType || 'LGPW';
     // Update toWallet to show wallet type if it's FinaPay
     let toWallet = entry.toWallet;
     if (toWallet === 'FinaPay') {
@@ -639,13 +639,13 @@ export default function FinaVault() {
 
           </div>
 
-          {/* Dual-Wallet Breakdown (MPGW/FPGW) */}
+          {/* Dual-Wallet Breakdown (LGPW/FPGW) */}
           {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
             <div className="mt-6 pt-6 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Wallet Type Breakdown</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                {/* MPGW - Market Price Gold Wallet */}
+                {/* LGPW - Live Gold Price Wallet */}
                 <div className="relative p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white overflow-hidden" data-testid="card-mpgw-balance">
                   <div className="absolute right-2 bottom-2 opacity-10">
                     <TrendingUp className="w-16 h-16 text-amber-500" />
@@ -653,7 +653,7 @@ export default function FinaVault() {
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">MPGW - Market Price</p>
+                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">LGPW - Market Price</p>
                     </div>
                     <p className="text-2xl font-bold text-amber-600 mb-0.5">
                       {mpgwAvailableGrams.toFixed(4)}g

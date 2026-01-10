@@ -33,7 +33,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     const goldPriceData = await goldPriceRes.json();
     const goldPricePerGram = goldPriceData?.pricePerGram || 142;
 
-    // Calculate total MPGW exposure
+    // Calculate total LGPW exposure
     const mpgwTotals = await db.select({
       totalGrams: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}), 0)`,
       pendingGrams: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}), 0)`,
@@ -242,7 +242,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
     let newCashBalance = currentCashBalance;
 
     // Create cash ledger entry based on direction
-    if (conversion.direction === 'MPGW_TO_FPGW') {
+    if (conversion.direction === 'LGPW_TO_FPGW') {
       newCashBalance = currentCashBalance + executionValue;
       await db.insert(cashSafetyLedger).values({
         entryType: 'FPGW_LOCK',
@@ -252,7 +252,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
         conversionId: id,
         userId: conversion.userId,
         createdBy: user.id,
-        notes: `MPGW→FPGW conversion: ${goldGrams}g @ $${finalPrice}/g`
+        notes: `LGPW→FPGW conversion: ${goldGrams}g @ $${finalPrice}/g`
       });
     } else {
       newCashBalance = currentCashBalance - executionValue;
@@ -267,7 +267,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
         conversionId: id,
         userId: conversion.userId,
         createdBy: user.id,
-        notes: `FPGW→MPGW conversion: ${goldGrams}g @ $${finalPrice}/g`
+        notes: `FPGW→LGPW conversion: ${goldGrams}g @ $${finalPrice}/g`
       });
     }
 
@@ -289,7 +289,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
     const [userBalance] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, conversion.userId));
     
     if (userBalance) {
-      if (conversion.direction === 'MPGW_TO_FPGW') {
+      if (conversion.direction === 'LGPW_TO_FPGW') {
         const newMpgw = parseFloat(userBalance.mpgwAvailableGrams) - goldGrams;
         const newFpgw = parseFloat(userBalance.fpgwAvailableGrams) + goldGrams;
         await db.update(vaultOwnershipSummary)
@@ -550,7 +550,7 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
     const goldPriceData = await goldPriceRes.json();
     const goldPricePerGram = goldPriceData?.pricePerGram || 142;
 
-    // Check MPGW vs Physical
+    // Check LGPW vs Physical
     const mpgwTotal = await db.select({
       total: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams} + ${vaultOwnershipSummary.mpgwPendingGrams} + ${vaultOwnershipSummary.mpgwLockedBnslGrams} + ${vaultOwnershipSummary.mpgwReservedTradeGrams}), 0)`
     }).from(vaultOwnershipSummary);
@@ -568,10 +568,10 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
       const severity = diffPct > 10 ? 'critical' : diffPct > 5 ? 'warning' : 'info';
 
       await db.insert(reconciliationAlerts).values({
-        alertType: 'MPGW_EXCEEDS_PHYSICAL',
+        alertType: 'LGPW_EXCEEDS_PHYSICAL',
         severity,
-        title: 'MPGW Exceeds Physical Inventory',
-        message: `Total MPGW (${mpgwGrams.toFixed(4)}g) exceeds physical inventory (${physicalGrams.toFixed(4)}g) by ${diff.toFixed(4)}g (${diffPct.toFixed(2)}%)`,
+        title: 'LGPW Exceeds Physical Inventory',
+        message: `Total LGPW (${mpgwGrams.toFixed(4)}g) exceeds physical inventory (${physicalGrams.toFixed(4)}g) by ${diff.toFixed(4)}g (${diffPct.toFixed(2)}%)`,
         expectedValue: mpgwGrams.toFixed(6),
         actualValue: physicalGrams.toFixed(6),
         differenceValue: diff.toFixed(6),
@@ -579,7 +579,7 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
         metadata: { goldPricePerGram }
       });
 
-      alerts.push({ type: 'MPGW_EXCEEDS_PHYSICAL', severity, difference: diff });
+      alerts.push({ type: 'LGPW_EXCEEDS_PHYSICAL', severity, difference: diff });
     }
 
     // Check FPGW vs Cash

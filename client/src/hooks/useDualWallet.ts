@@ -43,8 +43,8 @@ export interface FpgwBatch {
 export interface InternalTransferParams {
   userId: string;
   goldGrams: number;
-  fromWalletType: 'MPGW' | 'FPGW';
-  toWalletType: 'MPGW' | 'FPGW';
+  fromWalletType: 'LGPW' | 'FPGW';
+  toWalletType: 'LGPW' | 'FPGW';
   notes?: string;
 }
 
@@ -101,7 +101,7 @@ export function useInternalTransfer() {
 
 export function useValidateSpend() {
   return useMutation({
-    mutationFn: async (params: { userId: string; goldGrams: number; walletType: 'MPGW' | 'FPGW' }) => {
+    mutationFn: async (params: { userId: string; goldGrams: number; walletType: 'LGPW' | 'FPGW' }) => {
       const res = await apiRequest('POST', '/api/dual-wallet/validate-spend', params);
       return res.json();
     }

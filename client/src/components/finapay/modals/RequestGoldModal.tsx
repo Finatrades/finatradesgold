@@ -41,7 +41,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   // Gold price for summary
   const [currentGoldPrice, setCurrentGoldPrice] = useState(0);
 
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   useEffect(() => {
     if (isOpen) {
       setAmount('');
@@ -55,7 +55,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setInvoiceFile(null);
       setTermsAccepted(false);
       
-      setSelectedWalletType('MPGW');
+      setSelectedWalletType('LGPW');
       // Fetch user's QR code for receiving payments
       if (user?.id) {
         fetchMyQrCode();

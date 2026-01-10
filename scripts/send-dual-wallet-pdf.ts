@@ -21,7 +21,7 @@ async function sendDualWalletPDF() {
       <p>Please find attached the comprehensive documentation for the Finatrades Dual-Wallet System.</p>
       <p>This guide covers:</p>
       <ul>
-        <li>MPGW (Market Price Gold Wallet) - Value fluctuates with market</li>
+        <li>LGPW (Live Gold Price Wallet) - Value fluctuates with market</li>
         <li>FPGW (Fixed Price Gold Wallet) - Value locked at purchase price</li>
         <li>FIFO batch consumption for FPGW</li>
         <li>Balance buckets (Available, Pending, Locked_BNSL, Reserved_Trade)</li>

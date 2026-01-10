@@ -596,7 +596,7 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
-  // Register dual wallet routes (MPGW/FPGW)
+  // Register dual wallet routes (LGPW/FPGW)
   registerDualWalletRoutes(app);
   // Register SSO routes for Wingold integration
   registerSsoRoutes(app);
@@ -781,7 +781,7 @@ export async function registerRoutes(
 
       const goldPrice = priceData.pricePerGram || 85;
       const goldPriceSource = priceData.source || 'fallback';
-      // Extract vault ownership summary with MPGW/FPGW breakdown
+      // Extract vault ownership summary with LGPW/FPGW breakdown
       const vaultSummary = Array.isArray(vaultSummaryResult) && vaultSummaryResult.length > 0 ? vaultSummaryResult[0] : null;
       
       // Convert deposit requests to transaction format (exclude approved ones - they already have a transaction record)
@@ -930,7 +930,7 @@ export async function registerRoutes(
           activeBnslPlans: activeBnslPlans.length,
           pendingGoldGrams,
           pendingDepositUsd,
-          // MPGW/FPGW breakdown from vault ownership summary
+          // LGPW/FPGW breakdown from vault ownership summary
           mpgwAvailableGrams: parseFloat(vaultSummary?.mpgwAvailableGrams || '0'),
           mpgwPendingGrams: parseFloat(vaultSummary?.mpgwPendingGrams || '0'),
           mpgwLockedBnslGrams: parseFloat(vaultSummary?.mpgwLockedBnslGrams || '0'),
@@ -1114,7 +1114,7 @@ ${message}
               description: inviteMetadata.originalMemo || `Claimed invitation transfer from registration`,
               referenceId: invite.referenceNumber,
               sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
               completedAt: new Date(),
             });
             
@@ -3216,7 +3216,7 @@ ${message}
         amountUsd: d.amount,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
         createdAt: d.createdAt
       }));
       allPendingItems.push(...pendingDepositReqs);
@@ -3236,7 +3236,7 @@ ${message}
           amountUsd: w.amountUsd,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: w.createdAt
         }));
         allPendingItems.push(...pendingWithdrawReqs);
@@ -3257,7 +3257,7 @@ ${message}
           amountUsd: c.amountUsd,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: c.createdAt
         }));
         allPendingItems.push(...pendingCryptoReqs);
@@ -3278,7 +3278,7 @@ ${message}
           amountUsd: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: b.createdAt
         }));
         allPendingItems.push(...pendingBuyGoldReqs);
@@ -3489,7 +3489,7 @@ ${message}
     }
   });
 
-  // Enhanced Gold Backing Report with MPGW/FPGW segmentation (Admin)
+  // Enhanced Gold Backing Report with LGPW/FPGW segmentation (Admin)
   app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, async (req, res) => {
     try {
       const report = await storage.getGoldBackingReportEnhanced();
@@ -7445,7 +7445,7 @@ ${message}
         goldPriceUsdPerGram: null,
         description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
         createdAt: d.createdAt,
         completedAt: null,
         sourceTable: 'depositRequests'
@@ -7469,7 +7469,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Withdrawal to ${w.bankName || 'bank account'}`,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: w.createdAt,
           completedAt: null,
           sourceTable: 'withdrawalRequests'
@@ -7494,7 +7494,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: `Crypto deposit - ${c.network || 'Crypto'}`,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: c.createdAt,
           completedAt: null,
           sourceTable: 'cryptoPaymentRequests'
@@ -7519,7 +7519,7 @@ ${message}
           goldPriceUsdPerGram: null,
           description: 'Wingold purchase request',
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           createdAt: b.createdAt,
           completedAt: null,
           sourceTable: 'buyGoldRequests'
@@ -11600,7 +11600,7 @@ ${message}
               description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: request.referenceNumber,
               sourceModule: 'finapay',
-              goldWalletType: (request as any).goldWalletType || 'MPGW',
+              goldWalletType: (request as any).goldWalletType || 'LGPW',
               approvedBy: updates.processedBy,
               approvedAt: new Date(),
               completedAt: new Date(),
@@ -11991,7 +11991,7 @@ ${message}
           description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
           referenceId: request.referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           approvedBy: updates.processedBy,
           approvedAt: new Date(),
           updatedAt: new Date(),
@@ -12061,7 +12061,7 @@ ${message}
             description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
             referenceId: `${request.referenceNumber}-REFUND`,
             sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
             approvedBy: updates.processedBy,
             approvedAt: new Date(),
             updatedAt: new Date(),
@@ -15844,11 +15844,11 @@ ${message}
       }
       
       
-      // P2P RULE: Direct SEND must use MPGW only
-      // Payment Requests can specify MPGW or FPGW, but direct sends are MPGW-only
-      if (goldWalletType && goldWalletType !== 'MPGW') {
+      // P2P RULE: Direct SEND must use LGPW only
+      // Payment Requests can specify LGPW or FPGW, but direct sends are LGPW-only
+      if (goldWalletType && goldWalletType !== 'LGPW') {
         return res.status(400).json({ 
-          message: "Direct P2P sends must use Market Price Gold Wallet (MPGW). To transfer from FPGW, create a payment request instead."
+          message: "Direct P2P sends must use Live Gold Price Wallet (LGPW). To transfer from FPGW, create a payment request instead."
         });
       }
       // Validate gold amount is provided (platform is gold-only)
@@ -15966,8 +15966,8 @@ ${message}
           description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
           referenceId: referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
-          goldWalletType: goldWalletType || 'MPGW',
+            goldWalletType: 'LGPW',
+          goldWalletType: goldWalletType || 'LGPW',
         });
         
         // Record ledger entry
@@ -16103,8 +16103,8 @@ ${message}
         description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
-        goldWalletType: goldWalletType || 'MPGW',
+            goldWalletType: 'LGPW',
+        goldWalletType: goldWalletType || 'LGPW',
       });
       
       // Record ledger entry
@@ -16277,7 +16277,7 @@ ${message}
         attachmentName: attachmentName || null,
         attachmentMime: attachmentMime || null,
         attachmentSize: attachmentSize || null,
-        goldWalletType: goldWalletType || 'MPGW',
+        goldWalletType: goldWalletType || 'LGPW',
       });
       
       // Generate QR code as data URL
@@ -16485,7 +16485,7 @@ ${message}
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: (request as any).goldWalletType || 'MPGW',
+            goldWalletType: (request as any).goldWalletType || 'LGPW',
         completedAt: new Date(),
       });
       
@@ -16500,7 +16500,7 @@ ${message}
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: (request as any).goldWalletType || 'MPGW',
+            goldWalletType: (request as any).goldWalletType || 'LGPW',
         completedAt: new Date(),
       });
       
@@ -16521,7 +16521,7 @@ ${message}
       
       
       // Generate P2P certificates for both parties
-      const walletType = (request as any).goldWalletType || 'MPGW';
+      const walletType = (request as any).goldWalletType || 'LGPW';
       const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const wingoldRef = generateWingoldRef();
       
@@ -16557,7 +16557,7 @@ ${message}
         issuer: 'Wingold and Metals DMCC',
         vaultLocation: 'Dubai - Wingold & Metals DMCC',
         wingoldStorageRef: wingoldRef,
-        goldWalletType: 'MPGW', // Physical storage always MPGW
+        goldWalletType: 'LGPW', // Physical storage always LGPW
       });
       
       // 3. Transfer Certificate for payer (gold sender)
@@ -16867,7 +16867,7 @@ ${message}
             description: transfer.memo || `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
             referenceId: transfer.referenceNumber,
             sourceModule: 'finapay',
-            goldWalletType: transfer.goldWalletType || 'MPGW',
+            goldWalletType: transfer.goldWalletType || 'LGPW',
             completedAt: new Date(),
           });
           
@@ -17102,7 +17102,7 @@ ${message}
           description: `Transfer to ${recipient?.firstName || 'user'} was rejected${reason ? `: ${reason}` : ''}`,
           referenceId: transfer.referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
           completedAt: new Date(),
         });
         
@@ -17436,7 +17436,7 @@ ${message}
         description: invoice.description || `QR Payment to ${merchant.firstName} ${merchant.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
         completedAt: new Date(),
       });
       
@@ -17451,7 +17451,7 @@ ${message}
         description: invoice.description || `QR Payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
         completedAt: new Date(),
       });
       
@@ -18072,14 +18072,14 @@ ${message}
   // Create NGenius card deposit order
   app.post("/api/ngenius/create-order", async (req, res) => {
     try {
-      const { userId, amount, currency = 'USD', returnUrl, cancelUrl, goldWalletType = 'MPGW' } = req.body;
+      const { userId, amount, currency = 'USD', returnUrl, cancelUrl, goldWalletType = 'LGPW' } = req.body;
       
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized - userId required" });
       }
       
       // Validate wallet type
-      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
+      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -18237,7 +18237,7 @@ ${message}
                 });
 
                 // Get wallet type from stored transaction
-                const storedWalletType = transaction.goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
+                const storedWalletType = transaction.goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
                 
                 // Create transaction record (type='Buy' like crypto)
                 const walletTx = await storage.createTransaction({
@@ -18266,7 +18266,7 @@ ${message}
                   goldGrams: goldGrams,
                   goldPriceUsdPerGram: goldPricePerGram,
                   fromWallet: 'External',
-                  toWallet: storedWalletType === 'FPGW' ? 'FPGW' : 'MPGW',
+                  toWallet: storedWalletType === 'FPGW' ? 'FPGW' : 'LGPW',
                   toStatus: 'Available',
                   transactionId: walletTx.id,
                   notes: `Card payment (${storedWalletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
@@ -18289,7 +18289,7 @@ ${message}
                   });
                 }
                 
-                if (storedWalletType === 'MPGW') {
+                if (storedWalletType === 'LGPW') {
                   const currentMpgw = parseFloat(vaultSummary.mpgwAvailableGrams || '0');
                   await storage.updateVaultOwnershipSummary(vaultSummary.id, {
                     mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
@@ -18668,7 +18668,7 @@ ${message}
             description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
             referenceId: orderReference,
             sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
             completedAt: new Date(),
           });
 
@@ -18796,7 +18796,7 @@ ${message}
   // Process payment with session ID from frontend SDK (NGenius Hosted Sessions)
   app.post("/api/ngenius/process-hosted-payment", async (req, res) => {
     try {
-      const { userId, sessionId, amount, goldWalletType = 'MPGW' } = req.body;
+      const { userId, sessionId, amount, goldWalletType = 'LGPW' } = req.body;
       
       if (!userId || !sessionId || !amount) {
         return res.status(400).json({ 
@@ -18806,7 +18806,7 @@ ${message}
       }
       
       // Validate wallet type
-      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'MPGW';
+      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -18929,7 +18929,7 @@ ${message}
             goldGrams: goldGrams,
             goldPriceUsdPerGram: goldPricePerGram,
             fromWallet: 'External',
-            toWallet: walletType === 'FPGW' ? 'FPGW' : 'MPGW',
+            toWallet: walletType === 'FPGW' ? 'FPGW' : 'LGPW',
             toStatus: 'Available',
             transactionId: walletTx.id,
             notes: `Card payment (${walletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
@@ -18952,7 +18952,7 @@ ${message}
             });
           }
           
-          if (walletType === 'MPGW') {
+          if (walletType === 'LGPW') {
             const currentMpgw = parseFloat(vaultSummary.mpgwAvailableGrams || '0');
             await storage.updateVaultOwnershipSummary(vaultSummary.id, {
               mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
@@ -19149,7 +19149,7 @@ ${message}
               description: `Card payment via NGenius webhook - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: transaction.orderReference,
               sourceModule: 'finapay',
-            goldWalletType: 'MPGW',
+            goldWalletType: 'LGPW',
               completedAt: new Date(),
             });
 
@@ -19431,7 +19431,7 @@ ${message}
       const goldPriceData = await getGoldPrice();
       const GOLD_PRICE_USD = goldPriceData.pricePerGram;
 
-      // Get MPGW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
+      // Get LGPW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
       const goldBackingReport = await storage.getGoldBackingReportEnhanced();
 
       // Get platform config for accurate fee calculations
@@ -19447,7 +19447,7 @@ ${message}
       const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
-      // MPGW/FPGW gold holdings from vault ownership summary (authoritative source)
+      // LGPW/FPGW gold holdings from vault ownership summary (authoritative source)
       const mpgwTotalGrams = goldBackingReport.customerLiabilities.mpgw.totalGrams;
       const fpgwTotalGrams = goldBackingReport.customerLiabilities.fpgw.totalGrams;
       const totalGoldGrams = mpgwTotalGrams + fpgwTotalGrams;
@@ -19520,7 +19520,7 @@ ${message}
         physicalGoldGrams,
         goldPriceUsd: GOLD_PRICE_USD,
         
-        // MPGW/FPGW breakdown (gold grams are primary, USD is derived)
+        // LGPW/FPGW breakdown (gold grams are primary, USD is derived)
         mpgw: {
           totalGrams: mpgwTotalGrams,
           availableGrams: goldBackingReport.customerLiabilities.mpgw.available,
@@ -23680,7 +23680,7 @@ ${message}
       console.log('[DEBUG] Golden Rule validation passed:', { goldPrice, goldGrams });
       
       const tallyUser = await storage.getUser(paymentRequest.userId);
-      const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+      const walletType = (paymentRequest as any).goldWalletType || 'LGPW';
 
       // Fetch platform fee configuration
       const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
@@ -23777,7 +23777,7 @@ ${message}
       } else {
         await db.insert(vaultOwnershipSummary).values({
           userId: paymentRequest.userId,
-          mpgwAvailableGrams: walletType === 'MPGW' ? goldGrams.toFixed(6) : '0',
+          mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
           fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
         });
       }
@@ -23979,7 +23979,7 @@ ${message}
         goldPriceUsdPerGram: finalGoldPrice,
         description: `Crypto deposit - ${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(finalGoldGrams).toFixed(4)}g gold at ${parseFloat(finalGoldPrice).toFixed(2)}/g)`,
         sourceModule: 'finapay',
-        goldWalletType: (paymentRequest as any).goldWalletType || 'MPGW',
+        goldWalletType: (paymentRequest as any).goldWalletType || 'LGPW',
       });
       
       const goldGrams = finalGoldGrams ? parseFloat(finalGoldGrams) : 0;
@@ -24001,8 +24001,8 @@ ${message}
         createdBy: adminUser?.id || 'system',
       });
       
-      // Update dual-wallet vaultOwnershipSummary for MPGW/FPGW balance tracking
-      const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+      // Update dual-wallet vaultOwnershipSummary for LGPW/FPGW balance tracking
+      const walletType = (paymentRequest as any).goldWalletType || 'LGPW';
 
       // Fetch platform fee configuration
       const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
@@ -24036,7 +24036,7 @@ ${message}
       } else {
         await db.insert(vaultOwnershipSummary).values({
           userId: paymentRequest.userId,
-          mpgwAvailableGrams: walletType === 'MPGW' ? goldGrams.toFixed(6) : '0',
+          mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
           fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
         });
       }

@@ -24,16 +24,16 @@ interface VaultTransaction {
   createdAt: string;
   completedAt: string | null;
   rejectionReason?: string | null;
-  goldWalletType?: 'MPGW' | 'FPGW' | null;
+  goldWalletType?: 'LGPW' | 'FPGW' | null;
   certificates: {
     id: string;
     certificateNumber: string;
     type: string;
     status: string;
     goldGrams: string;
-    goldWalletType?: 'MPGW' | 'FPGW' | null;
-    fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
-    toGoldWalletType?: 'MPGW' | 'FPGW' | null;
+    goldWalletType?: 'LGPW' | 'FPGW' | null;
+    fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
+    toGoldWalletType?: 'LGPW' | 'FPGW' | null;
     issuer?: string;
   }[];
 }
@@ -76,9 +76,9 @@ export default function VaultActivityList() {
     type: string;
     status: string;
     goldGrams: string;
-    goldWalletType?: 'MPGW' | 'FPGW' | null;
-    fromGoldWalletType?: 'MPGW' | 'FPGW' | null;
-    toGoldWalletType?: 'MPGW' | 'FPGW' | null;
+    goldWalletType?: 'LGPW' | 'FPGW' | null;
+    fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
+    toGoldWalletType?: 'LGPW' | 'FPGW' | null;
   }[] | null>(null);
   const [certTab, setCertTab] = useState('ownership');
 
@@ -597,7 +597,7 @@ export default function VaultActivityList() {
                 <SelectItem value="Receive">Receive</SelectItem>
                 <SelectItem value="Deposit">Deposit</SelectItem>
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
-                <SelectItem value="Swap">Swap (MPGW↔FPGW)</SelectItem>
+                <SelectItem value="Swap">Swap (LGPW↔FPGW)</SelectItem>
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
                 <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
@@ -636,8 +636,8 @@ export default function VaultActivityList() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium">{
-                        // Swap Gold for MPGW<->FPGW conversions
-                        tx.type === 'Swap' || tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW')
+                        // Swap Gold for LGPW<->FPGW conversions
+                        tx.type === 'Swap' || tx.description?.includes('LGPW to FPGW') || tx.description?.includes('FPGW to LGPW')
                           ? 'Swap Gold'
                           // Deposit Physical Gold for actual physical vault deposits
                           : tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
@@ -652,19 +652,19 @@ export default function VaultActivityList() {
                       }</span>
                       {/* Show wallet type badges - for Swap show direction based on description */}
                       {tx.type === 'Swap' ? (
-                        tx.description?.includes('MPGW to FPGW') ? (
+                        tx.description?.includes('LGPW to FPGW') ? (
                           <Badge 
                             variant="outline" 
                             className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300"
                           >
-                            MPGW → FPGW
+                            LGPW → FPGW
                           </Badge>
-                        ) : tx.description?.includes('FPGW to MPGW') ? (
+                        ) : tx.description?.includes('FPGW to LGPW') ? (
                           <Badge 
                             variant="outline" 
                             className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300"
                           >
-                            FPGW → MPGW
+                            FPGW → LGPW
                           </Badge>
                         ) : (
                           <Badge 
@@ -678,7 +678,7 @@ export default function VaultActivityList() {
                         <Badge 
                           variant="outline" 
                           className={`text-xs ${
-                            tx.goldWalletType === 'MPGW' 
+                            tx.goldWalletType === 'LGPW' 
                               ? 'bg-blue-100 text-blue-700 border-blue-300' 
                               : 'bg-amber-100 text-amber-700 border-amber-300'
                           }`}

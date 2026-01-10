@@ -176,7 +176,7 @@ export default function Dashboard() {
 
         {/* Dual Wallet Section */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* MPGW Card */}
+          {/* LGPW Card */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-6">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             <div className="relative z-10">
@@ -186,8 +186,8 @@ export default function Dashboard() {
                     <Wallet className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">MPGW</h3>
-                    <p className="text-xs text-purple-200">Market Price Gold Wallet</p>
+                    <h3 className="font-bold text-white">LGPW</h3>
+                    <p className="text-xs text-purple-200">Live Gold Price Wallet</p>
                   </div>
                 </div>
                 <Badge className="bg-white/20 text-white border-0">Live Price</Badge>

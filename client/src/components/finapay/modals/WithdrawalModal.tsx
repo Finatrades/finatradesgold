@@ -27,14 +27,14 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
   const [swiftCode, setSwiftCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
     if (isOpen) {
       setStep('form');
-      setSelectedWalletType('MPGW');
+      setSelectedWalletType('LGPW');
       setAmount('');
       setBankName('');
       setAccountName('');

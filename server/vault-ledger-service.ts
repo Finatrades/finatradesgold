@@ -35,10 +35,10 @@ export type LedgerAction =
   | 'Gift_Send'
   | 'Gift_Receive'
   | 'Storage_Fee'
-  | 'MPGW_To_FPGW'
-  | 'FPGW_To_MPGW';
+  | 'LGPW_To_FPGW'
+  | 'FPGW_To_LGPW';
 
-export type GoldWalletType = 'MPGW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FPGW';
 
 export type WalletType = 'FinaPay' | 'BNSL' | 'FinaBridge' | 'External';
 export type OwnershipStatus = 'Available' | 'Locked_BNSL' | 'Reserved_Trade' | 'Pending_Deposit' | 'Pending_Withdrawal';
@@ -353,7 +353,7 @@ export class VaultLedgerService {
     userId: string;
     goldGrams: number;
     goldPriceUsdPerGram: number;
-    walletType: 'MPGW' | 'FPGW';
+    walletType: 'LGPW' | 'FPGW';
     transactionId?: string;
     certificateId?: string;
     notes?: string;
@@ -366,8 +366,8 @@ export class VaultLedgerService {
     const summary = await this.getOrCreateOwnershipSummary(userId, dbClient);
     const grams = parseFloat(goldGrams.toFixed(6));
     
-    const isMPGW = walletType === 'MPGW';
-    const walletTypeLabel = isMPGW ? 'MPGW' : 'FPGW';
+    const isLGPW = walletType === 'LGPW';
+    const walletTypeLabel = isLGPW ? 'LGPW' : 'FPGW';
     
     const walletResult = await dbClient.update(wallets)
       .set({
@@ -386,10 +386,10 @@ export class VaultLedgerService {
         totalGoldGrams: (parseFloat(summary.totalGoldGrams) + grams).toFixed(6),
         availableGrams: (parseFloat(summary.availableGrams) + grams).toFixed(6),
         finaPayGrams: (parseFloat(summary.finaPayGrams) + grams).toFixed(6),
-        mpgwAvailableGrams: isMPGW 
+        mpgwAvailableGrams: isLGPW 
           ? (parseFloat(summary.mpgwAvailableGrams) + grams).toFixed(6) 
           : summary.mpgwAvailableGrams,
-        fpgwAvailableGrams: !isMPGW 
+        fpgwAvailableGrams: !isLGPW 
           ? (parseFloat(summary.fpgwAvailableGrams) + grams).toFixed(6) 
           : summary.fpgwAvailableGrams,
         lastUpdated: new Date(),
@@ -720,10 +720,10 @@ export class VaultLedgerService {
     const [bnslWallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
     const [bridgeWallet] = await db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId));
     
-    // Get existing ownership summary to preserve MPGW/FPGW split
+    // Get existing ownership summary to preserve LGPW/FPGW split
     const [existingSummary] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
     
-    // Preserve the existing MPGW and FPGW values if they exist
+    // Preserve the existing LGPW and FPGW values if they exist
     const mpgwAvailableGrams = parseFloat(existingSummary?.mpgwAvailableGrams || '0');
     const fpgwAvailableGrams = parseFloat(existingSummary?.fpgwAvailableGrams || '0');
     const fpgwPendingGrams = parseFloat(existingSummary?.fpgwPendingGrams || '0');
@@ -753,7 +753,7 @@ export class VaultLedgerService {
         bnslLockedGrams: bnslLocked.toFixed(6),
         finaBridgeAvailableGrams: bridgeAvailable.toFixed(6),
         finaBridgeReservedGrams: bridgeLocked.toFixed(6),
-        // Preserve MPGW/FPGW dual-wallet data
+        // Preserve LGPW/FPGW dual-wallet data
         mpgwAvailableGrams: mpgwAvailableGrams.toFixed(6),
         fpgwAvailableGrams: fpgwAvailableGrams.toFixed(6),
         fpgwPendingGrams: fpgwPendingGrams.toFixed(6),

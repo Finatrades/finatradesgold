@@ -19,8 +19,8 @@ import { randomUUID } from 'crypto';
 
 export type FlowType = 
   | 'ADD_FUNDS'
-  | 'INTERNAL_TRANSFER_MPGW_TO_FPGW'
-  | 'INTERNAL_TRANSFER_FPGW_TO_MPGW'
+  | 'INTERNAL_TRANSFER_LGPW_TO_FPGW'
+  | 'INTERNAL_TRANSFER_FPGW_TO_LGPW'
   | 'TRANSFER_USER_TO_USER'
   | 'WITHDRAWAL'
   | 'BNSL_ACTIVATION'
@@ -48,30 +48,30 @@ const EXPECTED_STEPS: Record<FlowType, ExpectedStep[]> = {
     { stepKey: 'payment_reference_created', order: 7, description: 'Payment reference or proof submitted', required: true },
     { stepKey: 'admin_approval_received', order: 8, description: 'Admin approves the deposit', required: true },
     { stepKey: 'gold_acquisition_confirmed', order: 9, description: 'Physical gold acquisition confirmed', required: true },
-    { stepKey: 'ledger_posted_credit_to_MPGW', order: 10, description: 'Ledger entry: CREDIT to MPGW wallet', required: true,
-      validator: (actual) => actual === 'MPGW'
+    { stepKey: 'ledger_posted_credit_to_LGPW', order: 10, description: 'Ledger entry: CREDIT to LGPW wallet', required: true,
+      validator: (actual) => actual === 'LGPW'
     },
     { stepKey: 'balances_updated_from_ledger', order: 11, description: 'User balances updated from ledger', required: true },
     { stepKey: 'certificate_created', order: 12, description: 'Digital Ownership Certificate issued', required: true },
     { stepKey: 'notify_user_success', order: 13, description: 'User notified of successful deposit', required: true },
   ],
   
-  INTERNAL_TRANSFER_MPGW_TO_FPGW: [
-    { stepKey: 'validate_user_balance_mpgw', order: 1, description: 'Validate user has sufficient MPGW balance', required: true },
+  INTERNAL_TRANSFER_LGPW_TO_FPGW: [
+    { stepKey: 'validate_user_balance_mpgw', order: 1, description: 'Validate user has sufficient LGPW balance', required: true },
     { stepKey: 'create_pending_txn', order: 2, description: 'Create pending transfer transaction', required: true },
-    { stepKey: 'ledger_post_reclass_mpgw_to_fpgw', order: 3, description: 'Ledger: reclassify from MPGW to FPGW', required: true },
+    { stepKey: 'ledger_post_reclass_mpgw_to_fpgw', order: 3, description: 'Ledger: reclassify from LGPW to FPGW', required: true },
     { stepKey: 'fpgw_batch_created', order: 4, description: 'FPGW batch created with fixed price', required: true },
-    { stepKey: 'balances_updated', order: 5, description: 'Both MPGW and FPGW balances updated', required: true },
+    { stepKey: 'balances_updated', order: 5, description: 'Both LGPW and FPGW balances updated', required: true },
     { stepKey: 'certificate_issued', order: 6, description: 'Conversion certificate issued (optional)', required: false },
     { stepKey: 'notify_user', order: 7, description: 'User notified of successful transfer', required: true },
   ],
   
-  INTERNAL_TRANSFER_FPGW_TO_MPGW: [
+  INTERNAL_TRANSFER_FPGW_TO_LGPW: [
     { stepKey: 'validate_user_balance_fpgw', order: 1, description: 'Validate user has sufficient FPGW balance', required: true },
     { stepKey: 'create_pending_txn', order: 2, description: 'Create pending transfer transaction', required: true },
     { stepKey: 'fpgw_batches_consumed', order: 3, description: 'FPGW batches consumed via FIFO', required: true },
-    { stepKey: 'ledger_post_reclass_fpgw_to_mpgw', order: 4, description: 'Ledger: reclassify from FPGW to MPGW', required: true },
-    { stepKey: 'balances_updated', order: 5, description: 'Both FPGW and MPGW balances updated', required: true },
+    { stepKey: 'ledger_post_reclass_fpgw_to_mpgw', order: 4, description: 'Ledger: reclassify from FPGW to LGPW', required: true },
+    { stepKey: 'balances_updated', order: 5, description: 'Both FPGW and LGPW balances updated', required: true },
     { stepKey: 'certificate_issued', order: 6, description: 'Conversion certificate issued (optional)', required: false },
     { stepKey: 'notify_user', order: 7, description: 'User notified of successful transfer', required: true },
   ],

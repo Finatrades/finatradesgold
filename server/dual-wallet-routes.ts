@@ -1,9 +1,9 @@
 /**
- * Dual Wallet Routes - MPGW/FPGW API Endpoints
+ * Dual Wallet Routes - LGPW/FPGW API Endpoints
  * 
  * Provides endpoints for:
- * - Getting balance summary (MPGW + FPGW breakdown)
- * - Internal transfers between MPGW and FPGW
+ * - Getting balance summary (LGPW + FPGW breakdown)
+ * - Internal transfers between LGPW and FPGW
  * - Spend validation
  */
 
@@ -173,8 +173,8 @@ router.post("/api/dual-wallet/validate-spend", ensureAuthenticated, async (req, 
 const internalTransferSchema = z.object({
   userId: z.string(),
   goldGrams: z.string().or(z.number()).transform(v => parseFloat(String(v))),
-  fromWalletType: z.enum(['MPGW', 'FPGW']),
-  toWalletType: z.enum(['MPGW', 'FPGW']),
+  fromWalletType: z.enum(['LGPW', 'FPGW']),
+  toWalletType: z.enum(['LGPW', 'FPGW']),
   notes: z.string().optional()
 });
 
@@ -188,16 +188,16 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const flowType: FlowType = fromWalletType === 'MPGW' 
-      ? 'INTERNAL_TRANSFER_MPGW_TO_FPGW' 
-      : 'INTERNAL_TRANSFER_FPGW_TO_MPGW';
+    const flowType: FlowType = fromWalletType === 'LGPW' 
+      ? 'INTERNAL_TRANSFER_LGPW_TO_FPGW' 
+      : 'INTERNAL_TRANSFER_FPGW_TO_LGPW';
     const flowInstanceId = await workflowAuditService.startFlow(flowType, userId, {
       goldGrams,
       fromWalletType,
       toWalletType,
     });
 
-    const validateStepKey = fromWalletType === 'MPGW' 
+    const validateStepKey = fromWalletType === 'LGPW' 
       ? 'validate_user_balance_mpgw' 
       : 'validate_user_balance_fpgw';
     
@@ -222,7 +222,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
     const preTransferBalance = await getBalanceSummary(userId);
 
     await db.transaction(async (tx) => {
-      if (fromWalletType === 'MPGW' && toWalletType === 'FPGW') {
+      if (fromWalletType === 'LGPW' && toWalletType === 'FPGW') {
         const [insertedTx] = await tx.insert(transactions).values({
           userId,
           type: 'Swap',
@@ -230,8 +230,8 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           amountGold: goldGrams.toFixed(6),
           amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-          goldWalletType: 'MPGW',
-          description: `MPGW to FPGW conversion: ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`,
+          goldWalletType: 'LGPW',
+          description: `LGPW to FPGW conversion: ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -261,7 +261,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           lockedPriceUsd: currentGoldPrice,
           sourceType: 'conversion',
           sourceTransactionId: actualTxId,
-          notes: notes || `MPGW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
+          notes: notes || `LGPW to FPGW conversion at $${currentGoldPrice.toFixed(2)}/g`
         });
         
         await workflowAuditService.recordStep(
@@ -273,15 +273,15 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
 
         const [ledgerEntry] = await tx.insert(vaultLedgerEntries).values({
           userId,
-          action: 'MPGW_To_FPGW',
+          action: 'LGPW_To_FPGW',
           goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-          fromGoldWalletType: 'MPGW',
+          fromGoldWalletType: 'LGPW',
           toGoldWalletType: 'FPGW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxId,
-          notes: `MPGW → FPGW: Debit ${goldGrams.toFixed(6)}g from MPGW, Credit ${goldGrams.toFixed(6)}g to FPGW`
+          notes: `LGPW → FPGW: Debit ${goldGrams.toFixed(6)}g from LGPW, Credit ${goldGrams.toFixed(6)}g to FPGW`
         }).returning({ id: vaultLedgerEntries.id });
         
         await workflowAuditService.recordStep(
@@ -307,7 +307,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           issuer: 'Wingold Metals DMCC',
-          fromGoldWalletType: 'MPGW',
+          fromGoldWalletType: 'LGPW',
           toGoldWalletType: 'FPGW',
           conversionPriceUsd: currentGoldPrice.toFixed(2),
           status: 'Active',
@@ -315,14 +315,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           issuedAt: now
         }).returning({ id: certificates.id });
         
-        // Find existing MPGW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
+        // Find existing LGPW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
         const mpgwCerts = await tx.select()
           .from(certificates)
           .where(and(
             eq(certificates.userId, userId),
             eq(certificates.type, 'Digital Ownership'),
             eq(certificates.status, 'Active'),
-            sql`(${certificates.goldWalletType} = 'MPGW' OR ${certificates.goldWalletType} IS NULL)`
+            sql`(${certificates.goldWalletType} = 'LGPW' OR ${certificates.goldWalletType} IS NULL)`
           ))
           .orderBy(certificates.issuedAt);
         
@@ -352,7 +352,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
             gramsBefore: currentRemaining.toFixed(6),
             gramsAfter: newRemaining.toFixed(6),
             transactionId: actualTxId,
-            notes: `${deductAmount.toFixed(6)}g converted from MPGW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
+            notes: `${deductAmount.toFixed(6)}g converted from LGPW to FPGW at $${currentGoldPrice.toFixed(2)}/g`
           });
           
           if (!parentCertId) parentCertId = mpgwCert.id;
@@ -388,7 +388,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
         }
         
         // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events
-        // Physical Storage certs remain unchanged (goldWalletType=MPGW) but we record the reclassification
+        // Physical Storage certs remain unchanged (goldWalletType=LGPW) but we record the reclassification
         const physicalStorageCerts = await tx.select()
           .from(certificates)
           .where(and(
@@ -414,7 +414,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
             gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
             transactionId: actualTxId,
             childCertificateId: newFpgwCert?.id,
-            notes: `Physical storage backing reclassified: MPGW → FPGW (${reclassAmount.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g, locked rate)`
+            notes: `Physical storage backing reclassified: LGPW → FPGW (${reclassAmount.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g, locked rate)`
           });
           
           physicalReclassRemaining -= reclassAmount;
@@ -427,7 +427,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
 
-      } else if (fromWalletType === 'FPGW' && toWalletType === 'MPGW') {
+      } else if (fromWalletType === 'FPGW' && toWalletType === 'LGPW') {
         const consumption = await consumeFpgwBatches(userId, goldGrams, 'Available');
         
         if (!consumption.success) {
@@ -462,7 +462,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           amountUsd: consumption.weightedValueUsd.toFixed(2),
           goldPriceUsdPerGram: avgPrice.toFixed(2),
           goldWalletType: 'FPGW',
-          description: `FPGW to MPGW conversion: ${goldGrams.toFixed(6)}g (cost basis: $${avgPrice.toFixed(2)}/g)`,
+          description: `FPGW to LGPW conversion: ${goldGrams.toFixed(6)}g (cost basis: $${avgPrice.toFixed(2)}/g)`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -479,15 +479,15 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
         
         const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
           userId,
-          action: 'FPGW_To_MPGW',
+          action: 'FPGW_To_LGPW',
           goldGrams: goldGrams.toFixed(6),
           goldPriceUsdPerGram: avgPrice.toFixed(2),
           valueUsd: consumption.weightedValueUsd.toFixed(2),
           fromGoldWalletType: 'FPGW',
-          toGoldWalletType: 'MPGW',
+          toGoldWalletType: 'LGPW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxIdFpgw,
-          notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to MPGW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
+          notes: `Converted ${goldGrams.toFixed(6)}g from FPGW to LGPW (FPGW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
         }).returning({ id: vaultLedgerEntries.id });
         
         await workflowAuditService.recordStep(
@@ -514,7 +514,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           issuer: 'Wingold Metals DMCC',
           fromGoldWalletType: 'FPGW',
-          toGoldWalletType: 'MPGW',
+          toGoldWalletType: 'LGPW',
           conversionPriceUsd: avgPrice.toFixed(2),
           status: 'Active',
           transactionId: actualTxIdFpgw,
@@ -558,14 +558,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
             gramsBefore: currentRemainingFpgw.toFixed(6),
             gramsAfter: newRemainingFpgw.toFixed(6),
             transactionId: actualTxIdFpgw,
-            notes: `${deductAmountFpgw.toFixed(6)}g converted from FPGW to MPGW (FPGW cost: $${avgPrice.toFixed(2)}/g, market: $${currentGoldPrice.toFixed(2)}/g)`
+            notes: `${deductAmountFpgw.toFixed(6)}g converted from FPGW to LGPW (FPGW cost: $${avgPrice.toFixed(2)}/g, market: $${currentGoldPrice.toFixed(2)}/g)`
           });
           
           if (!parentCertIdFpgw) parentCertIdFpgw = fpgwCert.id;
           remainingToDeductFpgw -= deductAmountFpgw;
         }
         
-        // Generate Digital Ownership Certificate for the MPGW unlock
+        // Generate Digital Ownership Certificate for the LGPW unlock
         const digitalCertNumberMpgw = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         const [newMpgwCert] = await tx.insert(certificates).values({
           certificateNumber: digitalCertNumberMpgw,
@@ -576,7 +576,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           issuer: 'Wingold Metals DMCC',
-          goldWalletType: 'MPGW',
+          goldWalletType: 'LGPW',
           parentCertificateId: parentCertIdFpgw,
           status: 'Active',
           transactionId: actualTxIdFpgw,
@@ -593,7 +593,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
             ));
         }
         
-        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events (FPGW -> MPGW)
+        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events (FPGW -> LGPW)
         const physicalStorageCertsFpgw = await tx.select()
           .from(certificates)
           .where(and(
@@ -619,7 +619,7 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
             gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
             transactionId: actualTxIdFpgw,
             childCertificateId: newMpgwCert?.id,
-            notes: `Physical storage backing reclassified: FPGW → MPGW (${reclassAmount.toFixed(6)}g unlocked to market price)`
+            notes: `Physical storage backing reclassified: FPGW → LGPW (${reclassAmount.toFixed(6)}g unlocked to market price)`
           });
           
           physicalReclassRemainingFpgw -= reclassAmount;
@@ -684,7 +684,7 @@ router.get("/api/dual-wallet/:userId/transfers", ensureAuthenticated, async (req
       .where(
         and(
           eq(vaultLedgerEntries.userId, userId),
-          sql`${vaultLedgerEntries.action} IN ('MPGW_To_FPGW', 'FPGW_To_MPGW')`
+          sql`${vaultLedgerEntries.action} IN ('LGPW_To_FPGW', 'FPGW_To_LGPW')`
         )
       )
       .orderBy(desc(vaultLedgerEntries.createdAt))

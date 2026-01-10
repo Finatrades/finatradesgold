@@ -4020,7 +4020,7 @@ export class DatabaseStorage implements IStorage {
     // Get all vault holdings
     const holdings = await db.select().from(vaultHoldings);
 
-    // Get MPGW/FPGW breakdown from vault_ownership_summary
+    // Get LGPW/FPGW breakdown from vault_ownership_summary
     const ownershipResults = await db.select({
       mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}), 0)`,
       mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}), 0)`,
@@ -4044,7 +4044,7 @@ export class DatabaseStorage implements IStorage {
     const fpgwReservedTrade = parseFloat(ownershipResults[0]?.fpgwReservedTrade || '0');
     const fpgwTotal = fpgwAvailable + fpgwPending + fpgwLockedBnsl + fpgwReservedTrade;
 
-    // Count users with MPGW vs FPGW - use raw SQL for reliability
+    // Count users with LGPW vs FPGW - use raw SQL for reliability
     const mpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE mpgw_available_grams > 0 OR mpgw_pending_grams > 0`);
     const mpgwCount = parseInt((mpgwCountResult.rows[0] as any)?.count || '0');
 

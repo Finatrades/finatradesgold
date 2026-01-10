@@ -311,9 +311,9 @@ export class WingoldIntegrationService {
       .where(eq(wingoldPurchaseOrders.id, orderId));
 
     await this.createFinaVaultHolding(orderId);
-    await this.creditMPGWWallet(orderId);
+    await this.creditLGPWWallet(orderId);
     
-    console.log(`[Wingold] Order ${orderId} fulfilled, FinaVault updated and MPGW credited`);
+    console.log(`[Wingold] Order ${orderId} fulfilled, FinaVault updated and LGPW credited`);
   }
 
   private static async handleOrderCancelled(orderId: string, data: { reason?: string }): Promise<void> {
@@ -358,7 +358,7 @@ export class WingoldIntegrationService {
     }
   }
 
-  private static async creditMPGWWallet(orderId: string): Promise<void> {
+  private static async creditLGPWWallet(orderId: string): Promise<void> {
     const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
     if (!order) return;
 
@@ -386,12 +386,12 @@ export class WingoldIntegrationService {
       amountGold: order.totalGrams,
       goldPriceUsdPerGram: order.goldPriceUsdPerGram,
       amountUsd: order.usdAmount,
-      goldWalletType: 'MPGW',
+      goldWalletType: 'LGPW',
       description: `Wingold physical gold purchase - ${order.referenceNumber}`,
       sourceModule: 'wingold'
     });
 
-    console.log(`[Wingold] Credited ${creditAmount}g to MPGW wallet for user ${order.userId}`);
+    console.log(`[Wingold] Credited ${creditAmount}g to LGPW wallet for user ${order.userId}`);
   }
 
   private static async updateOrCreateVaultLocation(wingoldLocationId: string, name: string): Promise<void> {

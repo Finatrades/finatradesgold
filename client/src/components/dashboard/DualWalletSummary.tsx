@@ -59,8 +59,8 @@ export function DualWalletSummary({ userId, className }: DualWalletSummaryProps)
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <WalletCard
-          type="MPGW"
-          title="Market Price Gold Wallet"
+          type="LGPW"
+          title="Live Gold Price Wallet"
           description="Value follows live gold price"
           icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
           available={balance.mpgw.availableGrams}
@@ -108,7 +108,7 @@ export function DualWalletSummary({ userId, className }: DualWalletSummaryProps)
 }
 
 interface WalletCardProps {
-  type: 'MPGW' | 'FPGW';
+  type: 'LGPW' | 'FPGW';
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -140,7 +140,7 @@ function WalletCard({
     <Card className="relative overflow-hidden" data-testid={`wallet-card-${type.toLowerCase()}`}>
       <div className={cn(
         "absolute top-0 left-0 w-1 h-full",
-        type === 'MPGW' ? "bg-emerald-500" : "bg-amber-500"
+        type === 'LGPW' ? "bg-emerald-500" : "bg-amber-500"
       )} />
       
       <CardHeader className="pb-2">

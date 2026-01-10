@@ -22,7 +22,7 @@ import {
 } from "@shared/schema";
 import { eq, and, gt, sql, asc } from "drizzle-orm";
 
-export type GoldWalletType = 'MPGW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FPGW';
 export type BalanceBucket = 'Available' | 'Pending' | 'Locked_BNSL' | 'Reserved_Trade';
 
 interface BatchConsumptionResult {

@@ -31,7 +31,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   
   const [isLoading, setIsLoading] = useState(false);
   
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
       setUsd('');
       setMethod('bank');
       setIsLoading(false);
-      setSelectedWalletType('MPGW');
+      setSelectedWalletType('LGPW');
     }
   }, [isOpen]);
 

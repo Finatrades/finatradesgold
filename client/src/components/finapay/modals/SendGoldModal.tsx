@@ -80,8 +80,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
   
-  // MPGW/FPGW wallet type selection
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('MPGW');
+  // LGPW/FPGW wallet type selection
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
   // Transaction PIN verification
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
@@ -114,7 +114,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setIsSendingInvite(false);
       setInviteSent(false);
       setTermsAccepted(false);
-      setSelectedWalletType('MPGW');
+      setSelectedWalletType('LGPW');
       
       // Fetch terms
       fetch('/api/terms/transfer')
@@ -422,7 +422,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                     </div>
                   </div>
 
-                  {/* Wallet Type Selection - MPGW/FPGW */}
+                  {/* Wallet Type Selection - LGPW/FPGW */}
                   <WalletTypeSelector
                     value={selectedWalletType}
                     onChange={setSelectedWalletType}
@@ -672,7 +672,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     </div>
                   </div>
-                  {/* Wallet Type Selection - MPGW/FPGW */}
+                  {/* Wallet Type Selection - LGPW/FPGW */}
                   <WalletTypeSelector
                     value={selectedWalletType}
                     onChange={setSelectedWalletType}

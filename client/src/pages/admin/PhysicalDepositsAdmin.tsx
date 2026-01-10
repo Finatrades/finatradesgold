@@ -714,7 +714,7 @@ export default function PhysicalDepositsAdmin() {
                 <ul className="list-disc list-inside text-green-700 mt-2 space-y-1">
                   <li>Generate Physical Storage Certificate (Wingold)</li>
                   <li>Generate Digital Ownership Certificate (Finatrades)</li>
-                  <li>Credit user's MPGW wallet</li>
+                  <li>Credit user's LGPW wallet</li>
                   <li>Create deposit transaction</li>
                 </ul>
               </CardContent>

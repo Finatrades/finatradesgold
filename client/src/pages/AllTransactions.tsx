@@ -32,7 +32,7 @@ interface UnifiedTransaction {
   createdAt: string;
   completedAt: string | null;
   sourceType: string;
-  goldWalletType?: 'MPGW' | 'FPGW' | null;
+  goldWalletType?: 'LGPW' | 'FPGW' | null;
 }
 
 interface Totals {
@@ -387,7 +387,7 @@ export default function AllTransactions() {
                 {(() => {
                   let runningBalance = 0;
                   return filteredTransactions.map((tx) => {
-                  const isSwap = tx.description?.includes('MPGW to FPGW') || tx.description?.includes('FPGW to MPGW');
+                  const isSwap = tx.description?.includes('LGPW to FPGW') || tx.description?.includes('FPGW to LGPW');
                   const isDebit = !isSwap && ['SEND', 'Send', 'WITHDRAW', 'Withdrawal', 'SELL', 'Sell', 'LOCK'].includes(tx.actionType);
                   const isCredit = !isSwap && (['ADD_FUNDS', 'Deposit', 'RECEIVE', 'Receive', 'BUY', 'Buy', 'UNLOCK'].includes(tx.actionType) ||
                                    tx.actionType === 'ADD_FUNDS' ||
@@ -495,7 +495,7 @@ export default function AllTransactions() {
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {isSwap 
-                              ? `MPGW to FPGW conversion: ${goldAmount.toFixed(2)}g` 
+                              ? `LGPW to FPGW conversion: ${goldAmount.toFixed(2)}g` 
                               : tx.description?.includes('Crypto deposit')
                                 ? `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`
                                 : tx.description || tx.referenceId || '-'}
@@ -508,7 +508,7 @@ export default function AllTransactions() {
                         {isSwap ? (
                           <>
                             <p className="font-semibold text-amber-600">{goldAmount.toFixed(4)} g</p>
-                            <p className="text-xs text-muted-foreground">from MPGW</p>
+                            <p className="text-xs text-muted-foreground">from LGPW</p>
                           </>
                         ) : isDebit && goldAmount > 0 ? (
                           <>
@@ -572,8 +572,8 @@ export default function AllTransactions() {
                     {/* Expanded Details Row */}
                     {expandedRows.has(tx.id) && (
                       <div className="px-4 pb-4 pt-0 bg-muted/30 border-t border-dashed">
-                        {/* Special display for MPGW to FPGW conversions */}
-                        {tx.description?.includes('MPGW to FPGW') ? (
+                        {/* Special display for LGPW to FPGW conversions */}
+                        {tx.description?.includes('LGPW to FPGW') ? (
                           <div className="space-y-3 mt-2">
                             {/* Full Reference ID */}
                             <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -585,11 +585,11 @@ export default function AllTransactions() {
                               </div>
                             </div>
                             
-                            {/* Sell Gold from MPGW */}
+                            {/* Sell Gold from LGPW */}
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                               <div className="flex items-center gap-2 mb-2">
                                 <ArrowUpRight className="w-4 h-4 text-red-600" />
-                                <span className="font-semibold text-red-700">Sell Gold (from MPGW)</span>
+                                <span className="font-semibold text-red-700">Sell Gold (from LGPW)</span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
@@ -655,12 +655,12 @@ export default function AllTransactions() {
                               <Badge 
                                 variant="outline" 
                                 className={`text-xs ${
-                                  (tx.goldWalletType || 'MPGW') === 'MPGW' 
+                                  (tx.goldWalletType || 'LGPW') === 'LGPW' 
                                     ? 'bg-blue-50 text-blue-600 border-blue-200' 
                                     : 'bg-amber-50 text-amber-600 border-amber-200'
                                 }`}
                               >
-                                {tx.goldWalletType === 'FPGW' ? 'FPGW (Fixed Price)' : 'MPGW (Market Price)'}
+                                {tx.goldWalletType === 'FPGW' ? 'FPGW (Fixed Price)' : 'LGPW (Market Price)'}
                               </Badge>
                             </div>
                           </div>

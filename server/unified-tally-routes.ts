@@ -33,7 +33,7 @@ const createTallySchema = z.object({
   userId: z.string(),
   txnType: z.enum(['FIAT_CRYPTO_DEPOSIT', 'VAULT_GOLD_DEPOSIT']),
   sourceMethod: z.enum(['CARD', 'BANK', 'CRYPTO', 'VAULT_GOLD']),
-  walletType: z.enum(['MPGW', 'FPGW']).default('MPGW'),
+  walletType: z.enum(['LGPW', 'FPGW']).default('LGPW'),
   depositCurrency: z.string().default('USD'),
   depositAmount: z.string().or(z.number()).transform(v => String(v)),
   feeAmount: z.string().or(z.number()).transform(v => String(v)).optional(),
@@ -131,7 +131,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
         status: cp.status,
         proofUrl: cp.proofImageUrl,
         transactionHash: cp.transactionHash,
-        walletType: (cp as any).goldWalletType || 'MPGW',
+        walletType: (cp as any).goldWalletType || 'LGPW',
         createdAt: cp.createdAt,
       });
     }
@@ -152,7 +152,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
         proofUrl: dr.proofOfPayment,
         referenceNumber: dr.referenceNumber,
         senderBankName: dr.senderBankName,
-        walletType: 'MPGW',
+        walletType: 'LGPW',
         createdAt: dr.createdAt,
       });
     }
@@ -180,7 +180,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     const { 
       pricingMode: uiPricingMode = 'LIVE',
       manualGoldPrice,
-      walletType = 'MPGW',
+      walletType = 'LGPW',
       vaultLocation = 'Wingold & Metals DMCC',
       notes,
       // Allocation fields (optional)
@@ -267,7 +267,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       userId,
       txnType: 'FIAT_CRYPTO_DEPOSIT',
       sourceMethod: sourceType as 'CRYPTO' | 'BANK',
-      walletType: walletType as 'MPGW' | 'FPGW',
+      walletType: walletType as 'LGPW' | 'FPGW',
       status: initialStatus,
       depositCurrency: 'USD',
       depositAmount: String(amountUsd),
@@ -806,7 +806,7 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         userId: transaction.userId,
         goldGrams: physicalGoldAllocatedG,
         goldPriceUsdPerGram: goldRateValue,
-        walletType: transaction.walletType as 'MPGW' | 'FPGW',
+        walletType: transaction.walletType as 'LGPW' | 'FPGW',
         transactionId: transaction.id,
         certificateId: transaction.storageCertificateId || undefined,
         notes: `Unified Tally Credit: ${physicalGoldAllocatedG.toFixed(6)}g to ${transaction.walletType} wallet from ${transaction.sourceMethod} deposit`,
@@ -978,7 +978,7 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
     const goldRateValue = parseFloat(transaction.goldRateValue || '0') || 65; // Default rate if not set
     const usdEquivalent = goldToCredit * goldRateValue;
     
-    const isMPGW = transaction.walletType === 'MPGW';
+    const isLGPW = transaction.walletType === 'LGPW';
     
     const projection = {
       current: currentSnapshot,
@@ -994,12 +994,12 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
       after: {
         finapay: {
           mpgw: {
-            balanceG: currentSnapshot.finapay.mpgw.balanceG + (isMPGW ? goldToCredit : 0),
-            usdEquivalent: currentSnapshot.finapay.mpgw.usdEquivalent + (isMPGW ? usdEquivalent : 0),
+            balanceG: currentSnapshot.finapay.mpgw.balanceG + (isLGPW ? goldToCredit : 0),
+            usdEquivalent: currentSnapshot.finapay.mpgw.usdEquivalent + (isLGPW ? usdEquivalent : 0),
           },
           fpgw: {
-            balanceG: currentSnapshot.finapay.fpgw.balanceG + (!isMPGW ? goldToCredit : 0),
-            usdEquivalent: currentSnapshot.finapay.fpgw.usdEquivalent + (!isMPGW ? usdEquivalent : 0),
+            balanceG: currentSnapshot.finapay.fpgw.balanceG + (!isLGPW ? goldToCredit : 0),
+            usdEquivalent: currentSnapshot.finapay.fpgw.usdEquivalent + (!isLGPW ? usdEquivalent : 0),
           },
         },
         finavault: {
@@ -1012,8 +1012,8 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
         },
       },
       delta: {
-        mpgwDeltaG: isMPGW ? goldToCredit : 0,
-        fpgwDeltaG: !isMPGW ? goldToCredit : 0,
+        mpgwDeltaG: isLGPW ? goldToCredit : 0,
+        fpgwDeltaG: !isLGPW ? goldToCredit : 0,
         vaultDeltaG: goldToCredit,
         wingoldDeltaG: goldToCredit,
       },

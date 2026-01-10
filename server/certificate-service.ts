@@ -62,11 +62,11 @@ function generateCertificateNumber(type: CertificateType): string {
  * Generate Digital Ownership Certificate
  * Issued when user receives gold into FinaPay/FinaVault (after approval/completion)
  */
-export async function generateDigitalOwnershipCertificate(data: CertificateData & { goldWalletType?: 'MPGW' | 'FPGW' }): Promise<string> {
+export async function generateDigitalOwnershipCertificate(data: CertificateData & { goldWalletType?: 'LGPW' | 'FPGW' }): Promise<string> {
   const user = await storage.getUser(data.userId);
   if (!user) throw new Error('User not found');
 
-  const walletType = data.goldWalletType || 'MPGW'; // Default to MPGW (physical gold backed)
+  const walletType = data.goldWalletType || 'LGPW'; // Default to LGPW (physical gold backed)
   
   const certificateData: InsertCertificate = {
     userId: data.userId,
@@ -95,7 +95,7 @@ export async function generatePhysicalStorageCertificate(data: CertificateData):
   const user = await storage.getUser(data.userId);
   if (!user) throw new Error('User not found');
 
-  // Physical storage is ALWAYS backed by MPGW (actual physical gold in vault)
+  // Physical storage is ALWAYS backed by LGPW (actual physical gold in vault)
   const certificateData: InsertCertificate = {
     userId: data.userId,
     transactionId: data.transactionId,
@@ -106,13 +106,13 @@ export async function generatePhysicalStorageCertificate(data: CertificateData):
     totalValueUsd: ((data.grams || 0) * (data.goldPriceUsd || 0)).toString(),
     vaultLocation: data.vaultLocation || 'Dubai - Wingold & Metals DMCC',
     wingoldStorageRef: data.allocationBatchRef,
-    goldWalletType: 'MPGW', // Physical gold is always MPGW
+    goldWalletType: 'LGPW', // Physical gold is always LGPW
     issuer: 'Wingold and Metals DMCC',
     status: 'Active'
   };
 
   const cert = await storage.createCertificate(certificateData);
-  console.log(`[Certificate] Generated Physical Storage Certificate: ${cert.certificateNumber} (MPGW)`);
+  console.log(`[Certificate] Generated Physical Storage Certificate: ${cert.certificateNumber} (LGPW)`);
   return cert.id;
 }
 
@@ -120,7 +120,7 @@ export async function generatePhysicalStorageCertificate(data: CertificateData):
  * Generate Transfer Certificate
  * Issued to sender on every P2P transfer
  */
-export async function generateTransferCertificate(data: CertificateData & { goldWalletType?: 'MPGW' | 'FPGW' }): Promise<string> {
+export async function generateTransferCertificate(data: CertificateData & { goldWalletType?: 'LGPW' | 'FPGW' }): Promise<string> {
   const sender = await storage.getUser(data.userId);
   if (!sender) throw new Error('Sender not found');
 
@@ -133,7 +133,7 @@ export async function generateTransferCertificate(data: CertificateData & { gold
     }
   }
 
-  const walletType = data.goldWalletType || 'MPGW';
+  const walletType = data.goldWalletType || 'LGPW';
   
   const certificateData: InsertCertificate = {
     userId: data.userId,
@@ -162,13 +162,13 @@ export async function generateTransferCertificate(data: CertificateData & { gold
  * Generate Lock Certificate
  * Issued when moving gold from available → locked (BNSL lock or Trade lock)
  */
-export async function generateLockCertificate(data: CertificateData & { goldWalletType?: 'MPGW' | 'FPGW' }): Promise<string> {
+export async function generateLockCertificate(data: CertificateData & { goldWalletType?: 'LGPW' | 'FPGW' }): Promise<string> {
   const user = await storage.getUser(data.userId);
   if (!user) throw new Error('User not found');
 
   const lockPurpose = data.lockPurpose || 'BNSL';
   const certType: CertificateType = lockPurpose === 'BNSL' ? 'BNSL Lock' : 'Trade Lock';
-  const walletType = data.goldWalletType || 'MPGW';
+  const walletType = data.goldWalletType || 'LGPW';
   
   const certificateData: InsertCertificate = {
     userId: data.userId,
@@ -196,7 +196,7 @@ export async function generateLockCertificate(data: CertificateData & { goldWall
  * Issued when user sells/withdraws gold (ownership reduced and transferred to Finatrades)
  */
 export async function generateTitleTransferCertificate(data: CertificateData & { 
-  goldWalletType?: 'MPGW' | 'FPGW';
+  goldWalletType?: 'LGPW' | 'FPGW';
   reason?: string;
 }): Promise<string> {
   const user = await storage.getUser(data.userId);
@@ -223,7 +223,7 @@ export async function generateTitleTransferCertificate(data: CertificateData & {
 }
 
 /**
- * Generate Conversion Certificate (MPGW <-> FPGW)
+ * Generate Conversion Certificate (LGPW <-> FPGW)
  * Issued when user converts gold between Market Price and Fixed Price wallets
  */
 export async function generateConversionCertificate(data: {
@@ -231,8 +231,8 @@ export async function generateConversionCertificate(data: {
   transactionId?: string;
   grams: number;
   goldPriceUsd: number;
-  fromWalletType: 'MPGW' | 'FPGW';
-  toWalletType: 'MPGW' | 'FPGW';
+  fromWalletType: 'LGPW' | 'FPGW';
+  toWalletType: 'LGPW' | 'FPGW';
   conversionPriceUsd?: number;
   notes?: string;
 }): Promise<string> {

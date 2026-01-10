@@ -7,14 +7,14 @@ import { toast } from 'sonner';
 
 interface HybridCardPaymentProps {
   amount: number;
-  goldWalletType?: 'MPGW' | 'FPGW';
+  goldWalletType?: 'LGPW' | 'FPGW';
   onSuccess: (result: { goldGrams: string; amountUsd: number }) => void;
   onError: (error: string) => void;
   onCancel: () => void;
 }
 
 
-export default function HybridCardPayment({ amount, goldWalletType = 'MPGW', onSuccess, onError, onCancel }: HybridCardPaymentProps) {
+export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onSuccess, onError, onCancel }: HybridCardPaymentProps) {
   const { user } = useAuth();
   const [mode, setMode] = useState<'checking' | 'embedded' | 'iframe'>('checking');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
