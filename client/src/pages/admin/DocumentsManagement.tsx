@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -213,7 +213,6 @@ export default function DocumentsManagement() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleViewInvoice = (id: string, invoiceNumber: string) => {
     setPreviewTitle(`Invoice ${invoiceNumber}`);
@@ -246,9 +245,7 @@ export default function DocumentsManagement() {
   };
 
   const handlePrint = () => {
-    if (iframeRef.current) {
-      iframeRef.current.contentWindow?.print();
-    }
+    window.open(previewUrl, '_blank');
   };
 
   const refetch = () => {
@@ -728,15 +725,27 @@ export default function DocumentsManagement() {
                 </div>
               </div>
             </DialogHeader>
-            <div className="flex-1 bg-gray-100 p-4 overflow-hidden">
+            <div className="flex-1 bg-gray-100 p-4 overflow-hidden flex flex-col items-center justify-center">
               {previewUrl && (
-                <iframe
-                  ref={iframeRef}
-                  src={previewUrl}
+                <object
+                  data={previewUrl}
+                  type="application/pdf"
                   className="w-full h-full border-0 rounded-lg shadow-lg bg-white"
                   title={previewTitle}
-                  data-testid="iframe-document-preview"
-                />
+                  data-testid="object-document-preview"
+                >
+                  <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg p-8 text-center">
+                    <FileText className="w-16 h-16 text-purple-400 mb-4" />
+                    <p className="text-gray-600 mb-4">PDF preview not available in your browser.</p>
+                    <Button 
+                      onClick={() => window.open(previewUrl, '_blank')}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Open PDF in New Tab
+                    </Button>
+                  </div>
+                </object>
               )}
             </div>
           </DialogContent>

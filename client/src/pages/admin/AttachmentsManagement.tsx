@@ -489,11 +489,26 @@ export default function AttachmentsManagement() {
                     className="max-w-full max-h-[60vh] object-contain mx-auto"
                   />
                 ) : selectedAttachment.fileType === 'document' && getDocumentDownloadUrl(selectedAttachment.fileUrl, true) ? (
-                  <iframe 
-                    src={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || ''}
+                  <object 
+                    data={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || ''}
+                    type="application/pdf"
                     className="w-full h-[60vh] border-0"
                     title={selectedAttachment.fileName}
-                  />
+                  >
+                    <div className="flex flex-col items-center justify-center h-[60vh] bg-gray-50">
+                      <FileText className="w-16 h-16 text-gray-300 mb-4" />
+                      <p className="text-muted-foreground mb-4">PDF preview not available in your browser</p>
+                      <a 
+                        href={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || '#'}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline inline-flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Open Document in New Tab
+                      </a>
+                    </div>
+                  </object>
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
