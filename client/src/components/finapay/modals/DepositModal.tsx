@@ -1287,24 +1287,24 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <Coins className="w-5 h-5 text-amber-600" />
                       <h4 className="font-semibold text-amber-800">Deposit Summary</h4>
                     </div>
-                    <div className="space-y-2 text-sm">
-                      {/* Gold amount as primary */}
-                      <div className="flex justify-between text-amber-800 font-semibold">
-                        <span className="flex items-center gap-1">
+                    <div className="space-y-3 text-sm">
+                      {/* Gold You'll Receive - Primary */}
+                      <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-200">
+                        <span className="flex items-center gap-2 text-amber-700 font-medium">
                           <Coins className="w-4 h-4" />
                           Gold You'll Receive:
                         </span>
-                        <span className="text-lg">
+                        <span className="text-xl font-bold text-amber-700">
                           {(inputMode === 'gold' 
                             ? parseFloat(goldAmount) 
                             : getEffectiveGoldGrams()).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
                         </span>
                       </div>
                       
-                      {/* USD/Currency as secondary */}
-                      <div className="flex justify-between text-muted-foreground border-t border-amber-200 pt-2 mt-2">
-                        <span>≈ USD Equivalent:</span>
-                        <span>
+                      {/* Gold Value */}
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Gold Value:</span>
+                        <span className="font-medium">
                           ${(inputMode === 'gold' 
                             ? getEffectiveUsdAmount()
                             : (selectedAccount?.currency !== 'USD' 
@@ -1320,26 +1320,39 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         </div>
                       )}
                       
-                      {depositFee && getDepositSummary().feeInOriginalCurrency > 0 && inputMode === 'usd' && (
-                        <div className="flex justify-between text-orange-600 text-xs">
-                          <span>Processing Fee:</span>
-                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      {/* Processing Fee - Show in both modes */}
+                      {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
+                        <div className="flex justify-between text-orange-600">
+                          <span>Processing Fee ({depositFee.feeValue}%):</span>
+                          <span className="font-medium">
+                            +${(inputMode === 'gold' 
+                              ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
+                              : calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
+                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Total to Pay */}
+                      {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
+                        <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200">
+                          <span className="flex items-center gap-2 text-emerald-700 font-semibold">
+                            <DollarSign className="w-4 h-4" />
+                            Total to Pay:
+                          </span>
+                          <span className="text-lg font-bold text-emerald-700">
+                            ${(inputMode === 'gold' 
+                              ? (parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
+                              : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
+                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       )}
                       
                       {goldPrice?.pricePerGram && (
-                        <p className="text-xs text-muted-foreground mt-1 pt-2 border-t border-amber-200">
-                          Based on current gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                        <p className="text-xs text-muted-foreground pt-2 border-t border-amber-200">
+                          Live gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
                         </p>
-                      )}
-                      {goldPrice?.pricePerGram && (
-                        <div className="bg-warning-muted border border-warning/30 rounded-lg p-2.5 mt-3">
-                          <p className="font-medium text-warning-muted-foreground text-xs mb-1">Important Notice:</p>
-                          <p className="text-warning-muted-foreground text-xs leading-relaxed">
-                            Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
-                            After verification, gold will be deposited to your Market Price Gold Wallet (MPGW) at the final confirmed rate.
-                          </p>
-                        </div>
                       )}
                     </div>
                   </div>
