@@ -77,11 +77,8 @@ export class PlatformLimitService {
     }
   }
 
-  static getUserTier(user: User): 1 | 2 | 3 {
+  static getUserTier(user: User): 1 | 2 {
     if (user.kycStatus === "Approved") {
-      return 3;
-    }
-    if (user.kycStatus === "In Progress" || user.kycStatus === "Pending Review") {
       return 2;
     }
     return 1;
@@ -763,45 +760,6 @@ export class PlatformLimitService {
     return { valid: true };
   }
 
-  // ============================================================================
-  // SYSTEM STATUS CHECKS
-  // ============================================================================
-
-  static async isMaintenanceMode(): Promise<boolean> {
-    return await this.getBooleanConfig("maintenance_mode", false);
-  }
-
-  static async areRegistrationsEnabled(): Promise<boolean> {
-    return await this.getBooleanConfig("registrations_enabled", true);
-  }
-
-  static async getBlockedCountries(): Promise<string[]> {
-    return await this.getJsonConfig<string[]>("blocked_countries", []);
-  }
-
-  static async isCountryBlocked(countryCode: string): Promise<boolean> {
-    if (!countryCode) return false;
-    const blockedCountries = await this.getBlockedCountries();
-    return blockedCountries.includes(countryCode.toUpperCase());
-  }
-
-  static async getSystemStatus(): Promise<{
-    maintenanceMode: boolean;
-    registrationsEnabled: boolean;
-    blockedCountries: string[];
-  }> {
-    const [maintenanceMode, registrationsEnabled, blockedCountries] = await Promise.all([
-      this.isMaintenanceMode(),
-      this.areRegistrationsEnabled(),
-      this.getBlockedCountries()
-    ]);
-
-    return {
-      maintenanceMode,
-      registrationsEnabled,
-      blockedCountries
-    };
-  }
 }
 
 export const platformLimits = PlatformLimitService;
