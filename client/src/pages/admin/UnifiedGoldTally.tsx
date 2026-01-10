@@ -134,8 +134,32 @@ export default function UnifiedGoldTally() {
     },
   });
 
-  const openTransactionDrawer = (transaction: UnifiedTallyTransaction) => {
-    setSelectedTransaction(transaction);
+  const openTransactionDrawer = (txn: any) => {
+    const mappedTransaction: UnifiedTallyTransaction = {
+      id: txn.id,
+      userId: txn.user_id || txn.userId,
+      walletType: txn.wallet_type || txn.walletType,
+      depositMethod: txn.source_method || txn.depositMethod || 'CRYPTO',
+      status: txn.status,
+      depositAmount: txn.deposit_amount || txn.depositAmount || '0',
+      depositCurrency: txn.deposit_currency || txn.depositCurrency || 'USD',
+      netAmount: txn.net_amount || txn.netAmount || '0',
+      goldRateValue: txn.gold_rate_value || txn.goldRateValue,
+      goldEquivalentG: txn.gold_equivalent_g || txn.goldEquivalentG,
+      physicalGoldAllocatedG: txn.physical_gold_allocated_g || txn.physicalGoldAllocatedG,
+      wingoldOrderId: txn.wingold_order_id || txn.wingoldOrderId,
+      storageCertificateId: txn.storage_certificate_id || txn.storageCertificateId,
+      netProfitUsd: txn.net_profit_usd || txn.netProfitUsd,
+      createdAt: txn.created_at || txn.createdAt,
+      approvedAt: txn.approved_at || txn.approvedAt,
+      user: {
+        firstName: txn.user_name?.split(' ')[0] || '',
+        lastName: txn.user_name?.split(' ').slice(1).join(' ') || '',
+        email: txn.user_email || '',
+        accountType: txn.account_type || 'personal',
+      },
+    };
+    setSelectedTransaction(mappedTransaction);
     setDrawerOpen(true);
   };
 
@@ -755,27 +779,33 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 <CardContent>
                   {events && events.length > 0 ? (
                     <div className="space-y-4">
-                      {events.map((event: any, index: number) => (
-                        <div key={event.id} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}`} />
-                            {index < events.length - 1 && <div className="w-0.5 h-full bg-gray-200 mt-1" />}
+                      {events.map((event: any, index: number) => {
+                        const eventType = event.event_type || event.eventType;
+                        const triggeredByName = event.triggered_by_name || event.triggeredByName || 'System';
+                        const createdAt = event.created_at || event.createdAt;
+                        const details = event.details || {};
+                        return (
+                          <div key={event.id} className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}`} />
+                              {index < events.length - 1 && <div className="w-0.5 h-full bg-gray-200 mt-1" />}
+                            </div>
+                            <div className="flex-1 pb-4">
+                              <p className="text-sm font-medium">{eventType?.replace(/_/g, ' ')}</p>
+                              <p className="text-xs text-gray-500">
+                                {triggeredByName} • {createdAt ? format(new Date(createdAt), 'MMM d, yyyy HH:mm') : '-'}
+                              </p>
+                              {details && Object.keys(details).length > 0 && (
+                                <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                  {Object.entries(details).map(([key, value]) => (
+                                    <div key={key}>{key}: {String(value)}</div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 pb-4">
-                            <p className="text-sm font-medium">{event.eventType.replace(/_/g, ' ')}</p>
-                            <p className="text-xs text-gray-500">
-                              {event.triggeredByName || 'System'} • {format(new Date(event.createdAt), 'MMM d, yyyy HH:mm')}
-                            </p>
-                            {event.details && Object.keys(event.details).length > 0 && (
-                              <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                {Object.entries(event.details).map(([key, value]) => (
-                                  <div key={key}>{key}: {String(value)}</div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500 text-center py-4">No events yet</p>

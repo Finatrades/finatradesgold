@@ -122,6 +122,23 @@ router.get('/:txnId', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/:txnId/events', async (req: Request, res: Response) => {
+  try {
+    const { txnId } = req.params;
+    const transaction = await storage.getUnifiedTallyTransaction(txnId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    const events = await storage.getUnifiedTallyEvents(transaction.id);
+    res.json(events);
+  } catch (error: any) {
+    console.error('Error getting unified tally events:', error);
+    res.status(500).json({ error: error.message || 'Failed to get events' });
+  }
+});
+
 router.post('/', async (req: Request, res: Response) => {
   try {
     const data = createTallySchema.parse(req.body);

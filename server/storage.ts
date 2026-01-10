@@ -5175,23 +5175,60 @@ export class DatabaseStorage implements IStorage {
 
   // Physical Storage Certificates
   async getPhysicalStorageCertificates(filters?: { status?: string; vaultLocationId?: string }): Promise<any[]> {
-    let query = sql`
+    const pscResult = await db.execute(sql`
       SELECT psc.*, v.name as vault_location_name, v.code as vault_location_code
       FROM physical_storage_certificates psc
       LEFT JOIN third_party_vault_locations v ON psc.vault_location_id = v.id
-      WHERE 1=1
-    `;
+      ORDER BY psc.issued_at DESC
+    `);
     
-    if (filters?.status) {
-      query = sql`${query} AND psc.status = ${filters.status}`;
+    const existingRefs = new Set(pscResult.rows.map((r: any) => r.physical_storage_ref));
+    
+    const tallyResult = await db.execute(sql`
+      SELECT 
+        id,
+        storage_certificate_id as physical_storage_ref,
+        'Wingold & Metals DMCC' as issuer,
+        physical_gold_allocated_g as gold_grams,
+        0.9999 as gold_purity,
+        NULL as bar_serial_number,
+        physical_gold_allocated_g as bar_weight,
+        NULL as bar_type,
+        NULL as vault_location_id,
+        vault_location as vault_location_name,
+        'AE' as vault_location_code,
+        'Linked' as status,
+        NULL as linked_vault_certificate_id,
+        approved_at as linked_at,
+        created_by as linked_by,
+        NULL as document_url,
+        COALESCE(approved_at, created_at) as issued_at,
+        NULL as voided_at,
+        NULL as voided_by,
+        NULL as void_reason,
+        NULL as metadata,
+        created_at,
+        updated_at,
+        'AE' as country_code
+      FROM unified_tally_transactions
+      WHERE status = 'COMPLETED' 
+        AND physical_gold_allocated_g IS NOT NULL 
+        AND storage_certificate_id IS NOT NULL
+      ORDER BY created_at DESC
+    `);
+    
+    const nonDuplicateTally = tallyResult.rows.filter((r: any) => !existingRefs.has(r.physical_storage_ref));
+    const allCertificates = [...pscResult.rows, ...nonDuplicateTally];
+    
+    let filtered = allCertificates;
+    if (filters?.status && filters.status !== 'all') {
+      filtered = filtered.filter((c: any) => c.status === filters.status);
     }
     if (filters?.vaultLocationId) {
-      query = sql`${query} AND psc.vault_location_id = ${filters.vaultLocationId}`;
+      filtered = filtered.filter((c: any) => c.vault_location_id === filters.vaultLocationId);
     }
     
-    query = sql`${query} ORDER BY psc.issued_at DESC`;
-    const result = await db.execute(query);
-    return result.rows;
+    return filtered;
   }
 
   async createPhysicalStorageCertificate(data: any): Promise<any> {
@@ -5280,8 +5317,6 @@ export class DatabaseStorage implements IStorage {
 
   // Vault Overview Data for Dashboard
   async getVaultOverviewData(): Promise<any> {
-    // Query existing wallets table for total gold held by users
-    // Currently all balances are treated as MPGW until dual-wallet system is fully implemented
     const digitalResult = await db.execute(sql`
       SELECT 
         COALESCE(SUM(gold_grams), 0) as mpgw_grams,
@@ -5292,18 +5327,51 @@ export class DatabaseStorage implements IStorage {
       FROM wallets
     `);
 
-    const physicalResult = await db.execute(sql`
+    const pscPhysicalResult = await db.execute(sql`
       SELECT COALESCE(SUM(gold_grams), 0) as total_physical_grams
       FROM physical_storage_certificates
       WHERE status IN ('Active', 'Linked')
     `);
+    
+    const tallyPhysicalResult = await db.execute(sql`
+      SELECT COALESCE(SUM(t.physical_gold_allocated_g), 0) as total_physical_grams
+      FROM unified_tally_transactions t
+      WHERE t.status = 'COMPLETED' 
+        AND t.physical_gold_allocated_g IS NOT NULL 
+        AND t.storage_certificate_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM physical_storage_certificates psc 
+          WHERE psc.physical_storage_ref = t.storage_certificate_id
+        )
+    `);
 
     const byLocationResult = await db.execute(sql`
-      SELECT v.name, COALESCE(SUM(psc.gold_grams), 0) as grams
-      FROM third_party_vault_locations v
-      LEFT JOIN physical_storage_certificates psc ON psc.vault_location_id = v.id AND psc.status IN ('Active', 'Linked')
-      WHERE v.is_active = true
-      GROUP BY v.id, v.name
+      WITH vault_physical AS (
+        SELECT v.name, COALESCE(SUM(psc.gold_grams), 0) as grams
+        FROM third_party_vault_locations v
+        LEFT JOIN physical_storage_certificates psc ON psc.vault_location_id = v.id AND psc.status IN ('Active', 'Linked')
+        WHERE v.is_active = true
+        GROUP BY v.id, v.name
+      ),
+      tally_physical AS (
+        SELECT COALESCE(t.vault_location, 'Wingold & Metals DMCC') as name, 
+               COALESCE(SUM(t.physical_gold_allocated_g), 0) as grams
+        FROM unified_tally_transactions t
+        WHERE t.status = 'COMPLETED' 
+          AND t.physical_gold_allocated_g IS NOT NULL 
+          AND t.storage_certificate_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM physical_storage_certificates psc 
+            WHERE psc.physical_storage_ref = t.storage_certificate_id
+          )
+        GROUP BY t.vault_location
+      )
+      SELECT name, SUM(grams) as grams FROM (
+        SELECT name, grams FROM vault_physical
+        UNION ALL
+        SELECT name, grams FROM tally_physical
+      ) combined
+      GROUP BY name
       ORDER BY grams DESC
     `);
 
@@ -5314,11 +5382,13 @@ export class DatabaseStorage implements IStorage {
     `);
 
     const digital = digitalResult.rows[0] || {};
-    const physical = physicalResult.rows[0] || {};
+    const pscPhysical = parseFloat(pscPhysicalResult.rows[0]?.total_physical_grams || '0');
+    const tallyPhysical = parseFloat(tallyPhysicalResult.rows[0]?.total_physical_grams || '0');
+    const totalPhysical = pscPhysical + tallyPhysical;
 
     return {
       totalDigitalLiability: parseFloat(digital.total_digital_grams || '0'),
-      totalPhysicalCustody: parseFloat(physical.total_physical_grams || '0'),
+      totalPhysicalCustody: totalPhysical,
       mpgw: {
         totalGrams: parseFloat(digital.mpgw_grams || '0'),
         count: parseInt(digital.mpgw_count || '0')
@@ -5326,7 +5396,7 @@ export class DatabaseStorage implements IStorage {
       fpgw: {
         totalGrams: parseFloat(digital.fpgw_grams || '0'),
         count: parseInt(digital.fpgw_count || '0'),
-        weightedAvgPrice: 0 // TODO: Calculate from batches
+        weightedAvgPrice: 0
       },
       byBucket: {
         available: parseFloat(digital.total_digital_grams || '0'),
