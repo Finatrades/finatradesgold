@@ -797,9 +797,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                   </div>
                   
-                  {/* USD Equivalent */}
+                  {/* Gold Value */}
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>≈ USD Equivalent:</span>
+                    <span>Gold Value:</span>
                     <span className="font-medium">
                       ${inputMode === 'gold' 
                         ? (parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -812,9 +812,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="flex items-center justify-between text-sm text-orange-600">
                       <span>Processing Fee ({depositFee.feeValue}%):</span>
                       <span className="font-medium">
-                        -${(inputMode === 'gold' 
+                        +${(inputMode === 'gold' 
                           ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
                           : calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Total Amount to Pay - New clear display */}
+                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
+                    <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 mt-2">
+                      <span className="flex items-center gap-2 text-emerald-700 font-semibold">
+                        <DollarSign className="w-4 h-4" />
+                        Total to Pay:
+                      </span>
+                      <span className="text-lg font-bold text-emerald-700">
+                        ${(inputMode === 'gold' 
+                          ? (parseFloat(goldAmount) * goldPrice.pricePerGram) + calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram)
+                          : parseFloat(amount) + calculateFee(parseFloat(amount) || 0)
                         ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
