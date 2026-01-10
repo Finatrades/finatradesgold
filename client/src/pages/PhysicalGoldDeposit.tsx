@@ -45,11 +45,19 @@ const SOURCE_OPTIONS = [
   { value: 'Other', label: 'Other' },
 ];
 
+const VAULT_LOCATIONS = [
+  { value: 'Dubai', label: 'Dubai Vault - DMCC Free Zone' },
+  { value: 'Singapore', label: 'Singapore Vault - Freeport' },
+  { value: 'Zurich', label: 'Zurich Vault - Swiss Secure' },
+  { value: 'London', label: 'London Vault - Brinks' },
+];
+
 export default function PhysicalGoldDeposit() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   
+  const [vaultLocation, setVaultLocation] = useState('Dubai');
   const [depositType, setDepositType] = useState<'RAW' | 'GOLD_BAR' | 'GOLD_COIN' | 'OTHER'>('GOLD_BAR');
   const [items, setItems] = useState<DepositItem[]>([{
     id: '1',
@@ -68,7 +76,8 @@ export default function PhysicalGoldDeposit() {
   const [pickupAddress, setPickupAddress] = useState('');
   const [pickupContactName, setPickupContactName] = useState('');
   const [pickupContactPhone, setPickupContactPhone] = useState('');
-  const [preferredDatetime, setPreferredDatetime] = useState('');
+  const [pickupDate, setPickupDate] = useState('');
+  const [pickupTime, setPickupTime] = useState('');
   
   const [noLienDispute, setNoLienDispute] = useState(false);
   const [acceptVaultTerms, setAcceptVaultTerms] = useState(false);
@@ -149,7 +158,14 @@ export default function PhysicalGoldDeposit() {
       return;
     }
 
+    const preferredDatetime = pickupDate && pickupTime 
+      ? `${pickupDate}T${pickupTime.split('-')[0]}:00` 
+      : pickupDate 
+        ? `${pickupDate}T09:00:00` 
+        : undefined;
+
     const data = {
+      vaultLocation,
       depositType,
       items: items.map(({ id, ...item }) => item),
       isBeneficialOwner,
@@ -159,7 +175,7 @@ export default function PhysicalGoldDeposit() {
       pickupAddress: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupAddress : undefined,
       pickupContactName: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactName : undefined,
       pickupContactPhone: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactPhone : undefined,
-      preferredDatetime: preferredDatetime || undefined,
+      preferredDatetime,
       noLienDispute,
       acceptVaultTerms,
       acceptInsurance,
@@ -217,10 +233,29 @@ export default function PhysicalGoldDeposit() {
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>Step 1: Gold Type & Items</CardTitle>
-              <CardDescription>Select the type of gold and add your items</CardDescription>
+              <CardTitle>Step 1: Vault & Gold Details</CardTitle>
+              <CardDescription>Select vault location and add your gold items</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label>Select Vault Location</Label>
+                <Select value={vaultLocation} onValueChange={setVaultLocation}>
+                  <SelectTrigger data-testid="select-vault-location">
+                    <SelectValue placeholder="Select vault" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VAULT_LOCATIONS.map(vault => (
+                      <SelectItem key={vault.value} value={vault.value}>{vault.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Your gold will be stored in a secure, insured vault at this location
+                </p>
+              </div>
+
+              <Separator />
+
               <div className="space-y-3">
                 <Label>What type of gold are you depositing?</Label>
                 <RadioGroup
@@ -548,14 +583,31 @@ export default function PhysicalGoldDeposit() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label>Preferred Date & Time (Optional)</Label>
-                <Input
-                  type="datetime-local"
-                  value={preferredDatetime}
-                  onChange={(e) => setPreferredDatetime(e.target.value)}
-                  data-testid="input-preferred-datetime"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Preferred Date</Label>
+                  <Input
+                    type="date"
+                    value={pickupDate}
+                    onChange={(e) => setPickupDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    data-testid="input-pickup-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Preferred Time</Label>
+                  <Select value={pickupTime} onValueChange={setPickupTime}>
+                    <SelectTrigger data-testid="select-pickup-time">
+                      <SelectValue placeholder="Select time slot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="09:00-11:00">9:00 AM - 11:00 AM</SelectItem>
+                      <SelectItem value="11:00-13:00">11:00 AM - 1:00 PM</SelectItem>
+                      <SelectItem value="14:00-16:00">2:00 PM - 4:00 PM</SelectItem>
+                      <SelectItem value="16:00-18:00">4:00 PM - 6:00 PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex justify-between">
@@ -584,6 +636,10 @@ export default function PhysicalGoldDeposit() {
               <Card className="bg-gray-50">
                 <CardContent className="pt-4 space-y-2">
                   <div className="flex justify-between">
+                    <span className="text-gray-600">Vault Location:</span>
+                    <span className="font-medium">{VAULT_LOCATIONS.find(v => v.value === vaultLocation)?.label || vaultLocation}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Gold Type:</span>
                     <span className="font-medium">{depositType.replace('_', ' ')}</span>
                   </div>
@@ -599,6 +655,12 @@ export default function PhysicalGoldDeposit() {
                     <span className="text-gray-600">Delivery Method:</span>
                     <span className="font-medium">{deliveryMethod.replace(/_/g, ' ')}</span>
                   </div>
+                  {pickupDate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Preferred Schedule:</span>
+                      <span className="font-medium">{pickupDate} {pickupTime}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Source:</span>
                     <span className="font-medium">{sourceOfMetal}</span>

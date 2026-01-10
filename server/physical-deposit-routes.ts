@@ -25,6 +25,7 @@ const depositItemSchema = z.object({
 });
 
 const createDepositSchema = z.object({
+  vaultLocation: z.string().optional(),
   depositType: z.enum(['RAW', 'GOLD_BAR', 'GOLD_COIN', 'OTHER']),
   items: z.array(depositItemSchema).min(1),
   isBeneficialOwner: z.boolean().default(true),

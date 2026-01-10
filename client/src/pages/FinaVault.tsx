@@ -6,7 +6,6 @@ import { Database, TrendingUp, History, PlusCircle, Bell, Settings, Banknote, Br
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
-import NewDepositForm from '@/components/finavault/NewDepositForm';
 import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
 import VaultActivityList from '@/components/finavault/VaultActivityList';
@@ -15,7 +14,7 @@ import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -24,14 +23,13 @@ export default function FinaVault() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { getContent } = useCMSPage('finavault');
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   
   // State
   const [activeTab, setActiveTab] = useState('vault-activity');
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
+    const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
 
   // Fetch vault deposit requests
   const { data: depositData, isLoading: depositsLoading } = useQuery({
@@ -503,67 +501,17 @@ export default function FinaVault() {
     });
   };
 
-  const [highlightSection, setHighlightSection] = useState(false);
-  
-  // Check query params for initial tab and highlight
+  // Check query params for initial tab - redirect deposit requests to new page
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
     const highlight = searchParams.get('highlight');
     
-    if (tabParam === 'new-request') {
-      setActiveTab('new-request');
+    if (tabParam === 'new-request' || highlight === 'deposit') {
+      // Redirect to the new unified deposit page
+      navigate('/physical-gold-deposit');
     }
-    
-    if (highlight === 'deposit') {
-      setHighlightSection(true);
-      setTimeout(() => {
-        const depositSection = document.getElementById('finavault-deposit-section');
-        if (depositSection) {
-          depositSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-      setTimeout(() => setHighlightSection(false), 1500);
-      window.history.replaceState({}, '', '/finavault?tab=new-request');
-    }
-  }, [location]);
-
-  // Handlers
-  const handleNewRequest = async (data: Omit<DepositRequest, 'id' | 'status' | 'submittedAt'>) => {
-    if (!user) return;
-    setSubmitting(true);
-    
-    try {
-      const res = await apiRequest('POST', '/api/vault/deposit', {
-        userId: user.id,
-        vaultLocation: data.vaultLocation,
-        depositType: data.depositType,
-        totalDeclaredWeightGrams: data.totalDeclaredWeightGrams,
-        items: data.items,
-        deliveryMethod: data.deliveryMethod,
-        pickupDetails: data.pickupDetails,
-        documents: data.documents,
-      });
-      
-      const result = await res.json();
-      
-      queryClient.invalidateQueries({ queryKey: ['vault-deposits'] });
-      setActiveTab('vault-activity');
-      
-      toast({
-        title: "Request Submitted",
-        description: `Deposit request #${result.request.referenceNumber} created. Your FinaPay gold balance will be credited once the physical metal is received and verified at the vault.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit deposit request. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  }, []);
 
   const handleCancelRequest = async (id: string) => {
     toast({
@@ -781,14 +729,13 @@ export default function FinaVault() {
                       <span className="md:hidden">Activity</span>
                       <span className="hidden md:inline">Vault Activity</span>
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="new-request"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
-                    >
-                      <PlusCircle className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Deposit</span>
-                      <span className="hidden md:inline">New Deposit</span>
-                    </TabsTrigger>
+                    <Link href="/physical-gold-deposit">
+                      <div className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-primary text-white shadow-sm cursor-pointer inline-flex items-center hover:bg-primary/90 transition-colors">
+                        <PlusCircle className="w-4 h-4 mr-1.5" />
+                        <span className="md:hidden">Deposit</span>
+                        <span className="hidden md:inline">Deposit Gold</span>
+                      </div>
+                    </Link>
                     <TabsTrigger 
                       value="cash-out"
                       className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
@@ -830,13 +777,7 @@ export default function FinaVault() {
                   <VaultActivityList />
                 </TabsContent>
 
-                <TabsContent value="new-request" id="finavault-deposit-section" className={`transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
-                  <NewDepositForm 
-                    onSubmit={handleNewRequest}
-                    onCancel={() => setActiveTab('vault-activity')}
-                  />
-                </TabsContent>
-
+                
                 <TabsContent value="cash-out">
                   <CashOutForm vaultBalance={totalVaultGold} />
                 </TabsContent>
