@@ -115,7 +115,12 @@ import {
   type UnifiedTallyTransaction, type InsertUnifiedTallyTransaction,
   type UnifiedTallyEvent, type InsertUnifiedTallyEvent,
   type WingoldAllocation, type InsertWingoldAllocation,
-  type WingoldBar, type InsertWingoldBar
+  type WingoldBar, type InsertWingoldBar,
+  physicalDepositRequests, depositItems, depositInspections, depositNegotiationMessages,
+  type PhysicalDepositRequest, type InsertPhysicalDepositRequest,
+  type DepositItem, type InsertDepositItem,
+  type DepositInspection, type InsertDepositInspection,
+  type DepositNegotiationMessage, type InsertDepositNegotiationMessage
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -5695,6 +5700,170 @@ export class DatabaseStorage implements IStorage {
         credited_at = EXCLUDED.credited_at,
         credited_by = EXCLUDED.credited_by
     `);
+  }
+
+  // ====================================
+  // PHYSICAL GOLD DEPOSIT STORAGE
+  // ====================================
+
+  async createPhysicalDepositRequest(data: InsertPhysicalDepositRequest): Promise<PhysicalDepositRequest> {
+    const [result] = await db.insert(physicalDepositRequests).values(data).returning();
+    return result;
+  }
+
+  async getPhysicalDepositById(id: string): Promise<PhysicalDepositRequest | undefined> {
+    const [result] = await db.select().from(physicalDepositRequests).where(eq(physicalDepositRequests.id, id));
+    return result;
+  }
+
+  async getPhysicalDepositByReference(ref: string): Promise<PhysicalDepositRequest | undefined> {
+    const [result] = await db.select().from(physicalDepositRequests).where(eq(physicalDepositRequests.referenceNumber, ref));
+    return result;
+  }
+
+  async getUserPhysicalDeposits(userId: string): Promise<PhysicalDepositRequest[]> {
+    return await db.select().from(physicalDepositRequests)
+      .where(eq(physicalDepositRequests.userId, userId))
+      .orderBy(desc(physicalDepositRequests.createdAt));
+  }
+
+  async getAllPhysicalDeposits(filters?: { status?: string }): Promise<PhysicalDepositRequest[]> {
+    if (filters?.status) {
+      return await db.select().from(physicalDepositRequests)
+        .where(eq(physicalDepositRequests.status, filters.status as any))
+        .orderBy(desc(physicalDepositRequests.createdAt));
+    }
+    return await db.select().from(physicalDepositRequests)
+      .orderBy(desc(physicalDepositRequests.createdAt));
+  }
+
+  async updatePhysicalDeposit(id: string, updates: Partial<PhysicalDepositRequest>): Promise<PhysicalDepositRequest | undefined> {
+    const [result] = await db.update(physicalDepositRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(physicalDepositRequests.id, id))
+      .returning();
+    return result;
+  }
+
+  async generatePhysicalDepositReference(): Promise<string> {
+    const prefix = 'PHY';
+    const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `${prefix}-${date}-${random}`;
+  }
+
+  // Deposit Items
+  async createDepositItem(data: InsertDepositItem): Promise<DepositItem> {
+    const [result] = await db.insert(depositItems).values(data).returning();
+    return result;
+  }
+
+  async createDepositItems(items: InsertDepositItem[]): Promise<DepositItem[]> {
+    if (items.length === 0) return [];
+    return await db.insert(depositItems).values(items).returning();
+  }
+
+  async getDepositItems(depositRequestId: string): Promise<DepositItem[]> {
+    return await db.select().from(depositItems)
+      .where(eq(depositItems.depositRequestId, depositRequestId));
+  }
+
+  async updateDepositItem(id: string, updates: Partial<DepositItem>): Promise<DepositItem | undefined> {
+    const [result] = await db.update(depositItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(depositItems.id, id))
+      .returning();
+    return result;
+  }
+
+  // Deposit Inspections
+  async createDepositInspection(data: InsertDepositInspection): Promise<DepositInspection> {
+    const [result] = await db.insert(depositInspections).values(data).returning();
+    return result;
+  }
+
+  async getDepositInspection(depositRequestId: string): Promise<DepositInspection | undefined> {
+    const [result] = await db.select().from(depositInspections)
+      .where(eq(depositInspections.depositRequestId, depositRequestId))
+      .orderBy(desc(depositInspections.createdAt));
+    return result;
+  }
+
+  async updateDepositInspection(id: string, updates: Partial<DepositInspection>): Promise<DepositInspection | undefined> {
+    const [result] = await db.update(depositInspections)
+      .set(updates)
+      .where(eq(depositInspections.id, id))
+      .returning();
+    return result;
+  }
+
+  // Deposit Negotiation Messages
+  async createNegotiationMessage(data: InsertDepositNegotiationMessage): Promise<DepositNegotiationMessage> {
+    // Mark previous messages as not latest
+    await db.update(depositNegotiationMessages)
+      .set({ isLatest: false })
+      .where(eq(depositNegotiationMessages.depositRequestId, data.depositRequestId));
+    
+    const [result] = await db.insert(depositNegotiationMessages).values(data).returning();
+    return result;
+  }
+
+  async getNegotiationMessages(depositRequestId: string): Promise<DepositNegotiationMessage[]> {
+    return await db.select().from(depositNegotiationMessages)
+      .where(eq(depositNegotiationMessages.depositRequestId, depositRequestId))
+      .orderBy(desc(depositNegotiationMessages.createdAt));
+  }
+
+  async getLatestNegotiationMessage(depositRequestId: string): Promise<DepositNegotiationMessage | undefined> {
+    const [result] = await db.select().from(depositNegotiationMessages)
+      .where(and(
+        eq(depositNegotiationMessages.depositRequestId, depositRequestId),
+        eq(depositNegotiationMessages.isLatest, true)
+      ));
+    return result;
+  }
+
+  async markNegotiationResponded(id: string): Promise<void> {
+    await db.update(depositNegotiationMessages)
+      .set({ respondedAt: new Date() })
+      .where(eq(depositNegotiationMessages.id, id));
+  }
+
+  // Stats for dashboard
+  async getPhysicalDepositStats(): Promise<{
+    submitted: number;
+    underReview: number;
+    received: number;
+    inspection: number;
+    negotiation: number;
+    agreed: number;
+    approved: number;
+    rejected: number;
+  }> {
+    const result = await db.execute(sql`
+      SELECT 
+        COUNT(CASE WHEN status = 'SUBMITTED' THEN 1 END) as submitted,
+        COUNT(CASE WHEN status = 'UNDER_REVIEW' THEN 1 END) as under_review,
+        COUNT(CASE WHEN status = 'RECEIVED' THEN 1 END) as received,
+        COUNT(CASE WHEN status = 'INSPECTION' THEN 1 END) as inspection,
+        COUNT(CASE WHEN status = 'NEGOTIATION' THEN 1 END) as negotiation,
+        COUNT(CASE WHEN status = 'AGREED' THEN 1 END) as agreed,
+        COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved,
+        COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected
+      FROM physical_deposit_requests
+    `);
+
+    const row = result.rows[0] || {};
+    return {
+      submitted: parseInt(row.submitted || '0'),
+      underReview: parseInt(row.under_review || '0'),
+      received: parseInt(row.received || '0'),
+      inspection: parseInt(row.inspection || '0'),
+      negotiation: parseInt(row.negotiation || '0'),
+      agreed: parseInt(row.agreed || '0'),
+      approved: parseInt(row.approved || '0'),
+      rejected: parseInt(row.rejected || '0')
+    };
   }
 }
 

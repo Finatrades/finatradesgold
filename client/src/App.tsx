@@ -125,6 +125,8 @@ import DatabaseBackups from "@/pages/admin/DatabaseBackups";
 import GeoRestrictions from "@/pages/admin/GeoRestrictions";
 import BNSLExplore from "@/pages/BNSLExplore";
 import FinaVaultHistory from "@/pages/FinaVaultHistory";
+import PhysicalGoldDeposit from "@/pages/PhysicalGoldDeposit";
+import PhysicalDepositsAdmin from "@/pages/admin/PhysicalDepositsAdmin";
 import BNSLHistory from "@/pages/BNSLHistory";
 import FinaBridgeHistory from "@/pages/FinaBridgeHistory";
 import FinaBridgeRequests from "@/pages/FinaBridgeRequests";
@@ -214,6 +216,7 @@ function Router() {
       <ProtectedRoute path="/finapay/transactions" component={FinaPayTransactions} />
       <ProtectedRoute path="/finapay" component={FinaPay} />
       <ProtectedRoute path="/finavault/history" component={FinaVaultHistory} />
+      <ProtectedRoute path="/physical-gold-deposit" component={PhysicalGoldDeposit} />
       <ProtectedRoute path="/finavault" component={FinaVault} />
       <ProtectedRoute path="/bnsl/explore" component={BNSLExplore} />
       <ProtectedRoute path="/bnsl/history" component={BNSLHistory} />
@@ -239,6 +242,7 @@ function Router() {
       <Route path="/admin/users/:id" component={UserDetails} />
       <Route path="/admin/transactions" component={Transactions} />
       <Route path="/admin/vault" component={FinaVaultManagement} />
+      <Route path="/admin/physical-deposits" component={PhysicalDepositsAdmin} />
       <Route path="/admin/vault-legacy" component={VaultManagement} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/chat" component={AdminChat} />

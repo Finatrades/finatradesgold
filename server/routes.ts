@@ -99,6 +99,7 @@ import wingoldRoutes from "./wingold-routes";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
 import unifiedTallyRoutes from "./unified-tally-routes";
+import physicalDepositRoutes from "./physical-deposit-routes";
 import { WingoldUserSyncService } from "./wingold-user-sync-service";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
@@ -604,6 +605,7 @@ export async function registerRoutes(
   // Register Admin Vault Exposure routes
   app.use("/api/admin/vault-exposure", adminVaultExposureRoutes);
   app.use("/api/admin/unified-tally", unifiedTallyRoutes);
+  app.use("/api/physical-deposits", physicalDepositRoutes);
   // Register B2B order receiving routes
   app.use("/api/b2b", b2bRoutes);
 
