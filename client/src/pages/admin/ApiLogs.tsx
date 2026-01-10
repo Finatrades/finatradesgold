@@ -38,7 +38,7 @@ export default function ApiLogs() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
 
-  const { data, isLoading, refetch } = useQuery<{ logs: SystemLog[] }>({
+  const { data, isLoading, refetch, isRefetching } = useQuery<{ logs: SystemLog[] }>({
     queryKey: ['/api/admin/system-logs', levelFilter, sourceFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -59,7 +59,7 @@ export default function ApiLogs() {
     (log.requestId && log.requestId.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const sources = [...new Set(logs.map(l => l.source))];
+  const sources = Array.from(new Set(logs.map(l => l.source)));
 
   const getLevelBadge = (level: string) => {
     switch (level) {
@@ -91,9 +91,15 @@ export default function ApiLogs() {
             <h1 className="text-3xl font-bold text-foreground" data-testid="text-logs-title">API & Error Logs</h1>
             <p className="text-muted-foreground mt-1">System logs, API requests, and error tracking</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            disabled={isRefetching}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
           </Button>
         </div>
 
