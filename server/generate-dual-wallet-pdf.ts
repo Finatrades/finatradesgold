@@ -32,8 +32,8 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.text('• Best for: Investment and trading');
   doc.moveDown();
 
-  // FPGW
-  doc.fontSize(13).fillColor('#D4AF37').text('FPGW - Fixed Price Gold Wallet');
+  // FGPW
+  doc.fontSize(13).fillColor('#D4AF37').text('FGPW - Fixed Gold Price Wallet');
   doc.fontSize(10).fillColor('#333');
   doc.text('• Value is locked at the price you purchased');
   doc.text('• Uses FIFO (First-In-First-Out) batch consumption');
@@ -41,11 +41,11 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.text('• Best for: Savings and stability');
   doc.moveDown(2);
 
-  // Section 2: FPGW Batches
-  doc.fontSize(16).fillColor('#4B0082').text('2. How FPGW Batches Work (FIFO)');
+  // Section 2: FGPW Batches
+  doc.fontSize(16).fillColor('#4B0082').text('2. How FGPW Batches Work (FIFO)');
   doc.moveDown(0.5);
   doc.fontSize(10).fillColor('#333');
-  doc.text('When you buy gold into FPGW, it creates a "batch" with the locked price:');
+  doc.text('When you buy gold into FGPW, it creates a "batch" with the locked price:');
   doc.moveDown(0.5);
   doc.font('Courier').fontSize(9);
   doc.text('  Batch 1: 50g @ $140/g (Jan 1)');
@@ -64,7 +64,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.fontSize(16).fillColor('#4B0082').text('3. The Four Balance Buckets');
   doc.moveDown(0.5);
   doc.fontSize(10).fillColor('#333');
-  doc.text('Each wallet type (LGPW and FPGW) has four separate buckets:');
+  doc.text('Each wallet type (LGPW and FGPW) has four separate buckets:');
   doc.moveDown(0.5);
 
   const buckets = [
@@ -89,7 +89,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.fontSize(10).fillColor('#333');
   doc.text('When sending gold to another user:');
   doc.moveDown(0.5);
-  doc.text('1. Sender chooses wallet type (LGPW or FPGW) and amount');
+  doc.text('1. Sender chooses wallet type (LGPW or FGPW) and amount');
   doc.text('2. Sender\'s Available → Reserved (gold is held)');
   doc.text('3. Receiver sees request with [Accept] [Reject] + 24hr timer');
   doc.text('4. If Accept: Receiver\'s Available increases (same wallet type)');
@@ -105,8 +105,8 @@ export async function generateDualWalletGuide(): Promise<string> {
 
   const tables = [
     { name: 'wallets', purpose: 'Legacy total gold balance' },
-    { name: 'vaultOwnershipSummary', purpose: 'Dual-wallet buckets (LGPW/FPGW × 4 statuses)' },
-    { name: 'fpgw_batches', purpose: 'Individual FPGW batches with locked prices' },
+    { name: 'vaultOwnershipSummary', purpose: 'Dual-wallet buckets (LGPW/FGPW × 4 statuses)' },
+    { name: 'fpgw_batches', purpose: 'Individual FGPW batches with locked prices' },
     { name: 'vaultLedgerEntries', purpose: 'Audit trail of all movements' },
     { name: 'transactions', purpose: 'Transaction history' },
     { name: 'certificates', purpose: 'Digital ownership certificates' }
@@ -129,7 +129,7 @@ export async function generateDualWalletGuide(): Promise<string> {
   doc.text('• Display: UI shows gold as primary, USD as "≈ equivalent"');
   doc.text('• Disclaimer: "USD is an equivalent value. Your real balance is gold."');
   doc.text('• LGPW: USD = gold grams × current market price');
-  doc.text('• FPGW: USD = gold grams × locked purchase price');
+  doc.text('• FGPW: USD = gold grams × locked purchase price');
 
   doc.moveDown(3);
 

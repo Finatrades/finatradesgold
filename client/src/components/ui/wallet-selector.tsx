@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-export type GoldWalletType = 'LGPW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FGPW';
 
 interface WalletSelectorProps {
   value: GoldWalletType;
@@ -50,9 +50,9 @@ export function WalletSelector({
           showBalance={showBalances}
         />
         <WalletCard
-          type="FPGW"
-          selected={value === 'FPGW'}
-          onClick={() => !disabled && onChange('FPGW')}
+          type="FGPW"
+          selected={value === 'FGPW'}
+          onClick={() => !disabled && onChange('FGPW')}
           balance={fpgwBalance}
           price={fpgwAvgPrice}
           disabled={disabled}
@@ -184,12 +184,12 @@ export function WalletDropdown({ value, onChange, disabled, className }: WalletD
           </div>
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onClick={() => onChange('FPGW')}
+          onClick={() => onChange('FGPW')}
           data-testid="wallet-option-fpgw"
         >
           <Lock className="h-4 w-4 mr-2 text-amber-500" />
           <div className="flex flex-col">
-            <span className="font-medium">FPGW</span>
+            <span className="font-medium">FGPW</span>
             <span className="text-xs text-muted-foreground">Fixed Price Wallet</span>
           </div>
         </DropdownMenuItem>

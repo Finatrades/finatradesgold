@@ -73,8 +73,8 @@ export function DualWalletSummary({ userId, className }: DualWalletSummaryProps)
         />
 
         <WalletCard
-          type="FPGW"
-          title="Fixed Price Gold Wallet"
+          type="FGPW"
+          title="Fixed Gold Price Wallet"
           description="Value locked at purchase price"
           icon={<Lock className="h-5 w-5 text-amber-500" />}
           available={balance.fpgw.availableGrams}
@@ -84,7 +84,7 @@ export function DualWalletSummary({ userId, className }: DualWalletSummaryProps)
           total={balance.fpgw.totalGrams}
           pricePerGram={balance.fpgw.weightedAvgPrice}
           valueUsd={balance.fpgwValueUsd}
-          isFPGW
+          isFGPW
         />
       </div>
 
@@ -108,7 +108,7 @@ export function DualWalletSummary({ userId, className }: DualWalletSummaryProps)
 }
 
 interface WalletCardProps {
-  type: 'LGPW' | 'FPGW';
+  type: 'LGPW' | 'FGPW';
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -119,7 +119,7 @@ interface WalletCardProps {
   total: number;
   pricePerGram: number;
   valueUsd: number;
-  isFPGW?: boolean;
+  isFGPW?: boolean;
 }
 
 function WalletCard({
@@ -134,7 +134,7 @@ function WalletCard({
   total,
   pricePerGram,
   valueUsd,
-  isFPGW
+  isFGPW
 }: WalletCardProps) {
   return (
     <Card className="relative overflow-hidden" data-testid={`wallet-card-${type.toLowerCase()}`}>
@@ -152,7 +152,7 @@ function WalletCard({
               <p className="text-xs text-muted-foreground">{title}</p>
             </div>
           </div>
-          {isFPGW && pricePerGram > 0 && (
+          {isFGPW && pricePerGram > 0 && (
             <Badge variant="secondary" className="text-xs">
               Avg: ${pricePerGram.toFixed(2)}/g
             </Badge>

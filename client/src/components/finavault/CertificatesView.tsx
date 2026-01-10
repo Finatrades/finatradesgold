@@ -26,9 +26,9 @@ interface Certificate {
   issuer: string;
   vaultLocation: string | null;
   wingoldStorageRef: string | null;
-  goldWalletType: 'LGPW' | 'FPGW' | null;
-  fromGoldWalletType: 'LGPW' | 'FPGW' | null;
-  toGoldWalletType: 'LGPW' | 'FPGW' | null;
+  goldWalletType: 'LGPW' | 'FGPW' | null;
+  fromGoldWalletType: 'LGPW' | 'FGPW' | null;
+  toGoldWalletType: 'LGPW' | 'FGPW' | null;
   fromUserId: string | null;
   toUserId: string | null;
   fromUserName: string | null;
@@ -224,23 +224,23 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`px-3 py-1 ${
-                      certificate.fromGoldWalletType === 'FPGW' 
+                      certificate.fromGoldWalletType === 'FGPW' 
                         ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
                         : 'border-amber-500 text-amber-400 bg-amber-500/10'
                     }`}>
-                      {certificate.fromGoldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                      {certificate.fromGoldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                     </Badge>
                     <ArrowRight className="w-4 h-4 text-white/60" />
                     <Badge variant="outline" className={`px-3 py-1 ${
-                      certificate.toGoldWalletType === 'FPGW' 
+                      certificate.toGoldWalletType === 'FGPW' 
                         ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
                         : 'border-amber-500 text-amber-400 bg-amber-500/10'
                     }`}>
-                      {certificate.toGoldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                      {certificate.toGoldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                     </Badge>
                   </div>
                   <p className="text-xs text-white/50 max-w-xs text-center">
-                    {certificate.toGoldWalletType === 'FPGW' 
+                    {certificate.toGoldWalletType === 'FGPW' 
                       ? 'Converted to fixed price • Value locked at conversion rate' 
                       : 'Converted to market price • Value now follows live gold price'}
                   </p>
@@ -248,14 +248,14 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               ) : certificate.goldWalletType ? (
                 <div className="flex flex-col items-center gap-1">
                   <Badge variant="outline" className={`px-3 py-1 ${
-                    certificate.goldWalletType === 'FPGW' 
+                    certificate.goldWalletType === 'FGPW' 
                       ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
                       : 'border-amber-500 text-amber-400 bg-amber-500/10'
                   }`}>
-                    {certificate.goldWalletType === 'FPGW' ? '🔒 FPGW - Fixed Price Gold' : '📈 LGPW - Market Price Gold'}
+                    {certificate.goldWalletType === 'FGPW' ? '🔒 FGPW - Fixed Price Gold' : '📈 LGPW - Market Price Gold'}
                   </Badge>
                   <p className="text-xs text-white/50 max-w-xs text-center">
-                    {certificate.goldWalletType === 'FPGW' 
+                    {certificate.goldWalletType === 'FGPW' 
                       ? 'Value locked at purchase price • Backed by cash reserve' 
                       : 'Value follows live gold price • Backed by physical gold'}
                   </p>
@@ -266,7 +266,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
             {hasPartialSurrender && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mt-4 text-sm">
                 <p className="text-amber-400">
-                  Partial Surrender: {(originalGrams - remainingGrams).toFixed(4)}g converted to FPGW
+                  Partial Surrender: {(originalGrams - remainingGrams).toFixed(4)}g converted to FGPW
                 </p>
                 <p className="text-white/60 text-xs mt-1">
                   Original: {originalGrams.toFixed(4)}g → Current: {remainingGrams.toFixed(4)}g
@@ -515,28 +515,28 @@ export default function CertificatesView() {
                         {cert.type === 'Conversion' && cert.fromGoldWalletType && cert.toGoldWalletType ? (
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className={`text-xs ${
-                              cert.fromGoldWalletType === 'FPGW' 
+                              cert.fromGoldWalletType === 'FGPW' 
                                 ? 'border-blue-500 text-blue-600 bg-blue-50' 
                                 : 'border-amber-500 text-amber-600 bg-amber-50'
                             }`}>
-                              {cert.fromGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                              {cert.fromGoldWalletType === 'FGPW' ? '🔒' : '📈'}
                             </Badge>
                             <ArrowRight className="w-3 h-3 text-gray-400" />
                             <Badge variant="outline" className={`text-xs ${
-                              cert.toGoldWalletType === 'FPGW' 
+                              cert.toGoldWalletType === 'FGPW' 
                                 ? 'border-blue-500 text-blue-600 bg-blue-50' 
                                 : 'border-amber-500 text-amber-600 bg-amber-50'
                             }`}>
-                              {cert.toGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                              {cert.toGoldWalletType === 'FGPW' ? '🔒' : '📈'}
                             </Badge>
                           </div>
                         ) : cert.goldWalletType ? (
                           <Badge variant="outline" className={`text-xs ${
-                            cert.goldWalletType === 'FPGW' 
+                            cert.goldWalletType === 'FGPW' 
                               ? 'border-blue-500 text-blue-600 bg-blue-50' 
                               : 'border-amber-500 text-amber-600 bg-amber-50'
                           }`}>
-                            {cert.goldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                            {cert.goldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                           </Badge>
                         ) : null}
                       </div>

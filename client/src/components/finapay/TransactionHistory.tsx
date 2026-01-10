@@ -151,7 +151,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                   {(() => {
                     let runningBalance = 0;
                     return filteredTransactions.map((tx, index) => {
-                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FPGW') || tx.description?.includes('FPGW to LGPW');
+                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       
@@ -231,7 +231,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                     {(() => {
                       let runningBalance = 0;
                       return filteredTransactions.map((tx, index) => {
-                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FPGW') || tx.description?.includes('FPGW to LGPW');
+                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       
@@ -306,7 +306,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                                 <span className="text-green-600 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
-                                <div className="text-xs text-muted-foreground">to FPGW</div>
+                                <div className="text-xs text-muted-foreground">to FGPW</div>
                               </div>
                             ) : isCredit ? (
                               <div>

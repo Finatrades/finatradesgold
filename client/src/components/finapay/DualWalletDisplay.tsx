@@ -22,7 +22,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
   
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
-  const [transferDirection, setTransferDirection] = useState<'LGPW_to_FPGW' | 'FPGW_to_LGPW'>('LGPW_to_FPGW');
+  const [transferDirection, setTransferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>('LGPW_to_FGPW');
 
   if (isLoading) {
     return (
@@ -54,8 +54,8 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
       return;
     }
 
-    const fromType = transferDirection === 'LGPW_to_FPGW' ? 'LGPW' : 'FPGW';
-    const toType = transferDirection === 'LGPW_to_FPGW' ? 'FPGW' : 'LGPW';
+    const fromType = transferDirection === 'LGPW_to_FGPW' ? 'LGPW' : 'FGPW';
+    const toType = transferDirection === 'LGPW_to_FGPW' ? 'FGPW' : 'LGPW';
 
     try {
       await internalTransfer.mutateAsync({
@@ -80,7 +80,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
     }
   };
 
-  const maxTransferAmount = transferDirection === 'LGPW_to_FPGW' 
+  const maxTransferAmount = transferDirection === 'LGPW_to_FGPW' 
     ? balance.mpgw.availableGrams 
     : balance.fpgw.availableGrams;
 
@@ -93,7 +93,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Dual Gold Wallet</h2>
-            <p className="text-xs text-muted-foreground">LGPW (Market Price) & FPGW (Fixed Price)</p>
+            <p className="text-xs text-muted-foreground">LGPW (Market Price) & FGPW (Fixed Price)</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -184,7 +184,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
         <div className="p-5 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-purple-600" />
-            <h3 className="font-bold text-purple-800">FPGW - Fixed Price Gold</h3>
+            <h3 className="font-bold text-purple-800">FGPW - Fixed Price Gold</h3>
           </div>
           <p className="text-xs text-purple-700 mb-4">
             Value locked at purchase price 
@@ -232,7 +232,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             
             <div className="pt-2 border-t border-purple-200">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-purple-800">Total FPGW</span>
+                <span className="text-sm font-semibold text-purple-800">Total FGPW</span>
                 <div className="text-right">
                   <span className="text-lg font-bold text-purple-700" data-testid="fpgw-total">
                     {balance.fpgw.totalGrams.toFixed(4)} g
@@ -274,7 +274,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
           <DialogHeader>
             <DialogTitle>Transfer Between Wallets</DialogTitle>
             <DialogDescription>
-              Move gold between your Market Price (LGPW) and Fixed Price (FPGW) wallets.
+              Move gold between your Market Price (LGPW) and Fixed Price (FGPW) wallets.
             </DialogDescription>
           </DialogHeader>
           
@@ -283,14 +283,14 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
               <Label>Transfer Direction</Label>
               <RadioGroup 
                 value={transferDirection} 
-                onValueChange={(v) => setTransferDirection(v as 'LGPW_to_FPGW' | 'FPGW_to_LGPW')}
+                onValueChange={(v) => setTransferDirection(v as 'LGPW_to_FGPW' | 'FGPW_to_LGPW')}
               >
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-amber-50 cursor-pointer">
-                  <RadioGroupItem value="LGPW_to_FPGW" id="mpgw-to-fpgw" />
+                  <RadioGroupItem value="LGPW_to_FGPW" id="mpgw-to-fpgw" />
                   <Label htmlFor="mpgw-to-fpgw" className="flex-1 cursor-pointer">
                     <span className="font-semibold text-amber-700">LGPW</span>
                     <span className="mx-2">→</span>
-                    <span className="font-semibold text-purple-700">FPGW</span>
+                    <span className="font-semibold text-purple-700">FGPW</span>
                     <p className="text-xs text-muted-foreground mt-1">
                       Lock at current market price (${balance.goldPricePerGram.toFixed(2)}/g)
                     </p>
@@ -298,9 +298,9 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                 </div>
                 {balance.fpgw.availableGrams > 0.000001 && (
                   <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-purple-50 cursor-pointer">
-                    <RadioGroupItem value="FPGW_to_LGPW" id="fpgw-to-mpgw" />
+                    <RadioGroupItem value="FGPW_to_LGPW" id="fpgw-to-mpgw" />
                     <Label htmlFor="fpgw-to-mpgw" className="flex-1 cursor-pointer">
-                      <span className="font-semibold text-purple-700">FPGW</span>
+                      <span className="font-semibold text-purple-700">FGPW</span>
                       <span className="mx-2">→</span>
                       <span className="font-semibold text-amber-700">LGPW</span>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -338,7 +338,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
               </Button>
             </div>
 
-            {transferDirection === 'LGPW_to_FPGW' && transferAmount && (
+            {transferDirection === 'LGPW_to_FGPW' && transferAmount && (
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
                 <p className="text-sm text-amber-800">
                   <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be locked at current price of 
@@ -350,13 +350,13 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
               </div>
             )}
             
-            {transferDirection === 'FPGW_to_LGPW' && transferAmount && (
+            {transferDirection === 'FGPW_to_LGPW' && transferAmount && (
               <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
                 <p className="text-sm text-purple-800">
                   <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be converted to market valuation
                 </p>
                 <p className="text-xs text-purple-600 mt-1">
-                  FPGW batches will be consumed in FIFO order
+                  FGPW batches will be consumed in FIFO order
                 </p>
               </div>
             )}

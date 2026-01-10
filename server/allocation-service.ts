@@ -26,7 +26,7 @@ export interface CreateAllocationParams {
   goldGrams: number;
   vaultLocation: string;
   allocationBatchRef: string;
-  goldWalletType: 'LGPW' | 'FPGW';
+  goldWalletType: 'LGPW' | 'FGPW';
   goldPriceUsdPerGram?: number;
   allocatedBy?: string;
   notes?: string;

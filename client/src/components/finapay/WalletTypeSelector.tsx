@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-export type GoldWalletType = 'LGPW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FGPW';
 
 interface WalletTypeSelectorProps {
   value: GoldWalletType;
@@ -40,7 +40,7 @@ export default function WalletTypeSelector({
             <TooltipContent className="max-w-xs">
               <p className="text-sm">
                 <strong>LGPW:</strong> Gold value follows live market price.<br/>
-                <strong>FPGW:</strong> Gold value is locked at the price when you received it.
+                <strong>FGPW:</strong> Gold value is locked at the price when you received it.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -87,7 +87,7 @@ export default function WalletTypeSelector({
         
         <div className="relative">
           <RadioGroupItem
-            value="FPGW"
+            value="FGPW"
             id="wallet-fpgw"
             className="peer sr-only"
           />
@@ -96,7 +96,7 @@ export default function WalletTypeSelector({
             className={`
               flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer
               transition-all duration-200
-              ${value === 'FPGW' 
+              ${value === 'FGPW' 
                 ? 'border-amber-500 bg-amber-500/5 shadow-sm' 
                 : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/50'
               }
@@ -104,11 +104,11 @@ export default function WalletTypeSelector({
             `}
             data-testid="select-fpgw"
           >
-            <Lock className={`h-6 w-6 mb-2 ${value === 'FPGW' ? 'text-amber-500' : 'text-muted-foreground'}`} />
-            <span className={`font-semibold text-sm ${value === 'FPGW' ? 'text-amber-600' : ''}`}>
+            <Lock className={`h-6 w-6 mb-2 ${value === 'FGPW' ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            <span className={`font-semibold text-sm ${value === 'FGPW' ? 'text-amber-600' : ''}`}>
               Fixed Price
             </span>
-            <span className="text-xs text-muted-foreground text-center">FPGW</span>
+            <span className="text-xs text-muted-foreground text-center">FGPW</span>
             {showDescription && (
               <span className="text-xs text-muted-foreground text-center mt-1">
                 Price locked at purchase

@@ -35,10 +35,10 @@ export type LedgerAction =
   | 'Gift_Send'
   | 'Gift_Receive'
   | 'Storage_Fee'
-  | 'LGPW_To_FPGW'
-  | 'FPGW_To_LGPW';
+  | 'LGPW_To_FGPW'
+  | 'FGPW_To_LGPW';
 
-export type GoldWalletType = 'LGPW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FGPW';
 
 export type WalletType = 'FinaPay' | 'BNSL' | 'FinaBridge' | 'External';
 export type OwnershipStatus = 'Available' | 'Locked_BNSL' | 'Reserved_Trade' | 'Pending_Deposit' | 'Pending_Withdrawal';
@@ -353,7 +353,7 @@ export class VaultLedgerService {
     userId: string;
     goldGrams: number;
     goldPriceUsdPerGram: number;
-    walletType: 'LGPW' | 'FPGW';
+    walletType: 'LGPW' | 'FGPW';
     transactionId?: string;
     certificateId?: string;
     notes?: string;
@@ -367,7 +367,7 @@ export class VaultLedgerService {
     const grams = parseFloat(goldGrams.toFixed(6));
     
     const isLGPW = walletType === 'LGPW';
-    const walletTypeLabel = isLGPW ? 'LGPW' : 'FPGW';
+    const walletTypeLabel = isLGPW ? 'LGPW' : 'FGPW';
     
     const walletResult = await dbClient.update(wallets)
       .set({
@@ -720,10 +720,10 @@ export class VaultLedgerService {
     const [bnslWallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
     const [bridgeWallet] = await db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId));
     
-    // Get existing ownership summary to preserve LGPW/FPGW split
+    // Get existing ownership summary to preserve LGPW/FGPW split
     const [existingSummary] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
     
-    // Preserve the existing LGPW and FPGW values if they exist
+    // Preserve the existing LGPW and FGPW values if they exist
     const mpgwAvailableGrams = parseFloat(existingSummary?.mpgwAvailableGrams || '0');
     const fpgwAvailableGrams = parseFloat(existingSummary?.fpgwAvailableGrams || '0');
     const fpgwPendingGrams = parseFloat(existingSummary?.fpgwPendingGrams || '0');
@@ -753,7 +753,7 @@ export class VaultLedgerService {
         bnslLockedGrams: bnslLocked.toFixed(6),
         finaBridgeAvailableGrams: bridgeAvailable.toFixed(6),
         finaBridgeReservedGrams: bridgeLocked.toFixed(6),
-        // Preserve LGPW/FPGW dual-wallet data
+        // Preserve LGPW/FGPW dual-wallet data
         mpgwAvailableGrams: mpgwAvailableGrams.toFixed(6),
         fpgwAvailableGrams: fpgwAvailableGrams.toFixed(6),
         fpgwPendingGrams: fpgwPendingGrams.toFixed(6),

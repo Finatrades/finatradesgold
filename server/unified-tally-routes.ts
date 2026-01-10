@@ -33,7 +33,7 @@ const createTallySchema = z.object({
   userId: z.string(),
   txnType: z.enum(['FIAT_CRYPTO_DEPOSIT', 'VAULT_GOLD_DEPOSIT']),
   sourceMethod: z.enum(['CARD', 'BANK', 'CRYPTO', 'VAULT_GOLD']),
-  walletType: z.enum(['LGPW', 'FPGW']).default('LGPW'),
+  walletType: z.enum(['LGPW', 'FGPW']).default('LGPW'),
   depositCurrency: z.string().default('USD'),
   depositAmount: z.string().or(z.number()).transform(v => String(v)),
   feeAmount: z.string().or(z.number()).transform(v => String(v)).optional(),
@@ -267,7 +267,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       userId,
       txnType: 'FIAT_CRYPTO_DEPOSIT',
       sourceMethod: sourceType as 'CRYPTO' | 'BANK',
-      walletType: walletType as 'LGPW' | 'FPGW',
+      walletType: walletType as 'LGPW' | 'FGPW',
       status: initialStatus,
       depositCurrency: 'USD',
       depositAmount: String(amountUsd),
@@ -806,7 +806,7 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         userId: transaction.userId,
         goldGrams: physicalGoldAllocatedG,
         goldPriceUsdPerGram: goldRateValue,
-        walletType: transaction.walletType as 'LGPW' | 'FPGW',
+        walletType: transaction.walletType as 'LGPW' | 'FGPW',
         transactionId: transaction.id,
         certificateId: transaction.storageCertificateId || undefined,
         notes: `Unified Tally Credit: ${physicalGoldAllocatedG.toFixed(6)}g to ${transaction.walletType} wallet from ${transaction.sourceMethod} deposit`,
@@ -814,14 +814,14 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         tx: tx as any,
       });
 
-      if (transaction.walletType === 'FPGW') {
+      if (transaction.walletType === 'FGPW') {
         await createFpgwBatch({
           userId: transaction.userId,
           goldGrams: physicalGoldAllocatedG,
           lockedPriceUsd: goldRateValue,
           sourceType: 'deposit',
           sourceTransactionId: transaction.id,
-          notes: `FPGW batch from ${transaction.sourceMethod} deposit - Certificate: ${transaction.storageCertificateId}`,
+          notes: `FGPW batch from ${transaction.sourceMethod} deposit - Certificate: ${transaction.storageCertificateId}`,
           tx: tx as any,
         });
       }

@@ -42,7 +42,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
       userCount: sql<number>`COUNT(DISTINCT ${vaultOwnershipSummary.userId})`
     }).from(vaultOwnershipSummary);
 
-    // Calculate total FPGW exposure
+    // Calculate total FGPW exposure
     const fpgwTotals = await db.select({
       totalGrams: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwAvailableGrams}), 0)`,
       pendingGrams: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwPendingGrams}), 0)`,
@@ -51,7 +51,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
       userCount: sql<number>`COUNT(DISTINCT CASE WHEN ${vaultOwnershipSummary.fpgwAvailableGrams} > 0 THEN ${vaultOwnershipSummary.userId} END)`
     }).from(vaultOwnershipSummary);
 
-    // Get FPGW locked value from active batches
+    // Get FGPW locked value from active batches
     const fpgwBatchTotals = await db.select({
       totalLockedValue: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGrams} * ${fpgwBatches.lockedPriceUsd}), 0)`,
       totalRemainingGrams: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGrams}), 0)`
@@ -242,17 +242,17 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
     let newCashBalance = currentCashBalance;
 
     // Create cash ledger entry based on direction
-    if (conversion.direction === 'LGPW_TO_FPGW') {
+    if (conversion.direction === 'LGPW_TO_FGPW') {
       newCashBalance = currentCashBalance + executionValue;
       await db.insert(cashSafetyLedger).values({
-        entryType: 'FPGW_LOCK',
+        entryType: 'FGPW_LOCK',
         amountUsd: executionValue.toFixed(2),
         direction: 'credit',
         runningBalanceUsd: newCashBalance.toFixed(2),
         conversionId: id,
         userId: conversion.userId,
         createdBy: user.id,
-        notes: `LGPW→FPGW conversion: ${goldGrams}g @ $${finalPrice}/g`
+        notes: `LGPW→FGPW conversion: ${goldGrams}g @ $${finalPrice}/g`
       });
     } else {
       newCashBalance = currentCashBalance - executionValue;
@@ -260,14 +260,14 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Insufficient cash safety balance for this conversion' });
       }
       await db.insert(cashSafetyLedger).values({
-        entryType: 'FPGW_UNLOCK',
+        entryType: 'FGPW_UNLOCK',
         amountUsd: executionValue.toFixed(2),
         direction: 'debit',
         runningBalanceUsd: newCashBalance.toFixed(2),
         conversionId: id,
         userId: conversion.userId,
         createdBy: user.id,
-        notes: `FPGW→LGPW conversion: ${goldGrams}g @ $${finalPrice}/g`
+        notes: `FGPW→LGPW conversion: ${goldGrams}g @ $${finalPrice}/g`
       });
     }
 
@@ -289,7 +289,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
     const [userBalance] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, conversion.userId));
     
     if (userBalance) {
-      if (conversion.direction === 'LGPW_TO_FPGW') {
+      if (conversion.direction === 'LGPW_TO_FGPW') {
         const newMpgw = parseFloat(userBalance.mpgwAvailableGrams) - goldGrams;
         const newFpgw = parseFloat(userBalance.fpgwAvailableGrams) + goldGrams;
         await db.update(vaultOwnershipSummary)
@@ -582,7 +582,7 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
       alerts.push({ type: 'LGPW_EXCEEDS_PHYSICAL', severity, difference: diff });
     }
 
-    // Check FPGW vs Cash
+    // Check FGPW vs Cash
     const fpgwLockedValue = await db.select({
       total: sql<string>`COALESCE(SUM(${fpgwBatches.remainingGrams} * ${fpgwBatches.lockedPriceUsd}), 0)`
     }).from(fpgwBatches).where(eq(fpgwBatches.status, 'Active'));
@@ -600,17 +600,17 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
       const severity = diffPct > 10 ? 'critical' : diffPct > 5 ? 'warning' : 'info';
 
       await db.insert(reconciliationAlerts).values({
-        alertType: 'FPGW_EXCEEDS_CASH',
+        alertType: 'FGPW_EXCEEDS_CASH',
         severity,
-        title: 'FPGW Value Exceeds Cash Safety Balance',
-        message: `Total FPGW locked value ($${fpgwValueUsd.toFixed(2)}) exceeds cash safety balance ($${cashUsd.toFixed(2)}) by $${diff.toFixed(2)} (${diffPct.toFixed(2)}%)`,
+        title: 'FGPW Value Exceeds Cash Safety Balance',
+        message: `Total FGPW locked value ($${fpgwValueUsd.toFixed(2)}) exceeds cash safety balance ($${cashUsd.toFixed(2)}) by $${diff.toFixed(2)} (${diffPct.toFixed(2)}%)`,
         expectedValue: fpgwValueUsd.toFixed(2),
         actualValue: cashUsd.toFixed(2),
         differenceValue: diff.toFixed(2),
         differencePercentage: diffPct.toFixed(4)
       });
 
-      alerts.push({ type: 'FPGW_EXCEEDS_CASH', severity, difference: diff });
+      alerts.push({ type: 'FGPW_EXCEEDS_CASH', severity, difference: diff });
     }
 
     res.json({

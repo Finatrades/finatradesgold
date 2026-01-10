@@ -74,7 +74,7 @@ export default function UnifiedPaymentManagement() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [pricingMode, setPricingMode] = useState<'LIVE' | 'MANUAL'>('LIVE');
   const [manualGoldPrice, setManualGoldPrice] = useState('');
-  const [walletType, setWalletType] = useState<'LGPW' | 'FPGW'>('LGPW');
+  const [walletType, setWalletType] = useState<'LGPW' | 'FGPW'>('LGPW');
   const [vaultLocation, setVaultLocation] = useState('Wingold & Metals DMCC');
   const [approvalNotes, setApprovalNotes] = useState('');
   
@@ -154,7 +154,7 @@ export default function UnifiedPaymentManagement() {
 
   const openApprovalDialog = (payment: PendingPayment) => {
     setSelectedPayment(payment);
-    setWalletType(payment.walletType as 'LGPW' | 'FPGW');
+    setWalletType(payment.walletType as 'LGPW' | 'FGPW');
     setApprovalDialogOpen(true);
   };
 
@@ -451,13 +451,13 @@ export default function UnifiedPaymentManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label>Target Wallet</Label>
-                    <Select value={walletType} onValueChange={(v) => setWalletType(v as 'LGPW' | 'FPGW')}>
+                    <Select value={walletType} onValueChange={(v) => setWalletType(v as 'LGPW' | 'FGPW')}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="LGPW">LGPW (Market Price)</SelectItem>
-                        <SelectItem value="FPGW">FPGW (Fixed Price)</SelectItem>
+                        <SelectItem value="FGPW">FGPW (Fixed Price)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

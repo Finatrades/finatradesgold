@@ -231,7 +231,7 @@ export default function FinaVault() {
   const bnslAvailableGrams = ownership ? safeParseFloat(ownership.bnslAvailableGrams) : 0;
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
   
-  // Dual-wallet breakdown (LGPW/FPGW)
+  // Dual-wallet breakdown (LGPW/FGPW)
   const mpgwAvailableGrams = ownership ? safeParseFloat(ownership.mpgwAvailableGrams) : 0;
   const fpgwAvailableGrams = ownership ? safeParseFloat(ownership.fpgwAvailableGrams) : 0;
   
@@ -639,7 +639,7 @@ export default function FinaVault() {
 
           </div>
 
-          {/* Dual-Wallet Breakdown (LGPW/FPGW) */}
+          {/* Dual-Wallet Breakdown (LGPW/FGPW) */}
           {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
             <div className="mt-6 pt-6 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Wallet Type Breakdown</h3>
@@ -667,7 +667,7 @@ export default function FinaVault() {
                   </div>
                 </div>
 
-                {/* FPGW - Fixed Price Gold Wallet */}
+                {/* FGPW - Fixed Gold Price Wallet */}
                 <div className="relative p-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden" data-testid="card-fpgw-balance">
                   <div className="absolute right-2 bottom-2 opacity-10">
                     <Lock className="w-16 h-16 text-blue-500" />
@@ -675,7 +675,7 @@ export default function FinaVault() {
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">FPGW - Fixed Price</p>
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">FGPW - Fixed Price</p>
                     </div>
                     <p className="text-2xl font-bold text-blue-600 mb-0.5">
                       {fpgwAvailableGrams.toFixed(4)}g

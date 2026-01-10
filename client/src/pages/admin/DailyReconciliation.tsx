@@ -214,7 +214,7 @@ export default function DailyReconciliation() {
                 <hr />
                 <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Digital Claims (Liabilities)</div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">User Wallets (LGPW+FPGW)</span>
+                  <span className="text-sm">User Wallets (LGPW+FGPW)</span>
                   <span className="font-mono">{formatGold(summary?.totalGoldInWallets || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between">

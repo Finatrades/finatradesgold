@@ -127,7 +127,7 @@ export default function FinaVaultHistory() {
     const creditActions = ['Deposit', 'Transfer_Receive', 'Payout_Credit', 'Adjustment'];
     const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
     const transferActions = ['FinaPay_To_BNSL', 'BNSL_To_FinaPay', 'FinaPay_To_Trade', 'Trade_To_FinaPay'];
-    const conversionActions = ['LGPW_To_FPGW', 'FPGW_To_LGPW'];
+    const conversionActions = ['LGPW_To_FGPW', 'FGPW_To_LGPW'];
     
     if (conversionActions.includes(action)) {
       return <ArrowLeftRight className="w-5 h-5 text-purple-600" />;
@@ -163,12 +163,12 @@ export default function FinaVaultHistory() {
       // Bank/card/crypto purchases
       return 'Acquire Gold';
     }
-    // Handle LGPW/FPGW conversion actions
-    if (action === 'LGPW_To_FPGW') {
-      return 'LGPW → FPGW Conversion';
+    // Handle LGPW/FGPW conversion actions
+    if (action === 'LGPW_To_FGPW') {
+      return 'LGPW → FGPW Conversion';
     }
-    if (action === 'FPGW_To_LGPW') {
-      return 'FPGW → LGPW Conversion';
+    if (action === 'FGPW_To_LGPW') {
+      return 'FGPW → LGPW Conversion';
     }
     // For other actions, add spaces before uppercase letters that follow lowercase
     return action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
@@ -244,7 +244,7 @@ export default function FinaVaultHistory() {
                           const goldAmount = parseFloat(entry.goldGrams);
                           const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
                           const isDebit = debitActions.includes(entry.action) || goldAmount < 0;
-                          const isConversion = entry.action === 'LGPW_To_FPGW' || entry.action === 'FPGW_To_LGPW';
+                          const isConversion = entry.action === 'LGPW_To_FGPW' || entry.action === 'FGPW_To_LGPW';
                           const isCredit = (goldAmount >= 0 && !isDebit) || isConversion;
                           
                           return (

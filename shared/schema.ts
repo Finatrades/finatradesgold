@@ -943,9 +943,9 @@ export const transactions = pgTable("transactions", {
   // Gold price at transaction time (for historical value calculation)
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
   
-  // LGPW/FPGW wallet selection
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FPGW'
-  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW transactions, links to batch
+  // LGPW/FGPW wallet selection
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FGPW'
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FGPW transactions, links to batch
   
   recipientEmail: varchar("recipient_email", { length: 255 }),
   senderEmail: varchar("sender_email", { length: 255 }),
@@ -992,8 +992,8 @@ export const platformBankAccounts = pgTable("platform_bank_accounts", {
   isDefault: boolean("is_default").notNull().default(false),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1052,8 +1052,8 @@ export const depositRequests = pgTable("deposit_requests", {
   proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   status: depositRequestStatusEnum("status").notNull().default('Pending'),
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
   processedAt: timestamp("processed_at"),
@@ -1084,8 +1084,8 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   bankCountry: varchar("bank_country", { length: 100 }),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
   // Gold amount being withdrawn
   goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
@@ -1223,7 +1223,7 @@ export const certificateTypeEnum = pgEnum('certificate_type', [
   'BNSL Lock',            // Finatrades - issued when gold is locked into BNSL plan
   'Trade Lock',           // Finatrades - issued when FinaBridge reserve is created
   'Trade Release',        // Finatrades - issued when FinaBridge trade settles
-  'Conversion',           // Finatrades - issued when gold moves LGPW<->FPGW
+  'Conversion',           // Finatrades - issued when gold moves LGPW<->FGPW
   'Title Transfer'        // Finatrades - issued when user sells/withdraws gold
 ]);
 export const certificateStatusEnum = pgEnum('certificate_status', ['Active', 'Updated', 'Cancelled', 'Transferred']);
@@ -1277,11 +1277,11 @@ export const certificates = pgTable("certificates", {
   // Trade finance (FinaBridge) fields
   tradeCaseId: varchar("trade_case_id", { length: 255 }), // References tradeCases.id for Trade Lock/Release certs
   
-  // LGPW/FPGW Conversion fields
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FPGW' - which wallet this certificate belongs to
+  // LGPW/FGPW Conversion fields
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FGPW' - which wallet this certificate belongs to
   fromGoldWalletType: varchar("from_gold_wallet_type", { length: 10 }), // For conversion certificates
   toGoldWalletType: varchar("to_gold_wallet_type", { length: 10 }), // For conversion certificates
-  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW certificates, links to batch
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FGPW certificates, links to batch
   conversionPriceUsd: decimal("conversion_price_usd", { precision: 12, scale: 2 }), // Price at time of conversion
   
   // Certificate lineage - track remaining grams after partial conversions
@@ -1305,7 +1305,7 @@ export const certificateEventTypeEnum = pgEnum('certificate_event_type', [
   'FULL_SURRENDER',      // Full certificate converted/transferred
   'CANCELLED',           // Certificate cancelled
   'UPDATED',             // Certificate details updated
-  'WALLET_RECLASSIFICATION' // Physical storage backing reclassified between LGPW/FPGW
+  'WALLET_RECLASSIFICATION' // Physical storage backing reclassified between LGPW/FGPW
 ]);
 
 export const certificateEvents = pgTable("certificate_events", {
@@ -1369,8 +1369,8 @@ export const ledgerActionEnum = pgEnum('ledger_action', [
   'Gift_Send',                  // Gold gift sent
   'Gift_Receive',               // Gold gift received
   'Storage_Fee',                // Storage fee deduction
-  'LGPW_To_FPGW',              // Convert from Market Price to Fixed Price wallet
-  'FPGW_To_LGPW'               // Convert from Fixed Price to Market Price wallet
+  'LGPW_To_FGPW',              // Convert from Market Price to Fixed Price wallet
+  'FGPW_To_LGPW'               // Convert from Fixed Price to Market Price wallet
 ]);
 
 // Wallet types for tracking source/destination
@@ -1382,15 +1382,15 @@ export const walletTypeEnum = pgEnum('wallet_type', [
 ]);
 
 // ============================================
-// LGPW/FPGW DUAL-WALLET SYSTEM
+// LGPW/FGPW DUAL-WALLET SYSTEM
 // ============================================
 
 /**
  * Gold Wallet Valuation Types:
  * - LGPW (Live Gold Price Wallet): Gold value follows live market price
- * - FPGW (Fixed Price Gold Wallet): Gold value locked at transaction time
+ * - FGPW (Fixed Gold Price Wallet): Gold value locked at transaction time
  */
-export const goldWalletTypeEnum = pgEnum('gold_wallet_type', ['LGPW', 'FPGW']);
+export const goldWalletTypeEnum = pgEnum('gold_wallet_type', ['LGPW', 'FGPW']);
 
 // Balance bucket types for tracking gold status
 export const balanceBucketEnum = pgEnum('balance_bucket', [
@@ -1417,10 +1417,10 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   fromStatus: ownershipStatusEnum("from_status"),
   toStatus: ownershipStatusEnum("to_status"),
   
-  // LGPW/FPGW tracking
+  // LGPW/FGPW tracking
   goldWalletType: goldWalletTypeEnum("gold_wallet_type"), // Which valuation wallet this affects
-  fromGoldWalletType: goldWalletTypeEnum("from_gold_wallet_type"), // For LGPW<->FPGW transfers
-  toGoldWalletType: goldWalletTypeEnum("to_gold_wallet_type"), // For LGPW<->FPGW transfers
+  fromGoldWalletType: goldWalletTypeEnum("from_gold_wallet_type"), // For LGPW<->FGPW transfers
+  toGoldWalletType: goldWalletTypeEnum("to_gold_wallet_type"), // For LGPW<->FGPW transfers
   
   // Running balance after this entry
   balanceAfterGrams: decimal("balance_after_grams", { precision: 18, scale: 6 }).notNull(),
@@ -1431,7 +1431,7 @@ export const vaultLedgerEntries = pgTable("vault_ledger_entries", {
   bnslPayoutId: varchar("bnsl_payout_id", { length: 255 }),
   tradeRequestId: varchar("trade_request_id", { length: 255 }),
   certificateId: varchar("certificate_id", { length: 255 }),
-  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FPGW batch tracking
+  fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FGPW batch tracking
   
   // For transfers between users
   counterpartyUserId: varchar("counterparty_user_id", { length: 255 }).references(() => users.id),
@@ -1470,14 +1470,14 @@ export const vaultOwnershipSummary = pgTable("vault_ownership_summary", {
   mpgwReservedTradeGrams: decimal("mpgw_reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   
   // ============================================
-  // FPGW (Fixed Price Gold Wallet) Breakdown
+  // FGPW (Fixed Gold Price Wallet) Breakdown
   // Gold value locked at transaction time
   // ============================================
   fpgwAvailableGrams: decimal("fpgw_available_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   fpgwPendingGrams: decimal("fpgw_pending_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   fpgwLockedBnslGrams: decimal("fpgw_locked_bnsl_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   fpgwReservedTradeGrams: decimal("fpgw_reserved_trade_grams", { precision: 18, scale: 6 }).notNull().default('0'),
-  // FPGW weighted average price (computed from active batches)
+  // FGPW weighted average price (computed from active batches)
   fpgwWeightedAvgPriceUsd: decimal("fpgw_weighted_avg_price_usd", { precision: 12, scale: 2 }),
   
   // Breakdown by wallet (FinaPay/BNSL/FinaBridge)
@@ -1500,12 +1500,12 @@ export type InsertVaultOwnershipSummary = z.infer<typeof insertVaultOwnershipSum
 export type VaultOwnershipSummary = typeof vaultOwnershipSummary.$inferSelect;
 
 // ============================================
-// FPGW BATCHES - Fixed Price Gold Batches
+// FGPW BATCHES - Fixed Price Gold Batches
 // ============================================
 
 /**
- * FPGW Batches track gold purchased at specific prices.
- * When spending FPGW gold, FIFO (First-In-First-Out) is used.
+ * FGPW Batches track gold purchased at specific prices.
+ * When spending FGPW gold, FIFO (First-In-First-Out) is used.
  * Each batch represents gold added at a specific price point.
  */
 export const fpgwBatchStatusEnum = pgEnum('fpgw_batch_status', [
@@ -1535,8 +1535,8 @@ export const fpgwBatches = pgTable("fpgw_batches", {
   // Audit
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1571,8 +1571,8 @@ export const allocations = pgTable("allocations", {
   // Audit
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdBy: varchar("created_by", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1760,8 +1760,8 @@ export const vaultWithdrawalRequests = pgTable("vault_withdrawal_requests", {
   
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   status: vaultWithdrawalStatusEnum("status").notNull().default('Submitted'),
   
   // Admin processing
@@ -1872,8 +1872,8 @@ export const bnslPlans = pgTable("bnsl_plans", {
   maturityDate: timestamp("maturity_date").notNull(),
   status: bnslPlanStatusEnum("status").notNull().default('Pending Activation'),
 
-  // LGPW/FPGW wallet selection - which wallet gold is locked from
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is locked from
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   
   paidMarginUsd: decimal("paid_margin_usd", { precision: 18, scale: 2 }).notNull().default('0'),
   paidMarginGrams: decimal("paid_margin_grams", { precision: 18, scale: 6 }).notNull().default('0'),
@@ -2042,8 +2042,8 @@ export const tradeCases = pgTable("trade_cases", {
   
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -2134,8 +2134,8 @@ export const tradeProposals = pgTable("trade_proposals", {
   timelineDays: integer("timeline_days").notNull(),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   attachmentUrl: text("attachment_url"),
   
   portOfLoading: varchar("port_of_loading", { length: 255 }),
@@ -2901,7 +2901,7 @@ export const ngeniusTransactions = pgTable("ngenius_transactions", {
   webhookPayload: json("webhook_payload"),
   
   // Dual-wallet support
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('LGPW'), // LGPW or FPGW
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('LGPW'), // LGPW or FGPW
   
   // Metadata
   description: text("description"),
@@ -3305,8 +3305,8 @@ export const referrals = pgTable("referrals", {
   rewardPaidAt: timestamp("reward_paid_at"),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
 });
@@ -3671,8 +3671,8 @@ export const goldBars = pgTable("gold_bars", {
   assayCertificateUrl: text("assay_certificate_url"),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -3704,8 +3704,8 @@ export const storageFees = pgTable("storage_fees", {
   transactionId: varchar("transaction_id", { length: 255 }),
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -4055,8 +4055,8 @@ export const tradeShipments = pgTable("trade_shipments", {
   
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -4251,8 +4251,8 @@ export const sarReports = pgTable("sar_reports", {
   
   notes: text("notes"),
 
-  // LGPW/FPGW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FPGW'
+  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
   attachments: json("attachments").$type<string[]>(),
   
   createdBy: varchar("created_by", { length: 255 }).notNull().references(() => users.id),
@@ -4695,8 +4695,8 @@ export type VaultReconciliationRun = typeof vaultReconciliationRuns.$inferSelect
 
 export const workflowFlowTypeEnum = pgEnum('workflow_flow_type', [
   'ADD_FUNDS',
-  'INTERNAL_TRANSFER_LGPW_TO_FPGW',
-  'INTERNAL_TRANSFER_FPGW_TO_LGPW',
+  'INTERNAL_TRANSFER_LGPW_TO_FGPW',
+  'INTERNAL_TRANSFER_FGPW_TO_LGPW',
   'TRANSFER_USER_TO_USER',
   'WITHDRAWAL',
   'BNSL_ACTIVATION',
@@ -4906,7 +4906,7 @@ export type B2bWebhookLog = typeof b2bWebhookLogs.$inferSelect;
 
 
 // ============================================
-// ADMIN VAULT MANAGEMENT - LGPW/FPGW SYSTEM
+// ADMIN VAULT MANAGEMENT - LGPW/FGPW SYSTEM
 // ============================================
 
 // Wallet Conversion Status
@@ -4920,11 +4920,11 @@ export const walletConversionStatusEnum = pgEnum('wallet_conversion_status', [
 
 // Wallet Conversion Direction
 export const walletConversionDirectionEnum = pgEnum('wallet_conversion_direction', [
-  'LGPW_TO_FPGW',     // Market Price to Fixed Price (locks value, backend sells gold exposure)
-  'FPGW_TO_LGPW'      // Fixed Price to Market Price (unlocks, backend buys gold exposure)
+  'LGPW_TO_FGPW',     // Market Price to Fixed Price (locks value, backend sells gold exposure)
+  'FGPW_TO_LGPW'      // Fixed Price to Market Price (unlocks, backend buys gold exposure)
 ]);
 
-// WALLET CONVERSIONS - Track all LGPW↔FPGW conversion requests
+// WALLET CONVERSIONS - Track all LGPW↔FGPW conversion requests
 export const walletConversions = pgTable("wallet_conversions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
@@ -4972,15 +4972,15 @@ export type WalletConversion = typeof walletConversions.$inferSelect;
 
 // Cash Safety Ledger Entry Type
 export const cashLedgerEntryTypeEnum = pgEnum('cash_ledger_entry_type', [
-  'FPGW_LOCK',           // Cash credited when user locks LGPW→FPGW
-  'FPGW_UNLOCK',         // Cash debited when user unlocks FPGW→LGPW
+  'FGPW_LOCK',           // Cash credited when user locks LGPW→FGPW
+  'FGPW_UNLOCK',         // Cash debited when user unlocks FGPW→LGPW
   'BANK_DEPOSIT',        // Manual deposit from bank
   'BANK_WITHDRAWAL',     // Manual withdrawal to bank
   'ADJUSTMENT',          // Admin adjustment
   'FEE_REVENUE'          // Fee collected from conversions
 ]);
 
-// CASH SAFETY LEDGER - Track cash backing for FPGW positions
+// CASH SAFETY LEDGER - Track cash backing for FGPW positions
 export const cashSafetyLedger = pgTable("cash_safety_ledger", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   
@@ -5021,7 +5021,7 @@ export const reconciliationAlertSeverityEnum = pgEnum('reconciliation_alert_seve
 // Reconciliation Alert Type
 export const reconciliationAlertTypeEnum = pgEnum('reconciliation_alert_type', [
   'LGPW_EXCEEDS_PHYSICAL',       // Total LGPW > physical inventory
-  'FPGW_EXCEEDS_CASH',           // Total FPGW value > cash safety balance
+  'FGPW_EXCEEDS_CASH',           // Total FGPW value > cash safety balance
   'INVENTORY_MISMATCH',          // Wingold inventory doesn't match our records
   'LARGE_CONVERSION',            // Conversion > threshold (e.g., 100g)
   'CASH_LOW',                    // Cash safety account running low
@@ -5071,7 +5071,7 @@ export const platformExposureSnapshots = pgTable("platform_exposure_snapshots", 
   totalMpgwGrams: decimal("total_mpgw_grams", { precision: 18, scale: 6 }).notNull(),
   totalMpgwValueUsd: decimal("total_mpgw_value_usd", { precision: 18, scale: 2 }).notNull(),
   
-  // FPGW exposure (cash liability)
+  // FGPW exposure (cash liability)
   totalFpgwGrams: decimal("total_fpgw_grams", { precision: 18, scale: 6 }).notNull(),
   totalFpgwLockedValueUsd: decimal("total_fpgw_locked_value_usd", { precision: 18, scale: 2 }).notNull(),
   
@@ -5088,7 +5088,7 @@ export const platformExposureSnapshots = pgTable("platform_exposure_snapshots", 
   
   // Coverage ratios
   mpgwCoverageRatio: decimal("mpgw_coverage_ratio", { precision: 8, scale: 4 }).notNull(), // physical / LGPW
-  fpgwCoverageRatio: decimal("fpgw_coverage_ratio", { precision: 8, scale: 4 }).notNull(), // cash / FPGW value
+  fpgwCoverageRatio: decimal("fpgw_coverage_ratio", { precision: 8, scale: 4 }).notNull(), // cash / FGPW value
   
   // User counts
   totalUsersWithMpgw: integer("total_users_with_mpgw").notNull().default(0),
@@ -5122,7 +5122,7 @@ export const unifiedTallySourceMethodEnum = pgEnum('unified_tally_source_method'
 // Pricing mode for gold rate
 export const unifiedTallyPricingModeEnum = pgEnum('unified_tally_pricing_mode', [
   'MARKET',   // Market price at time of approval
-  'FIXED'     // Fixed price (FPGW)
+  'FIXED'     // Fixed price (FGPW)
 ]);
 
 // Status enum for unified tally lifecycle

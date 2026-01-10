@@ -99,7 +99,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [inputMode, setInputMode] = useState<'gold' | 'usd'>('gold');
   const [goldAmount, setGoldAmount] = useState('');
   
-  // LGPW/FPGW wallet type selection
+  // LGPW/FGPW wallet type selection
   const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
   // Terms and conditions
@@ -1483,7 +1483,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               
               {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-              {/* Deposits always go to LGPW - user can transfer to FPGW later */}
+              {/* Deposits always go to LGPW - user can transfer to FGPW later */}
               <div className="flex gap-2 mb-4">
                 <Button
                   type="button"
@@ -1639,7 +1639,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'crypto-amount' ? (
           <div className="space-y-4 py-4">
             {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-            {/* Deposits always go to LGPW - user can transfer to FPGW later */}
+            {/* Deposits always go to LGPW - user can transfer to FGPW later */}
 
             <div className="flex gap-2 mb-2">
               <Button

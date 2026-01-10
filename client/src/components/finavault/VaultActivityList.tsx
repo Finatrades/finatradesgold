@@ -24,16 +24,16 @@ interface VaultTransaction {
   createdAt: string;
   completedAt: string | null;
   rejectionReason?: string | null;
-  goldWalletType?: 'LGPW' | 'FPGW' | null;
+  goldWalletType?: 'LGPW' | 'FGPW' | null;
   certificates: {
     id: string;
     certificateNumber: string;
     type: string;
     status: string;
     goldGrams: string;
-    goldWalletType?: 'LGPW' | 'FPGW' | null;
-    fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
-    toGoldWalletType?: 'LGPW' | 'FPGW' | null;
+    goldWalletType?: 'LGPW' | 'FGPW' | null;
+    fromGoldWalletType?: 'LGPW' | 'FGPW' | null;
+    toGoldWalletType?: 'LGPW' | 'FGPW' | null;
     issuer?: string;
   }[];
 }
@@ -76,9 +76,9 @@ export default function VaultActivityList() {
     type: string;
     status: string;
     goldGrams: string;
-    goldWalletType?: 'LGPW' | 'FPGW' | null;
-    fromGoldWalletType?: 'LGPW' | 'FPGW' | null;
-    toGoldWalletType?: 'LGPW' | 'FPGW' | null;
+    goldWalletType?: 'LGPW' | 'FGPW' | null;
+    fromGoldWalletType?: 'LGPW' | 'FGPW' | null;
+    toGoldWalletType?: 'LGPW' | 'FGPW' | null;
   }[] | null>(null);
   const [certTab, setCertTab] = useState('ownership');
 
@@ -597,7 +597,7 @@ export default function VaultActivityList() {
                 <SelectItem value="Receive">Receive</SelectItem>
                 <SelectItem value="Deposit">Deposit</SelectItem>
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
-                <SelectItem value="Swap">Swap (LGPW↔FPGW)</SelectItem>
+                <SelectItem value="Swap">Swap (LGPW↔FGPW)</SelectItem>
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
                 <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
@@ -636,8 +636,8 @@ export default function VaultActivityList() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium">{
-                        // Swap Gold for LGPW<->FPGW conversions
-                        tx.type === 'Swap' || tx.description?.includes('LGPW to FPGW') || tx.description?.includes('FPGW to LGPW')
+                        // Swap Gold for LGPW<->FGPW conversions
+                        tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW')
                           ? 'Swap Gold'
                           // Deposit Physical Gold for actual physical vault deposits
                           : tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
@@ -652,19 +652,19 @@ export default function VaultActivityList() {
                       }</span>
                       {/* Show wallet type badges - for Swap show direction based on description */}
                       {tx.type === 'Swap' ? (
-                        tx.description?.includes('LGPW to FPGW') ? (
+                        tx.description?.includes('LGPW to FGPW') ? (
                           <Badge 
                             variant="outline" 
                             className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300"
                           >
-                            LGPW → FPGW
+                            LGPW → FGPW
                           </Badge>
-                        ) : tx.description?.includes('FPGW to LGPW') ? (
+                        ) : tx.description?.includes('FGPW to LGPW') ? (
                           <Badge 
                             variant="outline" 
                             className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300"
                           >
-                            FPGW → LGPW
+                            FGPW → LGPW
                           </Badge>
                         ) : (
                           <Badge 
@@ -852,17 +852,17 @@ export default function VaultActivityList() {
                             </Badge>
                             {cert.type === 'Conversion' && cert.fromGoldWalletType && cert.toGoldWalletType ? (
                               <div className="flex items-center gap-1">
-                                <Badge variant="outline" className={`text-xs ${cert.fromGoldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
-                                  {cert.fromGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                                <Badge variant="outline" className={`text-xs ${cert.fromGoldWalletType === 'FGPW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                  {cert.fromGoldWalletType === 'FGPW' ? '🔒' : '📈'}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">→</span>
-                                <Badge variant="outline" className={`text-xs ${cert.toGoldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
-                                  {cert.toGoldWalletType === 'FPGW' ? '🔒' : '📈'}
+                                <Badge variant="outline" className={`text-xs ${cert.toGoldWalletType === 'FGPW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                  {cert.toGoldWalletType === 'FGPW' ? '🔒' : '📈'}
                                 </Badge>
                               </div>
                             ) : cert.goldWalletType && (
-                              <Badge variant="outline" className={`text-xs ${cert.goldWalletType === 'FPGW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
-                                {cert.goldWalletType === 'FPGW' ? '🔒 Fixed' : '📈 Market'}
+                              <Badge variant="outline" className={`text-xs ${cert.goldWalletType === 'FGPW' ? 'border-blue-400 text-blue-600 bg-blue-50' : 'border-amber-400 text-amber-600 bg-amber-50'}`}>
+                                {cert.goldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                               </Badge>
                             )}
                           </div>

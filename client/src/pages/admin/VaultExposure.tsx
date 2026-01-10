@@ -80,7 +80,7 @@ interface ExposureData {
 interface ConversionRequest {
   id: string;
   userId: string;
-  direction: 'LGPW_TO_FPGW' | 'FPGW_TO_LGPW' | 'mpgw_to_fpgw' | 'fpgw_to_mpgw';
+  direction: 'LGPW_TO_FGPW' | 'FGPW_TO_LGPW' | 'mpgw_to_fpgw' | 'fpgw_to_mpgw';
   goldGrams: string;
   spotPriceUsdPerGram?: string;
   status: 'pending' | 'completed' | 'rejected';
@@ -195,11 +195,11 @@ export default function VaultExposure() {
   };
 
   const isMpgwToFpgw = (direction: string) => {
-    return direction.toUpperCase() === 'LGPW_TO_FPGW';
+    return direction.toUpperCase() === 'LGPW_TO_FGPW';
   };
 
   const formatDirection = (direction: string) => {
-    return isMpgwToFpgw(direction) ? 'LGPW → FPGW' : 'FPGW → LGPW';
+    return isMpgwToFpgw(direction) ? 'LGPW → FGPW' : 'FGPW → LGPW';
   };
 
   const mpgwTotal = parseFloat(exposure?.mpgw?.totalGrams || '0');
@@ -227,7 +227,7 @@ export default function VaultExposure() {
               Platform Exposure Dashboard
             </h1>
             <p className="text-gray-500 mt-1">
-              LGPW (Physical Gold) vs FPGW (Cash-Backed) wallet exposure management
+              LGPW (Physical Gold) vs FGPW (Cash-Backed) wallet exposure management
             </p>
           </div>
           <Button 
@@ -294,7 +294,7 @@ export default function VaultExposure() {
                       )}
                       <div>
                         <h2 className="text-xl font-bold" data-testid="text-fpgw-coverage-status">
-                          {isFpgwFullyBacked ? 'FPGW Fully Backed' : 'FPGW Under-Backed'}
+                          {isFpgwFullyBacked ? 'FGPW Fully Backed' : 'FGPW Under-Backed'}
                         </h2>
                         <p className="text-gray-600 text-sm" data-testid="text-fpgw-coverage-ratio">
                           {fpgwCoverage.toFixed(2)}% cash safety coverage
@@ -303,7 +303,7 @@ export default function VaultExposure() {
                     </div>
                     <div className="text-right text-xs text-gray-500">
                       <p>Cash: {formatUsd(cashBalance)}</p>
-                      <p>FPGW Locked: {formatUsd(fpgwLockedValueUsd)}</p>
+                      <p>FGPW Locked: {formatUsd(fpgwLockedValueUsd)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -328,7 +328,7 @@ export default function VaultExposure() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">FPGW Total</CardTitle>
+                  <CardTitle className="text-sm font-medium">FGPW Total</CardTitle>
                   <Wallet className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
@@ -371,7 +371,7 @@ export default function VaultExposure() {
                     {formatUsd(cashBalance)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Backing FPGW positions
+                    Backing FGPW positions
                   </p>
                 </CardContent>
               </Card>
@@ -427,7 +427,7 @@ export default function VaultExposure() {
               <CardHeader>
                 <CardTitle>Pending Conversion Requests</CardTitle>
                 <CardDescription>
-                  Review and approve/reject LGPW ↔ FPGW conversion requests
+                  Review and approve/reject LGPW ↔ FGPW conversion requests
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -524,7 +524,7 @@ export default function VaultExposure() {
             <Card>
               <CardHeader>
                 <CardTitle>Conversion History</CardTitle>
-                <CardDescription>All processed LGPW ↔ FPGW conversions</CardDescription>
+                <CardDescription>All processed LGPW ↔ FGPW conversions</CardDescription>
               </CardHeader>
               <CardContent>
                 {!allConversions?.conversions?.length ? (
@@ -595,7 +595,7 @@ export default function VaultExposure() {
               <CardHeader>
                 <CardTitle>Cash Safety Account Ledger</CardTitle>
                 <CardDescription>
-                  Track of cash in/out for FPGW positions
+                  Track of cash in/out for FGPW positions
                 </CardDescription>
               </CardHeader>
               <CardContent>

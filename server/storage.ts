@@ -4020,7 +4020,7 @@ export class DatabaseStorage implements IStorage {
     // Get all vault holdings
     const holdings = await db.select().from(vaultHoldings);
 
-    // Get LGPW/FPGW breakdown from vault_ownership_summary
+    // Get LGPW/FGPW breakdown from vault_ownership_summary
     const ownershipResults = await db.select({
       mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}), 0)`,
       mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}), 0)`,
@@ -4044,14 +4044,14 @@ export class DatabaseStorage implements IStorage {
     const fpgwReservedTrade = parseFloat(ownershipResults[0]?.fpgwReservedTrade || '0');
     const fpgwTotal = fpgwAvailable + fpgwPending + fpgwLockedBnsl + fpgwReservedTrade;
 
-    // Count users with LGPW vs FPGW - use raw SQL for reliability
+    // Count users with LGPW vs FGPW - use raw SQL for reliability
     const mpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE mpgw_available_grams > 0 OR mpgw_pending_grams > 0`);
     const mpgwCount = parseInt((mpgwCountResult.rows[0] as any)?.count || '0');
 
     const fpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE fpgw_available_grams > 0 OR fpgw_pending_grams > 0`);
     const fpgwCount = parseInt((fpgwCountResult.rows[0] as any)?.count || '0');
 
-    // Get FPGW weighted average price from batches - use raw SQL for reliability
+    // Get FGPW weighted average price from batches - use raw SQL for reliability
     const fpgwBatchResult = await db.execute(sql`SELECT COALESCE(SUM(remaining_gold_grams), 0) as total_grams, COALESCE(SUM(remaining_gold_grams * purchase_price_usd_per_gram), 0) as total_value FROM fpgw_batches WHERE remaining_gold_grams > 0`);
 
     const fpgwBatchGrams = parseFloat((fpgwBatchResult.rows[0] as any)?.total_grams || '0');

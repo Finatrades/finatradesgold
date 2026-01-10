@@ -596,7 +596,7 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
-  // Register dual wallet routes (LGPW/FPGW)
+  // Register dual wallet routes (LGPW/FGPW)
   registerDualWalletRoutes(app);
   // Register SSO routes for Wingold integration
   registerSsoRoutes(app);
@@ -781,7 +781,7 @@ export async function registerRoutes(
 
       const goldPrice = priceData.pricePerGram || 85;
       const goldPriceSource = priceData.source || 'fallback';
-      // Extract vault ownership summary with LGPW/FPGW breakdown
+      // Extract vault ownership summary with LGPW/FGPW breakdown
       const vaultSummary = Array.isArray(vaultSummaryResult) && vaultSummaryResult.length > 0 ? vaultSummaryResult[0] : null;
       
       // Convert deposit requests to transaction format (exclude approved ones - they already have a transaction record)
@@ -930,7 +930,7 @@ export async function registerRoutes(
           activeBnslPlans: activeBnslPlans.length,
           pendingGoldGrams,
           pendingDepositUsd,
-          // LGPW/FPGW breakdown from vault ownership summary
+          // LGPW/FGPW breakdown from vault ownership summary
           mpgwAvailableGrams: parseFloat(vaultSummary?.mpgwAvailableGrams || '0'),
           mpgwPendingGrams: parseFloat(vaultSummary?.mpgwPendingGrams || '0'),
           mpgwLockedBnslGrams: parseFloat(vaultSummary?.mpgwLockedBnslGrams || '0'),
@@ -3489,7 +3489,7 @@ ${message}
     }
   });
 
-  // Enhanced Gold Backing Report with LGPW/FPGW segmentation (Admin)
+  // Enhanced Gold Backing Report with LGPW/FGPW segmentation (Admin)
   app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, async (req, res) => {
     try {
       const report = await storage.getGoldBackingReportEnhanced();
@@ -15845,10 +15845,10 @@ ${message}
       
       
       // P2P RULE: Direct SEND must use LGPW only
-      // Payment Requests can specify LGPW or FPGW, but direct sends are LGPW-only
+      // Payment Requests can specify LGPW or FGPW, but direct sends are LGPW-only
       if (goldWalletType && goldWalletType !== 'LGPW') {
         return res.status(400).json({ 
-          message: "Direct P2P sends must use Live Gold Price Wallet (LGPW). To transfer from FPGW, create a payment request instead."
+          message: "Direct P2P sends must use Live Gold Price Wallet (LGPW). To transfer from FGPW, create a payment request instead."
         });
       }
       // Validate gold amount is provided (platform is gold-only)
@@ -18079,7 +18079,7 @@ ${message}
       }
       
       // Validate wallet type
-      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
+      const walletType = goldWalletType === 'FGPW' ? 'FGPW' : 'LGPW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -18237,7 +18237,7 @@ ${message}
                 });
 
                 // Get wallet type from stored transaction
-                const storedWalletType = transaction.goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
+                const storedWalletType = transaction.goldWalletType === 'FGPW' ? 'FGPW' : 'LGPW';
                 
                 // Create transaction record (type='Buy' like crypto)
                 const walletTx = await storage.createTransaction({
@@ -18266,7 +18266,7 @@ ${message}
                   goldGrams: goldGrams,
                   goldPriceUsdPerGram: goldPricePerGram,
                   fromWallet: 'External',
-                  toWallet: storedWalletType === 'FPGW' ? 'FPGW' : 'LGPW',
+                  toWallet: storedWalletType === 'FGPW' ? 'FGPW' : 'LGPW',
                   toStatus: 'Available',
                   transactionId: walletTx.id,
                   notes: `Card payment (${storedWalletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
@@ -18300,7 +18300,7 @@ ${message}
                     fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
                   });
                   
-                  // Create FPGW batch for fixed-price tracking
+                  // Create FGPW batch for fixed-price tracking
                   const { fpgwBatchService } = await import('./fpgw-batch-service');
                   await fpgwBatchService.createBatch({
                     userId: transaction.userId,
@@ -18806,7 +18806,7 @@ ${message}
       }
       
       // Validate wallet type
-      const walletType = goldWalletType === 'FPGW' ? 'FPGW' : 'LGPW';
+      const walletType = goldWalletType === 'FGPW' ? 'FGPW' : 'LGPW';
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -18929,7 +18929,7 @@ ${message}
             goldGrams: goldGrams,
             goldPriceUsdPerGram: goldPricePerGram,
             fromWallet: 'External',
-            toWallet: walletType === 'FPGW' ? 'FPGW' : 'LGPW',
+            toWallet: walletType === 'FGPW' ? 'FGPW' : 'LGPW',
             toStatus: 'Available',
             transactionId: walletTx.id,
             notes: `Card payment (${walletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
@@ -18963,7 +18963,7 @@ ${message}
               fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
             });
             
-            // Create FPGW batch for fixed-price tracking
+            // Create FGPW batch for fixed-price tracking
             const { fpgwBatchService } = await import('./fpgw-batch-service');
             await fpgwBatchService.createBatch({
               userId,
@@ -19431,7 +19431,7 @@ ${message}
       const goldPriceData = await getGoldPrice();
       const GOLD_PRICE_USD = goldPriceData.pricePerGram;
 
-      // Get LGPW/FPGW breakdown from Gold Backing Report for accurate dual-wallet data
+      // Get LGPW/FGPW breakdown from Gold Backing Report for accurate dual-wallet data
       const goldBackingReport = await storage.getGoldBackingReportEnhanced();
 
       // Get platform config for accurate fee calculations
@@ -19447,7 +19447,7 @@ ${message}
       const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
       const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
 
-      // LGPW/FPGW gold holdings from vault ownership summary (authoritative source)
+      // LGPW/FGPW gold holdings from vault ownership summary (authoritative source)
       const mpgwTotalGrams = goldBackingReport.customerLiabilities.mpgw.totalGrams;
       const fpgwTotalGrams = goldBackingReport.customerLiabilities.fpgw.totalGrams;
       const totalGoldGrams = mpgwTotalGrams + fpgwTotalGrams;
@@ -19501,7 +19501,7 @@ ${message}
 
       // Calculate USD values dynamically from gold grams
       const mpgwValueUsd = mpgwTotalGrams * GOLD_PRICE_USD;
-      // FPGW uses weighted average price from batches, not live price
+      // FGPW uses weighted average price from batches, not live price
       const fpgwValueUsd = fpgwTotalGrams * (goldBackingReport.customerLiabilities.fpgw.weightedAvgPriceUsd || GOLD_PRICE_USD);
       const totalGoldValueUsd = mpgwValueUsd + fpgwValueUsd;
       const physicalGoldValueUsd = physicalGoldGrams * GOLD_PRICE_USD;
@@ -19520,7 +19520,7 @@ ${message}
         physicalGoldGrams,
         goldPriceUsd: GOLD_PRICE_USD,
         
-        // LGPW/FPGW breakdown (gold grams are primary, USD is derived)
+        // LGPW/FGPW breakdown (gold grams are primary, USD is derived)
         mpgw: {
           totalGrams: mpgwTotalGrams,
           availableGrams: goldBackingReport.customerLiabilities.mpgw.available,
@@ -23763,7 +23763,7 @@ ${message}
         .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
       
       if (existingSummary) {
-        if (walletType === 'FPGW') {
+        if (walletType === 'FGPW') {
           const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
           await db.update(vaultOwnershipSummary)
             .set({ fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6), lastUpdated: new Date() })
@@ -23778,7 +23778,7 @@ ${message}
         await db.insert(vaultOwnershipSummary).values({
           userId: paymentRequest.userId,
           mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
-          fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
+          fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
         });
       }
       
@@ -24001,7 +24001,7 @@ ${message}
         createdBy: adminUser?.id || 'system',
       });
       
-      // Update dual-wallet vaultOwnershipSummary for LGPW/FPGW balance tracking
+      // Update dual-wallet vaultOwnershipSummary for LGPW/FGPW balance tracking
       const walletType = (paymentRequest as any).goldWalletType || 'LGPW';
 
       // Fetch platform fee configuration
@@ -24016,7 +24016,7 @@ ${message}
         .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
       
       if (existingSummary) {
-        if (walletType === 'FPGW') {
+        if (walletType === 'FGPW') {
           const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
           await db.update(vaultOwnershipSummary)
             .set({ 
@@ -24037,7 +24037,7 @@ ${message}
         await db.insert(vaultOwnershipSummary).values({
           userId: paymentRequest.userId,
           mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
-          fpgwAvailableGrams: walletType === 'FPGW' ? goldGrams.toFixed(6) : '0',
+          fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
         });
       }
       

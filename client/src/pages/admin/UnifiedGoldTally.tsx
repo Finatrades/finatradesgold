@@ -64,7 +64,7 @@ type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
 interface UnifiedTallyTransaction {
   id: string;
   userId: string;
-  walletType: 'LGPW' | 'FPGW';
+  walletType: 'LGPW' | 'FGPW';
   depositMethod: DepositMethod;
   status: TallyStatus;
   depositAmount: string;
@@ -1276,7 +1276,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       <Separator />
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">FPGW Balance</span>
+                          <span className="text-gray-500">FGPW Balance</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{formatGold(projection.current?.finapay?.fpgw?.balanceG)}</span>
                             <ArrowRight className="w-3 h-3 text-gray-400" />

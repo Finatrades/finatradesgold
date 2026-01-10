@@ -216,7 +216,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          {/* FPGW Card */}
+          {/* FGPW Card */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-6">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             <div className="relative z-10">
@@ -226,8 +226,8 @@ export default function Dashboard() {
                     <Database className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">FPGW</h3>
-                    <p className="text-xs text-amber-100">Fixed Price Gold Wallet</p>
+                    <h3 className="font-bold text-white">FGPW</h3>
+                    <p className="text-xs text-amber-100">Fixed Gold Price Wallet</p>
                   </div>
                 </div>
                 <Badge className="bg-white/20 text-white border-0">Fixed Price</Badge>

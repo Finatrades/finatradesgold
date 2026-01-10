@@ -12,7 +12,7 @@ import { vaultOwnershipSummary } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { validateSpendableFpgw, getFpgwBalanceSummary } from "./fpgw-batch-service";
 
-export type GoldWalletType = 'LGPW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FGPW';
 
 export interface SpendValidationResult {
   valid: boolean;
@@ -45,7 +45,7 @@ export interface BalanceSummary {
 }
 
 /**
- * Get the complete balance summary for a user (LGPW + FPGW)
+ * Get the complete balance summary for a user (LGPW + FGPW)
  */
 export async function getBalanceSummary(userId: string): Promise<BalanceSummary> {
   // Get ownership summary from database
@@ -54,7 +54,7 @@ export async function getBalanceSummary(userId: string): Promise<BalanceSummary>
     .from(vaultOwnershipSummary)
     .where(eq(vaultOwnershipSummary.userId, userId));
 
-  // Get FPGW details from batches
+  // Get FGPW details from batches
   const fpgwDetails = await getFpgwBalanceSummary(userId);
 
   const mpgw = {
@@ -103,7 +103,7 @@ export async function validateSpend(
     };
   }
 
-  if (walletType === 'FPGW') {
+  if (walletType === 'FGPW') {
     const result = await validateSpendableFpgw(userId, goldGrams);
     return {
       valid: result.valid,
@@ -136,7 +136,7 @@ export async function validateSpend(
 }
 
 /**
- * Check if user can perform an internal transfer between LGPW and FPGW
+ * Check if user can perform an internal transfer between LGPW and FGPW
  */
 export async function validateInternalTransfer(
   userId: string,

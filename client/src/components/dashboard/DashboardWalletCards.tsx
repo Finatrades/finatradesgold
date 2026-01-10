@@ -69,7 +69,7 @@ export default function DashboardWalletCards({
             <p className="text-xs text-muted-foreground">≈ ${finaPayWallet.usdValue.toFixed(2)} <span className="text-[10px]">(Reference)</span></p>
           </div>
           
-          {/* LGPW/FPGW Dual Wallet Breakdown */}
+          {/* LGPW/FGPW Dual Wallet Breakdown */}
           {(finaPayWallet.mpgwGrams || finaPayWallet.fpgwGrams) ? (
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 bg-gradient-to-r from-purple-50 to-fuchsia-50 p-2 rounded-lg">
             <div>
@@ -78,7 +78,7 @@ export default function DashboardWalletCards({
               <p className="text-xs text-gray-500">Live price</p>
             </div>
             <div>
-              <p className="text-xs text-amber-500 font-medium">FPGW (Fixed)</p>
+              <p className="text-xs text-amber-500 font-medium">FGPW (Fixed)</p>
               <p className="text-sm font-bold text-gray-900">{(finaPayWallet.fpgwGrams || 0).toFixed(4)}g</p>
               <p className="text-xs text-gray-500">Locked price</p>
             </div>

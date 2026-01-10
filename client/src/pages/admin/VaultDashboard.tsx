@@ -197,7 +197,7 @@ export default function VaultDashboard() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
                     <Package className="h-4 w-4 text-amber-600" />
-                    FPGW (Fixed Price)
+                    FGPW (Fixed Price)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

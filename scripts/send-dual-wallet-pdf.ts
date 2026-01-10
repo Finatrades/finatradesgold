@@ -22,8 +22,8 @@ async function sendDualWalletPDF() {
       <p>This guide covers:</p>
       <ul>
         <li>LGPW (Live Gold Price Wallet) - Value fluctuates with market</li>
-        <li>FPGW (Fixed Price Gold Wallet) - Value locked at purchase price</li>
-        <li>FIFO batch consumption for FPGW</li>
+        <li>FGPW (Fixed Gold Price Wallet) - Value locked at purchase price</li>
+        <li>FIFO batch consumption for FGPW</li>
         <li>Balance buckets (Available, Pending, Locked_BNSL, Reserved_Trade)</li>
         <li>P2P transfer flows with Accept/Reject</li>
         <li>Database structure and storage</li>

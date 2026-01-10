@@ -1,11 +1,11 @@
 /**
- * FPGW Batch Service
+ * FGPW Batch Service
  * 
- * Manages Fixed Price Gold Wallet batches with FIFO (First-In-First-Out) consumption.
+ * Manages Fixed Gold Price Wallet batches with FIFO (First-In-First-Out) consumption.
  * Each batch represents gold acquired at a specific locked price.
  * 
  * Key Operations:
- * - createBatch: Create a new FPGW batch when gold enters FPGW
+ * - createBatch: Create a new FGPW batch when gold enters FGPW
  * - consumeBatches: Consume gold from batches using FIFO order
  * - transferBatches: Transfer batch ownership between users
  * - getWeightedAveragePrice: Calculate weighted average price across active batches
@@ -22,7 +22,7 @@ import {
 } from "@shared/schema";
 import { eq, and, gt, sql, asc } from "drizzle-orm";
 
-export type GoldWalletType = 'LGPW' | 'FPGW';
+export type GoldWalletType = 'LGPW' | 'FGPW';
 export type BalanceBucket = 'Available' | 'Pending' | 'Locked_BNSL' | 'Reserved_Trade';
 
 interface BatchConsumptionResult {
@@ -56,7 +56,7 @@ interface TransferBatchParams {
 }
 
 /**
- * Create a new FPGW batch when gold enters the Fixed Price wallet
+ * Create a new FGPW batch when gold enters the Fixed Price wallet
  */
 export async function createFpgwBatch(params: CreateBatchParams & { tx?: typeof db }): Promise<FpgwBatch> {
   const {
@@ -114,7 +114,7 @@ export async function getActiveBatches(
 }
 
 /**
- * Consume gold from FPGW batches using FIFO order
+ * Consume gold from FGPW batches using FIFO order
  * Returns the batches consumed and their locked prices for audit trail
  */
 export async function consumeFpgwBatches(
@@ -136,7 +136,7 @@ export async function consumeFpgwBatches(
       consumedBatches: [],
       totalGramsConsumed: 0,
       weightedValueUsd: 0,
-      error: `Insufficient FPGW balance. Available: ${totalAvailable.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g`
+      error: `Insufficient FGPW balance. Available: ${totalAvailable.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g`
     };
   }
 
@@ -183,7 +183,7 @@ export async function consumeFpgwBatches(
 }
 
 /**
- * Transfer FPGW batches from one user to another
+ * Transfer FGPW batches from one user to another
  * Creates new batches for recipient with same locked prices
  */
 export async function transferFpgwBatches(
@@ -224,7 +224,7 @@ export async function transferFpgwBatches(
 }
 
 /**
- * Calculate weighted average price across all active FPGW batches
+ * Calculate weighted average price across all active FGPW batches
  */
 export async function getWeightedAveragePrice(
   userId: string,
@@ -260,7 +260,7 @@ export async function getWeightedAveragePrice(
 }
 
 /**
- * Get FPGW balance summary for a user
+ * Get FGPW balance summary for a user
  */
 export async function getFpgwBalanceSummary(userId: string): Promise<{
   availableGrams: number;
@@ -324,7 +324,7 @@ export async function getFpgwBalanceSummary(userId: string): Promise<{
 }
 
 /**
- * Lock FPGW batches for BNSL
+ * Lock FGPW batches for BNSL
  * Moves batches from Available to Locked_BNSL bucket
  */
 export async function lockFpgwForBnsl(
@@ -344,7 +344,7 @@ export async function lockFpgwForBnsl(
       consumedBatches: [],
       totalGramsConsumed: 0,
       weightedValueUsd: 0,
-      error: `Insufficient FPGW available balance for BNSL lock`
+      error: `Insufficient FGPW available balance for BNSL lock`
     };
   }
 
@@ -409,7 +409,7 @@ export async function lockFpgwForBnsl(
 }
 
 /**
- * Unlock FPGW batches from BNSL
+ * Unlock FGPW batches from BNSL
  * Moves batches from Locked_BNSL back to Available bucket
  */
 export async function unlockFpgwFromBnsl(
@@ -429,7 +429,7 @@ export async function unlockFpgwFromBnsl(
       consumedBatches: [],
       totalGramsConsumed: 0,
       weightedValueUsd: 0,
-      error: `Insufficient FPGW locked balance for unlock`
+      error: `Insufficient FGPW locked balance for unlock`
     };
   }
 
@@ -510,12 +510,12 @@ export async function validateSpendableFpgw(
   return {
     valid: false,
     available: summary.availableGrams,
-    error: `Insufficient FPGW balance. Available: ${summary.availableGrams.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g. Pending/Locked gold cannot be spent.`
+    error: `Insufficient FGPW balance. Available: ${summary.availableGrams.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g. Pending/Locked gold cannot be spent.`
   };
 }
 
 /**
- * Update vault ownership summary with FPGW totals
+ * Update vault ownership summary with FGPW totals
  */
 export async function updateFpgwOwnershipSummary(userId: string): Promise<void> {
   const summary = await getFpgwBalanceSummary(userId);

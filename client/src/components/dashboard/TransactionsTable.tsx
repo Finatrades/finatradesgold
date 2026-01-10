@@ -38,7 +38,7 @@ const getStatusBadge = (status: string) => {
 };
 
 const isSwapType = (description: string | null) => {
-  return description?.includes('LGPW to FPGW') || description?.includes('FPGW to LGPW');
+  return description?.includes('LGPW to FGPW') || description?.includes('FGPW to LGPW');
 };
 
 const isDebitType = (type: string, description: string | null) => {
@@ -68,11 +68,11 @@ const getTransactionLabel = (type: string, description: string | null) => {
 };
 
 const getShortDescription = (type: string, description: string | null, goldAmount: number, usdAmount: number) => {
-  if (description?.includes('LGPW to FPGW')) {
-    return `LGPW to FPGW conversion: ${goldAmount.toFixed(2)}g`;
+  if (description?.includes('LGPW to FGPW')) {
+    return `LGPW to FGPW conversion: ${goldAmount.toFixed(2)}g`;
   }
-  if (description?.includes('FPGW to LGPW')) {
-    return `FPGW to LGPW conversion: ${goldAmount.toFixed(2)}g`;
+  if (description?.includes('FGPW to LGPW')) {
+    return `FGPW to LGPW conversion: ${goldAmount.toFixed(2)}g`;
   }
   if (description?.includes('Crypto deposit')) {
     return `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`;
@@ -295,7 +295,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                       {tx.isSwap ? (
                         <>
                           <p className="font-semibold text-green-600 text-sm">{tx.goldAmount.toFixed(4)} g</p>
-                          <p className="text-xs text-muted-foreground">to FPGW</p>
+                          <p className="text-xs text-muted-foreground">to FGPW</p>
                         </>
                       ) : tx.isCredit && tx.goldAmount > 0 ? (
                         <>
@@ -351,7 +351,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                            <span className="font-semibold text-green-700 text-sm">To FPGW (Fixed Price)</span>
+                            <span className="font-semibold text-green-700 text-sm">To FGPW (Fixed Price)</span>
                           </div>
                           <p className="text-lg font-bold text-green-600">{tx.goldAmount.toFixed(6)} g</p>
                           <p className="text-xs text-muted-foreground">Locked at ${(tx.usdAmount / tx.goldAmount).toFixed(2)}/g</p>

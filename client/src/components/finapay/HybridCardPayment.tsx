@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 interface HybridCardPaymentProps {
   amount: number;
-  goldWalletType?: 'LGPW' | 'FPGW';
+  goldWalletType?: 'LGPW' | 'FGPW';
   onSuccess: (result: { goldGrams: string; amountUsd: number }) => void;
   onError: (error: string) => void;
   onCancel: () => void;

@@ -4,7 +4,7 @@
  * Auto-generates certificates on transaction approval:
  * - Digital Ownership Certificate (Finatrades)
  * - Physical Storage Certificate (Wingold & Metals DMCC)
- * - Conversion Certificate (LGPW<->FPGW transfers)
+ * - Conversion Certificate (LGPW<->FGPW transfers)
  * - Lock Certificate (BNSL/Trade locks)
  */
 
@@ -36,7 +36,7 @@ interface GenerateCertificateParams {
   certificateType: CertificateType;
   goldGrams: number;
   goldPriceUsd?: number;
-  goldWalletType: 'LGPW' | 'FPGW';
+  goldWalletType: 'LGPW' | 'FGPW';
   vaultLocation?: string;
   allocationBatchRef?: string;
   fpgwBatchId?: string;
@@ -126,7 +126,7 @@ export async function generateTransactionCertificates(
   transactionId: string,
   vaultLocation: string,
   allocationBatchRef: string,
-  goldWalletType: 'LGPW' | 'FPGW',
+  goldWalletType: 'LGPW' | 'FGPW',
   fpgwBatchId?: string
 ): Promise<TransactionCertificatesResult> {
   const [transaction] = await db
@@ -189,14 +189,14 @@ export async function generateTransactionCertificates(
 }
 
 /**
- * Generate conversion certificate for LGPW<->FPGW transfer
+ * Generate conversion certificate for LGPW<->FGPW transfer
  */
 export async function generateConversionCertificate(
   userId: string,
   goldGrams: number,
   goldPriceUsd: number,
-  fromWallet: 'LGPW' | 'FPGW',
-  toWallet: 'LGPW' | 'FPGW',
+  fromWallet: 'LGPW' | 'FGPW',
+  toWallet: 'LGPW' | 'FGPW',
   transactionId?: string,
   fpgwBatchId?: string
 ): Promise<Certificate> {
@@ -220,7 +220,7 @@ export async function generateLockCertificate(
   lockType: 'BNSL Lock' | 'Trade Lock',
   goldGrams: number,
   goldPriceUsd: number,
-  goldWalletType: 'LGPW' | 'FPGW',
+  goldWalletType: 'LGPW' | 'FGPW',
   referenceId: string,
   notes?: string
 ): Promise<Certificate> {
@@ -242,7 +242,7 @@ export async function generateTransferCertificate(
   receiverId: string,
   goldGrams: number,
   goldPriceUsd: number,
-  goldWalletType: 'LGPW' | 'FPGW',
+  goldWalletType: 'LGPW' | 'FGPW',
   transactionId: string
 ): Promise<{ senderCert: Certificate; receiverCert: Certificate }> {
   const senderCert = await generateCertificate({
