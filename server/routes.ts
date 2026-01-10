@@ -9219,20 +9219,42 @@ ${message}
   app.get("/api/admin/vault/reconciliation", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
     try {
       const latest = await storage.getLatestVaultReconciliation();
-      if (!latest) {
-        return res.json(null);
+      if (latest) {
+        return res.json({
+          runId: latest.id,
+          runDate: latest.run_date,
+          status: latest.status,
+          totalDigitalGrams: parseFloat(latest.total_digital_grams || '0'),
+          totalPhysicalGrams: parseFloat(latest.total_physical_grams || '0'),
+          discrepancyGrams: parseFloat(latest.discrepancy_grams || '0'),
+          unlinkedDeposits: latest.unlinked_deposits || 0,
+          countryMismatches: latest.country_mismatches || 0,
+          negativeBalances: latest.negative_balances || 0,
+          issues: latest.issues_json || []
+        });
       }
+      
+      const overview = await storage.getVaultOverviewData();
+      const totalDigital = overview.totalDigitalLiability;
+      const totalPhysical = overview.totalPhysicalCustody;
+      const discrepancy = totalPhysical - totalDigital;
+      
+      let status = 'success';
+      if (Math.abs(discrepancy) > 0.01) {
+        status = discrepancy < 0 ? 'error' : 'warning';
+      }
+      
       res.json({
-        runId: latest.id,
-        runDate: latest.run_date,
-        status: latest.status,
-        totalDigitalGrams: parseFloat(latest.total_digital_grams || '0'),
-        totalPhysicalGrams: parseFloat(latest.total_physical_grams || '0'),
-        discrepancyGrams: parseFloat(latest.discrepancy_grams || '0'),
-        unlinkedDeposits: latest.unlinked_deposits || 0,
-        countryMismatches: latest.country_mismatches || 0,
-        negativeBalances: latest.negative_balances || 0,
-        issues: latest.issues_json || []
+        runId: 'auto-' + Date.now(),
+        runDate: new Date().toISOString(),
+        status,
+        totalDigitalGrams: totalDigital,
+        totalPhysicalGrams: totalPhysical,
+        discrepancyGrams: discrepancy,
+        unlinkedDeposits: overview.unlinkedDeposits || 0,
+        countryMismatches: 0,
+        negativeBalances: 0,
+        issues: []
       });
     } catch (error) {
       console.error("[Vault] Error getting reconciliation:", error);
