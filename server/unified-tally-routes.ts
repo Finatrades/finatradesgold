@@ -182,12 +182,22 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       manualGoldPrice,
       walletType = 'MPGW',
       vaultLocation = 'Wingold & Metals DMCC',
-      notes 
+      notes,
+      // Allocation fields (optional)
+      wingoldOrderId,
+      wingoldInvoiceId,
+      physicalGoldAllocatedG,
+      wingoldBuyRate,
+      storageCertificateId,
     } = req.body;
     const adminUser = (req as any).adminUser;
 
     // Map UI pricing mode to schema enum
     const pricingMode = uiPricingMode === 'LIVE' ? 'MARKET' : 'FIXED';
+    
+    // Check if Golden Rule can be satisfied (allocation provided with valid positive value)
+    const parsedAllocation = physicalGoldAllocatedG ? parseFloat(physicalGoldAllocatedG) : 0;
+    const hasValidAllocation = parsedAllocation > 0 && storageCertificateId && storageCertificateId.trim().length > 0;
 
     let userId: string = '';
     let amountUsd: number = 0;
@@ -249,12 +259,16 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       return res.status(400).json({ error: 'Invalid source type. Use CRYPTO or BANK.' });
     }
 
+    // Determine initial status based on allocation data
+    // Golden Rule: physicalGoldAllocatedG > 0 AND storageCertificateId exists
+    const initialStatus = hasValidAllocation ? 'CERT_RECEIVED' : 'PAYMENT_CONFIRMED';
+
     const tallyRecord = await storage.createUnifiedTallyTransaction({
       userId,
       txnType: 'FIAT_CRYPTO_DEPOSIT',
       sourceMethod: sourceType as 'CRYPTO' | 'BANK',
       walletType: walletType as 'MPGW' | 'FPGW',
-      status: 'PAYMENT_CONFIRMED',
+      status: initialStatus,
       depositCurrency: 'USD',
       depositAmount: String(amountUsd),
       feeAmount: '0',
@@ -269,11 +283,21 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       vaultLocation,
       notes: notes || `Created from ${sourceType} payment approval`,
       createdBy: adminUser?.id,
+      // Allocation fields (if provided)
+      ...(wingoldOrderId && { wingoldOrderId }),
+      ...(wingoldInvoiceId && { wingoldSupplierInvoiceId: wingoldInvoiceId }),
+      ...(physicalGoldAllocatedG && { physicalGoldAllocatedG: String(physicalGoldAllocatedG) }),
+      ...(wingoldBuyRate && { wingoldBuyRate: String(wingoldBuyRate) }),
+      ...(storageCertificateId && { storageCertificateId }),
     });
+
+    const nextStep = hasValidAllocation 
+      ? 'Golden Rule satisfied. Ready for final credit approval in Unified Gold Tally.'
+      : 'Add Wingold order details and storage certificate in Unified Gold Tally.';
 
     res.json({
       success: true,
-      message: `Payment approved. UTT record created (status: PAYMENT_CONFIRMED). Next: Add Wingold details and certificate.`,
+      message: `Payment approved. UTT record created (status: ${initialStatus}). Next: ${nextStep}`,
       tally: {
         id: tallyRecord.id,
         txnId: tallyRecord.txnId,
@@ -281,6 +305,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         goldGrams: goldGrams.toFixed(4),
         goldPrice: goldPrice.toFixed(2),
         amountUsd: amountUsd.toFixed(2),
+        hasAllocation: hasValidAllocation,
       },
     });
 

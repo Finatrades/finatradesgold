@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Bitcoin, Building2, Coins, Clock, CheckCircle, XCircle, 
   RefreshCw, Eye, ArrowRight, AlertTriangle, TrendingUp,
-  FileText, ExternalLink, Package, CreditCard
+  FileText, ExternalLink, Package, CreditCard, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
@@ -77,6 +77,14 @@ export default function UnifiedPaymentManagement() {
   const [walletType, setWalletType] = useState<'MPGW' | 'FPGW'>('MPGW');
   const [vaultLocation, setVaultLocation] = useState('Wingold & Metals DMCC');
   const [approvalNotes, setApprovalNotes] = useState('');
+  
+  // Allocation fields
+  const [wingoldOrderId, setWingoldOrderId] = useState('');
+  const [wingoldInvoiceId, setWingoldInvoiceId] = useState('');
+  const [physicalGoldAllocatedG, setPhysicalGoldAllocatedG] = useState('');
+  const [wingoldBuyRate, setWingoldBuyRate] = useState('');
+  const [storageCertificateId, setStorageCertificateId] = useState('');
+  const [showAllocationFields, setShowAllocationFields] = useState(false);
 
   const { data: paymentsData, isLoading, refetch } = useQuery({
     queryKey: ['unified-pending-payments'],
@@ -104,6 +112,12 @@ export default function UnifiedPaymentManagement() {
         walletType,
         vaultLocation,
         notes: approvalNotes,
+        // Allocation fields (optional - can be added later in UTT detail view)
+        wingoldOrderId: wingoldOrderId || undefined,
+        wingoldInvoiceId: wingoldInvoiceId || undefined,
+        physicalGoldAllocatedG: physicalGoldAllocatedG || undefined,
+        wingoldBuyRate: wingoldBuyRate || undefined,
+        storageCertificateId: storageCertificateId || undefined,
       });
       return res.json();
     },
@@ -130,6 +144,12 @@ export default function UnifiedPaymentManagement() {
     setWalletType('MPGW');
     setVaultLocation('Wingold & Metals DMCC');
     setApprovalNotes('');
+    setWingoldOrderId('');
+    setWingoldInvoiceId('');
+    setPhysicalGoldAllocatedG('');
+    setWingoldBuyRate('');
+    setStorageCertificateId('');
+    setShowAllocationFields(false);
   };
 
   const openApprovalDialog = (payment: PendingPayment) => {
@@ -457,6 +477,90 @@ export default function UnifiedPaymentManagement() {
                   </div>
                 </div>
 
+                <div className="border rounded-lg p-3 space-y-3 bg-gray-50">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full text-left"
+                    onClick={() => setShowAllocationFields(!showAllocationFields)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-purple-600" />
+                      <span className="font-medium text-sm">Wingold Allocation Details (Optional)</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showAllocationFields ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showAllocationFields && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <p className="text-xs text-gray-500">
+                        Fill these fields now if you have Wingold order details, or add them later in the UTT detail view.
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Wingold Order ID</Label>
+                          <Input
+                            placeholder="e.g., WG-2026-0001"
+                            value={wingoldOrderId}
+                            onChange={(e) => setWingoldOrderId(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Wingold Invoice ID</Label>
+                          <Input
+                            placeholder="e.g., INV-2026-001"
+                            value={wingoldInvoiceId}
+                            onChange={(e) => setWingoldInvoiceId(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Physical Gold Allocated (g)</Label>
+                          <Input
+                            type="number"
+                            step="0.0001"
+                            placeholder="e.g., 150.5000"
+                            value={physicalGoldAllocatedG}
+                            onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Wingold Buy Rate ($/g)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="e.g., 65.50"
+                            value={wingoldBuyRate}
+                            onChange={(e) => setWingoldBuyRate(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Storage Certificate ID</Label>
+                        <Input
+                          placeholder="e.g., CERT-2026-0001"
+                          value={storageCertificateId}
+                          onChange={(e) => setStorageCertificateId(e.target.value)}
+                        />
+                      </div>
+                      
+                      {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && (
+                        <Card className="bg-green-50 border-green-200">
+                          <CardContent className="py-2">
+                            <div className="flex items-center gap-2 text-green-700 text-xs">
+                              <CheckCircle className="w-4 h-4" />
+                              Golden Rule will be satisfied - wallet credit will proceed immediately after approval.
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1">
                   <Label>Notes (Optional)</Label>
                   <Textarea
@@ -466,13 +570,14 @@ export default function UnifiedPaymentManagement() {
                   />
                 </div>
 
-                <Card className="bg-purple-50 border-purple-200">
+                <Card className={`${parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 ? 'bg-green-50 border-green-200' : 'bg-purple-50 border-purple-200'}`}>
                   <CardContent className="py-3">
-                    <div className="flex items-center gap-2 text-purple-700">
+                    <div className={`flex items-center gap-2 ${parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 ? 'text-green-700' : 'text-purple-700'}`}>
                       <ArrowRight className="w-4 h-4" />
                       <span className="text-sm">
-                        After approval, a Unified Gold Tally record will be created. 
-                        You'll need to add Wingold order details and storage certificate before crediting.
+                        {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 
+                          ? 'Golden Rule satisfied! UTT will be created with allocation data and ready for final approval.'
+                          : 'After approval, a Unified Gold Tally record will be created. You\'ll need to add Wingold order details and storage certificate before crediting.'}
                       </span>
                     </div>
                   </CardContent>
