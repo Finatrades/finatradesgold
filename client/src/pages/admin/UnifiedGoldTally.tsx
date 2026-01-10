@@ -30,6 +30,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Search, 
   RefreshCw, 
@@ -47,7 +49,11 @@ import {
   Building,
   User,
   ArrowRight,
-  CreditCard
+  CreditCard,
+  Plus,
+  Trash2,
+  Save,
+  Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -405,9 +411,62 @@ interface TransactionDrawerProps {
   onRefresh: () => void;
 }
 
+interface GoldBar {
+  serial: string;
+  weightG: number;
+  purity: number;
+  notes?: string;
+}
+
+interface WingoldFormState {
+  wingoldOrderId: string;
+  wingoldSupplierInvoiceId: string;
+  wingoldBuyRate: string;
+  wingoldCostUsd: string;
+  vaultLocation: string;
+  physicalGoldAllocatedG: string;
+  storageCertificateId: string;
+  certificateFileUrl: string;
+  certificateDate: string;
+  bars: GoldBar[];
+}
+
+interface CreditFormState {
+  pricingMode: 'MARKET' | 'FIXED';
+  goldRateValue: string;
+  gatewayCostUsd: string;
+  bankCostUsd: string;
+  networkCostUsd: string;
+  opsCostUsd: string;
+}
+
 function TransactionDrawer({ transaction, open, onClose, onRefresh }: TransactionDrawerProps) {
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
+  const [savingWingold, setSavingWingold] = useState(false);
+  const [savingCredit, setSavingCredit] = useState(false);
+
+  const [wingoldForm, setWingoldForm] = useState<WingoldFormState>({
+    wingoldOrderId: '',
+    wingoldSupplierInvoiceId: '',
+    wingoldBuyRate: '',
+    wingoldCostUsd: '',
+    vaultLocation: '',
+    physicalGoldAllocatedG: '',
+    storageCertificateId: '',
+    certificateFileUrl: '',
+    certificateDate: '',
+    bars: [],
+  });
+
+  const [creditForm, setCreditForm] = useState<CreditFormState>({
+    pricingMode: 'MARKET',
+    goldRateValue: '',
+    gatewayCostUsd: '0',
+    bankCostUsd: '0',
+    networkCostUsd: '0',
+    opsCostUsd: '0',
+  });
 
   const { data: formData, refetch: refetchForm } = useQuery({
     queryKey: ['/api/admin/unified-tally', transaction?.id, 'wingold-form'],
@@ -453,6 +512,68 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     enabled: !!transaction?.id && open,
   });
 
+  React.useEffect(() => {
+    if (!open) {
+      setWingoldForm({
+        wingoldOrderId: '',
+        wingoldSupplierInvoiceId: '',
+        wingoldBuyRate: '',
+        wingoldCostUsd: '',
+        vaultLocation: '',
+        physicalGoldAllocatedG: '',
+        storageCertificateId: '',
+        certificateFileUrl: '',
+        certificateDate: '',
+        bars: [],
+      });
+      setCreditForm({
+        pricingMode: 'MARKET',
+        goldRateValue: '',
+        gatewayCostUsd: '0',
+        bankCostUsd: '0',
+        networkCostUsd: '0',
+        opsCostUsd: '0',
+      });
+      setActiveTab('details');
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (formData?.formData) {
+      const fd = formData.formData;
+      setWingoldForm({
+        wingoldOrderId: fd.wingoldOrderId || '',
+        wingoldSupplierInvoiceId: fd.wingoldSupplierInvoiceId || '',
+        wingoldBuyRate: fd.wingoldBuyRate || '',
+        wingoldCostUsd: fd.wingoldCostUsd || '',
+        vaultLocation: fd.vaultLocation || '',
+        physicalGoldAllocatedG: fd.physicalGoldAllocatedG || '',
+        storageCertificateId: fd.storageCertificateId || '',
+        certificateFileUrl: fd.certificateFileUrl || '',
+        certificateDate: fd.certificateDate ? fd.certificateDate.split('T')[0] : '',
+        bars: formData.bars?.map((b: any) => ({
+          serial: b.barSerial || b.serial || '',
+          weightG: Number(b.weight || b.weightG || 0),
+          purity: Number(b.purity || 999.9),
+          notes: b.notes || '',
+        })) || [],
+      });
+    }
+  }, [formData]);
+
+  React.useEffect(() => {
+    if (transaction) {
+      setCreditForm({
+        pricingMode: 'MARKET',
+        goldRateValue: transaction.goldRateValue || '',
+        gatewayCostUsd: transaction.gatewayCostUsd || '0',
+        bankCostUsd: transaction.bankCostUsd || '0',
+        networkCostUsd: transaction.networkCostUsd || '0',
+        opsCostUsd: transaction.opsCostUsd || '0',
+      });
+    }
+  }, [transaction]);
+
   const handleConfirmPayment = async () => {
     if (!transaction) return;
     setLoading(true);
@@ -474,6 +595,121 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveWingoldForm = async () => {
+    if (!transaction) return;
+    setSavingWingold(true);
+    try {
+      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/wingold-form/save-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wingoldOrderId: wingoldForm.wingoldOrderId || undefined,
+          wingoldSupplierInvoiceId: wingoldForm.wingoldSupplierInvoiceId || undefined,
+          wingoldBuyRate: wingoldForm.wingoldBuyRate || undefined,
+          wingoldCostUsd: wingoldForm.wingoldCostUsd || undefined,
+          vaultLocation: wingoldForm.vaultLocation || undefined,
+          goldRateValue: wingoldForm.wingoldBuyRate || undefined,
+          storageCertificateId: wingoldForm.storageCertificateId || undefined,
+          certificateFileUrl: wingoldForm.certificateFileUrl || undefined,
+          certificateDate: wingoldForm.certificateDate || undefined,
+          barLotSerialsJson: wingoldForm.bars.length > 0 ? wingoldForm.bars : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to save');
+      }
+      toast.success('Wingold data saved');
+      refetchForm();
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setSavingWingold(false);
+    }
+  };
+
+  const handleApproveCredit = async () => {
+    if (!transaction) return;
+    
+    if (!wingoldForm.storageCertificateId) {
+      toast.error('Storage certificate is required (Golden Rule)');
+      return;
+    }
+    if (!wingoldForm.physicalGoldAllocatedG || Number(wingoldForm.physicalGoldAllocatedG) <= 0) {
+      toast.error('Physical gold must be allocated (Golden Rule)');
+      return;
+    }
+    if (!creditForm.goldRateValue || Number(creditForm.goldRateValue) <= 0) {
+      toast.error('Gold rate is required');
+      return;
+    }
+
+    setSavingCredit(true);
+    try {
+      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/approve-credit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pricingMode: creditForm.pricingMode,
+          goldRateValue: creditForm.goldRateValue,
+          gatewayCostUsd: creditForm.gatewayCostUsd || '0',
+          bankCostUsd: creditForm.bankCostUsd || '0',
+          networkCostUsd: creditForm.networkCostUsd || '0',
+          opsCostUsd: creditForm.opsCostUsd || '0',
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to approve credit');
+      }
+      toast.success('Credit approved and wallet updated');
+      refetchForm();
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setSavingCredit(false);
+    }
+  };
+
+  const addBar = () => {
+    setWingoldForm(prev => ({
+      ...prev,
+      bars: [...prev.bars, { serial: '', weightG: 100, purity: 999.9, notes: '' }]
+    }));
+  };
+
+  const removeBar = (index: number) => {
+    setWingoldForm(prev => ({
+      ...prev,
+      bars: prev.bars.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateBar = (index: number, field: keyof GoldBar, value: string | number) => {
+    setWingoldForm(prev => ({
+      ...prev,
+      bars: prev.bars.map((bar, i) => i === index ? { ...bar, [field]: value } : bar)
+    }));
+  };
+
+  const calculateTotalCosts = () => {
+    return (
+      Number(creditForm.gatewayCostUsd || 0) +
+      Number(creditForm.bankCostUsd || 0) +
+      Number(creditForm.networkCostUsd || 0) +
+      Number(creditForm.opsCostUsd || 0)
+    );
+  };
+
+  const calculateNetProfit = () => {
+    const depositAmount = Number(transaction?.depositAmount || 0);
+    const wingoldCost = Number(wingoldForm.wingoldCostUsd || 0);
+    const totalCosts = calculateTotalCosts();
+    return depositAmount - wingoldCost - totalCosts;
   };
 
   if (!transaction) return null;
@@ -584,80 +820,329 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
             <TabsContent value="allocation" className="m-0 space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Wingold Allocation</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Package className="w-4 h-4 text-purple-600" />
+                    Wingold Order Details
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Wingold Order ID</span>
-                    <span className="text-sm font-mono">{formData?.formData?.wingoldOrderId || '-'}</span>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Wingold Order ID *</Label>
+                      <Input
+                        placeholder="WG-2026-001234"
+                        value={wingoldForm.wingoldOrderId}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldOrderId: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Supplier Invoice</Label>
+                      <Input
+                        placeholder="INV-2026-5678"
+                        value={wingoldForm.wingoldSupplierInvoiceId}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldSupplierInvoiceId: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Supplier Invoice</span>
-                    <span className="text-sm font-mono">{formData?.formData?.wingoldSupplierInvoiceId || '-'}</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Buy Rate ($/gram) *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="95.50"
+                        value={wingoldForm.wingoldBuyRate}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldBuyRate: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Total Cost (USD) *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="28500.00"
+                        value={wingoldForm.wingoldCostUsd}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldCostUsd: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Buy Rate</span>
-                    <span className="text-sm">{formData?.formData?.wingoldBuyRate ? `$${Number(formData.formData.wingoldBuyRate).toFixed(2)}/g` : '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Total Cost</span>
-                    <span className="text-sm font-medium">{formatCurrency(formData?.formData?.wingoldCostUsd)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Physical Allocated</span>
-                    <span className="text-sm font-mono font-medium">{formatGold(formData?.formData?.physicalGoldAllocatedG)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Vault Location</span>
-                    <span className="text-sm">{formData?.formData?.vaultLocation || '-'}</span>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Vault Location *</Label>
+                    <Select
+                      value={wingoldForm.vaultLocation}
+                      onValueChange={(value) => setWingoldForm(prev => ({ ...prev, vaultLocation: value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select vault location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="zurich">Zurich, Switzerland</SelectItem>
+                        <SelectItem value="dubai">Dubai, UAE</SelectItem>
+                        <SelectItem value="singapore">Singapore</SelectItem>
+                        <SelectItem value="london">London, UK</SelectItem>
+                        <SelectItem value="hongkong">Hong Kong</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardContent>
               </Card>
 
-              {formData?.bars && formData.bars.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Gold Bars ({formData.bars.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-yellow-600" />
+                    Physical Gold Allocation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Physical Gold Allocated (grams) *</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      placeholder="298.4567"
+                      value={wingoldForm.physicalGoldAllocatedG}
+                      onChange={(e) => setWingoldForm(prev => ({ ...prev, physicalGoldAllocatedG: e.target.value }))}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Gold Bars</Label>
+                    <Button variant="outline" size="sm" onClick={addBar} className="h-7 text-xs">
+                      <Plus className="w-3 h-3 mr-1" /> Add Bar
+                    </Button>
+                  </div>
+
+                  {wingoldForm.bars.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-2">No bars added yet</p>
+                  ) : (
                     <div className="space-y-2">
-                      {formData.bars.map((bar: any) => (
-                        <div key={bar.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                          <span className="font-mono text-xs">{bar.barSerial}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{bar.weight}g</span>
-                            <Badge variant="outline" className="text-xs">{bar.purity}</Badge>
+                      {wingoldForm.bars.map((bar, index) => (
+                        <div key={index} className="p-2 bg-gray-50 rounded-md space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium">Bar #{index + 1}</span>
+                            <Button variant="ghost" size="sm" onClick={() => removeBar(index)} className="h-6 w-6 p-0">
+                              <Trash2 className="w-3 h-3 text-red-500" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <Input
+                              placeholder="Serial"
+                              value={bar.serial}
+                              onChange={(e) => updateBar(index, 'serial', e.target.value)}
+                              className="h-7 text-xs"
+                            />
+                            <Input
+                              type="number"
+                              placeholder="Weight (g)"
+                              value={bar.weightG}
+                              onChange={(e) => updateBar(index, 'weightG', Number(e.target.value))}
+                              className="h-7 text-xs"
+                            />
+                            <Input
+                              type="number"
+                              step="0.1"
+                              placeholder="Purity"
+                              value={bar.purity}
+                              onChange={(e) => updateBar(index, 'purity', Number(e.target.value))}
+                              className="h-7 text-xs"
+                            />
                           </div>
                         </div>
                       ))}
+                      <div className="text-xs text-gray-500 text-right">
+                        Total: {wingoldForm.bars.reduce((sum, b) => sum + b.weightG, 0).toFixed(2)}g
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Certificate</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-green-600" />
+                    Storage Certificate (Golden Rule)
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Certificate ID</span>
-                    <span className="text-sm font-mono">{formData?.formData?.storageCertificateId || '-'}</span>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Certificate ID *</Label>
+                    <Input
+                      placeholder="CERT-ZH-2026-001234"
+                      value={wingoldForm.storageCertificateId}
+                      onChange={(e) => setWingoldForm(prev => ({ ...prev, storageCertificateId: e.target.value }))}
+                      className="h-8 text-sm"
+                    />
                   </div>
-                  {formData?.formData?.certificateFileUrl && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">Certificate File</span>
-                      <a 
-                        href={formData.formData.certificateFileUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-purple-600 hover:underline"
-                      >
-                        View Certificate
-                      </a>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Certificate File URL</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={wingoldForm.certificateFileUrl}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, certificateFileUrl: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Certificate Date</Label>
+                      <Input
+                        type="date"
+                        value={wingoldForm.certificateDate}
+                        onChange={(e) => setWingoldForm(prev => ({ ...prev, certificateDate: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {wingoldForm.storageCertificateId && Number(wingoldForm.physicalGoldAllocatedG) > 0 ? (
+                    <div className="p-2 bg-green-50 border border-green-200 rounded-md">
+                      <p className="text-xs text-green-700 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Golden Rule satisfied: Certificate + Physical allocation present
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-xs text-yellow-700 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Golden Rule: Both certificate ID and physical allocation required to approve credit
+                      </p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              <Button
+                onClick={handleSaveWingoldForm}
+                disabled={savingWingold}
+                className="w-full"
+              >
+                {savingWingold ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Wingold Data
+              </Button>
+
+              <Card className="border-purple-200">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-purple-600" />
+                    Approve Credit (Final Step)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Pricing Mode</Label>
+                      <Select
+                        value={creditForm.pricingMode}
+                        onValueChange={(value: 'MARKET' | 'FIXED') => setCreditForm(prev => ({ ...prev, pricingMode: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MARKET">Market Price</SelectItem>
+                          <SelectItem value="FIXED">Fixed Price</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Gold Rate ($/gram) *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="96.75"
+                        value={creditForm.goldRateValue}
+                        onChange={(e) => setCreditForm(prev => ({ ...prev, goldRateValue: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+                  <Label className="text-xs font-medium">Operating Costs</Label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Gateway Cost ($)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={creditForm.gatewayCostUsd}
+                        onChange={(e) => setCreditForm(prev => ({ ...prev, gatewayCostUsd: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Bank Cost ($)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={creditForm.bankCostUsd}
+                        onChange={(e) => setCreditForm(prev => ({ ...prev, bankCostUsd: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Network Cost ($)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={creditForm.networkCostUsd}
+                        onChange={(e) => setCreditForm(prev => ({ ...prev, networkCostUsd: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Ops Cost ($)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={creditForm.opsCostUsd}
+                        onChange={(e) => setCreditForm(prev => ({ ...prev, opsCostUsd: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-md space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Total Costs:</span>
+                      <span className="font-medium">${calculateTotalCosts().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Wingold Cost:</span>
+                      <span className="font-medium">${Number(wingoldForm.wingoldCostUsd || 0).toFixed(2)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Estimated Net Profit:</span>
+                      <span className={`font-bold ${calculateNetProfit() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${calculateNetProfit().toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleApproveCredit}
+                    disabled={savingCredit || !wingoldForm.storageCertificateId || Number(wingoldForm.physicalGoldAllocatedG) <= 0}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    {savingCredit ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Approve Credit & Complete
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
