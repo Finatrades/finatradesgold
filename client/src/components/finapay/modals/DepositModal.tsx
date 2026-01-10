@@ -1709,9 +1709,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {cryptoWallets.map((wallet) => {
-                  const getCryptoStyle = (network: string, currency: string) => {
-                    const n = network.toLowerCase();
-                    const c = currency.toLowerCase();
+                  const getCryptoStyle = (network: string | undefined | null, currency: string | undefined | null) => {
+                    const n = (network || '').toLowerCase();
+                    const c = (currency || '').toLowerCase();
                     if (n.includes('bitcoin') || c === 'btc') {
                       return { 
                         bg: 'from-orange-500 to-orange-600', 
