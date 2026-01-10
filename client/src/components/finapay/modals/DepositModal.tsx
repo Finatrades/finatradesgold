@@ -1243,9 +1243,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       )}
                       
                       {depositFee && getDepositSummary().feeAmount > 0 && inputMode === 'usd' && (
-                        <div className="flex justify-between text-warning text-xs">
+                        <div className="flex justify-between text-orange-600 text-xs">
                           <span>Processing Fee:</span>
-                          <span>-${getDepositSummary().feeAmount.toFixed(2)}</span>
+                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       )}
                       
