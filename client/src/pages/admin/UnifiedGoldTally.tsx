@@ -734,8 +734,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
           </SheetDescription>
         </SheetHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col mt-4">
-          <TabsList className="grid grid-cols-5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col mt-4 overflow-hidden">
+          <TabsList className="grid grid-cols-5 shrink-0">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="allocation">Allocation</TabsTrigger>
             <TabsTrigger value="fees">Fees & Profit</TabsTrigger>
@@ -743,7 +743,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 mt-4 h-[calc(100vh-180px)]">
+          <div className="flex-1 overflow-y-auto mt-4 pr-2">
             <TabsContent value="details" className="m-0 space-y-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -1395,7 +1395,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardContent>
               </Card>
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
       </SheetContent>
     </Sheet>
