@@ -1217,9 +1217,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           Gold You'll Receive:
                         </span>
                         <span className="text-lg">
-                          {inputMode === 'gold' 
-                            ? parseFloat(goldAmount).toFixed(4) 
-                            : getEffectiveGoldGrams().toFixed(4)}g
+                          {(inputMode === 'gold' 
+                            ? parseFloat(goldAmount) 
+                            : getEffectiveGoldGrams()).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
                         </span>
                       </div>
                       
@@ -1227,25 +1227,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <div className="flex justify-between text-muted-foreground border-t border-amber-200 pt-2 mt-2">
                         <span>≈ USD Equivalent:</span>
                         <span>
-                          ${inputMode === 'gold' 
-                            ? getEffectiveUsdAmount().toFixed(2)
+                          ${(inputMode === 'gold' 
+                            ? getEffectiveUsdAmount()
                             : (selectedAccount?.currency !== 'USD' 
-                                ? getDepositSummary().amountInUsd.toFixed(2)
-                                : parseFloat(amount).toFixed(2))}
+                                ? getDepositSummary().amountInUsd
+                                : parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       
                       {inputMode === 'usd' && selectedAccount?.currency !== 'USD' && (
                         <div className="flex justify-between text-muted-foreground text-xs">
                           <span>{selectedAccount?.currency} Amount:</span>
-                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toFixed(2)}</span>
+                          <span>{getDepositSummary().currencySymbol}{getDepositSummary().amountNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       )}
                       
-                      {depositFee && getDepositSummary().feeAmount > 0 && inputMode === 'usd' && (
+                      {depositFee && getDepositSummary().feeInOriginalCurrency > 0 && inputMode === 'usd' && (
                         <div className="flex justify-between text-orange-600 text-xs">
                           <span>Processing Fee:</span>
-                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span>-{getDepositSummary().currencySymbol}{getDepositSummary().feeInOriginalCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       )}
                       
