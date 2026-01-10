@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, DollarSign, TrendingUp, Coins, BarChart3, AlertTriangle, CheckCircle2, Wallet, EyeOff, ArrowUpRight, ArrowDownRight, Zap, Shield, Clock, ChevronRight, Sparkles, Building, CreditCard, Send, ArrowRight, RefreshCw } from 'lucide-react';
+import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card } from '@/components/ui/card';
-import { AEDAmount } from '@/components/ui/DirhamSymbol';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
 
+import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
-import { useDashboardTour } from '@/hooks/useDashboardTour';
-import { TourButton } from '@/components/tour/TourProvider';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -31,21 +28,10 @@ function formatNumber(num: number | null | undefined, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-function formatGrams(grams: number | null | undefined): string {
-  if (grams === null || grams === undefined || isNaN(grams)) {
-    return '0.0000 g';
-  }
-  if (grams >= 1000) {
-    return `${formatNumber(grams / 1000, 4)} kg`;
-  }
-  return `${formatNumber(grams, 4)} g`;
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, wallet, transactions, goldPrice, goldPriceSource, isLoading, tradeCounts, finaBridge, certificates } = useDashboardData();
+  const { totals, transactions, goldPrice, goldPriceSource, isLoading, finaBridge, certificates } = useDashboardData();
   const { showOnboarding, completeOnboarding } = useOnboarding();
-  const { startTour, tourId } = useDashboardTour();
 
   const { data: prefsData } = useQuery<{ preferences: UserPreferences }>({
     queryKey: ['preferences', user?.id],
@@ -183,47 +169,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Quick Actions Hub */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/finapay">
-            <div className="group p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 hover:shadow-lg hover:shadow-emerald-100 transition-all cursor-pointer">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <ArrowDownRight className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-900">Deposit</h3>
-              <p className="text-xs text-gray-500">Add funds</p>
-            </div>
-          </Link>
-          
-          <Link href="/finapay">
-            <div className="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg hover:shadow-blue-100 transition-all cursor-pointer">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <ArrowUpRight className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-900">Withdraw</h3>
-              <p className="text-xs text-gray-500">Cash out</p>
-            </div>
-          </Link>
-          
-          <Link href="/finapay">
-            <div className="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-lg hover:shadow-purple-100 transition-all cursor-pointer">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <RefreshCw className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-900">Convert</h3>
-              <p className="text-xs text-gray-500">MPGW ↔ FPGW</p>
-            </div>
-          </Link>
-          
-          <Link href="/finapay">
-            <div className="group p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 hover:shadow-lg hover:shadow-amber-100 transition-all cursor-pointer">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Send className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-900">Transfer</h3>
-              <p className="text-xs text-gray-500">Send gold</p>
-            </div>
-          </Link>
+        {/* Quick Actions - Modal-driven actions */}
+        <section>
+          <QuickActionsTop />
         </section>
 
         {/* Dual Wallet Section */}
@@ -308,6 +256,54 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+
+        {/* FinaBridge Card for Business Users */}
+        {isBusinessUser && (
+          <section>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Briefcase className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white">FinaBridge</h3>
+                      <p className="text-xs text-blue-200">Trade Finance</p>
+                    </div>
+                  </div>
+                  <Link href="/finabridge">
+                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+                      View <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-blue-200 mb-1">Available Gold</p>
+                    <p className="text-2xl font-bold text-white">
+                      {showBalance ? `${formatNumber(finaBridge?.goldGrams || 0, 4)}g` : hiddenValue}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-200 mb-1">Active Cases</p>
+                    <p className="text-2xl font-bold text-white">{finaBridge?.activeCases || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-200 mb-1">Trade Volume</p>
+                    <p className="text-2xl font-bold text-white">${formatNumber(finaBridge?.tradeVolume || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-200 mb-1">USD Value</p>
+                    <p className="text-2xl font-bold text-white">{showBalance ? formatCurrency(finaBridge?.usdValue || 0) : hiddenValue}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Insights Row */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
