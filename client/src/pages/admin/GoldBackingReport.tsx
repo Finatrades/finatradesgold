@@ -45,15 +45,33 @@ interface GoldBackingReport {
       vaultLocation: string;
       isPhysicallyDeposited: boolean;
     }>;
+    byLocation?: Record<string, number>;
   };
   customerLiabilities: {
     totalGrams: number;
-    wallets: { count: number; totalGrams: number };
-    bnslWallets: { count: number; availableGrams: number; lockedGrams: number };
+    wallets?: { count: number; totalGrams: number };
+    bnslWallets?: { count: number; availableGrams: number; lockedGrams: number };
+    mpgw?: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number };
+    fpgw?: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number };
+    bnsl?: { count: number; availableGrams: number; lockedGrams: number };
   };
-  certificates: { total: number; byStatus: Record<string, number> };
-  backingRatio: number;
-  surplus: number;
+  certificates: { total: number; byStatus: Record<string, number>; byType?: Record<string, number> };
+  backing: {
+    overallRatio: number;
+    overallSurplus: number;
+    mpgwRatio: number;
+    mpgwSurplus: number;
+    fpgwRatio: number;
+    fpgwSurplus: number;
+  };
+  compliance?: {
+    lastReconciliationDate: string | null;
+    totalReconciliations: number;
+    pendingReviews: number;
+    digitalCertificates: number;
+    physicalCertificates: number;
+  };
+  generatedAt?: string;
 }
 
 interface EnhancedGoldBackingReport {
@@ -259,7 +277,7 @@ export default function GoldBackingReport() {
     refetchEnhanced();
   };
 
-  const backingStatus = data ? getBackingStatus(data.backingRatio) : null;
+  const backingStatus = data ? getBackingStatus(data.backing.overallRatio) : null;
   const StatusIcon = backingStatus?.icon || AlertTriangle;
   
   const enhancedBackingStatus = enhancedData ? getBackingStatus(enhancedData.backing.overallRatio) : null;
@@ -361,31 +379,31 @@ export default function GoldBackingReport() {
                         <div>
                           <h2 className="text-2xl font-bold" data-testid="text-backing-status">{backingStatus?.label}</h2>
                           <p className="text-gray-600" data-testid="text-backing-ratio">
-                            {data.backingRatio.toFixed(2)}% of customer gold is backed by physical holdings
+                            {data.backing.overallRatio.toFixed(2)}% of customer gold is backed by physical holdings
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold" data-testid="text-surplus">
-                          {data.surplus >= 0 ? (
+                          {data.backing.overallSurplus >= 0 ? (
                             <span className="text-green-600 flex items-center gap-2">
                               <TrendingUp className="h-6 w-6" />
-                              +{formatGrams(data.surplus)}g
+                              +{formatGrams(data.backing.overallSurplus)}g
                             </span>
                           ) : (
                             <span className="text-red-600 flex items-center gap-2">
                               <TrendingDown className="h-6 w-6" />
-                              {formatGrams(Math.abs(data.surplus))}g
+                              {formatGrams(Math.abs(data.backing.overallSurplus))}g
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {data.surplus >= 0 ? 'Surplus' : 'Deficit'}
+                          {data.backing.overallSurplus >= 0 ? 'Surplus' : 'Deficit'}
                         </p>
                       </div>
                     </div>
                     <Progress 
-                      value={Math.min(data.backingRatio, 100)} 
+                      value={Math.min(data.backing.overallRatio, 100)} 
                       className="mt-4 h-3"
                       data-testid="progress-backing-ratio"
                     />
