@@ -482,6 +482,17 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   const handleSelectAccount = (account: PlatformBankAccount) => {
     setSelectedAccount(account);
+    
+    // Convert the amount entered in step 1 to the bank's currency
+    // If user entered in gold mode, we already have goldAmount set
+    // If user entered in USD mode, convert to the bank's currency
+    if (account.currency !== 'USD' && parseFloat(amount) > 0) {
+      const rate = exchangeRates[account.currency] || 1;
+      const convertedAmount = (parseFloat(amount) * rate).toFixed(2);
+      setAmount(convertedAmount);
+      setInputMode('usd'); // Show in local currency mode
+    }
+    
     setStep('details');
   };
 
