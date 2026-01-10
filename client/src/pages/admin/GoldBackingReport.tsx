@@ -291,7 +291,7 @@ export default function GoldBackingReport() {
                          modalType === 'bnsl' ? loadingBnsl :
                          modalType === 'vault' ? loadingVault : false;
 
-  const modalTitle = modalType === 'finapay' ? 'FinaPay Wallet Holders' :
+  const modalTitle = modalType === 'finapay' ? 'MPGW Holders (Market Price Gold Wallet)' :
                      modalType === 'bnsl' ? 'BNSL Account Holders' :
                      modalType === 'vault' ? `Vault: ${selectedVaultLocation}` : '';
 
@@ -1164,7 +1164,7 @@ function UserProfileView({
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-blue-600" />
-                  FinaPay Wallet
+                  MPGW (Market Price)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1182,7 +1182,7 @@ function UserProfileView({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No FinaPay wallet</p>
+                  <p className="text-gray-400 text-sm">No MPGW wallet</p>
                 )}
               </CardContent>
             </Card>
