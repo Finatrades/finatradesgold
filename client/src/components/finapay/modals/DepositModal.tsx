@@ -772,10 +772,74 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               )}
             </div>
 
-            {/* Live Conversion Display - Premium Card */}
-            {goldPrice && (
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
-                {/* Live Price Indicator */}
+            {/* Deposit Summary Preview - Step 1 */}
+            {goldPrice && ((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+              <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-xl p-5 border border-amber-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                    <Coins className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-bold text-amber-800">Deposit Summary</h4>
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Gold You'll Receive - Primary */}
+                  <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-200">
+                    <span className="flex items-center gap-2 text-amber-700 font-medium">
+                      <Coins className="w-4 h-4" />
+                      Gold You'll Receive:
+                    </span>
+                    <span className="text-xl font-bold text-amber-700">
+                      {inputMode === 'gold' 
+                        ? parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                        : ((parseFloat(amount) || 0) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
+                    </span>
+                  </div>
+                  
+                  {/* USD Equivalent */}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>≈ USD Equivalent:</span>
+                    <span className="font-medium">
+                      ${inputMode === 'gold' 
+                        ? (parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {/* Processing Fee (if applicable) */}
+                  {depositFee && inputMode === 'usd' && parseFloat(amount) > 0 && (
+                    <div className="flex items-center justify-between text-sm text-orange-600">
+                      <span>Processing Fee ({depositFee.feeValue}%):</span>
+                      <span className="font-medium">
+                        -${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Live Price */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-amber-200">
+                    <span className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                      Live gold price:
+                    </span>
+                    <span className="font-medium">${goldPrice.pricePerGram.toFixed(2)}/gram</span>
+                  </div>
+                  
+                  {/* Important Notice */}
+                  <div className="bg-amber-100/50 border border-amber-200 rounded-lg p-3 mt-2">
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      <strong>Note:</strong> Gold price is tentative. Final rate will be confirmed upon fund receipt.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Live Price Display when no amount entered */}
+            {goldPrice && !((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -786,7 +850,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <span className="font-bold text-amber-700">${goldPrice.pricePerGram.toFixed(2)}<span className="text-xs font-normal text-muted-foreground">/gram</span></span>
                   </div>
                 </div>
-                
+              </div>
+            )}
+            
+            {/* Legacy Conversion Display - kept for compatibility */}
+            {goldPrice && false && (
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 shadow-sm space-y-4">
                 {/* Conversion Result */}
                 {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
                   (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
@@ -820,12 +889,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         {inputMode === 'gold' ? (
                           <>
                             <p className="text-xs text-muted-foreground">Estimated cost</p>
-                            <p className="text-lg font-bold text-emerald-600">≈ ${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</p>
+                            <p className="text-lg font-bold text-emerald-600">≈ ${(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)).toFixed(2)}</p>
                           </>
                         ) : (
                           <>
                             <p className="text-xs text-muted-foreground">You'll receive</p>
-                            <p className="text-lg font-bold text-amber-600">≈ {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</p>
+                            <p className="text-lg font-bold text-amber-600">≈ {(parseFloat(amount) / (goldPrice?.pricePerGram || 1)).toFixed(4)}g</p>
                           </>
                         )}
                       </div>
@@ -1057,47 +1126,56 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : step === 'details' && selectedAccount ? (
           <div className="py-4">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Left Panel - Bank Account Details */}
-              <div className="border border-border rounded-xl p-4 bg-muted/10 h-fit">
-                <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-5 h-5 text-primary" />
-                    <h4 className="font-bold text-foreground">Bank Details</h4>
+              {/* Left Panel - Premium Bank Details Card */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5 shadow-xl">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl -translate-y-8 translate-x-8"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-xl translate-y-4 -translate-x-4"></div>
+                
+                {/* Header */}
+                <div className="relative flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                      <Building className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Transfer To</h4>
+                      <p className="text-xs text-slate-400">{selectedAccount.bankName}</p>
+                    </div>
                   </div>
-                  <span className="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded">
+                  <span className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold rounded-full shadow-lg">
                     {selectedAccount.currency}
                   </span>
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-4">{selectedAccount.bankName}</p>
-                
-                <div className="space-y-3 text-sm">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-xs uppercase">Beneficiary Name</span>
-                    <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
-                      <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.accountName}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
+                {/* Bank Details */}
+                <div className="relative space-y-3">
+                  <div className="group">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Beneficiary</span>
+                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
+                      <span className="font-mono text-sm text-white truncate mr-2">{selectedAccount.accountName}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
                         <Copy className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-muted-foreground text-xs uppercase">Account Number</span>
-                    <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
-                      <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.accountNumber}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
+                  <div className="group">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Account Number</span>
+                    <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
+                      <span className="font-mono text-sm text-white">{selectedAccount.accountNumber}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
                         <Copy className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
 
                   {selectedAccount.swiftCode && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground text-xs uppercase">SWIFT Code</span>
-                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
-                        <span className="font-medium font-mono text-sm">{selectedAccount.swiftCode}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
+                    <div className="group">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">SWIFT Code</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-sm text-white">{selectedAccount.swiftCode}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
                           <Copy className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -1105,11 +1183,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   )}
 
                   {selectedAccount.iban && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground text-xs uppercase">IBAN</span>
-                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
-                        <span className="font-medium font-mono text-sm truncate mr-2">{selectedAccount.iban}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
+                    <div className="group">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">IBAN</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-xs text-white truncate mr-2">{selectedAccount.iban}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
                           <Copy className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -1117,11 +1195,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   )}
 
                   {selectedAccount.routingNumber && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground text-xs uppercase">Routing Number</span>
-                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-border">
-                        <span className="font-medium font-mono text-sm">{selectedAccount.routingNumber}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
+                    <div className="group">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Routing Number</span>
+                      <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm p-3 rounded-lg border border-white/10 mt-1 hover:bg-white/10 transition-colors">
+                        <span className="font-mono text-sm text-white">{selectedAccount.routingNumber}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
                           <Copy className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -1132,75 +1210,47 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
               {/* Right Panel - Deposit Information */}
               <div className="space-y-4">
-                {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
-                {/* Deposits always go to MPGW - user can transfer to FPGW later */}
-
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={inputMode === 'gold' ? 'default' : 'outline'}
-                    onClick={() => setInputMode('gold')}
-                    className={`flex-1 ${inputMode === 'gold' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
-                    data-testid="button-bank-input-mode-gold"
-                  >
-                    <Coins className="w-4 h-4 mr-1" /> Enter in Gold (g)
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={inputMode === 'usd' ? 'default' : 'outline'}
-                    onClick={() => setInputMode('usd')}
-                    className="flex-1"
-                    data-testid="button-bank-input-mode-usd"
-                  >
-                    <DollarSign className="w-4 h-4 mr-1" /> Enter in {selectedAccount?.currency || 'USD'}
-                  </Button>
-                </div>
-
-                {inputMode === 'gold' ? (
-                  <div>
-                    <Label className="text-sm font-medium text-amber-700">Amount (Gold Grams) *</Label>
-                    <div className="relative mt-1.5">
-                      <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
-                      <Input 
-                        type="number"
-                        value={goldAmount}
-                        onChange={(e) => setGoldAmount(e.target.value)}
-                        placeholder="0.000"
-                        className="pl-9 h-11 border-amber-300 focus:border-amber-500"
-                        step="0.001"
-                        min="0.001"
-                        data-testid="input-deposit-gold-amount"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Current price: ${goldPrice?.pricePerGram?.toFixed(2) || '—'}/gram
-                    </p>
+                {/* Read-Only Amount Display - Pre-filled from Step 1 */}
+                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-semibold text-amber-800">Amount to Transfer</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setStep('amount')}
+                      className="text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100 h-7 px-2"
+                      data-testid="button-edit-amount"
+                    >
+                      Edit Amount
+                    </Button>
                   </div>
-                ) : (
-                  <div>
-                    <Label className="text-sm font-medium">Amount ({selectedAccount?.currency || 'USD'}) *</Label>
-                    <div className="relative mt-1.5">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
-                        {getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}
-                      </span>
-                      <Input 
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="0.00"
-                        className={selectedAccount?.currency === 'AED' ? 'pl-12 h-11' : 'pl-7 h-11'}
-                        data-testid="input-deposit-amount"
-                      />
+                  <div className="flex items-center gap-3 bg-white rounded-lg p-3 border border-amber-200">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+                      {inputMode === 'gold' ? (
+                        <Coins className="w-5 h-5 text-white" />
+                      ) : (
+                        <span className="text-white font-bold text-sm">{getCurrencySymbol(selectedAccount?.currency || 'USD').trim()}</span>
+                      )}
                     </div>
-                    {selectedAccount?.currency !== 'USD' && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ≈ ${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toFixed(2)} USD (rate: 1 USD = {getRate(selectedAccount?.currency || 'USD').toFixed(4)} {selectedAccount?.currency})
+                    <div className="flex-1">
+                      <p className="text-2xl font-bold text-amber-800">
+                        {inputMode === 'gold' 
+                          ? `${parseFloat(goldAmount || '0').toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g`
+                          : `${getCurrencySymbol(selectedAccount?.currency || 'USD')}${parseFloat(amount || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        }
                       </p>
-                    )}
+                      <p className="text-xs text-amber-600">
+                        {inputMode === 'gold' 
+                          ? `≈ $${goldPrice ? (parseFloat(goldAmount || '0') * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} USD`
+                          : selectedAccount?.currency !== 'USD' 
+                            ? `≈ $${convertToUsd(parseFloat(amount) || 0, selectedAccount?.currency || 'USD').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                            : ''
+                        }
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
 
                 {/* Deposit Summary - GOLD-FIRST */}
                 {((inputMode === 'gold' && parseFloat(goldAmount) > 0) || (inputMode === 'usd' && parseFloat(amount) > 0)) && (
