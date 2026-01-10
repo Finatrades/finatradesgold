@@ -33,6 +33,7 @@ interface Transaction {
   rejectionReason: string | null;
   createdAt: string;
   completedAt: string | null;
+  sourceTable?: string;
 }
 
 interface UserInfo {
@@ -206,7 +207,9 @@ export default function FinaPayManagement() {
     swiftCode: '',
     iban: '',
     currency: 'USD',
-    isActive: true
+    isActive: true,
+    country: '',
+    status: 'Active' as 'Active' | 'Inactive'
   });
 
   const handleSaveBankAccount = async () => {
