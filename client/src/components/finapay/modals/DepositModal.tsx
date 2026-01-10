@@ -60,7 +60,7 @@ interface DepositModalProps {
 }
 
 type PaymentMethod = 'bank' | 'card' | 'crypto';
-type Step = 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'card-embedded' | 'card-success' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
+type Step = 'amount' | 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'card-embedded' | 'card-success' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
 
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { user } = useAuth();
@@ -68,7 +68,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { refreshTransactions } = useFinaPay();
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<Step>('method');
+  const [step, setStep] = useState<Step>('amount');
   const [cardFormKey, setCardFormKey] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
@@ -241,7 +241,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const resetForm = () => {
-    setStep('method');
+    setStep('amount');
     setPaymentMethod(null);
     setSelectedAccount(null);
     setAmount('');
@@ -446,10 +446,38 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     if (method === 'bank') {
       setStep('select');
     } else if (method === 'card') {
-      setStep('card-amount');
+      // Amount already entered in first step, go directly to payment
+      // Sync USD amount from gold input if needed
+      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+        const usdValue = getEffectiveUsdAmount();
+        setAmount(usdValue.toFixed(2));
+      }
+      handleCardPayment();
     } else if (method === 'crypto') {
-      setStep('crypto-amount');
+      // Amount already entered, go to crypto wallet selection
+      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+        const usdValue = getEffectiveUsdAmount();
+        setAmount(usdValue.toFixed(2));
+      }
+      setStep('crypto-select-wallet');
     }
+  };
+  
+  const handleAmountContinue = () => {
+    const minDeposit = platformSettings.minDeposit || 50;
+    const effectiveUsd = getEffectiveUsdAmount();
+    
+    if (effectiveUsd < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
+      return;
+    }
+    
+    // Sync the USD amount for downstream use
+    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+      setAmount(effectiveUsd.toFixed(2));
+    }
+    
+    setStep('method');
   };
 
   const handleSelectAccount = (account: PlatformBankAccount) => {
@@ -556,13 +584,14 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount') {
+    if (step === 'method') {
+      setStep('amount');
+      setPaymentMethod(null);
+    } else if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet') {
       setStep('method');
       setPaymentMethod(null);
     } else if (step === 'details') {
       setStep('select');
-    } else if (step === 'crypto-select-wallet') {
-      setStep('crypto-amount');
     } else if (step === 'crypto-address') {
       setStep('crypto-select-wallet');
       setSelectedCryptoWallet(null);
@@ -587,6 +616,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </DialogTitle>
           <p className="font-bold text-foreground text-sm">(Fund your account through buying equivalent amount of gold)</p>
           <DialogDescription className="text-muted-foreground">
+            {step === 'amount' && "Fund your account through buying equivalent amount of gold"}
             {step === 'method' && "Choose your preferred deposit method"}
             {step === 'select' && "Select a bank account to deposit to"}
             {step === 'details' && "Enter deposit details and make your transfer"}
@@ -603,7 +633,101 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {(loading || checkingNgenius) && step === 'method' ? (
+        {step === 'amount' ? (
+          <div className="space-y-6 py-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">Enter the amount you want to deposit</p>
+            </div>
+            
+            {/* Input Mode Toggle */}
+            <div className="flex items-center justify-center gap-4 p-1 bg-muted/30 rounded-lg">
+              <button
+                onClick={() => setInputMode('gold')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  inputMode === 'gold' 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                data-testid="button-input-gold-mode"
+              >
+                <Coins className="w-4 h-4 inline mr-2" />
+                Gold (grams)
+              </button>
+              <button
+                onClick={() => setInputMode('usd')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  inputMode === 'usd' 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                data-testid="button-input-usd-mode"
+              >
+                <DollarSign className="w-4 h-4 inline mr-2" />
+                USD Amount
+              </button>
+            </div>
+
+            {/* Amount Input */}
+            <div className="space-y-2">
+              {inputMode === 'gold' ? (
+                <div className="relative">
+                  <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    placeholder="Enter gold quantity (grams)"
+                    value={goldAmount}
+                    onChange={(e) => setGoldAmount(e.target.value)}
+                    className="pl-10 h-14 text-lg"
+                    data-testid="input-gold-amount"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">g</span>
+                </div>
+              ) : (
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter USD amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="pl-10 h-14 text-lg"
+                    data-testid="input-usd-amount"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">USD</span>
+                </div>
+              )}
+            </div>
+
+            {/* Conversion Display */}
+            {goldPrice && (
+              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Current Gold Price</span>
+                  <span className="font-medium">${goldPrice.pricePerGram.toFixed(2)}/gram</span>
+                </div>
+                {inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0 && (
+                  <div className="flex justify-between text-sm border-t border-border pt-2">
+                    <span className="text-muted-foreground">Equivalent USD</span>
+                    <span className="font-bold text-success">≈ ${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</span>
+                  </div>
+                )}
+                {inputMode === 'usd' && amount && parseFloat(amount) > 0 && (
+                  <div className="flex justify-between text-sm border-t border-border pt-2">
+                    <span className="text-muted-foreground">Equivalent Gold</span>
+                    <span className="font-bold text-primary">≈ {(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Minimum Deposit Notice */}
+            <p className="text-xs text-center text-muted-foreground">
+              Minimum deposit: ${platformSettings.minDeposit || 50} USD
+            </p>
+          </div>
+        ) : (loading || checkingNgenius) && step === 'method' ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
@@ -1585,8 +1709,28 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ) : null}
 
         <DialogFooter>
+          {step === 'amount' && (
+            <>
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button 
+                onClick={handleAmountContinue}
+                disabled={
+                  inputMode === 'gold' 
+                    ? !goldAmount || parseFloat(goldAmount) <= 0
+                    : !amount || parseFloat(amount) <= 0
+                }
+                data-testid="button-continue-deposit"
+              >
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </>
+          )}
           {step === 'method' && (
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <>
+              <Button variant="outline" onClick={() => setStep('amount')}>Back</Button>
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            </>
           )}
           {(step === 'select' || step === 'card-amount') && (
             <>
