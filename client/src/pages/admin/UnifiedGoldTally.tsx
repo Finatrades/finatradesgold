@@ -69,7 +69,14 @@ interface UnifiedTallyTransaction {
   physicalGoldAllocatedG: string | null;
   wingoldOrderId: string | null;
   storageCertificateId: string | null;
+  feeAmount: string | null;
+  gatewayCostUsd: string | null;
+  bankCostUsd: string | null;
+  networkCostUsd: string | null;
+  opsCostUsd: string | null;
+  totalCostsUsd: string | null;
   netProfitUsd: string | null;
+  wingoldCostUsd: string | null;
   createdAt: string;
   approvedAt: string | null;
   user?: {
@@ -149,7 +156,14 @@ export default function UnifiedGoldTally() {
       physicalGoldAllocatedG: txn.physical_gold_allocated_g || txn.physicalGoldAllocatedG,
       wingoldOrderId: txn.wingold_order_id || txn.wingoldOrderId,
       storageCertificateId: txn.storage_certificate_id || txn.storageCertificateId,
+      feeAmount: txn.fee_amount || txn.feeAmount,
+      gatewayCostUsd: txn.gateway_cost_usd || txn.gatewayCostUsd,
+      bankCostUsd: txn.bank_cost_usd || txn.bankCostUsd,
+      networkCostUsd: txn.network_cost_usd || txn.networkCostUsd,
+      opsCostUsd: txn.ops_cost_usd || txn.opsCostUsd,
+      totalCostsUsd: txn.total_costs_usd || txn.totalCostsUsd,
       netProfitUsd: txn.net_profit_usd || txn.netProfitUsd,
+      wingoldCostUsd: txn.wingold_cost_usd || txn.wingoldCostUsd,
       createdAt: txn.created_at || txn.createdAt,
       approvedAt: txn.approved_at || txn.approvedAt,
       user: {
@@ -485,9 +499,10 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col mt-4">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="allocation">Allocation</TabsTrigger>
+            <TabsTrigger value="fees">Fees & Profit</TabsTrigger>
             <TabsTrigger value="holdings">Holdings</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
@@ -643,6 +658,88 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       </a>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="fees" className="m-0 space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    Revenue & Fees
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Deposit Amount</span>
+                    <span className="text-sm font-medium">{formatCurrency(transaction.depositAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Platform Fee</span>
+                    <span className="text-sm font-medium text-orange-600">-{formatCurrency(transaction.feeAmount)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Net Amount</span>
+                    <span className="text-sm font-bold">{formatCurrency(transaction.netAmount)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Building className="w-4 h-4 text-red-600" />
+                    Operating Costs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Wingold Cost</span>
+                    <span className="text-sm">{formatCurrency(transaction.wingoldCostUsd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Payment Gateway</span>
+                    <span className="text-sm">{formatCurrency(transaction.gatewayCostUsd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Bank Fees</span>
+                    <span className="text-sm">{formatCurrency(transaction.bankCostUsd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Network Fees</span>
+                    <span className="text-sm">{formatCurrency(transaction.networkCostUsd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Operations</span>
+                    <span className="text-sm">{formatCurrency(transaction.opsCostUsd)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Total Costs</span>
+                    <span className="text-sm font-bold text-red-600">{formatCurrency(transaction.totalCostsUsd)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className={Number(transaction.netProfitUsd || 0) >= 0 ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Coins className="w-4 h-4" />
+                    Net Profit
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Platform Profit</span>
+                    <span className={`text-xl font-bold ${Number(transaction.netProfitUsd || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(transaction.netProfitUsd)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Calculated as: Fee Amount - Total Costs
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
