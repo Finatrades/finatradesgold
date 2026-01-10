@@ -5318,3 +5318,208 @@ export const wingoldBars = pgTable("wingold_bars", {
 export const insertWingoldBarSchema = createInsertSchema(wingoldBars).omit({ id: true, createdAt: true });
 export type InsertWingoldBar = z.infer<typeof insertWingoldBarSchema>;
 export type WingoldBar = typeof wingoldBars.$inferSelect;
+
+// ====================================
+// PHYSICAL GOLD DEPOSIT WORKFLOW
+// ====================================
+
+// Gold Item Types for Physical Deposits
+export const goldItemTypeEnum = pgEnum('gold_item_type', ['RAW', 'GOLD_BAR', 'GOLD_COIN', 'OTHER']);
+
+// Extended status for physical deposit workflow
+export const physicalDepositStatusEnum = pgEnum('physical_deposit_status', [
+  'SUBMITTED',
+  'UNDER_REVIEW', 
+  'RECEIVED',
+  'INSPECTION',
+  'NEGOTIATION',
+  'AGREED',
+  'APPROVED',
+  'REJECTED',
+  'CANCELLED'
+]);
+
+// Deposit Items - Individual gold items in a deposit request
+export const depositItems = pgTable("deposit_items", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  depositRequestId: varchar("deposit_request_id", { length: 255 }).notNull(),
+  
+  // Item details
+  itemType: goldItemTypeEnum("item_type").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  weightPerUnitGrams: decimal("weight_per_unit_grams", { precision: 18, scale: 6 }).notNull(),
+  totalDeclaredWeightGrams: decimal("total_declared_weight_grams", { precision: 18, scale: 6 }).notNull(),
+  purity: varchar("purity", { length: 20 }).notNull(), // '999.9', '995', '916', 'Unknown'
+  
+  // Brand/Mint details
+  brand: varchar("brand", { length: 255 }),
+  mint: varchar("mint", { length: 255 }),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  customDescription: text("custom_description"),
+  
+  // Photos
+  photoFrontUrl: varchar("photo_front_url", { length: 500 }),
+  photoBackUrl: varchar("photo_back_url", { length: 500 }),
+  additionalPhotos: json("additional_photos").$type<string[]>(),
+  
+  // After inspection
+  verifiedWeightGrams: decimal("verified_weight_grams", { precision: 18, scale: 6 }),
+  verifiedPurity: varchar("verified_purity", { length: 20 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDepositItemSchema = createInsertSchema(depositItems).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDepositItem = z.infer<typeof insertDepositItemSchema>;
+export type DepositItem = typeof depositItems.$inferSelect;
+
+// Deposit Inspections - Assay and verification results
+export const depositInspections = pgTable("deposit_inspections", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  depositRequestId: varchar("deposit_request_id", { length: 255 }).notNull(),
+  inspectorId: varchar("inspector_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Inspection results
+  grossWeightGrams: decimal("gross_weight_grams", { precision: 18, scale: 6 }).notNull(),
+  netWeightGrams: decimal("net_weight_grams", { precision: 18, scale: 6 }).notNull(),
+  purityResult: varchar("purity_result", { length: 20 }).notNull(),
+  assayMethod: varchar("assay_method", { length: 100 }), // 'XRF', 'Fire Assay', 'Visual', etc.
+  
+  // Fees and deductions
+  assayFeeUsd: decimal("assay_fee_usd", { precision: 12, scale: 2 }).default('0'),
+  refiningFeeUsd: decimal("refining_fee_usd", { precision: 12, scale: 2 }).default('0'),
+  handlingFeeUsd: decimal("handling_fee_usd", { precision: 12, scale: 2 }).default('0'),
+  otherFeesUsd: decimal("other_fees_usd", { precision: 12, scale: 2 }).default('0'),
+  totalFeesUsd: decimal("total_fees_usd", { precision: 12, scale: 2 }).default('0'),
+  
+  // Calculated credited grams after fees
+  creditedGrams: decimal("credited_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  // Documents
+  assayReportUrl: varchar("assay_report_url", { length: 500 }),
+  inspectionPhotos: json("inspection_photos").$type<string[]>(),
+  
+  // Notes
+  inspectorNotes: text("inspector_notes"),
+  discrepancyNotes: text("discrepancy_notes"),
+  
+  inspectedAt: timestamp("inspected_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDepositInspectionSchema = createInsertSchema(depositInspections).omit({ id: true, createdAt: true });
+export type InsertDepositInspection = z.infer<typeof insertDepositInspectionSchema>;
+export type DepositInspection = typeof depositInspections.$inferSelect;
+
+// Deposit Negotiation Messages - Offer/Counter history for RAW/OTHER
+export const depositNegotiationMessages = pgTable("deposit_negotiation_messages", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  depositRequestId: varchar("deposit_request_id", { length: 255 }).notNull(),
+  
+  // Message type
+  messageType: varchar("message_type", { length: 20 }).notNull(), // 'ADMIN_OFFER', 'USER_COUNTER', 'USER_ACCEPT', 'ADMIN_ACCEPT', 'USER_REJECT'
+  senderId: varchar("sender_id", { length: 255 }).notNull().references(() => users.id),
+  senderRole: varchar("sender_role", { length: 20 }).notNull(), // 'admin', 'user'
+  
+  // Offer details
+  proposedGrams: decimal("proposed_grams", { precision: 18, scale: 6 }),
+  proposedPurity: varchar("proposed_purity", { length: 20 }),
+  proposedFees: decimal("proposed_fees", { precision: 12, scale: 2 }),
+  goldPriceAtTime: decimal("gold_price_at_time", { precision: 12, scale: 2 }),
+  
+  // Message content
+  message: text("message"),
+  
+  // Response tracking
+  isLatest: boolean("is_latest").default(true),
+  respondedAt: timestamp("responded_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDepositNegotiationMessageSchema = createInsertSchema(depositNegotiationMessages).omit({ id: true, createdAt: true });
+export type InsertDepositNegotiationMessage = z.infer<typeof insertDepositNegotiationMessageSchema>;
+export type DepositNegotiationMessage = typeof depositNegotiationMessages.$inferSelect;
+
+// Physical Deposit Requests - Enhanced table for full workflow
+export const physicalDepositRequests = pgTable("physical_deposit_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Deposit type (determines workflow)
+  depositType: goldItemTypeEnum("deposit_type").notNull(),
+  requiresNegotiation: boolean("requires_negotiation").notNull().default(false),
+  
+  // Totals (calculated from items)
+  totalDeclaredWeightGrams: decimal("total_declared_weight_grams", { precision: 18, scale: 6 }).notNull(),
+  itemCount: integer("item_count").notNull().default(1),
+  
+  // Ownership declaration
+  isBeneficialOwner: boolean("is_beneficial_owner").notNull().default(true),
+  sourceOfMetal: varchar("source_of_metal", { length: 255 }),
+  sourceDetails: text("source_details"),
+  
+  // Delivery method
+  deliveryMethod: varchar("delivery_method", { length: 50 }).notNull(), // 'PERSONAL_DROPOFF', 'COURIER', 'ARMORED_PICKUP'
+  pickupAddress: text("pickup_address"),
+  pickupContactName: varchar("pickup_contact_name", { length: 255 }),
+  pickupContactPhone: varchar("pickup_contact_phone", { length: 50 }),
+  preferredDatetime: timestamp("preferred_datetime"),
+  scheduledDatetime: timestamp("scheduled_datetime"),
+  
+  // Documents
+  invoiceUrl: varchar("invoice_url", { length: 500 }),
+  assayCertificateUrl: varchar("assay_certificate_url", { length: 500 }),
+  additionalDocuments: json("additional_documents").$type<{name: string; url: string}[]>(),
+  
+  // Declarations
+  noLienDispute: boolean("no_lien_dispute").notNull().default(false),
+  acceptVaultTerms: boolean("accept_vault_terms").notNull().default(false),
+  acceptInsurance: boolean("accept_insurance").notNull().default(false),
+  acceptFees: boolean("accept_fees").notNull().default(false),
+  
+  // Status workflow
+  status: physicalDepositStatusEnum("status").notNull().default('SUBMITTED'),
+  
+  // Admin processing
+  assignedTo: varchar("assigned_to", { length: 255 }).references(() => users.id),
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  
+  // Receipt
+  receivedAt: timestamp("received_at"),
+  receivedBy: varchar("received_by", { length: 255 }).references(() => users.id),
+  batchLotId: varchar("batch_lot_id", { length: 100 }),
+  
+  // Inspection reference
+  inspectionId: varchar("inspection_id", { length: 255 }),
+  
+  // Final approval
+  approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by", { length: 255 }).references(() => users.id),
+  
+  // Credited amount
+  finalCreditedGrams: decimal("final_credited_grams", { precision: 18, scale: 6 }),
+  goldPriceAtApproval: decimal("gold_price_at_approval", { precision: 12, scale: 2 }),
+  
+  // Generated certificates (dual)
+  physicalStorageCertificateId: varchar("physical_storage_certificate_id", { length: 255 }).references(() => certificates.id),
+  digitalOwnershipCertificateId: varchar("digital_ownership_certificate_id", { length: 255 }).references(() => certificates.id),
+  
+  // Wallet credit reference
+  walletTransactionId: varchar("wallet_transaction_id", { length: 255 }).references(() => transactions.id),
+  
+  // Admin notes
+  adminNotes: text("admin_notes"),
+  rejectionReason: text("rejection_reason"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPhysicalDepositRequestSchema = createInsertSchema(physicalDepositRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPhysicalDepositRequest = z.infer<typeof insertPhysicalDepositRequestSchema>;
+export type PhysicalDepositRequest = typeof physicalDepositRequests.$inferSelect;
+
