@@ -157,6 +157,7 @@ import VaultPhysicalRegistry from "@/pages/admin/VaultPhysicalRegistry";
 import VaultLocations from "@/pages/admin/VaultLocations";
 import VaultReconciliation from "@/pages/admin/VaultReconciliation";
 import UnifiedGoldTally from "@/pages/admin/UnifiedGoldTally";
+import UnifiedPaymentManagement from "@/pages/admin/UnifiedPaymentManagement";
 import ComplianceDashboard from "@/pages/admin/ComplianceDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import EmailNotificationsManagement from "@/pages/admin/EmailNotificationsManagement";
@@ -294,6 +295,7 @@ function Router() {
       <Route path="/admin/vault-routing" component={VaultLocations} />
       <Route path="/admin/vault-reconciliation" component={VaultReconciliation} />
       <Route path="/admin/unified-gold-tally" component={UnifiedGoldTally} />
+      <Route path="/admin/unified-payments" component={UnifiedPaymentManagement} />
       <Route path="/admin/compliance" component={ComplianceDashboard} />
       
       {/* Operations & Finance */}

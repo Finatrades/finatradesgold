@@ -99,6 +99,197 @@ router.get('/stats', async (req: Request, res: Response) => {
   }
 });
 
+// UNIFIED PAYMENT MANAGEMENT - Must be before /:txnId to avoid route collision
+router.get('/pending-payments', async (req: Request, res: Response) => {
+  try {
+    // Filter for only pending payments that haven't been approved yet
+    // Exclude terminal statuses: Approved, Confirmed, Rejected, Cancelled
+    const terminalStatuses = ['Approved', 'Confirmed', 'Rejected', 'Cancelled', 'Completed'];
+    const [cryptoPayments, depositRequests] = await Promise.all([
+      storage.getAllCryptoPaymentRequests().then((r: any[]) => r.filter((p: any) => 
+        !terminalStatuses.includes(p.status)
+      )),
+      storage.getAllDepositRequests().then((r: any[]) => r.filter((d: any) => 
+        !terminalStatuses.includes(d.status)
+      )),
+    ]);
+    
+    const pendingPayments: any[] = [];
+
+    for (const cp of cryptoPayments) {
+      const user = await storage.getUser(cp.userId);
+      pendingPayments.push({
+        id: cp.id,
+        sourceType: 'CRYPTO',
+        sourceTable: 'crypto_payment_requests',
+        userId: cp.userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        userEmail: user?.email || '',
+        amountUsd: cp.amountUsd,
+        goldGrams: cp.goldGrams,
+        goldPriceAtTime: cp.goldPriceAtTime,
+        status: cp.status,
+        proofUrl: cp.proofImageUrl,
+        transactionHash: cp.transactionHash,
+        walletType: (cp as any).goldWalletType || 'MPGW',
+        createdAt: cp.createdAt,
+      });
+    }
+
+    for (const dr of depositRequests) {
+      const user = await storage.getUser(dr.userId);
+      pendingPayments.push({
+        id: dr.id,
+        sourceType: 'BANK',
+        sourceTable: 'deposit_requests',
+        userId: dr.userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        userEmail: user?.email || '',
+        amountUsd: dr.amountUsd,
+        goldGrams: null,
+        goldPriceAtTime: null,
+        status: dr.status,
+        proofUrl: dr.proofOfPayment,
+        referenceNumber: dr.referenceNumber,
+        senderBankName: dr.senderBankName,
+        walletType: 'MPGW',
+        createdAt: dr.createdAt,
+      });
+    }
+
+    pendingPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({
+      payments: pendingPayments,
+      counts: {
+        crypto: cryptoPayments.length,
+        bank: depositRequests.length,
+        physical: 0,
+        total: pendingPayments.length,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error fetching pending payments:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch pending payments' });
+  }
+});
+
+router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Response) => {
+  try {
+    const { sourceType, id } = req.params;
+    const { 
+      pricingMode: uiPricingMode = 'LIVE',
+      manualGoldPrice,
+      walletType = 'MPGW',
+      vaultLocation = 'Wingold & Metals DMCC',
+      notes 
+    } = req.body;
+    const adminUser = (req as any).adminUser;
+
+    // Map UI pricing mode to schema enum
+    const pricingMode = uiPricingMode === 'LIVE' ? 'MARKET' : 'FIXED';
+
+    let userId: string = '';
+    let amountUsd: number = 0;
+    let goldGrams: number = 0;
+    let goldPrice: number = 0;
+    let paymentReference: string = '';
+
+    if (sourceType === 'CRYPTO') {
+      const payment = await storage.getCryptoPaymentRequest(id);
+      if (!payment) return res.status(404).json({ error: 'Crypto payment not found' });
+      if (!['Pending', 'Under Review'].includes(payment.status)) {
+        return res.status(400).json({ error: 'Payment already processed' });
+      }
+      
+      userId = payment.userId;
+      amountUsd = Number(payment.amountUsd);
+      
+      if (pricingMode === 'MARKET') {
+        const { getGoldPricePerGram } = await import('./gold-price-service');
+        goldPrice = await getGoldPricePerGram();
+      } else {
+        goldPrice = Number(manualGoldPrice);
+      }
+      goldGrams = amountUsd / goldPrice;
+      
+      paymentReference = `CRYPTO-${id.substring(0, 8)}`;
+      
+      // Mark crypto payment as Approved (removes from pending queue)
+      await storage.updateCryptoPaymentRequest(id, {
+        status: 'Approved',
+        reviewNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+      });
+
+    } else if (sourceType === 'BANK') {
+      const deposit = await storage.getDepositRequest(id);
+      if (!deposit) return res.status(404).json({ error: 'Deposit request not found' });
+      if (deposit.status !== 'Pending') {
+        return res.status(400).json({ error: 'Deposit already processed' });
+      }
+      
+      userId = deposit.userId;
+      amountUsd = Number(deposit.amountUsd);
+      
+      const { getGoldPricePerGram } = await import('./gold-price-service');
+      goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
+      goldGrams = amountUsd / goldPrice;
+      
+      paymentReference = deposit.referenceNumber;
+      
+      // Mark deposit as Confirmed (removes from pending queue)
+      await storage.updateDepositRequest(deposit.id, {
+        status: 'Confirmed',
+        adminNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+        processedBy: adminUser?.id,
+        processedAt: new Date(),
+      });
+
+    } else {
+      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO or BANK.' });
+    }
+
+    const tallyRecord = await storage.createUnifiedTallyTransaction({
+      userId,
+      txnType: 'FIAT_CRYPTO_DEPOSIT',
+      sourceMethod: sourceType as 'CRYPTO' | 'BANK',
+      walletType: walletType as 'MPGW' | 'FPGW',
+      status: 'PAYMENT_CONFIRMED',
+      depositCurrency: 'USD',
+      depositAmount: String(amountUsd),
+      feeAmount: '0',
+      feeCurrency: 'USD',
+      netAmount: String(amountUsd),
+      paymentReference,
+      paymentConfirmedAt: new Date(),
+      pricingMode: pricingMode as 'MARKET' | 'FIXED',
+      goldRateValue: String(goldPrice),
+      rateTimestamp: new Date(),
+      goldEquivalentG: String(goldGrams),
+      vaultLocation,
+      notes: notes || `Created from ${sourceType} payment approval`,
+      createdBy: adminUser?.id,
+    });
+
+    res.json({
+      success: true,
+      message: `Payment approved. UTT record created (status: PAYMENT_CONFIRMED). Next: Add Wingold details and certificate.`,
+      tally: {
+        id: tallyRecord.id,
+        txnId: tallyRecord.txnId,
+        status: tallyRecord.status,
+        goldGrams: goldGrams.toFixed(4),
+        goldPrice: goldPrice.toFixed(2),
+        amountUsd: amountUsd.toFixed(2),
+      },
+    });
+
+  } catch (error: any) {
+    console.error('Error approving payment:', error);
+    res.status(500).json({ error: error.message || 'Failed to approve payment' });
+  }
+});
+
 router.get('/:txnId', async (req: Request, res: Response) => {
   try {
     const { txnId } = req.params;
