@@ -596,8 +596,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     } else if (step === 'crypto-address') {
       setStep('crypto-select-wallet');
       setSelectedCryptoWallet(null);
-    } else if (step === 'crypto-submit-proof') {
-      setStep('crypto-address');
+      setTransactionHash('');
+      setCryptoReceipt(null);
+      setCryptoReceiptFileName('');
     }
   };
 
@@ -659,8 +660,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             {step === 'card-success' && "Payment completed successfully"}
             {step === 'crypto-amount' && "Enter the amount to deposit via crypto"}
             {step === 'crypto-select-wallet' && "Select a cryptocurrency network"}
-            {step === 'crypto-address' && "Send crypto to the wallet address below"}
-            {step === 'crypto-submit-proof' && "Submit your transaction hash for verification"}
+            {step === 'crypto-address' && "Send crypto and submit your transaction hash for verification"}
             {step === 'crypto-submitted' && "Payment submitted for verification"}
           </DialogDescription>
         </DialogHeader>
@@ -1812,7 +1812,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             )}
           </div>
         ) : step === 'crypto-address' && selectedCryptoWallet ? (
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+            {/* Wallet Address Section */}
             <div className="p-4 bg-warning-muted border border-warning/30 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Bitcoin className="w-5 h-5 text-primary" />
@@ -1827,7 +1828,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <img 
                         src={selectedCryptoWallet.qrCodeImage} 
                         alt="Scan to pay" 
-                        className="w-40 h-40 object-contain"
+                        className="w-32 h-32 object-contain"
                         data-testid="img-crypto-qrcode"
                       />
                     </div>
@@ -1866,27 +1867,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 )}
               </div>
             </div>
-            
-            <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount to send:</span>
-                <span className="font-bold text-primary">${parseFloat(amount).toFixed(2)} worth</span>
-              </div>
-              {goldPrice?.pricePerGram && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Gold to receive:</span>
-                  <span className="font-bold text-amber-600">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-sm text-primary">
-              <p className="font-semibold mb-1">After sending, click "I've Sent Payment" below</p>
-              <p className="text-xs text-primary/80">You'll then enter your transaction hash for verification.</p>
-            </div>
-          </div>
-        ) : step === 'crypto-submit-proof' ? (
-          <div className="space-y-4 py-4">
+
+            {/* Transaction Hash Section */}
             <div>
               <Label>Transaction Hash / TX ID</Label>
               <Textarea 
@@ -1951,15 +1933,22 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </p>
             </div>
             
+            {/* Amount Summary */}
             <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Network:</span>
-                <span className="font-medium">{selectedCryptoWallet?.networkLabel}</span>
+                <span className="font-medium">{selectedCryptoWallet.networkLabel}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
-                <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                <span className="font-bold text-primary">${parseFloat(amount).toFixed(2)}</span>
               </div>
+              {goldPrice?.pricePerGram && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gold to receive:</span>
+                  <span className="font-bold text-amber-600">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
+                </div>
+              )}
             </div>
           </div>
         ) : step === 'crypto-submitted' ? (
@@ -2147,19 +2136,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             </>
           )}
           {step === 'crypto-address' && (
-            <>
-              <Button variant="outline" onClick={handleBack}>Back</Button>
-              <Button 
-                onClick={() => setStep('crypto-submit-proof')}
-                className="bg-primary hover:bg-primary/90"
-                data-testid="button-crypto-sent"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                I've Sent Payment
-              </Button>
-            </>
-          )}
-          {step === 'crypto-submit-proof' && (
             <>
               <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
