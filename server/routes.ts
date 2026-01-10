@@ -23657,6 +23657,15 @@ ${message}
       
       const tallyUser = await storage.getUser(paymentRequest.userId);
       const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+
+      // Fetch platform fee configuration
+      const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
+      const feePercent = feeConfig ? parseFloat(feeConfig.configValue || '1') : 1; // Default 1%
+      const feeAmount = (usdAmount * feePercent) / 100;
+      const netAmount = usdAmount - feeAmount;
+      const adminEarnedProfit = feeAmount; // Fee is the admin's profit
+
+      console.log('[DEBUG] Fee calculation:', { usdAmount, feePercent, feeAmount, netAmount, adminEarnedProfit });
       
       // Generate unique UTT transaction ID
       const year = new Date().getFullYear();
@@ -23762,9 +23771,9 @@ ${message}
         status: 'COMPLETED',
         depositCurrency: 'USD',
         depositAmount: paymentRequest.amountUsd,
-        feeAmount: '0.00',
+        feeAmount: feeAmount.toFixed(2),
         feeCurrency: 'USD',
-        netAmount: paymentRequest.amountUsd,
+        netAmount: netAmount.toFixed(2),
         paymentReference: `CRYPTO-${id.substring(0, 8)}`,
         paymentConfirmedAt: new Date(),
         pricingMode: pricingMode === 'MANUAL' ? 'FIXED' : 'MARKET',
@@ -23782,7 +23791,7 @@ ${message}
         networkCostUsd: '0.00',
         opsCostUsd: '0.00',
         totalCostsUsd: '0.00',
-        netProfitUsd: usdAmount.toFixed(2),
+        netProfitUsd: adminEarnedProfit.toFixed(2),
         approvedBy: adminUser?.id,
         approvedAt: new Date(),
         notes: `Streamlined approval - ${pricingMode} pricing`,
@@ -23970,6 +23979,15 @@ ${message}
       
       // Update dual-wallet vaultOwnershipSummary for MPGW/FPGW balance tracking
       const walletType = (paymentRequest as any).goldWalletType || 'MPGW';
+
+      // Fetch platform fee configuration
+      const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
+      const feePercent = feeConfig ? parseFloat(feeConfig.configValue || '1') : 1; // Default 1%
+      const feeAmount = (usdAmount * feePercent) / 100;
+      const netAmount = usdAmount - feeAmount;
+      const adminEarnedProfit = feeAmount; // Fee is the admin's profit
+
+      console.log('[DEBUG] Fee calculation:', { usdAmount, feePercent, feeAmount, netAmount, adminEarnedProfit });
       const [existingSummary] = await db.select().from(vaultOwnershipSummary)
         .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
       
