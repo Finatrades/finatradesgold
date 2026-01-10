@@ -726,7 +726,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-hidden flex flex-col">
+      <SheetContent className="w-full sm:max-w-xl overflow-hidden flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>Transaction Details</SheetTitle>
           <SheetDescription>
@@ -743,7 +743,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 mt-4">
+          <ScrollArea className="flex-1 mt-4 h-[calc(100vh-180px)]">
             <TabsContent value="details" className="m-0 space-y-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -817,7 +817,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
               )}
             </TabsContent>
 
-            <TabsContent value="allocation" className="m-0 space-y-4">
+            <TabsContent value="allocation" className="m-0 space-y-4 pb-8">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
