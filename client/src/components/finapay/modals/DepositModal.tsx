@@ -332,11 +332,16 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     
     setSubmitting(true);
     try {
+      // Apply fee deduction before calculating gold grams (Universal Bank Rule)
+      const feeAmount = calculateFee(amountNum);
+      const netDepositUsd = amountNum - feeAmount;
+      const goldGramsAfterFee = goldPrice ? (netDepositUsd / goldPrice.pricePerGram) : 0;
+      
       const response = await apiRequest('POST', '/api/crypto-payments', {
         userId: user.id,
         walletConfigId: selectedCryptoWallet.id,
         amountUsd: amountNum.toFixed(2),
-        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+        goldGrams: goldGramsAfterFee.toFixed(6),
         goldPriceAtTime: goldPrice?.pricePerGram.toFixed(2) || '0',
         paymentType: 'deposit',
       });
@@ -646,11 +651,16 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     
     setSubmitting(true);
     try {
+      // Apply fee deduction before calculating gold grams (Universal Bank Rule)
+      const feeAmount = calculateFee(amountNum);
+      const netDepositUsd = amountNum - feeAmount;
+      const goldGramsAfterFee = goldPrice ? (netDepositUsd / goldPrice.pricePerGram) : 0;
+      
       const response = await apiRequest('POST', '/api/crypto-payments', {
         userId: user.id,
         walletConfigId: selectedCryptoWallet.id,
         amountUsd: amountNum.toFixed(2),
-        goldGrams: goldPrice ? (amountNum / goldPrice.pricePerGram).toFixed(6) : '0',
+        goldGrams: goldGramsAfterFee.toFixed(6),
         goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
         paymentType: 'deposit',
       });
