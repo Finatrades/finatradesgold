@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,19 +46,34 @@ const SOURCE_OPTIONS = [
   { value: 'Other', label: 'Other' },
 ];
 
-const VAULT_LOCATIONS = [
-  { value: 'Dubai', label: 'Dubai Vault - DMCC Free Zone' },
-  { value: 'Singapore', label: 'Singapore Vault - Freeport' },
-  { value: 'Zurich', label: 'Zurich Vault - Swiss Secure' },
-  { value: 'London', label: 'London Vault - Brinks' },
-];
+interface VaultLocation {
+  id: string;
+  name: string;
+  code: string;
+  city: string;
+  country: string;
+  address?: string;
+  isActive: boolean;
+}
 
 export default function PhysicalGoldDeposit() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   
-  const [vaultLocation, setVaultLocation] = useState('Dubai');
+  // Fetch vault locations from database
+  const { data: vaultLocationsData, isLoading: vaultLocationsLoading } = useQuery({
+    queryKey: ['vault-locations'],
+    queryFn: async () => {
+      const res = await fetch('/api/vault/locations', { credentials: 'include' });
+      if (!res.ok) return { locations: [] };
+      return res.json();
+    },
+  });
+  
+  const vaultLocations: VaultLocation[] = vaultLocationsData?.locations || [];
+  
+  const [vaultLocation, setVaultLocation] = useState('');
   const [depositType, setDepositType] = useState<'RAW' | 'GOLD_BAR' | 'GOLD_COIN' | 'OTHER'>('GOLD_BAR');
   const [items, setItems] = useState<DepositItem[]>([{
     id: '1',
@@ -240,11 +256,13 @@ export default function PhysicalGoldDeposit() {
                 <Label>Select Vault Location</Label>
                 <Select value={vaultLocation} onValueChange={setVaultLocation}>
                   <SelectTrigger data-testid="select-vault-location">
-                    <SelectValue placeholder="Select vault" />
+                    <SelectValue placeholder={vaultLocationsLoading ? "Loading..." : "Select vault"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {VAULT_LOCATIONS.map(vault => (
-                      <SelectItem key={vault.value} value={vault.value}>{vault.label}</SelectItem>
+                    {vaultLocations.map(vault => (
+                      <SelectItem key={vault.id} value={vault.id}>
+                        {vault.name} - {vault.city}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -636,7 +654,7 @@ export default function PhysicalGoldDeposit() {
                 <CardContent className="pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vault Location:</span>
-                    <span className="font-medium">{VAULT_LOCATIONS.find(v => v.value === vaultLocation)?.label || vaultLocation}</span>
+                    <span className="font-medium">{vaultLocations.find(v => v.id === vaultLocation)?.name || vaultLocation}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Gold Type:</span>
