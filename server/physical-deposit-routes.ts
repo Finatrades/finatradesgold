@@ -187,6 +187,34 @@ router.get('/deposits/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Dedicated endpoint for negotiation messages
+router.get('/deposits/:id/negotiation', async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const userId = (req.user as any).id;
+    const deposit = await storage.getPhysicalDepositById(req.params.id);
+
+    if (!deposit || deposit.userId !== userId) {
+      return res.status(404).json({ error: 'Deposit not found' });
+    }
+
+    const messages = await storage.getNegotiationMessages(deposit.id);
+    
+    res.json({ 
+      messages,
+      usdEstimateFromUser: deposit.usdEstimateFromUser,
+      usdCounterFromAdmin: deposit.usdCounterFromAdmin,
+      usdAgreedValue: deposit.usdAgreedValue,
+    });
+  } catch (error) {
+    console.error('Error fetching negotiation messages:', error);
+    res.status(500).json({ error: 'Failed to fetch negotiation messages' });
+  }
+});
+
 const userResponseSchema = z.object({
   action: z.enum(['ACCEPT', 'COUNTER', 'REJECT']),
   counterGrams: z.number().optional(),
