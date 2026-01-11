@@ -56,7 +56,12 @@ interface VaultLocation {
   isActive: boolean;
 }
 
-export default function PhysicalGoldDeposit() {
+interface PhysicalGoldDepositProps {
+  embedded?: boolean;
+  onSuccess?: () => void;
+}
+
+export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: PhysicalGoldDepositProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -119,7 +124,12 @@ export default function PhysicalGoldDeposit() {
         title: 'Deposit Request Submitted',
         description: `Reference: ${data.deposit.referenceNumber}`,
       });
-      navigate('/finavault');
+      if (onSuccess) {
+        onSuccess();
+      } else if (!embedded) {
+        navigate('/finavault');
+      }
+      setStep(1);
     },
     onError: (error: Error) => {
       toast({
@@ -204,10 +214,12 @@ export default function PhysicalGoldDeposit() {
   const isNegotiationRequired = depositType === 'RAW' || depositType === 'OTHER';
 
   return (
-    <div className="max-w-4xl mx-auto py-4">
-      <Button variant="ghost" className="mb-4" onClick={() => navigate('/finavault')} data-testid="button-back">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back to FinaVault
-      </Button>
+    <div className={embedded ? "" : "max-w-4xl mx-auto py-4"}>
+      {!embedded && (
+        <Button variant="ghost" className="mb-4" onClick={() => navigate('/finavault')} data-testid="button-back">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to FinaVault
+        </Button>
+      )}
 
         <Card className="mb-6">
           <CardHeader>

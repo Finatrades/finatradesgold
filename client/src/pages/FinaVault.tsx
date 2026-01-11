@@ -790,7 +790,7 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="deposit-gold" className="mt-0">
-                  <PhysicalGoldDeposit />
+                  <PhysicalGoldDeposit embedded={true} />
                 </TabsContent>
 
                 <TabsContent value="buy-gold-bars" className="mt-0">
