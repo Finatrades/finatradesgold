@@ -99,6 +99,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const [inputMode, setInputMode] = useState<'gold' | 'usd'>('gold');
   const [goldAmount, setGoldAmount] = useState('');
   
+  // Preserve base USD amount for correct gold gram calculations when using non-USD bank accounts
+  const [baseUsdAmount, setBaseUsdAmount] = useState<number>(0);
+  
   // LGPW/FGPW wallet type selection
   const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
@@ -246,6 +249,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     setSelectedAccount(null);
     setAmount('');
     setGoldAmount('');
+    setBaseUsdAmount(0);
     setInputMode('gold');
     setSenderBankName('');
     setSenderAccountName('');
@@ -483,14 +487,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const handleSelectAccount = (account: PlatformBankAccount) => {
     setSelectedAccount(account);
     
-    // Convert the amount entered in step 1 to the bank's currency
-    // If user entered in gold mode, we already have goldAmount set
-    // If user entered in USD mode, convert to the bank's currency
-    if (account.currency !== 'USD' && parseFloat(amount) > 0) {
+    // Calculate and preserve the base USD amount for gold gram calculations
+    // This ensures correct gold calculations regardless of display currency
+    let usdBase = 0;
+    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+      // User entered gold grams - calculate USD value
+      usdBase = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+    } else {
+      // User entered USD amount
+      usdBase = parseFloat(amount || '0');
+    }
+    setBaseUsdAmount(usdBase);
+    
+    // Convert the amount to the bank's currency for display
+    // But keep the base USD amount for calculations
+    if (account.currency !== 'USD' && usdBase > 0) {
       const rate = exchangeRates[account.currency] || 1;
-      const convertedAmount = (parseFloat(amount) * rate).toFixed(2);
+      const convertedAmount = (usdBase * rate).toFixed(2);
       setAmount(convertedAmount);
-      setInputMode('usd'); // Show in local currency mode
+      // Note: inputMode stays as is - we use baseUsdAmount for calculations
     }
     
     setStep('details');
@@ -1271,9 +1286,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </Button>
                   </div>
                   <p className="text-2xl font-bold text-amber-800 text-center">
-                    {(inputMode === 'gold' 
-                      ? parseFloat(goldAmount || '0') 
-                      : getEffectiveGoldGrams()).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
+                    {(() => {
+                      // For non-USD bank accounts, use the preserved baseUsdAmount to calculate gold
+                      if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0 && goldPrice?.pricePerGram) {
+                        // Calculate gold from base USD (minus fee)
+                        const feeRate = parseFloat(depositFee?.feeValue || '0') / 100;
+                        const netUsd = baseUsdAmount * (1 - feeRate);
+                        return (netUsd / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                      }
+                      // For gold input mode, show the gold amount directly
+                      if (inputMode === 'gold') {
+                        return parseFloat(goldAmount || '0').toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                      }
+                      // For USD input, calculate from USD amount
+                      return getEffectiveGoldGrams().toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                    })()}g
                   </p>
                 </div>
                 
@@ -1282,11 +1309,18 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Gold Value:</span>
                     <span className="font-medium">
-                      ${(inputMode === 'gold' 
-                        ? getEffectiveUsdAmount()
-                        : (selectedAccount?.currency !== 'USD' 
-                            ? getDepositSummary().amountInUsd
-                            : parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${(() => {
+                        // Use baseUsdAmount for non-USD bank accounts
+                        if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
+                          return baseUsdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                        // For gold mode, calculate from gold
+                        if (inputMode === 'gold') {
+                          return getEffectiveUsdAmount().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                        // For USD mode, use amount directly
+                        return (parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      })()}
                     </span>
                   </div>
                   
@@ -1294,10 +1328,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="flex justify-between text-orange-600">
                       <span>Processing Fee ({depositFee.feeValue}%):</span>
                       <span className="font-medium">
-                        +${(inputMode === 'gold' 
-                          ? calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
-                          : calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        +${(() => {
+                          // Use baseUsdAmount for fee calculation when non-USD bank account selected
+                          const usdForFee = selectedAccount?.currency !== 'USD' && baseUsdAmount > 0 
+                            ? baseUsdAmount 
+                            : (inputMode === 'gold' ? parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0) : parseFloat(amount) || 0);
+                          return calculateFee(usdForFee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        })()}
                       </span>
                     </div>
                   )}
@@ -1309,9 +1346,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                     <span className="text-lg font-bold text-emerald-700">
                       {(() => {
-                        const totalUsd = inputMode === 'gold' 
-                          ? (parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
-                          : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0);
+                        // Use baseUsdAmount for non-USD bank accounts
+                        const usdBase = selectedAccount?.currency !== 'USD' && baseUsdAmount > 0 
+                          ? baseUsdAmount 
+                          : (inputMode === 'gold' ? parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0) : parseFloat(amount) || 0);
+                        const totalUsd = usdBase + calculateFee(usdBase);
                         
                         const accountCurrency = selectedAccount?.currency || 'USD';
                         if (accountCurrency !== 'USD') {
