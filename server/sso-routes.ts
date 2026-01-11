@@ -196,6 +196,58 @@ router.get("/api/sso/public-key", (req, res) => {
   });
 });
 
+/**
+ * SSO redirect specifically for Buy Gold Bar flow
+ * Includes permitted_delivery constraint to enforce SecureVault-only on Wingold
+ */
+router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.redirect("/login?error=user_not_found");
+    }
+
+    // Payload includes permitted_delivery to enforce SecureVault-only on Wingold
+    const payload = {
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+      },
+      // CRITICAL: This tells Wingold to ONLY show SecureVault delivery option
+      permitted_delivery: ['SECURE_VAULT'],
+      // Source context for Wingold to know this is a FinaVault purchase
+      source: 'finavault_buy_gold_bar',
+      iss: "finatrades.com",
+    };
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "30m", // Longer expiry for shopping session
+    });
+
+    // Redirect to Wingold shop with SSO token
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}&redirect=/shop`;
+    res.redirect(redirectUrl);
+  } catch (error: any) {
+    console.error("SSO shop redirect error:", error);
+    res.redirect("/finavault?error=sso_failed");
+  }
+});
+
 export function registerSsoRoutes(app: any) {
   app.use(router);
 }

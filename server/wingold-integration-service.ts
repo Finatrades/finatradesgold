@@ -195,13 +195,64 @@ export class WingoldIntegrationService {
   static async handleWebhook(payload: WingoldWebhookPayload): Promise<void> {
     console.log(`[Wingold] Received webhook: ${payload.event} for order ${payload.orderId}`);
     
-    const [order] = await db.select()
+    let [order] = await db.select()
       .from(wingoldPurchaseOrders)
       .where(eq(wingoldPurchaseOrders.wingoldOrderId, payload.orderId));
     
+    // If order doesn't exist locally, create it from webhook data (for SSO-redirect purchases)
+    // Wingold MUST include complete order data in the webhook payload
     if (!order) {
-      console.error(`[Wingold] Order not found for Wingold ID: ${payload.orderId}`);
-      throw new Error(`Order not found: ${payload.orderId}`);
+      const orderData = payload.data as {
+        finatradesId?: string;
+        userId?: string;
+        barSize?: string;
+        barCount?: number;
+        totalGrams?: string;
+        usdAmount?: string;
+        vaultLocationId?: string;
+        goldPricePerGram?: string;
+        wingoldReference?: string;
+      };
+      
+      const userId = orderData.finatradesId || orderData.userId;
+      if (!userId) {
+        console.error(`[Wingold] Cannot create order - no finatradesId in webhook payload: ${payload.orderId}`);
+        throw new Error(`Missing finatradesId in webhook: ${payload.orderId}`);
+      }
+      
+      // Validate required fields from Wingold
+      if (!orderData.barSize || !orderData.totalGrams || !orderData.usdAmount) {
+        console.error(`[Wingold] Incomplete order data in webhook - missing barSize, totalGrams, or usdAmount: ${payload.orderId}`);
+        throw new Error(`Incomplete order data in webhook: ${payload.orderId}`);
+      }
+      
+      // Validate bar size
+      const validBarSizes = ['1g', '10g', '100g', '1kg'];
+      if (!validBarSizes.includes(orderData.barSize)) {
+        console.error(`[Wingold] Invalid barSize in webhook: ${orderData.barSize}`);
+        throw new Error(`Invalid barSize: ${orderData.barSize}`);
+      }
+      
+      // Create the order locally with complete data from Wingold
+      const referenceNumber = orderData.wingoldReference || 
+        `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      const [newOrder] = await db.insert(wingoldPurchaseOrders).values({
+        userId,
+        referenceNumber,
+        wingoldOrderId: payload.orderId,
+        barSize: orderData.barSize as '1g' | '10g' | '100g' | '1kg',
+        barCount: orderData.barCount || 1,
+        totalGrams: orderData.totalGrams,
+        usdAmount: orderData.usdAmount,
+        goldPricePerGram: orderData.goldPricePerGram || '0',
+        preferredVaultLocation: orderData.vaultLocationId,
+        status: 'confirmed',
+        confirmedAt: new Date()
+      }).returning();
+      
+      order = newOrder;
+      console.log(`[Wingold] Created local order ${referenceNumber} from webhook for Wingold ID: ${payload.orderId} (user: ${userId}, ${orderData.barCount}x ${orderData.barSize}, $${orderData.usdAmount})`);
     }
 
     switch (payload.event) {
