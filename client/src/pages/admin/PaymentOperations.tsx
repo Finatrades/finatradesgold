@@ -231,7 +231,9 @@ export default function FinaPayManagement() {
         swiftCode: '',
         iban: '',
         currency: 'USD',
-        isActive: true
+        isActive: true,
+        country: '',
+        status: 'Active' as 'Active' | 'Inactive'
       });
       fetchData();
     } catch (error) {
@@ -367,8 +369,19 @@ export default function FinaPayManagement() {
       toast.success(`Deposit ${action.toLowerCase()}`);
       setDepositDialogOpen(false);
       fetchData();
-    } catch (error) {
-      toast.error(`Failed to ${action.toLowerCase()} deposit`);
+    } catch (error: any) {
+      // Handle Golden Rule enforcement redirect
+      if (error?.code === 'GOLDEN_RULE_ENFORCEMENT' || error?.message?.includes('Golden Rule')) {
+        toast.error('Golden Rule: Use Unified Payment Management for approvals', {
+          description: 'Go to Admin > Payments to approve with proper allocation.',
+          duration: 8000,
+        });
+        setDepositDialogOpen(false);
+        // Redirect to Unified Payment Management
+        window.location.href = '/admin/payments';
+      } else {
+        toast.error(`Failed to ${action.toLowerCase()} deposit`);
+      }
     }
   };
 

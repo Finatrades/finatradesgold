@@ -11564,6 +11564,8 @@ ${message}
           redirectTo: "/admin/payments"
         });
       }
+        /* DISABLED - Legacy direct wallet credit code (Golden Rule enforcement)
+        if (false) {
         const wallet = await storage.getWallet(request.userId);
         if (wallet) {
           // Fetch live gold price from metals-api BEFORE the transaction
@@ -11839,6 +11841,7 @@ ${message}
           updates.goldPriceUsdPerGram = goldPricePerGram.toFixed(2);
         }
       }
+      } */
       
       const updatedRequest = await storage.updateDepositRequest(req.params.id, {
         ...updates,
