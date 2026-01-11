@@ -13,6 +13,7 @@ import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
+import MetalCard from '@/components/dashboard/MetalCard';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -88,29 +89,38 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl"></div>
           
           <div className="relative z-10">
-            {/* Top row - Greeting & Live Price */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-              <div>
-                <p className="text-purple-300 text-sm mb-1">Welcome back</p>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">{userName}</h1>
-                {user.finatradesId && (
-                  <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full">
-                    <span className="text-xs text-purple-300">ID</span>
-                    <span className="text-sm font-mono font-bold text-amber-400">{user.finatradesId}</span>
+            {/* Top row - Greeting, Live Price & Metal Card */}
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                  <div>
+                    <p className="text-purple-300 text-sm mb-1">Welcome back</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">{userName}</h1>
+                    {user.finatradesId && (
+                      <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full">
+                        <span className="text-xs text-purple-300">ID</span>
+                        <span className="text-sm font-mono font-bold text-amber-400">{user.finatradesId}</span>
+                      </div>
+                    )}
                   </div>
-                )}
+                  
+                  {/* Live Gold Price Ticker */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${isGoldPriceLive ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
+                      <span className="text-xs text-purple-300 uppercase tracking-wide">Gold Price</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-bold text-amber-400">${goldPrice.toFixed(2)}</span>
+                      <span className="text-xs text-purple-300">/gram</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              {/* Live Gold Price Ticker */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isGoldPriceLive ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
-                  <span className="text-xs text-purple-300 uppercase tracking-wide">Gold Price</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-amber-400">${goldPrice.toFixed(2)}</span>
-                  <span className="text-xs text-purple-300">/gram</span>
-                </div>
+              {/* Metal Card */}
+              <div className="hidden lg:block">
+                <MetalCard />
               </div>
             </div>
             
