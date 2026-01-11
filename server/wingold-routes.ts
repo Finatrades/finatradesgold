@@ -278,7 +278,33 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
   try {
     const locations = await db.select()
       .from(wingoldVaultLocations)
-      .where(eq(wingoldVaultLocations.isActive, true));
+      .where(and(
+        eq(wingoldVaultLocations.isActive, true),
+        sql`LOWER(${wingoldVaultLocations.name}) LIKE '%securevault%' OR LOWER(${wingoldVaultLocations.code}) LIKE '%sv%'`
+      ));
+    
+    if (locations.length === 0) {
+      const allActiveLocations = await db.select()
+        .from(wingoldVaultLocations)
+        .where(eq(wingoldVaultLocations.isActive, true));
+      
+      if (allActiveLocations.length > 0) {
+        res.json({ locations: allActiveLocations, note: 'All vault locations shown - SecureVault filter applied when available' });
+        return;
+      }
+      
+      const defaultSecureVault = [{
+        id: 'sv-dubai-default',
+        name: 'SecureVault - Dubai',
+        code: 'SV-DXB',
+        city: 'Dubai',
+        country: 'UAE',
+        address: 'Dubai Multi Commodities Centre',
+        isActive: true
+      }];
+      res.json({ locations: defaultSecureVault });
+      return;
+    }
     
     res.json({ locations });
   } catch (error) {
@@ -603,5 +629,53 @@ async function seedDefaultProducts(): Promise<void> {
   }
   console.log('[Wingold] Seeded default products');
 }
+
+router.get('/shop-redirect', async (req: Request, res: Response) => {
+  try {
+    const ssoSecret = process.env.WINGOLD_SYNC_SECRET;
+    if (!ssoSecret) {
+      console.error('[Wingold] WINGOLD_SYNC_SECRET not configured - shop redirect unavailable');
+      return res.status(503).json({ error: 'Shop integration temporarily unavailable' });
+    }
+    
+    const user = await getSessionUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const [userData] = await db.select().from(users).where(eq(users.id, user.id));
+    if (!userData) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const ssoPayload = {
+      userId: userData.id,
+      finatradesId: userData.finatradesId,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + (5 * 60 * 1000)
+    };
+
+    const ssoToken = Buffer.from(JSON.stringify(ssoPayload)).toString('base64url');
+    
+    const crypto = require('crypto');
+    const signature = crypto
+      .createHmac('sha256', ssoSecret)
+      .update(ssoToken)
+      .digest('hex');
+
+    const shopUrl = `${WINGOLD_API_URL}/shop?sso=${ssoToken}&sig=${signature}&partner=finatrades`;
+
+    res.json({ 
+      redirectUrl: shopUrl,
+      expiresIn: 300
+    });
+  } catch (error) {
+    console.error('[Wingold] Shop redirect failed:', error);
+    res.status(500).json({ error: 'Failed to generate shop redirect' });
+  }
+});
 
 export default router;

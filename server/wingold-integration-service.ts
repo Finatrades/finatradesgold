@@ -2,7 +2,7 @@ import { db } from './db';
 import { 
   wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, 
   wingoldVaultLocations, wingoldReconciliations,
-  vaultHoldings, transactions, wallets, users
+  vaultHoldings, transactions, wallets, users, certificates
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -312,8 +312,9 @@ export class WingoldIntegrationService {
 
     await this.createFinaVaultHolding(orderId);
     await this.creditLGPWWallet(orderId);
+    await this.issueDigitalOwnershipCertificate(orderId);
     
-    console.log(`[Wingold] Order ${orderId} fulfilled, FinaVault updated and LGPW credited`);
+    console.log(`[Wingold] Order ${orderId} fulfilled, FinaVault updated, LGPW credited, and Digital Ownership Certificate issued`);
   }
 
   private static async handleOrderCancelled(orderId: string, data: { reason?: string }): Promise<void> {
@@ -392,6 +393,66 @@ export class WingoldIntegrationService {
     });
 
     console.log(`[Wingold] Credited ${creditAmount}g to LGPW wallet for user ${order.userId}`);
+  }
+
+  private static async issueDigitalOwnershipCertificate(orderId: string): Promise<void> {
+    const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
+    if (!order) return;
+
+    const [user] = await db.select().from(users).where(eq(users.id, order.userId));
+    if (!user) return;
+
+    const barLots = await db.select().from(wingoldBarLots).where(eq(wingoldBarLots.orderId, orderId));
+    if (barLots.length === 0) return;
+    
+    const perBarValueUsd = (parseFloat(order.usdAmount || '0') / barLots.length).toFixed(2);
+    
+    for (const bar of barLots) {
+      if (!bar.vaultHoldingId || !bar.serialNumber) {
+        console.warn(`[Wingold] Skipping certificate for bar without vaultHoldingId or serialNumber in order ${orderId}`);
+        continue;
+      }
+      
+      const existingCert = await db.select()
+        .from(certificates)
+        .where(eq(certificates.wingoldStorageRef, `WG-${bar.serialNumber}`))
+        .limit(1);
+      
+      if (existingCert.length > 0) {
+        console.log(`[Wingold] Digital Ownership Certificate already exists for bar ${bar.serialNumber}, skipping`);
+        continue;
+      }
+
+      const certificateNumber = `FT-DOC-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+
+      await db.insert(certificates).values({
+        certificateNumber,
+        userId: order.userId,
+        vaultHoldingId: bar.vaultHoldingId,
+        type: 'DigitalOwnership',
+        status: 'Active',
+        goldGrams: bar.weightGrams,
+        goldPriceUsdPerGram: order.goldPriceUsdPerGram,
+        totalValueUsd: perBarValueUsd,
+        issuer: 'Finatrades',
+        vaultLocation: bar.vaultLocationName || 'SecureVault - Dubai',
+        wingoldStorageRef: `WG-${bar.serialNumber}`,
+        metadata: {
+          wingoldOrderId: order.wingoldOrderId,
+          wingoldReferenceNumber: order.referenceNumber,
+          barSerialNumber: bar.serialNumber,
+          barSize: bar.barSize,
+          barPurity: bar.purity,
+          mint: bar.mint,
+          issuedTo: {
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+            finatradesId: user.finatradesId
+          }
+        }
+      });
+
+      console.log(`[Wingold] Issued Finatrades Digital Ownership Certificate ${certificateNumber} for bar ${bar.serialNumber}`);
+    }
   }
 
   private static async updateOrCreateVaultLocation(wingoldLocationId: string, name: string): Promise<void> {
