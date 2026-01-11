@@ -1059,6 +1059,19 @@ export const depositRequests = pgTable("deposit_requests", {
   processedAt: timestamp("processed_at"),
   rejectionReason: text("rejection_reason"),
   adminNotes: text("admin_notes"), // Admin notes for processing
+  
+  // Gold Bar Purchase Integration (for Buy Gold Bar flow via Wingold)
+  goldBarPurchase: json("gold_bar_purchase").$type<{
+    isGoldBarPurchase: boolean;
+    barSize: '1g' | '10g' | '100g' | '1kg';
+    barCount: number;
+    totalGrams: number;
+    vaultLocationId: string;
+    vaultLocationName: string;
+    estimatedPricePerGram: number;
+  } | null>().default(null),
+  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).default(sql`NULL`),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

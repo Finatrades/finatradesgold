@@ -363,6 +363,24 @@ export class WingoldIntegrationService {
     const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
     if (!order) return;
 
+    const barLots = await db.select().from(wingoldBarLots).where(eq(wingoldBarLots.orderId, orderId));
+    
+    const physicalGoldAllocatedG = barLots.reduce((sum, bar) => {
+      const weight = parseFloat(bar.weightGrams || '0');
+      return sum + (isNaN(weight) ? 0 : weight);
+    }, 0);
+    
+    if (physicalGoldAllocatedG <= 0) {
+      console.error(`[Wingold] GOLDEN RULE VIOLATION: Cannot credit wallet - no physical gold allocated for order ${orderId}`);
+      return;
+    }
+
+    const barsWithCertificates = barLots.filter(bar => bar.storageCertificateId || bar.barCertificateId || bar.vaultHoldingId);
+    if (barsWithCertificates.length === 0) {
+      console.error(`[Wingold] GOLDEN RULE VIOLATION: Cannot credit wallet - no storage certificates or vault holdings for order ${orderId}`);
+      return;
+    }
+
     const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, order.userId));
     if (!wallet) {
       console.error(`[Wingold] No wallet found for user ${order.userId}`);
@@ -370,7 +388,7 @@ export class WingoldIntegrationService {
     }
 
     const currentBalance = parseFloat(wallet.goldGrams || '0');
-    const creditAmount = parseFloat(order.totalGrams);
+    const creditAmount = physicalGoldAllocatedG;
     const newBalance = currentBalance + creditAmount;
 
     await db.update(wallets)
@@ -384,7 +402,7 @@ export class WingoldIntegrationService {
       userId: order.userId,
       type: 'Deposit',
       status: 'Completed',
-      amountGold: order.totalGrams,
+      amountGold: String(creditAmount),
       goldPriceUsdPerGram: order.goldPriceUsdPerGram,
       amountUsd: order.usdAmount,
       goldWalletType: 'LGPW',
@@ -392,7 +410,7 @@ export class WingoldIntegrationService {
       sourceModule: 'wingold'
     });
 
-    console.log(`[Wingold] Credited ${creditAmount}g to LGPW wallet for user ${order.userId}`);
+    console.log(`[Wingold] GOLDEN RULE SATISFIED: Credited ${creditAmount}g to LGPW wallet for user ${order.userId} (physical allocation: ${physicalGoldAllocatedG}g, certificates: ${barsWithCertificates.length})`);
   }
 
   private static async issueDigitalOwnershipCertificate(orderId: string): Promise<void> {
