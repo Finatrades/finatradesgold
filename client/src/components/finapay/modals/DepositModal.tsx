@@ -803,43 +803,41 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 <div className="space-y-3">
-                  {/* Deposit Amount */}
+                  {/* Deposit Amount - What user is depositing (gross) */}
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Deposit Amount:</span>
                     <span className="font-medium">
-                      ${inputMode === 'gold' 
-                        ? (parseFloat(goldAmount) * goldPrice.pricePerGram / (1 - (parseFloat(depositFee?.feeValue || '0') / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        : parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {inputMode === 'gold' 
+                        ? `${parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g (≈ $${(parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+                        : `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     </span>
                   </div>
                   
-                  {/* Processing Fee - DEDUCTED (bank-style) */}
+                  {/* Processing Fee - DEDUCTED from deposit (universal bank rule) */}
                   {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
                     <div className="flex items-center justify-between text-sm text-red-500">
                       <span>Processing Fee ({depositFee.feeValue}%):</span>
                       <span className="font-medium">
-                        -${(inputMode === 'gold' 
-                          ? calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram / (1 - (parseFloat(depositFee.feeValue) / 100)))
-                          : calculateFee(parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {inputMode === 'gold' 
+                          ? `-${(parseFloat(goldAmount) * parseFloat(depositFee.feeValue) / 100).toFixed(4)}g`
+                          : `-$${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </span>
                     </div>
                   )}
                   
-                  {/* Net Amount for Gold */}
+                  {/* Net Amount after fee deduction */}
                   {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-2">
-                      <span>Net for Gold:</span>
+                      <span>Net After Fee:</span>
                       <span className="font-medium">
-                        ${(inputMode === 'gold' 
-                          ? (parseFloat(goldAmount) * goldPrice.pricePerGram)
-                          : (parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {inputMode === 'gold' 
+                          ? `${(parseFloat(goldAmount) * (1 - parseFloat(depositFee.feeValue) / 100)).toFixed(4)}g`
+                          : `$${((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </span>
                     </div>
                   )}
                   
-                  {/* Gold You'll Receive - Primary (calculated from NET amount) */}
+                  {/* Gold You'll Receive - After fee deduction */}
                   <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-200">
                     <span className="flex items-center gap-2 text-amber-700 font-medium">
                       <Coins className="w-4 h-4" />
@@ -847,7 +845,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                     <span className="text-xl font-bold text-amber-700">
                       {inputMode === 'gold' 
-                        ? parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                        ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                         : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
                     </span>
                   </div>
@@ -1287,22 +1285,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   </div>
                   <p className="text-2xl font-bold text-amber-800 text-center">
                     {(() => {
-                      // For gold input mode, user receives exactly what they entered
-                      // The fee is ADDED to what they pay, not subtracted from gold received
+                      const feeRate = parseFloat(depositFee?.feeValue || '0') / 100;
+                      // For gold input mode, fee is deducted from gold (universal bank rule)
                       if (inputMode === 'gold') {
-                        return parseFloat(goldAmount || '0').toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                        const grossGold = parseFloat(goldAmount || '0');
+                        const netGold = grossGold * (1 - feeRate);
+                        return netGold.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
                       }
                       // For USD input mode with non-USD bank accounts, use baseUsdAmount
                       if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0 && goldPrice?.pricePerGram) {
-                        // For USD input: fee is subtracted from deposit, user gets less gold
-                        const feeRate = parseFloat(depositFee?.feeValue || '0') / 100;
                         const netUsd = baseUsdAmount * (1 - feeRate);
                         return (netUsd / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
                       }
                       // For USD input with USD bank, calculate from amount
                       if (goldPrice?.pricePerGram) {
                         const usdAmount = parseFloat(amount) || 0;
-                        const feeRate = parseFloat(depositFee?.feeValue || '0') / 100;
                         const netUsd = usdAmount * (1 - feeRate);
                         return (netUsd / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
                       }
@@ -1313,45 +1310,48 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 
                 {/* Fee Breakdown */}
                 <div className="border border-amber-300 rounded-lg p-3 bg-white space-y-2 text-sm">
+                  {/* Deposit Amount (gross) */}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Gold Value:</span>
+                    <span>Deposit Amount:</span>
                     <span className="font-medium">
-                      ${(() => {
-                        // For gold input mode, calculate gold value from gold grams
+                      {(() => {
+                        // For gold input mode, show gold amount and USD equivalent
                         if (inputMode === 'gold' && goldPrice?.pricePerGram) {
                           const goldValue = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
-                          return goldValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          return `$${goldValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                         }
                         // For USD input with non-USD bank account, use baseUsdAmount
                         if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
-                          return baseUsdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          return `$${baseUsdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                         }
                         // For USD mode, use amount directly
-                        return (parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        return `$${(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                       })()}
                     </span>
                   </div>
                   
+                  {/* Processing Fee - DEDUCTED (universal bank rule) */}
                   {depositFee && (
-                    <div className="flex justify-between text-orange-600">
+                    <div className="flex justify-between text-red-500">
                       <span>Processing Fee ({depositFee.feeValue}%):</span>
                       <span className="font-medium">
-                        +${(() => {
-                          // Calculate fee based on gold value
+                        -{(() => {
+                          // Calculate fee based on deposit amount
                           if (inputMode === 'gold' && goldPrice?.pricePerGram) {
                             const goldValue = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
-                            return calculateFee(goldValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            return `$${calculateFee(goldValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                           }
                           // For USD input with non-USD bank account
                           if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
-                            return calculateFee(baseUsdAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            return `$${calculateFee(baseUsdAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                           }
-                          return calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          return `$${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                         })()}
                       </span>
                     </div>
                   )}
                   
+                  {/* Total to Pay = Deposit Amount (no fee added, fee is deducted from what user receives) */}
                   <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 mt-2">
                     <span className="flex items-center gap-2 text-emerald-700 font-semibold">
                       <DollarSign className="w-4 h-4" />
@@ -1359,18 +1359,18 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     </span>
                     <span className="text-lg font-bold text-emerald-700">
                       {(() => {
-                        // Calculate total based on input mode
-                        let goldValue = 0;
+                        // Calculate total based on input mode (fee is deducted from deposit, not added to payment)
+                        let depositUsd = 0;
                         if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                          goldValue = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+                          depositUsd = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
                         } else if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
-                          goldValue = baseUsdAmount;
+                          depositUsd = baseUsdAmount;
                         } else {
-                          goldValue = parseFloat(amount) || 0;
+                          depositUsd = parseFloat(amount) || 0;
                         }
                         
-                        // For gold input: fee is ADDED to payment (user pays gold value + fee)
-                        const totalUsd = goldValue + calculateFee(goldValue);
+                        // Total to pay is the deposit amount (fee is deducted from gold received, not added to payment)
+                        const totalUsd = depositUsd;
                         
                         const accountCurrency = selectedAccount?.currency || 'USD';
                         if (accountCurrency !== 'USD') {
