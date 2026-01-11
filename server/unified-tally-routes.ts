@@ -398,6 +398,28 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       });
     }
 
+    // Create timeline event for UTT creation
+    await storage.createUnifiedTallyEvent({
+      tallyId: tallyRecord.id,
+      eventType: 'CREATED',
+      previousStatus: null,
+      newStatus: initialStatus,
+      details: {
+        sourceType,
+        amountUsd,
+        feeAmountUsd,
+        netAmountUsd,
+        goldGrams,
+        goldPrice,
+        wingoldOrderId: wingoldOrderId || null,
+        physicalGoldAllocatedG: physicalGoldAllocatedG || null,
+        storageCertificateId: storageCertificateId || null,
+        message: `UTT created from ${sourceType} payment with Golden Rule allocation`
+      } as any,
+      triggeredBy: adminUser?.id || 'system',
+      triggeredByName: adminUser?.firstName ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin',
+    });
+
     res.json({
       success: true,
       message: `Payment approved. UTT record created (status: CERT_RECEIVED). Golden Rule satisfied - ready for final credit approval.`,

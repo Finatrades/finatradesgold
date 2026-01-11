@@ -64,7 +64,7 @@ type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
 interface UnifiedTallyTransaction {
   id: string;
   userId: string;
-  walletType: 'LGPW' | 'FGPW';
+  walletType: 'LGPW' | 'FGPW' | 'MPGW' | 'FPGW';
   depositMethod: DepositMethod;
   status: TallyStatus;
   depositAmount: string;
@@ -73,6 +73,7 @@ interface UnifiedTallyTransaction {
   goldRateValue: string | null;
   goldEquivalentG: string | null;
   physicalGoldAllocatedG: string | null;
+  goldCreditedG: string | null;
   wingoldOrderId: string | null;
   storageCertificateId: string | null;
   feeAmount: string | null;
@@ -160,6 +161,7 @@ export default function UnifiedGoldTally() {
       goldRateValue: txn.gold_rate_value || txn.goldRateValue,
       goldEquivalentG: txn.gold_equivalent_g || txn.goldEquivalentG,
       physicalGoldAllocatedG: txn.physical_gold_allocated_g || txn.physicalGoldAllocatedG,
+      goldCreditedG: txn.gold_credited_g || txn.goldCreditedG,
       wingoldOrderId: txn.wingold_order_id || txn.wingoldOrderId,
       storageCertificateId: txn.storage_certificate_id || txn.storageCertificateId,
       feeAmount: txn.fee_amount || txn.feeAmount,
@@ -634,15 +636,19 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
   const handleApproveCredit = async () => {
     if (!transaction) return;
     
-    if (!wingoldForm.storageCertificateId) {
+    // Validate Golden Rule from transaction data (already captured at approval)
+    if (!transaction.storageCertificateId) {
       toast.error('Storage certificate is required (Golden Rule)');
       return;
     }
-    if (!wingoldForm.physicalGoldAllocatedG || Number(wingoldForm.physicalGoldAllocatedG) <= 0) {
+    if (!transaction.physicalGoldAllocatedG || Number(transaction.physicalGoldAllocatedG) <= 0) {
       toast.error('Physical gold must be allocated (Golden Rule)');
       return;
     }
-    if (!creditForm.goldRateValue || Number(creditForm.goldRateValue) <= 0) {
+    
+    // Use stored gold rate from transaction (captured at approval time)
+    const goldRate = transaction.goldRateValue || creditForm.goldRateValue;
+    if (!goldRate || Number(goldRate) <= 0) {
       toast.error('Gold rate is required');
       return;
     }
@@ -653,8 +659,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pricingMode: creditForm.pricingMode,
-          goldRateValue: creditForm.goldRateValue,
+          pricingMode: 'MARKET', // Use stored rate
+          goldRateValue: goldRate,
           gatewayCostUsd: creditForm.gatewayCostUsd || '0',
           bankCostUsd: creditForm.bankCostUsd || '0',
           networkCostUsd: creditForm.networkCostUsd || '0',
@@ -665,7 +671,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
         const err = await res.json();
         throw new Error(err.error || 'Failed to approve credit');
       }
-      toast.success('Credit approved and wallet updated');
+      toast.success('Gold credited to wallet successfully!');
       refetchForm();
       onRefresh();
     } catch (error: any) {
@@ -814,6 +820,84 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                   Confirm Payment
                 </Button>
+              )}
+
+              {/* Credit Wallet Action - Shows when ready for final credit */}
+              {(transaction.status === 'CERT_RECEIVED' || transaction.status === 'PHYSICAL_ALLOCATED') && (
+                <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2 text-green-700">
+                      <CreditCard className="w-4 h-4" />
+                      Ready for Wallet Credit
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-sm text-gray-600">
+                      <div className="flex justify-between py-1">
+                        <span>Physical Gold Allocated:</span>
+                        <span className="font-mono font-semibold text-green-700">{formatGold(transaction.physicalGoldAllocatedG)}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Certificate ID:</span>
+                        <span className="font-medium">{transaction.storageCertificateId || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Credit Rate:</span>
+                        <span className="font-medium">${Number(transaction.goldRateValue || 0).toFixed(2)}/g</span>
+                      </div>
+                    </div>
+                    
+                    {transaction.physicalGoldAllocatedG && Number(transaction.physicalGoldAllocatedG) > 0 && transaction.storageCertificateId ? (
+                      <div className="bg-green-100 text-green-800 text-xs p-2 rounded flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3" />
+                        Golden Rule satisfied - Ready to credit wallet
+                      </div>
+                    ) : (
+                      <div className="bg-amber-100 text-amber-800 text-xs p-2 rounded flex items-center gap-2">
+                        <AlertTriangle className="w-3 h-3" />
+                        Missing: {!transaction.physicalGoldAllocatedG || Number(transaction.physicalGoldAllocatedG) <= 0 ? 'Physical allocation' : ''} 
+                        {!transaction.storageCertificateId ? ' Certificate ID' : ''}
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={handleApproveCredit}
+                      disabled={savingCredit || !transaction.physicalGoldAllocatedG || Number(transaction.physicalGoldAllocatedG) <= 0 || !transaction.storageCertificateId}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                    >
+                      {savingCredit ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <CreditCard className="w-4 h-4 mr-2" />
+                      )}
+                      Credit {formatGold(transaction.physicalGoldAllocatedG)} to {transaction.walletType} Wallet
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Completed Status */}
+              {(transaction.status === 'CREDITED' || transaction.status === 'COMPLETED') && (
+                <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2 text-purple-700">
+                      <CheckCircle className="w-4 h-4" />
+                      Transaction Completed
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Gold Credited:</span>
+                        <span className="font-mono font-semibold text-purple-700">{formatGold(transaction.goldCreditedG)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>To Wallet:</span>
+                        <Badge variant="secondary">{transaction.walletType}</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
 
