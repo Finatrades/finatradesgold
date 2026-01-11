@@ -227,10 +227,6 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Fetch deposit fee from platform configuration (bank-style: deducted from deposit)
     const depositFeeConfig = await storage.getPlatformFeeByKey('FinaPay', 'deposit_fee');
     const feePercent = depositFeeConfig ? parseFloat(depositFeeConfig.feeValue) : 0.5; // Default 0.5%
-    
-    // Check if Golden Rule can be satisfied (allocation provided with valid positive value)
-    const parsedAllocation = physicalGoldAllocatedG ? parseFloat(physicalGoldAllocatedG) : 0;
-    const hasValidAllocation = parsedAllocation > 0 && storageCertificateId && storageCertificateId.trim().length > 0;
 
     let userId: string = '';
     let amountUsd: number = 0;
@@ -239,6 +235,35 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     let goldGrams: number = 0;
     let goldPrice: number = 0;
     let paymentReference: string = '';
+
+    // GOLDEN RULE: All payment types REQUIRE allocation data before approval
+    const parsedAllocation = physicalGoldAllocatedG ? parseFloat(physicalGoldAllocatedG) : 0;
+    if (parsedAllocation <= 0) {
+      return res.status(400).json({ 
+        error: 'Golden Rule: Physical gold allocation is required before payment approval',
+        code: 'GOLDEN_RULE_VIOLATION',
+        requiredFields: ['physicalGoldAllocatedG', 'storageCertificateId', 'wingoldOrderId', 'wingoldBuyRate']
+      });
+    }
+    if (!storageCertificateId || !storageCertificateId.trim()) {
+      return res.status(400).json({ 
+        error: 'Golden Rule: Storage certificate is required before payment approval',
+        code: 'GOLDEN_RULE_VIOLATION',
+        requiredFields: ['storageCertificateId']
+      });
+    }
+    if (!wingoldOrderId || !wingoldOrderId.trim()) {
+      return res.status(400).json({ 
+        error: 'Wingold order ID is required before payment approval',
+        code: 'MISSING_WINGOLD_ORDER'
+      });
+    }
+    if (!wingoldBuyRate || parseFloat(wingoldBuyRate) <= 0) {
+      return res.status(400).json({ 
+        error: 'Wingold buy rate is required before payment approval',
+        code: 'MISSING_WINGOLD_RATE'
+      });
+    }
 
     if (sourceType === 'CRYPTO') {
       const payment = await storage.getCryptoPaymentRequest(id);
@@ -326,9 +351,9 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or CARD.' });
     }
 
-    // Determine initial status based on allocation data
-    // Golden Rule: physicalGoldAllocatedG > 0 AND storageCertificateId exists
-    const initialStatus = hasValidAllocation ? 'CERT_RECEIVED' : 'PAYMENT_CONFIRMED';
+    // Golden Rule enforced: allocation is always provided at approval time
+    // Status is always CERT_RECEIVED since physicalGoldAllocatedG > 0 AND storageCertificateId exists
+    const initialStatus = 'CERT_RECEIVED';
 
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
@@ -370,13 +395,9 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       });
     }
 
-    const nextStep = hasValidAllocation 
-      ? 'Golden Rule satisfied. Ready for final credit approval in Unified Gold Tally.'
-      : 'Add Wingold order details and storage certificate in Unified Gold Tally.';
-
     res.json({
       success: true,
-      message: `Payment approved. UTT record created (status: ${initialStatus}). Next: ${nextStep}`,
+      message: `Payment approved. UTT record created (status: CERT_RECEIVED). Golden Rule satisfied - ready for final credit approval.`,
       tally: {
         id: tallyRecord.id,
         txnId: tallyRecord.txnId,
@@ -384,7 +405,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         goldGrams: goldGrams.toFixed(4),
         goldPrice: goldPrice.toFixed(2),
         amountUsd: amountUsd.toFixed(2),
-        hasAllocation: hasValidAllocation,
+        hasAllocation: true,
       },
     });
 

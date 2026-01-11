@@ -537,88 +537,91 @@ export default function UnifiedPaymentManagement() {
                   </div>
                 </div>
 
-                <div className="border rounded-lg p-3 space-y-3 bg-gray-50">
-                  <button
-                    type="button"
-                    className="flex items-center justify-between w-full text-left"
-                    onClick={() => setShowAllocationFields(!showAllocationFields)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium text-sm">Wingold Allocation Details (Optional)</span>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showAllocationFields ? 'rotate-180' : ''}`} />
-                  </button>
+                <div className="border rounded-lg p-3 space-y-3 bg-amber-50 border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-sm text-amber-800">Wingold Allocation Details (Required)</span>
+                  </div>
                   
-                  {showAllocationFields && (
-                    <div className="space-y-3 pt-2 border-t">
-                      <p className="text-xs text-gray-500">
-                        Fill these fields now if you have Wingold order details, or add them later in the UTT detail view.
-                      </p>
+                  <div className="space-y-3 pt-2 border-t">
+                    <p className="text-xs text-amber-700">
+                      Golden Rule: Physical gold allocation and storage certificate are required before approval.
+                    </p>
                       
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Wingold Order ID</Label>
-                          <Input
-                            placeholder="e.g., WG-2026-0001"
-                            value={wingoldOrderId}
-                            onChange={(e) => setWingoldOrderId(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Wingold Invoice ID</Label>
-                          <Input
-                            placeholder="e.g., INV-2026-001"
-                            value={wingoldInvoiceId}
-                            onChange={(e) => setWingoldInvoiceId(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Physical Gold Allocated (g)</Label>
-                          <Input
-                            type="number"
-                            step="0.0001"
-                            placeholder="e.g., 150.5000"
-                            value={physicalGoldAllocatedG}
-                            onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Wingold Buy Rate ($/g)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="e.g., 65.50"
-                            value={wingoldBuyRate}
-                            onChange={(e) => setWingoldBuyRate(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">Storage Certificate ID</Label>
+                        <Label className="text-xs">
+                          Wingold Order ID <span className="text-red-500">*</span>
+                        </Label>
                         <Input
-                          placeholder="e.g., CERT-2026-0001"
-                          value={storageCertificateId}
-                          onChange={(e) => setStorageCertificateId(e.target.value)}
+                          placeholder="e.g., WG-2026-0001"
+                          value={wingoldOrderId}
+                          onChange={(e) => setWingoldOrderId(e.target.value)}
+                          className={!wingoldOrderId ? 'border-amber-400' : ''}
                         />
                       </div>
-                      
-                      {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && (
-                        <Card className="bg-green-50 border-green-200">
-                          <CardContent className="py-2">
-                            <div className="flex items-center gap-2 text-green-700 text-xs">
-                              <CheckCircle className="w-4 h-4" />
-                              Golden Rule will be satisfied - wallet credit will proceed immediately after approval.
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Wingold Invoice ID</Label>
+                        <Input
+                          placeholder="e.g., INV-2026-001"
+                          value={wingoldInvoiceId}
+                          onChange={(e) => setWingoldInvoiceId(e.target.value)}
+                        />
+                      </div>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Physical Gold Allocated (g) <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.0001"
+                          placeholder="e.g., 150.5000"
+                          value={physicalGoldAllocatedG}
+                          onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
+                          className={!physicalGoldAllocatedG ? 'border-amber-400' : ''}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Wingold Buy Rate ($/g) <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 65.50"
+                          value={wingoldBuyRate}
+                          onChange={(e) => setWingoldBuyRate(e.target.value)}
+                          className={!wingoldBuyRate ? 'border-amber-400' : ''}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">
+                        Storage Certificate ID <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        placeholder="e.g., CERT-2026-0001"
+                        value={storageCertificateId}
+                        onChange={(e) => setStorageCertificateId(e.target.value)}
+                        className={!storageCertificateId ? 'border-amber-400' : ''}
+                      />
+                    </div>
+                    
+                    {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && (
+                      <Card className="bg-green-50 border-green-200">
+                        <CardContent className="py-2">
+                          <div className="flex items-center gap-2 text-green-700 text-xs">
+                            <CheckCircle className="w-4 h-4" />
+                            Golden Rule satisfied - ready for approval.
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -630,18 +633,18 @@ export default function UnifiedPaymentManagement() {
                   />
                 </div>
 
-                <Card className={`${parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 ? 'bg-green-50 border-green-200' : 'bg-purple-50 border-purple-200'}`}>
-                  <CardContent className="py-3">
-                    <div className={`flex items-center gap-2 ${parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 ? 'text-green-700' : 'text-purple-700'}`}>
-                      <ArrowRight className="w-4 h-4" />
-                      <span className="text-sm">
-                        {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 
-                          ? 'Golden Rule satisfied! UTT will be created with allocation data and ready for final approval.'
-                          : 'After approval, a Unified Gold Tally record will be created. You\'ll need to add Wingold order details and storage certificate before crediting.'}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && wingoldOrderId.trim() && wingoldBuyRate && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="py-3">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm">
+                          Golden Rule satisfied! UTT will be created with allocation data and ready for final approval.
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
 
@@ -652,7 +655,14 @@ export default function UnifiedPaymentManagement() {
               <Button 
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleApprove}
-                disabled={approveMutation.isPending}
+                disabled={approveMutation.isPending || 
+                  !wingoldOrderId.trim() ||
+                  !physicalGoldAllocatedG ||
+                  parseFloat(physicalGoldAllocatedG) <= 0 ||
+                  !wingoldBuyRate ||
+                  parseFloat(wingoldBuyRate) <= 0 ||
+                  !storageCertificateId.trim()
+                }
               >
                 {approveMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
