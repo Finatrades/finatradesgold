@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PhysicalGoldDeposit from './PhysicalGoldDeposit';
+import BuyGoldBars from '@/components/finavault/BuyGoldBars';
 
 
 export default function FinaVault() {
@@ -741,6 +742,15 @@ export default function FinaVault() {
                       <span className="hidden md:inline">Deposit Gold</span>
                     </button>
                     <TabsTrigger 
+                      value="buy-gold-bars"
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-amber-50 text-amber-700 border border-amber-200 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 data-[state=active]:shadow-sm"
+                      data-testid="tab-buy-gold-bars"
+                    >
+                      <Briefcase className="w-4 h-4 mr-1.5" />
+                      <span className="md:hidden">Buy Bars</span>
+                      <span className="hidden md:inline">Buy Gold Bars</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
                       value="cash-out"
                       className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
                     >
@@ -781,6 +791,9 @@ export default function FinaVault() {
                   <VaultActivityList />
                 </TabsContent>
 
+                <TabsContent value="buy-gold-bars" className="mt-0">
+                  <BuyGoldBars />
+                </TabsContent>
                 
                 <TabsContent value="cash-out">
                   <CashOutForm vaultBalance={totalVaultGold} />
