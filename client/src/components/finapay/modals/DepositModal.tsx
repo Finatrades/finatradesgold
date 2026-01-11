@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock, FileText, Sparkles, Shield, Zap, Globe, TrendingUp, ChevronRight } from 'lucide-react';
@@ -2100,23 +2101,46 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </p>
             </div>
             
-            {/* Amount Summary */}
-            <div className="bg-muted/30 rounded-lg border p-3 space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Network:</span>
-                <span className="font-medium">{selectedCryptoWallet.networkLabel}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount:</span>
-                <span className="font-bold text-primary">${parseFloat(amount).toFixed(2)}</span>
-              </div>
-              {goldPrice?.pricePerGram && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Gold to receive:</span>
-                  <span className="font-bold text-amber-600">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span>
+            {/* Deposit Summary - Same as Bank Transfer */}
+            {(() => {
+              const amountNum = parseFloat(amount) || 0;
+              const feeAmount = calculateFee(amountNum);
+              const netDepositUsd = amountNum - feeAmount;
+              const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
+              const feePercentage = depositFee?.feeType === 'percentage' ? parseFloat(depositFee.feeValue) : null;
+              
+              return (
+                <div className="bg-muted/30 rounded-lg border p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Network:</span>
+                    <span className="font-medium">{selectedCryptoWallet.networkLabel}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Deposit Amount:</span>
+                    <span className="font-medium">${amountNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-destructive">
+                    <span>Fee Deducted {feePercentage ? `(-${feePercentage}%)` : ''}:</span>
+                    <span>-${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <span className="text-muted-foreground">Net Deposit:</span>
+                    <span className="text-primary">${netDepositUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {goldPrice?.pricePerGram && (
+                    <div className="flex justify-between font-bold">
+                      <span className="text-muted-foreground">Gold to Receive:</span>
+                      <span className="text-amber-600">{goldGrams.toFixed(4)}g</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                    Gold price: ${goldPrice?.pricePerGram?.toFixed(2)}/g
+                  </p>
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         ) : step === 'crypto-submitted' ? (
           <div className="text-center py-8 space-y-4">
