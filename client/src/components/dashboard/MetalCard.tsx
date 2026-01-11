@@ -37,11 +37,16 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
                 <div className="h-[1.5px] bg-yellow-700/40 mx-1.5" />
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-white font-bold text-base tracking-wide">
-                {isPersonal ? 'FINAGOLD' : 'FINATRADES'}
-              </p>
-              <p className="text-yellow-500 text-xs font-medium">GOLD MEMBER</p>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md">
+                <div className="w-4 h-4 bg-white/90 rounded-sm" />
+              </div>
+              <div className="text-right">
+                <p className="text-white font-bold text-base tracking-wide">
+                  {isPersonal ? 'FINAGOLD' : 'FINATRADES'}
+                </p>
+                <p className="text-yellow-500 text-xs font-medium">GOLD MEMBER</p>
+              </div>
             </div>
           </div>
           
