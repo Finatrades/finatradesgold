@@ -4379,11 +4379,18 @@ export class DatabaseStorage implements IStorage {
       .from(certificates)
       .where(eq(certificates.userId, userId));
 
-    // Get recent transactions (last 20)
+    // Get recent transactions from both legacy and unified tally tables
     const txResults = await db.select()
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(sql`${transactions.createdAt} DESC`)
+      .limit(20);
+    
+    // Also get unified gold tally transactions
+    const tallyResults = await db.select()
+      .from(unifiedGoldTally)
+      .where(eq(unifiedGoldTally.userId, userId))
+      .orderBy(sql`${unifiedGoldTally.createdAt} DESC`)
       .limit(20);
 
     // Get KYC submission
@@ -4421,15 +4428,30 @@ export class DatabaseStorage implements IStorage {
         issuedAt: c.issuedAt,
         expiresAt: c.expiresAt,
       })),
-      recentTransactions: txResults.map(t => ({
-        id: t.id,
-        type: t.type,
-        status: t.status,
-        description: t.description,
-        amountGold: t.amountGold ? parseFloat(t.amountGold) : 0,
-        amountUsd: t.amountUsd ? parseFloat(t.amountUsd) : 0,
-        createdAt: t.createdAt,
-      })),
+      recentTransactions: [
+        // Legacy transactions
+        ...txResults.map(t => ({
+          id: t.id,
+          type: t.type,
+          status: t.status,
+          description: t.description,
+          amountGold: t.amountGold ? parseFloat(t.amountGold) : 0,
+          amountUsd: t.amountUsd ? parseFloat(t.amountUsd) : 0,
+          createdAt: t.createdAt,
+          source: 'legacy' as const,
+        })),
+        // Unified Gold Tally transactions
+        ...tallyResults.map(t => ({
+          id: t.id,
+          type: t.txnType === 'FIAT_CRYPTO_DEPOSIT' ? 'Deposit' : 'Vault Deposit',
+          status: t.status,
+          description: `${t.sourceMethod} deposit - ${t.walletType} wallet`,
+          amountGold: t.goldCreditedG ? parseFloat(t.goldCreditedG) : 0,
+          amountUsd: t.depositAmount ? parseFloat(t.depositAmount) : 0,
+          createdAt: t.createdAt,
+          source: 'unified_tally' as const,
+        })),
+      ].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()).slice(0, 20),
       kycSubmission: kycResult[0] || null,
     };
   }
