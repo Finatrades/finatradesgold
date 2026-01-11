@@ -19,7 +19,7 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
       transition={{ duration: 0.5 }}
       className={`${className}`}
     >
-      <div className="w-[280px] h-[180px] rounded-xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-4 shadow-2xl relative overflow-hidden border border-gray-700/50">
+      <div className="w-[340px] h-[220px] rounded-2xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-5 shadow-2xl relative overflow-hidden border border-gray-700/50">
         <div 
           className="absolute inset-0 opacity-20"
           style={{
@@ -30,39 +30,39 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
         
         <div className="relative z-10 h-full flex flex-col justify-between">
           <div className="flex justify-between items-start">
-            <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 shadow-md relative overflow-hidden">
-              <div className="absolute inset-0 flex flex-col justify-center gap-[1.5px] py-1.5">
-                <div className="h-[1px] bg-yellow-700/40 mx-1" />
-                <div className="h-[1px] bg-yellow-700/40 mx-1" />
-                <div className="h-[1px] bg-yellow-700/40 mx-1" />
+            <div className="w-12 h-9 rounded bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 shadow-md relative overflow-hidden">
+              <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-2">
+                <div className="h-[1.5px] bg-yellow-700/40 mx-1.5" />
+                <div className="h-[1.5px] bg-yellow-700/40 mx-1.5" />
+                <div className="h-[1.5px] bg-yellow-700/40 mx-1.5" />
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white font-bold text-sm tracking-wide">
+              <p className="text-white font-bold text-base tracking-wide">
                 {isPersonal ? 'FINAGOLD' : 'FINATRADES'}
               </p>
-              <p className="text-yellow-500 text-[10px] font-medium">GOLD MEMBER</p>
+              <p className="text-yellow-500 text-xs font-medium">GOLD MEMBER</p>
             </div>
           </div>
           
           <div>
-            <p className="text-white text-lg tracking-[0.2em] font-medium mb-3">
+            <p className="text-white text-xl tracking-[0.2em] font-medium mb-4">
               4532 <span className="text-gray-400">••••</span> <span className="text-gray-400">••••</span> {lastFour}
             </p>
           </div>
           
           <div className="flex justify-between items-end">
             <div>
-              <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
-              <p className="text-white text-xs font-semibold tracking-wide">{userName}</p>
+              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Card Holder</p>
+              <p className="text-white text-sm font-semibold tracking-wide">{userName}</p>
             </div>
             <div className="text-right">
-              <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Expires</p>
-              <p className="text-white text-xs font-semibold">12/28</p>
+              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Expires</p>
+              <p className="text-white text-sm font-semibold">12/28</p>
             </div>
             <div className="flex -space-x-2">
-              <div className="w-5 h-5 rounded-full bg-red-500" />
-              <div className="w-5 h-5 rounded-full bg-orange-400" />
+              <div className="w-6 h-6 rounded-full bg-red-500" />
+              <div className="w-6 h-6 rounded-full bg-orange-400" />
             </div>
           </div>
         </div>
