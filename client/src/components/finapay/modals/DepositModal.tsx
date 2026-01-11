@@ -538,6 +538,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         ? baseUsdAmount 
         : parseFloat(amount);
       
+      // Calculate expected gold values for pending state display (informational only)
+      const currentGoldPrice = goldPrice?.pricePerGram || 0;
+      const feePercent = depositFee?.feeType === 'percentage' ? parseFloat(depositFee.feeValue) : 0;
+      const feeAmount = calculateFee(actualUsdAmount);
+      const netDepositUsd = actualUsdAmount - feeAmount;
+      const expectedGoldGrams = currentGoldPrice > 0 ? netDepositUsd / currentGoldPrice : 0;
+      
       const res = await apiRequest('POST', '/api/deposit-requests', {
         userId: user.id,
         bankAccountId: selectedAccount.id,
@@ -552,6 +559,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         senderAccountName: senderAccountName || null,
         proofOfPayment: proofOfPayment,
         goldWalletType: selectedWalletType,
+        expectedGoldGrams: expectedGoldGrams.toFixed(6),
+        priceSnapshotUsdPerGram: currentGoldPrice.toFixed(2),
+        feePercentSnapshot: feePercent.toFixed(2),
       });
       const data = await res.json();
       

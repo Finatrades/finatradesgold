@@ -25,6 +25,7 @@ interface VaultTransaction {
   completedAt: string | null;
   rejectionReason?: string | null;
   goldWalletType?: 'LGPW' | 'FGPW' | null;
+  isExpectedValue?: boolean;
   certificates: {
     id: string;
     certificateNumber: string;
@@ -60,6 +61,9 @@ interface DepositRequest {
   createdAt: string;
   processedAt?: string;
   rejectionReason?: string;
+  expectedGoldGrams?: string;
+  priceSnapshotUsdPerGram?: string;
+  feePercentSnapshot?: string;
 }
 
 interface CryptoPaymentRequest {
@@ -563,9 +567,9 @@ export default function VaultActivityList() {
       id: `deposit-${dep.id}`,
       type: 'Bank Deposit' as const,
       status: dep.status === 'Rejected' ? 'Cancelled' : 'Pending',
-      amountGold: null, // Deposit requests don't have gold data until approved
+      amountGold: dep.expectedGoldGrams || null,
       amountUsd: dep.amountUsd,
-      goldPriceUsdPerGram: null, // Will be set when deposit is approved
+      goldPriceUsdPerGram: dep.priceSnapshotUsdPerGram || null,
       recipientEmail: null,
       senderEmail: null,
       description: `Bank Deposit via ${dep.paymentMethod}`,
@@ -574,6 +578,7 @@ export default function VaultActivityList() {
       completedAt: dep.processedAt || null,
       rejectionReason: dep.rejectionReason || null,
       certificates: [],
+      isExpectedValue: !!dep.expectedGoldGrams,
     }));
   
   // Convert crypto payment requests to VaultTransaction format
@@ -768,6 +773,29 @@ export default function VaultActivityList() {
                             {parseFloat(tx.amountGold).toFixed(4)}g
                           </p>
                         )}
+                      </>
+                    ) : tx.type === 'Bank Deposit' && tx.isExpectedValue && tx.amountGold ? (
+                      <>
+                        <p className="font-bold text-green-600">
+                          ~{parseFloat(tx.amountGold).toFixed(4)}g
+                        </p>
+                        <p className="text-xs text-amber-600 font-medium">
+                          <span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span>
+                        </p>
+                        {tx.amountUsd && (
+                          <p className="text-xs text-muted-foreground">
+                            ${parseFloat(tx.amountUsd).toFixed(2)}
+                          </p>
+                        )}
+                      </>
+                    ) : tx.type === 'Bank Deposit' && !tx.amountGold && tx.amountUsd ? (
+                      <>
+                        <p className="font-bold text-green-600">
+                          ${parseFloat(tx.amountUsd).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-amber-600 font-medium">
+                          <span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span>
+                        </p>
                       </>
                     ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
                       <>
