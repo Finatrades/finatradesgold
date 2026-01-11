@@ -10,6 +10,8 @@ import DepositModal from '@/components/finapay/modals/DepositModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import PhysicalGoldDeposit from '@/pages/PhysicalGoldDeposit';
 
 const actions = [
   {
@@ -32,12 +34,12 @@ const actions = [
   },
   {
     title: 'Deposit Gold',
-    path: '/physical-gold-deposit',
+    path: '',
     icon: <Database className="w-4 h-4" />,
     gradient: 'from-teal-500 to-cyan-600',
     hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',
     requiresKyc: true,
-    isModal: false
+    isModal: true
   },
   {
     title: 'Send Payment',
@@ -85,6 +87,7 @@ export default function QuickActionsTop() {
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [buyGoldModalOpen, setBuyGoldModalOpen] = useState(false);
+  const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
   const kycPending = user?.kycStatus === 'In Progress';
@@ -160,6 +163,10 @@ export default function QuickActionsTop() {
         handleWingoldSSO();
         return;
       }
+      if (action.title === 'Deposit Gold') {
+        setDepositGoldModalOpen(true);
+        return;
+      }
     }
     
     setLocation(action.path);
@@ -223,6 +230,12 @@ export default function QuickActionsTop() {
         onClose={() => setBuyGoldModalOpen(false)}
         onSuccess={() => setBuyGoldModalOpen(false)}
       />
+      
+      <Dialog open={depositGoldModalOpen} onOpenChange={setDepositGoldModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <PhysicalGoldDeposit />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
