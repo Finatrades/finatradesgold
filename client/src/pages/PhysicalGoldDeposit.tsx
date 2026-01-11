@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Trash2, Upload, Package, Truck, Building2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Package, Truck, Building2, AlertTriangle, FileText } from 'lucide-react';
 
 interface DepositItem {
   id: string;
@@ -104,6 +104,10 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
   const [acceptVaultTerms, setAcceptVaultTerms] = useState(false);
   const [acceptInsurance, setAcceptInsurance] = useState(false);
   const [acceptFees, setAcceptFees] = useState(false);
+  
+  // Document uploads
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
 
   const createDepositMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -658,7 +662,82 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         {step === 4 && (
           <Card>
             <CardHeader>
-              <CardTitle>Step 4: Declarations & Submit</CardTitle>
+              <CardTitle>Step 4: Documents</CardTitle>
+              <CardDescription>Upload supporting documents for your deposit</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Invoice Upload */}
+                <div 
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 ${invoiceFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                  onClick={() => document.getElementById('invoice-upload')?.click()}
+                >
+                  <input
+                    id="invoice-upload"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                    data-testid="input-invoice-upload"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-gray-400" />
+                    <div>
+                      <p className="font-medium text-gray-700">Upload Invoice</p>
+                      <p className="text-xs text-gray-500">Proof of purchase</p>
+                    </div>
+                    {invoiceFile && (
+                      <p className="text-sm text-green-600 mt-2">{invoiceFile.name}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Certificate Upload */}
+                <div 
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 ${certificateFile ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                  onClick={() => document.getElementById('certificate-upload')?.click()}
+                >
+                  <input
+                    id="certificate-upload"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setCertificateFile(e.target.files?.[0] || null)}
+                    data-testid="input-certificate-upload"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <FileText className="w-8 h-8 text-gray-400" />
+                    <div>
+                      <p className="font-medium text-gray-700">Upload Certificate</p>
+                      <p className="text-xs text-gray-500">Assay / Purity</p>
+                    </div>
+                    {certificateFile && (
+                      <p className="text-sm text-green-600 mt-2">{certificateFile.name}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-500">
+                Documents are optional but help speed up verification. Accepted formats: PDF, JPG, PNG.
+              </p>
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep(3)} data-testid="button-prev-step-4">
+                  Back
+                </Button>
+                <Button onClick={() => setStep(5)} data-testid="button-next-step-4">
+                  Continue
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 5 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 5: Declarations & Submit</CardTitle>
               <CardDescription>Review and accept the terms before submitting</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -756,7 +835,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(3)} data-testid="button-prev-step-4">
+                <Button variant="outline" onClick={() => setStep(4)} data-testid="button-prev-step-5">
                   Back
                 </Button>
                 <Button
