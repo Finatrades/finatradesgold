@@ -511,15 +511,9 @@ export default function UnifiedPaymentManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label>Target Wallet</Label>
-                    <Select value={walletType} onValueChange={(v) => setWalletType(v as 'LGPW' | 'FGPW')}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="LGPW">LGPW (Market Price)</SelectItem>
-                        <SelectItem value="FGPW">FGPW (Fixed Price)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center h-10 px-3 rounded-md border bg-muted/50">
+                      <span className="text-sm font-medium">LGPW (Market Price)</span>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label>Vault Location</Label>
