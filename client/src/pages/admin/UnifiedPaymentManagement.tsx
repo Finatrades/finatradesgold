@@ -26,7 +26,7 @@ import { useLocation } from 'wouter';
 
 interface PendingPayment {
   id: string;
-  sourceType: 'CRYPTO' | 'BANK' | 'PHYSICAL';
+  sourceType: 'CRYPTO' | 'BANK' | 'CARD' | 'PHYSICAL';
   sourceTable: string;
   userId: string;
   userName: string;
@@ -44,17 +44,25 @@ interface PendingPayment {
   walletType: string;
   createdAt: string;
   linkedTallyId: string | null;
+  // Card payment specific
+  orderReference?: string;
+  ngeniusOrderId?: string;
+  cardBrand?: string;
+  cardLast4?: string;
+  gatewayVerified?: boolean;
 }
 
 const SOURCE_ICONS = {
   CRYPTO: Bitcoin,
   BANK: Building2,
+  CARD: CreditCard,
   PHYSICAL: Coins,
 };
 
 const SOURCE_COLORS = {
   CRYPTO: 'text-orange-600 bg-orange-50',
   BANK: 'text-blue-600 bg-blue-50',
+  CARD: 'text-purple-600 bg-purple-50',
   PHYSICAL: 'text-yellow-600 bg-yellow-50',
 };
 
@@ -64,6 +72,7 @@ const STATUS_BADGES: Record<string, { variant: 'default' | 'secondary' | 'outlin
   submitted: { variant: 'outline', label: 'Submitted' },
   pending_review: { variant: 'secondary', label: 'Pending Review' },
   pending_assay: { variant: 'secondary', label: 'Pending Assay' },
+  'Gateway Verified': { variant: 'default', label: '✓ Gateway Verified' },
 };
 
 export default function UnifiedPaymentManagement() {
@@ -270,6 +279,7 @@ export default function UnifiedPaymentManagement() {
             <TabsTrigger value="all">All ({counts.total})</TabsTrigger>
             <TabsTrigger value="crypto">Crypto ({counts.crypto})</TabsTrigger>
             <TabsTrigger value="bank">Bank ({counts.bank})</TabsTrigger>
+            <TabsTrigger value="card">Card ({counts.card || 0})</TabsTrigger>
             <TabsTrigger value="physical">Physical ({counts.physical})</TabsTrigger>
           </TabsList>
 
@@ -313,9 +323,21 @@ export default function UnifiedPaymentManagement() {
                         return (
                           <TableRow key={`${payment.sourceType}-${payment.id}`}>
                             <TableCell>
-                              <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${colorClass}`}>
-                                <Icon className="w-4 h-4" />
-                                <span className="text-xs font-medium">{payment.sourceType}</span>
+                              <div className="flex flex-col gap-1">
+                                <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${colorClass}`}>
+                                  <Icon className="w-4 h-4" />
+                                  <span className="text-xs font-medium">{payment.sourceType}</span>
+                                </div>
+                                {payment.sourceType === 'CARD' && payment.cardBrand && (
+                                  <span className="text-xs text-gray-500">
+                                    {payment.cardBrand} ****{payment.cardLast4}
+                                  </span>
+                                )}
+                                {payment.gatewayVerified && (
+                                  <Badge variant="default" className="text-xs bg-green-600 w-fit">
+                                    ✓ Verified
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -333,14 +355,14 @@ export default function UnifiedPaymentManagement() {
                             </TableCell>
                             <TableCell>
                               {payment.amountUsd ? (
-                                <span className="font-medium text-red-500">-{formatCurrency(payment.amountUsd * 0.005)}</span>
+                                <span className="font-medium text-red-500">-{formatCurrency(parseFloat(payment.amountUsd) * 0.005)}</span>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
                             </TableCell>
                             <TableCell>
                               {payment.amountUsd ? (
-                                <span className="font-medium">{formatCurrency(payment.amountUsd * 0.995)}</span>
+                                <span className="font-medium">{formatCurrency(parseFloat(payment.amountUsd) * 0.995)}</span>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
@@ -350,7 +372,7 @@ export default function UnifiedPaymentManagement() {
                                 <span className="font-mono font-semibold text-amber-600">{formatGold(payment.goldGrams)}</span>
                               ) : payment.amountUsd && goldPrice?.pricePerGram ? (
                                 <span className="font-mono font-semibold text-amber-600">
-                                  {((payment.amountUsd * 0.995) / goldPrice.pricePerGram).toFixed(4)}g
+                                  {((parseFloat(payment.amountUsd) * 0.995) / goldPrice.pricePerGram).toFixed(4)}g
                                 </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
@@ -427,22 +449,22 @@ export default function UnifiedPaymentManagement() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">Fee (0.5%)</span>
                       <span className="text-sm font-medium text-red-500">
-                        -{formatCurrency(selectedPayment.amountUsd * 0.005)}
+                        -{formatCurrency(selectedPayment.amountUsd ? parseFloat(selectedPayment.amountUsd) * 0.005 : 0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">Net for Gold</span>
                       <span className="text-sm font-medium">
-                        {formatCurrency(selectedPayment.amountUsd * 0.995)}
+                        {formatCurrency(selectedPayment.amountUsd ? parseFloat(selectedPayment.amountUsd) * 0.995 : 0)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-2 mt-2">
                       <span className="text-sm text-gray-500">≈ Gold to Credit</span>
                       <span className="text-sm font-semibold text-amber-600">
-                        {pricingMode === 'MANUAL' && manualGoldPrice 
-                          ? ((selectedPayment.amountUsd * 0.995) / parseFloat(manualGoldPrice)).toFixed(4)
-                          : goldPrice?.pricePerGram 
-                            ? ((selectedPayment.amountUsd * 0.995) / goldPrice.pricePerGram).toFixed(4)
+                        {pricingMode === 'MANUAL' && manualGoldPrice && selectedPayment.amountUsd
+                          ? ((parseFloat(selectedPayment.amountUsd) * 0.995) / parseFloat(manualGoldPrice)).toFixed(4)
+                          : goldPrice?.pricePerGram && selectedPayment.amountUsd
+                            ? ((parseFloat(selectedPayment.amountUsd) * 0.995) / goldPrice.pricePerGram).toFixed(4)
                             : '...'} g
                       </span>
                     </div>

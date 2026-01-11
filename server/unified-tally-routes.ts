@@ -105,12 +105,16 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     // Filter for only pending payments that haven't been approved yet
     // Exclude terminal statuses: Approved, Confirmed, Rejected, Cancelled
     const terminalStatuses = ['Approved', 'Confirmed', 'Rejected', 'Cancelled', 'Completed'];
-    const [cryptoPayments, depositRequests] = await Promise.all([
+    const [cryptoPayments, depositRequests, cardPayments] = await Promise.all([
       storage.getAllCryptoPaymentRequests().then((r: any[]) => r.filter((p: any) => 
         !terminalStatuses.includes(p.status)
       )),
       storage.getAllDepositRequests().then((r: any[]) => r.filter((d: any) => 
         !terminalStatuses.includes(d.status)
+      )),
+      // Card payments: Captured by N-Genius but not yet credited to wallet (awaiting allocation)
+      storage.getAllNgeniusTransactions().then((r: any[]) => r.filter((c: any) => 
+        c.status === 'Captured' && !c.walletTransactionId
       )),
     ]);
     
@@ -157,6 +161,30 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
       });
     }
 
+    // Card payments (N-Genius): Already verified by gateway, awaiting admin allocation
+    for (const card of cardPayments) {
+      const user = await storage.getUser(card.userId);
+      pendingPayments.push({
+        id: card.id,
+        sourceType: 'CARD',
+        sourceTable: 'ngenius_transactions',
+        userId: card.userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        userEmail: user?.email || '',
+        amountUsd: card.amountUsd,
+        goldGrams: null,
+        goldPriceAtTime: null,
+        status: 'Gateway Verified', // N-Genius has verified the payment
+        orderReference: card.orderReference,
+        ngeniusOrderId: card.ngeniusOrderId,
+        cardBrand: card.cardBrand,
+        cardLast4: card.cardLast4,
+        walletType: card.goldWalletType || 'LGPW',
+        createdAt: card.createdAt,
+        gatewayVerified: true, // Flag for UI to show verification badge
+      });
+    }
+
     pendingPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     res.json({
@@ -164,6 +192,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
       counts: {
         crypto: cryptoPayments.length,
         bank: depositRequests.length,
+        card: cardPayments.length,
         physical: 0,
         total: pendingPayments.length,
       }
@@ -269,18 +298,45 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         processedAt: new Date(),
       });
 
+    } else if (sourceType === 'CARD') {
+      // Card payments: Already verified by N-Genius gateway
+      const cardPayment = await storage.getNgeniusTransaction(id);
+      if (!cardPayment) return res.status(404).json({ error: 'Card payment not found' });
+      if (cardPayment.status !== 'Captured') {
+        return res.status(400).json({ error: 'Card payment not in Captured state' });
+      }
+      if (cardPayment.walletTransactionId) {
+        return res.status(400).json({ error: 'Card payment already credited to wallet' });
+      }
+      
+      userId = cardPayment.userId;
+      amountUsd = Number(cardPayment.amountUsd || 0);
+      
+      // Bank-style fee: deduct fee from deposit amount
+      feeAmountUsd = amountUsd * (feePercent / 100);
+      netAmountUsd = amountUsd - feeAmountUsd;
+      
+      const { getGoldPricePerGram } = await import('./gold-price-service');
+      goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
+      goldGrams = netAmountUsd / goldPrice; // Gold calculated from NET amount after fee
+      
+      paymentReference = cardPayment.orderReference || `CARD-${id.substring(0, 8)}`;
+
     } else {
-      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO or BANK.' });
+      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or CARD.' });
     }
 
     // Determine initial status based on allocation data
     // Golden Rule: physicalGoldAllocatedG > 0 AND storageCertificateId exists
     const initialStatus = hasValidAllocation ? 'CERT_RECEIVED' : 'PAYMENT_CONFIRMED';
 
+    // Store original source ID for linking back after UTT creation
+    const sourceId = id;
+    
     const tallyRecord = await storage.createUnifiedTallyTransaction({
       userId,
       txnType: 'FIAT_CRYPTO_DEPOSIT',
-      sourceMethod: sourceType as 'CRYPTO' | 'BANK',
+      sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
       walletType: walletType as 'LGPW' | 'FGPW',
       status: initialStatus,
       depositCurrency: 'USD',
@@ -304,6 +360,15 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       ...(wingoldBuyRate && { wingoldBuyRate: String(wingoldBuyRate) }),
       ...(storageCertificateId && { storageCertificateId }),
     });
+
+    // For CARD payments, mark the NGenius transaction as linked to this UTT
+    // This prevents it from appearing in the pending payments list again
+    if (sourceType === 'CARD') {
+      // Set a placeholder walletTransactionId to mark as processed (actual credit happens in UTT finalize)
+      await storage.updateNgeniusTransaction(sourceId, {
+        walletTransactionId: `UTT:${tallyRecord.txnId}`, // Prefix with UTT: to indicate pending UTT credit
+      });
+    }
 
     const nextStep = hasValidAllocation 
       ? 'Golden Rule satisfied. Ready for final credit approval in Unified Gold Tally.'

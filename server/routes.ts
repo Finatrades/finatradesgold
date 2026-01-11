@@ -19120,129 +19120,22 @@ ${message}
 
         await storage.updateNgeniusTransaction(transaction.id, updates);
 
-        // If payment captured, credit wallet with gold (matching crypto flow)
+        // GOLDEN RULE: Do NOT auto-credit wallet on capture
+        // Card payments must go through UTT flow for admin allocation before wallet credit
+        // Wallet credit only happens when physicalGoldAllocatedG > 0 AND storageCertificateId exists
         if (webhookData.status === 'Captured' && transaction.status !== 'Captured') {
-          const wallet = await storage.getWallet(transaction.userId);
-          if (wallet) {
-            const depositAmount = parseFloat(transaction.amountUsd || '0');
-            let goldPricePerGram: number;
-            try {
-              goldPricePerGram = await getGoldPricePerGram();
-            } catch {
-              goldPricePerGram = 140;
-            }
-            const goldGrams = depositAmount / goldPricePerGram;
-            const currentGold = parseFloat(wallet.goldGrams || '0');
-            
-            await storage.updateWallet(wallet.id, {
-              goldGrams: (currentGold + goldGrams).toFixed(6),
-            });
+          const depositAmount = parseFloat(transaction.amountUsd || '0');
+          
+          // Create notification that payment is being processed
+          await storage.createNotification({
+            userId: transaction.userId,
+            title: 'Card Payment Confirmed',
+            message: `Your card payment of ${depositAmount.toFixed(2)} has been verified. Gold will be credited to your wallet after allocation is confirmed.`,
+            type: 'info',
+            read: false,
+          });
 
-            // Create transaction record (type='Buy' like crypto)
-            const walletTx = await storage.createTransaction({
-              userId: transaction.userId,
-              type: 'Buy',
-              status: 'Completed',
-              amountUsd: transaction.amountUsd,
-              amountGold: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `Card payment via NGenius webhook - ${transaction.orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-              referenceId: transaction.orderReference,
-              sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-              completedAt: new Date(),
-            });
-
-            await storage.updateNgeniusTransaction(transaction.id, {
-              walletTransactionId: walletTx.id,
-            });
-
-            // Record vault ledger entry
-            const { vaultLedgerService } = await import('./vault-ledger-service');
-            await vaultLedgerService.recordLedgerEntry({
-              userId: transaction.userId,
-              action: 'Deposit',
-              goldGrams: goldGrams,
-              goldPriceUsdPerGram: goldPricePerGram,
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              toStatus: 'Available',
-              transactionId: walletTx.id,
-              notes: `Card payment (webhook): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${depositAmount.toFixed(2)})`,
-              createdBy: 'system',
-            });
-
-            // Get or create vault holding - use getUserVaultHoldings
-            const userHoldings = await storage.getUserVaultHoldings(transaction.userId);
-            let holding = userHoldings[0];
-            if (!holding) {
-              holding = await storage.createVaultHolding({
-                userId: transaction.userId,
-                goldGrams: goldGrams.toFixed(6),
-                vaultLocation: 'Dubai - Wingold & Metals DMCC',
-                wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
-              });
-            } else {
-              const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
-              await storage.updateVaultHolding(holding.id, {
-                goldGrams: newTotalGrams.toFixed(6),
-              });
-            }
-
-            // Digital Ownership Certificate
-            const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
-            await storage.createCertificate({
-              certificateNumber: docCertNum,
-              userId: transaction.userId,
-              transactionId: walletTx.id,
-              vaultHoldingId: holding.id,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmount.toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              issuedAt: new Date(),
-            });
-
-            // Physical Storage Certificate
-            const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
-            await storage.createCertificate({
-              certificateNumber: sscCertNum,
-              userId: transaction.userId,
-              transactionId: walletTx.id,
-              vaultHoldingId: holding.id,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmount.toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              issuedAt: new Date(),
-            });
-
-            // Create notification
-            await storage.createNotification({
-              userId: transaction.userId,
-              title: 'Card Payment Credited',
-              message: `Your card payment of $${depositAmount.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
-              type: 'success',
-              read: false,
-            });
-
-            // Emit real-time sync event for auto-update
-            emitLedgerEvent(transaction.userId, {
-              type: 'balance_update',
-              module: 'finapay',
-              action: 'card_payment_credited',
-              data: { goldGrams, amountUsd: depositAmount },
-            });
-
-            console.log(`[NGenius Webhook] Dual certificates created for ${transaction.orderReference}`);
-          }
+          console.log(`[NGenius Webhook] Payment ${transaction.orderReference} captured - awaiting admin allocation via UTT`);
         }
 
         await storage.createAuditLog({
