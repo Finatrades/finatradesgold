@@ -409,12 +409,24 @@ export default function UnifiedPaymentManagement() {
                       <span className="text-sm font-medium">{formatCurrency(selectedPayment.amountUsd)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">≈ Equivalent Gold</span>
-                      <span className="text-sm font-medium text-amber-600">
+                      <span className="text-sm text-gray-500">Fee (0.5%)</span>
+                      <span className="text-sm font-medium text-red-500">
+                        -{formatCurrency(selectedPayment.amountUsd * 0.005)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Net Amount</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(selectedPayment.amountUsd * 0.995)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 mt-2">
+                      <span className="text-sm text-gray-500">≈ Gold to Credit</span>
+                      <span className="text-sm font-semibold text-amber-600">
                         {pricingMode === 'MANUAL' && manualGoldPrice 
-                          ? (selectedPayment.amountUsd / parseFloat(manualGoldPrice)).toFixed(4)
+                          ? ((selectedPayment.amountUsd * 0.995) / parseFloat(manualGoldPrice)).toFixed(4)
                           : goldPrice?.pricePerGram 
-                            ? (selectedPayment.amountUsd / goldPrice.pricePerGram).toFixed(4)
+                            ? ((selectedPayment.amountUsd * 0.995) / goldPrice.pricePerGram).toFixed(4)
                             : '...'} g
                       </span>
                     </div>

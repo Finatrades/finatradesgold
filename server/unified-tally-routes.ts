@@ -195,12 +195,18 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Map UI pricing mode to schema enum
     const pricingMode = uiPricingMode === 'LIVE' ? 'MARKET' : 'FIXED';
     
+    // Fetch deposit fee from platform configuration
+    const depositFeeConfig = await storage.getPlatformFeeByKey('FinaPay', 'deposit_fee');
+    const feePercent = depositFeeConfig ? parseFloat(depositFeeConfig.feeValue) : 0.5; // Default 0.5%
+    
     // Check if Golden Rule can be satisfied (allocation provided with valid positive value)
     const parsedAllocation = physicalGoldAllocatedG ? parseFloat(physicalGoldAllocatedG) : 0;
     const hasValidAllocation = parsedAllocation > 0 && storageCertificateId && storageCertificateId.trim().length > 0;
 
     let userId: string = '';
     let amountUsd: number = 0;
+    let feeAmountUsd: number = 0;
+    let netAmountUsd: number = 0;
     let goldGrams: number = 0;
     let goldPrice: number = 0;
     let paymentReference: string = '';
@@ -215,13 +221,17 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       userId = payment.userId;
       amountUsd = Number(payment.amountUsd);
       
+      // Calculate fee and net amount
+      feeAmountUsd = amountUsd * (feePercent / 100);
+      netAmountUsd = amountUsd - feeAmountUsd;
+      
       if (pricingMode === 'MARKET') {
         const { getGoldPricePerGram } = await import('./gold-price-service');
         goldPrice = await getGoldPricePerGram();
       } else {
         goldPrice = Number(manualGoldPrice);
       }
-      goldGrams = amountUsd / goldPrice;
+      goldGrams = netAmountUsd / goldPrice; // Gold calculated from net amount after fee
       
       paymentReference = `CRYPTO-${id.substring(0, 8)}`;
       
@@ -241,9 +251,13 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       userId = deposit.userId;
       amountUsd = Number(deposit.amountUsd);
       
+      // Calculate fee and net amount
+      feeAmountUsd = amountUsd * (feePercent / 100);
+      netAmountUsd = amountUsd - feeAmountUsd;
+      
       const { getGoldPricePerGram } = await import('./gold-price-service');
       goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
-      goldGrams = amountUsd / goldPrice;
+      goldGrams = netAmountUsd / goldPrice; // Gold calculated from net amount after fee
       
       paymentReference = deposit.referenceNumber;
       
@@ -271,9 +285,9 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       status: initialStatus,
       depositCurrency: 'USD',
       depositAmount: String(amountUsd),
-      feeAmount: '0',
+      feeAmount: String(feeAmountUsd.toFixed(2)),
       feeCurrency: 'USD',
-      netAmount: String(amountUsd),
+      netAmount: String(netAmountUsd.toFixed(2)),
       paymentReference,
       paymentConfirmedAt: new Date(),
       pricingMode: pricingMode as 'MARKET' | 'FIXED',
@@ -281,7 +295,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       rateTimestamp: new Date(),
       goldEquivalentG: String(goldGrams),
       vaultLocation,
-      notes: notes || `Created from ${sourceType} payment approval`,
+      notes: notes || `Created from ${sourceType} payment approval. Fee: ${feePercent}% ($${feeAmountUsd.toFixed(2)})`,
       createdBy: adminUser?.id,
       // Allocation fields (if provided)
       ...(wingoldOrderId && { wingoldOrderId }),
