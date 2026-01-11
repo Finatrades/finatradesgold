@@ -4388,9 +4388,9 @@ export class DatabaseStorage implements IStorage {
     
     // Also get unified gold tally transactions
     const tallyResults = await db.select()
-      .from(unifiedGoldTally)
-      .where(eq(unifiedGoldTally.userId, userId))
-      .orderBy(sql`${unifiedGoldTally.createdAt} DESC`)
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.userId, userId))
+      .orderBy(sql`${unifiedTallyTransactions.createdAt} DESC`)
       .limit(20);
 
     // Get KYC submission
