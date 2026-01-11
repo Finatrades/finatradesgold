@@ -158,6 +158,23 @@ export default function PhysicalDepositsAdmin() {
     },
   });
 
+  const acceptCounterMutation = useMutation({
+    mutationFn: async ({ id, message }: { id: string; message?: string }) => {
+      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/accept-counter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message }),
+      });
+      if (!res.ok) throw new Error('Failed to accept counter');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-deposits'] });
+      toast({ title: 'Counter-offer accepted', description: 'Negotiation completed successfully' });
+    },
+  });
+
   const rejectMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/reject`, {
@@ -218,6 +235,7 @@ export default function PhysicalDepositsAdmin() {
   const [offerForm, setOfferForm] = useState({
     proposedGrams: 0,
     proposedFees: 0,
+    usdOffer: 0,
     message: '',
   });
   const [rejectReason, setRejectReason] = useState('');
@@ -332,9 +350,23 @@ export default function PhysicalDepositsAdmin() {
                           </Button>
                         )}
                         {(deposit.status === 'INSPECTION' || deposit.status === 'NEGOTIATION') && deposit.requiresNegotiation && (
-                          <Button size="sm" onClick={() => openDialog(deposit, 'offer')} data-testid={`button-offer-${deposit.id}`}>
-                            <DollarSign className="w-4 h-4 mr-1" /> Send Offer
-                          </Button>
+                          <>
+                            <Button size="sm" onClick={() => openDialog(deposit, 'offer')} data-testid={`button-offer-${deposit.id}`}>
+                              <DollarSign className="w-4 h-4 mr-1" /> Send Offer
+                            </Button>
+                            {deposit.negotiations?.length > 0 && 
+                             deposit.negotiations[deposit.negotiations.length - 1]?.messageType === 'USER_COUNTER' && (
+                              <Button 
+                                size="sm" 
+                                className="bg-teal-600 hover:bg-teal-700"
+                                onClick={() => acceptCounterMutation.mutate({ id: deposit.id })}
+                                disabled={acceptCounterMutation.isPending}
+                                data-testid={`button-accept-counter-${deposit.id}`}
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-1" /> Accept Counter
+                              </Button>
+                            )}
+                          </>
                         )}
                         {(deposit.status === 'AGREED' || (deposit.status === 'INSPECTION' && !deposit.requiresNegotiation)) && (
                           <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openDialog(deposit, 'approve')} data-testid={`button-approve-${deposit.id}`}>
@@ -413,6 +445,48 @@ export default function PhysicalDepositsAdmin() {
                   ))}
                 </div>
               </div>
+              
+              {selectedDeposit.requiresNegotiation && (
+                <div>
+                  <Label className="text-gray-500 mb-2 block">Negotiation</Label>
+                  <Card className="bg-amber-50 border-amber-200">
+                    <CardContent className="py-3 space-y-2">
+                      {(selectedDeposit as any).usdEstimateFromUser && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">User's USD Estimate:</span>
+                          <span className="font-medium">${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {(selectedDeposit as any).usdCounterFromAdmin && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Admin's USD Offer:</span>
+                          <span className="font-medium">${parseFloat((selectedDeposit as any).usdCounterFromAdmin).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {(selectedDeposit as any).usdAgreedValue && (
+                        <div className="flex justify-between text-green-700">
+                          <span className="text-sm font-medium">Agreed USD Value:</span>
+                          <span className="font-bold">${parseFloat((selectedDeposit as any).usdAgreedValue).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 && (
+                        <div className="pt-2 border-t border-amber-200">
+                          <p className="text-xs text-gray-500 mb-2">Message History ({selectedDeposit.negotiations.length})</p>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {selectedDeposit.negotiations.map((msg: any, idx: number) => (
+                              <div key={idx} className={`text-xs p-2 rounded ${msg.senderRole === 'admin' ? 'bg-purple-100' : 'bg-gray-100'}`}>
+                                <span className="font-medium">{msg.senderRole === 'admin' ? 'Admin' : 'User'}:</span>{' '}
+                                <span>{msg.messageType.replace(/_/g, ' ')}</span>
+                                {msg.proposedGrams && <span className="ml-2">({msg.proposedGrams}g)</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
@@ -584,6 +658,15 @@ export default function PhysicalDepositsAdmin() {
             <DialogDescription>Propose credited grams to the user</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {(selectedDeposit as any)?.usdEstimateFromUser && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-amber-800">User's Target USD Value:</span>
+                  <span className="font-bold text-amber-900">${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-amber-600 mt-1">Consider this when making your offer</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Proposed Credited Grams</Label>
               <Input
@@ -603,6 +686,23 @@ export default function PhysicalDepositsAdmin() {
                 onChange={(e) => setOfferForm({ ...offerForm, proposedFees: parseFloat(e.target.value) })}
                 data-testid="input-proposed-fees"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>USD Valuation Offer</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={offerForm.usdOffer || ''}
+                  onChange={(e) => setOfferForm({ ...offerForm, usdOffer: parseFloat(e.target.value) || 0 })}
+                  className="pl-7"
+                  placeholder="Enter USD value for this gold"
+                  data-testid="input-usd-offer"
+                />
+              </div>
+              <p className="text-xs text-gray-500">This is the total USD value you're offering for the deposited gold</p>
             </div>
             <div className="space-y-2">
               <Label>Message to User</Label>
