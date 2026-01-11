@@ -1051,6 +1051,11 @@ export const depositRequests = pgTable("deposit_requests", {
   transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
   proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
   notes: text("notes"),
+  
+  // Expected gold calculation snapshot (informational - final calculated at approval)
+  expectedGoldGrams: decimal("expected_gold_grams", { precision: 18, scale: 6 }), // Gold grams after fee deduction at submission time
+  priceSnapshotUsdPerGram: decimal("price_snapshot_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at submission time
+  feePercentSnapshot: decimal("fee_percent_snapshot", { precision: 5, scale: 2 }), // Fee percentage at submission time
 
   // LGPW/FGPW wallet selection - which wallet gold is used for settlement
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
