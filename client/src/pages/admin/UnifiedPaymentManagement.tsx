@@ -297,8 +297,10 @@ export default function UnifiedPaymentManagement() {
                       <TableRow>
                         <TableHead>Source</TableHead>
                         <TableHead>User</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Gold Equiv.</TableHead>
+                        <TableHead>Deposit</TableHead>
+                        <TableHead className="text-red-600">Fee (0.5%)</TableHead>
+                        <TableHead>Net</TableHead>
+                        <TableHead className="text-amber-600">≈ Gold</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -330,11 +332,25 @@ export default function UnifiedPaymentManagement() {
                               )}
                             </TableCell>
                             <TableCell>
+                              {payment.amountUsd ? (
+                                <span className="font-medium text-red-500">-{formatCurrency(payment.amountUsd * 0.005)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {payment.amountUsd ? (
+                                <span className="font-medium">{formatCurrency(payment.amountUsd * 0.995)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
                               {payment.goldGrams ? (
-                                <span className="font-mono">{formatGold(payment.goldGrams)}</span>
+                                <span className="font-mono font-semibold text-amber-600">{formatGold(payment.goldGrams)}</span>
                               ) : payment.amountUsd && goldPrice?.pricePerGram ? (
-                                <span className="font-mono text-gray-500">
-                                  ~{calculateGoldEquivalent(payment.amountUsd, goldPrice.pricePerGram)}
+                                <span className="font-mono font-semibold text-amber-600">
+                                  {((payment.amountUsd * 0.995) / goldPrice.pricePerGram).toFixed(4)}g
                                 </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
