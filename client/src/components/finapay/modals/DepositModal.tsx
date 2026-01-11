@@ -1154,9 +1154,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'details' && selectedAccount ? (
           <div className="py-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Left Panel - Premium Bank Details Card (Horizontal Layout) */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 shadow-xl">
+            <div className="grid md:grid-cols-5 gap-6">
+              {/* Left Panel - Premium Bank Details Card - Takes 3/5 of width */}
+              <div className="md:col-span-3 relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 shadow-xl">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-xl translate-y-6 -translate-x-6"></div>
@@ -1242,8 +1242,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
               </div>
               
-              {/* Right Panel - Summary + Upload (Vertical Stack) */}
-              <div className="space-y-4">
+              {/* Right Panel - Summary + Upload (Vertical Stack) - Takes 2/5 of width */}
+              <div className="md:col-span-2 space-y-4">
                 {/* Deposit Summary */}
                 <div className="text-center">
                   <h4 className="font-semibold text-foreground text-sm">Deposit Summary</h4>
