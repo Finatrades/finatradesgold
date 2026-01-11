@@ -5,7 +5,11 @@
 
 import { sendEmailDirect } from '../server/email';
 
-const SECURITY_EMAIL = 'System@finatrades.com';
+const SECURITY_EMAILS = [
+  'chairman@winvestnet.com',
+  'legal@finatrades.com',
+  'blockchaim@finatrades.com'
+];
 
 async function sendSecurityAlert() {
   const timestamp = new Date().toISOString();
@@ -151,23 +155,28 @@ async function sendSecurityAlert() {
     </html>
   `;
 
-  console.log('🚨 Sending security alert email...');
+  console.log('🚨 Sending security alert emails...');
   
-  try {
-    const result = await sendEmailDirect(
-      SECURITY_EMAIL,
-      subject,
-      html
-    );
-    
-    console.log('✅ Security alert sent successfully!');
-    console.log('📧 Sent to:', SECURITY_EMAIL);
-    console.log('📋 Subject:', subject);
-    return result;
-  } catch (error) {
-    console.error('❌ Failed to send security alert:', error);
-    throw error;
+  const results = [];
+  for (const email of SECURITY_EMAILS) {
+    try {
+      console.log(`\n📧 Sending to: ${email}`);
+      const result = await sendEmailDirect(
+        email,
+        subject,
+        html
+      );
+      console.log(`✅ Sent successfully to ${email}`);
+      results.push({ email, success: true, result });
+    } catch (error) {
+      console.error(`❌ Failed to send to ${email}:`, error);
+      results.push({ email, success: false, error });
+    }
   }
+  
+  console.log('\n📋 Subject:', subject);
+  console.log('📊 Summary:', results.filter(r => r.success).length, 'of', SECURITY_EMAILS.length, 'emails sent');
+  return results;
 }
 
 sendSecurityAlert()
