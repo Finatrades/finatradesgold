@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import PhysicalGoldDeposit from './PhysicalGoldDeposit';
 
 
 export default function FinaVault() {
@@ -29,7 +31,8 @@ export default function FinaVault() {
   // State
   const [activeTab, setActiveTab] = useState('vault-activity');
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
-    const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
+  const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
+  const [showDepositWizard, setShowDepositWizard] = useState(false);
 
   // Fetch vault deposit requests
   const { data: depositData, isLoading: depositsLoading } = useQuery({
@@ -501,15 +504,14 @@ export default function FinaVault() {
     });
   };
 
-  // Check query params for initial tab - redirect deposit requests to new page
+  // Check query params for initial tab - open deposit wizard
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
     const highlight = searchParams.get('highlight');
     
     if (tabParam === 'new-request' || highlight === 'deposit') {
-      // Redirect to the new unified deposit page
-      navigate('/physical-gold-deposit');
+      setShowDepositWizard(true);
     }
   }, []);
 
@@ -729,13 +731,15 @@ export default function FinaVault() {
                       <span className="md:hidden">Activity</span>
                       <span className="hidden md:inline">Vault Activity</span>
                     </TabsTrigger>
-                    <Link href="/physical-gold-deposit">
-                      <div className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-primary text-white shadow-sm cursor-pointer inline-flex items-center hover:bg-primary/90 transition-colors">
-                        <PlusCircle className="w-4 h-4 mr-1.5" />
-                        <span className="md:hidden">Deposit</span>
-                        <span className="hidden md:inline">Deposit Gold</span>
-                      </div>
-                    </Link>
+                    <button
+                      onClick={() => setShowDepositWizard(true)}
+                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-primary text-white shadow-sm cursor-pointer inline-flex items-center hover:bg-primary/90 transition-colors"
+                      data-testid="button-deposit-gold"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-1.5" />
+                      <span className="md:hidden">Deposit</span>
+                      <span className="hidden md:inline">Deposit Gold</span>
+                    </button>
                     <TabsTrigger 
                       value="cash-out"
                       className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
@@ -1158,6 +1162,13 @@ export default function FinaVault() {
         </AnimatePresence>
 
       </div>
+
+      {/* Physical Gold Deposit Wizard Modal */}
+      <Dialog open={showDepositWizard} onOpenChange={setShowDepositWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <PhysicalGoldDeposit />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Trash2, Upload, Package, Truck, Building2, AlertTriangle } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
 
 interface DepositItem {
   id: string;
@@ -189,11 +188,10 @@ export default function PhysicalGoldDeposit() {
   const isNegotiationRequired = depositType === 'RAW' || depositType === 'OTHER';
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate('/finavault')} data-testid="button-back">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to FinaVault
-        </Button>
+    <div className="max-w-4xl mx-auto py-4">
+      <Button variant="ghost" className="mb-4" onClick={() => navigate('/finavault')} data-testid="button-back">
+        <ArrowLeft className="w-4 h-4 mr-2" /> Back to FinaVault
+      </Button>
 
         <Card className="mb-6">
           <CardHeader>
@@ -743,7 +741,6 @@ export default function PhysicalGoldDeposit() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }
