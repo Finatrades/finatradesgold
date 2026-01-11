@@ -527,10 +527,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
     setSubmitting(true);
     try {
+      // Use baseUsdAmount for non-USD banks to send the correct USD value (not the converted currency value)
+      const actualUsdAmount = selectedAccount.currency !== 'USD' && baseUsdAmount > 0 
+        ? baseUsdAmount 
+        : parseFloat(amount);
+      
       const res = await apiRequest('POST', '/api/deposit-requests', {
         userId: user.id,
         bankAccountId: selectedAccount.id,
-        amountUsd: parseFloat(amount).toString(),
+        amountUsd: actualUsdAmount.toString(),
         targetBankName: selectedAccount.bankName,
         targetAccountName: selectedAccount.accountName,
         targetAccountNumber: selectedAccount.accountNumber,
