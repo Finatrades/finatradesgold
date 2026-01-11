@@ -871,8 +871,13 @@ export async function registerRoutes(
           .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
           .reduce((sum: number, c: any) => sum + parseFloat(c.amountUsd || '0'), 0);
       
-      // Convert pending USD to gold grams
-      const pendingGoldGrams = pendingDepositUsd / goldPrice;
+      // Fetch deposit fee and apply it (universal bank rule: fee deducted from deposit)
+      const depositFeeConfig = await storage.getPlatformFeeByKey('FinaPay', 'deposit_fee');
+      const depositFeePercent = depositFeeConfig ? parseFloat(depositFeeConfig.feeValue) : 0.5;
+      const netPendingDepositUsd = pendingDepositUsd * (1 - depositFeePercent / 100);
+      
+      // Convert net pending USD to gold grams (after fee deduction)
+      const pendingGoldGrams = netPendingDepositUsd / goldPrice;
 
       const loadTime = Date.now() - startTime;
       console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
