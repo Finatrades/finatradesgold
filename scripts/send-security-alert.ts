@@ -8,7 +8,7 @@ import { sendEmailDirect } from '../server/email';
 const SECURITY_EMAILS = [
   'chairman@winvestnet.com',
   'legal@finatrades.com',
-  'blockchaim@finatrades.com'
+  'blockchain@finatrades.com'
 ];
 
 async function sendSecurityAlert() {
