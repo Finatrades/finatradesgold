@@ -1303,10 +1303,19 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       Total to Pay:
                     </span>
                     <span className="text-lg font-bold text-emerald-700">
-                      ${(inputMode === 'gold' 
-                        ? (parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
-                        : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0)
-                      ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {(() => {
+                        const totalUsd = inputMode === 'gold' 
+                          ? (parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0)) + calculateFee(parseFloat(goldAmount || '0') * (goldPrice?.pricePerGram || 0))
+                          : (selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0) + calculateFee(selectedAccount?.currency !== 'USD' ? getDepositSummary().amountInUsd : parseFloat(amount) || 0);
+                        
+                        const accountCurrency = selectedAccount?.currency || 'USD';
+                        if (accountCurrency !== 'USD') {
+                          const rate = getRate(accountCurrency);
+                          const totalInCurrency = totalUsd * rate;
+                          return `${getCurrencySymbol(accountCurrency)}${totalInCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        return `$${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      })()}
                     </span>
                   </div>
                   
@@ -1715,7 +1724,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         ${(inputMode === 'gold' 
                           ? (parseFloat(goldAmount) * goldPrice.pricePerGram) + calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram)
                           : parseFloat(amount) + calculateFee(parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (USD)
                       </span>
                     </div>
                   )}
