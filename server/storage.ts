@@ -5747,11 +5747,9 @@ export class DatabaseStorage implements IStorage {
     userId: string;
     goldGrams: number;
     wingoldOrderId: string | null;
+    wingoldInvoiceId?: string | null;
     certificateId: string | null;
     vaultLocation: string | null;
-    barLotSerialsJson: any;
-    creditedAt: Date;
-    creditedBy: string;
     tx?: typeof db;
   }): Promise<void> {
     const allocationId = `WA-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
@@ -5760,19 +5758,16 @@ export class DatabaseStorage implements IStorage {
     await dbClient.execute(sql`
       INSERT INTO wingold_allocations (
         id, user_id, tally_id, allocated_g, wingold_order_id, 
-        certificate_id, vault_location, bar_serials_json, 
-        credited_at, credited_by, created_at
+        wingold_invoice_id, certificate_id, vault_location, created_at
       ) VALUES (
         ${allocationId}, ${params.userId}, ${params.tallyId}, 
-        ${params.goldGrams.toFixed(6)}, ${params.wingoldOrderId}, 
-        ${params.certificateId}, ${params.vaultLocation}, 
-        ${JSON.stringify(params.barLotSerialsJson || [])}, 
-        ${params.creditedAt}, ${params.creditedBy}, NOW()
+        ${params.goldGrams.toFixed(6)}, ${params.wingoldOrderId || null}, 
+        ${params.wingoldInvoiceId || null}, ${params.certificateId || null}, 
+        ${params.vaultLocation || null}, NOW()
       )
       ON CONFLICT (tally_id) DO UPDATE SET
         allocated_g = EXCLUDED.allocated_g,
-        credited_at = EXCLUDED.credited_at,
-        credited_by = EXCLUDED.credited_by
+        updated_at = NOW()
     `);
   }
 

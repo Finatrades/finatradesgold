@@ -489,11 +489,9 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         userId,
         goldGrams: parsedAllocation,
         wingoldOrderId,
+        wingoldInvoiceId: wingoldInvoiceId || null,
         certificateId: storageCertificateId,
         vaultLocation,
-        barLotSerialsJson: null,
-        creditedAt: new Date(),
-        creditedBy: adminId || undefined,
         tx: tx as any,
       });
 
@@ -1091,11 +1089,9 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         userId: transaction.userId,
         goldGrams: physicalGoldAllocatedG,
         wingoldOrderId: transaction.wingoldOrderId,
+        wingoldInvoiceId: transaction.wingoldInvoiceId || null,
         certificateId: transaction.storageCertificateId,
         vaultLocation: transaction.vaultLocation,
-        barLotSerialsJson: transaction.barLotSerialsJson,
-        creditedAt: new Date(),
-        creditedBy: adminId,
         tx: tx as any,
       });
 
