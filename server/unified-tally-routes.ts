@@ -319,8 +319,8 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
     
-    // Map frontend naming (LGPW/FGPW) to database enum (MPGW/FPGW)
-    const dbWalletType = walletType === 'LGPW' ? 'MPGW' : walletType === 'FGPW' ? 'FPGW' : walletType;
+    // Use LGPW/FGPW directly (database enum already migrated)
+    const dbWalletType = walletType;
     
     // Calculate Wingold cost (buy rate * physical grams)
     const wingoldCostUsd = parsedAllocation * parseFloat(wingoldBuyRate);
@@ -351,7 +351,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         userId,
         txnType: 'FIAT_CRYPTO_DEPOSIT',
         sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
-        walletType: dbWalletType as 'MPGW' | 'FPGW',
+        walletType: dbWalletType as 'LGPW' | 'FGPW',
         status: 'COMPLETED', // Final state - everything done in one step
         depositCurrency: 'USD',
         depositAmount: String(amountUsd),
@@ -379,13 +379,12 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         approvedAt: new Date(),
       }, tx as any);
 
-      // 2. Credit wallet immediately (vaultLedgerService expects LGPW/FGPW naming)
-      const vaultWalletType = dbWalletType === 'MPGW' ? 'LGPW' : 'FGPW';
+      // 2. Credit wallet immediately
       await vaultLedgerService.creditWalletDeposit({
         userId,
         goldGrams: parsedAllocation,
         goldPriceUsdPerGram: goldPrice,
-        walletType: vaultWalletType,
+        walletType: dbWalletType as 'LGPW' | 'FGPW',
         transactionId: tallyRecord.id,
         certificateId: storageCertificateId,
         notes: `Unified Tally Credit: ${parsedAllocation.toFixed(6)}g to ${dbWalletType} wallet from ${sourceType} deposit`,
@@ -393,8 +392,8 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         tx: tx as any,
       });
 
-      // 3. Create FPGW batch if it's a fixed-price wallet
-      if (dbWalletType === 'FPGW') {
+      // 3. Create FGPW batch if it's a fixed-price wallet
+      if (dbWalletType === 'FGPW') {
         await createFpgwBatch({
           userId,
           goldGrams: parsedAllocation,
@@ -1089,7 +1088,7 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         userId: transaction.userId,
         goldGrams: physicalGoldAllocatedG,
         wingoldOrderId: transaction.wingoldOrderId,
-        wingoldInvoiceId: transaction.wingoldInvoiceId || null,
+        wingoldInvoiceId: transaction.wingoldSupplierInvoiceId || null,
         certificateId: transaction.storageCertificateId,
         vaultLocation: transaction.vaultLocation,
         tx: tx as any,

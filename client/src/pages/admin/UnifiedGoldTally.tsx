@@ -65,7 +65,7 @@ type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
 interface UnifiedTallyTransaction {
   id: string;
   userId: string;
-  walletType: 'LGPW' | 'FGPW' | 'MPGW' | 'FPGW';
+  walletType: 'LGPW' | 'FGPW';
   depositMethod: DepositMethod;
   status: TallyStatus;
   depositAmount: string;
