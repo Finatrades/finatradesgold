@@ -408,6 +408,16 @@ export default function UnifiedPaymentManagement() {
                       <span className="text-sm text-gray-500">Amount</span>
                       <span className="text-sm font-medium">{formatCurrency(selectedPayment.amountUsd)}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">≈ Equivalent Gold</span>
+                      <span className="text-sm font-medium text-amber-600">
+                        {pricingMode === 'MANUAL' && manualGoldPrice 
+                          ? (selectedPayment.amountUsd / parseFloat(manualGoldPrice)).toFixed(4)
+                          : goldPrice?.pricePerGram 
+                            ? (selectedPayment.amountUsd / goldPrice.pricePerGram).toFixed(4)
+                            : '...'} g
+                      </span>
+                    </div>
                     {selectedPayment.transactionHash && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-500">TX Hash</span>
