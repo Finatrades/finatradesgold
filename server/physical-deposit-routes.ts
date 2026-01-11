@@ -41,8 +41,10 @@ const createDepositSchema = z.object({
   additionalDocuments: z.array(z.object({ name: z.string(), url: z.string() })).optional(),
   noLienDispute: z.boolean(),
   acceptVaultTerms: z.boolean(),
-  acceptInsurance: z.boolean(),
-  acceptFees: z.boolean(),
+  acceptInsurance: z.boolean().optional(),
+  acceptFees: z.boolean().optional(),
+  // Optional USD estimate from user (for negotiation)
+  usdEstimateFromUser: z.number().positive().optional(),
 });
 
 router.post('/deposits', async (req: Request, res: Response) => {
@@ -59,8 +61,8 @@ router.post('/deposits', async (req: Request, res: Response) => {
     const data = parsed.data;
     const userId = (req.user as any).id;
 
-    if (!data.noLienDispute || !data.acceptVaultTerms || !data.acceptInsurance || !data.acceptFees) {
-      return res.status(400).json({ error: 'All declarations must be accepted' });
+    if (!data.noLienDispute || !data.acceptVaultTerms) {
+      return res.status(400).json({ error: 'Required declarations must be accepted' });
     }
 
     const requiresNegotiation = data.depositType === 'RAW' || data.depositType === 'OTHER';
@@ -92,6 +94,8 @@ router.post('/deposits', async (req: Request, res: Response) => {
       acceptInsurance: data.acceptInsurance,
       acceptFees: data.acceptFees,
       status: 'SUBMITTED',
+      // USD estimate from user (optional, for negotiation)
+      usdEstimateFromUser: data.usdEstimateFromUser?.toString(),
     };
 
     const deposit = await storage.createPhysicalDepositRequest(depositRequest);
@@ -262,8 +266,23 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       await storage.markNegotiationResponded(latestMsg.id);
     }
 
+    // Build update object for deposit
+    const depositUpdate: any = {};
     if (newStatus) {
-      await storage.updatePhysicalDeposit(deposit.id, { status: newStatus as any });
+      depositUpdate.status = newStatus;
+    }
+    
+    // When user accepts admin's offer, record timestamp and agreed USD value
+    if (action === 'ACCEPT' && latestMsg?.messageType === 'ADMIN_OFFER') {
+      depositUpdate.userAcceptedAt = new Date();
+      // Get the USD value from the admin's counter offer (stored on the deposit)
+      if (deposit.usdCounterFromAdmin) {
+        depositUpdate.usdAgreedValue = deposit.usdCounterFromAdmin;
+      }
+    }
+    
+    if (Object.keys(depositUpdate).length > 0) {
+      await storage.updatePhysicalDeposit(deposit.id, depositUpdate);
     }
 
     await storage.createAuditLog({
@@ -566,6 +585,7 @@ const offerSchema = z.object({
   proposedPurity: z.string().optional(),
   proposedFees: z.number().optional(),
   goldPriceAtTime: z.number().optional(),
+  usdOffer: z.number().positive().optional(), // Admin's USD valuation offer
   message: z.string().optional(),
 });
 
@@ -613,9 +633,12 @@ router.post('/admin/deposits/:id/offer', async (req: Request, res: Response) => 
       await storage.markNegotiationResponded(latestMsg.id);
     }
 
-    if (deposit.status !== 'NEGOTIATION') {
-      await storage.updatePhysicalDeposit(deposit.id, { status: 'NEGOTIATION' });
+    // Update deposit status and USD counter offer
+    const depositUpdate: any = { status: 'NEGOTIATION' };
+    if (parsed.data.usdOffer) {
+      depositUpdate.usdCounterFromAdmin = parsed.data.usdOffer.toString();
     }
+    await storage.updatePhysicalDeposit(deposit.id, depositUpdate);
 
     res.json({ success: true });
   } catch (error) {
@@ -659,9 +682,14 @@ router.post('/admin/deposits/:id/accept-counter', async (req: Request, res: Resp
 
     await storage.markNegotiationResponded(latestMsg.id);
 
+    // When admin accepts user's counter, record both timestamps and agreed value
     await storage.updatePhysicalDeposit(deposit.id, { 
       status: 'AGREED',
       finalCreditedGrams: latestMsg.proposedGrams,
+      adminAcceptedAt: new Date(),
+      userAcceptedAt: new Date(), // User already accepted by counter-offering
+      // If counter had USD value in message, use it; otherwise keep existing
+      usdAgreedValue: deposit.usdCounterFromAdmin || undefined,
     });
 
     res.json({ success: true });
