@@ -96,6 +96,7 @@ import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
 import { registerSsoRoutes } from "./sso-routes";
 import wingoldRoutes from "./wingold-routes";
+import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
 import unifiedTallyRoutes from "./unified-tally-routes";
@@ -600,6 +601,8 @@ export async function registerRoutes(
   registerDualWalletRoutes(app);
   // Register SSO routes for Wingold integration
   registerSsoRoutes(app);
+  // Register Wingold Partner API routes for user data sharing
+  registerWingoldPartnerRoutes(app);
   // Register Wingold B2B integration routes
   app.use("/api/wingold", wingoldRoutes);
   // Register Admin Vault Exposure routes
