@@ -5765,9 +5765,6 @@ export class DatabaseStorage implements IStorage {
         ${params.wingoldInvoiceId || null}, ${params.certificateId || null}, 
         ${params.vaultLocation || null}, NOW()
       )
-      ON CONFLICT (tally_id) DO UPDATE SET
-        allocated_g = EXCLUDED.allocated_g,
-        updated_at = NOW()
     `);
   }
 
