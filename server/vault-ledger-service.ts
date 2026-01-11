@@ -368,7 +368,6 @@ export class VaultLedgerService {
     
     const isLGPW = walletType === 'LGPW';
     const walletTypeLabel = isLGPW ? 'LGPW' : 'FGPW';
-    const dbWalletType = isLGPW ? 'MPGW' : 'FPGW'; // Map frontend names to database enum
     
     const walletResult = await dbClient.update(wallets)
       .set({
@@ -413,8 +412,8 @@ export class VaultLedgerService {
       valueUsd: (grams * goldPriceUsdPerGram).toFixed(2),
       toWallet: 'FinaPay',
       toStatus: 'Available',
-      goldWalletType: dbWalletType as 'MPGW' | 'FPGW',
-      toGoldWalletType: dbWalletType as 'MPGW' | 'FPGW',
+      goldWalletType: walletType,
+      toGoldWalletType: walletType,
       balanceAfterGrams: newBalance.toFixed(6),
       transactionId,
       certificateId,
