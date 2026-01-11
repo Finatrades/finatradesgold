@@ -358,11 +358,14 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
     
+    // Map frontend naming (LGPW/FGPW) to database enum (MPGW/FPGW)
+    const dbWalletType = walletType === 'LGPW' ? 'MPGW' : walletType === 'FGPW' ? 'FPGW' : walletType;
+    
     const tallyRecord = await storage.createUnifiedTallyTransaction({
       userId,
       txnType: 'FIAT_CRYPTO_DEPOSIT',
       sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
-      walletType: walletType as 'LGPW' | 'FGPW',
+      walletType: dbWalletType as 'MPGW' | 'FPGW',
       status: initialStatus,
       depositCurrency: 'USD',
       depositAmount: String(amountUsd),
