@@ -265,35 +265,19 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       });
     }
 
+    // Pre-fetch data and validate BEFORE transaction (read-only operations)
+    let sourcePayment: any = null;
+    
     if (sourceType === 'CRYPTO') {
       const payment = await storage.getCryptoPaymentRequest(id);
       if (!payment) return res.status(404).json({ error: 'Crypto payment not found' });
       if (!['Pending', 'Under Review'].includes(payment.status)) {
         return res.status(400).json({ error: 'Payment already processed' });
       }
-      
       userId = payment.userId;
       amountUsd = Number(payment.amountUsd);
-      
-      // Bank-style fee: deduct fee from deposit amount
-      feeAmountUsd = amountUsd * (feePercent / 100);
-      netAmountUsd = amountUsd - feeAmountUsd;
-      
-      if (pricingMode === 'MARKET') {
-        const { getGoldPricePerGram } = await import('./gold-price-service');
-        goldPrice = await getGoldPricePerGram();
-      } else {
-        goldPrice = Number(manualGoldPrice);
-      }
-      goldGrams = netAmountUsd / goldPrice; // Gold calculated from NET amount after fee
-      
       paymentReference = `CRYPTO-${id.substring(0, 8)}`;
-      
-      // Mark crypto payment as Approved (removes from pending queue)
-      await storage.updateCryptoPaymentRequest(id, {
-        status: 'Approved',
-        reviewNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-      });
+      sourcePayment = payment;
 
     } else if (sourceType === 'BANK') {
       const deposit = await storage.getDepositRequest(id);
@@ -301,30 +285,12 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       if (deposit.status !== 'Pending') {
         return res.status(400).json({ error: 'Deposit already processed' });
       }
-      
       userId = deposit.userId;
       amountUsd = Number(deposit.amountUsd);
-      
-      // Bank-style fee: deduct fee from deposit amount
-      feeAmountUsd = amountUsd * (feePercent / 100);
-      netAmountUsd = amountUsd - feeAmountUsd;
-      
-      const { getGoldPricePerGram } = await import('./gold-price-service');
-      goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
-      goldGrams = netAmountUsd / goldPrice; // Gold calculated from NET amount after fee
-      
       paymentReference = deposit.referenceNumber;
-      
-      // Mark deposit as Confirmed (removes from pending queue)
-      await storage.updateDepositRequest(deposit.id, {
-        status: 'Confirmed',
-        adminNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-        processedBy: adminUser?.id,
-        processedAt: new Date(),
-      });
+      sourcePayment = deposit;
 
     } else if (sourceType === 'CARD') {
-      // Card payments: Already verified by N-Genius gateway
       const cardPayment = await storage.getNgeniusTransaction(id);
       if (!cardPayment) return res.status(404).json({ error: 'Card payment not found' });
       if (cardPayment.status !== 'Captured') {
@@ -333,27 +299,22 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       if (cardPayment.walletTransactionId) {
         return res.status(400).json({ error: 'Card payment already credited to wallet' });
       }
-      
       userId = cardPayment.userId;
       amountUsd = Number(cardPayment.amountUsd || 0);
-      
-      // Bank-style fee: deduct fee from deposit amount
-      feeAmountUsd = amountUsd * (feePercent / 100);
-      netAmountUsd = amountUsd - feeAmountUsd;
-      
-      const { getGoldPricePerGram } = await import('./gold-price-service');
-      goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
-      goldGrams = netAmountUsd / goldPrice; // Gold calculated from NET amount after fee
-      
       paymentReference = cardPayment.orderReference || `CARD-${id.substring(0, 8)}`;
+      sourcePayment = cardPayment;
 
     } else {
       return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or CARD.' });
     }
 
-    // Golden Rule enforced: allocation is always provided at approval time
-    // Status is always CERT_RECEIVED since physicalGoldAllocatedG > 0 AND storageCertificateId exists
-    const initialStatus = 'CERT_RECEIVED';
+    // Calculate fees and gold price (outside transaction - read operations)
+    feeAmountUsd = amountUsd * (feePercent / 100);
+    netAmountUsd = amountUsd - feeAmountUsd;
+    
+    const { getGoldPricePerGram } = await import('./gold-price-service');
+    goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
+    goldGrams = netAmountUsd / goldPrice;
 
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
@@ -361,77 +322,200 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Map frontend naming (LGPW/FGPW) to database enum (MPGW/FPGW)
     const dbWalletType = walletType === 'LGPW' ? 'MPGW' : walletType === 'FGPW' ? 'FPGW' : walletType;
     
-    const tallyRecord = await storage.createUnifiedTallyTransaction({
-      userId,
-      txnType: 'FIAT_CRYPTO_DEPOSIT',
-      sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
-      walletType: dbWalletType as 'MPGW' | 'FPGW',
-      status: initialStatus,
-      depositCurrency: 'USD',
-      depositAmount: String(amountUsd),
-      feeAmount: String(feeAmountUsd.toFixed(2)), // Bank-style fee deducted
-      feeCurrency: 'USD',
-      netAmount: String(netAmountUsd.toFixed(2)), // Net after fee = gold value
-      paymentReference,
-      paymentConfirmedAt: new Date(),
-      pricingMode: pricingMode as 'MARKET' | 'FIXED',
-      goldRateValue: String(goldPrice),
-      rateTimestamp: new Date(),
-      goldEquivalentG: String(goldGrams),
-      vaultLocation,
-      notes: notes || `Created from ${sourceType} payment. Fee: ${feePercent}% ($${feeAmountUsd.toFixed(2)}) deducted.`,
-      createdBy: adminUser?.id,
-      // Allocation fields (if provided)
-      ...(wingoldOrderId && { wingoldOrderId }),
-      ...(wingoldInvoiceId && { wingoldSupplierInvoiceId: wingoldInvoiceId }),
-      ...(physicalGoldAllocatedG && { physicalGoldAllocatedG: String(physicalGoldAllocatedG) }),
-      ...(wingoldBuyRate && { wingoldBuyRate: String(wingoldBuyRate) }),
-      ...(storageCertificateId && { storageCertificateId }),
-    });
+    // Calculate Wingold cost (buy rate * physical grams)
+    const wingoldCostUsd = parsedAllocation * parseFloat(wingoldBuyRate);
+    
+    // Admin info for audit trail (triggered_by requires valid user ID or null)
+    const adminId = adminUser?.id || null;
+    const adminName = adminUser?.firstName ? `${adminUser.firstName} ${adminUser.lastName}` : 'System';
 
-    // For CARD payments, mark the NGenius transaction as linked to this UTT
-    // This prevents it from appearing in the pending payments list again
-    if (sourceType === 'CARD') {
-      // Set a placeholder walletTransactionId to mark as processed (actual credit happens in UTT finalize)
-      await storage.updateNgeniusTransaction(sourceId, {
-        walletTransactionId: `UTT:${tallyRecord.txnId}`, // Prefix with UTT: to indicate pending UTT credit
+    // ONE-STEP APPROVAL: ALL database writes in a single atomic transaction
+    const result = await db.transaction(async (tx) => {
+      // 0. Update source payment status FIRST (inside transaction for atomicity)
+      if (sourceType === 'CRYPTO') {
+        await storage.updateCryptoPaymentRequest(id, {
+          status: 'Approved',
+          reviewNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+        }, tx as any);
+      } else if (sourceType === 'BANK') {
+        await storage.updateDepositRequest(sourcePayment.id, {
+          status: 'Confirmed',
+          adminNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+          processedBy: adminUser?.id,
+          processedAt: new Date(),
+        }, tx as any);
+      }
+
+      // 1. Create UTT with status COMPLETED (final state)
+      const tallyRecord = await storage.createUnifiedTallyTransaction({
+        userId,
+        txnType: 'FIAT_CRYPTO_DEPOSIT',
+        sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
+        walletType: dbWalletType as 'MPGW' | 'FPGW',
+        status: 'COMPLETED', // Final state - everything done in one step
+        depositCurrency: 'USD',
+        depositAmount: String(amountUsd),
+        feeAmount: String(feeAmountUsd.toFixed(2)),
+        feeCurrency: 'USD',
+        netAmount: String(netAmountUsd.toFixed(2)),
+        paymentReference,
+        paymentConfirmedAt: new Date(),
+        pricingMode: pricingMode as 'MARKET' | 'FIXED',
+        goldRateValue: String(goldPrice),
+        rateTimestamp: new Date(),
+        goldEquivalentG: String(goldGrams),
+        goldCreditedG: String(parsedAllocation), // Credited amount = physical allocation
+        goldCreditedValueUsd: String(parsedAllocation * goldPrice),
+        vaultLocation,
+        notes: notes || `One-step approval from ${sourceType}. Fee: ${feePercent}% ($${feeAmountUsd.toFixed(2)}) deducted.`,
+        createdBy: adminId || undefined,
+        wingoldOrderId,
+        wingoldSupplierInvoiceId: wingoldInvoiceId,
+        physicalGoldAllocatedG: String(parsedAllocation),
+        wingoldBuyRate: String(wingoldBuyRate),
+        wingoldCostUsd: String(wingoldCostUsd),
+        storageCertificateId,
+        approvedBy: adminId || undefined,
+        approvedAt: new Date(),
+      }, tx as any);
+
+      // 2. Credit wallet immediately (vaultLedgerService expects LGPW/FGPW naming)
+      const vaultWalletType = dbWalletType === 'MPGW' ? 'LGPW' : 'FGPW';
+      await vaultLedgerService.creditWalletDeposit({
+        userId,
+        goldGrams: parsedAllocation,
+        goldPriceUsdPerGram: goldPrice,
+        walletType: vaultWalletType,
+        transactionId: tallyRecord.id,
+        certificateId: storageCertificateId,
+        notes: `Unified Tally Credit: ${parsedAllocation.toFixed(6)}g to ${dbWalletType} wallet from ${sourceType} deposit`,
+        createdBy: adminId || undefined,
+        tx: tx as any,
       });
-    }
 
-    // Create timeline event for UTT creation
-    await storage.createUnifiedTallyEvent({
-      tallyId: tallyRecord.id,
-      eventType: 'CREATED',
-      previousStatus: null,
-      newStatus: initialStatus,
-      details: {
-        sourceType,
-        amountUsd,
-        feeAmountUsd,
-        netAmountUsd,
-        goldGrams,
-        goldPrice,
-        wingoldOrderId: wingoldOrderId || null,
-        physicalGoldAllocatedG: physicalGoldAllocatedG || null,
-        storageCertificateId: storageCertificateId || null,
-        message: `UTT created from ${sourceType} payment with Golden Rule allocation`
-      } as any,
-      triggeredBy: adminUser?.id || 'system',
-      triggeredByName: adminUser?.firstName ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin',
+      // 3. Create FPGW batch if it's a fixed-price wallet
+      if (dbWalletType === 'FPGW') {
+        await createFpgwBatch({
+          userId,
+          goldGrams: parsedAllocation,
+          lockedPriceUsd: goldPrice,
+          sourceType: 'deposit',
+          sourceTransactionId: tallyRecord.id,
+          notes: `FPGW batch from ${sourceType} deposit - Certificate: ${storageCertificateId}`,
+          tx: tx as any,
+        });
+      }
+
+      // 4. For CARD payments, mark as linked
+      if (sourceType === 'CARD') {
+        await storage.updateNgeniusTransaction(sourceId, {
+          walletTransactionId: tallyRecord.txnId,
+        }, tx as any);
+      }
+
+      // 5. Create timeline events (CREATED -> CREDITED -> COMPLETED)
+      await storage.createUnifiedTallyEvent({
+        tallyId: tallyRecord.id,
+        eventType: 'CREATED',
+        previousStatus: null,
+        newStatus: 'PENDING_PAYMENT',
+        details: {
+          sourceType,
+          amountUsd,
+          feeAmountUsd,
+          netAmountUsd,
+          goldGrams,
+          goldPrice,
+          message: `Payment received from ${sourceType}`
+        } as any,
+        triggeredBy: adminId || undefined,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      await storage.createUnifiedTallyEvent({
+        tallyId: tallyRecord.id,
+        eventType: 'PHYSICAL_ALLOCATED',
+        previousStatus: 'PENDING_PAYMENT',
+        newStatus: 'CERT_RECEIVED',
+        details: {
+          wingoldOrderId,
+          physicalGoldAllocatedG: parsedAllocation,
+          wingoldBuyRate,
+          wingoldCostUsd,
+          storageCertificateId,
+          vaultLocation,
+          message: `Golden Rule satisfied - Wingold allocation confirmed`
+        } as any,
+        triggeredBy: adminId || undefined,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      await storage.createUnifiedTallyEvent({
+        tallyId: tallyRecord.id,
+        eventType: 'CREDITED',
+        previousStatus: 'CERT_RECEIVED',
+        newStatus: 'CREDITED',
+        details: {
+          goldCreditedG: parsedAllocation,
+          walletType: dbWalletType,
+          goldRateValue: goldPrice,
+          message: `${parsedAllocation.toFixed(4)}g credited to ${dbWalletType} wallet`
+        } as any,
+        triggeredBy: adminId || undefined,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      await storage.createUnifiedTallyEvent({
+        tallyId: tallyRecord.id,
+        eventType: 'COMPLETED',
+        previousStatus: 'CREDITED',
+        newStatus: 'COMPLETED',
+        details: {
+          goldCreditedG: parsedAllocation,
+          goldRateValue: goldPrice,
+          wingoldOrderId,
+          certificateId: storageCertificateId,
+          vaultLocation,
+          netProfitUsd: amountUsd - wingoldCostUsd,
+          message: `Transaction completed - Gold delivered to user wallet`
+        } as any,
+        triggeredBy: adminId || undefined,
+        triggeredByName: adminName,
+      }, tx as any);
+
+      // 6. Record Wingold allocation for audit
+      await storage.recordWingoldAllocationCredit({
+        tallyId: tallyRecord.id,
+        userId,
+        goldGrams: parsedAllocation,
+        wingoldOrderId,
+        certificateId: storageCertificateId,
+        vaultLocation,
+        barLotSerialsJson: null,
+        creditedAt: new Date(),
+        creditedBy: adminId || undefined,
+        tx: tx as any,
+      });
+
+      return tallyRecord;
     });
+
+    // Get updated holdings for response
+    const holdingsSnapshot = await storage.getUserHoldingsSnapshot(userId);
 
     res.json({
       success: true,
-      message: `Payment approved. UTT record created (status: CERT_RECEIVED). Golden Rule satisfied - ready for final credit approval.`,
+      message: `Payment approved & wallet credited! ${parsedAllocation.toFixed(4)}g added to ${dbWalletType} wallet.`,
       tally: {
-        id: tallyRecord.id,
-        txnId: tallyRecord.txnId,
-        status: tallyRecord.status,
-        goldGrams: goldGrams.toFixed(4),
+        id: result.id,
+        txnId: result.txnId,
+        status: 'COMPLETED',
+        goldGrams: parsedAllocation.toFixed(4),
         goldPrice: goldPrice.toFixed(2),
         amountUsd: amountUsd.toFixed(2),
-        hasAllocation: true,
+        walletCredited: true,
       },
+      holdingsSnapshot,
     });
 
   } catch (error: any) {

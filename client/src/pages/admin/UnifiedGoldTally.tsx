@@ -53,7 +53,8 @@ import {
   Plus,
   Trash2,
   Save,
-  Upload
+  Upload,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -822,56 +823,30 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </Button>
               )}
 
-              {/* Credit Wallet Action - Shows when ready for final credit */}
+              {/* Pending Credit Status - For historical records still in CERT_RECEIVED state */}
               {(transaction.status === 'CERT_RECEIVED' || transaction.status === 'PHYSICAL_ALLOCATED') && (
-                <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-green-700">
-                      <CreditCard className="w-4 h-4" />
-                      Ready for Wallet Credit
+                    <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
+                      <AlertTriangle className="w-4 h-4" />
+                      Pending Wallet Credit
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="text-sm text-gray-600">
                       <div className="flex justify-between py-1">
                         <span>Physical Gold Allocated:</span>
-                        <span className="font-mono font-semibold text-green-700">{formatGold(transaction.physicalGoldAllocatedG)}</span>
+                        <span className="font-mono font-semibold text-amber-700">{formatGold(transaction.physicalGoldAllocatedG)}</span>
                       </div>
                       <div className="flex justify-between py-1">
                         <span>Certificate ID:</span>
                         <span className="font-medium">{transaction.storageCertificateId || 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between py-1">
-                        <span>Credit Rate:</span>
-                        <span className="font-medium">${Number(transaction.goldRateValue || 0).toFixed(2)}/g</span>
-                      </div>
                     </div>
-                    
-                    {transaction.physicalGoldAllocatedG && Number(transaction.physicalGoldAllocatedG) > 0 && transaction.storageCertificateId ? (
-                      <div className="bg-green-100 text-green-800 text-xs p-2 rounded flex items-center gap-2">
-                        <CheckCircle className="w-3 h-3" />
-                        Golden Rule satisfied - Ready to credit wallet
-                      </div>
-                    ) : (
-                      <div className="bg-amber-100 text-amber-800 text-xs p-2 rounded flex items-center gap-2">
-                        <AlertTriangle className="w-3 h-3" />
-                        Missing: {!transaction.physicalGoldAllocatedG || Number(transaction.physicalGoldAllocatedG) <= 0 ? 'Physical allocation' : ''} 
-                        {!transaction.storageCertificateId ? ' Certificate ID' : ''}
-                      </div>
-                    )}
-
-                    <Button 
-                      onClick={handleApproveCredit}
-                      disabled={savingCredit || !transaction.physicalGoldAllocatedG || Number(transaction.physicalGoldAllocatedG) <= 0 || !transaction.storageCertificateId}
-                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                    >
-                      {savingCredit ? (
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <CreditCard className="w-4 h-4 mr-2" />
-                      )}
-                      Credit {formatGold(transaction.physicalGoldAllocatedG)} to {transaction.walletType} Wallet
-                    </Button>
+                    <div className="bg-blue-100 text-blue-800 text-xs p-2 rounded flex items-center gap-2">
+                      <FileText className="w-3 h-3" />
+                      This is a historical record. New payments are credited automatically in Unified Payments.
+                    </div>
                   </CardContent>
                 </Card>
               )}

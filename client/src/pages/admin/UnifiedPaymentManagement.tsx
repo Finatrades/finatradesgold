@@ -639,7 +639,7 @@ export default function UnifiedPaymentManagement() {
                       <div className="flex items-center gap-2 text-green-700">
                         <CheckCircle className="w-4 h-4" />
                         <span className="text-sm">
-                          Golden Rule satisfied! UTT will be created with allocation data and ready for final approval.
+                          Golden Rule satisfied! Click "Approve & Credit Wallet" to complete the transaction in one step.
                         </span>
                       </div>
                     </CardContent>
@@ -669,7 +669,7 @@ export default function UnifiedPaymentManagement() {
                 ) : (
                   <CheckCircle className="w-4 h-4 mr-2" />
                 )}
-                Approve & Create UTT
+                Approve & Credit Wallet
               </Button>
             </DialogFooter>
           </DialogContent>

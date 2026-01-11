@@ -2217,8 +2217,9 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async updateDepositRequest(id: string, updates: Partial<DepositRequest>): Promise<DepositRequest | undefined> {
-    const [request] = await db.update(depositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(depositRequests.id, id)).returning();
+  async updateDepositRequest(id: string, updates: Partial<DepositRequest>, tx?: typeof db): Promise<DepositRequest | undefined> {
+    const dbClient = tx || db;
+    const [request] = await dbClient.update(depositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(depositRequests.id, id)).returning();
     return request || undefined;
   }
 
@@ -2632,8 +2633,9 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(ngeniusTransactions).orderBy(desc(ngeniusTransactions.createdAt));
   }
 
-  async updateNgeniusTransaction(id: string, updates: Partial<NgeniusTransaction>): Promise<NgeniusTransaction | undefined> {
-    const [transaction] = await db.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.id, id)).returning();
+  async updateNgeniusTransaction(id: string, updates: Partial<NgeniusTransaction>, tx?: typeof db): Promise<NgeniusTransaction | undefined> {
+    const dbClient = tx || db;
+    const [transaction] = await dbClient.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.id, id)).returning();
     return transaction || undefined;
   }
 
@@ -3507,8 +3509,9 @@ export class DatabaseStorage implements IStorage {
     return newRequest;
   }
 
-  async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>): Promise<CryptoPaymentRequest | undefined> {
-    const [request] = await db.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
+  async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>, tx?: typeof db): Promise<CryptoPaymentRequest | undefined> {
+    const dbClient = tx || db;
+    const [request] = await dbClient.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
     return request || undefined;
   }
 
@@ -5426,9 +5429,10 @@ export class DatabaseStorage implements IStorage {
     return `UGT-${year}-${String(count).padStart(6, '0')}`;
   }
 
-  async createUnifiedTallyTransaction(data: InsertUnifiedTallyTransaction): Promise<UnifiedTallyTransaction> {
+  async createUnifiedTallyTransaction(data: InsertUnifiedTallyTransaction, tx?: typeof db): Promise<UnifiedTallyTransaction> {
+    const dbClient = tx || db;
     const txnId = await this.generateUnifiedTallyTxnId();
-    const [transaction] = await db.insert(unifiedTallyTransactions).values({
+    const [transaction] = await dbClient.insert(unifiedTallyTransactions).values({
       ...data,
       txnId,
     }).returning();
