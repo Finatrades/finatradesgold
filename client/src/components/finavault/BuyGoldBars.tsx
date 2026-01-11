@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Package, ExternalLink, ShieldCheck, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Package, ExternalLink, ShieldCheck, Clock, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface WingoldOrder {
@@ -18,9 +19,14 @@ interface WingoldOrder {
   createdAt: string;
 }
 
+const WINGOLD_SHOP_URL = 'https://wingoldandmetals--imcharanpratap.replit.app';
+
 export default function BuyGoldBars() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showShopModal, setShowShopModal] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [ssoUrl, setSsoUrl] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['wingold-orders', user?.id],
@@ -35,7 +41,7 @@ export default function BuyGoldBars() {
 
   const orders: WingoldOrder[] = ordersData?.orders || [];
 
-  const handleShopRedirect = () => {
+  const handleOpenShop = async () => {
     if (!user) {
       toast({
         title: 'Login Required',
@@ -54,7 +60,28 @@ export default function BuyGoldBars() {
       return;
     }
 
-    window.location.href = '/api/sso/wingold/shop';
+    try {
+      const res = await fetch('/api/sso/wingold', { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to generate SSO token');
+      }
+      const data = await res.json();
+      setSsoUrl(data.redirectUrl);
+      setIframeLoading(true);
+      setShowShopModal(true);
+    } catch (error) {
+      toast({
+        title: 'Connection Error',
+        description: 'Unable to connect to Wingold shop. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCloseShop = () => {
+    setShowShopModal(false);
+    setSsoUrl(null);
+    setIframeLoading(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -108,7 +135,7 @@ export default function BuyGoldBars() {
                   Shop on Wingold & Metals
                 </h3>
                 <p className="text-amber-800 mb-4">
-                  Click below to browse and purchase gold bars from our trusted partner, 
+                  Browse and purchase gold bars from our trusted partner, 
                   Wingold & Metals. Your purchase will be securely stored in a SecureVault 
                   location and automatically credited to your FinaVault account.
                 </p>
@@ -131,13 +158,13 @@ export default function BuyGoldBars() {
                   </li>
                 </ul>
                 <Button 
-                  onClick={handleShopRedirect}
+                  onClick={handleOpenShop}
                   size="lg"
                   className="bg-amber-600 hover:bg-amber-700 text-white"
                   data-testid="button-shop-wingold"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Shop Gold Bars on Wingold
+                  Open Gold Bar Shop
                 </Button>
               </div>
             </div>
@@ -198,6 +225,45 @@ export default function BuyGoldBars() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showShopModal} onOpenChange={handleCloseShop}>
+        <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="px-4 py-3 border-b bg-amber-50 flex flex-row items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-amber-900">
+              <Package className="w-5 h-5" />
+              Wingold & Metals Shop
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleCloseShop}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogHeader>
+          <div className="flex-1 relative h-full">
+            {iframeLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-amber-600 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading Wingold Shop...</p>
+                </div>
+              </div>
+            )}
+            {ssoUrl && (
+              <iframe
+                src={ssoUrl}
+                className="w-full h-full border-0"
+                style={{ minHeight: 'calc(90vh - 60px)' }}
+                onLoad={() => setIframeLoading(false)}
+                title="Wingold & Metals Shop"
+                allow="payment"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
