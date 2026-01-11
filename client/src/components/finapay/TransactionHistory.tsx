@@ -162,7 +162,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                         ? 'Swap Gold'
                         : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
-                        : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
+                        : (tx.type === 'Deposit' || tx.type === 'Buy')
                         ? 'Acquire Gold' 
                         : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
                       
@@ -242,7 +242,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                         ? 'Swap Gold'
                         : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
-                        : (tx.type === 'Deposit' || tx.type === 'Buy') && tx.amountGrams && tx.amountGrams > 0 
+                        : (tx.type === 'Deposit' || tx.type === 'Buy')
                         ? 'Acquire Gold' 
                         : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
                       
