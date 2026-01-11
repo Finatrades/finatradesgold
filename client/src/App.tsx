@@ -76,8 +76,17 @@ function PublicRoute({ path, component: Component }: { path: string, component: 
   );
 }
 
+function getDomainModeFromHostname(): 'personal' | 'business' {
+  if (typeof window === 'undefined') return 'personal';
+  const hostname = window.location.hostname.toLowerCase();
+  if (hostname.includes('finagold')) return 'personal';
+  if (hostname.includes('finatrades')) return 'business';
+  return 'personal';
+}
+
 function HomeRedirect() {
   const { user, loading, adminPortal } = useAuth();
+  const domainMode = getDomainModeFromHostname();
   
   if (loading) {
     return (
@@ -88,7 +97,7 @@ function HomeRedirect() {
   }
   
   if (!user) {
-    return <Redirect to="/finagold" />;
+    return <Redirect to={domainMode === 'business' ? "/finatrades" : "/finagold"} />;
   }
   
   // Redirect admins to admin dashboard, regular users to user dashboard
@@ -174,6 +183,7 @@ import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WingoldOrders from "@/pages/admin/WingoldOrders";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
+import FinatradesLanding from "@/pages/finatrades/FinatradesLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
 import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
 import FinaBridgeLanding from "@/pages/finagold/FinaBridgeLanding";
@@ -189,6 +199,7 @@ function Router() {
       <Switch>
       <Route path="/" component={HomeRedirect} />
       <Route path="/finagold" component={FinagoldLanding} />
+      <Route path="/finatrades" component={FinatradesLanding} />
       <Route path="/finagold/bnsl" component={BNSLLanding} />
       <Route path="/finagold/finapay" component={FinaPayLanding} />
       <Route path="/finagold/finavault" component={FinaVaultLanding} />

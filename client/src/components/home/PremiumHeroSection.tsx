@@ -8,7 +8,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 
 export default function PremiumHeroSection() {
   const { t } = useLanguage();
-  const { accountType, setAccountType } = useAccountType();
+  const { accountType } = useAccountType();
 
   return (
     <section className="relative min-h-[auto] lg:min-h-[90vh] py-16 lg:py-0 flex items-center overflow-hidden bg-gradient-to-br from-white via-purple-50/50 to-purple-50/30">
@@ -31,31 +31,18 @@ export default function PremiumHeroSection() {
               <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
             </div>
 
-            <div className="inline-flex items-center p-1 rounded-full bg-white border border-gray-200 shadow-sm mb-8">
-              <button
-                onClick={() => setAccountType('personal')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  accountType === 'personal' 
-                    ? 'bg-white text-gray-800 shadow-sm border border-gray-200' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                data-testid="hero-button-personal"
-              >
-                <User className="w-4 h-4" />
-                Personal
-              </button>
-              <button
-                onClick={() => setAccountType('business')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  accountType === 'business' 
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-500 text-white shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                data-testid="hero-button-business"
-              >
-                <Building2 className="w-4 h-4" />
-                Business
-              </button>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm mb-8">
+              {accountType === 'personal' ? (
+                <>
+                  <User className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm font-medium text-gray-800">Personal Account</span>
+                </>
+              ) : (
+                <>
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm font-medium text-gray-800">Business Account</span>
+                </>
+              )}
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">

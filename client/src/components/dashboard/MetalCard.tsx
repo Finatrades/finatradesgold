@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { getDomainMode } from '@/context/AccountTypeContext';
 
 interface MetalCardProps {
   className?: string;
@@ -7,7 +8,8 @@ interface MetalCardProps {
 
 export default function MetalCard({ className = '' }: MetalCardProps) {
   const { user } = useAuth();
-  const isPersonal = user?.accountType !== 'business';
+  const domainMode = getDomainMode();
+  const isPersonal = user?.accountType ? user.accountType !== 'business' : domainMode === 'personal';
   const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim().toUpperCase() || 'CARD HOLDER';
   
   const lastFour = user?.finatradesId?.slice(-4) || '0001';

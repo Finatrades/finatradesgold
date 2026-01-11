@@ -7,64 +7,65 @@ interface AccountTypeContextType {
   accountType: AccountType;
   setAccountType: (type: AccountType) => void;
   toggleAccountType: () => void;
+  isModeLocked: boolean;
+  domainMode: AccountType;
 }
 
+export function getDomainMode(): AccountType {
+  if (typeof window === 'undefined') return 'personal';
+  
+  const hostname = window.location.hostname.toLowerCase();
+  
+  if (hostname.includes('finagold')) {
+    return 'personal';
+  }
+  if (hostname.includes('finatrades')) {
+    return 'business';
+  }
+  
+  return 'personal';
+}
+
+const domainMode = getDomainMode();
+
 const defaultValue: AccountTypeContextType = { 
-  accountType: 'personal', 
+  accountType: domainMode, 
   setAccountType: () => {}, 
-  toggleAccountType: () => {} 
+  toggleAccountType: () => {},
+  isModeLocked: true,
+  domainMode: domainMode
 };
 
 const AccountTypeContext = createContext<AccountTypeContextType>(defaultValue);
 
 export function AccountTypeProvider({ children }: { children: ReactNode }) {
-  const [accountType, setAccountType] = useState<AccountType>('personal');
+  const detectedMode = getDomainMode();
+  const [accountType, setAccountTypeInternal] = useState<AccountType>(detectedMode);
   const { user } = useAuth();
   
-  // Sync with logged-in user's account type from database
   useEffect(() => {
     if (user && user.accountType) {
       const userAccountType = user.accountType === 'business' ? 'business' : 'personal';
-      setAccountType(userAccountType);
-      try {
-        localStorage.setItem('finatrades_account_type', userAccountType);
-      } catch (e) {
-        // localStorage not available
-      }
+      setAccountTypeInternal(userAccountType);
+    } else {
+      setAccountTypeInternal(detectedMode);
     }
-  }, [user]);
+  }, [user, detectedMode]);
   
-  // Initialize from localStorage only when not logged in
-  useEffect(() => {
-    if (!user) {
-      try {
-        const stored = localStorage.getItem('finatrades_account_type');
-        if (stored === 'personal' || stored === 'business') {
-          setAccountType(stored as AccountType);
-        }
-      } catch (e) {
-        // localStorage not available
-      }
-    }
-  }, [user]);
-
-  // Save to localStorage when account type changes (for non-logged-in state)
-  useEffect(() => {
-    if (!user) {
-      try {
-        localStorage.setItem('finatrades_account_type', accountType);
-      } catch (e) {
-        // localStorage not available
-      }
-    }
-  }, [accountType, user]);
-
+  const setAccountType = (_type: AccountType) => {
+  };
+  
   const toggleAccountType = () => {
-    setAccountType(prev => prev === 'personal' ? 'business' : 'personal');
   };
 
   return (
-    <AccountTypeContext.Provider value={{ accountType, setAccountType, toggleAccountType }}>
+    <AccountTypeContext.Provider value={{ 
+      accountType, 
+      setAccountType, 
+      toggleAccountType,
+      isModeLocked: true,
+      domainMode: detectedMode
+    }}>
       {children}
     </AccountTypeContext.Provider>
   );

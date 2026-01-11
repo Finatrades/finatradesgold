@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAccountType } from '@/context/AccountTypeContext';
+import { useAccountType, getDomainMode } from '@/context/AccountTypeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,16 +13,14 @@ import { Link, useLocation } from 'wouter';
 type AccountType = 'personal' | 'business';
 
 export default function Register() {
-  const { setAccountType: setContextAccountType } = useAccountType();
+  const { domainMode } = useAccountType();
   const { login } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Read initial account type and referral code from URL query parameters
   const urlParams = new URLSearchParams(window.location.search);
-  const initialType = urlParams.get('type') === 'business' ? 'business' : 'personal';
   const initialReferralCode = urlParams.get('ref') || '';
   
-  const [accountType, setAccountType] = useState<AccountType>(initialType);
+  const accountType = domainMode;
   const [referralCode, setReferralCode] = useState(initialReferralCode);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -209,8 +207,6 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      setContextAccountType(accountType);
-
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,33 +260,20 @@ export default function Register() {
 
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex rounded-lg border overflow-hidden" data-testid="account-type-toggle">
-              <button
-                type="button"
-                onClick={() => setAccountType('personal')}
-                className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 transition-colors ${
-                  accountType === 'personal' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-                data-testid="toggle-personal"
-              >
-                <User className="w-5 h-5" />
-                <span className="font-medium">Personal</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType('business')}
-                className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 transition-colors ${
-                  accountType === 'business' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-                data-testid="toggle-business"
-              >
-                <Building className="w-5 h-5" />
-                <span className="font-medium">Corporate</span>
-              </button>
+            <div className="flex rounded-lg border overflow-hidden bg-primary text-white py-3 px-4" data-testid="account-type-indicator">
+              <div className="flex-1 flex items-center justify-center gap-2">
+                {accountType === 'personal' ? (
+                  <>
+                    <User className="w-5 h-5" />
+                    <span className="font-medium">Personal Account</span>
+                  </>
+                ) : (
+                  <>
+                    <Building className="w-5 h-5" />
+                    <span className="font-medium">Business Account</span>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
