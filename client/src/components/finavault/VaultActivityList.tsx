@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 
 interface VaultTransaction {
   id: string;
-  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal' | 'Bank Deposit' | 'Swap';
+  type: 'Buy' | 'Sell' | 'Send' | 'Receive' | 'Deposit' | 'Withdrawal' | 'Vault Deposit' | 'Vault Withdrawal' | 'Bank Deposit' | 'Crypto Deposit' | 'Swap';
   status: string;
   amountGold: string | null;
   amountUsd: string | null;
@@ -62,10 +62,24 @@ interface DepositRequest {
   rejectionReason?: string;
 }
 
+interface CryptoPaymentRequest {
+  id: string;
+  userId: string;
+  amountUsd: string;
+  goldGrams: string;
+  goldPriceAtTime: string;
+  status: string;
+  createdAt: string;
+  completedAt?: string;
+  rejectionReason?: string;
+  networkLabel?: string;
+}
+
 export default function VaultActivityList() {
   const { user } = useAuth();
   const [data, setData] = useState<VaultActivityData | null>(null);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
+  const [cryptoPaymentRequests, setCryptoPaymentRequests] = useState<CryptoPaymentRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -348,10 +362,11 @@ export default function VaultActivityList() {
     if (!user) return;
     setLoading(true);
     try {
-      // Fetch both vault activity and bank deposit requests in parallel
-      const [vaultResponse, depositResponse] = await Promise.all([
+      // Fetch vault activity, bank deposit requests, and crypto payment requests in parallel
+      const [vaultResponse, depositResponse, cryptoResponse] = await Promise.all([
         fetch(`/api/vault/activity/${user.id}`),
-        fetch(`/api/deposit-requests/${user.id}`)
+        fetch(`/api/deposit-requests/${user.id}`),
+        fetch(`/api/crypto-payments/user/${user.id}`)
       ]);
       
       if (vaultResponse.ok) {
@@ -362,6 +377,11 @@ export default function VaultActivityList() {
       if (depositResponse.ok) {
         const depositResult = await depositResponse.json();
         setDepositRequests(depositResult.requests || []);
+      }
+      
+      if (cryptoResponse.ok) {
+        const cryptoResult = await cryptoResponse.json();
+        setCryptoPaymentRequests(cryptoResult.requests || []);
       }
     } catch (error) {
       console.error('Failed to fetch vault activity:', error);
@@ -407,11 +427,11 @@ export default function VaultActivityList() {
   };
   
   const isGoldIncoming = (type: string) => {
-    return ['Buy', 'Receive', 'Vault Deposit'].includes(type);
+    return ['Buy', 'Receive', 'Vault Deposit', 'Deposit', 'Bank Deposit', 'Crypto Deposit'].includes(type);
   };
   
   const isUsdIncoming = (type: string) => {
-    return type === 'Deposit';
+    return ['Deposit', 'Bank Deposit', 'Crypto Deposit'].includes(type);
   };
 
   const getStatusBadge = (status: string, rejectionReason?: string | null) => {
@@ -556,8 +576,32 @@ export default function VaultActivityList() {
       certificates: [],
     }));
   
+  // Convert crypto payment requests to VaultTransaction format
+  const cryptoDepositActivities: VaultTransaction[] = cryptoPaymentRequests
+    .filter(crypto => {
+      // Exclude confirmed/approved - they have a transaction record
+      if (crypto.status === 'Confirmed' || crypto.status === 'Approved') return false;
+      return true;
+    })
+    .map(crypto => ({
+      id: `crypto-${crypto.id}`,
+      type: 'Crypto Deposit' as const,
+      status: crypto.status === 'Rejected' ? 'Cancelled' : crypto.status,
+      amountGold: crypto.goldGrams,
+      amountUsd: crypto.amountUsd,
+      goldPriceUsdPerGram: crypto.goldPriceAtTime,
+      recipientEmail: null,
+      senderEmail: null,
+      description: `Crypto Deposit${crypto.networkLabel ? ` via ${crypto.networkLabel}` : ''}`,
+      referenceId: null,
+      createdAt: crypto.createdAt,
+      completedAt: crypto.completedAt || null,
+      rejectionReason: crypto.rejectionReason || null,
+      certificates: [],
+    }));
+  
   // Combine and sort by date (newest first)
-  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities]
+  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities, ...cryptoDepositActivities]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredTransactions = allActivities.filter(tx => {
@@ -601,6 +645,7 @@ export default function VaultActivityList() {
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
                 <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
+                <SelectItem value="Crypto Deposit">Crypto Deposit</SelectItem>
               </SelectContent>
             </Select>
             <Button size="icon" variant="outline" onClick={fetchActivity} data-testid="button-refresh-vault">

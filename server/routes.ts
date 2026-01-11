@@ -23461,7 +23461,19 @@ ${message}
   app.get("/api/crypto-payments/user/:userId", async (req, res) => {
     try {
       const requests = await storage.getUserCryptoPaymentRequests(req.params.userId);
-      res.json({ requests });
+      
+      // Enrich with network labels
+      const enrichedRequests = await Promise.all(
+        requests.map(async (r) => {
+          const walletConfig = await storage.getCryptoWalletConfig(r.walletConfigId);
+          return {
+            ...r,
+            networkLabel: walletConfig?.networkLabel || null,
+          };
+        })
+      );
+      
+      res.json({ requests: enrichedRequests });
     } catch (error) {
       console.error("Failed to get user crypto payments:", error);
       res.status(500).json({ message: "Failed to get payment requests" });
