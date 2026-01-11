@@ -788,7 +788,43 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 <div className="space-y-3">
-                  {/* Gold You'll Receive - Primary */}
+                  {/* Deposit Amount */}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Deposit Amount:</span>
+                    <span className="font-medium">
+                      ${inputMode === 'gold' 
+                        ? (parseFloat(goldAmount) * goldPrice.pricePerGram / (1 - (parseFloat(depositFee?.feeValue || '0') / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {/* Processing Fee - DEDUCTED (bank-style) */}
+                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
+                    <div className="flex items-center justify-between text-sm text-red-500">
+                      <span>Processing Fee ({depositFee.feeValue}%):</span>
+                      <span className="font-medium">
+                        -${(inputMode === 'gold' 
+                          ? calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram / (1 - (parseFloat(depositFee.feeValue) / 100)))
+                          : calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Net Amount for Gold */}
+                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
+                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-2">
+                      <span>Net for Gold:</span>
+                      <span className="font-medium">
+                        ${(inputMode === 'gold' 
+                          ? (parseFloat(goldAmount) * goldPrice.pricePerGram)
+                          : (parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Gold You'll Receive - Primary (calculated from NET amount) */}
                   <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-200">
                     <span className="flex items-center gap-2 text-amber-700 font-medium">
                       <Coins className="w-4 h-4" />
@@ -797,48 +833,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <span className="text-xl font-bold text-amber-700">
                       {inputMode === 'gold' 
                         ? parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-                        : ((parseFloat(amount) || 0) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
+                        : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
                     </span>
                   </div>
-                  
-                  {/* Gold Value */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Gold Value:</span>
-                    <span className="font-medium">
-                      ${inputMode === 'gold' 
-                        ? (parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        : parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  
-                  {/* Processing Fee (if applicable) - Show in both modes */}
-                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
-                    <div className="flex items-center justify-between text-sm text-orange-600">
-                      <span>Processing Fee ({depositFee.feeValue}%):</span>
-                      <span className="font-medium">
-                        +${(inputMode === 'gold' 
-                          ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
-                          : calculateFee(parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Total Amount to Pay - New clear display */}
-                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
-                    <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 mt-2">
-                      <span className="flex items-center gap-2 text-emerald-700 font-semibold">
-                        <DollarSign className="w-4 h-4" />
-                        Total to Pay:
-                      </span>
-                      <span className="text-lg font-bold text-emerald-700">
-                        ${(inputMode === 'gold' 
-                          ? (parseFloat(goldAmount) * goldPrice.pricePerGram) + calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram)
-                          : parseFloat(amount) + calculateFee(parseFloat(amount) || 0)
-                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  )}
                   
                   {/* Live Price */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-amber-200">
