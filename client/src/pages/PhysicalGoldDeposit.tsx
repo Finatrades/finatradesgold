@@ -68,9 +68,9 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
   
   // Fetch vault locations from database
   const { data: vaultLocationsData, isLoading: vaultLocationsLoading } = useQuery({
-    queryKey: ['vault-locations'],
+    queryKey: ['wingold-vault-locations'],
     queryFn: async () => {
-      const res = await fetch('/api/vault/locations', { credentials: 'include' });
+      const res = await fetch('/api/wingold/vault-locations', { credentials: 'include' });
       if (!res.ok) return { locations: [] };
       return res.json();
     },
