@@ -11554,8 +11554,16 @@ ${message}
         });
       }
       
-      // If confirming deposit, credit the user's wallet with USD and calculate gold backing
+      // GOLDEN RULE ENFORCEMENT: Direct wallet credit is disabled
+      // All deposit approvals must go through Unified Payment Management
+      // to ensure physical gold allocation and storage certificate are provided
       if (updates.status === 'Confirmed' && request.status === 'Pending') {
+        return res.status(400).json({ 
+          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Payments) to approve deposits with proper gold allocation and storage certificate.",
+          code: "GOLDEN_RULE_ENFORCEMENT",
+          redirectTo: "/admin/payments"
+        });
+      }
         const wallet = await storage.getWallet(request.userId);
         if (wallet) {
           // Fetch live gold price from metals-api BEFORE the transaction
