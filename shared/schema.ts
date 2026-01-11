@@ -5496,6 +5496,14 @@ export const physicalDepositRequests = pgTable("physical_deposit_requests", {
   // Status workflow
   status: physicalDepositStatusEnum("status").notNull().default('SUBMITTED'),
   
+  // Negotiation - USD Value Tracking
+  usdEstimateFromUser: decimal("usd_estimate_from_user", { precision: 18, scale: 2 }), // User's optional target
+  usdCounterFromAdmin: decimal("usd_counter_from_admin", { precision: 18, scale: 2 }), // Admin's latest offer
+  usdAgreedValue: decimal("usd_agreed_value", { precision: 18, scale: 2 }), // Final agreed value
+  negotiationNotes: text("negotiation_notes"),
+  userAcceptedAt: timestamp("user_accepted_at"),
+  adminAcceptedAt: timestamp("admin_accepted_at"),
+  
   // Admin processing
   assignedTo: varchar("assigned_to", { length: 255 }).references(() => users.id),
   reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
