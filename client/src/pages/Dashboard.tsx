@@ -82,106 +82,110 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* Premium Hero Section */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6 md:p-8">
-          {/* Background decorations */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl"></div>
-          
-          <div className="relative z-10">
-            {/* Top row - Greeting, Live Price & Metal Card */}
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                  <div>
-                    <p className="text-purple-300 text-sm mb-1">Welcome back</p>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">{userName}</h1>
-                    {user.finatradesId && (
-                      <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full">
-                        <span className="text-xs text-purple-300">ID</span>
-                        <span className="text-sm font-mono font-bold text-amber-400">{user.finatradesId}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Live Gold Price Ticker */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/10">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${isGoldPriceLive ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
-                      <span className="text-xs text-purple-300 uppercase tracking-wide">Gold Price</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-amber-400">${goldPrice.toFixed(2)}</span>
-                      <span className="text-xs text-purple-300">/gram</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Metal Card */}
-              <div className="hidden lg:block">
-                <MetalCard />
-              </div>
-            </div>
-            
-            {/* Portfolio Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Total Gold Holdings */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                    <Coins className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <span className="text-sm text-purple-300">Total Gold Holdings</span>
-                </div>
-                <p className="text-3xl font-bold text-white mb-1">
-                  {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
-                </p>
-                <p className="text-sm text-purple-300">
-                  {showBalance ? `≈ ${formatCurrency(totalGoldGrams * goldPrice)}` : ''}
-                </p>
-              </div>
-              
-              {/* Total Portfolio Value */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <span className="text-sm text-purple-300">Portfolio Value</span>
-                </div>
-                <p className="text-3xl font-bold text-white mb-1">
-                  {showBalance ? formatCurrency(totalPortfolioValue) : hiddenValue}
-                </p>
-                <div className="flex items-center gap-1 text-emerald-400 text-sm">
-                  <ArrowUpRight className="w-4 h-4" />
-                  <span>Active</span>
-                </div>
-              </div>
-              
-              {/* Vault Status */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <span className="text-sm text-purple-300">Vault Storage</span>
-                </div>
-                <p className="text-3xl font-bold text-white mb-1">
-                  {showBalance ? `${formatNumber(totals.vaultGoldGrams || 0, 4)}g` : hiddenValue}
-                </p>
-                <div className="flex items-center gap-1 text-purple-300 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Secured in FinaVault</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Welcome Header */}
+        <section>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, {userName}</h1>
+          <p className="text-gray-500 text-sm mt-1">Here's an overview of your portfolio performance</p>
         </section>
 
-        {/* Quick Actions - Modal-driven actions */}
+        {/* Quick Actions - Colorful buttons */}
         <section>
           <QuickActionsTop />
+        </section>
+
+        {/* Stats Cards + Metal Card Layout */}
+        <section className="flex flex-col lg:flex-row gap-6">
+          {/* Left side - Stats Cards */}
+          <div className="flex-1 space-y-4">
+            {/* Row 1 - Gold Storage, Gold Value USD, Gold Value AED */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Gold Storage</p>
+                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Database className="w-3.5 h-3.5 text-purple-600" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Deposited in FinaVault</p>
+              </Card>
+              
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Gold Value (USD)</p>
+                  <div className="w-6 h-6 rounded bg-yellow-100 flex items-center justify-center">
+                    <span className="text-yellow-600 text-sm font-bold">$</span>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Worth in USD</p>
+              </Card>
+              
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Gold Value (AED)</p>
+                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                    <span className="text-green-600 text-xs font-bold">Dh</span>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Worth in AED</p>
+              </Card>
+            </div>
+            
+            {/* Row 2 - Total Portfolio, BNSL Invested, Total Profit */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Total Portfolio</p>
+                  <div className="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Overall Investment</p>
+              </Card>
+              
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">BNSL Invested</p>
+                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">In active plans</p>
+              </Card>
+              
+              <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Total Profit</p>
+                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                    <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">ROI from BNSL</p>
+              </Card>
+            </div>
+          </div>
+          
+          {/* Right side - Metal Card */}
+          <div className="hidden lg:flex items-center justify-center">
+            <MetalCard />
+          </div>
         </section>
 
         {/* Dual Wallet Section */}

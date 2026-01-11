@@ -10,84 +10,60 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
   const isPersonal = user?.accountType !== 'business';
   const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim().toUpperCase() || 'CARD HOLDER';
   
-  const lastFour = user?.finatradesId?.slice(-4) || '0000';
-  const firstFour = user?.finatradesId?.slice(0, 4) || '4789';
+  const lastFour = user?.finatradesId?.slice(-4) || '0001';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ 
-        scale: 1.02,
-        transition: { duration: 0.2 }
-      }}
-      className={`cursor-pointer ${className}`}
+      className={`${className}`}
     >
-      <div className={`w-full max-w-[380px] h-[220px] rounded-2xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border-2 ${isPersonal ? 'border-[#8A2BE2]/60 hover:border-[#A342FF]' : 'border-[#A342FF]/70 hover:border-[#FF2FBF]'} p-5 shadow-2xl shadow-[#8A2BE2]/30 hover:shadow-[#8A2BE2]/50 relative overflow-hidden transition-all duration-300`}>
-        <motion.div
-          animate={{ x: ['-100%', '300%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
-          className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/8 to-transparent skew-x-12"
+      <div className="w-[280px] h-[180px] rounded-xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-4 shadow-2xl relative overflow-hidden border border-gray-700/50">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.3) 0%, transparent 50%),
+                              radial-gradient(circle at 0% 100%, rgba(234, 179, 8, 0.2) 0%, transparent 50%)`
+          }}
         />
         
-        <div className="flex justify-between items-center mb-3 relative z-10">
-          <div className="flex items-center gap-2">
-            <span className="text-[#A342FF] text-base">✦</span>
-            <span className="text-white font-bold text-base tracking-wide">
-              {isPersonal ? (
-                <>FINA<span className="text-[#FFD700]">GOLD</span></>
-              ) : (
-                <>FINA<span className="text-[#A342FF]">TRADES</span></>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] text-green-400 font-bold uppercase px-2 py-0.5 bg-green-400/15 rounded-full border border-green-400/30">Active</span>
-            <span className="text-[#A342FF] text-sm">📶</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3 mb-4 relative z-10">
-          <div className="w-11 h-8 rounded-md bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 shadow-lg relative overflow-hidden">
-            <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-1.5">
-              <div className="h-[1.5px] bg-purple-700/60 mx-1" />
-              <div className="h-[1.5px] bg-purple-700/60 mx-1" />
-              <div className="h-[1.5px] bg-purple-700/60 mx-1" />
-              <div className="h-[1.5px] bg-purple-700/60 mx-1" />
+        <div className="relative z-10 h-full flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 shadow-md relative overflow-hidden">
+              <div className="absolute inset-0 flex flex-col justify-center gap-[1.5px] py-1.5">
+                <div className="h-[1px] bg-yellow-700/40 mx-1" />
+                <div className="h-[1px] bg-yellow-700/40 mx-1" />
+                <div className="h-[1px] bg-yellow-700/40 mx-1" />
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-white font-bold text-sm tracking-wide">
+                {isPersonal ? 'FINAGOLD' : 'FINATRADES'}
+              </p>
+              <p className="text-yellow-500 text-[10px] font-medium">GOLD MEMBER</p>
             </div>
           </div>
+          
           <div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#A342FF]" />
-              <span className="text-white font-semibold text-xs tracking-wide">
-                {isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}
-              </span>
-            </div>
-            <p className="text-gray-400 text-[9px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+            <p className="text-white text-lg tracking-[0.2em] font-medium mb-3">
+              4532 <span className="text-gray-400">••••</span> <span className="text-gray-400">••••</span> {lastFour}
+            </p>
           </div>
-        </div>
-        
-        <div className="mb-4 relative z-10">
-          <p className="text-white text-xl tracking-[0.12em] font-medium">
-            {firstFour} <span className="text-white/60">••••</span> <span className="text-white/60">••••</span> {lastFour}
-          </p>
-        </div>
-        
-        <div className="flex justify-between items-end relative z-10">
-          <div className="flex gap-6">
+          
+          <div className="flex justify-between items-end">
             <div>
-              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-0.5">Card Holder</p>
-              <p className="text-white text-xs font-semibold">{userName}</p>
+              <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
+              <p className="text-white text-xs font-semibold tracking-wide">{userName}</p>
             </div>
-            <div>
-              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-0.5">Valid Thru</p>
+            <div className="text-right">
+              <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Expires</p>
               <p className="text-white text-xs font-semibold">12/28</p>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-red-500/80" />
-            <div className="w-6 h-6 rounded-full bg-orange-400/80 -ml-3" />
+            <div className="flex -space-x-2">
+              <div className="w-5 h-5 rounded-full bg-red-500" />
+              <div className="w-5 h-5 rounded-full bg-orange-400" />
+            </div>
           </div>
         </div>
       </div>
