@@ -173,8 +173,8 @@ export default function FinaPay() {
     description: tx.description || ''
   }));
 
-  // Check if user has at least one confirmed payment (Completed status)
-  const hasConfirmedPayment = transactions.some(tx => tx.status === 'Completed');
+  // Check if user has any wallet activity (completed transactions OR positive balance OR ledger entries)
+  const hasWalletActivity = transactions.some(tx => tx.status === 'Completed') || goldGrams > 0;
 
   // Fetch vault ledger entries for chain-of-custody display
   const { data: ledgerData } = useQuery({
@@ -302,8 +302,8 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
-        {/* FinaPay Wallet Card - Only show after confirmed payment */}
-        {hasConfirmedPayment && (
+        {/* FinaPay Wallet Card - Only show when user has wallet activity */}
+        {hasWalletActivity && (
           <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3">
@@ -362,8 +362,8 @@ export default function FinaPay() {
           </div>
         )}
 
-        {/* Dual Wallet Display - LGPW/FGPW - Only show after confirmed payment */}
-        {hasConfirmedPayment && user && <DualWalletDisplay userId={user.id} />}
+        {/* Dual Wallet Display - LGPW/FGPW - Only show when user has wallet activity */}
+        {hasWalletActivity && user && <DualWalletDisplay userId={user.id} />}
 
         {/* KYC Warning Banner */}
         {!isKycApproved && (

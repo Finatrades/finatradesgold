@@ -252,8 +252,8 @@ export default function FinaVault() {
   const transactions = transactionsData?.transactions || [];
   const depositRequests = depositRequestsData?.requests || [];
   
-  // Check if user has at least one confirmed payment (Completed status)
-  const hasConfirmedPayment = transactions.some((tx: any) => tx.status === 'Completed');
+  // Check if user has any vault activity (completed transactions OR positive balance OR ledger entries)
+  const hasVaultActivity = transactions.some((tx: any) => tx.status === 'Completed') || totalVaultGold > 0 || ledgerEntries.length > 0;
   
   // Helper to format wallet destination with wallet type
   const formatWalletWithType = (wallet: string, walletType?: string) => {
@@ -491,8 +491,8 @@ export default function FinaVault() {
           </div>
         </div>
         
-        {/* FinaVault Wallet Card - Only show after confirmed payment */}
-        {hasConfirmedPayment && (
+        {/* FinaVault Wallet Card - Only show when user has vault activity */}
+        {hasVaultActivity && (
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
