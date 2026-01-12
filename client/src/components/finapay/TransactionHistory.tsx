@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet, ChevronDown, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,56 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import TransactionDetailsModal from './modals/TransactionDetailsModal';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 
+interface LedgerEntry {
+  id: string;
+  transactionId?: string;
+  action: string;
+  goldGrams: string;
+  valueUsd?: string;
+  fromWallet?: string;
+  toWallet?: string;
+  goldWalletType?: string;
+  toGoldWalletType?: string;
+  createdAt: string;
+}
+
 interface TransactionHistoryProps {
   transactions: Transaction[];
   goldPrice?: number;
+  ledgerEntries?: LedgerEntry[];
 }
 
-export default function TransactionHistory({ transactions, goldPrice = 85 }: TransactionHistoryProps) {
+export default function TransactionHistory({ transactions, goldPrice = 85, ledgerEntries = [] }: TransactionHistoryProps) {
   const [filter, setFilter] = useState('All');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  
+  const toggleExpanded = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+  
+  const ledgerByTxId = useMemo(() => {
+    const map = new Map<string, LedgerEntry[]>();
+    ledgerEntries.forEach(entry => {
+      const key = entry.transactionId || entry.id;
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(entry);
+    });
+    map.forEach(entries => {
+      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
+    return map;
+  }, [ledgerEntries]);
   
   const getIcon = (type: string, asset: string = 'USD', isSwap: boolean = false) => {
     if (isSwap) return <ArrowLeftRight className="w-4 h-4" />;
@@ -223,6 +265,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                 <table className="w-full hidden md:table" data-testid="finapay-transactions-table">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-muted/50 border-b border-border">
+                      <th className="w-8 py-3 px-2"></th>
                       <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>
                       <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
                       <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit</th>
@@ -241,7 +284,6 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       const isCompleted = tx.status?.toLowerCase() === 'completed';
                       
-                      // Only include COMPLETED transactions in running balance
                       if (isCompleted) {
                         if (isCredit) runningBalance += tx.amountUsd;
                         else if (isDebit) runningBalance -= tx.amountUsd;
@@ -256,13 +298,29 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                         ? 'Acquire Gold' 
                         : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
                       
+                      const ledgerChildren = ledgerByTxId.get(tx.id) || [];
+                      const hasLedgerChildren = ledgerChildren.length > 1;
+                      const isExpanded = expandedRows.has(tx.id);
+                      
                       return (
+                        <React.Fragment key={tx.id}>
                         <tr 
-                          key={tx.id} 
-                          onClick={() => setSelectedTx(tx)}
+                          onClick={(e) => {
+                            if (hasLedgerChildren) {
+                              e.stopPropagation();
+                              toggleExpanded(tx.id);
+                            } else {
+                              setSelectedTx(tx);
+                            }
+                          }}
                           className={`hover:bg-muted/30 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
                           data-testid={`transaction-row-${tx.id}`}
                         >
+                          <td className="py-3 px-2 text-center">
+                            {hasLedgerChildren && (
+                              isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </td>
                           <td className="py-3 px-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-foreground">
                               {new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
@@ -352,12 +410,51 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex justify-center">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}>
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </div>
                           </td>
                         </tr>
+                        {isExpanded && ledgerChildren.map((entry, entryIndex) => {
+                          const formatFrom = (e: LedgerEntry) => {
+                            if (e.action === 'Vault_Transfer') return 'Wingold & Metals';
+                            if (e.fromWallet === 'FinaPay' || e.fromWallet === 'External') return 'FinaVault';
+                            return e.fromWallet || '—';
+                          };
+                          const formatTo = (e: LedgerEntry) => {
+                            if (e.action === 'Vault_Transfer') return 'FinaVault';
+                            if (e.action === 'Deposit' && e.toGoldWalletType) return `FinaPay-${e.toGoldWalletType}`;
+                            if (e.toWallet === 'FinaPay' && e.goldWalletType) return `FinaPay-${e.goldWalletType}`;
+                            return e.toWallet || '—';
+                          };
+                          return (
+                            <tr key={entry.id} className="bg-muted/20 border-l-4 border-l-purple-400">
+                              <td className="py-2 px-2"></td>
+                              <td className="py-2 px-4 text-xs text-muted-foreground">Step {entryIndex + 1}</td>
+                              <td className="py-2 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                    entry.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                  }`}>
+                                    {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">{formatFrom(entry)} → {formatTo(entry)}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-4 text-right font-mono text-sm text-muted-foreground">—</td>
+                              <td className="py-2 px-4 text-right font-mono text-sm text-muted-foreground">
+                                {parseFloat(entry.goldGrams).toFixed(4)} g
+                              </td>
+                              <td className="py-2 px-4 text-right font-mono text-sm text-muted-foreground">
+                                ${parseFloat(entry.valueUsd || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2 px-4"></td>
+                              <td className="py-2 px-4"></td>
+                            </tr>
+                          );
+                        })}
+                        </React.Fragment>
                       );
                     });
                     })()}

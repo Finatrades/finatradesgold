@@ -6,6 +6,7 @@ import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
+import { useQuery } from '@tanstack/react-query';
 import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -174,6 +175,18 @@ export default function FinaPay() {
 
   // Check if user has at least one confirmed payment (Completed status)
   const hasConfirmedPayment = transactions.some(tx => tx.status === 'Completed');
+
+  // Fetch vault ledger entries for chain-of-custody display
+  const { data: ledgerData } = useQuery({
+    queryKey: ['vaultLedger', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/vault/ledger/${user?.id}?limit=100`);
+      if (!res.ok) throw new Error('Failed to fetch ledger');
+      return res.json();
+    },
+    enabled: !!user?.id
+  });
+  const ledgerEntries = ledgerData?.entries || [];
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
@@ -475,7 +488,7 @@ export default function FinaPay() {
               </Button>
             </div>
           ) : (
-            <TransactionHistory transactions={transactions} goldPrice={currentGoldPriceUsdPerGram} />
+            <TransactionHistory transactions={transactions} goldPrice={currentGoldPriceUsdPerGram} ledgerEntries={ledgerEntries} />
           )}
         </div>
 
