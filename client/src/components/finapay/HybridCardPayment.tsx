@@ -304,8 +304,8 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
           {
             mountId: 'threeds-challenge-container',
             style: {
-              width: 400,
-              height: 500
+              width: '100%',
+              height: 600
             }
           }
         );
@@ -580,45 +580,66 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
 
   if (awaiting3DS) {
     return (
-      <div className="space-y-4">
-        <div className="text-center pb-2">
-          <p className="text-xl font-bold text-foreground">${amount.toFixed(2)} USD</p>
-          <p className="text-sm text-muted-foreground">Complete 3D Secure verification</p>
-        </div>
-
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Lock className="w-5 h-5 text-primary" />
-              <span className="font-medium">3D Secure Verification</span>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-primary to-purple-600 px-6 py-4 text-white">
+            <div className="flex items-center gap-3">
+              <Lock className="w-6 h-6" />
+              <div>
+                <h3 className="font-bold text-lg">3D Secure Verification</h3>
+                <p className="text-sm opacity-90">${amount.toFixed(2)} USD</p>
+              </div>
             </div>
-            
+          </div>
+          
+          <div className="p-4">
             <div 
               id="threeds-challenge-container" 
-              className="border rounded-lg bg-white overflow-hidden flex items-center justify-center"
-              style={{ minHeight: '500px' }}
+              className="border-2 border-gray-200 rounded-xl bg-white overflow-auto"
+              style={{ 
+                minHeight: '550px',
+                maxHeight: '75vh',
+                width: '100%'
+              }}
             >
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <div className="flex items-center justify-center h-full py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              </div>
             </div>
 
             {error && (
-              <p className="text-sm text-warning mt-2">{error}</p>
+              <p className="text-sm text-amber-600 mt-3 text-center">{error}</p>
             )}
 
-            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1">
               <Lock className="w-3 h-3" />
               Complete the verification in the window above
             </p>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="w-full"
-        >
-          Cancel
-        </Button>
+          <div className="px-6 pb-6">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="w-full h-12"
+            >
+              Cancel Payment
+            </Button>
+          </div>
+        </div>
+        
+        <style>{`
+          #threeds-challenge-container iframe {
+            width: 100% !important;
+            min-width: 100% !important;
+            height: 550px !important;
+            min-height: 550px !important;
+            border: none !important;
+          }
+          #threeds-challenge-container > div:first-child {
+            display: none !important;
+          }
+        `}</style>
       </div>
     );
   }
