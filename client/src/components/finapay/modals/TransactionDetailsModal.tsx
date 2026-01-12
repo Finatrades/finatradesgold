@@ -20,6 +20,13 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   
   if (!transaction) return null;
 
+  // Calculate deposit fee if not provided (0.5% for bank deposits)
+  const isDeposit = transaction.type === 'Deposit' || transaction.description?.includes('Bank Deposit');
+  const calculatedFee = isDeposit && !transaction.feeUsd ? transaction.amountUsd * 0.005 : (transaction.feeUsd || 0);
+  
+  // Get the gold grams - prefer stored value, fallback to calculation
+  const displayGoldGrams = transaction.amountGrams || (goldPrice > 0 ? transaction.amountUsd / goldPrice : 0);
+
   const formatDescription = (description: string | undefined | null): string | null => {
     if (!description) return null;
     
@@ -113,14 +120,17 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       yPos += 12;
     };
     
-    addRow('Transaction Type', transaction.type + ' ' + (transaction.assetType === 'GOLD' ? 'Gold' : 'USD'));
+    const pdfTxType = (transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer'))
+      ? 'Bank Deposit'
+      : transaction.type + ' ' + (transaction.assetType === 'GOLD' ? 'Gold' : 'USD');
+    addRow('Transaction Type', pdfTxType);
     addRow('Status', transaction.status);
     addRow('Reference ID', transaction.referenceId);
     addRow('Date & Time', new Date(transaction.timestamp).toLocaleString());
     if (displayDescription) {
       addRow('Description', displayDescription.substring(0, 40));
     }
-    addRow('Network Fee', 'USD ' + (transaction.feeUsd || 0).toFixed(2));
+    addRow(isDeposit ? 'Deposit Fee (0.5%)' : 'Network Fee', 'USD ' + calculatedFee.toFixed(2));
     
     pdf.line(20, yPos + 5, pageWidth - 20, yPos + 5);
     
@@ -190,7 +200,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
                 </p>
               ) : goldPrice > 0 && (
                 <p className="text-sm text-fuchsia-600 font-medium mt-1">
-                  ~{(transaction.amountUsd / goldPrice).toFixed(2)}g gold
+                  ~{displayGoldGrams.toFixed(2)}g gold
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 mt-2">
@@ -207,7 +217,11 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
           <div className="bg-muted/30 rounded-xl border border-border p-4 space-y-3">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Transaction Type</span>
-              <span className="font-medium">{transaction.type} {transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}</span>
+              <span className="font-medium">
+                {transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer') 
+                  ? 'Bank Deposit' 
+                  : `${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}`}
+              </span>
             </div>
             <Separator className="bg-border" />
             <div className="flex justify-between items-center text-sm">
@@ -235,8 +249,8 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
             )}
              <Separator className="bg-border" />
              <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Network Fee</span>
-              <span className="font-medium text-muted-foreground">${(transaction.feeUsd || 0).toFixed(2)}</span>
+              <span className="text-muted-foreground">{isDeposit ? 'Deposit Fee (0.5%)' : 'Network Fee'}</span>
+              <span className="font-medium text-muted-foreground">${calculatedFee.toFixed(2)}</span>
             </div>
           </div>
 
