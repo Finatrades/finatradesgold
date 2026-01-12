@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,12 +19,16 @@ interface DepositItem {
   quantity: number;
   weightPerUnitGrams: string;
   totalDeclaredWeightGrams: string;
+  usdValuePerUnit: string;
   purity: string;
   brand?: string;
   mint?: string;
   serialNumber?: string;
   customDescription?: string;
 }
+
+type InputMode = 'grams' | 'usd';
+type PriceMode = 'live' | 'manual';
 
 const PURITY_OPTIONS = [
   { value: '999.9', label: '999.9 (24K)' },
@@ -73,16 +77,75 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
   
   const vaultLocations: VaultLocation[] = vaultLocationsData?.locations || [];
   
+  // Fetch live gold price
+  const { data: goldPriceData } = useQuery({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price', { credentials: 'include' });
+      if (!res.ok) return { pricePerGram: 0 };
+      return res.json();
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+  
+  const liveGoldPrice = goldPriceData?.pricePerGram || 0;
+  
   const [vaultLocation, setVaultLocation] = useState('');
   const [depositType, setDepositType] = useState<'RAW' | 'GOLD_BAR' | 'GOLD_COIN' | 'OTHER'>('GOLD_BAR');
+  
+  // Input mode and price mode state
+  const [inputMode, setInputMode] = useState<InputMode>('grams');
+  const [priceMode, setPriceMode] = useState<PriceMode>('live');
+  const [manualPrice, setManualPrice] = useState<string>('');
+  
+  // Get effective price based on mode
+  const effectivePrice = priceMode === 'live' ? liveGoldPrice : (parseFloat(manualPrice) || 0);
+  
+  // Track previous effective price for recalculation
+  const prevEffectivePriceRef = useRef(effectivePrice);
+  
   const [items, setItems] = useState<DepositItem[]>([{
     id: '1',
     itemType: 'GOLD_BAR',
     quantity: 1,
     weightPerUnitGrams: '',
     totalDeclaredWeightGrams: '',
+    usdValuePerUnit: '',
     purity: '999.9',
   }]);
+  
+  // Recalculate items when effective price changes
+  useEffect(() => {
+    if (effectivePrice > 0 && prevEffectivePriceRef.current !== effectivePrice) {
+      setItems(prevItems => prevItems.map(item => {
+        const qty = item.quantity || 1;
+        
+        if (inputMode === 'usd') {
+          // In USD mode, weight is derived from USD value
+          const usdValue = parseFloat(item.usdValuePerUnit) || 0;
+          if (usdValue > 0) {
+            const weightPerUnit = usdValue / effectivePrice;
+            return {
+              ...item,
+              weightPerUnitGrams: weightPerUnit.toFixed(4),
+              totalDeclaredWeightGrams: (qty * weightPerUnit).toFixed(4),
+            };
+          }
+        } else {
+          // In grams mode, USD is derived from weight
+          const weight = parseFloat(item.weightPerUnitGrams) || 0;
+          if (weight > 0) {
+            return {
+              ...item,
+              usdValuePerUnit: (weight * effectivePrice).toFixed(2),
+            };
+          }
+        }
+        return item;
+      }));
+      prevEffectivePriceRef.current = effectivePrice;
+    }
+  }, [effectivePrice, inputMode]);
   
   const [isBeneficialOwner, setIsBeneficialOwner] = useState(false);
   const [sourceOfMetal, setSourceOfMetal] = useState('');
@@ -145,6 +208,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       quantity: 1,
       weightPerUnitGrams: '',
       totalDeclaredWeightGrams: '',
+      usdValuePerUnit: '',
       purity: '999.9',
     }]);
   };
@@ -159,10 +223,23 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
     setItems(items.map(item => {
       if (item.id === id) {
         const updated = { ...item, ...updates };
-        if (updates.quantity !== undefined || updates.weightPerUnitGrams !== undefined) {
-          const qty = updates.quantity ?? item.quantity;
+        const qty = updates.quantity ?? item.quantity;
+        
+        if (inputMode === 'usd') {
+          // USD mode: calculate weight from USD value
+          const usdValue = updates.usdValuePerUnit ?? item.usdValuePerUnit;
+          if (effectivePrice > 0 && usdValue) {
+            const weightPerUnit = parseFloat(usdValue) / effectivePrice;
+            updated.weightPerUnitGrams = weightPerUnit.toFixed(4);
+            updated.totalDeclaredWeightGrams = (qty * weightPerUnit).toFixed(4);
+          }
+        } else {
+          // Grams mode: calculate USD from weight
           const weight = updates.weightPerUnitGrams ?? item.weightPerUnitGrams;
           updated.totalDeclaredWeightGrams = (qty * parseFloat(weight || '0')).toFixed(4);
+          if (effectivePrice > 0 && weight) {
+            updated.usdValuePerUnit = (parseFloat(weight) * effectivePrice).toFixed(2);
+          }
         }
         return updated;
       }
@@ -333,6 +410,63 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
             </div>
 
             <Separator />
+            
+            {/* Input Mode & Price Mode Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Input Mode</Label>
+                <RadioGroup
+                  value={inputMode}
+                  onValueChange={(v) => setInputMode(v as InputMode)}
+                  className="flex gap-4"
+                >
+                  <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${inputMode === 'grams' ? 'border-purple-500 bg-white' : 'bg-gray-50'}`}>
+                    <RadioGroupItem value="grams" data-testid="radio-input-grams" />
+                    <span>Weight (grams)</span>
+                  </Label>
+                  <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${inputMode === 'usd' ? 'border-purple-500 bg-white' : 'bg-gray-50'}`}>
+                    <RadioGroupItem value="usd" data-testid="radio-input-usd" />
+                    <span>USD Value</span>
+                  </Label>
+                </RadioGroup>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Gold Price</Label>
+                <RadioGroup
+                  value={priceMode}
+                  onValueChange={(v) => setPriceMode(v as PriceMode)}
+                  className="flex gap-4"
+                >
+                  <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${priceMode === 'live' ? 'border-purple-500 bg-white' : 'bg-gray-50'}`}>
+                    <RadioGroupItem value="live" data-testid="radio-price-live" />
+                    <span>Live Price</span>
+                    {liveGoldPrice > 0 && <span className="text-xs text-green-600">(${liveGoldPrice.toFixed(2)}/g)</span>}
+                  </Label>
+                  <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${priceMode === 'manual' ? 'border-purple-500 bg-white' : 'bg-gray-50'}`}>
+                    <RadioGroupItem value="manual" data-testid="radio-price-manual" />
+                    <span>Manual Price</span>
+                  </Label>
+                </RadioGroup>
+                {priceMode === 'manual' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm text-gray-600">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={manualPrice}
+                      onChange={(e) => setManualPrice(e.target.value)}
+                      placeholder="Enter price per gram"
+                      className="w-40"
+                      data-testid="input-manual-price"
+                    />
+                    <span className="text-sm text-gray-600">per gram</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator />
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -353,7 +487,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Quantity</Label>
                       <Input
@@ -364,17 +498,33 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                         data-testid={`input-quantity-${index}`}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Weight/unit (g)</Label>
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        value={item.weightPerUnitGrams}
-                        onChange={(e) => updateItem(item.id, { weightPerUnitGrams: e.target.value })}
-                        placeholder="31.1035"
-                        data-testid={`input-weight-${index}`}
-                      />
-                    </div>
+                    
+                    {inputMode === 'usd' ? (
+                      <div className="space-y-1">
+                        <Label className="text-xs">USD/unit</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.usdValuePerUnit}
+                          onChange={(e) => updateItem(item.id, { usdValuePerUnit: e.target.value })}
+                          placeholder="5000.00"
+                          data-testid={`input-usd-${index}`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Weight/unit (g)</Label>
+                        <Input
+                          type="number"
+                          step="0.0001"
+                          value={item.weightPerUnitGrams}
+                          onChange={(e) => updateItem(item.id, { weightPerUnitGrams: e.target.value })}
+                          placeholder="31.1035"
+                          data-testid={`input-weight-${index}`}
+                        />
+                      </div>
+                    )}
+                    
                     <div className="space-y-1">
                       <Label className="text-xs">Purity</Label>
                       <Select value={item.purity} onValueChange={(v) => updateItem(item.id, { purity: v })}>
@@ -388,9 +538,22 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                         </SelectContent>
                       </Select>
                     </div>
+                    
                     <div className="space-y-1">
                       <Label className="text-xs">Total (g)</Label>
                       <Input value={item.totalDeclaredWeightGrams || '0'} disabled className="bg-gray-100" />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Label className="text-xs">≈ USD Value</Label>
+                      <Input 
+                        value={effectivePrice > 0 && item.totalDeclaredWeightGrams 
+                          ? `$${(parseFloat(item.totalDeclaredWeightGrams) * effectivePrice).toFixed(2)}`
+                          : '--'
+                        } 
+                        disabled 
+                        className="bg-gray-100 text-green-700" 
+                      />
                     </div>
                   </div>
 
@@ -429,9 +592,20 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 </div>
               ))}
 
-              <div className="flex justify-between items-center p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                <span className="font-medium">Total Declared Weight:</span>
-                <span className="text-lg font-bold text-purple-800">{totalWeight.toFixed(4)} g</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex justify-between sm:block">
+                  <span className="font-medium">Total Declared Weight:</span>
+                  <span className="text-lg font-bold text-purple-800 sm:ml-2">{totalWeight.toFixed(4)} g</span>
+                </div>
+                <div className="flex justify-between sm:block text-right">
+                  <span className="font-medium sm:hidden">≈ USD Value:</span>
+                  <span className="text-lg font-bold text-green-700">
+                    ≈ ${effectivePrice > 0 ? (totalWeight * effectivePrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+                  </span>
+                  <span className="text-xs text-gray-500 block">
+                    @ ${effectivePrice.toFixed(2)}/g ({priceMode === 'live' ? 'Live' : 'Manual'})
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
