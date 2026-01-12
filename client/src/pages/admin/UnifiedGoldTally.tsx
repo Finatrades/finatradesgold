@@ -177,10 +177,10 @@ export default function UnifiedGoldTally() {
       createdAt: txn.created_at || txn.createdAt,
       approvedAt: txn.approved_at || txn.approvedAt,
       user: {
-        firstName: txn.user_name?.split(' ')[0] || '',
-        lastName: txn.user_name?.split(' ').slice(1).join(' ') || '',
-        email: txn.user_email || '',
-        accountType: txn.account_type || 'personal',
+        firstName: (txn.user_name || txn.userName)?.split(' ')[0] || '',
+        lastName: (txn.user_name || txn.userName)?.split(' ').slice(1).join(' ') || '',
+        email: txn.user_email || txn.userEmail || '',
+        accountType: txn.account_type || txn.accountType || 'personal',
       },
     };
     setSelectedTransaction(mappedTransaction);
