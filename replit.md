@@ -110,3 +110,15 @@ Comprehensive system with toggleable `email_notification_settings` and `email_lo
 
 **Mobile App (Capacitor):**
 - Configured for iOS and Android builds with various Capacitor plugins (camera, push-notifications, haptics, status-bar, splash-screen, filesystem, preferences).
+
+## Documentation
+
+**Core Business Logic:**
+- See `docs/CORE_LOGIC.md` for detailed explanation of:
+  - Gold-First Principle (gold is the only stored value, USD is calculated)
+  - Add Funds flow and pending request visibility
+  - Chain of Custody (2-step: Physical Storage → Digital Recording)
+  - Golden Rule (no wallet credit without physical gold + certificate)
+  - Universal Bank Rule (fees deducted from deposit)
+  - Ledger entry types and certificate types
+  - Admin approval atomic steps
