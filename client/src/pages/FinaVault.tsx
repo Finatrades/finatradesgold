@@ -386,112 +386,47 @@ export default function FinaVault() {
   // All certificates (normalized, from API data)
   const allCertificates = certificateRecords;
 
-  // Group entries: main transaction entries are parents, certificates are children
-  // Certificates (Physical Storage, Digital Ownership) should ONLY appear as children, never as top-level
+  // Group entries by transactionId for chain-of-custody display
+  // Entries with same transactionId are grouped together (e.g., Vault_Transfer + Deposit)
   const groupedRecords = React.useMemo(() => {
-    const isCertEntry = (e: any) => 
-      e.isCertificate || e.action === 'Physical Storage' || e.action === 'Digital Ownership';
+    const groups: Map<string, any[]> = new Map();
     
-    // Filter out certificate entries from base records - they will be added as children
-    const nonCertBaseRecords = baseRecords.filter((r: any) => !isCertEntry(r));
-    
-    // Build a map of transactionId -> certificates (deduplicated by certificateNumber + transactionId)
-    const certsByTxId = new Map<string, any[]>();
-    const seenCertKeys = new Set<string>();
-    
-    // Helper to add certificate with deduplication
-    const addCert = (txId: string, cert: any) => {
-      // Prefer certificateNumber for deduplication, fall back to id
-      const dedupeKey = cert.certificateNumber || cert.id;
-      const certKey = `${dedupeKey}-${txId}`;
-      if (seenCertKeys.has(certKey)) return;
-      seenCertKeys.add(certKey);
-      
-      if (!certsByTxId.has(txId)) {
-        certsByTxId.set(txId, []);
-      }
-      certsByTxId.get(txId)!.push(cert);
-    };
-    
-    // Collect certificates from base records first (ledger feed is authoritative)
+    // Group all records by transactionId
     for (const record of baseRecords) {
-      if (isCertEntry(record) && record.transactionId) {
-        addCert(record.transactionId, record);
+      const key = record.transactionId || record.id;
+      if (!groups.has(key)) {
+        groups.set(key, []);
       }
+      groups.get(key)!.push(record);
     }
     
-    // Then add from API data (only if not already present)
-    for (const cert of allCertificates) {
-      const txId = cert.transactionId;
-      if (txId) {
-        addCert(txId, cert);
-      }
-    }
+    // Sort entries within each group by creation date (oldest first for chain order)
+    groups.forEach((entries) => {
+      entries.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
     
-    const groups: { parent: any; children: any[] }[] = [];
-    const usedTxIds = new Set<string>();
+    // Convert to array and sort by newest first
+    const groupArray = Array.from(groups.entries()).sort((a, b) => {
+      const dateA = new Date(a[1][a[1].length - 1]?.createdAt || 0).getTime();
+      const dateB = new Date(b[1][b[1].length - 1]?.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
     
-    // Actions that can have certificates attached (deposits/buys only, not transfers/sends)
-    const canHaveCertificates = (action: string) => {
-      if (!action) return false;
-      const a = action.toLowerCase();
-      return a.includes('deposit') || a.includes('buy') || a === 'add funds' || 
-             a.includes('credit') || a.includes('receive');
-    };
-    
-    // Create groups from non-certificate records
-    for (const record of nonCertBaseRecords) {
-      const txId = record.transactionId;
-      // Only attach certificates to deposit/buy transactions, not transfers
-      const children = (txId && canHaveCertificates(record.action)) 
-        ? (certsByTxId.get(txId) || []) 
-        : [];
-      if (txId && canHaveCertificates(record.action)) usedTxIds.add(txId);
-      groups.push({
-        parent: record,
-        children
-      });
-    }
-    
-    // Handle certificate-only groups (no parent transaction) - create descriptive parent
-    for (const [txId, certs] of Array.from(certsByTxId.entries())) {
-      if (!usedTxIds.has(txId) && certs.length > 0) {
-        // Create a descriptive parent for orphaned certificates using transactionId metadata
-        const firstCert = certs[0];
-        const totalGold = certs.reduce((sum: number, c: any) => sum + safeParseFloat(c.goldGrams), 0);
-        const totalValue = certs.reduce((sum: number, c: any) => sum + safeParseFloat(c.valueUsd), 0);
-        
-        // Determine action label based on certificate types present
-        const hasPhysical = certs.some((c: any) => c.action === 'Physical Storage');
-        const hasDigital = certs.some((c: any) => c.action === 'Digital Ownership');
-        let actionLabel = 'Vault Deposit';
-        if (hasPhysical && hasDigital) actionLabel = 'Vault Deposit';
-        else if (hasPhysical) actionLabel = 'Physical Storage Deposit';
-        else if (hasDigital) actionLabel = 'Digital Storage Deposit';
-        
-        groups.push({
-          parent: {
-            id: `synthetic-${txId}`,
-            createdAt: firstCert.createdAt,
-            action: actionLabel,
-            status: 'Completed',
-            fromWallet: 'Vault Deposit',
-            toWallet: 'FinaVault',
-            goldGrams: totalGold.toString(),
-            valueUsd: totalValue.toString(),
-            transactionId: txId,
-            isSynthetic: true,
-          },
-          children: certs
-        });
-      }
-    }
-    
-    // Sort groups by parent date (newest first)
-    return groups.sort((a, b) => 
-      new Date(b.parent.createdAt).getTime() - new Date(a.parent.createdAt).getTime()
-    );
-  }, [baseRecords, allCertificates]);
+    // Convert to parent/children format for display
+    return groupArray.map(([txId, entries]) => {
+      const mainEntry = entries[entries.length - 1]; // Last entry is the main one (Deposit)
+      const totalValue = entries.reduce((sum: number, e: any) => sum + safeParseFloat(e.valueUsd || 0), 0);
+      
+      return {
+        parent: {
+          ...mainEntry,
+          displayValue: totalValue.toString(),
+        },
+        children: entries,
+        transactionId: txId,
+      };
+    });
+  }, [baseRecords]);
 
   // Toggle expand/collapse for ledger rows
   const toggleLedgerRow = (id: string) => {
@@ -866,30 +801,47 @@ export default function FinaVault() {
                               <tbody className="divide-y">
                                 {groupedRecords.map((group) => {
                                   const entry = group.parent;
-                                  const hasChildren = group.children.length > 0;
+                                  const hasChildren = group.children.length > 1;
                                   const isExpanded = expandedLedgerRows.has(entry.id);
+                                  const totalValue = group.children.reduce((sum: number, c: any) => sum + safeParseFloat(c.valueUsd || 0), 0);
+                                  
+                                  const formatParentFrom = () => {
+                                    if (hasChildren) return 'Wingold & Metals';
+                                    if (entry.action === 'Vault_Transfer') return 'Wingold & Metals';
+                                    return entry.fromWallet || '—';
+                                  };
+                                  
+                                  const formatParentTo = () => {
+                                    if (entry.action === 'Deposit' && entry.toGoldWalletType) {
+                                      return `FinaPay-${entry.toGoldWalletType}`;
+                                    }
+                                    if (entry.toWallet === 'FinaPay' && entry.goldWalletType) {
+                                      return `FinaPay-${entry.goldWalletType}`;
+                                    }
+                                    return entry.toWallet || '—';
+                                  };
                                   
                                   return (
                                     <React.Fragment key={entry.id}>
                                       {/* Parent Row */}
                                       <tr 
                                         className="hover:bg-gray-50 cursor-pointer"
-                                        onClick={() => toggleLedgerRow(entry.id)}
+                                        onClick={() => hasChildren && toggleLedgerRow(entry.id)}
                                       >
                                         <td className="p-4 w-8">
-                                          <span className="text-muted-foreground">
-                                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                          </span>
+                                          {hasChildren && (
+                                            <span className="text-muted-foreground">
+                                              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                            </span>
+                                          )}
                                         </td>
                                         <td className="p-4 text-muted-foreground">
                                           {new Date(entry.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="p-4">
                                           <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
-                                            {entry.transactionId 
-                                              ? entry.transactionId.substring(0, 8).toUpperCase()
-                                              : entry.certificateId 
-                                              ? entry.certificateId.substring(0, 8).toUpperCase()
+                                            {group.transactionId 
+                                              ? group.transactionId.substring(0, 8).toUpperCase()
                                               : entry.id.substring(0, 8).toUpperCase()}
                                           </span>
                                         </td>
@@ -906,11 +858,6 @@ export default function FinaVault() {
                                             }`}>
                                               {entry.action === 'Buy' ? 'Add Funds' : (entry.action || '').replace(/_/g, ' ')}
                                             </span>
-                                            {hasChildren && (
-                                              <span className="text-xs text-muted-foreground bg-gray-200 px-1.5 py-0.5 rounded">
-                                                +{group.children.length}
-                                              </span>
-                                            )}
                                           </div>
                                         </td>
                                         <td className="p-4">
@@ -925,117 +872,83 @@ export default function FinaVault() {
                                           </span>
                                         </td>
                                         <td className="p-4">
-                                          {entry.fromWallet && (
-                                            <span className="text-muted-foreground">
-                                              {entry.fromWallet}
-                                            </span>
-                                          )}
+                                          <span className="text-foreground">
+                                            {formatParentFrom()}
+                                          </span>
                                         </td>
                                         <td className="p-4">
-                                          {entry.toWallet && (
-                                            <span className="text-muted-foreground">
-                                              {entry.toWallet}
-                                            </span>
-                                          )}
+                                          <span className="text-foreground">
+                                            {formatParentTo()}
+                                          </span>
                                         </td>
-                                        <td className="p-4 text-right font-medium">
+                                        <td className="p-4 text-right font-medium text-green-600">
                                           {safeParseFloat(entry.goldGrams).toFixed(4)}
                                         </td>
-                                        <td className="p-4 text-right text-muted-foreground">
-                                          {entry.valueUsd ? `$${safeParseFloat(entry.valueUsd).toFixed(2)}` : '-'}
+                                        <td className="p-4 text-right font-medium">
+                                          ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </td>
                                       </tr>
                                       
-                                      {/* Expanded Details Row */}
-                                      {isExpanded && (
-                                        <tr className="bg-gray-50/70 border-l-4 border-l-primary">
-                                          <td colSpan={9} className="p-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                              <div>
-                                                <p className="text-xs text-muted-foreground uppercase mb-1">Full Reference ID</p>
-                                                <p className="font-mono text-xs bg-gray-100 px-2 py-1 rounded inline-block">
-                                                  {entry.referenceId || entry.transactionId || entry.id}
-                                                </p>
-                                              </div>
-                                              <div>
-                                                <p className="text-xs text-muted-foreground uppercase mb-1">Date & Time</p>
-                                                <p className="text-foreground">
-                                                  {new Date(entry.createdAt).toLocaleString()}
-                                                </p>
-                                              </div>
-                                              <div>
-                                                <p className="text-xs text-muted-foreground uppercase mb-1">Gold Price at Transaction</p>
-                                                <p className="text-foreground">
-                                                  {entry.goldPriceUsdPerGram 
-                                                    ? `$${safeParseFloat(entry.goldPriceUsdPerGram).toFixed(2)}/g`
-                                                    : entry.valueUsd && safeParseFloat(entry.goldGrams) > 0
-                                                    ? `$${(safeParseFloat(entry.valueUsd) / safeParseFloat(entry.goldGrams)).toFixed(2)}/g`
-                                                    : 'N/A'}
-                                                </p>
-                                              </div>
-                                              {entry.description && (
-                                                <div className="md:col-span-3">
-                                                  <p className="text-xs text-muted-foreground uppercase mb-1">Description</p>
-                                                  <p className="text-foreground">{entry.description}</p>
-                                                </div>
-                                              )}
-                                              {(entry.senderEmail || entry.recipientEmail) && (
-                                                <div className="md:col-span-3">
-                                                  <p className="text-xs text-muted-foreground uppercase mb-1">
-                                                    {entry.senderEmail ? 'Sender' : 'Recipient'}
-                                                  </p>
-                                                  <p className="text-foreground">{entry.senderEmail || entry.recipientEmail}</p>
-                                                </div>
-                                              )}
-                                              {entry.memo && (
-                                                <div className="md:col-span-3">
-                                                  <p className="text-xs text-muted-foreground uppercase mb-1">Memo</p>
-                                                  <p className="text-foreground">{entry.memo}</p>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      )}
-                                      
-                                      {/* Child Rows (Certificates) - shown when expanded */}
-                                      {isExpanded && group.children.length > 0 && group.children.map((child: any) => (
-                                        <tr key={child.id} className="bg-gray-50/50 border-l-4 border-l-primary/20">
-                                          <td className="p-4 w-8"></td>
-                                          <td className="p-4 text-muted-foreground text-xs">
-                                            {new Date(child.createdAt).toLocaleDateString()}
-                                          </td>
-                                          <td className="p-4">
-                                            <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
-                                              {child.certificateNumber 
-                                                ? child.certificateNumber.substring(0, 8).toUpperCase()
-                                                : child.id.substring(0, 8).toUpperCase()}
-                                            </span>
-                                          </td>
-                                          <td className="p-4">
-                                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-600">
-                                              {child.action?.replace(/_/g, ' ')}
-                                            </span>
-                                          </td>
-                                          <td className="p-4">
-                                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-600">
-                                              {child.status}
-                                            </span>
-                                          </td>
-                                          <td className="p-4 text-muted-foreground text-xs">
-                                            {child.fromWallet}
-                                          </td>
-                                          <td className="p-4 text-muted-foreground text-xs">
-                                            {child.toWallet}
-                                          </td>
-                                          <td className="p-4 text-right text-xs text-muted-foreground">
-                                            {safeParseFloat(child.goldGrams).toFixed(4)}
-                                          </td>
-                                          <td className="p-4 text-right text-xs text-muted-foreground">
-                                            {child.valueUsd ? `$${safeParseFloat(child.valueUsd).toFixed(2)}` : '-'}
-                                          </td>
-                                        </tr>
-                                      ))}
+                                      {/* Chain-of-Custody Rows - shown when expanded */}
+                                      {isExpanded && group.children.map((child: any, childIndex: number) => {
+                                        const formatFrom = (e: any) => {
+                                          if (e.action === 'Vault_Transfer') return 'Wingold & Metals';
+                                          if (e.fromWallet === 'FinaPay' || e.fromWallet === 'External') return 'FinaVault';
+                                          return e.fromWallet || '—';
+                                        };
+                                        
+                                        const formatTo = (e: any) => {
+                                          if (e.action === 'Vault_Transfer') return 'FinaVault';
+                                          if (e.action === 'Deposit' && e.toGoldWalletType) {
+                                            return `FinaPay-${e.toGoldWalletType}`;
+                                          }
+                                          if (e.toWallet === 'FinaPay' && e.goldWalletType) {
+                                            return `FinaPay-${e.goldWalletType}`;
+                                          }
+                                          return e.toWallet || '—';
+                                        };
+                                        
+                                        return (
+                                          <tr 
+                                            key={child.id} 
+                                            className="bg-muted/20 border-l-4 border-l-purple-400"
+                                          >
+                                            <td className="p-4 w-8"></td>
+                                            <td className="p-4 text-muted-foreground text-xs">
+                                              Step {childIndex + 1}
+                                            </td>
+                                            <td className="p-4">
+                                              <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                                                {child.id.substring(0, 8).toUpperCase()}
+                                              </span>
+                                            </td>
+                                            <td className="p-4">
+                                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                                child.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                              }`}>
+                                                {child.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
+                                              </span>
+                                            </td>
+                                            <td className="p-4">
+                                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-600">
+                                                {child.status || 'Completed'}
+                                              </span>
+                                            </td>
+                                            <td className="p-4 text-muted-foreground text-sm">
+                                              {formatFrom(child)}
+                                            </td>
+                                            <td className="p-4 text-muted-foreground text-sm">
+                                              {formatTo(child)}
+                                            </td>
+                                            <td className="p-4 text-right text-sm text-muted-foreground">
+                                              {safeParseFloat(child.goldGrams).toFixed(4)}
+                                            </td>
+                                            <td className="p-4 text-right text-sm text-muted-foreground">
+                                              ${safeParseFloat(child.valueUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
                                     </React.Fragment>
                                   );
                                 })}
