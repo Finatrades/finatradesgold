@@ -154,9 +154,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
+                      const isCompleted = tx.status?.toLowerCase() === 'completed';
                       
-                      if (isCredit) runningBalance += tx.amountUsd;
-                      else if (isDebit) runningBalance -= tx.amountUsd;
+                      // Only include COMPLETED transactions in running balance
+                      if (isCompleted) {
+                        if (isCredit) runningBalance += tx.amountUsd;
+                        else if (isDebit) runningBalance -= tx.amountUsd;
+                      }
+                      const currentBalance = isCompleted ? runningBalance : null;
                       
                       const transactionLabel = isSwap
                         ? 'Swap Gold'
@@ -204,7 +209,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                                 <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
                                   {tx.status}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground">Bal: ${Math.abs(runningBalance).toFixed(2)}</span>
+                                <span className="text-xs text-muted-foreground">Bal: {currentBalance !== null ? `$${Math.abs(currentBalance).toFixed(2)}` : '--'}</span>
                               </div>
                             </div>
                           </div>
@@ -234,9 +239,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                       const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
+                      const isCompleted = tx.status?.toLowerCase() === 'completed';
                       
-                      if (isCredit) runningBalance += tx.amountUsd;
-                      else if (isDebit) runningBalance -= tx.amountUsd;
+                      // Only include COMPLETED transactions in running balance
+                      if (isCompleted) {
+                        if (isCredit) runningBalance += tx.amountUsd;
+                        else if (isDebit) runningBalance -= tx.amountUsd;
+                      }
+                      const currentBalance = isCompleted ? runningBalance : null;
                       
                       const transactionLabel = isSwap
                         ? 'Swap Gold'
@@ -322,12 +332,16 @@ export default function TransactionHistory({ transactions, goldPrice = 85 }: Tra
                             )}
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            <div>
-                              <span className="font-medium text-foreground">
-                                ${Math.abs(runningBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                              <div className="text-xs text-muted-foreground">≈ {(runningBalance / goldPrice).toFixed(2)}g</div>
-                            </div>
+                            {currentBalance !== null ? (
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  ${Math.abs(currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <div className="text-xs text-muted-foreground">≈ {(currentBalance / goldPrice).toFixed(2)}g</div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">--</span>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex justify-center">
