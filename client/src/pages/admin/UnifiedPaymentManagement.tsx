@@ -842,20 +842,40 @@ export default function UnifiedPaymentManagement() {
         </Dialog>
 
         <Dialog open={proofViewerOpen} onOpenChange={setProofViewerOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Eye className="w-5 h-5" />
                 Payment Proof
               </DialogTitle>
             </DialogHeader>
-            <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg">
-              {proofViewerUrl && (
+            <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg min-h-[400px]">
+              {proofViewerUrl && proofViewerUrl.startsWith('data:application/pdf') ? (
+                <iframe 
+                  src={proofViewerUrl}
+                  title="Payment Proof PDF"
+                  className="w-full h-[70vh] border-0 rounded"
+                />
+              ) : proofViewerUrl && (proofViewerUrl.startsWith('data:image') || proofViewerUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i)) ? (
                 <img 
                   src={proofViewerUrl} 
                   alt="Payment Proof" 
                   className="max-w-full max-h-[60vh] object-contain rounded"
                 />
+              ) : proofViewerUrl ? (
+                <div className="text-center">
+                  <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
+                  <a 
+                    href={proofViewerUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
+                    Open in new tab
+                  </a>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No proof available</p>
               )}
             </div>
             <DialogFooter>
