@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
 interface Certificate {
@@ -47,6 +48,8 @@ interface CertificateDetailModalProps {
 
 function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   const { toast } = useToast();
+  const certificateRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   if (!certificate) return null;
 
@@ -62,224 +65,91 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   const hasPartialSurrender = remainingGrams < originalGrams;
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
   
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const handleDownloadPDF = async () => {
+    if (!certificateRef.current) return;
     
-    if (isDigitalOwnership) {
-      // Dark background for digital ownership
-      doc.setFillColor(13, 5, 21);
-      doc.rect(0, 0, pageWidth, 297, 'F');
+    setIsGenerating(true);
+    try {
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0D0515',
+        logging: false
+      });
       
-      doc.setTextColor(212, 175, 55);
-      doc.setFontSize(28);
-      doc.text('CERTIFICATE', pageWidth / 2, 40, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('of Digital Ownership', pageWidth / 2, 52, { align: 'center' });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(certificate.certificateNumber, pageWidth / 2, 62, { align: 'center' });
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.text(`This certifies that the holder is the beneficial owner of`, pageWidth / 2, 85, { align: 'center' });
-      doc.text(`${goldGrams.toFixed(4)}g of fine gold, secured in the Finatrades ledger.`, pageWidth / 2, 93, { align: 'center' });
+      doc.addImage(imgData, 'PNG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20));
       
-      // Details grid
-      doc.setTextColor(212, 175, 55);
-      doc.setFontSize(10);
-      const detailsY = 115;
-      doc.text('GOLD WEIGHT', 30, detailsY);
-      doc.text('PURITY', 75, detailsY);
-      doc.text('VALUE (USD)', 120, detailsY);
-      doc.text('ISSUER', 165, detailsY);
+      const filename = `${certificate.type.replace(/\s+/g, '_')}_${certificate.certificateNumber}.pdf`;
+      doc.save(filename);
       
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.text(`${goldGrams.toFixed(4)}g`, 30, detailsY + 10);
-      doc.text('999.9', 75, detailsY + 10);
-      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, detailsY + 10);
-      doc.text(certificate.issuer, 165, detailsY + 10);
-      
-      // Footer
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(8);
-      doc.text(`Issued: ${issueDate}`, pageWidth / 2, 250, { align: 'center' });
-      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 258, { align: 'center' });
-      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 264, { align: 'center' });
-    } else {
-      // White background for physical storage
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, 297, 'F');
-      
-      // Header
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(20);
-      doc.text('CERTIFICATE', pageWidth / 2, 30, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('of Physical Storage', pageWidth / 2, 40, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(certificate.certificateNumber, pageWidth / 2, 50, { align: 'center' });
-      
-      // Main content
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.text(`This certifies that ${goldGrams.toFixed(4)}g of physical gold is securely stored at`, pageWidth / 2, 75, { align: 'center' });
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(certificate.vaultLocation || 'N/A', pageWidth / 2, 85, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text(`under custody of ${certificate.issuer}.`, pageWidth / 2, 95, { align: 'center' });
-      
-      // Details box
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(30, 110, pageWidth - 60, 50);
-      
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text('GOLD WEIGHT', 40, 125);
-      doc.text('PURITY', 80, 125);
-      doc.text('VALUE (USD)', 120, 125);
-      doc.text('STORAGE REF', 160, 125);
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.text(`${goldGrams.toFixed(4)}g`, 40, 140);
-      doc.text('999.9', 80, 140);
-      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, 140);
-      doc.text(certificate.wingoldStorageRef || 'N/A', 160, 140);
-      
-      // Footer
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Issued: ${issueDate}`, 40, 200);
-      doc.text(`Issuing Authority: ${certificate.issuer}`, 40, 210);
-      
-      doc.setFontSize(8);
-      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 260, { align: 'center' });
-      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 268, { align: 'center' });
+      toast({
+        title: "Certificate Downloaded",
+        description: `${certificate.type} certificate has been saved as PDF.`
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Unable to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    const filename = `${certificate.type.replace(/\s+/g, '_')}_${certificate.certificateNumber}.pdf`;
-    doc.save(filename);
-    
-    toast({
-      title: "Certificate Downloaded",
-      description: `${certificate.type} certificate has been saved as PDF.`
-    });
   };
 
-  const handlePrint = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const handlePrint = async () => {
+    if (!certificateRef.current) return;
     
-    if (isDigitalOwnership) {
-      doc.setFillColor(13, 5, 21);
-      doc.rect(0, 0, pageWidth, 297, 'F');
+    setIsGenerating(true);
+    try {
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0D0515',
+        logging: false
+      });
       
-      doc.setTextColor(212, 175, 55);
-      doc.setFontSize(28);
-      doc.text('CERTIFICATE', pageWidth / 2, 40, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('of Digital Ownership', pageWidth / 2, 52, { align: 'center' });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(certificate.certificateNumber, pageWidth / 2, 62, { align: 'center' });
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.text(`This certifies that the holder is the beneficial owner of`, pageWidth / 2, 85, { align: 'center' });
-      doc.text(`${goldGrams.toFixed(4)}g of fine gold, secured in the Finatrades ledger.`, pageWidth / 2, 93, { align: 'center' });
+      doc.addImage(imgData, 'PNG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20));
       
-      doc.setTextColor(212, 175, 55);
-      doc.setFontSize(10);
-      const detailsY = 115;
-      doc.text('GOLD WEIGHT', 30, detailsY);
-      doc.text('PURITY', 75, detailsY);
-      doc.text('VALUE (USD)', 120, detailsY);
-      doc.text('ISSUER', 165, detailsY);
+      doc.autoPrint();
+      window.open(doc.output('bloburl'), '_blank');
       
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.text(`${goldGrams.toFixed(4)}g`, 30, detailsY + 10);
-      doc.text('999.9', 75, detailsY + 10);
-      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, detailsY + 10);
-      doc.text(certificate.issuer, 165, detailsY + 10);
-      
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(8);
-      doc.text(`Issued: ${issueDate}`, pageWidth / 2, 250, { align: 'center' });
-      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 258, { align: 'center' });
-      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 264, { align: 'center' });
-    } else {
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, 297, 'F');
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(20);
-      doc.text('CERTIFICATE', pageWidth / 2, 30, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('of Physical Storage', pageWidth / 2, 40, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(certificate.certificateNumber, pageWidth / 2, 50, { align: 'center' });
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.text(`This certifies that ${goldGrams.toFixed(4)}g of physical gold is securely stored at`, pageWidth / 2, 75, { align: 'center' });
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(certificate.vaultLocation || 'N/A', pageWidth / 2, 85, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.text(`under custody of ${certificate.issuer}.`, pageWidth / 2, 95, { align: 'center' });
-      
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(30, 110, pageWidth - 60, 50);
-      
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text('GOLD WEIGHT', 40, 125);
-      doc.text('PURITY', 80, 125);
-      doc.text('VALUE (USD)', 120, 125);
-      doc.text('STORAGE REF', 160, 125);
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.text(`${goldGrams.toFixed(4)}g`, 40, 140);
-      doc.text('999.9', 80, 140);
-      doc.text(`$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 120, 140);
-      doc.text(certificate.wingoldStorageRef || 'N/A', 160, 140);
-      
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Issued: ${issueDate}`, 40, 200);
-      doc.text(`Issuing Authority: ${certificate.issuer}`, 40, 210);
-      
-      doc.setFontSize(8);
-      doc.text('This Certificate is electronically generated and verified through the Platform\'s secure system.', pageWidth / 2, 260, { align: 'center' });
-      doc.text('It does not require any physical signature or stamp to be valid.', pageWidth / 2, 268, { align: 'center' });
+      toast({
+        title: "Print Dialog Opened",
+        description: "Your certificate is ready to print."
+      });
+    } catch (error) {
+      toast({
+        title: "Print Failed",
+        description: "Unable to generate print document.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    doc.autoPrint();
-    window.open(doc.output('bloburl'), '_blank');
-    
-    toast({
-      title: "Print Dialog Opened",
-      description: "Your certificate is ready to print."
-    });
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] bg-[#0D0515] border-white/10 p-0 overflow-y-auto">
-        <div className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
+        <div ref={certificateRef} className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
           isDigitalOwnership 
             ? 'border-[#D4AF37]/30' 
             : 'border-[#C0C0C0]/30'
@@ -470,6 +340,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               variant="outline" 
               size="sm" 
               className="border-white/20 text-white hover:bg-white/10"
+              disabled={isGenerating}
               onClick={handleDownloadPDF}
               data-testid="button-download-certificate-pdf"
             >
@@ -480,6 +351,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               variant="outline" 
               size="sm" 
               className="border-white/20 text-white hover:bg-white/10"
+              disabled={isGenerating}
               onClick={handlePrint}
               data-testid="button-print-certificate"
             >
