@@ -24,9 +24,12 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 **Backend:**
 - **Technology**: Node.js with Express, TypeScript (ESM).
 - **API**: RESTful endpoints.
-- **Authentication**: Session-based with bcrypt hashing.
+- **Authentication**: Session-based with Argon2id hashing (OWASP recommended, bcrypt backward compatible).
 - **Real-time**: Socket.IO server.
 - **Database Access**: Drizzle ORM with PostgreSQL.
+- **Job Queues**: BullMQ for reliable background job processing (settlements, emails, PDFs).
+- **Logging**: Pino high-performance structured logging with sensitive data redaction.
+- **Tracing**: OpenTelemetry distributed tracing for observability.
 
 **Security Hardening:**
 - HTTPS enforcement, Helmet.js for security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).
@@ -35,7 +38,8 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - Request sanitization (`sanitizeRequest` middleware) and idempotency middleware for critical payment routes using Redis.
 - Rate limiting on sensitive endpoints (auth, OTP, password reset, withdrawals, general API).
 - PostgreSQL-backed session store with secure cookie flags and session rotation.
-- PII handling includes bcrypt for passwords, authenticated access for KYC documents, environment variables for API keys, and audit logging.
+- PII handling includes Argon2id for password hashing (with bcrypt migration support), authenticated access for KYC documents, environment variables for API keys, and audit logging.
+- Banking-grade token authentication with PASETO v4 (more secure than JWT for internal services).
 
 **Production Security (Jan 2026):**
 - **HTTPS Enforcement**: Automatic redirect via X-Forwarded-Proto in production
