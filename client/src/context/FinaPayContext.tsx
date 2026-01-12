@@ -98,10 +98,11 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Convert pending deposit requests to transaction-like format (exclude confirmed ones since they have real transactions)
+      // Also exclude Crypto payment method - shown separately from crypto_payment_requests
       if (depositResponse.ok) {
         const depositData = await depositResponse.json();
         const pendingDepositTransactions = (depositData.requests || [])
-          .filter((dep: any) => dep.status !== 'Confirmed' && dep.status !== 'Approved')
+          .filter((dep: any) => dep.status !== 'Confirmed' && dep.status !== 'Approved' && dep.paymentMethod !== 'Crypto')
           .map((dep: any) => ({
             id: dep.id,
             userId: dep.userId,

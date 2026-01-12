@@ -599,6 +599,8 @@ export default function VaultActivityList() {
       if (dep.status === 'Confirmed' || dep.status === 'Approved') return false;
       // Also exclude if there's already a matching transaction
       if (existingDepositRefs.has(dep.referenceNumber)) return false;
+      // Exclude Crypto payment method - shown separately as Crypto Deposit from crypto_payment_requests
+      if (dep.paymentMethod === 'Crypto') return false;
       return true;
     })
     .map(dep => ({
