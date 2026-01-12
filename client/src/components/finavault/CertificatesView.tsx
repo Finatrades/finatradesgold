@@ -66,17 +66,28 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
   
   const handleDownloadPDF = async () => {
-    if (!certificateRef.current) return;
+    if (!certificateRef.current) {
+      console.error('Certificate ref not available');
+      toast({
+        title: "Download Failed",
+        description: "Certificate element not ready. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsGenerating(true);
     try {
+      console.log('Starting PDF generation, element:', certificateRef.current);
       const canvas = await html2canvas(certificateRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#0D0515',
-        logging: false
+        logging: true,
+        allowTaint: true
       });
       
+      console.log('Canvas created:', canvas.width, 'x', canvas.height);
       const imgData = canvas.toDataURL('image/png');
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -95,6 +106,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
         description: `${certificate.type} certificate has been saved as PDF.`
       });
     } catch (error) {
+      console.error('PDF generation error:', error);
       toast({
         title: "Download Failed",
         description: "Unable to generate PDF. Please try again.",
