@@ -395,9 +395,14 @@ export default function AllTransactions() {
                   
                   const goldAmount = tx.grams ? parseFloat(tx.grams) : (tx.usd && currentGoldPrice > 0 ? parseFloat(tx.usd) / currentGoldPrice : 0);
                   const usdAmount = tx.usd ? parseFloat(tx.usd) : 0;
+                  const isCompleted = tx.status?.toUpperCase() === 'COMPLETED';
                   
-                  if (isCredit) runningBalance += usdAmount;
-                  else if (isDebit) runningBalance -= usdAmount;
+                  // Only include COMPLETED transactions in running balance
+                  if (isCompleted) {
+                    if (isCredit) runningBalance += usdAmount;
+                    else if (isDebit) runningBalance -= usdAmount;
+                  }
+                  const currentBalance = isCompleted ? runningBalance : null;
                   
                   return (
                   <div key={tx.id} data-testid={`row-tx-${tx.id}`}>
@@ -448,7 +453,7 @@ export default function AllTransactions() {
                           <div className="flex items-center justify-between mt-2">
                             {getStatusBadge(tx.status)}
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <span>Balance: ${Math.abs(runningBalance).toFixed(2)}</span>
+                              <span>Balance: {currentBalance !== null ? `$${Math.abs(currentBalance).toFixed(2)}` : '--'}</span>
                               {expandedRows.has(tx.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                             </div>
                           </div>
@@ -543,10 +548,16 @@ export default function AllTransactions() {
                       
                       {/* BALANCE USD Column */}
                       <div className="col-span-2 text-right">
-                        <p className="font-semibold text-foreground">
-                          ${Math.abs(runningBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">≈ {(runningBalance / currentGoldPrice).toFixed(2)}g</p>
+                        {currentBalance !== null ? (
+                          <>
+                            <p className="font-semibold text-foreground">
+                              ${Math.abs(currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">≈ {(currentBalance / currentGoldPrice).toFixed(2)}g</p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">--</p>
+                        )}
                       </div>
                       
                       {/* STATUS Column */}
