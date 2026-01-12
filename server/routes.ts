@@ -5920,8 +5920,9 @@ ${message}
       });
       
       // Deposit requests (exclude approved/confirmed - they already have a transaction record)
+      // Also exclude Crypto payment method deposits - they are shown via crypto_payment_requests
       depositRequests
-        .filter(dep => dep.status !== 'Confirmed' && dep.status !== 'Approved')
+        .filter(dep => dep.status !== 'Confirmed' && dep.status !== 'Approved' && dep.paymentMethod !== 'Crypto')
         .forEach(dep => {
           unifiedTransactions.push({
             id: dep.id,
