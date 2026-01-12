@@ -870,14 +870,14 @@ export async function registerRoutes(
         + (cryptoPayments || [])
           .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
           .reduce((sum: number, c: any) => sum + parseFloat(c.amountUsd || '0'), 0);
-      
-      // Fetch deposit fee and apply it (universal bank rule: fee deducted from deposit)
-      const depositFeeConfig = await storage.getPlatformFeeByKey('FinaPay', 'deposit_fee');
-      const depositFeePercent = depositFeeConfig ? parseFloat(depositFeeConfig.feeValue) : 0.5;
-      const netPendingDepositUsd = pendingDepositUsd * (1 - depositFeePercent / 100);
-      
-      // Convert net pending USD to gold grams (after fee deduction)
-      const pendingGoldGrams = netPendingDepositUsd / goldPrice;
+      // Use expectedGoldGrams from deposit requests for consistency with transaction display
+      // This ensures Pending Card matches Transaction History (both use snapshot price at submission)
+      const pendingGoldGrams = (depositRequests || [])
+        .filter((d: any) => d.status === 'Pending')
+        .reduce((sum: number, d: any) => sum + parseFloat(d.expectedGoldGrams || '0'), 0)
+        + (cryptoPayments || [])
+          .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
+          .reduce((sum: number, c: any) => sum + parseFloat(c.goldGrams || '0'), 0);
 
       const loadTime = Date.now() - startTime;
       console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
