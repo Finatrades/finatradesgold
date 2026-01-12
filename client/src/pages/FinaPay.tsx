@@ -291,83 +291,45 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
-        {/* Horizontal Tab Navigation - FinaVault Style */}
-        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab('wallet-activity')}
-              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
-                activeTab === 'wallet-activity'
-                  ? 'bg-primary text-white border-primary shadow-md'
-                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
-              }`}
-              data-testid="tab-wallet-activity"
-            >
-              <History className="w-4 h-4" />
-              Wallet Activity
-            </button>
-            <button
-              onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
-              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all flex items-center gap-1.5 hover:bg-green-100"
-              data-testid="tab-deposit-gold"
-            >
-              <Plus className="w-4 h-4" />
-              Deposit Gold
-            </button>
-            <button
-              onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
-              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-amber-200 bg-amber-50 text-amber-700 transition-all flex items-center gap-1.5 hover:bg-amber-100"
-              data-testid="tab-buy-gold-bars"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Buy Gold Bars
-            </button>
-            <button
-              onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
-              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all flex items-center gap-1.5 hover:bg-orange-100"
-              data-testid="tab-cash-out"
-            >
-              <ArrowUpRight className="w-4 h-4" />
-              Cash Out
-            </button>
-            <button
-              onClick={() => setActiveTab('ownership-ledger')}
-              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
-                activeTab === 'ownership-ledger'
-                  ? 'bg-primary text-white border-primary shadow-md'
-                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
-              }`}
-              data-testid="tab-ownership-ledger"
-            >
-              <Lock className="w-4 h-4" />
-              Ownership Ledger
-            </button>
-            <button
-              onClick={() => setActiveTab('certificates')}
-              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
-                activeTab === 'certificates'
-                  ? 'bg-primary text-white border-primary shadow-md'
-                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
-              }`}
-              data-testid="tab-certificates"
-            >
-              <Award className="w-4 h-4" />
-              Certificates
-            </button>
-            <button
-              onClick={() => setActiveTab('terms')}
-              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
-                activeTab === 'terms'
-                  ? 'bg-primary text-white border-primary shadow-md'
-                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
-              }`}
-              data-testid="tab-terms"
-            >
-              <FileText className="w-4 h-4" />
-              Terms & Conditions
-            </button>
+        {/* Main Navigation Tabs - FinaVault Style */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="bg-white rounded-2xl border border-border p-3 shadow-sm mb-6 overflow-x-auto">
+            <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto">
+              <TabsTrigger 
+                value="wallet-activity"
+                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                data-testid="tab-wallet-activity"
+              >
+                <History className="w-4 h-4 mr-1.5" />
+                Wallet Activity
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ownership-ledger"
+                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                data-testid="tab-ownership-ledger"
+              >
+                <Lock className="w-4 h-4 mr-1.5" />
+                Ownership Ledger
+              </TabsTrigger>
+              <TabsTrigger 
+                value="certificates"
+                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                data-testid="tab-certificates"
+              >
+                <Award className="w-4 h-4 mr-1.5" />
+                Certificates
+              </TabsTrigger>
+              <TabsTrigger 
+                value="terms"
+                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                data-testid="tab-terms"
+              >
+                <FileText className="w-4 h-4 mr-1.5" />
+                Terms & Conditions
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
+        </Tabs>
 
         {/* FinaPay Wallet Card - Only show after confirmed payment */}
         {hasConfirmedPayment && (
@@ -450,131 +412,93 @@ export default function FinaPay() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <button
-            onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
-            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
-              isKycApproved 
-                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
-                : 'border-gray-200 opacity-60 cursor-not-allowed'
-            }`}
-            data-testid="button-add-funds"
-          >
-            {!isKycApproved && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-            <div className="p-3 bg-green-100 rounded-full">
-              <Plus className="w-5 h-5 text-green-600" />
-            </div>
-            <span className="text-sm font-medium">Add Funds</span>
-          </button>
+        {/* Quick Actions - Horizontal Pill Tabs */}
+        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white hover:border-green-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-add-funds"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Add Funds
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
 
-          <button
-            onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
-            className={`relative flex flex-row items-center justify-center gap-2 px-5 py-3 rounded-lg text-white font-medium transition-all shadow-md ${
-              isKycApproved 
-                ? 'bg-green-500 hover:bg-green-600' 
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}
-            data-testid="button-buy-gold"
-          >
-            {!isKycApproved && <Lock className="w-4 h-4 absolute top-2 right-2" />}
-            <ShoppingCart className="w-5 h-5" />
-            <span className="text-sm font-medium">Buy Gold Bar</span>
-          </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-buy-gold"
+            >
+              <ShoppingCart className="w-4 h-4 mr-1.5" />
+              Buy Gold Bar
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
 
-          <button
-            onClick={() => isKycApproved ? setActiveModal('sell') : handleKycRequired()}
-            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
-              isKycApproved 
-                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
-                : 'border-gray-200 opacity-60 cursor-not-allowed'
-            }`}
-            data-testid="button-sell-gold"
-          >
-            {!isKycApproved && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Coins className="w-5 h-5 text-purple-600" />
-            </div>
-            <span className="text-sm font-medium">Sell Gold</span>
-          </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('sell') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-500 hover:text-white hover:border-purple-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-sell-gold"
+            >
+              <Coins className="w-4 h-4 mr-1.5" />
+              Sell Gold
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
 
-          <button
-            onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
-            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
-              isKycApproved 
-                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
-                : 'border-gray-200 opacity-60 cursor-not-allowed'
-            }`}
-            data-testid="button-withdrawals"
-          >
-            {!isKycApproved && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-            <div className="p-3 bg-purple-100 rounded-full">
-              <ArrowUpRight className="w-5 h-5 text-purple-600" />
-            </div>
-            <span className="text-sm font-medium">Withdrawals</span>
-          </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-withdrawals"
+            >
+              <ArrowUpRight className="w-4 h-4 mr-1.5" />
+              Withdrawals
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
 
-          <button
-            onClick={() => isKycApproved ? setActiveModal('send') : handleKycRequired()}
-            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
-              isKycApproved 
-                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
-                : 'border-gray-200 opacity-60 cursor-not-allowed'
-            }`}
-            data-testid="button-send-funds"
-          >
-            {!isKycApproved && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Send className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium">Send Funds</span>
-          </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('send') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-500 hover:text-white hover:border-blue-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-send-funds"
+            >
+              <Send className="w-4 h-4 mr-1.5" />
+              Send Funds
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
 
-          <button
-            onClick={() => isKycApproved ? setActiveModal('request') : handleKycRequired()}
-            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl bg-white border transition-all ${
-              isKycApproved 
-                ? 'border-border hover:border-purple-300 hover:bg-purple-50' 
-                : 'border-gray-200 opacity-60 cursor-not-allowed'
-            }`}
-            data-testid="button-request-funds"
-          >
-            {!isKycApproved && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-            <div className="p-3 bg-teal-100 rounded-full">
-              <ArrowDownLeft className="w-5 h-5 text-teal-600" />
-            </div>
-            <span className="text-sm font-medium">Request Funds</span>
-          </button>
-        </div>
-
-        {/* Secondary Actions */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          <button onClick={() => setLocation('/bnsl')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <TrendingUp className="w-4 h-4 inline mr-1" /> BNSL Plans
-          </button>
-          <button onClick={() => setLocation('/finabridge')} className="px-4 py-2 text-sm rounded-full border border-border hover:bg-muted transition-colors">
-            <BarChart3 className="w-4 h-4 inline mr-1" /> Trade Finance
-          </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('request') : handleKycRequired()}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white hover:border-teal-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-request-funds"
+            >
+              <ArrowDownLeft className="w-4 h-4 mr-1.5" />
+              Request Funds
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
+          </div>
         </div>
 
         {/* Pending Transfers */}
