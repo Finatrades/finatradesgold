@@ -5859,7 +5859,8 @@ ${message}
         vaultWithdrawalReqs,
         tradeCases,
         userCertificates,
-        buyGoldRequests
+        buyGoldRequests,
+        unifiedTallyTxns
       ] = await Promise.all([
         storage.getUserTransactions(userId),
         storage.getUserDepositRequests(userId),
@@ -5871,7 +5872,8 @@ ${message}
         storage.getUserVaultWithdrawalRequests(userId),
         storage.getUserTradeCases(userId),
         storage.getUserCertificates(userId),
-        storage.getUserBuyGoldRequests(userId)
+        storage.getUserBuyGoldRequests(userId),
+        storage.getUserUnifiedTallyTransactions(userId)
       ]);
       
       // Normalize all transactions to unified format
@@ -6158,6 +6160,33 @@ ${message}
           });
         });
       
+      
+      // Unified Gold Tally transactions - show completed deposits from the new unified tally system
+      unifiedTallyTxns
+        .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
+        .forEach(ut => {
+          const goldGrams = parseFloat(ut.goldCreditedG || ut.physicalGoldAllocatedG || ut.goldEquivalentG || '0');
+          const usdAmount = parseFloat(ut.depositAmount || '0');
+          const goldRate = parseFloat(ut.goldRateValue || '0');
+          unifiedTransactions.push({
+            id: ut.id,
+            userId: ut.userId,
+            module: 'finapay',
+            actionType: 'ADD_FUNDS',
+            grams: goldGrams,
+            usd: usdAmount,
+            usdPerGram: goldRate,
+            status: 'COMPLETED',
+            referenceId: ut.txnId,
+            description: `${ut.sourceMethod} deposit - ${ut.walletType} wallet`,
+            counterpartyUserId: null,
+            createdAt: ut.createdAt,
+            completedAt: ut.approvedAt,
+            sourceType: 'unified_tally',
+            goldWalletType: ut.walletType
+          });
+        });
+
       // Apply filters
       if (module && module !== 'all') {
         unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);
@@ -6395,6 +6424,33 @@ ${message}
         });
       });
       
+      
+      // Unified Gold Tally transactions - show completed deposits from the new unified tally system
+      unifiedTallyTxns
+        .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
+        .forEach(ut => {
+          const goldGrams = parseFloat(ut.goldCreditedG || ut.physicalGoldAllocatedG || ut.goldEquivalentG || '0');
+          const usdAmount = parseFloat(ut.depositAmount || '0');
+          const goldRate = parseFloat(ut.goldRateValue || '0');
+          unifiedTransactions.push({
+            id: ut.id,
+            userId: ut.userId,
+            module: 'finapay',
+            actionType: 'ADD_FUNDS',
+            grams: goldGrams,
+            usd: usdAmount,
+            usdPerGram: goldRate,
+            status: 'COMPLETED',
+            referenceId: ut.txnId,
+            description: `${ut.sourceMethod} deposit - ${ut.walletType} wallet`,
+            counterpartyUserId: null,
+            createdAt: ut.createdAt,
+            completedAt: ut.approvedAt,
+            sourceType: 'unified_tally',
+            goldWalletType: ut.walletType
+          });
+        });
+
       // Apply filters
       if (module && module !== 'all') {
         unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);

@@ -5468,6 +5468,14 @@ export class DatabaseStorage implements IStorage {
     return transaction || undefined;
   }
 
+  async getUserUnifiedTallyTransactions(userId: string): Promise<UnifiedTallyTransaction[]> {
+    const results = await db.select()
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.userId, userId))
+      .orderBy(sql`${unifiedTallyTransactions.createdAt} DESC`);
+    return results;
+  }
+
   async updateUnifiedTallyTransaction(id: string, updates: Partial<UnifiedTallyTransaction>, tx?: typeof db): Promise<UnifiedTallyTransaction | undefined> {
     const dbClient = tx || db;
     const [transaction] = await dbClient.update(unifiedTallyTransactions)
