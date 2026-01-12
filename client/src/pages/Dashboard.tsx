@@ -420,7 +420,7 @@ export default function Dashboard() {
                 <span className="font-semibold text-emerald-600">{certificates?.summary?.physicalStorage || 0}</span>
               </div>
             </div>
-            <Link href="/vault">
+            <Link href="/finavault">
               <Button variant="outline" className="w-full mt-4 border-purple-300 text-purple-700 hover:bg-purple-100">
                 View All <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
