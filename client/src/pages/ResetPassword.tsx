@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { ArrowRight, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -49,26 +50,16 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.message?.includes('expired') || data.message?.includes('invalid')) {
-          setTokenError(true);
-        }
-        throw new Error(data.message || 'Failed to reset password');
-      }
+      await apiRequest('POST', '/api/auth/reset-password', { token, password });
 
       setResetComplete(true);
       toast.success("Password reset successful!", {
         description: "You can now log in with your new password."
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('expired') || error.message?.includes('invalid')) {
+        setTokenError(true);
+      }
       toast.error("Error", {
         description: error instanceof Error ? error.message : "Failed to reset password. Please try again."
       });

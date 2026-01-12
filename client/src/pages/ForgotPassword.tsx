@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
 import { ArrowLeft, ArrowRight, Lock, Mail, CheckCircle } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -22,17 +23,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to send reset email');
-      }
+      await apiRequest('POST', '/api/auth/forgot-password', { email });
 
       setEmailSent(true);
       toast.success("Reset link sent!", {

@@ -9,6 +9,7 @@ import { Building, User, Eye, EyeOff, Camera, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 
 type AccountType = 'personal' | 'business';
 
@@ -207,32 +208,24 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phoneNumber: formData.phone,
-          password: formData.password,
-          accountType: accountType,
-          profilePhoto: profilePhoto,
-          role: 'user',
-          kycStatus: 'Not Started',
-          ...(referralCode && { referralCode }),
-          ...(accountType === 'business' && {
-            companyName: formData.companyName,
-            registrationNumber: formData.registrationNumber,
-          }),
-        })
+      const response = await apiRequest('POST', '/api/auth/register', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phone,
+        password: formData.password,
+        accountType: accountType,
+        profilePhoto: profilePhoto,
+        role: 'user',
+        kycStatus: 'Not Started',
+        ...(referralCode && { referralCode }),
+        ...(accountType === 'business' && {
+          companyName: formData.companyName,
+          registrationNumber: formData.registrationNumber,
+        }),
       });
 
       const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
 
       sessionStorage.setItem('verificationEmail', formData.email);
       

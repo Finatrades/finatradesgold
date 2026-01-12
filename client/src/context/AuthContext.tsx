@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import type { User } from '@shared/schema';
-import { prefetchDashboardData, clearQueryCache, SESSION_EXPIRED_EVENT } from '@/lib/queryClient';
+import { prefetchDashboardData, clearQueryCache, SESSION_EXPIRED_EVENT, apiRequest } from '@/lib/queryClient';
 import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
 import { pushNotificationManager } from '@/lib/pushNotificationManager';
 import { toast } from 'sonner';
@@ -44,11 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem('adminPortalSession');
     sessionStorage.removeItem('pendingAdminLogin');
     
-    fetch('/api/auth/logout', { 
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'include'
-    }).catch(() => {});
+    apiRequest('POST', '/api/auth/logout', {}).catch(() => {});
     
     toast.error('Your session has expired. Please log in again.');
     setLocation('/login');
@@ -109,23 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<MfaChallenge | null> => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        // Handle admin redirect case
-        if (error.redirectTo) {
-          const adminError = new Error(error.message || 'Login failed') as Error & { redirectTo?: string };
-          adminError.redirectTo = error.redirectTo;
-          throw adminError;
-        }
-        throw new Error(error.message || 'Login failed');
-      }
-
+      const response = await apiRequest('POST', '/api/auth/login', { email, password });
       const data = await response.json();
       
       // Check if MFA is required
@@ -159,17 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Admin-specific login that grants admin portal access
   const adminLogin = async (email: string, password: string): Promise<MfaChallenge | null> => {
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
-      }
-
+      const response = await apiRequest('POST', '/api/admin/login', { email, password });
       const data = await response.json();
       
       // Check if MFA is required
@@ -200,17 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const verifyMfa = async (challengeToken: string, token: string) => {
     try {
-      const response = await fetch('/api/mfa/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeToken, token }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'MFA verification failed');
-      }
-
+      const response = await apiRequest('POST', '/api/mfa/verify', { challengeToken, token });
       const data = await response.json();
       
       // Clear any cached data from previous session before setting new user
@@ -241,17 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any) => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
-      }
-
+      const response = await apiRequest('POST', '/api/auth/register', userData);
       const data = await response.json();
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
@@ -272,11 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.removeItem('adminPortalSession');
     sessionStorage.removeItem('pendingAdminLogin');
     
-    fetch('/api/auth/logout', { 
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'include'
-    }).catch(() => {});
+    apiRequest('POST', '/api/auth/logout', {}).catch(() => {});
     
     setLocation('/');
   };

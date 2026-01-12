@@ -10,21 +10,12 @@ const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf_token';
 
-// Routes exempt from CSRF protection (webhooks, public endpoints)
+// Routes exempt from CSRF protection (webhooks only - external services need to POST without our tokens)
 const CSRF_EXEMPT_ROUTES = [
   '/api/webhooks/',
   '/api/binance-pay/webhook',
   '/api/ngenius/webhook',
   '/api/stripe/webhook',
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/admin/login',
-  '/api/gold-price',
-  '/api/platform-config/public',
-  '/api/cms/',
-  '/api/b2b/',
   '/api/wingold/webhooks',
   '/api/certificates/verify',
   '/api/verify-certificate',
