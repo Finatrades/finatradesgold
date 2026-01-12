@@ -24,15 +24,30 @@ const FINATRADES_API_KEY = process.env.FINATRADES_API_KEY;
 
 router.post('/webhooks', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
   try {
-    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : req.body;
-    const signature = req.headers['x-wingold-signature'] as string || '';
+    let rawBody: string;
+    let payload: any;
     
-    if (!WingoldIntegrationService.verifyWebhookSignature(rawBody, signature)) {
+    if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body.toString('utf8');
+      payload = JSON.parse(rawBody);
+    } else if (typeof req.body === 'object') {
+      rawBody = JSON.stringify(req.body);
+      payload = req.body;
+    } else if (typeof req.body === 'string') {
+      rawBody = req.body;
+      payload = JSON.parse(rawBody);
+    } else {
+      return res.status(400).json({ error: 'Invalid request body' });
+    }
+    
+    const signature = req.headers['x-wingold-signature'] as string || 
+                      req.headers['x-webhook-signature'] as string || '';
+    const timestamp = req.headers['x-webhook-timestamp'] as string || '';
+    
+    if (!WingoldIntegrationService.verifyWebhookSignature(rawBody, signature, timestamp)) {
       console.error('[Wingold Webhook] Invalid signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
-
-    const payload = JSON.parse(rawBody);
     
     console.log(`[Wingold Webhook] Received event: ${payload.event}`);
     

@@ -175,21 +175,27 @@ export class WingoldIntegrationService {
     }
   }
 
-  static verifyWebhookSignature(payload: string, signature: string): boolean {
+  static verifyWebhookSignature(payload: string, signature: string, timestamp?: string): boolean {
     if (!WINGOLD_WEBHOOK_SECRET) {
       console.warn('[Wingold] Webhook secret not configured, skipping signature verification');
       return true;
     }
     
+    const dataToSign = timestamp ? `${timestamp}.${payload}` : payload;
+    
     const expectedSignature = crypto
       .createHmac('sha256', WINGOLD_WEBHOOK_SECRET)
-      .update(payload)
+      .update(dataToSign)
       .digest('hex');
     
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    try {
+      return crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      );
+    } catch {
+      return signature === expectedSignature;
+    }
   }
 
   static async handleWebhook(payload: WingoldWebhookPayload): Promise<void> {
@@ -214,10 +220,19 @@ export class WingoldIntegrationService {
         wingoldReference?: string;
       };
       
-      const userId = orderData.finatradesId || orderData.userId;
+      // Prefer userId (UUID) over finatradesId (legacy format)
+      // finatradesId should be a UUID, not a legacy ID like "FT-TEST-001"
+      const userId = orderData.userId || orderData.finatradesId;
       if (!userId) {
-        console.error(`[Wingold] Cannot create order - no finatradesId in webhook payload: ${payload.orderId}`);
-        throw new Error(`Missing finatradesId in webhook: ${payload.orderId}`);
+        console.error(`[Wingold] Cannot create order - no userId in webhook payload: ${payload.orderId}`);
+        throw new Error(`Missing userId in webhook: ${payload.orderId}`);
+      }
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        console.error(`[Wingold] Invalid userId format - expected UUID, got: ${userId}`);
+        throw new Error(`Invalid userId format in webhook: ${userId}`);
       }
       
       // Validate required fields from Wingold
@@ -237,6 +252,10 @@ export class WingoldIntegrationService {
       const referenceNumber = orderData.wingoldReference || 
         `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
+      // Calculate goldPricePerGram if not provided
+      const goldPrice = orderData.goldPricePerGram || 
+        (parseFloat(orderData.usdAmount) / parseFloat(orderData.totalGrams)).toFixed(6);
+      
       const [newOrder] = await db.insert(wingoldPurchaseOrders).values({
         userId,
         referenceNumber,
@@ -245,7 +264,7 @@ export class WingoldIntegrationService {
         barCount: orderData.barCount || 1,
         totalGrams: orderData.totalGrams,
         usdAmount: orderData.usdAmount,
-        goldPricePerGram: orderData.goldPricePerGram || '0',
+        goldPriceUsdPerGram: goldPrice,
         preferredVaultLocation: orderData.vaultLocationId,
         status: 'confirmed',
         confirmedAt: new Date()
@@ -498,7 +517,7 @@ export class WingoldIntegrationService {
         certificateNumber,
         userId: order.userId,
         vaultHoldingId: bar.vaultHoldingId,
-        type: 'DigitalOwnership',
+        type: 'Digital Ownership',
         status: 'Active',
         goldGrams: bar.weightGrams,
         goldPriceUsdPerGram: order.goldPriceUsdPerGram,
