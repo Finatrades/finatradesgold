@@ -1077,6 +1077,16 @@ export const depositRequests = pgTable("deposit_requests", {
   } | null>().default(null),
   wingoldOrderId: varchar("wingold_order_id", { length: 255 }).default(sql`NULL`),
   
+  // Crypto Payment Fields (when paymentMethod = 'Crypto')
+  cryptoTransactionHash: varchar("crypto_transaction_hash", { length: 255 }), // Blockchain TX hash
+  cryptoNetwork: varchar("crypto_network", { length: 50 }), // BTC, ETH, USDT_TRC20, etc.
+  cryptoWalletConfigId: varchar("crypto_wallet_config_id", { length: 255 }), // Reference to crypto_wallet_configs
+  cryptoAmount: varchar("crypto_amount", { length: 100 }), // Expected crypto amount
+  
+  // Card Payment Fields (when paymentMethod = 'Card Payment')
+  cardTransactionRef: varchar("card_transaction_ref", { length: 255 }), // N-Genius order reference
+  cardPaymentStatus: varchar("card_payment_status", { length: 50 }), // CAPTURED, FAILED, etc.
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
