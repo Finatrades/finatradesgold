@@ -1179,23 +1179,42 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
     const currentSnapshot = await storage.getUserHoldingsSnapshot(transaction.userId);
     
     const goldToCredit = parseFloat(transaction.physicalGoldAllocatedG || transaction.goldEquivalentG || '0');
-    const goldRateValue = parseFloat(transaction.goldRateValue || '0') || 65; // Default rate if not set
+    const goldCredited = parseFloat(transaction.goldCreditedG || '0');
+    const goldRateValue = parseFloat(transaction.goldRateValue || '0') || 65;
     const usdEquivalent = goldToCredit * goldRateValue;
     
     const isLGPW = transaction.walletType === 'LGPW';
     
-    const projection = {
-      current: currentSnapshot,
-      transaction: {
-        id: transaction.id,
-        walletType: transaction.walletType,
-        goldToCredit,
-        usdEquivalent,
-        sourceMethod: transaction.sourceMethod,
-        certificateId: transaction.storageCertificateId,
-        status: transaction.status,
-      },
-      after: {
+    const isAlreadyApproved = ['APPROVED', 'COMPLETED', 'CREDITED'].includes(transaction.status);
+    
+    let beforeSnapshot;
+    let afterSnapshot;
+    
+    if (isAlreadyApproved && goldCredited > 0) {
+      beforeSnapshot = {
+        finapay: {
+          mpgw: {
+            balanceG: currentSnapshot.finapay.mpgw.balanceG - (isLGPW ? goldCredited : 0),
+            usdEquivalent: currentSnapshot.finapay.mpgw.usdEquivalent - (isLGPW ? goldCredited * goldRateValue : 0),
+          },
+          fpgw: {
+            balanceG: currentSnapshot.finapay.fpgw.balanceG - (!isLGPW ? goldCredited : 0),
+            usdEquivalent: currentSnapshot.finapay.fpgw.usdEquivalent - (!isLGPW ? goldCredited * goldRateValue : 0),
+          },
+        },
+        finavault: {
+          totalG: currentSnapshot.finavault.totalG - goldCredited,
+          barsCount: Math.max(0, currentSnapshot.finavault.barsCount - (transaction.barLotSerialsJson?.length || 1)),
+        },
+        wingold: {
+          allocatedTotalGForUser: currentSnapshot.wingold.allocatedTotalGForUser - goldCredited,
+          latestCertificateId: currentSnapshot.wingold.latestCertificateId,
+        },
+      };
+      afterSnapshot = currentSnapshot;
+    } else {
+      beforeSnapshot = currentSnapshot;
+      afterSnapshot = {
         finapay: {
           mpgw: {
             balanceG: currentSnapshot.finapay.mpgw.balanceG + (isLGPW ? goldToCredit : 0),
@@ -1214,16 +1233,31 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
           allocatedTotalGForUser: currentSnapshot.wingold.allocatedTotalGForUser + goldToCredit,
           latestCertificateId: transaction.storageCertificateId || currentSnapshot.wingold.latestCertificateId,
         },
+      };
+    }
+    
+    const projection = {
+      current: beforeSnapshot,
+      transaction: {
+        id: transaction.id,
+        walletType: transaction.walletType,
+        goldToCredit: isAlreadyApproved ? goldCredited : goldToCredit,
+        usdEquivalent: (isAlreadyApproved ? goldCredited : goldToCredit) * goldRateValue,
+        sourceMethod: transaction.sourceMethod,
+        certificateId: transaction.storageCertificateId,
+        status: transaction.status,
       },
+      after: afterSnapshot,
       delta: {
-        mpgwDeltaG: isLGPW ? goldToCredit : 0,
-        fpgwDeltaG: !isLGPW ? goldToCredit : 0,
-        vaultDeltaG: goldToCredit,
-        wingoldDeltaG: goldToCredit,
+        mpgwDeltaG: isLGPW ? (isAlreadyApproved ? goldCredited : goldToCredit) : 0,
+        fpgwDeltaG: !isLGPW ? (isAlreadyApproved ? goldCredited : goldToCredit) : 0,
+        vaultDeltaG: isAlreadyApproved ? goldCredited : goldToCredit,
+        wingoldDeltaG: isAlreadyApproved ? goldCredited : goldToCredit,
       },
       readyToApprove: transaction.status === 'CERT_RECEIVED' && 
                        goldToCredit > 0 && 
                        !!transaction.storageCertificateId,
+      isAlreadyApproved,
     };
 
     res.json(projection);
