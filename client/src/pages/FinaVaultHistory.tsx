@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { History, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Loader2, RefreshCw, ArrowLeftRight, Wallet } from 'lucide-react';
+import { History, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Loader2, RefreshCw, ArrowLeftRight, Wallet, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
@@ -27,13 +27,29 @@ interface LedgerEntry {
   toWallet?: string;
   fromStatus?: string;
   toStatus?: string;
+  goldWalletType?: string;
+  toGoldWalletType?: string;
   balanceAfterGrams: string;
   notes?: string;
+  transactionId?: string;
   createdAt: string;
 }
 
 export default function FinaVaultHistory() {
   const { user } = useAuth();
+  const [expandedTransactions, setExpandedTransactions] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (txId: string) => {
+    setExpandedTransactions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(txId)) {
+        newSet.delete(txId);
+      } else {
+        newSet.add(txId);
+      }
+      return newSet;
+    });
+  };
 
   const { data: depositsData, isLoading: depositsLoading } = useQuery({
     queryKey: ['vault-deposits', user?.id],
@@ -70,6 +86,25 @@ export default function FinaVaultHistory() {
 
   const isLoading = depositsLoading || withdrawalsLoading || ledgerLoading;
   const ledgerEntries: LedgerEntry[] = ledgerData?.entries || [];
+
+  const groupedEntries = React.useMemo(() => {
+    const groups: Map<string, LedgerEntry[]> = new Map();
+    ledgerEntries.forEach(entry => {
+      const key = entry.transactionId || entry.id;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(entry);
+    });
+    groups.forEach((entries) => {
+      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    });
+    return Array.from(groups.entries()).sort((a, b) => {
+      const dateA = new Date(a[1][0]?.createdAt || 0).getTime();
+      const dateB = new Date(b[1][0]?.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [ledgerEntries]);
 
   const allTransactions: VaultTransaction[] = [
     ...(depositsData?.requests || []).map((d: any) => ({
@@ -231,82 +266,109 @@ export default function FinaVaultHistory() {
                     <table className="w-full" data-testid="ledger-table">
                       <thead>
                         <tr className="bg-muted/50 border-b border-border">
+                          <th className="w-8 py-3 px-2"></th>
                           <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date</th>
-                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
-                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit (g)</th>
-                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Credit (g)</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Action</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">From</th>
+                          <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">To</th>
+                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Gold (g)</th>
                           <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Value (USD)</th>
-                          <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted/80">Balance (g)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {ledgerEntries.map((entry, index) => {
-                          const goldAmount = parseFloat(entry.goldGrams);
-                          const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
-                          const isDebit = debitActions.includes(entry.action) || goldAmount < 0;
-                          const isConversion = entry.action === 'LGPW_To_FGPW' || entry.action === 'FGPW_To_LGPW';
-                          const isCredit = (goldAmount >= 0 && !isDebit) || isConversion;
+                        {groupedEntries.map(([txId, entries], groupIndex) => {
+                          const isExpanded = expandedTransactions.has(txId);
+                          const hasMultiple = entries.length > 1;
+                          const mainEntry = entries[entries.length - 1];
+                          const totalValue = entries.reduce((sum, e) => sum + parseFloat(e.valueUsd || '0'), 0);
+                          const goldAmount = parseFloat(mainEntry.goldGrams);
+                          
+                          const formatFrom = (entry: LedgerEntry) => {
+                            if (entry.action === 'Vault_Transfer') return 'Wingold & Metals';
+                            if (entry.fromWallet === 'FinaPay') return 'FinaVault';
+                            return entry.fromWallet || '—';
+                          };
+                          
+                          const formatTo = (entry: LedgerEntry) => {
+                            if (entry.action === 'Vault_Transfer') return 'FinaVault';
+                            if (entry.action === 'Deposit' && entry.toGoldWalletType) {
+                              return `FinaPay-${entry.toGoldWalletType}`;
+                            }
+                            return entry.toWallet || '—';
+                          };
                           
                           return (
-                            <tr 
-                              key={entry.id} 
-                              className={`hover:bg-muted/30 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
-                              data-testid={`ledger-entry-${entry.id}`}
-                            >
-                              <td className="py-3 px-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-foreground">
-                                  {format(new Date(entry.createdAt), 'MMM dd, yyyy')}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {format(new Date(entry.createdAt), 'HH:mm')}
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isConversion ? 'bg-purple-100' : isCredit ? 'bg-green-100' : 'bg-red-100'
-                                  }`}>
-                                    {getActionIcon(entry.action)}
+                            <React.Fragment key={txId}>
+                              <tr 
+                                className={`hover:bg-muted/30 transition-colors cursor-pointer ${groupIndex % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
+                                onClick={() => hasMultiple && toggleExpanded(txId)}
+                                data-testid={`ledger-group-${txId}`}
+                              >
+                                <td className="py-3 px-2 text-center">
+                                  {hasMultiple && (
+                                    isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-foreground">
+                                    {format(new Date(mainEntry.createdAt), 'dd/MM/yyyy')}
                                   </div>
-                                  <div className="min-w-0">
-                                    <div className="font-medium text-foreground text-sm">
-                                      {formatAction(entry.action, entry)}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                      {entry.notes || (entry.fromWallet && entry.toWallet 
-                                        ? `${entry.fromWallet} → ${entry.toWallet}`
-                                        : 'Gold movement')}
-                                    </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {format(new Date(mainEntry.createdAt), 'h:mm:ss a')}
                                   </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-right font-mono">
-                                {isConversion || isDebit ? (
-                                  <span className="text-red-600 font-medium">
-                                    {Math.abs(goldAmount).toFixed(4)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                    {formatAction(mainEntry.action, mainEntry)}
                                   </span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4 text-right font-mono">
-                                {isConversion || (isCredit && !isDebit) ? (
+                                </td>
+                                <td className="py-3 px-4 text-sm text-foreground">
+                                  {hasMultiple ? 'Wingold & Metals' : formatFrom(mainEntry)}
+                                </td>
+                                <td className="py-3 px-4 text-sm text-foreground">
+                                  {formatTo(mainEntry)}
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono">
                                   <span className="text-green-600 font-medium">
-                                    {Math.abs(goldAmount).toFixed(4)}
+                                    {goldAmount.toFixed(4)}
                                   </span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4 text-right font-mono text-sm text-muted-foreground">
-                                {entry.valueUsd ? `$${parseFloat(entry.valueUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
-                              </td>
-                              <td className="py-3 px-4 text-right font-mono bg-muted/20">
-                                <span className="font-semibold text-foreground">
-                                  {parseFloat(entry.balanceAfterGrams).toFixed(4)}
-                                </span>
-                              </td>
-                            </tr>
+                                </td>
+                                <td className="py-3 px-4 text-right font-mono text-sm">
+                                  ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                              {isExpanded && entries.map((entry, entryIndex) => (
+                                <tr 
+                                  key={entry.id}
+                                  className="bg-muted/20 border-l-4 border-l-purple-400"
+                                  data-testid={`ledger-entry-${entry.id}`}
+                                >
+                                  <td className="py-2 px-2"></td>
+                                  <td className="py-2 px-4 whitespace-nowrap text-xs text-muted-foreground">
+                                    Step {entryIndex + 1}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                      entry.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                    }`}>
+                                      {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-4 text-sm text-muted-foreground">
+                                    {formatFrom(entry)}
+                                  </td>
+                                  <td className="py-2 px-4 text-sm text-muted-foreground">
+                                    {formatTo(entry)}
+                                  </td>
+                                  <td className="py-2 px-4 text-right font-mono text-sm text-muted-foreground">
+                                    {parseFloat(entry.goldGrams).toFixed(4)}
+                                  </td>
+                                  <td className="py-2 px-4 text-right font-mono text-sm text-muted-foreground">
+                                    ${parseFloat(entry.valueUsd || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
                           );
                         })}
                       </tbody>
