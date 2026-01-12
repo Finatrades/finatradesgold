@@ -322,25 +322,26 @@ export default function KYCReview() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string }>({ url: '', name: '' });
   
-  // Fetch full corporate KYC details when a corporate KYC is selected
+  // Fetch full KYC details when a Finatrades KYC is selected (both corporate and personal)
   useEffect(() => {
-    async function fetchFullCorporateDetails() {
+    async function fetchFullKycDetails() {
       if (!selectedApplication) {
         setFullApplicationData(null);
         return;
       }
       
-      // Only fetch full details for corporate KYC submissions
-      if (selectedApplication.kycType === 'finatrades_corporate' && selectedApplication.userId) {
+      const userId = selectedApplication.userId;
+      
+      // Fetch full details for corporate KYC submissions
+      if (selectedApplication.kycType === 'finatrades_corporate' && userId) {
         setLoadingFullData(true);
         try {
-          const res = await fetch(`/api/finatrades-kyc/corporate/${selectedApplication.userId}`, {
+          const res = await fetch(`/api/finatrades-kyc/corporate/${userId}`, {
             credentials: 'include',
           });
           if (res.ok) {
             const data = await res.json();
             if (data.submission) {
-              // Merge full data with the selected application
               setFullApplicationData({
                 ...selectedApplication,
                 ...data.submission,
@@ -360,12 +361,41 @@ export default function KYCReview() {
         } finally {
           setLoadingFullData(false);
         }
+      }
+      // Fetch full details for personal KYC submissions
+      else if (selectedApplication.kycType === 'finatrades_personal' && userId) {
+        setLoadingFullData(true);
+        try {
+          const res = await fetch(`/api/finatrades-kyc/personal/${userId}`, {
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.submission) {
+              setFullApplicationData({
+                ...selectedApplication,
+                ...data.submission,
+                kycType: 'finatrades_personal',
+                accountType: 'personal',
+              });
+            } else {
+              setFullApplicationData(selectedApplication);
+            }
+          } else {
+            setFullApplicationData(selectedApplication);
+          }
+        } catch (error) {
+          console.error('Failed to fetch full personal KYC:', error);
+          setFullApplicationData(selectedApplication);
+        } finally {
+          setLoadingFullData(false);
+        }
       } else {
         setFullApplicationData(selectedApplication);
       }
     }
     
-    fetchFullCorporateDetails();
+    fetchFullKycDetails();
   }, [selectedApplication]);
   
   const openDocumentViewer = (url: string, name: string) => {
