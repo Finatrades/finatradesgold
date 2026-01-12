@@ -7713,7 +7713,8 @@ ${message}
     try {
       const { vaultLedgerService } = await import('./vault-ledger-service');
       const limit = parseInt(req.query.limit as string) || 50;
-      const entries = await vaultLedgerService.getLedgerHistory(req.params.userId, limit);
+      const allEntries = await vaultLedgerService.getLedgerHistory(req.params.userId, limit);
+      const entries = allEntries.filter((e: any) => e.action !== 'Vault_Transfer');
       res.json({ entries });
     } catch (error) {
       res.status(400).json({ message: "Failed to get ledger history" });
