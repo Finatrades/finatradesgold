@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
 interface Certificate {
@@ -48,6 +49,7 @@ interface CertificateDetailModalProps {
 function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const certificateRef = useRef<HTMLDivElement>(null);
   
   if (!certificate) return null;
 
@@ -63,217 +65,58 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   const hasPartialSurrender = remainingGrams < originalGrams;
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
   
-  const generateCertificatePDF = () => {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 25;
-    const contentWidth = pageWidth - (margin * 2);
-    
-    // Dark background
-    doc.setFillColor(13, 5, 21);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
-    // Color scheme
-    const borderColor = isDigitalOwnership ? [212, 175, 55] : [192, 192, 192];
-    const borderColorFaded = isDigitalOwnership ? [212, 175, 55, 0.3] : [192, 192, 192, 0.3];
-    
-    // Outer decorative border (triple line effect)
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(2);
-    doc.rect(margin - 10, margin - 10, contentWidth + 20, pageHeight - (margin * 2) + 20, 'S');
-    doc.setLineWidth(0.5);
-    doc.rect(margin - 7, margin - 7, contentWidth + 14, pageHeight - (margin * 2) + 14, 'S');
-    doc.setLineWidth(1.5);
-    doc.rect(margin - 3, margin - 3, contentWidth + 6, pageHeight - (margin * 2) + 6, 'S');
-    
-    // Corner decorations
-    const cornerSize = 15;
-    const corners = [
-      { x: margin - 10, y: margin - 10 },
-      { x: pageWidth - margin + 10 - cornerSize, y: margin - 10 },
-      { x: margin - 10, y: pageHeight - margin + 10 - cornerSize },
-      { x: pageWidth - margin + 10 - cornerSize, y: pageHeight - margin + 10 - cornerSize }
-    ];
-    doc.setLineWidth(1);
-    corners.forEach((corner, i) => {
-      if (i === 0) {
-        doc.line(corner.x, corner.y + cornerSize, corner.x + cornerSize, corner.y);
-      } else if (i === 1) {
-        doc.line(corner.x, corner.y, corner.x + cornerSize, corner.y + cornerSize);
-      } else if (i === 2) {
-        doc.line(corner.x, corner.y, corner.x + cornerSize, corner.y + cornerSize);
-      } else {
-        doc.line(corner.x + cornerSize, corner.y, corner.x, corner.y + cornerSize);
-      }
-    });
-    
-    let y = margin + 20;
-    
-    // Shield icon (drawn with lines)
-    const shieldCenterX = pageWidth / 2;
-    const shieldTop = y;
-    const shieldWidth = 16;
-    const shieldHeight = 18;
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(1.5);
-    // Shield outline
-    doc.line(shieldCenterX - shieldWidth/2, shieldTop, shieldCenterX - shieldWidth/2, shieldTop + shieldHeight * 0.6);
-    doc.line(shieldCenterX + shieldWidth/2, shieldTop, shieldCenterX + shieldWidth/2, shieldTop + shieldHeight * 0.6);
-    doc.line(shieldCenterX - shieldWidth/2, shieldTop, shieldCenterX + shieldWidth/2, shieldTop);
-    doc.line(shieldCenterX - shieldWidth/2, shieldTop + shieldHeight * 0.6, shieldCenterX, shieldTop + shieldHeight);
-    doc.line(shieldCenterX + shieldWidth/2, shieldTop + shieldHeight * 0.6, shieldCenterX, shieldTop + shieldHeight);
-    // Checkmark inside shield
-    doc.setLineWidth(1);
-    doc.line(shieldCenterX - 4, shieldTop + 9, shieldCenterX - 1, shieldTop + 12);
-    doc.line(shieldCenterX - 1, shieldTop + 12, shieldCenterX + 5, shieldTop + 6);
-    y = shieldTop + shieldHeight + 12;
-    
-    // Title
-    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setFontSize(32);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
-    y += 14;
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text(isDigitalOwnership ? 'OF DIGITAL OWNERSHIP' : 'OF PHYSICAL STORAGE', pageWidth / 2, y, { align: 'center' });
-    y += 12;
-    
-    // Decorative line under title
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.3);
-    doc.line(pageWidth / 2 - 40, y, pageWidth / 2 + 40, y);
-    y += 12;
-    
-    // Certificate Number
-    doc.setTextColor(180, 180, 180);
-    doc.setFontSize(10);
-    doc.text(certificate.certificateNumber, pageWidth / 2, y, { align: 'center' });
-    y += 12;
-    
-    // Status Badge
-    doc.setFillColor(34, 197, 94);
-    doc.roundedRect(pageWidth / 2 - 18, y - 5, 36, 10, 3, 3, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(certificate.status, pageWidth / 2, y + 1, { align: 'center' });
-    y += 16;
-    
-    // Gold Wallet Type Badge
-    if (certificate.goldWalletType) {
-      const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Market Price Gold' : 'FGPW - Fixed Price Gold';
-      doc.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.roundedRect(pageWidth / 2 - 40, y - 5, 80, 10, 3, 3, 'F');
-      doc.setTextColor(20, 10, 30);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text(walletLabel, pageWidth / 2, y + 1, { align: 'center' });
-      y += 12;
-      
-      // Subtitle
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Value follows live gold price • Backed by physical gold', pageWidth / 2, y, { align: 'center' });
-      y += 18;
-    }
-    
-    // Main text box
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.3);
-    const textBoxY = y - 5;
-    doc.roundedRect(margin + 10, textBoxY, contentWidth - 20, 25, 2, 2, 'S');
-    
-    doc.setTextColor(220, 220, 220);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    const mainText = `This certifies that the holder is the beneficial owner of ${goldGrams.toFixed(4)}g of fine gold, secured and recorded in the Finatrades digital ledger.`;
-    const splitText = doc.splitTextToSize(mainText, contentWidth - 30);
-    doc.text(splitText, pageWidth / 2, y + 5, { align: 'center' });
-    y = textBoxY + 35;
-    
-    // Details section with boxes
-    const detailsY = y;
-    const colWidth = (contentWidth - 30) / 4;
-    const boxHeight = 28;
-    const startX = margin + 15;
-    
-    // Draw detail boxes
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.3);
-    for (let i = 0; i < 4; i++) {
-      doc.roundedRect(startX + (colWidth * i), detailsY, colWidth - 5, boxHeight, 2, 2, 'S');
-    }
-    
-    // Headers
-    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('GOLD WEIGHT', startX + (colWidth * 0) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
-    doc.text('PURITY', startX + (colWidth * 1) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
-    doc.text('VALUE (USD)', startX + (colWidth * 2) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
-    doc.text('STORAGE REF', startX + (colWidth * 3) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
-    
-    // Values
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${goldGrams.toFixed(4)}g`, startX + (colWidth * 0) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
-    doc.text('999.9', startX + (colWidth * 1) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
-    doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, startX + (colWidth * 2) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text(certificate.wingoldStorageRef || 'N/A', startX + (colWidth * 3) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
-    y = detailsY + boxHeight + 15;
-    
-    // Decorative separator
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.5);
-    const sepY = y;
-    doc.line(margin + 30, sepY, margin + 50, sepY);
-    doc.line(pageWidth / 2 - 10, sepY, pageWidth / 2 + 10, sepY);
-    doc.line(pageWidth - margin - 50, sepY, pageWidth - margin - 30, sepY);
-    y += 20;
-    
-    // Date and Authority section
-    const footerY = y;
-    
-    // Date box
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(margin + 15, footerY - 8, contentWidth / 2 - 25, 25, 2, 2, 'S');
-    doc.roundedRect(pageWidth / 2 + 10, footerY - 8, contentWidth / 2 - 25, 25, 2, 2, 'S');
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.text(issueDate, margin + 15 + (contentWidth / 2 - 25) / 2, footerY + 3, { align: 'center' });
-    doc.text('Finatrades Finance SA', pageWidth / 2 + 10 + (contentWidth / 2 - 25) / 2, footerY + 3, { align: 'center' });
-    
-    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('DATE OF ISSUE', margin + 15 + (contentWidth / 2 - 25) / 2, footerY + 11, { align: 'center' });
-    doc.text('ISSUING AUTHORITY', pageWidth / 2 + 10 + (contentWidth / 2 - 25) / 2, footerY + 11, { align: 'center' });
-    y = footerY + 30;
-    
-    // Disclaimer
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'italic');
-    const disclaimer = 'This Certificate is electronically generated and verified through the Platform\'s secure system. It does not require any physical signature or stamp to be valid.';
-    const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth - 20);
-    doc.text(disclaimerLines, pageWidth / 2, y, { align: 'center' });
-    
-    return doc;
-  };
-
   const handleDownloadPDF = async () => {
+    if (!certificateRef.current) {
+      toast({
+        title: "Download Failed",
+        description: "Certificate not ready. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      const doc = generateCertificatePDF();
+      // Clone the element to modify for PDF capture
+      const element = certificateRef.current;
+      
+      // Use html2canvas to capture exact screen appearance
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#0D0515',
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false,
+        removeContainer: true,
+        imageTimeout: 15000
+      });
+      
+      // Create PDF from canvas
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Calculate dimensions to fit on page with margins
+      const margin = 10;
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2);
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(maxWidth / (imgWidth / 2), maxHeight / (imgHeight / 2));
+      
+      const finalWidth = (imgWidth / 2) * ratio;
+      const finalHeight = (imgHeight / 2) * ratio;
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+      
+      // Dark background
+      doc.setFillColor(13, 5, 21);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      doc.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      
       const filename = `${certificate.type.replace(/\s+/g, '_')}_${certificate.certificateNumber}.pdf`;
       doc.save(filename);
       
@@ -294,9 +137,52 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   };
 
   const handlePrint = async () => {
+    if (!certificateRef.current) {
+      toast({
+        title: "Print Failed",
+        description: "Certificate not ready. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      const doc = generateCertificatePDF();
+      const element = certificateRef.current;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#0D0515',
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false,
+        removeContainer: true,
+        imageTimeout: 15000
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      const margin = 10;
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2);
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(maxWidth / (imgWidth / 2), maxHeight / (imgHeight / 2));
+      
+      const finalWidth = (imgWidth / 2) * ratio;
+      const finalHeight = (imgHeight / 2) * ratio;
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+      
+      doc.setFillColor(13, 5, 21);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      doc.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      
       doc.autoPrint();
       window.open(doc.output('bloburl'), '_blank');
       
@@ -305,6 +191,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
         description: "Your certificate is ready to print."
       });
     } catch (error) {
+      console.error('Print error:', error);
       toast({
         title: "Print Failed",
         description: "Unable to generate print document.",
@@ -319,7 +206,10 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] bg-[#0D0515] border-white/10 p-0 overflow-y-auto">
-        <div className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
+        {/* Certificate content for capture - ref attached here */}
+        <div 
+          ref={certificateRef}
+          className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
           isDigitalOwnership 
             ? 'border-[#D4AF37]/30' 
             : 'border-[#C0C0C0]/30'
@@ -504,31 +394,32 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
               </p>
             </div>
           </div>
-
-          <div className="flex justify-center gap-4 mt-8">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="border-white/20 text-white hover:bg-white/10"
-              disabled={isGenerating}
-              onClick={handleDownloadPDF}
-              data-testid="button-download-certificate-pdf"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="border-white/20 text-white hover:bg-white/10"
-              disabled={isGenerating}
-              onClick={handlePrint}
-              data-testid="button-print-certificate"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              Print
-            </Button>
-          </div>
+        </div>
+        
+        {/* Buttons outside ref so they don't appear in PDF */}
+        <div className="flex justify-center gap-4 pb-6 bg-[#0D0515]">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-white/20 text-white hover:bg-white/10"
+            disabled={isGenerating}
+            onClick={handleDownloadPDF}
+            data-testid="button-download-certificate-pdf"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {isGenerating ? 'Generating...' : 'Download PDF'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-white/20 text-white hover:bg-white/10"
+            disabled={isGenerating}
+            onClick={handlePrint}
+            data-testid="button-print-certificate"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Print
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
