@@ -13,6 +13,7 @@ import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User,
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 interface BeneficialOwner {
   name: string;
@@ -463,44 +464,33 @@ export default function KYC() {
       const addressProofBase64 = await fileToBase64(addressProofFile);
       const passportBase64 = passportFile ? await fileToBase64(passportFile) : null;
       
-      const response = await fetch('/api/finatrades-kyc/personal', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+      await apiRequest('POST', '/api/finatrades-kyc/personal', {
+        userId: user.id,
+        personalInformation: {
+          fullName: personalFullName,
+          email: personalEmail,
+          phone: personalPhone,
+          dateOfBirth: personalDateOfBirth,
+          nationality: personalNationality,
+          country: personalCountry,
+          city: personalCity,
+          address: personalAddress,
+          postalCode: personalPostalCode,
+          occupation: personalOccupation,
+          sourceOfFunds: personalSourceOfFunds,
+          accountType: personalAccountType
         },
-        body: JSON.stringify({
-          userId: user.id,
-          personalInformation: {
-            fullName: personalFullName,
-            email: personalEmail,
-            phone: personalPhone,
-            dateOfBirth: personalDateOfBirth,
-            nationality: personalNationality,
-            country: personalCountry,
-            city: personalCity,
-            address: personalAddress,
-            postalCode: personalPostalCode,
-            occupation: personalOccupation,
-            sourceOfFunds: personalSourceOfFunds,
-            accountType: personalAccountType
-          },
-          documents: {
-            idFront: { url: idFrontBase64, uploaded: true },
-            idBack: { url: idBackBase64, uploaded: true },
-            addressProof: { url: addressProofBase64, uploaded: true },
-            passport: passportBase64 ? { url: passportBase64, uploaded: true } : null
-          },
-          passportExpiryDate: passportExpiryDate || null,
-          livenessVerified: true,
-          livenessCapture: capturedSelfie,
-          status: 'In Progress'
-        }),
+        documents: {
+          idFront: { url: idFrontBase64, uploaded: true },
+          idBack: { url: idBackBase64, uploaded: true },
+          addressProof: { url: addressProofBase64, uploaded: true },
+          passport: passportBase64 ? { url: passportBase64, uploaded: true } : null
+        },
+        passportExpiryDate: passportExpiryDate || null,
+        livenessVerified: true,
+        livenessCapture: capturedSelfie,
+        status: 'In Progress'
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit KYC');
-      }
       
       await refreshUser();
       
@@ -545,46 +535,35 @@ export default function KYC() {
         }
       }
       
-      const response = await fetch('/api/finatrades-kyc/corporate', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          companyName,
-          registrationNumber: corporateRegNumber,
-          incorporationDate,
-          countryOfIncorporation,
-          companyType,
-          natureOfBusiness,
-          numberOfEmployees,
-          headOfficeAddress,
-          telephoneNumber,
-          website,
-          emailAddress,
-          tradingContactName,
-          tradingContactEmail,
-          tradingContactPhone,
-          financeContactName,
-          financeContactEmail,
-          financeContactPhone,
-          beneficialOwners: beneficialOwners.filter(o => o.name.trim()),
-          shareholderCompanyUbos,
-          hasPepOwners,
-          pepDetails: hasPepOwners ? pepDetails : null,
-          documents: docsPayload,
-          tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
-          directorPassportExpiryDate: directorPassportExpiryDate || null,
-          representativeLiveness: capturedSelfie,
-          status: 'In Progress'
-        }),
+      await apiRequest('POST', '/api/finatrades-kyc/corporate', {
+        userId: user.id,
+        companyName,
+        registrationNumber: corporateRegNumber,
+        incorporationDate,
+        countryOfIncorporation,
+        companyType,
+        natureOfBusiness,
+        numberOfEmployees,
+        headOfficeAddress,
+        telephoneNumber,
+        website,
+        emailAddress,
+        tradingContactName,
+        tradingContactEmail,
+        tradingContactPhone,
+        financeContactName,
+        financeContactEmail,
+        financeContactPhone,
+        beneficialOwners: beneficialOwners.filter(o => o.name.trim()),
+        shareholderCompanyUbos,
+        hasPepOwners,
+        pepDetails: hasPepOwners ? pepDetails : null,
+        documents: docsPayload,
+        tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
+        directorPassportExpiryDate: directorPassportExpiryDate || null,
+        representativeLiveness: capturedSelfie,
+        status: 'In Progress'
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit KYC');
-      }
       
       await refreshUser();
       
