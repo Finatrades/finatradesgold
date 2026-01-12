@@ -478,7 +478,7 @@ export default function FinaPay() {
         {/* Transaction History */}
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-4">Recent Transactions</h3>
-          {transactions.length === 0 ? (
+          {transactions.length === 0 && ledgerEntries.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
               <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>

@@ -102,9 +102,52 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
      }
   };
 
+  // Get transaction IDs that already exist
+  const existingTxIds = new Set(transactions.map(tx => tx.id));
+  
+  // Create synthetic transactions from ledger entries that don't have a corresponding transaction
+  const ledgerOnlyGroups = Array.from(ledgerByTxId.entries())
+    .filter(([key, entries]) => {
+      // Check if this ledger group's transactionId matches an existing transaction
+      const firstEntry = entries[0];
+      if (firstEntry.transactionId && existingTxIds.has(firstEntry.transactionId)) {
+        return false;
+      }
+      return true;
+    });
+  
+  // Map ledger-only groups to synthetic Transaction objects
+  const syntheticFromLedger: Transaction[] = ledgerOnlyGroups.map(([key, entries]) => {
+    const depositEntry = entries.find(e => e.action === 'Deposit') || entries[0];
+    const goldGrams = parseFloat(depositEntry.goldGrams);
+    const valueUsd = depositEntry.valueUsd ? parseFloat(depositEntry.valueUsd) : goldGrams * goldPrice;
+    
+    // Determine gold wallet type from entries
+    const walletType = depositEntry.toGoldWalletType || depositEntry.goldWalletType || 'LGPW';
+    
+    return {
+      id: key,
+      type: 'Deposit' as const,
+      status: 'Completed',
+      assetType: 'GOLD',
+      amountGrams: goldGrams,
+      amountUsd: valueUsd,
+      description: entries.length > 1 
+        ? `Chain of Custody: ${entries.map(e => e.action.replace('_', ' ')).join(' → ')}`
+        : `${depositEntry.action.replace('_', ' ')} - ${walletType} wallet`,
+      referenceId: depositEntry.transactionId || depositEntry.id,
+      timestamp: depositEntry.createdAt,
+      goldWalletType: walletType,
+    } as Transaction;
+  });
+  
+  // Combine original transactions with synthetic ledger entries
+  const combinedTransactions = [...transactions, ...syntheticFromLedger]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
   const filteredTransactions = filter === 'All' 
-    ? transactions 
-    : transactions.filter(t => t.type === filter);
+    ? combinedTransactions 
+    : combinedTransactions.filter(t => t.type === filter);
 
   return (
     <>
