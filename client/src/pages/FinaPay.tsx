@@ -6,11 +6,12 @@ import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
-import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle, History, Award, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import PendingTransfers from '@/components/finapay/PendingTransfers';
@@ -176,6 +177,7 @@ export default function FinaPay() {
   const hasConfirmedPayment = transactions.some(tx => tx.status === 'Completed');
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('wallet-activity');
 
   // Auto-open deposit modal when coming from dashboard with action=deposit
   useEffect(() => {
@@ -289,6 +291,84 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
+        {/* Horizontal Tab Navigation - FinaVault Style */}
+        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab('wallet-activity')}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                activeTab === 'wallet-activity'
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+              }`}
+              data-testid="tab-wallet-activity"
+            >
+              <History className="w-4 h-4" />
+              Wallet Activity
+            </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
+              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all flex items-center gap-1.5 hover:bg-green-100"
+              data-testid="tab-deposit-gold"
+            >
+              <Plus className="w-4 h-4" />
+              Deposit Gold
+            </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
+              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-amber-200 bg-amber-50 text-amber-700 transition-all flex items-center gap-1.5 hover:bg-amber-100"
+              data-testid="tab-buy-gold-bars"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Buy Gold Bars
+            </button>
+            <button
+              onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
+              className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all flex items-center gap-1.5 hover:bg-orange-100"
+              data-testid="tab-cash-out"
+            >
+              <ArrowUpRight className="w-4 h-4" />
+              Cash Out
+            </button>
+            <button
+              onClick={() => setActiveTab('ownership-ledger')}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                activeTab === 'ownership-ledger'
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+              }`}
+              data-testid="tab-ownership-ledger"
+            >
+              <Lock className="w-4 h-4" />
+              Ownership Ledger
+            </button>
+            <button
+              onClick={() => setActiveTab('certificates')}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                activeTab === 'certificates'
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+              }`}
+              data-testid="tab-certificates"
+            >
+              <Award className="w-4 h-4" />
+              Certificates
+            </button>
+            <button
+              onClick={() => setActiveTab('terms')}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                activeTab === 'terms'
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+              }`}
+              data-testid="tab-terms"
+            >
+              <FileText className="w-4 h-4" />
+              Terms & Conditions
+            </button>
+          </div>
+        </div>
+
         {/* FinaPay Wallet Card - Only show after confirmed payment */}
         {hasConfirmedPayment && (
           <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>

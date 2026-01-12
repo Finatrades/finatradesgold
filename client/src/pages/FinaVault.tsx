@@ -506,14 +506,14 @@ export default function FinaVault() {
     });
   };
 
-  // Check query params for initial tab - open deposit wizard
+  // Check query params for initial tab - open deposit tab
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
     const highlight = searchParams.get('highlight');
     
     if (tabParam === 'new-request' || highlight === 'deposit') {
-      setShowDepositWizard(true);
+      setActiveTab('deposit-gold');
     }
   }, []);
 
