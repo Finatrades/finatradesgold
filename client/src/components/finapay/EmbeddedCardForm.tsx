@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CreditCard, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { preloadNGeniusSDK, getCachedConfig, isSDKReady } from '@/lib/ngenius-sdk-loader';
+import { apiRequest } from '@/lib/queryClient';
 
 interface EmbeddedCardFormProps {
   amount: number;
@@ -146,18 +147,10 @@ export default function EmbeddedCardForm({ amount, onSuccess, onError, onCancel 
     try {
       const sessionId = await window.NI.generateSessionId();
       
-      const res = await fetch('/api/ngenius/process-hosted-payment', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: user?.id,
-          sessionId,
-          amount,
-        }),
+      const res = await apiRequest('POST', '/api/ngenius/process-hosted-payment', {
+        userId: user?.id,
+        sessionId,
+        amount,
       });
 
       const result = await res.json();

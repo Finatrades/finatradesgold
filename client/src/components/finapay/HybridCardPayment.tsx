@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CreditCard, Lock, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 interface HybridCardPaymentProps {
   amount: number;
@@ -102,19 +103,11 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
     toast.info('Loading payment page...', { duration: 2000 });
     
     try {
-      const res = await fetch('/api/ngenius/create-order', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: user?.id,
-          amount,
-          currency: 'USD',
-          goldWalletType,
-        }),
+      const res = await apiRequest('POST', '/api/ngenius/create-order', {
+        userId: user?.id,
+        amount,
+        currency: 'USD',
+        goldWalletType,
       });
       
       const data = await res.json();
@@ -407,19 +400,11 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
         throw new Error(errorMsg);
       }
       
-      const res = await fetch('/api/ngenius/process-hosted-payment', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: user?.id,
-          sessionId,
-          amount,
-          goldWalletType,
-        }),
+      const res = await apiRequest('POST', '/api/ngenius/process-hosted-payment', {
+        userId: user?.id,
+        sessionId,
+        amount,
+        goldWalletType,
       });
 
       const result = await res.json();
