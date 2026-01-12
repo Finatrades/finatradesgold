@@ -724,8 +724,8 @@ export default function FinaVault() {
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 {/* Horizontally scrollable tabs for mobile, wrapped on desktop */}
-                <div className="-mx-4 px-4 md:mx-0 md:px-0 mb-6">
-                  <TabsList className="bg-muted/50 border border-border/50 p-1.5 inline-flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 min-w-full md:min-w-0 md:flex-wrap">
+                <div className="bg-white rounded-2xl border border-border p-4 shadow-sm mb-6">
+                  <TabsList className="bg-muted/50 border border-border/50 p-1.5 inline-flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 w-full md:flex-wrap justify-start">
                     <TabsTrigger 
                       value="vault-activity"
                       className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
