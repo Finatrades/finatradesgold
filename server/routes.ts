@@ -795,7 +795,7 @@ export async function registerRoutes(
           type: 'Deposit',
           status: dep.status,
           amountUsd: dep.amountUsd,
-          amountGold: null,
+          amountGold: dep.expectedGoldGrams || null,
           createdAt: dep.createdAt,
           description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
           sourceModule: 'FinaPay',
