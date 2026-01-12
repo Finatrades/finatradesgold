@@ -94,6 +94,8 @@ export default function UnifiedPaymentManagement() {
   const [wingoldBuyRate, setWingoldBuyRate] = useState('');
   const [storageCertificateId, setStorageCertificateId] = useState('');
   const [showAllocationFields, setShowAllocationFields] = useState(false);
+  const [proofViewerOpen, setProofViewerOpen] = useState(false);
+  const [proofViewerUrl, setProofViewerUrl] = useState('');
 
   const { data: paymentsData, isLoading, refetch } = useQuery({
     queryKey: ['unified-pending-payments'],
@@ -391,10 +393,15 @@ export default function UnifiedPaymentManagement() {
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
                                 {payment.proofUrl && (
-                                  <Button variant="ghost" size="sm" asChild>
-                                    <a href={payment.proofUrl} target="_blank" rel="noopener noreferrer">
-                                      <Eye className="w-4 h-4" />
-                                    </a>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setProofViewerUrl(payment.proofUrl!);
+                                      setProofViewerOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
                                   </Button>
                                 )}
                                 <Button 
@@ -664,6 +671,32 @@ export default function UnifiedPaymentManagement() {
                   <CheckCircle className="w-4 h-4 mr-2" />
                 )}
                 Approve & Credit Wallet
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Proof Image Viewer Dialog */}
+        <Dialog open={proofViewerOpen} onOpenChange={setProofViewerOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Payment Proof
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg">
+              {proofViewerUrl && (
+                <img 
+                  src={proofViewerUrl} 
+                  alt="Payment Proof" 
+                  className="max-w-full max-h-[60vh] object-contain rounded"
+                />
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setProofViewerOpen(false)}>
+                Close
               </Button>
             </DialogFooter>
           </DialogContent>
