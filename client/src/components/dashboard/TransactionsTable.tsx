@@ -112,14 +112,18 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
     const isSwap = isSwapType(tx.description);
     const isCredit = isCreditType(tx.type, tx.description);
     const isDebit = isDebitType(tx.type, tx.description);
+    const isCompleted = tx.status?.toLowerCase() === 'completed' || tx.status?.toLowerCase() === 'complete';
     
-    if (isCredit) {
-      runningBalanceUsd += usdAmount;
-    } else if (isDebit) {
-      runningBalanceUsd -= usdAmount;
+    // Only include COMPLETED transactions in running balance
+    if (isCompleted) {
+      if (isCredit) {
+        runningBalanceUsd += usdAmount;
+      } else if (isDebit) {
+        runningBalanceUsd -= usdAmount;
+      }
     }
     
-    return { ...tx, goldAmount, usdAmount, isSwap, isCredit, isDebit, balanceUsd: runningBalanceUsd };
+    return { ...tx, goldAmount, usdAmount, isSwap, isCredit, isDebit, balanceUsd: isCompleted ? runningBalanceUsd : null };
   });
 
   return (
@@ -220,7 +224,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                         <div className="flex items-center justify-between mt-2">
                           {getStatusBadge(tx.status)}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <span>Bal: ${Math.abs(tx.balanceUsd).toFixed(2)}</span>
+                            <span>Bal: {tx.balanceUsd !== null ? `$${Math.abs(tx.balanceUsd).toFixed(2)}` : '--'}</span>
                             {tx.isSwap && (isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />)}
                           </div>
                         </div>
@@ -311,10 +315,16 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                     
                     {/* BALANCE USD Column */}
                     <div className="col-span-2 text-right">
-                      <p className="font-semibold text-foreground text-sm">
-                        ${Math.abs(tx.balanceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">≈ {(tx.balanceUsd / goldPrice).toFixed(2)}g</p>
+                      {tx.balanceUsd !== null ? (
+                        <>
+                          <p className="font-semibold text-foreground text-sm">
+                            ${Math.abs(tx.balanceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">≈ {(tx.balanceUsd / goldPrice).toFixed(2)}g</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">--</p>
+                      )}
                     </div>
                     
                     {/* STATUS Column */}
