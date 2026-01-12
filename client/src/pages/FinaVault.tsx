@@ -252,6 +252,9 @@ export default function FinaVault() {
   const transactions = transactionsData?.transactions || [];
   const depositRequests = depositRequestsData?.requests || [];
   
+  // Check if user has at least one confirmed payment (Completed status)
+  const hasConfirmedPayment = transactions.some((tx: any) => tx.status === 'Completed');
+  
   // Helper to format wallet destination with wallet type
   const formatWalletWithType = (wallet: string, walletType?: string) => {
     if (wallet === 'FinaPay' && walletType) {
@@ -548,7 +551,8 @@ export default function FinaVault() {
           </div>
         </div>
         
-        {/* FinaVault Wallet Card */}
+        {/* FinaVault Wallet Card - Only show after confirmed payment */}
+        {hasConfirmedPayment && (
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -694,6 +698,7 @@ export default function FinaVault() {
             </div>
           )}
         </div>
+        )}
 
         {/* Main Content */}
         <AnimatePresence mode="wait">
