@@ -392,6 +392,20 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         tx: tx as any,
       });
 
+      // 2b. Create transaction record for Wallet/Activity display
+      await storage.createTransaction({
+        userId,
+        type: 'Deposit',
+        status: 'Completed',
+        amountGold: parsedAllocation.toFixed(6),
+        amountUsd: String((parsedAllocation * goldPrice).toFixed(2)),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        goldWalletType: dbWalletType,
+        description: `${sourceType} deposit: ${parsedAllocation.toFixed(6)}g credited to ${dbWalletType} wallet`,
+        sourceModule: 'unified-tally',
+        completedAt: new Date(),
+      }, tx as any);
+
       // 3. Create FGPW batch if it's a fixed-price wallet
       if (dbWalletType === 'FGPW') {
         await createFpgwBatch({
@@ -1019,6 +1033,20 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         createdBy: adminId,
         tx: tx as any,
       });
+
+      // Create transaction record for Wallet/Activity display
+      await storage.createTransaction({
+        userId: transaction.userId,
+        type: 'Deposit',
+        status: 'Completed',
+        amountGold: physicalGoldAllocatedG.toFixed(6),
+        amountUsd: String((physicalGoldAllocatedG * goldRateValue).toFixed(2)),
+        goldPriceUsdPerGram: goldRateValue.toFixed(2),
+        goldWalletType: transaction.walletType,
+        description: `${transaction.sourceMethod} deposit: ${physicalGoldAllocatedG.toFixed(6)}g credited to ${transaction.walletType} wallet`,
+        sourceModule: 'unified-tally',
+        completedAt: new Date(),
+      }, tx as any);
 
       if (transaction.walletType === 'FGPW') {
         await createFpgwBatch({
