@@ -973,7 +973,7 @@ export type Transaction = typeof transactions.$inferSelect;
 // ============================================
 
 export const bankAccountStatusEnum = pgEnum('bank_account_status', ['Active', 'Inactive']);
-export const depositRequestStatusEnum = pgEnum('deposit_request_status', ['Pending', 'Confirmed', 'Rejected', 'Cancelled']);
+export const depositRequestStatusEnum = pgEnum('deposit_request_status', ['Pending', 'Under Review', 'Confirmed', 'Rejected', 'Cancelled']);
 export const withdrawalRequestStatusEnum = pgEnum('withdrawal_request_status', ['Pending', 'Processing', 'Completed', 'Rejected', 'Cancelled']);
 
 // Admin-managed bank accounts for receiving deposits

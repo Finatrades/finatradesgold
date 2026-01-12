@@ -18197,13 +18197,29 @@ ${message}
         goldWalletType: walletType,
       });
 
+      // UNIFIED ARCHITECTURE: Create deposit_request for card payment
+      // Golden Rule requires admin approval before wallet credit
+      const refNum = `CARD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const cardDepositRequest = await storage.createDepositRequest({
+        userId: user.id,
+        referenceNumber: refNum,
+        amountUsd: amountUsd.toString(),
+        currency: 'USD',
+        paymentMethod: 'Card Payment',
+        notes: `Card payment via NGenius (Order: ${orderReference})`,
+        cardTransactionRef: orderReference,
+        cardPaymentStatus: 'Pending',
+        goldWalletType: walletType,
+        status: 'Pending',
+      });
+
       await storage.createAuditLog({
         entityType: 'ngenius',
         entityId: ngeniusTx.id,
         actionType: 'create',
         actor: user.id,
         actorRole: user.role || 'user',
-        details: `Created card deposit order for ${amount} ${currency}`,
+        details: `Created card deposit order for ${amount} ${currency} (deposit request: ${cardDepositRequest.id})`,
       });
 
       res.json({
@@ -18211,6 +18227,7 @@ ${message}
         orderReference,
         paymentUrl,
         orderId: orderResponse._id,
+        depositRequestId: cardDepositRequest.id,
       });
     } catch (error: any) {
       console.error('NGenius create order error:', error);
@@ -18885,7 +18902,24 @@ ${message}
         status: 'Pending',
         amountUsd: amountUsd.toString(),
         currency: 'AED',
-        description: `Card deposit - $${amountUsd} USD`,
+        description: `Card deposit - ${amountUsd} USD`,
+        goldWalletType: walletType,
+      });
+
+      // UNIFIED ARCHITECTURE: Create deposit_request for card payment (hosted flow)
+      // Golden Rule requires admin approval before wallet credit
+      const refNum = `CARD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      await storage.createDepositRequest({
+        userId: user.id,
+        referenceNumber: refNum,
+        amountUsd: amountUsd.toString(),
+        currency: 'USD',
+        paymentMethod: 'Card Payment',
+        notes: `Card payment via NGenius SDK (Order: ${orderReference})`,
+        cardTransactionRef: orderReference,
+        cardPaymentStatus: 'Processing',
+        goldWalletType: walletType,
+        status: 'Pending',
       });
 
       // Process payment with session ID
@@ -18919,185 +18953,56 @@ ${message}
       }
 
       if (result.success) {
-        // Update transaction with NGenius order ID
+        // UNIFIED ARCHITECTURE: Card payment captured - update deposit_request status
+        // DO NOT directly credit wallet - Golden Rule requires admin approval
         await storage.updateNgeniusTransaction(txRecord.id, {
           ngeniusOrderId: result.orderId,
           status: 'Captured',
         });
 
-        // Credit wallet with gold (matching crypto flow)
-        const wallet = await storage.getWallet(userId);
-        if (wallet) {
+        // Find and update the corresponding deposit_request
+        const userDepositRequests = await storage.getUserDepositRequests(userId);
+        const matchingDepositReq = userDepositRequests.find(dr => 
+          dr.paymentMethod === 'Card Payment' && 
+          dr.status === 'Pending' &&
+          dr.cardTransactionRef === orderReference
+        );
+        
+        if (matchingDepositReq) {
+          // Get current gold price for expected gold calculation
           let goldPricePerGram: number;
           try {
             goldPricePerGram = await getGoldPricePerGram();
           } catch {
-            goldPricePerGram = 140;
+            goldPricePerGram = 140; // Fallback
           }
+          const expectedGoldGrams = amountUsd / goldPricePerGram;
           
-          const goldGrams = amountUsd / goldPricePerGram;
-          const currentGold = parseFloat(wallet.goldGrams || '0');
-          
-          await storage.updateWallet(wallet.id, {
-            goldGrams: (currentGold + goldGrams).toFixed(6),
-          });
-
-          // Create transaction record (type='Buy' like crypto)
-          const walletTx = await storage.createTransaction({
-            userId,
-            type: 'Buy',
-            status: 'Completed',
-            amountUsd: amountUsd.toString(),
-            amountGold: goldGrams.toFixed(6),
-            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-            description: `Card payment via NGenius - ${orderReference} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-            referenceId: orderReference,
-            sourceModule: 'finapay',
-            goldWalletType: walletType,
-            completedAt: new Date(),
-          });
-
-          await storage.updateNgeniusTransaction(txRecord.id, {
-            walletTransactionId: walletTx.id,
-          });
-
-          // Record vault ledger entry
-          const { vaultLedgerService } = await import('./vault-ledger-service');
-          await vaultLedgerService.recordLedgerEntry({
-            userId,
-            action: 'Deposit',
-            goldGrams: goldGrams,
-            goldPriceUsdPerGram: goldPricePerGram,
-            fromWallet: 'External',
-            toWallet: walletType === 'FGPW' ? 'FGPW' : 'LGPW',
-            toStatus: 'Available',
-            transactionId: walletTx.id,
-            notes: `Card payment (${walletType}): ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g (USD $${amountUsd.toFixed(2)})`,
-            createdBy: 'system',
-          });
-          
-          // Update dual-wallet buckets in vaultOwnershipSummary
-          let vaultSummary = await storage.getVaultOwnershipSummary(userId);
-          if (!vaultSummary) {
-            vaultSummary = await storage.createVaultOwnershipSummary({
-              userId,
-              mpgwAvailableGrams: '0',
-              mpgwPendingGrams: '0',
-              mpgwLockedBnslGrams: '0',
-              mpgwReservedTradeGrams: '0',
-              fpgwAvailableGrams: '0',
-              fpgwPendingGrams: '0',
-              fpgwLockedBnslGrams: '0',
-              fpgwReservedTradeGrams: '0',
-            });
-          }
-          
-          if (walletType === 'LGPW') {
-            const currentMpgw = parseFloat(vaultSummary.mpgwAvailableGrams || '0');
-            await storage.updateVaultOwnershipSummary(vaultSummary.id, {
-              mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
-            });
-          } else {
-            const currentFpgw = parseFloat(vaultSummary.fpgwAvailableGrams || '0');
-            await storage.updateVaultOwnershipSummary(vaultSummary.id, {
-              fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
-            });
-            
-            // Create FGPW batch for fixed-price tracking
-            const { fpgwBatchService } = await import('./fpgw-batch-service');
-            await fpgwBatchService.createBatch({
-              userId,
-              goldGrams,
-              lockedPriceUsdPerGram: goldPricePerGram,
-              sourceType: 'card_payment',
-              sourceTransactionId: walletTx.id,
-              notes: `Card payment: ${goldGrams.toFixed(4)}g at $${goldPricePerGram.toFixed(2)}/g`,
-            });
-          }
-
-          // Get or create vault holding - use getUserVaultHoldings
-          const userHoldings = await storage.getUserVaultHoldings(userId);
-          let holding = userHoldings[0];
-          if (!holding) {
-            holding = await storage.createVaultHolding({
-              userId,
-              goldGrams: goldGrams.toFixed(6),
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-              purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
-            });
-          } else {
-            const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
-            await storage.updateVaultHolding(holding.id, {
-              goldGrams: newTotalGrams.toFixed(6),
-            });
-          }
-
-          // Digital Ownership Certificate
-          const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
-          await storage.createCertificate({
-            certificateNumber: docCertNum,
-            userId,
-            transactionId: walletTx.id,
-            vaultHoldingId: holding.id,
-            type: 'Digital Ownership',
-            status: 'Active',
-            goldGrams: goldGrams.toFixed(6),
-            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-            totalValueUsd: amountUsd.toFixed(2),
-            issuer: 'Finatrades Finance SA',
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            issuedAt: new Date(),
-          });
-
-          // Physical Storage Certificate
-          const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
-          await storage.createCertificate({
-            certificateNumber: sscCertNum,
-            userId,
-            transactionId: walletTx.id,
-            vaultHoldingId: holding.id,
-            type: 'Physical Storage',
-            status: 'Active',
-            goldGrams: goldGrams.toFixed(6),
-            goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-            totalValueUsd: amountUsd.toFixed(2),
-            issuer: 'Wingold and Metals DMCC',
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            issuedAt: new Date(),
-          });
-
-          // Send notification
-          await storage.createNotification({
-            userId,
-            title: 'Card Payment Credited',
-            message: `Your card payment of $${amountUsd.toFixed(2)} has been credited. ${goldGrams.toFixed(4)}g gold has been added to your wallet.`,
-            type: 'success',
-            read: false,
-          });
-
-          // Emit real-time sync event for auto-update
-          emitLedgerEvent(userId, {
-            type: 'balance_update',
-            module: 'finapay',
-            action: 'card_payment_credited',
-            data: { goldGrams, amountUsd },
-          });
-
-          console.log(`[NGenius] Payment successful: ${goldGrams.toFixed(4)}g gold credited with dual certificates`);
-
-          res.json({
-            success: true,
-            status: 'completed',
-            goldGrams: goldGrams.toFixed(6),
-            amountUsd,
-          });
-        } else {
-          res.json({
-            success: false,
-            message: "Wallet not found",
+          await storage.updateDepositRequest(matchingDepositReq.id, {
+            status: 'Under Review' as const,
+            cardPaymentStatus: 'Captured',
+            expectedGoldGrams: expectedGoldGrams.toFixed(6),
+            priceSnapshotUsdPerGram: goldPricePerGram.toFixed(2),
           });
         }
+
+        // Notify user that payment is captured but awaiting admin approval
+        await storage.createNotification({
+          userId,
+          title: 'Card Payment Captured',
+          message: `Your card payment of $${amountUsd.toFixed(2)} has been captured. Awaiting admin approval to credit your wallet.`,
+          type: 'info',
+          read: false,
+        });
+
+        console.log(`[NGenius] Payment captured - awaiting admin approval via unified deposit_request`);
+
+        res.json({
+          success: true,
+          status: 'awaiting_approval',
+          message: 'Payment captured successfully. Awaiting admin approval.',
+          depositRequestId: matchingDepositReq?.id,
+        });
       } else {
         await storage.updateNgeniusTransaction(txRecord.id, {
           status: 'Failed',
@@ -23374,6 +23279,7 @@ ${message}
   // ============================================
 
   // Create crypto payment request (user initiates payment)
+  // UNIFIED PAYMENT ARCHITECTURE: Creates deposit_request with paymentMethod='Crypto'
   app.post("/api/crypto-payments", async (req, res) => {
     try {
       const { userId, walletConfigId, amountUsd, goldGrams, goldPriceAtTime, cryptoAmount } = req.body;
@@ -23396,6 +23302,7 @@ ${message}
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       
+      // Create legacy crypto payment request for backward compatibility
       const paymentRequest = await storage.createCryptoPaymentRequest({
         userId,
         walletConfigId,
@@ -23407,25 +23314,45 @@ ${message}
         expiresAt,
       });
       
+      // UNIFIED ARCHITECTURE: Also create deposit_request with paymentMethod='Crypto'
+      // This allows all payments to flow through the same admin approval queue
+      const referenceNumber = `CRYPTO-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const depositRequest = await storage.createDepositRequest({
+        userId,
+        referenceNumber,
+        amountUsd: amountUsd.toString(),
+        currency: 'USD',
+        paymentMethod: 'Crypto',
+        expectedGoldGrams: goldGrams.toString(),
+        priceSnapshotUsdPerGram: goldPriceAtTime.toString(),
+        notes: `Crypto payment via ${walletConfig.networkLabel || walletConfig.cryptoCurrency}`,
+        cryptoNetwork: walletConfig.networkLabel || walletConfig.cryptoCurrency,
+        cryptoWalletConfigId: walletConfigId,
+        cryptoAmount: cryptoAmount?.toString() || null,
+        goldWalletType: 'LGPW',
+        status: 'Pending',
+      });
+      
       await storage.createAuditLog({
-        entityType: "crypto_payment_request",
-        entityId: paymentRequest.id,
+        entityType: "deposit_request",
+        entityId: depositRequest.id,
         actionType: "create",
         actor: userId,
         actorRole: "user",
-        details: `Created crypto payment request for $${amountUsd} (${goldGrams}g gold)`,
+        details: `Created unified crypto deposit request for ${amountUsd} (${goldGrams}g gold) via ${walletConfig.networkLabel || walletConfig.cryptoCurrency}`,
       });
       
       // Send notification to user
       await storage.createNotification({
         userId,
-        title: "Payment Request Created",
-        message: `Your crypto payment request for $${amountUsd} has been created. Please complete the transfer within 24 hours.`,
+        title: "Crypto Deposit Request Created",
+        message: `Your crypto deposit request for ${amountUsd} has been created. Please complete the transfer within 24 hours.`,
         type: "transaction",
         read: false,
       });
       
-      res.json({ paymentRequest, walletConfig });
+      // Return both for compatibility - frontend may need legacy paymentRequest.id for proof submission
+      res.json({ paymentRequest, depositRequest, walletConfig });
     } catch (error) {
       console.error("Failed to create crypto payment request:", error);
       res.status(500).json({ message: "Failed to create payment request" });
@@ -23433,6 +23360,7 @@ ${message}
   });
 
   // Submit payment proof (user uploads tx hash or screenshot)
+  // UNIFIED ARCHITECTURE: Updates both crypto_payment_request AND deposit_request
   app.patch("/api/crypto-payments/:id/submit-proof", async (req, res) => {
     try {
       const { id } = req.params;
@@ -23447,11 +23375,30 @@ ${message}
         return res.status(400).json({ message: "Payment request is not pending" });
       }
       
+      // Update legacy crypto_payment_request
       const updated = await storage.updateCryptoPaymentRequest(id, {
         transactionHash: transactionHash || paymentRequest.transactionHash,
         proofImageUrl: proofImageUrl || paymentRequest.proofImageUrl,
         status: 'Under Review',
       });
+      
+      // UNIFIED ARCHITECTURE: Also update corresponding deposit_request
+      // Find the deposit request by userId, paymentMethod='Crypto', and matching amount
+      const userDepositRequests = await storage.getUserDepositRequests(paymentRequest.userId);
+      const matchingDepositReq = userDepositRequests.find(dr => 
+        dr.paymentMethod === 'Crypto' && 
+        dr.status === 'Pending' &&
+        dr.cryptoWalletConfigId === paymentRequest.walletConfigId &&
+        parseFloat(dr.amountUsd || '0') === parseFloat(paymentRequest.amountUsd || '0')
+      );
+      
+      if (matchingDepositReq) {
+        await storage.updateDepositRequest(matchingDepositReq.id, {
+          cryptoTransactionHash: transactionHash || null,
+          proofOfPayment: proofImageUrl || null,
+          status: 'Under Review' as const,
+        });
+      }
       
       await storage.createAuditLog({
         entityType: "crypto_payment_request",

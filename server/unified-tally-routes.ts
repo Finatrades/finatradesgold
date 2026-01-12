@@ -105,18 +105,17 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     // Filter for only pending payments that haven't been approved yet
     // Exclude terminal statuses: Approved, Confirmed, Rejected, Cancelled
     const terminalStatuses = ['Approved', 'Confirmed', 'Rejected', 'Cancelled', 'Completed'];
-    const [cryptoPayments, depositRequests, cardPayments] = await Promise.all([
-      storage.getAllCryptoPaymentRequests().then((r: any[]) => r.filter((p: any) => 
-        !terminalStatuses.includes(p.status)
-      )),
-      storage.getAllDepositRequests().then((r: any[]) => r.filter((d: any) => 
-        !terminalStatuses.includes(d.status)
-      )),
-      // Card payments: Captured by N-Genius but not yet credited to wallet (awaiting allocation)
-      storage.getAllNgeniusTransactions().then((r: any[]) => r.filter((c: any) => 
-        c.status === 'Captured' && !c.walletTransactionId
-      )),
-    ]);
+    // UNIFIED ARCHITECTURE: All payments now flow through deposit_requests
+    // Crypto/Card payments create deposit_requests with appropriate paymentMethod
+    // Legacy crypto_payment_requests and ngenius_transactions are kept for reference only
+    const depositRequests = await storage.getAllDepositRequests().then((r: any[]) => r.filter((d: any) => 
+      !terminalStatuses.includes(d.status)
+    ));
+    
+    // No separate crypto/card payment arrays - everything unified in deposit_requests
+    // This prevents duplicate entries in admin queue
+    const cryptoPayments: any[] = [];
+    const cardPayments: any[] = [];
     
     const pendingPayments: any[] = [];
 
@@ -144,20 +143,28 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
       const user = await storage.getUser(dr.userId);
       pendingPayments.push({
         id: dr.id,
-        sourceType: 'BANK',
+        sourceType: 'BANK', // All deposit_requests use BANK sourceType for unified approval
         sourceTable: 'deposit_requests',
         userId: dr.userId,
         userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
         userEmail: user?.email || '',
         amountUsd: dr.amountUsd,
-        goldGrams: null,
-        goldPriceAtTime: null,
+        goldGrams: dr.expectedGoldGrams || null,
+        goldPriceAtTime: dr.priceSnapshotUsdPerGram || null,
         status: dr.status,
         proofUrl: dr.proofOfPayment,
         referenceNumber: dr.referenceNumber,
         senderBankName: dr.senderBankName,
-        walletType: 'LGPW',
+        walletType: dr.goldWalletType || 'LGPW',
         createdAt: dr.createdAt,
+        // UNIFIED ARCHITECTURE: Include payment method for admin display
+        paymentMethod: dr.paymentMethod || 'Bank Transfer',
+        // Crypto-specific fields
+        cryptoTransactionHash: dr.cryptoTransactionHash || null,
+        cryptoNetwork: dr.cryptoNetwork || null,
+        // Card-specific fields
+        cardTransactionRef: dr.cardTransactionRef || null,
+        cardPaymentStatus: dr.cardPaymentStatus || null,
       });
     }
 
@@ -187,12 +194,17 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
 
     pendingPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    // UNIFIED ARCHITECTURE: Calculate counts by payment method from deposit_requests
+    const cryptoCount = depositRequests.filter((d: any) => d.paymentMethod === 'Crypto').length;
+    const bankCount = depositRequests.filter((d: any) => d.paymentMethod === 'Bank Transfer' || !d.paymentMethod).length;
+    const cardCount = depositRequests.filter((d: any) => d.paymentMethod === 'Card Payment').length;
+
     res.json({
       payments: pendingPayments,
       counts: {
-        crypto: cryptoPayments.length,
-        bank: depositRequests.length,
-        card: cardPayments.length,
+        crypto: cryptoCount,
+        bank: bankCount,
+        card: cardCount,
         physical: 0,
         total: pendingPayments.length,
       }
@@ -280,10 +292,13 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       sourcePayment = payment;
 
     } else if (sourceType === 'BANK') {
+      // UNIFIED ARCHITECTURE: BANK sourceType handles ALL deposit_requests
+      // Including Bank Transfer, Crypto, and Card Payment methods
       const deposit = await storage.getDepositRequest(id);
       if (!deposit) return res.status(404).json({ error: 'Deposit request not found' });
-      if (deposit.status !== 'Pending') {
-        return res.status(400).json({ error: 'Deposit already processed' });
+      // Accept 'Pending' (bank transfers) or 'Under Review' (crypto/card with proof submitted)
+      if (!['Pending', 'Under Review'].includes(deposit.status)) {
+        return res.status(400).json({ error: 'Deposit already processed or not ready for approval' });
       }
       userId = deposit.userId;
       amountUsd = Number(deposit.amountUsd);
@@ -291,21 +306,16 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       sourcePayment = deposit;
 
     } else if (sourceType === 'CARD') {
-      const cardPayment = await storage.getNgeniusTransaction(id);
-      if (!cardPayment) return res.status(404).json({ error: 'Card payment not found' });
-      if (cardPayment.status !== 'Captured') {
-        return res.status(400).json({ error: 'Card payment not in Captured state' });
-      }
-      if (cardPayment.walletTransactionId) {
-        return res.status(400).json({ error: 'Card payment already credited to wallet' });
-      }
-      userId = cardPayment.userId;
-      amountUsd = Number(cardPayment.amountUsd || 0);
-      paymentReference = cardPayment.orderReference || `CARD-${id.substring(0, 8)}`;
-      sourcePayment = cardPayment;
+      // UNIFIED ARCHITECTURE: Card payments now flow through deposit_requests
+      // Redirect admin to use the BANK sourceType with the deposit_request ID
+      return res.status(400).json({ 
+        error: 'Card payments are now unified with deposit requests. Please use the BANK sourceType to approve card payment deposit requests.',
+        hint: 'Card payments create deposit_requests with paymentMethod="Card Payment". Find the corresponding deposit request to approve.',
+        code: 'USE_UNIFIED_APPROVAL'
+      });
 
     } else {
-      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or CARD.' });
+      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO or BANK.' });
     }
 
     // Calculate fees and gold price (outside transaction - read operations)
@@ -340,10 +350,22 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       } else if (sourceType === 'BANK') {
         await storage.updateDepositRequest(sourcePayment.id, {
           status: 'Confirmed',
-          adminNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+          adminNotes: `UTT created. Gold: ${goldGrams.toFixed(4)}g at ${goldPrice.toFixed(2)}/g`,
           processedBy: adminUser?.id,
           processedAt: new Date(),
         }, tx as any);
+        
+        // UNIFIED ARCHITECTURE: If this is a Card Payment deposit_request, also mark the linked ngenius_transaction
+        // This prevents the card entry from appearing as actionable in the CARD queue
+        if (sourcePayment.paymentMethod === 'Card Payment' && sourcePayment.cardTransactionRef) {
+          const linkedNgeniusTx = await storage.getNgeniusTransactionByOrderReference(sourcePayment.cardTransactionRef);
+          if (linkedNgeniusTx) {
+            await storage.updateNgeniusTransaction(linkedNgeniusTx.id, {
+              status: 'Approved',
+              walletTransactionId: 'unified-approval', // Flag to prevent double-processing
+            }, tx as any);
+          }
+        }
       }
 
       // 0.5. Create Physical Storage Certificate (Golden Rule requirement)
@@ -378,10 +400,18 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       }, tx as any);
 
       // 1. Create UTT with status COMPLETED (final state)
+      // UNIFIED ARCHITECTURE: Determine actual source method from deposit paymentMethod field
+      let actualSourceMethod = sourceType as 'CRYPTO' | 'BANK' | 'CARD';
+      if (sourceType === 'BANK' && sourcePayment?.paymentMethod) {
+        if (sourcePayment.paymentMethod === 'Crypto') actualSourceMethod = 'CRYPTO';
+        else if (sourcePayment.paymentMethod === 'Card Payment') actualSourceMethod = 'CARD';
+        // else keep 'BANK' for 'Bank Transfer'
+      }
+      
       const tallyRecord = await storage.createUnifiedTallyTransaction({
         userId,
         txnType: 'FIAT_CRYPTO_DEPOSIT',
-        sourceMethod: sourceType as 'CRYPTO' | 'BANK' | 'CARD',
+        sourceMethod: actualSourceMethod,
         walletType: dbWalletType as 'LGPW' | 'FGPW',
         status: 'COMPLETED', // Final state - everything done in one step
         depositCurrency: 'USD',

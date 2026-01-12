@@ -9,7 +9,7 @@ import { apiRequest } from '@/lib/queryClient';
 interface HybridCardPaymentProps {
   amount: number;
   goldWalletType?: 'LGPW' | 'FGPW';
-  onSuccess: (result: { goldGrams: string; amountUsd: number }) => void;
+  onSuccess: (result: { goldGrams: string; amountUsd: number; awaitingApproval?: boolean }) => void;
   onError: (error: string) => void;
   onCancel: () => void;
 }
@@ -137,10 +137,13 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
             clearInterval(pollIntervalRef.current);
           }
           setSuccess(true);
+          // UNIFIED ARCHITECTURE: Card payments now await admin approval
+          // Show success but indicate gold allocation is pending
           setTimeout(() => {
             onSuccess({
               goldGrams: data.amountGold || '0',
-              amountUsd: amount
+              amountUsd: amount,
+              awaitingApproval: true, // Card payments always await admin approval
             });
           }, 1500);
         } else if (status === 'FAILED' || status === 'Failed' || status === 'CANCELLED' || status === 'Cancelled') {
@@ -323,10 +326,12 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
           }
           
           setSuccess(true);
+          // UNIFIED ARCHITECTURE: Card payments await admin approval
           setTimeout(() => {
             onSuccess({
               goldGrams: '0',
               amountUsd: amount,
+              awaitingApproval: true, // Card payments require admin approval
             });
           }, 1500);
         } else if (outcome?.status === 'FAILED' || outcome?.status === 'CANCELLED' || outcome?.status === 'ERROR') {
@@ -411,10 +416,13 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
 
       if (result.success) {
         setSuccess(true);
+        // UNIFIED ARCHITECTURE: Card payments now await admin approval
+        // Show success but clarify gold is pending approval
         setTimeout(() => {
           onSuccess({
-            goldGrams: result.goldGrams,
-            amountUsd: result.amountUsd,
+            goldGrams: result.goldGrams || '0', // Will be allocated by admin
+            amountUsd: result.amountUsd || amount,
+            awaitingApproval: result.status === 'awaiting_approval',
           });
         }, 1500);
       } else if (result.requires3DS && result.paymentResponse) {
@@ -451,9 +459,12 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
       <div className="py-12 text-center space-y-4">
         <CheckCircle2 className="w-16 h-16 text-success mx-auto" />
         <div>
-          <h3 className="text-lg font-bold text-foreground">Payment Successful!</h3>
+          <h3 className="text-lg font-bold text-foreground">Payment Captured!</h3>
           <p className="text-sm text-muted-foreground mt-2">
-            Your gold has been credited to your wallet.
+            Your payment has been received and is now awaiting admin approval.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Gold will be allocated to your wallet once approved.
           </p>
         </div>
       </div>
