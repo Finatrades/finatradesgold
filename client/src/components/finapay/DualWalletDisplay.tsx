@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useDualWalletBalance, useInternalTransfer } from '@/hooks/useDualWallet';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDirection, setTransferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>('LGPW_to_FGPW');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   if (isLoading) {
     return (
@@ -71,6 +73,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
       });
       setShowTransferModal(false);
       setTransferAmount('');
+      setAgreedToTerms(false);
     } catch (err: any) {
       toast({
         title: 'Transfer Failed',
@@ -269,7 +272,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
       
       <GoldBackedDisclosure className="mt-4" />
 
-      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+      <Dialog open={showTransferModal} onOpenChange={(open) => { setShowTransferModal(open); if (!open) setAgreedToTerms(false); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Transfer Between Wallets</DialogTitle>
@@ -360,6 +363,26 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                 </p>
               </div>
             )}
+
+            <div className="flex items-start space-x-2 pt-2 border-t">
+              <Checkbox 
+                id="transfer-terms" 
+                checked={agreedToTerms}
+                onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                data-testid="checkbox-transfer-terms"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="transfer-terms"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  I agree to the Terms & Conditions
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  I understand that this transfer is irreversible and the gold will be moved between my wallets at the stated price.
+                </p>
+              </div>
+            </div>
           </div>
           
           <DialogFooter>
@@ -368,7 +391,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             </Button>
             <Button 
               onClick={handleTransfer}
-              disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0}
+              disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || !agreedToTerms}
               className="bg-purple-500 hover:bg-purple-600"
               data-testid="btn-confirm-transfer"
             >
