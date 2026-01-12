@@ -5897,6 +5897,10 @@ ${message}
           if (tx.type === 'Deposit' && tx.description?.includes('FinaVault')) {
             return false;
           }
+          // Skip transactions created by unified-tally - they are shown via unified_tally_transactions
+          if (tx.sourceModule === 'unified-tally') {
+            return false;
+          }
           return true;
         })
         .forEach(tx => {
