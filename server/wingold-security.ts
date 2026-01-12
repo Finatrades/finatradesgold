@@ -67,16 +67,26 @@ export class WingoldSecurityService {
       .update(data)
       .digest('hex');
 
-    const signatureValid = crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    try {
+      const signatureBuffer = Buffer.from(signature, 'hex');
+      const expectedBuffer = Buffer.from(expectedSignature, 'hex');
 
-    if (!signatureValid) {
-      return { valid: false, reason: 'invalid_signature' };
+      if (signatureBuffer.length !== expectedBuffer.length) {
+        console.warn(`[Security] Signature length mismatch: received ${signatureBuffer.length}, expected ${expectedBuffer.length}`);
+        return { valid: false, reason: 'signature_length_mismatch' };
+      }
+
+      const signatureValid = crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+
+      if (!signatureValid) {
+        return { valid: false, reason: 'invalid_signature' };
+      }
+
+      return { valid: true };
+    } catch (err) {
+      console.warn('[Security] Signature verification error:', err);
+      return { valid: false, reason: 'signature_verification_error' };
     }
-
-    return { valid: true };
   }
 
   static checkIpWhitelist(ip: string): { allowed: boolean; reason?: string } {
