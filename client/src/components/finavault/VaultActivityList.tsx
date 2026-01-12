@@ -80,11 +80,31 @@ interface CryptoPaymentRequest {
   networkLabel?: string;
 }
 
+interface VaultLedgerEntry {
+  id: string;
+  userId: string;
+  action: string;
+  goldGrams: string;
+  goldPriceUsdPerGram?: string;
+  valueUsd?: string;
+  fromWallet?: string;
+  toWallet?: string;
+  fromStatus?: string;
+  toStatus?: string;
+  balanceAfterGrams: string;
+  transactionId?: string;
+  certificateId?: string;
+  notes?: string;
+  createdAt: string;
+  createdBy?: string;
+}
+
 export default function VaultActivityList() {
   const { user } = useAuth();
   const [data, setData] = useState<VaultActivityData | null>(null);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const [cryptoPaymentRequests, setCryptoPaymentRequests] = useState<CryptoPaymentRequest[]>([]);
+  const [ledgerEntries, setLedgerEntries] = useState<VaultLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -368,11 +388,12 @@ export default function VaultActivityList() {
     if (!user) return;
     setLoading(true);
     try {
-      // Fetch vault activity, bank deposit requests, and crypto payment requests in parallel
-      const [vaultResponse, depositResponse, cryptoResponse] = await Promise.all([
+      // Fetch vault activity, bank deposit requests, crypto payment requests, and vault ledger in parallel
+      const [vaultResponse, depositResponse, cryptoResponse, ledgerResponse] = await Promise.all([
         fetch(`/api/vault/activity/${user.id}`),
         fetch(`/api/deposit-requests/${user.id}`),
-        fetch(`/api/crypto-payments/user/${user.id}`)
+        fetch(`/api/crypto-payments/user/${user.id}`),
+        fetch(`/api/vault/ledger/${user.id}?limit=50`)
       ]);
       
       if (vaultResponse.ok) {
@@ -388,6 +409,11 @@ export default function VaultActivityList() {
       if (cryptoResponse.ok) {
         const cryptoResult = await cryptoResponse.json();
         setCryptoPaymentRequests(cryptoResult.requests || []);
+      }
+      
+      if (ledgerResponse.ok) {
+        const ledgerResult = await ledgerResponse.json();
+        setLedgerEntries(ledgerResult.entries || []);
       }
     } catch (error) {
       console.error('Failed to fetch vault activity:', error);
@@ -617,8 +643,94 @@ export default function VaultActivityList() {
       certificates: [],
     }));
   
+  // Convert vault ledger entries to VaultTransaction format
+  // Group entries by transactionId for accordion display (e.g., Vault_Transfer + Deposit for same transaction)
+  const ledgerTransactionGroups = new Map<string, VaultLedgerEntry[]>();
+  ledgerEntries.forEach(entry => {
+    const groupKey = entry.transactionId || entry.id;
+    if (!ledgerTransactionGroups.has(groupKey)) {
+      ledgerTransactionGroups.set(groupKey, []);
+    }
+    ledgerTransactionGroups.get(groupKey)!.push(entry);
+  });
+  
+  // Helper to map ledger action to display type
+  const mapLedgerActionToType = (action: string): VaultTransaction['type'] => {
+    switch (action) {
+      case 'Deposit':
+      case 'Vault_Transfer':
+        return 'Deposit';
+      case 'Withdrawal':
+        return 'Withdrawal';
+      case 'Transfer_Send':
+      case 'Gift_Send':
+        return 'Send';
+      case 'Transfer_Receive':
+      case 'Gift_Receive':
+        return 'Receive';
+      case 'FinaPay_To_BNSL':
+      case 'BNSL_To_FinaPay':
+      case 'LGPW_To_FGPW':
+      case 'FGPW_To_LGPW':
+        return 'Swap';
+      default:
+        return 'Deposit';
+    }
+  };
+  
+  // Create transactions from ledger groups
+  const ledgerActivities: VaultTransaction[] = Array.from(ledgerTransactionGroups.entries())
+    .filter(([groupKey, entries]) => {
+      // Skip if we already have a transaction with this ID in other sources
+      const firstEntry = entries[0];
+      if (firstEntry.transactionId) {
+        const existsInTxs = transactions.some(tx => tx.id === firstEntry.transactionId);
+        if (existsInTxs) return false;
+      }
+      return true;
+    })
+    .map(([groupKey, entries]) => {
+      // Sort entries: Vault_Transfer first (Step 1: Physical Storage), then Deposit (Step 2: Recorded)
+      const sortedEntries = [...entries].sort((a, b) => {
+        const priority = (action: string) => {
+          if (action === 'Vault_Transfer') return 0;
+          if (action === 'Deposit') return 1;
+          return 2;
+        };
+        return priority(a.action) - priority(b.action);
+      });
+      
+      const primaryEntry = sortedEntries[0];
+      const depositEntry = sortedEntries.find(e => e.action === 'Deposit') || primaryEntry;
+      const totalGold = parseFloat(depositEntry.goldGrams);
+      const pricePerGram = depositEntry.goldPriceUsdPerGram ? parseFloat(depositEntry.goldPriceUsdPerGram) : null;
+      const valueUsd = depositEntry.valueUsd ? parseFloat(depositEntry.valueUsd) : (pricePerGram ? totalGold * pricePerGram : null);
+      
+      return {
+        id: `ledger-${groupKey}`,
+        type: mapLedgerActionToType(depositEntry.action),
+        status: 'Completed',
+        amountGold: depositEntry.goldGrams,
+        amountUsd: valueUsd?.toFixed(2) || null,
+        goldPriceUsdPerGram: depositEntry.goldPriceUsdPerGram || null,
+        recipientEmail: null,
+        senderEmail: null,
+        description: sortedEntries.length > 1 
+          ? `Chain of Custody: ${sortedEntries.map(e => e.action.replace('_', ' ')).join(' → ')}`
+          : depositEntry.notes || `${depositEntry.action.replace('_', ' ')}`,
+        referenceId: depositEntry.certificateId || null,
+        createdAt: primaryEntry.createdAt,
+        completedAt: depositEntry.createdAt,
+        rejectionReason: null,
+        certificates: [],
+        isExpectedValue: false,
+        goldWalletType: depositEntry.toWallet?.includes('LGPW') ? 'LGPW' as const : 
+                        depositEntry.toWallet?.includes('FGPW') ? 'FGPW' as const : null,
+      };
+    });
+  
   // Combine and sort by date (newest first)
-  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities, ...cryptoDepositActivities]
+  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities, ...cryptoDepositActivities, ...ledgerActivities]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredTransactions = allActivities.filter(tx => {
