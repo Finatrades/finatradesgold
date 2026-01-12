@@ -689,6 +689,11 @@ export default function VaultActivityList() {
         const existsInTxs = transactions.some(tx => tx.id === firstEntry.transactionId);
         if (existsInTxs) return false;
       }
+      // Skip ledger entries that have a transactionId - they were created as part of a processed 
+      // unified_tally_transaction and the deposit is already shown via that system
+      if (firstEntry.transactionId) {
+        return false;
+      }
       return true;
     })
     .map(([groupKey, entries]) => {

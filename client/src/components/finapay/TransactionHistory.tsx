@@ -113,6 +113,11 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
       if (firstEntry.transactionId && existingTxIds.has(firstEntry.transactionId)) {
         return false;
       }
+      // Skip ledger entries that have a transactionId - they were created as part of a processed 
+      // unified_tally_transaction and the deposit is already shown via that system
+      if (firstEntry.transactionId) {
+        return false;
+      }
       return true;
     });
   
