@@ -346,6 +346,37 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         }, tx as any);
       }
 
+      // 0.5. Create Physical Storage Certificate (Golden Rule requirement)
+      const physicalCert = await storage.createCertificate({
+        userId,
+        type: 'Physical Storage',
+        certificateNumber: storageCertificateId, // Use admin-provided Wingold certificate number
+        goldGrams: parsedAllocation.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        totalValueUsd: (parsedAllocation * goldPrice).toFixed(2),
+        status: 'Active',
+        vaultLocation,
+        wingoldStorageRef: wingoldOrderId,
+        goldWalletType: dbWalletType,
+        issuer: 'Wingold & Metals DMCC',
+      }, tx as any);
+
+      // 0.6. Create Digital Ownership Certificate (links to physical cert)
+      const digitalCertNumber = `DOC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const digitalCert = await storage.createCertificate({
+        userId,
+        type: 'Digital Ownership',
+        certificateNumber: digitalCertNumber,
+        goldGrams: parsedAllocation.toFixed(6),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        totalValueUsd: (parsedAllocation * goldPrice).toFixed(2),
+        status: 'Active',
+        vaultLocation,
+        goldWalletType: dbWalletType,
+        issuer: 'Finatrades Finance SA',
+        relatedCertificateId: physicalCert.id,
+      }, tx as any);
+
       // 1. Create UTT with status COMPLETED (final state)
       const tallyRecord = await storage.createUnifiedTallyTransaction({
         userId,
@@ -374,7 +405,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         physicalGoldAllocatedG: String(parsedAllocation),
         wingoldBuyRate: String(wingoldBuyRate),
         wingoldCostUsd: String(wingoldCostUsd),
-        storageCertificateId,
+        storageCertificateId: physicalCert.certificateNumber, // Use created certificate number
         approvedBy: adminId || undefined,
         approvedAt: new Date(),
       }, tx as any);
@@ -386,7 +417,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         goldPriceUsdPerGram: goldPrice,
         walletType: dbWalletType as 'LGPW' | 'FGPW',
         transactionId: tallyRecord.id,
-        certificateId: storageCertificateId,
+        certificateId: physicalCert.certificateNumber, // Use created certificate number
         notes: `Unified Tally Credit: ${parsedAllocation.toFixed(6)}g to ${dbWalletType} wallet from ${sourceType} deposit`,
         createdBy: adminId || undefined,
         tx: tx as any,
