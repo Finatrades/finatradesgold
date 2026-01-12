@@ -20,7 +20,7 @@ export default function Register() {
   const urlParams = new URLSearchParams(window.location.search);
   const initialReferralCode = urlParams.get('ref') || '';
   
-  const accountType = domainMode;
+  const [accountType, setAccountType] = useState<AccountType>(domainMode);
   const [referralCode, setReferralCode] = useState(initialReferralCode);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -260,20 +260,33 @@ export default function Register() {
 
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex rounded-lg border overflow-hidden bg-primary text-white py-3 px-4" data-testid="account-type-indicator">
-              <div className="flex-1 flex items-center justify-center gap-2">
-                {accountType === 'personal' ? (
-                  <>
-                    <User className="w-5 h-5" />
-                    <span className="font-medium">Personal Account</span>
-                  </>
-                ) : (
-                  <>
-                    <Building className="w-5 h-5" />
-                    <span className="font-medium">Business Account</span>
-                  </>
-                )}
-              </div>
+            <div className="flex rounded-lg border overflow-hidden" data-testid="account-type-toggle">
+              <button
+                type="button"
+                onClick={() => setAccountType('personal')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 transition-all ${
+                  accountType === 'personal' 
+                    ? 'bg-primary text-white' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+                data-testid="toggle-personal"
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">Personal Account</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('business')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 transition-all ${
+                  accountType === 'business' 
+                    ? 'bg-primary text-white' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+                data-testid="toggle-business"
+              >
+                <Building className="w-5 h-5" />
+                <span className="font-medium">Business Account</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
