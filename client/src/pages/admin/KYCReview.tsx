@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
 import { PDFViewer } from '@/components/ui/PDFViewer';
+import { apiRequest } from '@/lib/queryClient';
 
 // Helper to detect document type from URL or base64 content
 function detectDocumentType(url: string): 'pdf' | 'image' | 'doc' | 'unknown' {
@@ -580,20 +581,11 @@ export default function KYCReview() {
 
   const approveMutation = useMutation({
     mutationFn: async (submissionId: string) => {
-      const res = await fetch(`/api/kyc/${submissionId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          status: 'Approved',
-          reviewedBy: adminUser?.id,
-          reviewedAt: new Date().toISOString(),
-        }),
+      const res = await apiRequest('PATCH', `/api/kyc/${submissionId}`, { 
+        status: 'Approved',
+        reviewedBy: adminUser?.id,
+        reviewedAt: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error('Failed to approve');
       return res.json();
     },
     onSuccess: () => {
@@ -608,21 +600,12 @@ export default function KYCReview() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ submissionId, reason }: { submissionId: string; reason: string }) => {
-      const res = await fetch(`/api/kyc/${submissionId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          status: 'Rejected',
-          rejectionReason: reason,
-          reviewedBy: adminUser?.id,
-          reviewedAt: new Date().toISOString(),
-        }),
+      const res = await apiRequest('PATCH', `/api/kyc/${submissionId}`, { 
+        status: 'Rejected',
+        rejectionReason: reason,
+        reviewedBy: adminUser?.id,
+        reviewedAt: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error('Failed to reject');
       return res.json();
     },
     onSuccess: () => {
@@ -649,20 +632,16 @@ export default function KYCReview() {
     mutationFn: async (submissionIds: string[]) => {
       const results = await Promise.all(
         submissionIds.map(async (id) => {
-          const res = await fetch(`/api/kyc/${id}`, {
-            method: 'PATCH',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'include',
-            body: JSON.stringify({ 
+          try {
+            const res = await apiRequest('PATCH', `/api/kyc/${id}`, { 
               status: 'Approved',
               reviewedBy: adminUser?.id,
               reviewedAt: new Date().toISOString(),
-            }),
-          });
-          return { id, success: res.ok };
+            });
+            return { id, success: res.ok };
+          } catch {
+            return { id, success: false };
+          }
         })
       );
       return results;
@@ -682,21 +661,17 @@ export default function KYCReview() {
     mutationFn: async ({ submissionIds, reason }: { submissionIds: string[]; reason: string }) => {
       const results = await Promise.all(
         submissionIds.map(async (id) => {
-          const res = await fetch(`/api/kyc/${id}`, {
-            method: 'PATCH',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'include',
-            body: JSON.stringify({ 
+          try {
+            const res = await apiRequest('PATCH', `/api/kyc/${id}`, { 
               status: 'Rejected',
               rejectionReason: reason,
               reviewedBy: adminUser?.id,
               reviewedAt: new Date().toISOString(),
-            }),
-          });
-          return { id, success: res.ok };
+            });
+            return { id, success: res.ok };
+          } catch {
+            return { id, success: false };
+          }
         })
       );
       return results;
