@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,7 +17,8 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Bitcoin, Building2, Coins, Clock, CheckCircle, XCircle, 
   RefreshCw, Eye, ArrowRight, AlertTriangle, TrendingUp,
-  FileText, ExternalLink, Package, CreditCard, ChevronDown
+  FileText, ExternalLink, Package, CreditCard, ChevronDown,
+  DollarSign, Calculator, Sparkles, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
@@ -44,7 +45,6 @@ interface PendingPayment {
   walletType: string;
   createdAt: string;
   linkedTallyId: string | null;
-  // Card payment specific
   orderReference?: string;
   ngeniusOrderId?: string;
   cardBrand?: string;
@@ -75,25 +75,55 @@ const STATUS_BADGES: Record<string, { variant: 'default' | 'secondary' | 'outlin
   'Gateway Verified': { variant: 'default', label: '✓ Gateway Verified' },
 };
 
+const generateWingoldOrderId = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `WG-${year}${month}${day}-${random}`;
+};
+
+const generateCertificateId = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `PSC-${year}${month}${day}-${random}`;
+};
+
 export default function UnifiedPaymentManagement() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  
+  // Pricing
   const [pricingMode, setPricingMode] = useState<'LIVE' | 'MANUAL'>('LIVE');
   const [manualGoldPrice, setManualGoldPrice] = useState('');
+  
+  // Wallet & Location
   const [walletType, setWalletType] = useState<'LGPW' | 'FGPW'>('LGPW');
   const [vaultLocation, setVaultLocation] = useState('Wingold & Metals DMCC');
-  const [approvalNotes, setApprovalNotes] = useState('');
   
-  // Allocation fields
+  // Wingold Order - IDs are pre-generated and editable
   const [wingoldOrderId, setWingoldOrderId] = useState('');
   const [wingoldInvoiceId, setWingoldInvoiceId] = useState('');
-  const [physicalGoldAllocatedG, setPhysicalGoldAllocatedG] = useState('');
+  const [wingoldBuyRateMode, setWingoldBuyRateMode] = useState<'SAME' | 'MANUAL'>('SAME');
   const [wingoldBuyRate, setWingoldBuyRate] = useState('');
+  
+  // Certificate - ID is pre-generated and editable
   const [storageCertificateId, setStorageCertificateId] = useState('');
-  const [showAllocationFields, setShowAllocationFields] = useState(false);
+  
+  // Allocation
+  const [physicalGoldAllocatedG, setPhysicalGoldAllocatedG] = useState('');
+  
+  // Notes
+  const [approvalNotes, setApprovalNotes] = useState('');
+  
+  // Dialogs
   const [proofViewerOpen, setProofViewerOpen] = useState(false);
   const [proofViewerUrl, setProofViewerUrl] = useState('');
 
@@ -115,25 +145,75 @@ export default function UnifiedPaymentManagement() {
     refetchInterval: 60000,
   });
 
+  const FEE_PERCENT = 0.5;
+
+  const calculations = useMemo(() => {
+    if (!selectedPayment?.amountUsd) return null;
+    
+    const depositAmount = parseFloat(selectedPayment.amountUsd);
+    const feeAmount = depositAmount * (FEE_PERCENT / 100);
+    const netAmount = depositAmount - feeAmount;
+    
+    const goldRate = pricingMode === 'MANUAL' && manualGoldPrice 
+      ? parseFloat(manualGoldPrice) 
+      : goldPrice?.pricePerGram || 0;
+    
+    const goldEquivalent = goldRate > 0 ? netAmount / goldRate : 0;
+    
+    const buyRate = wingoldBuyRateMode === 'SAME' 
+      ? goldRate 
+      : parseFloat(wingoldBuyRate) || 0;
+    
+    const physicalGold = parseFloat(physicalGoldAllocatedG) || goldEquivalent;
+    const wingoldCost = physicalGold * buyRate;
+    
+    const platformProfit = feeAmount;
+    
+    return {
+      depositAmount,
+      feeAmount,
+      netAmount,
+      goldRate,
+      goldEquivalent,
+      buyRate,
+      physicalGold,
+      wingoldCost,
+      platformProfit,
+    };
+  }, [selectedPayment, pricingMode, manualGoldPrice, goldPrice, wingoldBuyRateMode, wingoldBuyRate, physicalGoldAllocatedG]);
+
+  const allocationVariance = useMemo(() => {
+    if (!calculations) return null;
+    const expected = calculations.goldEquivalent;
+    const allocated = parseFloat(physicalGoldAllocatedG) || 0;
+    if (expected === 0 || allocated === 0) return null;
+    const variancePercent = ((allocated - expected) / expected) * 100;
+    return { expected, allocated, variancePercent };
+  }, [calculations, physicalGoldAllocatedG]);
+
   const approveMutation = useMutation({
     mutationFn: async (payment: PendingPayment) => {
+      // IDs are pre-generated in state - use them directly
+      const finalBuyRate = wingoldBuyRateMode === 'SAME' 
+        ? (pricingMode === 'MANUAL' ? manualGoldPrice : String(goldPrice?.pricePerGram || 0))
+        : wingoldBuyRate;
+      
       const res = await apiRequest('POST', `/api/admin/unified-tally/approve-payment/${payment.sourceType}/${payment.id}`, {
         pricingMode,
         manualGoldPrice: pricingMode === 'MANUAL' ? manualGoldPrice : undefined,
         walletType,
         vaultLocation,
         notes: approvalNotes,
-        // Allocation fields (optional - can be added later in UTT detail view)
-        wingoldOrderId: wingoldOrderId || undefined,
+        wingoldOrderId: wingoldOrderId,
         wingoldInvoiceId: wingoldInvoiceId || undefined,
-        physicalGoldAllocatedG: physicalGoldAllocatedG || undefined,
-        wingoldBuyRate: wingoldBuyRate || undefined,
-        storageCertificateId: storageCertificateId || undefined,
+        physicalGoldAllocatedG: physicalGoldAllocatedG, // No fallback - Golden Rule requires explicit allocation
+        wingoldBuyRate: finalBuyRate,
+        storageCertificateId: storageCertificateId,
       });
       return res.json();
     },
     onSuccess: (data) => {
-      toast.success(data.message || 'Payment approved and UTT created');
+      toast.success(data.message || 'Payment approved and wallet credited!');
       queryClient.invalidateQueries({ queryKey: ['unified-pending-payments'] });
       queryClient.invalidateQueries({ queryKey: ['unified-tally'] });
       setApprovalDialogOpen(false);
@@ -157,55 +237,74 @@ export default function UnifiedPaymentManagement() {
     setApprovalNotes('');
     setWingoldOrderId('');
     setWingoldInvoiceId('');
-    setPhysicalGoldAllocatedG('');
+    setWingoldBuyRateMode('SAME');
     setWingoldBuyRate('');
     setStorageCertificateId('');
-    setShowAllocationFields(false);
+    setPhysicalGoldAllocatedG('');
   };
 
   const openApprovalDialog = (payment: PendingPayment) => {
     setSelectedPayment(payment);
     setWalletType(payment.walletType as 'LGPW' | 'FGPW');
-    // Auto-populate physical gold allocated from expected gold amount
-    if (payment.goldGrams) {
-      setPhysicalGoldAllocatedG(payment.goldGrams);
-    }
-    // Auto-populate buy rate from gold price at time of deposit
-    if (payment.goldPriceAtTime) {
-      setWingoldBuyRate(payment.goldPriceAtTime);
-    }
+    // Pre-generate IDs so they're visible and editable
+    setWingoldOrderId(generateWingoldOrderId());
+    setStorageCertificateId(generateCertificateId());
     setApprovalDialogOpen(true);
   };
-  
-  // Calculate variance between expected and allocated gold
-  const getAllocationVariance = () => {
-    if (!selectedPayment?.goldGrams || !physicalGoldAllocatedG) return null;
-    const expected = parseFloat(selectedPayment.goldGrams);
-    const allocated = parseFloat(physicalGoldAllocatedG);
-    if (isNaN(expected) || isNaN(allocated) || expected === 0) return null;
-    const variancePercent = ((allocated - expected) / expected) * 100;
-    return { expected, allocated, variancePercent };
-  };
-  
-  const allocationVariance = getAllocationVariance();
+
+  // Update physical gold allocation when gold rate changes
+  useEffect(() => {
+    if (calculations && calculations.goldEquivalent > 0 && approvalDialogOpen) {
+      setPhysicalGoldAllocatedG(calculations.goldEquivalent.toFixed(4));
+    }
+  }, [calculations?.goldEquivalent, approvalDialogOpen]);
+
+  // Check if gold price is loaded
+  const isPriceReady = pricingMode === 'MANUAL' 
+    ? (manualGoldPrice && parseFloat(manualGoldPrice) > 0)
+    : (goldPrice?.pricePerGram && goldPrice.pricePerGram > 0);
 
   const handleApprove = () => {
     if (!selectedPayment) return;
-    if (pricingMode === 'MANUAL' && !manualGoldPrice) {
-      toast.error('Please enter manual gold price');
+    
+    if (!isPriceReady) {
+      toast.error('Please wait for live price to load or enter a manual gold price');
       return;
     }
-    // Require notes if allocation differs by more than 1%
-    const variance = getAllocationVariance();
+    
+    // Golden Rule validation: physical gold allocation is MANDATORY
+    const allocatedGrams = parseFloat(physicalGoldAllocatedG);
+    if (!physicalGoldAllocatedG || isNaN(allocatedGrams) || allocatedGrams <= 0) {
+      toast.error('Physical gold allocation is required (Golden Rule). Please enter grams to allocate.');
+      return;
+    }
+    
+    if (!wingoldOrderId.trim()) {
+      toast.error('Please enter Wingold Order ID');
+      return;
+    }
+    
+    if (!storageCertificateId.trim()) {
+      toast.error('Please enter Storage Certificate ID');
+      return;
+    }
+    
+    if (wingoldBuyRateMode === 'MANUAL' && (!wingoldBuyRate || parseFloat(wingoldBuyRate) <= 0)) {
+      toast.error('Please enter valid Wingold buy rate');
+      return;
+    }
+    
+    const variance = allocationVariance;
     if (variance && Math.abs(variance.variancePercent) > 1 && !approvalNotes.trim()) {
       toast.error('Large variance detected! Please provide justification in the notes field.');
       return;
     }
+    
     approveMutation.mutate(selectedPayment);
   };
 
   const payments = paymentsData?.payments || [];
-  const counts = paymentsData?.counts || { crypto: 0, bank: 0, physical: 0, total: 0 };
+  const counts = paymentsData?.counts || { crypto: 0, bank: 0, card: 0, physical: 0, total: 0 };
 
   const filteredPayments = activeTab === 'all' 
     ? payments 
@@ -221,10 +320,18 @@ export default function UnifiedPaymentManagement() {
     return `${Number(grams).toFixed(4)}g`;
   };
 
-  const calculateGoldEquivalent = (amountUsd: string | null, pricePerGram: number) => {
-    if (!amountUsd || !pricePerGram) return '-';
-    return `${(Number(amountUsd) / pricePerGram).toFixed(4)}g`;
-  };
+  const isFormValid = useMemo(() => {
+    // Check pricing is ready
+    if (!isPriceReady) return false;
+    // Check IDs are set
+    if (!wingoldOrderId.trim()) return false;
+    if (!storageCertificateId.trim()) return false;
+    // Check buy rate if manual
+    if (wingoldBuyRateMode === 'MANUAL' && (!wingoldBuyRate || parseFloat(wingoldBuyRate) <= 0)) return false;
+    // Check allocation is valid
+    if (!physicalGoldAllocatedG || parseFloat(physicalGoldAllocatedG) <= 0) return false;
+    return true;
+  }, [isPriceReady, wingoldOrderId, storageCertificateId, wingoldBuyRateMode, wingoldBuyRate, physicalGoldAllocatedG]);
 
   return (
     <AdminLayout>
@@ -240,7 +347,7 @@ export default function UnifiedPaymentManagement() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
@@ -256,10 +363,10 @@ export default function UnifiedPaymentManagement() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Crypto Payments</p>
-                  <p className="text-2xl font-bold text-orange-600">{counts.crypto}</p>
+                  <p className="text-sm text-orange-600">Crypto</p>
+                  <p className="text-2xl font-bold text-orange-700">{counts.crypto}</p>
                 </div>
-                <Bitcoin className="w-8 h-8 text-orange-400" />
+                <Bitcoin className="w-8 h-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
@@ -267,10 +374,21 @@ export default function UnifiedPaymentManagement() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Bank Deposits</p>
-                  <p className="text-2xl font-bold text-blue-600">{counts.bank}</p>
+                  <p className="text-sm text-blue-600">Bank Wire</p>
+                  <p className="text-2xl font-bold text-blue-700">{counts.bank}</p>
                 </div>
-                <Building2 className="w-8 h-8 text-blue-400" />
+                <Building2 className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-purple-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600">Card</p>
+                  <p className="text-2xl font-bold text-purple-700">{counts.card}</p>
+                </div>
+                <CreditCard className="w-8 h-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
@@ -278,94 +396,56 @@ export default function UnifiedPaymentManagement() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Physical Gold</p>
-                  <p className="text-2xl font-bold text-yellow-600">{counts.physical}</p>
+                  <p className="text-sm text-yellow-600">Physical</p>
+                  <p className="text-2xl font-bold text-yellow-700">{counts.physical}</p>
                 </div>
-                <Coins className="w-8 h-8 text-yellow-400" />
+                <Coins className="w-8 h-8 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {goldPrice && (
-          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-            <CardContent className="py-3">
-              <div className="flex items-center gap-4">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
-                <span className="text-sm text-gray-600">Current Gold Price:</span>
-                <span className="font-bold text-purple-700">${goldPrice.pricePerGram?.toFixed(2)}/gram</span>
-                <span className="text-xs text-gray-400">
-                  Updated {formatDistanceToNow(new Date(goldPrice.timestamp))} ago
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all">All ({counts.total})</TabsTrigger>
             <TabsTrigger value="crypto">Crypto ({counts.crypto})</TabsTrigger>
             <TabsTrigger value="bank">Bank ({counts.bank})</TabsTrigger>
-            <TabsTrigger value="card">Card ({counts.card || 0})</TabsTrigger>
+            <TabsTrigger value="card">Card ({counts.card})</TabsTrigger>
             <TabsTrigger value="physical">Physical ({counts.physical})</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Pending Payments</CardTitle>
-                <CardDescription>
-                  Approve payments to create Unified Gold Tally records for processing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
                   </div>
                 ) : filteredPayments.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
-                    <p>No pending payments</p>
+                    No pending payments
                   </div>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Source</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>User</TableHead>
-                        <TableHead>Deposit</TableHead>
-                        <TableHead className="text-red-600">Fee (0.5%)</TableHead>
-                        <TableHead>Net</TableHead>
-                        <TableHead className="text-amber-600">≈ Gold</TableHead>
+                        <TableHead>Amount</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredPayments.map((payment: PendingPayment) => {
-                        const Icon = SOURCE_ICONS[payment.sourceType];
-                        const colorClass = SOURCE_COLORS[payment.sourceType];
+                        const SourceIcon = SOURCE_ICONS[payment.sourceType];
                         return (
                           <TableRow key={`${payment.sourceType}-${payment.id}`}>
                             <TableCell>
-                              <div className="flex flex-col gap-1">
-                                <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${colorClass}`}>
-                                  <Icon className="w-4 h-4" />
-                                  <span className="text-xs font-medium">{payment.sourceType}</span>
-                                </div>
-                                {payment.sourceType === 'CARD' && payment.cardBrand && (
-                                  <span className="text-xs text-gray-500">
-                                    {payment.cardBrand} ****{payment.cardLast4}
-                                  </span>
-                                )}
-                                {payment.gatewayVerified && (
-                                  <Badge variant="default" className="text-xs bg-green-600 w-fit">
-                                    ✓ Verified
-                                  </Badge>
-                                )}
+                              <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${SOURCE_COLORS[payment.sourceType]}`}>
+                                <SourceIcon className="w-4 h-4" />
+                                <span className="text-xs font-medium">{payment.sourceType}</span>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -375,36 +455,12 @@ export default function UnifiedPaymentManagement() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {payment.amountUsd ? (
-                                <span className="font-medium">{formatCurrency(payment.amountUsd)}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {payment.amountUsd ? (
-                                <span className="font-medium text-red-500">-{formatCurrency(parseFloat(payment.amountUsd) * 0.005)}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {payment.amountUsd ? (
-                                <span className="font-medium">{formatCurrency(parseFloat(payment.amountUsd) * 0.995)}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {payment.goldGrams ? (
-                                <span className="font-mono font-semibold text-amber-600">{formatGold(payment.goldGrams)}</span>
-                              ) : payment.amountUsd && goldPrice?.pricePerGram ? (
-                                <span className="font-mono font-semibold text-amber-600">
-                                  {((parseFloat(payment.amountUsd) * 0.995) / goldPrice.pricePerGram).toFixed(4)}g
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              <div>
+                                <p className="font-medium">{formatCurrency(payment.amountUsd)}</p>
+                                {payment.goldGrams && (
+                                  <p className="text-xs text-amber-600">≈ {formatGold(payment.goldGrams)}</p>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant={STATUS_BADGES[payment.status]?.variant || 'outline'}>
@@ -412,16 +468,19 @@ export default function UnifiedPaymentManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <span className="text-sm text-gray-500">
-                                {formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}
-                              </span>
+                              <div className="text-sm">
+                                {format(new Date(payment.createdAt), 'MMM d, yyyy')}
+                                <p className="text-xs text-gray-500">
+                                  {formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <TableCell>
+                              <div className="flex gap-2">
                                 {payment.proofUrl && (
                                   <Button 
-                                    variant="ghost" 
-                                    size="sm"
+                                    size="sm" 
+                                    variant="outline"
                                     onClick={() => {
                                       setProofViewerUrl(payment.proofUrl!);
                                       setProofViewerOpen(true);
@@ -452,257 +511,324 @@ export default function UnifiedPaymentManagement() {
         </Tabs>
 
         <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                Approve Payment
+                Approve Payment & Credit Wallet
               </DialogTitle>
               <DialogDescription>
-                This will create a Unified Gold Tally record for processing
+                Complete the allocation details to credit gold to user's wallet
               </DialogDescription>
             </DialogHeader>
 
-            {selectedPayment && (
+            {selectedPayment && calculations && (
               <div className="space-y-4">
                 <Card className="bg-gray-50">
-                  <CardContent className="pt-4 space-y-2">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Deposit Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-500">User:</span>
+                        <span className="ml-2 font-medium">{selectedPayment.userName}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Method:</span>
+                        <Badge variant="outline" className="ml-2">{selectedPayment.sourceType}</Badge>
+                      </div>
+                    </div>
+                    <Separator />
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Source</span>
-                      <Badge variant="outline">{selectedPayment.sourceType}</Badge>
+                      <span className="text-gray-500">Deposit Amount:</span>
+                      <span className="font-semibold">{formatCurrency(calculations.depositAmount)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">User</span>
-                      <span className="text-sm font-medium">{selectedPayment.userName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Deposit Amount</span>
-                      <span className="text-sm font-medium">{formatCurrency(selectedPayment.amountUsd)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Fee (0.5%)</span>
-                      <span className="text-sm font-medium text-red-500">
-                        -{formatCurrency(selectedPayment.amountUsd ? parseFloat(selectedPayment.amountUsd) * 0.005 : 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Net for Gold</span>
-                      <span className="text-sm font-medium">
-                        {formatCurrency(selectedPayment.amountUsd ? parseFloat(selectedPayment.amountUsd) * 0.995 : 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2 mt-2">
-                      <span className="text-sm text-gray-500">≈ Gold to Credit</span>
-                      <span className="text-sm font-semibold text-amber-600">
-                        {pricingMode === 'MANUAL' && manualGoldPrice && selectedPayment.amountUsd
-                          ? ((parseFloat(selectedPayment.amountUsd) * 0.995) / parseFloat(manualGoldPrice)).toFixed(4)
-                          : goldPrice?.pricePerGram && selectedPayment.amountUsd
-                            ? ((parseFloat(selectedPayment.amountUsd) * 0.995) / goldPrice.pricePerGram).toFixed(4)
-                            : '...'} g
-                      </span>
-                    </div>
-                    {selectedPayment.transactionHash && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">TX Hash</span>
-                        <span className="text-xs font-mono">{selectedPayment.transactionHash.slice(0, 20)}...</span>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-purple-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-purple-600" />
+                      Gold Pricing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <RadioGroup value={pricingMode} onValueChange={(v) => setPricingMode(v as 'LIVE' | 'MANUAL')} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="LIVE" id="live" />
+                        <Label htmlFor="live" className="font-normal cursor-pointer">
+                          Live Market Price <span className="text-green-600 font-medium">(${goldPrice?.pricePerGram?.toFixed(2) || '...'}/g)</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="MANUAL" id="manual" />
+                        <Label htmlFor="manual" className="font-normal cursor-pointer">Manual Entry</Label>
+                      </div>
+                    </RadioGroup>
+
+                    {pricingMode === 'MANUAL' && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Gold Price ($/gram) *</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Enter price per gram"
+                          value={manualGoldPrice}
+                          onChange={(e) => setManualGoldPrice(e.target.value)}
+                        />
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                <Separator />
-
-                <div className="space-y-3">
-                  <Label>Pricing Mode</Label>
-                  <RadioGroup value={pricingMode} onValueChange={(v) => setPricingMode(v as 'LIVE' | 'MANUAL')}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="LIVE" id="live" />
-                      <Label htmlFor="live" className="font-normal">
-                        Live Price (${goldPrice?.pricePerGram?.toFixed(2) || '...'}/g)
-                      </Label>
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Calculator className="w-4 h-4 text-green-600" />
+                      Auto-Calculated Values
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Deposit Amount:</span>
+                      <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="MANUAL" id="manual" />
-                      <Label htmlFor="manual" className="font-normal">Manual Price</Label>
+                    <div className="flex justify-between text-red-600">
+                      <span>Platform Fee ({FEE_PERCENT}%):</span>
+                      <span>- {formatCurrency(calculations.feeAmount)}</span>
                     </div>
-                  </RadioGroup>
-
-                  {pricingMode === 'MANUAL' && (
-                    <div className="space-y-1">
-                      <Label>Gold Price ($/gram)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Enter price per gram"
-                        value={manualGoldPrice}
-                        onChange={(e) => setManualGoldPrice(e.target.value)}
-                      />
+                    <Separator />
+                    <div className="flex justify-between font-medium">
+                      <span>Net Amount for Gold:</span>
+                      <span>{formatCurrency(calculations.netAmount)}</span>
                     </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label>Target Wallet</Label>
-                    <div className="flex items-center h-10 px-3 rounded-md border bg-muted/50">
-                      <span className="text-sm font-medium">LGPW (Market Price)</span>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Gold Rate Used:</span>
+                      <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Vault Location</Label>
-                    <Select value={vaultLocation} onValueChange={setVaultLocation}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Wingold & Metals DMCC">Dubai (Wingold)</SelectItem>
-                        <SelectItem value="Zurich">Zurich</SelectItem>
-                        <SelectItem value="Singapore">Singapore</SelectItem>
-                        <SelectItem value="London">London</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
+                      <span className="font-semibold text-amber-800">Gold to Credit User:</span>
+                      <span className="font-bold text-amber-900">{calculations.goldEquivalent.toFixed(4)}g</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-3 space-y-3 bg-amber-50 border-amber-200">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-amber-600" />
-                    <span className="font-medium text-sm text-amber-800">Wingold Allocation Details (Required)</span>
-                  </div>
-                  
-                  <div className="space-y-3 pt-2 border-t">
-                    <p className="text-xs text-amber-700">
-                      Golden Rule: Physical gold allocation and storage certificate are required before approval.
-                    </p>
-                      
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Wingold Order ID <span className="text-red-500">*</span>
-                        </Label>
+                <Card className="border-orange-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Package className="w-4 h-4 text-orange-600" />
+                      Wingold Order
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Wingold Order ID</Label>
+                      <div className="flex items-center gap-2">
                         <Input
-                          placeholder="e.g., WG-2026-0001"
+                          placeholder="e.g., WG-20260112-XXXX"
                           value={wingoldOrderId}
                           onChange={(e) => setWingoldOrderId(e.target.value)}
-                          className={!wingoldOrderId ? 'border-amber-400' : ''}
+                          className="font-mono"
                         />
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setWingoldOrderId(generateWingoldOrderId())}
+                          title="Regenerate ID"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Wingold Invoice ID</Label>
-                        <Input
-                          placeholder="e.g., INV-2026-001"
-                          value={wingoldInvoiceId}
-                          onChange={(e) => setWingoldInvoiceId(e.target.value)}
-                        />
-                      </div>
+                      <p className="text-xs text-gray-500">Pre-generated ID shown above. Edit or regenerate as needed.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Physical Gold Allocated (g) <span className="text-red-500">*</span>
-                          {selectedPayment?.goldGrams && (
-                            <span className="text-gray-500 ml-1">(Expected: {parseFloat(selectedPayment.goldGrams).toFixed(4)}g)</span>
-                          )}
-                        </Label>
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          placeholder="e.g., 150.5000"
-                          value={physicalGoldAllocatedG}
-                          onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
-                          className={!physicalGoldAllocatedG ? 'border-amber-400' : allocationVariance && Math.abs(allocationVariance.variancePercent) > 1 ? 'border-red-500 bg-red-50' : ''}
-                        />
-                        {allocationVariance && Math.abs(allocationVariance.variancePercent) > 0.1 && (
-                          <div className={`text-xs mt-1 p-2 rounded ${Math.abs(allocationVariance.variancePercent) > 1 ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-amber-100 text-amber-700'}`}>
-                            <AlertTriangle className="w-3 h-3 inline mr-1" />
-                            <strong>Variance: {allocationVariance.variancePercent > 0 ? '+' : ''}{allocationVariance.variancePercent.toFixed(2)}%</strong>
-                            {' '}({allocationVariance.allocated.toFixed(4)}g vs expected {allocationVariance.expected.toFixed(4)}g)
-                            {Math.abs(allocationVariance.variancePercent) > 1 && (
-                              <div className="mt-1 font-semibold">⚠️ Large variance requires justification in notes</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Wingold Buy Rate ($/g) <span className="text-red-500">*</span>
-                        </Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Wingold Invoice ID (Optional)</Label>
+                      <Input
+                        placeholder="e.g., INV-2026-001"
+                        value={wingoldInvoiceId}
+                        onChange={(e) => setWingoldInvoiceId(e.target.value)}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Wingold Buy Rate</Label>
+                      <RadioGroup value={wingoldBuyRateMode} onValueChange={(v) => setWingoldBuyRateMode(v as 'SAME' | 'MANUAL')} className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="SAME" id="rate-same" />
+                          <Label htmlFor="rate-same" className="font-normal cursor-pointer">
+                            Same as User Rate (${calculations.goldRate.toFixed(2)}/g)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="MANUAL" id="rate-manual" />
+                          <Label htmlFor="rate-manual" className="font-normal cursor-pointer">Different Rate</Label>
+                        </div>
+                      </RadioGroup>
+                      {wingoldBuyRateMode === 'MANUAL' && (
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="e.g., 65.50"
+                          placeholder="Wingold buy rate ($/gram)"
                           value={wingoldBuyRate}
                           onChange={(e) => setWingoldBuyRate(e.target.value)}
-                          className={!wingoldBuyRate ? 'border-amber-400' : ''}
                         />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-yellow-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-yellow-600" />
+                      Physical Gold Allocation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">
+                        Physical Gold Allocated (grams) *
+                        <span className="text-gray-500 ml-2">(Expected: {calculations.goldEquivalent.toFixed(4)}g)</span>
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        placeholder="e.g., 103.1088"
+                        value={physicalGoldAllocatedG}
+                        onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
+                        className={allocationVariance && Math.abs(allocationVariance.variancePercent) > 1 ? 'border-red-500 bg-red-50' : ''}
+                      />
+                      {allocationVariance && Math.abs(allocationVariance.variancePercent) > 0.1 && (
+                        <div className={`text-xs mt-1 p-2 rounded flex items-start gap-2 ${Math.abs(allocationVariance.variancePercent) > 1 ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-amber-100 text-amber-700'}`}>
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <strong>Variance: {allocationVariance.variancePercent > 0 ? '+' : ''}{allocationVariance.variancePercent.toFixed(2)}%</strong>
+                            <span className="ml-1">({allocationVariance.allocated.toFixed(4)}g vs expected {allocationVariance.expected.toFixed(4)}g)</span>
+                            {Math.abs(allocationVariance.variancePercent) > 1 && (
+                              <div className="mt-1 font-semibold">Large variance requires justification in notes</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-blue-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                      Storage Certificate (Golden Rule)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Certificate ID</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="e.g., PSC-20260112-XXXX"
+                          value={storageCertificateId}
+                          onChange={(e) => setStorageCertificateId(e.target.value)}
+                          className="font-mono"
+                        />
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setStorageCertificateId(generateCertificateId())}
+                          title="Regenerate ID"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
                       </div>
+                      <p className="text-xs text-gray-500">Pre-generated ID shown above. Edit or regenerate as needed.</p>
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-xs">
-                        Storage Certificate ID <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        placeholder="e.g., CERT-2026-0001"
-                        value={storageCertificateId}
-                        onChange={(e) => setStorageCertificateId(e.target.value)}
-                        className={!storageCertificateId ? 'border-amber-400' : ''}
-                      />
+                      <Label className="text-xs">Vault Location</Label>
+                      <Select value={vaultLocation} onValueChange={setVaultLocation}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Wingold & Metals DMCC">Dubai (Wingold & Metals DMCC)</SelectItem>
+                          <SelectItem value="Zurich">Zurich, Switzerland</SelectItem>
+                          <SelectItem value="Singapore">Singapore</SelectItem>
+                          <SelectItem value="London">London, UK</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    
-                    {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && (
-                      <Card className="bg-green-50 border-green-200">
-                        <CardContent className="py-2">
-                          <div className="flex items-center gap-2 text-green-700 text-xs">
-                            <CheckCircle className="w-4 h-4" />
-                            Golden Rule satisfied - ready for approval.
-                          </div>
-                        </CardContent>
-                      </Card>
+
+                    {isFormValid && (
+                      <div className="p-2 bg-green-100 border border-green-300 rounded-md flex items-center gap-2 text-green-700 text-xs">
+                        <CheckCircle className="w-4 h-4" />
+                        Golden Rule satisfied: Physical gold allocated + Certificate ready
+                      </div>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-gray-600" />
+                      Profit Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">User Receives:</span>
+                      <span className="font-medium">{(parseFloat(physicalGoldAllocatedG) || calculations.goldEquivalent).toFixed(4)}g gold</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Wingold Cost:</span>
+                      <span className="font-medium">{formatCurrency(calculations.wingoldCost)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-green-700 font-semibold">
+                      <span>Platform Fee Revenue:</span>
+                      <span>{formatCurrency(calculations.platformProfit)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <div className="space-y-1">
-                  <Label>Notes (Optional)</Label>
+                  <Label className="text-xs">
+                    Notes {allocationVariance && Math.abs(allocationVariance.variancePercent) > 1 && <span className="text-red-500">* (Required for variance)</span>}
+                  </Label>
                   <Textarea
                     placeholder="Any additional notes for this approval..."
                     value={approvalNotes}
                     onChange={(e) => setApprovalNotes(e.target.value)}
+                    className={allocationVariance && Math.abs(allocationVariance.variancePercent) > 1 && !approvalNotes.trim() ? 'border-red-400' : ''}
                   />
                 </div>
 
-                {parseFloat(physicalGoldAllocatedG) > 0 && storageCertificateId.trim().length > 0 && wingoldOrderId.trim() && wingoldBuyRate && (
-                  <Card className="bg-green-50 border-green-200">
-                    <CardContent className="py-3">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm">
-                          Golden Rule satisfied! Click "Approve & Credit Wallet" to complete the transaction in one step.
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Target Wallet:</Label>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700">{walletType}</Badge>
+                </div>
               </div>
             )}
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { setApprovalDialogOpen(false); resetApprovalForm(); }}>
                 Cancel
               </Button>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleApprove}
-                disabled={approveMutation.isPending || 
-                  !wingoldOrderId.trim() ||
-                  !physicalGoldAllocatedG ||
-                  parseFloat(physicalGoldAllocatedG) <= 0 ||
-                  !wingoldBuyRate ||
-                  parseFloat(wingoldBuyRate) <= 0 ||
-                  !storageCertificateId.trim()
-                }
+                disabled={approveMutation.isPending || !isFormValid}
               >
                 {approveMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -715,7 +841,6 @@ export default function UnifiedPaymentManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Proof Image Viewer Dialog */}
         <Dialog open={proofViewerOpen} onOpenChange={setProofViewerOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh]">
             <DialogHeader>
