@@ -448,7 +448,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         goldCreditedG: String(parsedAllocation), // Credited amount = physical allocation
         goldCreditedValueUsd: String(parsedAllocation * goldPrice),
         vaultLocation,
-        notes: notes || `One-step approval from ${sourceType}. Fee: ${feePercent}% ($${feeAmountUsd.toFixed(2)}) deducted.`,
+        notes: notes || `One-step approval from ${actualSourceMethod}. Fee: ${feePercent}% ($${feeAmountUsd.toFixed(2)}) deducted.`,
         createdBy: adminId || undefined,
         wingoldOrderId,
         wingoldSupplierInvoiceId: wingoldInvoiceId,
@@ -468,7 +468,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         walletType: dbWalletType as 'LGPW' | 'FGPW',
         transactionId: tallyRecord.id,
         certificateId: physicalCert.certificateNumber, // Use created certificate number
-        notes: `Unified Tally Credit: ${parsedAllocation.toFixed(6)}g to ${dbWalletType} wallet from ${sourceType} deposit`,
+        notes: `Unified Tally Credit: ${parsedAllocation.toFixed(6)}g to ${dbWalletType} wallet from ${actualSourceMethod} deposit`,
         createdBy: adminId || undefined,
         tx: tx as any,
       });
@@ -482,7 +482,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         amountUsd: String((parsedAllocation * goldPrice).toFixed(2)),
         goldPriceUsdPerGram: goldPrice.toFixed(2),
         goldWalletType: dbWalletType,
-        description: `${sourceType} deposit: ${parsedAllocation.toFixed(6)}g credited to ${dbWalletType} wallet`,
+        description: `${actualSourceMethod} deposit: ${parsedAllocation.toFixed(6)}g credited to ${dbWalletType} wallet`,
         sourceModule: 'unified-tally',
         completedAt: new Date(),
       }, tx as any);
@@ -495,7 +495,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
           lockedPriceUsd: goldPrice,
           sourceType: 'deposit',
           sourceTransactionId: tallyRecord.id,
-          notes: `FPGW batch from ${sourceType} deposit - Certificate: ${storageCertificateId}`,
+          notes: `FPGW batch from ${actualSourceMethod} deposit - Certificate: ${storageCertificateId}`,
           tx: tx as any,
         });
       }
@@ -520,7 +520,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
           netAmountUsd,
           goldGrams,
           goldPrice,
-          message: `Payment received from ${sourceType}`
+          message: `Payment received from ${actualSourceMethod}`
         } as any,
         triggeredBy: adminId || undefined,
         triggeredByName: adminName,
