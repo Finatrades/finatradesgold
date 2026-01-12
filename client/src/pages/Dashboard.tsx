@@ -2,6 +2,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
+import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -31,8 +33,20 @@ function formatNumber(num: number | null | undefined, decimals = 2): string {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, transactions, goldPrice, goldPriceSource, isLoading, finaBridge, certificates } = useDashboardData();
+  const { totals, goldPrice, goldPriceSource, isLoading, finaBridge, certificates } = useDashboardData();
+  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  
+  const transactions = unifiedTx.map(tx => ({
+    id: tx.id,
+    type: getTransactionLabel(tx.actionType),
+    status: normalizeStatus(tx.status),
+    amountGold: tx.grams,
+    amountUsd: tx.usd,
+    description: tx.description,
+    createdAt: tx.createdAt,
+    sourceModule: tx.module,
+  }));
 
   const { data: prefsData } = useQuery<{ preferences: UserPreferences }>({
     queryKey: ['preferences', user?.id],

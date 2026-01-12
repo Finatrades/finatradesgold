@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
+import { normalizeStatus as normalizeStatusUtil } from '@/lib/transactionUtils';
 import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -87,6 +88,7 @@ export default function VaultActivityList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  
   const [selectedTx, setSelectedTx] = useState<VaultTransaction | null>(null);
   const [viewingCerts, setViewingCerts] = useState<{
     id: string;
@@ -467,7 +469,17 @@ export default function VaultActivityList() {
     }
   };
 
-  const transactions = data?.transactions || [];
+  // Use original vault activity data which has full metadata (certificates, counterparty emails, etc.)
+  // Apply status normalization using shared utilities for consistency
+  const rawTransactions = data?.transactions || [];
+  const transactions: VaultTransaction[] = rawTransactions.map((tx: any) => {
+    const normalizedStatus = normalizeStatusUtil(tx.status);
+    return {
+      ...tx,
+      status: normalizedStatus === 'Failed' ? 'Cancelled' : normalizedStatus,
+      isExpectedValue: normalizedStatus !== 'Completed',
+    };
+  });
   const certificates = data?.certificates || [];
   
   // Check if there are FinaBridge transactions to avoid duplicate entries from Trade Release certificates

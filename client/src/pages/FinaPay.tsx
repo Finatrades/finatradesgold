@@ -5,6 +5,7 @@ import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
+import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -154,16 +155,20 @@ export default function FinaPay() {
     return idStr.length >= 10 ? idStr.substring(0, 10).toUpperCase() : idStr.toUpperCase();
   };
 
-  const transactions: Transaction[] = (rawTransactions || []).map((tx: any) => ({
+  // Use FinaPay context transactions (enriched with fees, counterparties, etc.)
+  // Apply status normalization for consistency
+  const { transactions: contextTransactions } = useFinaPay();
+  
+  const transactions: Transaction[] = contextTransactions.map((tx: any) => ({
     id: tx.id || String(Math.random()),
-    type: tx.type || 'Transfer',
-    amountGrams: tx.amountGold != null ? parseNumericValue(tx.amountGold) : undefined,
+    type: getTransactionLabel(tx.type || tx.actionType || 'Transfer'),
+    amountGrams: tx.amountGold != null ? parseNumericValue(tx.amountGold) : (tx.amountGrams != null ? parseNumericValue(tx.amountGrams) : undefined),
     amountUsd: parseNumericValue(tx.amountUsd),
-    feeUsd: 0,
+    feeUsd: parseNumericValue(tx.feeUsd || tx.fee || 0),
     timestamp: tx.createdAt,
-    referenceId: formatReferenceId(tx.id),
-    status: tx.status || 'Pending',
-    assetType: tx.amountGold != null ? 'GOLD' : 'USD',
+    referenceId: formatReferenceId(tx.id || tx.referenceId),
+    status: normalizeStatus(tx.status),
+    assetType: (tx.amountGold != null || tx.amountGrams != null) ? 'GOLD' : 'USD',
     description: tx.description || ''
   }));
 
