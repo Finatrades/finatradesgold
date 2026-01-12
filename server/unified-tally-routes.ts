@@ -366,6 +366,26 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
             }, tx as any);
           }
         }
+        
+        // UNIFIED ARCHITECTURE: If this is a Crypto deposit_request, also mark the linked crypto_payment_request
+        // This prevents the crypto entry from appearing as "Under Review" after approval
+        if (sourcePayment.paymentMethod === 'Crypto') {
+          const linkedCryptoPayments = await storage.getUserCryptoPaymentRequests(sourcePayment.userId);
+          // Find matching crypto payment by amount and approximate timestamp (within 5 seconds)
+          const depositTime = new Date(sourcePayment.createdAt).getTime();
+          const linkedCryptoPayment = linkedCryptoPayments.find((cp: any) => 
+            parseFloat(cp.amountUsd) === parseFloat(sourcePayment.amountUsd) &&
+            Math.abs(new Date(cp.createdAt).getTime() - depositTime) < 5000 &&
+            cp.status !== 'Approved' && cp.status !== 'Credited'
+          );
+          if (linkedCryptoPayment) {
+            await storage.updateCryptoPaymentRequest(linkedCryptoPayment.id, {
+              status: 'Approved',
+              reviewNotes: `Unified approval via deposit_request. Gold: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+              reviewedAt: new Date(),
+            }, tx as any);
+          }
+        }
       }
 
       // 0.5. Create Physical Storage Certificate (Golden Rule requirement)
