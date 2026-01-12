@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
 import { Loader2, Mail, RefreshCw, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 
 export type AdminActionType = 
   | 'kyc_approval' | 'kyc_rejection'
@@ -88,19 +89,11 @@ export default function AdminOtpModal({
   const sendOtp = async () => {
     try {
       setStep('sending');
-      const res = await fetch('/api/admin/action-otp/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-User-Id': adminUserId,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          actionType,
-          targetId,
-          targetType,
-          actionData,
-        }),
+      const res = await apiRequest('POST', '/api/admin/action-otp/send', {
+        actionType,
+        targetId,
+        targetType,
+        actionData,
       });
 
       const data = await res.json();
@@ -130,17 +123,9 @@ export default function AdminOtpModal({
 
     try {
       setStep('verifying');
-      const res = await fetch('/api/admin/action-otp/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-User-Id': adminUserId,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          otpId,
-          code,
-        }),
+      const res = await apiRequest('POST', '/api/admin/action-otp/verify', {
+        otpId,
+        code,
       });
 
       const data = await res.json();
@@ -169,15 +154,7 @@ export default function AdminOtpModal({
     
     setResending(true);
     try {
-      const res = await fetch('/api/admin/action-otp/resend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-User-Id': adminUserId,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({ otpId }),
-      });
+      const res = await apiRequest('POST', '/api/admin/action-otp/resend', { otpId });
 
       const data = await res.json();
 
