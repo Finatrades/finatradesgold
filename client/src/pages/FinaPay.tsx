@@ -6,12 +6,11 @@ import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
-import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle, History, Award, FileText } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import PendingTransfers from '@/components/finapay/PendingTransfers';
@@ -177,7 +176,6 @@ export default function FinaPay() {
   const hasConfirmedPayment = transactions.some(tx => tx.status === 'Completed');
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('wallet-activity');
 
   // Auto-open deposit modal when coming from dashboard with action=deposit
   useEffect(() => {
@@ -291,46 +289,6 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         
-        {/* Main Navigation Tabs - FinaVault Style */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="bg-white rounded-2xl border border-border p-3 shadow-sm mb-6 overflow-x-auto">
-            <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto">
-              <TabsTrigger 
-                value="wallet-activity"
-                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
-                data-testid="tab-wallet-activity"
-              >
-                <History className="w-4 h-4 mr-1.5" />
-                Wallet Activity
-              </TabsTrigger>
-              <TabsTrigger 
-                value="ownership-ledger"
-                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
-                data-testid="tab-ownership-ledger"
-              >
-                <Lock className="w-4 h-4 mr-1.5" />
-                Ownership Ledger
-              </TabsTrigger>
-              <TabsTrigger 
-                value="certificates"
-                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
-                data-testid="tab-certificates"
-              >
-                <Award className="w-4 h-4 mr-1.5" />
-                Certificates
-              </TabsTrigger>
-              <TabsTrigger 
-                value="terms"
-                className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
-                data-testid="tab-terms"
-              >
-                <FileText className="w-4 h-4 mr-1.5" />
-                Terms & Conditions
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </Tabs>
-
         {/* FinaPay Wallet Card - Only show after confirmed payment */}
         {hasConfirmedPayment && (
           <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
