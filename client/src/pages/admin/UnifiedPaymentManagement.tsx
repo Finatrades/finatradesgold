@@ -166,13 +166,39 @@ export default function UnifiedPaymentManagement() {
   const openApprovalDialog = (payment: PendingPayment) => {
     setSelectedPayment(payment);
     setWalletType(payment.walletType as 'LGPW' | 'FGPW');
+    // Auto-populate physical gold allocated from expected gold amount
+    if (payment.goldGrams) {
+      setPhysicalGoldAllocatedG(payment.goldGrams);
+    }
+    // Auto-populate buy rate from gold price at time of deposit
+    if (payment.goldPriceAtTime) {
+      setWingoldBuyRate(payment.goldPriceAtTime);
+    }
     setApprovalDialogOpen(true);
   };
+  
+  // Calculate variance between expected and allocated gold
+  const getAllocationVariance = () => {
+    if (!selectedPayment?.goldGrams || !physicalGoldAllocatedG) return null;
+    const expected = parseFloat(selectedPayment.goldGrams);
+    const allocated = parseFloat(physicalGoldAllocatedG);
+    if (isNaN(expected) || isNaN(allocated) || expected === 0) return null;
+    const variancePercent = ((allocated - expected) / expected) * 100;
+    return { expected, allocated, variancePercent };
+  };
+  
+  const allocationVariance = getAllocationVariance();
 
   const handleApprove = () => {
     if (!selectedPayment) return;
     if (pricingMode === 'MANUAL' && !manualGoldPrice) {
       toast.error('Please enter manual gold price');
+      return;
+    }
+    // Require notes if allocation differs by more than 1%
+    const variance = getAllocationVariance();
+    if (variance && Math.abs(variance.variancePercent) > 1 && !approvalNotes.trim()) {
+      toast.error('Large variance detected! Please provide justification in the notes field.');
       return;
     }
     approveMutation.mutate(selectedPayment);
@@ -575,6 +601,9 @@ export default function UnifiedPaymentManagement() {
                       <div className="space-y-1">
                         <Label className="text-xs">
                           Physical Gold Allocated (g) <span className="text-red-500">*</span>
+                          {selectedPayment?.goldGrams && (
+                            <span className="text-gray-500 ml-1">(Expected: {parseFloat(selectedPayment.goldGrams).toFixed(4)}g)</span>
+                          )}
                         </Label>
                         <Input
                           type="number"
@@ -582,8 +611,18 @@ export default function UnifiedPaymentManagement() {
                           placeholder="e.g., 150.5000"
                           value={physicalGoldAllocatedG}
                           onChange={(e) => setPhysicalGoldAllocatedG(e.target.value)}
-                          className={!physicalGoldAllocatedG ? 'border-amber-400' : ''}
+                          className={!physicalGoldAllocatedG ? 'border-amber-400' : allocationVariance && Math.abs(allocationVariance.variancePercent) > 1 ? 'border-red-500 bg-red-50' : ''}
                         />
+                        {allocationVariance && Math.abs(allocationVariance.variancePercent) > 0.1 && (
+                          <div className={`text-xs mt-1 p-2 rounded ${Math.abs(allocationVariance.variancePercent) > 1 ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-amber-100 text-amber-700'}`}>
+                            <AlertTriangle className="w-3 h-3 inline mr-1" />
+                            <strong>Variance: {allocationVariance.variancePercent > 0 ? '+' : ''}{allocationVariance.variancePercent.toFixed(2)}%</strong>
+                            {' '}({allocationVariance.allocated.toFixed(4)}g vs expected {allocationVariance.expected.toFixed(4)}g)
+                            {Math.abs(allocationVariance.variancePercent) > 1 && (
+                              <div className="mt-1 font-semibold">⚠️ Large variance requires justification in notes</div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
