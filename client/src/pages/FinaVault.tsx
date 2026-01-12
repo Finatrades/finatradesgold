@@ -400,9 +400,14 @@ export default function FinaVault() {
       groups.get(key)!.push(record);
     }
     
-    // Sort entries within each group by creation date (oldest first for chain order)
+    // Sort entries within each group by action type (Physical Storage first, then Recorded)
+    const actionOrder = (action: string) => {
+      if (action === 'Vault_Transfer') return 0;
+      if (action === 'Deposit') return 1;
+      return 2;
+    };
     groups.forEach((entries) => {
-      entries.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      entries.sort((a: any, b: any) => actionOrder(a.action) - actionOrder(b.action));
     });
     
     // Convert to array and sort by newest first

@@ -55,8 +55,13 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
       }
       map.get(key)!.push(entry);
     });
+    const actionOrder = (action: string) => {
+      if (action === 'Vault_Transfer') return 0;
+      if (action === 'Deposit') return 1;
+      return 2;
+    };
     map.forEach(entries => {
-      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      entries.sort((a, b) => actionOrder(a.action) - actionOrder(b.action));
     });
     return map;
   }, [ledgerEntries]);

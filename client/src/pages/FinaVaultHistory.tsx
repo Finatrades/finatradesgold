@@ -96,8 +96,13 @@ export default function FinaVaultHistory() {
       }
       groups.get(key)!.push(entry);
     });
+    const actionOrder = (action: string) => {
+      if (action === 'Vault_Transfer') return 0;
+      if (action === 'Deposit') return 1;
+      return 2;
+    };
     groups.forEach((entries) => {
-      entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      entries.sort((a, b) => actionOrder(a.action) - actionOrder(b.action));
     });
     return Array.from(groups.entries()).sort((a, b) => {
       const dateA = new Date(a[1][0]?.createdAt || 0).getTime();
