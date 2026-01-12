@@ -6,18 +6,18 @@
  * - Requires authenticated encryption
  * - Simpler, safer defaults
  * 
- * Uses V4.local for symmetric encryption (internal services)
- * Uses V4.public for asymmetric signing (external services like Wingold)
+ * Uses V3.local for symmetric encryption (internal services)
+ * Uses V3.public for asymmetric signing (external services like Wingold)
  */
 
 import * as paseto from 'paseto';
 import crypto from 'crypto';
 
-const { V4 } = paseto;
+const { V3 } = paseto;
 
-let publicKeyPaseto: ReturnType<typeof crypto.createPublicKey> | Buffer | null = null;
-let privateKeyPaseto: ReturnType<typeof crypto.createPrivateKey> | Buffer | null = null;
-let symmetricKeyPaseto: Buffer | null = null;
+let publicKeyPaseto: string | null = null;
+let privateKeyPaseto: string | null = null;
+let symmetricKeyPaseto: crypto.KeyObject | null = null;
 let initialized = false;
 
 export interface TokenPayload {
@@ -33,33 +33,21 @@ async function initializeKeys(): Promise<void> {
   if (initialized) return;
 
   try {
-    const keys = await V4.generateKey('public');
-    privateKeyPaseto = keys.secretKey as Buffer;
-    publicKeyPaseto = keys.publicKey as Buffer;
-    console.log('[PASETO] Generated Ed25519 keypair for token signing');
+    const keys = await V3.generateKey('public', { format: 'paserk' });
+    privateKeyPaseto = (keys as any).secretKey;
+    publicKeyPaseto = (keys as any).publicKey;
+    console.log('[PASETO] Generated P-384 keypair for token signing');
   } catch (error) {
     console.error('[PASETO] Failed to generate keypair:', error);
     throw new Error('PASETO key initialization failed');
   }
 
-  const symKeyEnv = process.env.PASETO_SYMMETRIC_KEY;
-  if (symKeyEnv) {
-    try {
-      symmetricKeyPaseto = Buffer.from(symKeyEnv, 'hex');
-      if (symmetricKeyPaseto.length !== 32) {
-        console.warn('[PASETO] Symmetric key must be 32 bytes, generating new one');
-        symmetricKeyPaseto = null;
-      }
-    } catch {
-      console.warn('[PASETO] Invalid symmetric key format, generating new one');
-      symmetricKeyPaseto = null;
-    }
-  }
-  
-  if (!symmetricKeyPaseto) {
-    const localKey = await V4.generateKey('local');
-    symmetricKeyPaseto = localKey as Buffer;
+  try {
+    symmetricKeyPaseto = await V3.generateKey('local') as crypto.KeyObject;
     console.log('[PASETO] Generated symmetric key for local tokens');
+  } catch (error) {
+    console.error('[PASETO] Failed to generate symmetric key:', error);
+    throw new Error('PASETO symmetric key initialization failed');
   }
   
   initialized = true;
@@ -110,7 +98,10 @@ export async function signPublicToken(payload: TokenPayload, expiresIn: string =
   };
 
   try {
-    const token = await V4.sign(tokenPayload, privateKeyPaseto);
+    const privateKeyObject = await V3.bytesToKeyObject(
+      Buffer.from(privateKeyPaseto.replace('k3.secret.', ''), 'base64url')
+    );
+    const token = await V3.sign(tokenPayload, privateKeyObject);
     return token;
   } catch (error) {
     console.error('[PASETO] Token signing failed:', error);
@@ -126,7 +117,10 @@ export async function verifyPublicToken(token: string): Promise<TokenPayload> {
   }
 
   try {
-    const verified = await V4.verify(token, publicKeyPaseto);
+    const publicKeyObject = await V3.bytesToKeyObject(
+      Buffer.from(publicKeyPaseto.replace('k3.public.', ''), 'base64url')
+    );
+    const verified = await V3.verify(token, publicKeyObject);
     
     if (verified.exp) {
       const expDate = new Date(verified.exp as string);
@@ -159,7 +153,7 @@ export async function encryptLocalToken(payload: TokenPayload, expiresIn: string
   };
 
   try {
-    const token = await V4.encrypt(tokenPayload, symmetricKeyPaseto);
+    const token = await V3.encrypt(tokenPayload, symmetricKeyPaseto);
     return token;
   } catch (error) {
     console.error('[PASETO] Token encryption failed:', error);
@@ -175,7 +169,7 @@ export async function decryptLocalToken(token: string): Promise<TokenPayload> {
   }
 
   try {
-    const decrypted = await V4.decrypt(token, symmetricKeyPaseto);
+    const decrypted = await V3.decrypt(token, symmetricKeyPaseto);
     
     if (decrypted.exp) {
       const expDate = new Date(decrypted.exp as string);
@@ -217,9 +211,9 @@ export async function generateAdminToken(
   }, expiresIn);
 }
 
-export async function getPublicKey(): Promise<Buffer | null> {
+export async function getPublicKey(): Promise<string | null> {
   await ensureInitialized();
-  return publicKeyPaseto as Buffer | null;
+  return publicKeyPaseto;
 }
 
 export { ensureInitialized as initializePaseto };
