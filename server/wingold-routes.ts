@@ -1,6 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { WingoldIntegrationService } from './wingold-integration-service';
 import { WingoldUserSyncService } from './wingold-user-sync-service';
+import { wingoldSecurityMiddleware, wingoldSecurityPostProcessor, WingoldSecurityService } from './wingold-security';
 import { db } from './db';
 import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations, wingoldProducts, users } from '@shared/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
@@ -22,36 +23,19 @@ async function getSessionUser(req: Request): Promise<{ id: string; role: string 
 const WINGOLD_API_URL = process.env.WINGOLD_API_URL || 'https://wingoldandmetals--imcharanpratap.replit.app';
 const FINATRADES_API_KEY = process.env.FINATRADES_API_KEY;
 
-router.post('/webhooks', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+router.post('/webhooks', express.raw({ type: 'application/json' }), wingoldSecurityMiddleware, async (req: Request, res: Response) => {
   try {
-    let rawBody: string;
-    let payload: any;
+    const payload = (req as any).wingoldPayload;
     
-    if (Buffer.isBuffer(req.body)) {
-      rawBody = req.body.toString('utf8');
-      payload = JSON.parse(rawBody);
-    } else if (typeof req.body === 'object') {
-      rawBody = JSON.stringify(req.body);
-      payload = req.body;
-    } else if (typeof req.body === 'string') {
-      rawBody = req.body;
-      payload = JSON.parse(rawBody);
-    } else {
-      return res.status(400).json({ error: 'Invalid request body' });
+    if (!payload) {
+      return res.status(400).json({ error: 'Invalid request' });
     }
     
-    const signature = req.headers['x-wingold-signature'] as string || 
-                      req.headers['x-webhook-signature'] as string || '';
-    const timestamp = req.headers['x-webhook-timestamp'] as string || '';
-    
-    if (!WingoldIntegrationService.verifyWebhookSignature(rawBody, signature, timestamp)) {
-      console.error('[Wingold Webhook] Invalid signature');
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-    
-    console.log(`[Wingold Webhook] Received event: ${payload.event}`);
+    console.log(`[Wingold Webhook] Processing secured event: ${payload.event}`);
     
     await WingoldIntegrationService.handleWebhook(payload);
+    
+    wingoldSecurityPostProcessor(payload.orderId, payload.event);
     
     res.json({ received: true });
   } catch (error) {
@@ -430,6 +414,37 @@ router.get('/stats', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Wingold] Failed to fetch stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+router.get('/security/stats', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const stats = WingoldSecurityService.getSecurityStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch security stats:', error);
+    res.status(500).json({ error: 'Failed to fetch security stats' });
+  }
+});
+
+router.get('/security/audit-log', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 100;
+    const logs = WingoldSecurityService.getAuditLog(limit);
+    res.json({ logs, count: logs.length });
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch audit log:', error);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
   }
 });
 
