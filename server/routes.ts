@@ -6097,46 +6097,11 @@ ${message}
         });
       });
       
-      // Certificates - only show Digital Ownership (not Physical Storage to avoid duplicates)
-      // Digital Ownership and Physical Storage are created together for the same purchase,
-      // so we only show Digital Ownership as the main transaction entry with module = finapay
-      // Trade Release certificates are excluded if there's a corresponding transaction
-      const hasFinaBridgeTransactions = regularTransactions.some((tx: any) => tx.sourceModule === 'FinaBridge');
-      userCertificates
-        .filter(cert => {
-          // Only include Digital Ownership certificates (Physical Storage is a companion document)
-          if (cert.type === 'Digital Ownership') return true;
-          // Only include Trade Release if there's no corresponding transaction
-          if (cert.type === 'Trade Release' && !hasFinaBridgeTransactions) return true;
-          return false;
-        })
-        .forEach(cert => {
-          const moduleMap: Record<string, string> = {
-            'Trade Release': 'finabridge',
-            'Digital Ownership': 'finapay'  // Show as FinaPay since this is gold added to wallet
-          };
-          const actionMap: Record<string, string> = {
-            'Trade Release': 'RECEIVE',
-            'Digital Ownership': 'ADD_FUNDS'
-          };
-          unifiedTransactions.push({
-            id: cert.id,
-            userId: cert.userId,
-            module: moduleMap[cert.type] || 'finapay',
-            actionType: actionMap[cert.type] || 'RECEIVE',
-            grams: cert.goldGrams,
-            usd: cert.totalValueUsd,
-            usdPerGram: cert.goldPriceUsdPerGram,
-            status: cert.status === 'Active' ? 'COMPLETED' : cert.status === 'Cancelled' ? 'FAILED' : 'PENDING',
-            referenceId: cert.certificateNumber,
-            description: `${cert.type} Certificate`,
-            counterpartyUserId: null,
-            createdAt: cert.issuedAt,
-            completedAt: cert.issuedAt,
-            sourceType: 'certificate',
-            goldWalletType: cert.goldWalletType || null
-          });
-        });
+      // DESIGN: Certificates are EXCLUDED from transaction list
+      // Certificates are documentation of ownership, NOT financial transactions.
+      // The actual transactions are in: unified_tally_transactions, transactions table, trade_cases.
+      // Including certificates here caused double-entry issues (same gold shown twice).
+      // Users can view certificates separately in FinaVault > Certificates section.
       
       // Buy Gold Bar requests (Wingold) - exclude 'Credited' since those have transaction records
       buyGoldRequests
