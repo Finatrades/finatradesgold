@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/context/AuthContext';
 import { normalizeStatus as normalizeStatusUtil } from '@/lib/transactionUtils';
-import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Send, Coins, Award, Eye, Printer, Share2, FileText, X, ShieldCheck, Box, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -108,6 +109,7 @@ export default function VaultActivityList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   const [selectedTx, setSelectedTx] = useState<VaultTransaction | null>(null);
   const [viewingCerts, setViewingCerts] = useState<{
@@ -749,6 +751,183 @@ export default function VaultActivityList() {
     return matchesSearch && matchesType;
   });
 
+  // Group related transactions by gold amount and time proximity (within 60 seconds)
+  const groupedTransactions = useMemo(() => {
+    const groups: { primary: VaultTransaction; related: VaultTransaction[] }[] = [];
+    const processedIds = new Set<string>();
+    
+    // Priority order for determining the "primary" transaction in a group
+    const getPriority = (tx: VaultTransaction): number => {
+      if (tx.type === 'Deposit' || tx.id.startsWith('bank-') || tx.id.startsWith('crypto-')) return 1;
+      if (tx.type === 'Buy' || tx.type === 'Sell') return 2;
+      if (tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase') return 3;
+      if (tx.type === 'Vault Deposit') return 4;
+      return 5;
+    };
+    
+    // Check if two transactions are related (same gold amount, within time window)
+    const areRelated = (tx1: VaultTransaction, tx2: VaultTransaction): boolean => {
+      if (!tx1.amountGold || !tx2.amountGold) return false;
+      const gold1 = Math.abs(parseFloat(tx1.amountGold));
+      const gold2 = Math.abs(parseFloat(tx2.amountGold));
+      const goldMatch = Math.abs(gold1 - gold2) < 0.01 || gold1 === gold2;
+      
+      const time1 = new Date(tx1.createdAt).getTime();
+      const time2 = new Date(tx2.createdAt).getTime();
+      const timeMatch = Math.abs(time1 - time2) < 120000; // 2 minutes
+      
+      return goldMatch && timeMatch;
+    };
+    
+    for (const tx of filteredTransactions) {
+      if (processedIds.has(tx.id)) continue;
+      
+      // Find all related transactions
+      const relatedTxs = filteredTransactions.filter(
+        other => other.id !== tx.id && !processedIds.has(other.id) && areRelated(tx, other)
+      );
+      
+      // Combine tx with related ones and sort by priority
+      const allRelated = [tx, ...relatedTxs].sort((a, b) => getPriority(a) - getPriority(b));
+      const primary = allRelated[0];
+      const related = allRelated.slice(1);
+      
+      // Mark all as processed
+      allRelated.forEach(t => processedIds.add(t.id));
+      
+      groups.push({ primary, related });
+    }
+    
+    return groups;
+  }, [filteredTransactions]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  // Helper to get display name for transaction type
+  const getDisplayName = (tx: VaultTransaction): string => {
+    if (tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW')) {
+      return 'Swap Gold';
+    }
+    if (tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')) {
+      return 'Deposit Physical Gold';
+    }
+    if (tx.type === 'Vault Deposit' && tx.certificates.length === 1 && tx.certificates[0]?.type === 'Physical Storage') {
+      return 'Deposit Physical Gold';
+    }
+    if (tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase') {
+      return 'Acquire Gold';
+    }
+    return tx.type;
+  };
+
+  // Render a single transaction row
+  const renderTransactionRow = (tx: VaultTransaction, isNested: boolean = false) => (
+    <div
+      key={tx.id}
+      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer ${isNested ? 'bg-muted/20 border-l-4 border-muted-foreground/20' : ''}`}
+      onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}
+      data-testid={`row-vault-tx-${tx.id}`}
+    >
+      <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+        <div className={`${isNested ? 'w-8 h-8' : 'w-10 h-10'} flex-shrink-0 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
+          {getTypeIcon(tx.type)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`font-medium ${isNested ? 'text-sm text-muted-foreground' : ''}`}>{getDisplayName(tx)}</span>
+            {tx.type === 'Swap' ? (
+              tx.description?.includes('LGPW to FGPW') ? (
+                <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300">
+                  LGPW → FGPW
+                </Badge>
+              ) : tx.description?.includes('FGPW to LGPW') ? (
+                <Badge variant="outline" className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300">
+                  FGPW → LGPW
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">Swap</Badge>
+              )
+            ) : tx.goldWalletType && (
+              <Badge variant="outline" className={`text-xs ${tx.goldWalletType === 'LGPW' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+                {tx.goldWalletType}
+              </Badge>
+            )}
+            {tx.certificates.length > 0 && (
+              <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
+                <Award className="w-3 h-3 mr-1" />
+                {tx.certificates.length} Cert
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
+            {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : new Date(tx.createdAt).toLocaleString())}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 ml-13 sm:ml-0">
+        <div className="text-left sm:text-right">
+          {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
+            <>
+              <p className="font-bold text-amber-600">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              {tx.goldPriceUsdPerGram && (
+                <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
+                  <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
+                  ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
+                </p>
+              )}
+            </>
+          ) : tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
+            <>
+              <p className="font-bold text-green-600">+${parseFloat(tx.amountUsd).toFixed(2)}</p>
+              {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
+                <p className="text-xs sm:text-sm text-fuchsia-600 font-medium">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              )}
+            </>
+          ) : tx.type === 'Bank Deposit' && tx.isExpectedValue && tx.amountGold ? (
+            <>
+              <p className="font-bold text-green-600">~{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
+              {tx.amountUsd && <p className="text-xs text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
+            </>
+          ) : tx.type === 'Bank Deposit' && !tx.amountGold && tx.amountUsd ? (
+            <>
+              <p className="font-bold text-green-600">${parseFloat(tx.amountUsd).toFixed(2)}</p>
+              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
+            </>
+          ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
+            <>
+              <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                {isGoldIncoming(tx.type) ? '+' : '-'}{parseFloat(tx.amountGold).toFixed(4)}g
+              </p>
+              {tx.amountUsd && <p className="text-xs sm:text-sm text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
+            </>
+          ) : tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
+            <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+              {isUsdIncoming(tx.type) ? '+' : '-'}${parseFloat(tx.amountUsd).toFixed(2)}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">--</p>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          {getStatusBadge(tx.status, tx.rejectionReason)}
+          <p className="text-xs text-muted-foreground mt-1 hidden sm:block">{new Date(tx.createdAt).toLocaleDateString()}</p>
+        </div>
+        {!isNested && <Button size="icon" variant="ghost" className="shrink-0 hidden sm:flex"><Eye className="w-4 h-4" /></Button>}
+      </div>
+    </div>
+  );
+
   return (
     <Card className="bg-white shadow-sm border border-border overflow-hidden">
       <CardHeader className="border-b border-border bg-muted/30">
@@ -803,163 +982,43 @@ export default function VaultActivityList() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
-                onClick={() => setSelectedTx(tx)}
-                data-testid={`row-vault-tx-${tx.id}`}
-              >
-                <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-                  <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
-                    {getTypeIcon(tx.type)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-medium">{
-                        // Swap Gold for LGPW<->FGPW conversions
-                        tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW')
-                          ? 'Swap Gold'
-                          // Deposit Physical Gold for actual physical vault deposits
-                          : tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')
-                          ? 'Deposit Physical Gold'
-                          // Physical deposits with 1 cert (only Physical Storage, no Digital Ownership pair from purchase)
-                          : tx.type === 'Vault Deposit' && tx.certificates.length === 1 && tx.certificates[0]?.type === 'Physical Storage'
-                          ? 'Deposit Physical Gold'
-                          // Acquire Gold for bank/card/crypto purchases shown as Vault Deposit (have both cert types)
-                          : tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase'
-                          ? 'Acquire Gold'
-                          : tx.type
-                      }</span>
-                      {/* Show wallet type badges - for Swap show direction based on description */}
-                      {tx.type === 'Swap' ? (
-                        tx.description?.includes('LGPW to FGPW') ? (
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300"
-                          >
-                            LGPW → FGPW
-                          </Badge>
-                        ) : tx.description?.includes('FGPW to LGPW') ? (
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300"
-                          >
-                            FGPW → LGPW
-                          </Badge>
+            {groupedTransactions.map(({ primary, related }) => (
+              related.length > 0 ? (
+                <Collapsible
+                  key={primary.id}
+                  open={expandedGroups.has(primary.id)}
+                  onOpenChange={() => toggleGroup(primary.id)}
+                >
+                  <div className="relative">
+                    <CollapsibleTrigger asChild>
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 cursor-pointer p-1 hover:bg-muted rounded">
+                        {expandedGroups.has(primary.id) ? (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
                         ) : (
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs bg-amber-100 text-amber-700 border-amber-300"
-                          >
-                            Swap
-                          </Badge>
-                        )
-                      ) : tx.goldWalletType && (
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${
-                            tx.goldWalletType === 'LGPW' 
-                              ? 'bg-blue-100 text-blue-700 border-blue-300' 
-                              : 'bg-amber-100 text-amber-700 border-amber-300'
-                          }`}
-                        >
-                          {tx.goldWalletType}
-                        </Badge>
-                      )}
-                      {tx.certificates.length > 0 && (
-                        <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
-                          <Award className="w-3 h-3 mr-1" />
-                          {tx.certificates.length} Cert
-                        </Badge>
-                      )}
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    </CollapsibleTrigger>
+                    <div className="pl-8">
+                      {renderTransactionRow(primary)}
                     </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
-                      {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : new Date(tx.createdAt).toLocaleString())}
-                    </p>
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute right-16 top-1/2 -translate-y-1/2 text-xs cursor-pointer hover:bg-muted"
+                      onClick={(e) => { e.stopPropagation(); toggleGroup(primary.id); }}
+                    >
+                      +{related.length} related
+                    </Badge>
                   </div>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 ml-13 sm:ml-0">
-                  <div className="text-left sm:text-right">
-                    {/* Swap transactions: show conversion amount with Locked price */}
-                    {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
-                      <>
-                        <p className="font-bold text-amber-600">
-                          {parseFloat(tx.amountGold).toFixed(4)}g
-                        </p>
-                        {tx.goldPriceUsdPerGram && (
-                          <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
-                            <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
-                            ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
-                          </p>
-                        )}
-                      </>
-                    ) : tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
-                      <>
-                        <p className="font-bold text-green-600">
-                          +${parseFloat(tx.amountUsd).toFixed(2)}
-                        </p>
-                        {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
-                          <p className="text-xs sm:text-sm text-fuchsia-600 font-medium">
-                            {parseFloat(tx.amountGold).toFixed(4)}g
-                          </p>
-                        )}
-                      </>
-                    ) : tx.type === 'Bank Deposit' && tx.isExpectedValue && tx.amountGold ? (
-                      <>
-                        <p className="font-bold text-green-600">
-                          ~{parseFloat(tx.amountGold).toFixed(4)}g
-                        </p>
-                        <p className="text-xs text-amber-600 font-medium">
-                          <span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span>
-                        </p>
-                        {tx.amountUsd && (
-                          <p className="text-xs text-muted-foreground">
-                            ${parseFloat(tx.amountUsd).toFixed(2)}
-                          </p>
-                        )}
-                      </>
-                    ) : tx.type === 'Bank Deposit' && !tx.amountGold && tx.amountUsd ? (
-                      <>
-                        <p className="font-bold text-green-600">
-                          ${parseFloat(tx.amountUsd).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-amber-600 font-medium">
-                          <span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span>
-                        </p>
-                      </>
-                    ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
-                      <>
-                        <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
-                          {isGoldIncoming(tx.type) ? '+' : '-'}
-                          {parseFloat(tx.amountGold).toFixed(4)}g
-                        </p>
-                        {tx.amountUsd && (
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            ${parseFloat(tx.amountUsd).toFixed(2)}
-                          </p>
-                        )}
-                      </>
-                    ) : tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
-                      <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
-                        {isUsdIncoming(tx.type) ? '+' : '-'}
-                        ${parseFloat(tx.amountUsd).toFixed(2)}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">--</p>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    {getStatusBadge(tx.status, tx.rejectionReason)}
-                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                      {new Date(tx.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button size="icon" variant="ghost" className="shrink-0 hidden sm:flex">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+                  <CollapsibleContent>
+                    <div className="border-l-2 border-muted-foreground/20 ml-6">
+                      {related.map(tx => renderTransactionRow(tx, true))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                renderTransactionRow(primary)
+              )
             ))}
           </div>
         )}
