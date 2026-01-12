@@ -723,69 +723,63 @@ export default function FinaVault() {
               exit={{ opacity: 0, y: -20 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Horizontally scrollable tabs for mobile, wrapped on desktop */}
-                <div className="bg-white rounded-2xl border border-border p-4 shadow-sm mb-6">
-                  <TabsList className="bg-muted/50 border border-border/50 p-1.5 inline-flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 w-full md:flex-wrap justify-start">
+                {/* Tabs navigation with proper styling */}
+                <div className="bg-white rounded-2xl border border-border p-3 shadow-sm mb-6 overflow-x-auto">
+                  <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto">
                     <TabsTrigger 
                       value="vault-activity"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
                       data-testid="tab-vault-activity"
                     >
                       <History className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Activity</span>
-                      <span className="hidden md:inline">Vault Activity</span>
+                      Vault Activity
                     </TabsTrigger>
                     <TabsTrigger 
                       value="deposit-gold"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-green-50 text-green-700 border border-green-200 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500 data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500 data-[state=active]:shadow-md"
                       data-testid="tab-deposit-gold"
                     >
                       <PlusCircle className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Deposit</span>
-                      <span className="hidden md:inline">Deposit Gold</span>
+                      Deposit Gold
                     </TabsTrigger>
                     <TabsTrigger 
                       value="buy-gold-bars"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-amber-50 text-amber-700 border border-amber-200 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-amber-200 bg-amber-50 text-amber-700 transition-all data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 data-[state=active]:shadow-md"
                       data-testid="tab-buy-gold-bars"
                     >
                       <Briefcase className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Buy Bars</span>
-                      <span className="hidden md:inline">Buy Gold Bars</span>
+                      Buy Gold Bars
                     </TabsTrigger>
                     <TabsTrigger 
                       value="cash-out"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm bg-orange-50 text-orange-700 border border-orange-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-md"
                     >
                       <Banknote className="w-4 h-4 mr-1.5" />
                       Cash Out
                     </TabsTrigger>
                     <TabsTrigger 
                       value="ownership-ledger"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
                       data-testid="tab-ownership-ledger"
                     >
                       <Lock className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Ledger</span>
-                      <span className="hidden md:inline">Ownership Ledger</span>
+                      Ownership Ledger
                     </TabsTrigger>
                     <TabsTrigger 
                       value="certificates"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
                       data-testid="tab-certificates"
                     >
                       <Award className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Certs</span>
-                      <span className="hidden md:inline">Certificates</span>
+                      Certificates
                     </TabsTrigger>
                     <TabsTrigger 
                       value="terms"
-                      className="whitespace-nowrap shrink-0 md:shrink rounded-full px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
                       data-testid="tab-terms"
                     >
                       <FileText className="w-4 h-4 mr-1.5" />
-                      <span className="md:hidden">Terms</span>
-                      <span className="hidden md:inline">Terms & Conditions</span>
+                      Terms & Conditions
                     </TabsTrigger>
                   </TabsList>
                 </div>
