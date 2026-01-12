@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -309,6 +309,8 @@ export default function KYCReview() {
   const { user: adminUser } = useAuth();
   const queryClient = useQueryClient();
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [fullApplicationData, setFullApplicationData] = useState<any>(null);
+  const [loadingFullData, setLoadingFullData] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showBulkRejectDialog, setShowBulkRejectDialog] = useState(false);
@@ -319,6 +321,52 @@ export default function KYCReview() {
   // Document viewer state
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerDocument, setViewerDocument] = useState<{ url: string; name: string }>({ url: '', name: '' });
+  
+  // Fetch full corporate KYC details when a corporate KYC is selected
+  useEffect(() => {
+    async function fetchFullCorporateDetails() {
+      if (!selectedApplication) {
+        setFullApplicationData(null);
+        return;
+      }
+      
+      // Only fetch full details for corporate KYC submissions
+      if (selectedApplication.kycType === 'finatrades_corporate' && selectedApplication.userId) {
+        setLoadingFullData(true);
+        try {
+          const res = await fetch(`/api/finatrades-kyc/corporate/${selectedApplication.userId}`, {
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.submission) {
+              // Merge full data with the selected application
+              setFullApplicationData({
+                ...selectedApplication,
+                ...data.submission,
+                kycType: 'finatrades_corporate',
+                accountType: 'business',
+                fullName: data.submission.companyName || selectedApplication.fullName,
+              });
+            } else {
+              setFullApplicationData(selectedApplication);
+            }
+          } else {
+            setFullApplicationData(selectedApplication);
+          }
+        } catch (error) {
+          console.error('Failed to fetch full corporate KYC:', error);
+          setFullApplicationData(selectedApplication);
+        } finally {
+          setLoadingFullData(false);
+        }
+      } else {
+        setFullApplicationData(selectedApplication);
+      }
+    }
+    
+    fetchFullCorporateDetails();
+  }, [selectedApplication]);
   
   const openDocumentViewer = (url: string, name: string) => {
     setViewerDocument({ url, name });
@@ -999,9 +1047,15 @@ export default function KYCReview() {
 
               <div className="space-y-4">
                 <h4 className="font-medium border-b pb-2">Documents Status</h4>
+                {loadingFullData ? (
+                  <div className="flex items-center justify-center p-4">
+                    <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                    <span>Loading documents...</span>
+                  </div>
+                ) : (
                 <div className="space-y-2">
                   {/* Handle Corporate KYC format */}
-                  {selectedApplication?.kycType === 'finatrades_corporate' ? (
+                  {fullApplicationData?.kycType === 'finatrades_corporate' ? (
                     <>
                       {/* Certificate of Incorporation */}
                       <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
@@ -1010,13 +1064,13 @@ export default function KYCReview() {
                           <span className="text-sm">Certificate of Incorporation</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.certificateOfIncorporation?.url ? (
+                          {fullApplicationData?.documents?.certificateOfIncorporation?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.certificateOfIncorporation.url, 'Certificate of Incorporation')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.certificateOfIncorporation.url, 'Certificate of Incorporation')}
                                 data-testid="button-view-cert-inc"
                               >
                                 View
@@ -1035,13 +1089,13 @@ export default function KYCReview() {
                           <span className="text-sm">Trade License</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.tradeLicense?.url ? (
+                          {fullApplicationData?.documents?.tradeLicense?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.tradeLicense.url, 'Trade License')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.tradeLicense.url, 'Trade License')}
                                 data-testid="button-view-trade-license"
                               >
                                 View
@@ -1060,13 +1114,13 @@ export default function KYCReview() {
                           <span className="text-sm">Memorandum & Articles</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.memorandumArticles?.url ? (
+                          {fullApplicationData?.documents?.memorandumArticles?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.memorandumArticles.url, 'Memorandum & Articles')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.memorandumArticles.url, 'Memorandum & Articles')}
                                 data-testid="button-view-memo-articles"
                               >
                                 View
@@ -1085,13 +1139,13 @@ export default function KYCReview() {
                           <span className="text-sm">UBO Passports</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.uboPassports?.url ? (
+                          {fullApplicationData?.documents?.uboPassports?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.uboPassports.url, 'UBO Passports')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.uboPassports.url, 'UBO Passports')}
                                 data-testid="button-view-ubo-passports"
                               >
                                 View
@@ -1110,13 +1164,13 @@ export default function KYCReview() {
                           <span className="text-sm">Bank Reference Letter</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.bankReferenceLetter?.url ? (
+                          {fullApplicationData?.documents?.bankReferenceLetter?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.bankReferenceLetter.url, 'Bank Reference Letter')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.bankReferenceLetter.url, 'Bank Reference Letter')}
                                 data-testid="button-view-bank-ref"
                               >
                                 View
@@ -1135,13 +1189,13 @@ export default function KYCReview() {
                           <span className="text-sm">Authorized Signatories</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.authorizedSignatories?.url ? (
+                          {fullApplicationData?.documents?.authorizedSignatories?.url ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.authorizedSignatories.url, 'Authorized Signatories')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.authorizedSignatories.url, 'Authorized Signatories')}
                                 data-testid="button-view-auth-sigs"
                               >
                                 View
@@ -1160,15 +1214,15 @@ export default function KYCReview() {
                           <span className="text-sm">Signatory Liveness</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.livenessCapture ? (
+                          {fullApplicationData?.livenessCapture ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">
-                                {selectedApplication?.livenessVerified ? 'Verified' : 'Captured'}
+                                {fullApplicationData?.livenessVerified ? 'Verified' : 'Captured'}
                               </Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.livenessCapture, 'Signatory Liveness')}
+                                onClick={() => openDocumentViewer(fullApplicationData.livenessCapture, 'Signatory Liveness')}
                                 data-testid="button-view-corp-liveness"
                               >
                                 View
@@ -1180,7 +1234,7 @@ export default function KYCReview() {
                         </div>
                       </div>
                     </>
-                  ) : isFinatradesKyc(selectedApplication) ? (
+                  ) : isFinatradesKyc(fullApplicationData) ? (
                     <>
                       {/* Finatrades Personal KYC - ID Front */}
                       <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
@@ -1189,13 +1243,13 @@ export default function KYCReview() {
                           <span className="text-sm">ID Front</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.idFrontUrl ? (
+                          {fullApplicationData?.idFrontUrl ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.idFrontUrl, 'ID Front')}
+                                onClick={() => openDocumentViewer(fullApplicationData.idFrontUrl, 'ID Front')}
                                 data-testid="button-view-id-front"
                               >
                                 View
@@ -1214,13 +1268,13 @@ export default function KYCReview() {
                           <span className="text-sm">ID Back</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.idBackUrl ? (
+                          {fullApplicationData?.idBackUrl ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.idBackUrl, 'ID Back')}
+                                onClick={() => openDocumentViewer(fullApplicationData.idBackUrl, 'ID Back')}
                                 data-testid="button-view-id-back"
                               >
                                 View
@@ -1239,13 +1293,13 @@ export default function KYCReview() {
                           <span className="text-sm">Passport (Optional)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.passportUrl ? (
+                          {fullApplicationData?.passportUrl ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.passportUrl, 'Passport')}
+                                onClick={() => openDocumentViewer(fullApplicationData.passportUrl, 'Passport')}
                                 data-testid="button-view-passport"
                               >
                                 View
@@ -1264,13 +1318,13 @@ export default function KYCReview() {
                           <span className="text-sm">Proof of Address</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.addressProofUrl ? (
+                          {fullApplicationData?.addressProofUrl ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.addressProofUrl, 'Proof of Address')}
+                                onClick={() => openDocumentViewer(fullApplicationData.addressProofUrl, 'Proof of Address')}
                                 data-testid="button-view-address-proof"
                               >
                                 View
@@ -1289,15 +1343,15 @@ export default function KYCReview() {
                           <span className="text-sm">Liveness Verification</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.livenessCapture ? (
+                          {fullApplicationData?.livenessCapture ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">
-                                {selectedApplication?.livenessVerified ? 'Verified' : 'Captured'}
+                                {fullApplicationData?.livenessVerified ? 'Verified' : 'Captured'}
                               </Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.livenessCapture, 'Liveness Photo')}
+                                onClick={() => openDocumentViewer(fullApplicationData.livenessCapture, 'Liveness Photo')}
                                 data-testid="button-view-liveness"
                               >
                                 View
@@ -1319,13 +1373,13 @@ export default function KYCReview() {
                           <span className="text-sm">ID Document</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.idProof ? (
+                          {fullApplicationData?.documents?.idProof ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.idProof.url, 'ID Document')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.idProof.url, 'ID Document')}
                                 data-testid="button-view-id-doc"
                               >
                                 View
@@ -1342,13 +1396,13 @@ export default function KYCReview() {
                           <span className="text-sm">Selfie</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.selfie ? (
+                          {fullApplicationData?.documents?.selfie ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.selfie.url, 'Selfie')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.selfie.url, 'Selfie')}
                                 data-testid="button-view-selfie"
                               >
                                 View
@@ -1365,13 +1419,13 @@ export default function KYCReview() {
                           <span className="text-sm">Proof of Address</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {selectedApplication?.documents?.proofOfAddress ? (
+                          {fullApplicationData?.documents?.proofOfAddress ? (
                             <>
                               <Badge className="bg-green-100 text-green-700">Uploaded</Badge>
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => openDocumentViewer(selectedApplication.documents.proofOfAddress.url, 'Proof of Address')}
+                                onClick={() => openDocumentViewer(fullApplicationData.documents.proofOfAddress.url, 'Proof of Address')}
                                 data-testid="button-view-address-proof-legacy"
                               >
                                 View
@@ -1385,6 +1439,7 @@ export default function KYCReview() {
                     </>
                   )}
                 </div>
+                )}
 
                 {selectedApplication?.rejectionReason && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
