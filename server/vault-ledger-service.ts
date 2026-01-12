@@ -402,26 +402,49 @@ export class VaultLedgerService {
     }
     
     const currentBalance = parseFloat(summary.totalGoldGrams);
-    const newBalance = currentBalance + grams;
+    const intermediateBalance = currentBalance + grams;
+    const finalBalance = intermediateBalance;
     
-    const entry: InsertVaultLedgerEntry = {
+    const entry1: InsertVaultLedgerEntry = {
+      userId,
+      action: 'Vault_Transfer',
+      goldGrams: grams.toFixed(6),
+      goldPriceUsdPerGram: goldPriceUsdPerGram.toFixed(2),
+      valueUsd: (grams * goldPriceUsdPerGram).toFixed(2),
+      fromWallet: 'External',
+      toWallet: 'FinaPay',
+      fromStatus: 'Available',
+      toStatus: 'Available',
+      balanceAfterGrams: intermediateBalance.toFixed(6),
+      transactionId,
+      certificateId,
+      notes: `Physical gold allocated: Wingold & Metals → FinaVault (${grams.toFixed(6)}g)`,
+      createdBy: createdBy || 'system',
+    };
+
+    await dbClient.insert(vaultLedgerEntries).values(entry1);
+    
+    const entry2: InsertVaultLedgerEntry = {
       userId,
       action: 'Deposit',
       goldGrams: grams.toFixed(6),
       goldPriceUsdPerGram: goldPriceUsdPerGram.toFixed(2),
       valueUsd: (grams * goldPriceUsdPerGram).toFixed(2),
+      fromWallet: 'FinaPay',
       toWallet: 'FinaPay',
+      fromStatus: 'Available',
       toStatus: 'Available',
       goldWalletType: walletType,
+      fromGoldWalletType: undefined,
       toGoldWalletType: walletType,
-      balanceAfterGrams: newBalance.toFixed(6),
+      balanceAfterGrams: finalBalance.toFixed(6),
       transactionId,
       certificateId,
-      notes: notes || `${walletTypeLabel} Deposit: +${grams.toFixed(6)}g`,
+      notes: `Digital ownership credited: FinaVault → FinaPay-${walletTypeLabel} (${grams.toFixed(6)}g)`,
       createdBy: createdBy || 'system',
     };
 
-    const [ledgerEntry] = await dbClient.insert(vaultLedgerEntries).values(entry).returning();
+    const [ledgerEntry] = await dbClient.insert(vaultLedgerEntries).values(entry2).returning();
     return ledgerEntry;
   }
 
