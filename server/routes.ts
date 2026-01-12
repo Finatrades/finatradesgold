@@ -5920,9 +5920,20 @@ ${message}
       });
       
       // Deposit requests (exclude approved/confirmed - they already have a transaction record)
+      // UNIFIED ARCHITECTURE: Handle all payment methods (Bank Transfer, Crypto, Card Payment)
       depositRequests
         .filter(dep => dep.status !== 'Confirmed' && dep.status !== 'Approved')
         .forEach(dep => {
+          // Build description based on payment method
+          let description = 'Bank Deposit - Bank Transfer';
+          if (dep.paymentMethod === 'Crypto') {
+            description = `Crypto Deposit - ${dep.cryptoNetwork || 'Crypto'}`;
+          } else if (dep.paymentMethod === 'Card Payment') {
+            description = `Card Deposit - ${dep.cardTransactionRef ? 'Card' : 'Card Payment'}`;
+          } else {
+            description = `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`;
+          }
+          
           unifiedTransactions.push({
             id: dep.id,
             userId: dep.userId,
@@ -5933,7 +5944,7 @@ ${message}
             usdPerGram: dep.priceSnapshotUsdPerGram || null,
             status: dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
             referenceId: dep.referenceNumber,
-            description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
+            description: description,
             counterpartyUserId: null,
             createdAt: dep.createdAt,
             completedAt: dep.processedAt,
@@ -6251,8 +6262,19 @@ ${message}
         });
       });
       
+      // UNIFIED ARCHITECTURE: Handle all payment methods in admin view
       allDepositRequests.forEach(dep => {
         const user = userMap.get(dep.userId);
+        // Build description based on payment method
+        let description = 'Bank Deposit - Bank Transfer';
+        if (dep.paymentMethod === 'Crypto') {
+          description = `Crypto Deposit - ${dep.cryptoNetwork || 'Crypto'}`;
+        } else if (dep.paymentMethod === 'Card Payment') {
+          description = `Card Deposit - ${dep.cardTransactionRef ? 'Card' : 'Card Payment'}`;
+        } else {
+          description = `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`;
+        }
+        
         unifiedTransactions.push({
           id: dep.id,
           userId: dep.userId,
@@ -6265,7 +6287,7 @@ ${message}
           usdPerGram: dep.priceSnapshotUsdPerGram || null,
           status: dep.status === 'Confirmed' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
           referenceId: dep.referenceNumber,
-          description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
+          description: description,
           createdAt: dep.createdAt,
           completedAt: dep.processedAt,
           sourceType: 'deposit_request'
