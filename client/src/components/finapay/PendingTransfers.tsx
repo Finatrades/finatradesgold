@@ -60,6 +60,18 @@ interface UserInfo {
   email: string;
 }
 
+interface DepositRequest {
+  id: string;
+  referenceNumber: string;
+  amountUsd: string;
+  expectedGoldGrams?: string;
+  priceSnapshotUsdPerGram?: string;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+  goldWalletType?: string;
+}
+
 export default function PendingTransfers() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -98,6 +110,17 @@ export default function PendingTransfers() {
     queryFn: async () => {
       if (!user?.id) return { requests: [] };
       const response = await apiRequest('GET', `/api/finapay/requests/received/${user.id}`);
+      return await response.json();
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
+
+  const { data: depositRequestsData, isLoading: loadingDeposits } = useQuery({
+    queryKey: ['depositRequests', 'pending', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { requests: [] };
+      const response = await apiRequest('GET', `/api/deposit-requests/${user.id}`);
       return await response.json();
     },
     enabled: !!user?.id,
@@ -322,8 +345,11 @@ export default function PendingTransfers() {
   const receivedRequests = (receivedRequestsData?.requests || []).filter(
     (r: GoldRequest) => r.status === 'Pending'
   );
+  const pendingDeposits = (depositRequestsData?.requests || []).filter(
+    (d: DepositRequest) => d.status === 'Pending'
+  );
 
-  if (loadingIncoming && loadingOutgoing && loadingRequests) {
+  if (loadingIncoming && loadingOutgoing && loadingRequests && loadingDeposits) {
     return (
       <Card className="border-border">
         <CardContent className="py-8 text-center">
@@ -334,7 +360,7 @@ export default function PendingTransfers() {
     );
   }
 
-  if (incomingTransfers.length === 0 && outgoingTransfers.length === 0 && receivedRequests.length === 0) {
+  if (incomingTransfers.length === 0 && outgoingTransfers.length === 0 && receivedRequests.length === 0 && pendingDeposits.length === 0) {
     return null;
   }
 
@@ -370,7 +396,7 @@ export default function PendingTransfers() {
     return `Expires ${formatDistanceToNow(expires, { addSuffix: true })}`;
   };
 
-  const totalPendingItems = incomingTransfers.length + outgoingTransfers.length + receivedRequests.length;
+  const totalPendingItems = incomingTransfers.length + outgoingTransfers.length + receivedRequests.length + pendingDeposits.length;
 
   return (
     <Card className="border-amber-200 bg-amber-50/50">
@@ -526,6 +552,54 @@ export default function PendingTransfers() {
                           Gold will be refunded if not claimed within 24 hours
                         </p>
                       )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {pendingDeposits.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+              <ArrowDownLeft className="w-4 h-4" />
+              Add Funds - Awaiting Approval
+            </p>
+            {pendingDeposits.map((deposit: DepositRequest) => {
+              const goldGrams = deposit.expectedGoldGrams ? parseFloat(deposit.expectedGoldGrams) : 0;
+              const usdValue = parseFloat(deposit.amountUsd);
+              
+              return (
+                <div
+                  key={deposit.id}
+                  className="p-4 bg-white rounded-lg border border-emerald-200 shadow-sm"
+                  data-testid={`pending-deposit-${deposit.id}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-full">
+                      <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-lg text-emerald-700">
+                        {goldGrams > 0 ? `${goldGrams.toFixed(4)}g Gold` : `$${usdValue.toFixed(2)}`}
+                      </p>
+                      {goldGrams > 0 && (
+                        <p className="text-sm text-muted-foreground">≈ ${usdValue.toFixed(2)}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-1">
+                        via {deposit.paymentMethod} • {deposit.goldWalletType || 'LGPW'} Wallet
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ref: {deposit.referenceNumber}
+                      </p>
+                      <Badge variant="outline" className="mt-2 text-amber-600 border-amber-300">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Awaiting admin approval
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Submitted {formatDistanceToNow(new Date(deposit.createdAt), { addSuffix: true })}
+                      </p>
                     </div>
                   </div>
                 </div>

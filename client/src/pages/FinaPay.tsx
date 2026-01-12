@@ -323,10 +323,10 @@ export default function FinaPay() {
                 <div className="relative z-10">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
                   <p className="text-3xl font-bold text-foreground mb-1">
-                    ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {goldGrams.toFixed(4)} g
                   </p>
-                  <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g</p>
-                  <p className="text-xs text-muted-foreground mt-3">Funds available for trading and transfers.</p>
+                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-muted-foreground mt-3">Gold balance. USD is approximate at current price.</p>
                 </div>
               </div>
 
@@ -336,8 +336,8 @@ export default function FinaPay() {
                 </div>
                 <div className="relative z-10">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
-                  <p className="text-3xl font-bold text-purple-500 mb-1">$0.00</p>
-                  <p className="text-sm text-purple-500/70">0.000 g</p>
+                  <p className="text-3xl font-bold text-purple-500 mb-1">0.0000 g</p>
+                  <p className="text-sm text-purple-500/70">≈ $0.00</p>
                   <p className="text-xs text-muted-foreground mt-3">
                     <Lock className="w-3 h-3 inline mr-1" />
                     Assets locked in active plans and trades.
@@ -352,9 +352,9 @@ export default function FinaPay() {
                 <div className="relative z-10">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
                   <p className="text-3xl font-bold text-purple-500 mb-1">
-                    ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {goldGrams.toFixed(4)} g
                   </p>
-                  <p className="text-sm text-muted-foreground">{goldGrams.toFixed(3)} g Total</p>
+                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
 
@@ -438,7 +438,7 @@ export default function FinaPay() {
               data-testid="button-withdrawals"
             >
               <ArrowUpRight className="w-4 h-4 mr-1.5" />
-              Withdrawals
+              Withdraw Gold
               {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
             </button>
 
@@ -452,7 +452,7 @@ export default function FinaPay() {
               data-testid="button-send-funds"
             >
               <Send className="w-4 h-4 mr-1.5" />
-              Send Funds
+              Send Gold
               {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
             </button>
 
@@ -466,7 +466,7 @@ export default function FinaPay() {
               data-testid="button-request-funds"
             >
               <ArrowDownLeft className="w-4 h-4 mr-1.5" />
-              Request Funds
+              Request Gold
               {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
             </button>
           </div>

@@ -299,7 +299,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
                                   {tx.status}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground">Bal: {currentBalance !== null ? `$${Math.abs(currentBalance).toFixed(2)}` : '--'}</span>
+                                <span className="text-xs text-muted-foreground">Bal: {currentBalance !== null ? `${(currentBalance / goldPrice).toFixed(4)}g` : '--'}</span>
                               </div>
                             </div>
                           </div>
@@ -318,7 +318,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                       <th className="text-left py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Description</th>
                       <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Debit</th>
                       <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Credit</th>
-                      <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Balance USD</th>
+                      <th className="text-right py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Balance (Gold)</th>
                       <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Status</th>
                       <th className="text-center py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Action</th>
                     </tr>
@@ -441,9 +441,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                             {currentBalance !== null ? (
                               <div>
                                 <span className="font-medium text-foreground">
-                                  ${Math.abs(currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  {(currentBalance / goldPrice).toFixed(4)} g
                                 </span>
-                                <div className="text-xs text-muted-foreground">≈ {(currentBalance / goldPrice).toFixed(2)}g</div>
+                                <div className="text-xs text-muted-foreground">≈ ${Math.abs(currentBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">--</span>
