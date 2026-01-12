@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ export default function PhysicalDepositsAdmin() {
   const { data: stats } = useQuery({
     queryKey: ['physical-deposit-stats'],
     queryFn: async () => {
-      const res = await fetch('/api/physical-deposits/admin/deposits/stats', { credentials: 'include' });
+      const res = await apiRequest('GET', '/api/physical-deposits/admin/deposits/stats');
       if (!res.ok) throw new Error('Failed to fetch stats');
       return res.json();
     },
@@ -83,7 +84,7 @@ export default function PhysicalDepositsAdmin() {
       const url = statusFilter === 'all' 
         ? '/api/physical-deposits/admin/deposits'
         : `/api/physical-deposits/admin/deposits?status=${statusFilter}`;
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await apiRequest('GET', url);
       if (!res.ok) throw new Error('Failed to fetch deposits');
       return res.json();
     },
@@ -91,10 +92,7 @@ export default function PhysicalDepositsAdmin() {
 
   const reviewMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/review`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/review`, {});
       if (!res.ok) throw new Error('Failed to review');
       return res.json();
     },
@@ -106,12 +104,7 @@ export default function PhysicalDepositsAdmin() {
 
   const receiveMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/receive`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/receive`, data);
       if (!res.ok) throw new Error('Failed to receive');
       return res.json();
     },
@@ -124,12 +117,7 @@ export default function PhysicalDepositsAdmin() {
 
   const inspectMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/inspect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/inspect`, data);
       if (!res.ok) throw new Error('Failed to inspect');
       return res.json();
     },
@@ -142,12 +130,7 @@ export default function PhysicalDepositsAdmin() {
 
   const offerMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/offer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/offer`, data);
       if (!res.ok) throw new Error('Failed to send offer');
       return res.json();
     },
@@ -160,12 +143,7 @@ export default function PhysicalDepositsAdmin() {
 
   const acceptCounterMutation = useMutation({
     mutationFn: async ({ id, message }: { id: string; message?: string }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/accept-counter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ message }),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/accept-counter`, { message });
       if (!res.ok) throw new Error('Failed to accept counter');
       return res.json();
     },
@@ -177,12 +155,7 @@ export default function PhysicalDepositsAdmin() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ reason }),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/reject`, { reason });
       if (!res.ok) throw new Error('Failed to reject');
       return res.json();
     },
@@ -195,12 +168,7 @@ export default function PhysicalDepositsAdmin() {
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await fetch(`/api/physical-deposits/admin/deposits/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/approve`, data);
       if (!res.ok) throw new Error('Failed to approve');
       return res.json();
     },

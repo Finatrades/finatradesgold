@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function UserDetails() {
   const [, params] = useRoute("/admin/users/:id");
@@ -25,7 +26,7 @@ export default function UserDetails() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-user-details', userId],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/users/${userId}`);
+      const res = await apiRequest('GET', `/api/admin/users/${userId}`);
       if (!res.ok) throw new Error('Failed to fetch user');
       return res.json();
     },
@@ -41,15 +42,7 @@ export default function UserDetails() {
   // Admin actions
   const handleVerifyEmail = async () => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/verify-email`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ adminId: adminUser?.id }),
-      });
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/verify-email`, { adminId: adminUser?.id });
       if (res.ok) {
         toast({ title: "Email Verified", description: "User email has been verified." });
         refetch();
@@ -61,15 +54,7 @@ export default function UserDetails() {
 
   const handleSuspend = async () => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/suspend`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ adminId: adminUser?.id, reason: "Suspended by admin" }),
-      });
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/suspend`, { adminId: adminUser?.id, reason: "Suspended by admin" });
       if (res.ok) {
         toast({ title: "User Suspended", description: "User has been suspended." });
         refetch();
@@ -81,15 +66,7 @@ export default function UserDetails() {
 
   const handleActivate = async () => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/activate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ adminId: adminUser?.id }),
-      });
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/activate`, { adminId: adminUser?.id });
       if (res.ok) {
         toast({ title: "User Activated", description: "User has been activated." });
         refetch();

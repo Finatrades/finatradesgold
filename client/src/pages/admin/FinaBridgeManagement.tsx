@@ -187,9 +187,7 @@ export default function FinaBridgeManagement() {
   const fetchDealRooms = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch('/api/admin/deal-rooms', {
-        headers: { 'X-Admin-User-Id': user.id }
-      });
+      const res = await apiRequest('GET', '/api/admin/deal-rooms');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setDealRooms(data.rooms || []);

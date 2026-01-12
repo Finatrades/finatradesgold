@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation, Link, Redirect } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   LayoutDashboard, 
   Users, 
@@ -105,7 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     queryKey: ['/api/admin/employee/me', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const res = await fetch(`/api/admin/employees/by-user/${user.id}`);
+      const res = await apiRequest('GET', `/api/admin/employees/by-user/${user.id}`);
       if (!res.ok) return null;
       return res.json();
     },
@@ -116,7 +117,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: pendingCounts } = useQuery({
     queryKey: ['/api/admin/pending-counts'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/pending-counts');
+      const res = await apiRequest('GET', '/api/admin/pending-counts');
       if (!res.ok) return null;
       return res.json();
     },

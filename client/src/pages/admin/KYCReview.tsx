@@ -337,9 +337,7 @@ export default function KYCReview() {
       if (selectedApplication.kycType === 'finatrades_corporate' && userId) {
         setLoadingFullData(true);
         try {
-          const res = await fetch(`/api/finatrades-kyc/corporate/${userId}`, {
-            credentials: 'include',
-          });
+          const res = await apiRequest('GET', `/api/finatrades-kyc/corporate/${userId}`);
           if (res.ok) {
             const data = await res.json();
             if (data.submission) {
@@ -367,9 +365,7 @@ export default function KYCReview() {
       else if (selectedApplication.kycType === 'finatrades_personal' && userId) {
         setLoadingFullData(true);
         try {
-          const res = await fetch(`/api/finatrades-kyc/personal/${userId}`, {
-            credentials: 'include',
-          });
+          const res = await apiRequest('GET', `/api/finatrades-kyc/personal/${userId}`);
           if (res.ok) {
             const data = await res.json();
             if (data.submission) {
@@ -567,7 +563,7 @@ export default function KYCReview() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-kyc-submissions'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/kyc');
+      const res = await apiRequest('GET', '/api/admin/kyc');
       if (!res.ok) throw new Error('Failed to fetch KYC submissions');
       return res.json();
     },

@@ -248,14 +248,14 @@ export default function FinaPayManagement() {
     };
     try {
       const [txResponse, usersResponse, depositsRes, withdrawalsRes, peerTransfersRes, peerRequestsRes, cryptoRes, buyGoldRes] = await Promise.all([
-        fetch('/api/admin/transactions', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/users', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/deposit-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/withdrawal-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/finapay/peer-transfers', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/finapay/peer-requests', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/crypto-payments', { credentials: 'include', headers: adminHeaders }),
-        fetch('/api/admin/buy-gold', { credentials: 'include', headers: adminHeaders })
+        apiRequest('GET', '/api/admin/transactions'),
+        apiRequest('GET', '/api/admin/users'),
+        apiRequest('GET', '/api/admin/deposit-requests'),
+        apiRequest('GET', '/api/admin/withdrawal-requests'),
+        apiRequest('GET', '/api/admin/finapay/peer-transfers'),
+        apiRequest('GET', '/api/admin/finapay/peer-requests'),
+        apiRequest('GET', '/api/admin/crypto-payments'),
+        apiRequest('GET', '/api/admin/buy-gold')
       ]);
       
       const txData = await txResponse.json();

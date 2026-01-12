@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,9 +62,7 @@ export default function AttachmentsManagement() {
   const { data, isLoading, refetch } = useQuery<{ attachments: Attachment[] }>({
     queryKey: ['/api/admin/attachments'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/attachments', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/attachments');
       if (!res.ok) throw new Error('Failed to fetch attachments');
       return res.json();
     },

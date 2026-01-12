@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,9 +65,7 @@ export default function SecuritySettings() {
   const fetchSettings = async () => {
     if (!user) return;
     try {
-      const res = await fetch('/api/admin/security-settings', {
-        headers: { 'X-Admin-User-Id': user.id }
-      });
+      const res = await apiRequest('GET', '/api/admin/security-settings');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setSettings(data);
@@ -83,16 +82,7 @@ export default function SecuritySettings() {
     setSaving(true);
     try {
       const { id, ...updates } = settings;
-      const res = await fetch('/api/admin/security-settings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user.id
-        },
-        credentials: 'include',
-        body: JSON.stringify(updates)
-      });
+      const res = await apiRequest('PATCH', '/api/admin/security-settings', updates);
       if (!res.ok) throw new Error('Failed to save');
       toast.success('Security settings updated successfully');
     } catch (error) {

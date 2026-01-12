@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,9 +140,7 @@ export default function PaymentGatewayManagement() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admin/payment-gateways', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/payment-gateways');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       if (data) {
@@ -178,16 +177,7 @@ export default function PaymentGatewayManagement() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/admin/payment-gateways', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include',
-        body: JSON.stringify(settings)
-      });
+      const res = await apiRequest('PUT', '/api/admin/payment-gateways', settings);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to save');
@@ -243,9 +233,7 @@ export default function PaymentGatewayManagement() {
   // Crypto wallet functions
   const fetchCryptoWallets = async () => {
     try {
-      const response = await fetch('/api/admin/crypto-wallets', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const response = await apiRequest('GET', '/api/admin/crypto-wallets');
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setCryptoWallets(data.wallets || []);
@@ -325,16 +313,7 @@ export default function PaymentGatewayManagement() {
         : '/api/admin/crypto-wallets';
       const method = editingWallet ? 'PATCH' : 'POST';
       
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || ''
-        },
-        credentials: 'include',
-        body: JSON.stringify(walletForm)
-      });
+      const res = await apiRequest(method, url, walletForm);
       if (!res.ok) throw new Error('Failed to save');
       toast.success(editingWallet ? 'Wallet updated' : 'Wallet added');
       setShowWalletDialog(false);
@@ -348,14 +327,7 @@ export default function PaymentGatewayManagement() {
     if (!confirm('Are you sure you want to delete this wallet?')) return;
     
     try {
-      const res = await fetch(`/api/admin/crypto-wallets/${id}`, {
-        method: 'DELETE',
-        headers: { 
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include'
-      });
+      const res = await apiRequest('DELETE', `/api/admin/crypto-wallets/${id}`, {});
       if (!res.ok) throw new Error('Failed to delete');
       toast.success('Wallet deleted');
       fetchCryptoWallets();
@@ -366,16 +338,7 @@ export default function PaymentGatewayManagement() {
 
   const handleToggleWalletActive = async (wallet: CryptoWalletConfig) => {
     try {
-      const res = await fetch(`/api/admin/crypto-wallets/${wallet.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || ''
-        },
-        credentials: 'include',
-        body: JSON.stringify({ isActive: !wallet.isActive })
-      });
+      const res = await apiRequest('PATCH', `/api/admin/crypto-wallets/${wallet.id}`, { isActive: !wallet.isActive });
       if (!res.ok) throw new Error('Failed to update');
       fetchCryptoWallets();
     } catch (error) {

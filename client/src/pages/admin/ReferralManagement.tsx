@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,11 +52,11 @@ export default function ReferralManagement() {
   const fetchReferrals = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/referrals');
+      const response = await apiRequest('GET', '/api/admin/referrals');
       const data = await response.json();
       setReferrals(data.referrals || []);
       
-      const usersResponse = await fetch('/api/admin/users');
+      const usersResponse = await apiRequest('GET', '/api/admin/users');
       const usersData = await usersResponse.json();
       const usersMap: Record<string, User> = {};
       (usersData.users || []).forEach((user: User) => {
@@ -100,15 +101,7 @@ export default function ReferralManagement() {
         }
       }
       
-      const response = await fetch(`/api/admin/referrals/${selectedReferral.id}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(updates),
-      });
+      const response = await apiRequest('PATCH', `/api/admin/referrals/${selectedReferral.id}`, updates);
       
       if (!response.ok) throw new Error('Failed to update');
       

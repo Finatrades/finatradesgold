@@ -1,4 +1,5 @@
 import React from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,7 @@ export default function AdminSettings() {
 
   const handleDownloadAdminManual = async () => {
     try {
-      const response = await fetch('/api/documents/admin-manual', {
-        credentials: 'include',
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const response = await apiRequest('GET', '/api/documents/admin-manual');
       if (!response.ok) {
         throw new Error('Failed to download manual');
       }

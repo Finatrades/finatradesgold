@@ -66,7 +66,7 @@ export default function SuspiciousActivityReports() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
-      const res = await fetch(`/api/admin/sar-reports?${params.toString()}`);
+      const res = await apiRequest('GET', `/api/admin/sar-reports?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch SAR reports');
       return res.json();
     },

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,7 +96,7 @@ export default function EmployeeManagement() {
   const { data: employeesData, isLoading } = useQuery({
     queryKey: ['/api/admin/employees'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/employees');
+      const res = await apiRequest('GET', '/api/admin/employees');
       if (!res.ok) throw new Error('Failed to fetch employees');
       return res.json();
     }
@@ -104,7 +105,7 @@ export default function EmployeeManagement() {
   const { data: usersData } = useQuery({
     queryKey: ['/api/admin/users'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/users');
+      const res = await apiRequest('GET', '/api/admin/users');
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     }
@@ -112,15 +113,7 @@ export default function EmployeeManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const res = await fetch('/api/admin/employees', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ ...data, createdBy: user?.id }),
-      });
+      const res = await apiRequest('POST', '/api/admin/employees', { ...data, createdBy: user?.id });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Failed to create employee');
@@ -140,15 +133,7 @@ export default function EmployeeManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
-      const res = await fetch(`/api/admin/employees/${id}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ ...data, updatedBy: user?.id }),
-      });
+      const res = await apiRequest('PATCH', `/api/admin/employees/${id}`, { ...data, updatedBy: user?.id });
       if (!res.ok) throw new Error('Failed to update employee');
       return res.json();
     },
@@ -165,15 +150,7 @@ export default function EmployeeManagement() {
 
   const deactivateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/employees/${id}/deactivate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ adminId: user?.id }),
-      });
+      const res = await apiRequest('POST', `/api/admin/employees/${id}/deactivate`, { adminId: user?.id });
       if (!res.ok) throw new Error('Failed to deactivate employee');
       return res.json();
     },
@@ -188,15 +165,7 @@ export default function EmployeeManagement() {
 
   const activateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/employees/${id}/activate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ adminId: user?.id }),
-      });
+      const res = await apiRequest('POST', `/api/admin/employees/${id}/activate`, { adminId: user?.id });
       if (!res.ok) throw new Error('Failed to activate employee');
       return res.json();
     },

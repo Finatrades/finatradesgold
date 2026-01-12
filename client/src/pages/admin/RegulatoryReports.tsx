@@ -72,7 +72,7 @@ export default function RegulatoryReports() {
       const params = new URLSearchParams();
       if (typeFilter !== 'all') params.set('type', typeFilter);
       if (statusFilter !== 'all') params.set('status', statusFilter);
-      const res = await fetch(`/api/admin/regulatory-reports?${params.toString()}`);
+      const res = await apiRequest('GET', `/api/admin/regulatory-reports?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch reports');
       return res.json();
     },

@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import AdminOtpModal, { checkOtpRequired } from '@/components/admin/AdminOtpModal';
 import { useAdminOtp } from '@/hooks/useAdminOtp';
 import { Link } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Transaction {
   id: string;
@@ -52,15 +53,7 @@ export default function Transactions() {
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
-      const res = await fetch(`/api/admin/transactions/${id}/approve`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ sourceTable }),
-      });
+      const res = await apiRequest('POST', `/api/admin/transactions/${id}/approve`, { sourceTable });
       if (!res.ok) throw new Error('Failed to approve transaction');
       return res.json();
     },
@@ -75,15 +68,7 @@ export default function Transactions() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
-      const res = await fetch(`/api/admin/transactions/${id}/reject`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ reason: 'Rejected by admin', sourceTable }),
-      });
+      const res = await apiRequest('POST', `/api/admin/transactions/${id}/reject`, { reason: 'Rejected by admin', sourceTable });
       if (!res.ok) throw new Error('Failed to reject transaction');
       return res.json();
     },
@@ -132,16 +117,12 @@ export default function Transactions() {
     mutationFn: async (ids: string[]) => {
       const results = await Promise.all(
         ids.map(async (id) => {
-          const res = await fetch(`/api/admin/transactions/${id}/approve`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'include',
-            body: JSON.stringify({}),
-          });
-          return { id, success: res.ok };
+          try {
+            const res = await apiRequest('POST', `/api/admin/transactions/${id}/approve`, {});
+            return { id, success: res.ok };
+          } catch {
+            return { id, success: false };
+          }
         })
       );
       return results;
@@ -161,16 +142,12 @@ export default function Transactions() {
     mutationFn: async (ids: string[]) => {
       const results = await Promise.all(
         ids.map(async (id) => {
-          const res = await fetch(`/api/admin/transactions/${id}/reject`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'include',
-            body: JSON.stringify({ reason: 'Bulk rejected by admin' }),
-          });
-          return { id, success: res.ok };
+          try {
+            const res = await apiRequest('POST', `/api/admin/transactions/${id}/reject`, { reason: 'Bulk rejected by admin' });
+            return { id, success: res.ok };
+          } catch {
+            return { id, success: false };
+          }
         })
       );
       return results;

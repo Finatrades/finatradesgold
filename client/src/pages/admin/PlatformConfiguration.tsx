@@ -143,9 +143,7 @@ export default function PlatformConfiguration() {
   const fetchConfigs = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/platform-config', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/platform-config');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setConfigs(data.configs || []);
@@ -164,14 +162,7 @@ export default function PlatformConfiguration() {
 
   const seedDefaults = async () => {
     try {
-      const res = await fetch('/api/admin/platform-config/seed', {
-        method: 'POST',
-        headers: { 
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include'
-      });
+      const res = await apiRequest('POST', '/api/admin/platform-config/seed', {});
       if (!res.ok) throw new Error('Failed to seed');
       toast.success('Default configuration seeded successfully');
       fetchConfigs();
