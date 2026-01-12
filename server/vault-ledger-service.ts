@@ -410,7 +410,7 @@ export class VaultLedgerService {
       action: 'Vault_Transfer',
       goldGrams: grams.toFixed(6),
       goldPriceUsdPerGram: goldPriceUsdPerGram.toFixed(2),
-      valueUsd: (grams * goldPriceUsdPerGram).toFixed(2),
+      valueUsd: '0.00',
       fromWallet: 'External',
       toWallet: 'FinaPay',
       fromStatus: 'Available',
@@ -418,7 +418,7 @@ export class VaultLedgerService {
       balanceAfterGrams: intermediateBalance.toFixed(6),
       transactionId,
       certificateId,
-      notes: `Physical gold allocated: Wingold & Metals → FinaVault (${grams.toFixed(6)}g)`,
+      notes: `Physical gold allocated: Wingold & Metals → FinaVault`,
       createdBy: createdBy || 'system',
     };
 
@@ -440,7 +440,7 @@ export class VaultLedgerService {
       balanceAfterGrams: finalBalance.toFixed(6),
       transactionId,
       certificateId,
-      notes: `Digital ownership credited: FinaVault → FinaPay-${walletTypeLabel} (${grams.toFixed(6)}g)`,
+      notes: `Digital ownership credited: FinaVault → FinaPay-${walletTypeLabel}`,
       createdBy: createdBy || 'system',
     };
 
