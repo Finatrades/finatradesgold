@@ -63,124 +63,217 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   const hasPartialSurrender = remainingGrams < originalGrams;
   const totalValue = parseFloat(certificate.totalValueUsd || '0');
   
+  const generateCertificatePDF = () => {
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 25;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Dark background
+    doc.setFillColor(13, 5, 21);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    // Color scheme
+    const borderColor = isDigitalOwnership ? [212, 175, 55] : [192, 192, 192];
+    const borderColorFaded = isDigitalOwnership ? [212, 175, 55, 0.3] : [192, 192, 192, 0.3];
+    
+    // Outer decorative border (triple line effect)
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(2);
+    doc.rect(margin - 10, margin - 10, contentWidth + 20, pageHeight - (margin * 2) + 20, 'S');
+    doc.setLineWidth(0.5);
+    doc.rect(margin - 7, margin - 7, contentWidth + 14, pageHeight - (margin * 2) + 14, 'S');
+    doc.setLineWidth(1.5);
+    doc.rect(margin - 3, margin - 3, contentWidth + 6, pageHeight - (margin * 2) + 6, 'S');
+    
+    // Corner decorations
+    const cornerSize = 15;
+    const corners = [
+      { x: margin - 10, y: margin - 10 },
+      { x: pageWidth - margin + 10 - cornerSize, y: margin - 10 },
+      { x: margin - 10, y: pageHeight - margin + 10 - cornerSize },
+      { x: pageWidth - margin + 10 - cornerSize, y: pageHeight - margin + 10 - cornerSize }
+    ];
+    doc.setLineWidth(1);
+    corners.forEach((corner, i) => {
+      if (i === 0) {
+        doc.line(corner.x, corner.y + cornerSize, corner.x + cornerSize, corner.y);
+      } else if (i === 1) {
+        doc.line(corner.x, corner.y, corner.x + cornerSize, corner.y + cornerSize);
+      } else if (i === 2) {
+        doc.line(corner.x, corner.y, corner.x + cornerSize, corner.y + cornerSize);
+      } else {
+        doc.line(corner.x + cornerSize, corner.y, corner.x, corner.y + cornerSize);
+      }
+    });
+    
+    let y = margin + 20;
+    
+    // Shield icon (drawn with lines)
+    const shieldCenterX = pageWidth / 2;
+    const shieldTop = y;
+    const shieldWidth = 16;
+    const shieldHeight = 18;
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(1.5);
+    // Shield outline
+    doc.line(shieldCenterX - shieldWidth/2, shieldTop, shieldCenterX - shieldWidth/2, shieldTop + shieldHeight * 0.6);
+    doc.line(shieldCenterX + shieldWidth/2, shieldTop, shieldCenterX + shieldWidth/2, shieldTop + shieldHeight * 0.6);
+    doc.line(shieldCenterX - shieldWidth/2, shieldTop, shieldCenterX + shieldWidth/2, shieldTop);
+    doc.line(shieldCenterX - shieldWidth/2, shieldTop + shieldHeight * 0.6, shieldCenterX, shieldTop + shieldHeight);
+    doc.line(shieldCenterX + shieldWidth/2, shieldTop + shieldHeight * 0.6, shieldCenterX, shieldTop + shieldHeight);
+    // Checkmark inside shield
+    doc.setLineWidth(1);
+    doc.line(shieldCenterX - 4, shieldTop + 9, shieldCenterX - 1, shieldTop + 12);
+    doc.line(shieldCenterX - 1, shieldTop + 12, shieldCenterX + 5, shieldTop + 6);
+    y = shieldTop + shieldHeight + 12;
+    
+    // Title
+    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setFontSize(32);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
+    y += 14;
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text(isDigitalOwnership ? 'OF DIGITAL OWNERSHIP' : 'OF PHYSICAL STORAGE', pageWidth / 2, y, { align: 'center' });
+    y += 12;
+    
+    // Decorative line under title
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    doc.line(pageWidth / 2 - 40, y, pageWidth / 2 + 40, y);
+    y += 12;
+    
+    // Certificate Number
+    doc.setTextColor(180, 180, 180);
+    doc.setFontSize(10);
+    doc.text(certificate.certificateNumber, pageWidth / 2, y, { align: 'center' });
+    y += 12;
+    
+    // Status Badge
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(pageWidth / 2 - 18, y - 5, 36, 10, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(certificate.status, pageWidth / 2, y + 1, { align: 'center' });
+    y += 16;
+    
+    // Gold Wallet Type Badge
+    if (certificate.goldWalletType) {
+      const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Market Price Gold' : 'FGPW - Fixed Price Gold';
+      doc.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.roundedRect(pageWidth / 2 - 40, y - 5, 80, 10, 3, 3, 'F');
+      doc.setTextColor(20, 10, 30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(walletLabel, pageWidth / 2, y + 1, { align: 'center' });
+      y += 12;
+      
+      // Subtitle
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Value follows live gold price • Backed by physical gold', pageWidth / 2, y, { align: 'center' });
+      y += 18;
+    }
+    
+    // Main text box
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    const textBoxY = y - 5;
+    doc.roundedRect(margin + 10, textBoxY, contentWidth - 20, 25, 2, 2, 'S');
+    
+    doc.setTextColor(220, 220, 220);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const mainText = `This certifies that the holder is the beneficial owner of ${goldGrams.toFixed(4)}g of fine gold, secured and recorded in the Finatrades digital ledger.`;
+    const splitText = doc.splitTextToSize(mainText, contentWidth - 30);
+    doc.text(splitText, pageWidth / 2, y + 5, { align: 'center' });
+    y = textBoxY + 35;
+    
+    // Details section with boxes
+    const detailsY = y;
+    const colWidth = (contentWidth - 30) / 4;
+    const boxHeight = 28;
+    const startX = margin + 15;
+    
+    // Draw detail boxes
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    for (let i = 0; i < 4; i++) {
+      doc.roundedRect(startX + (colWidth * i), detailsY, colWidth - 5, boxHeight, 2, 2, 'S');
+    }
+    
+    // Headers
+    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('GOLD WEIGHT', startX + (colWidth * 0) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
+    doc.text('PURITY', startX + (colWidth * 1) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
+    doc.text('VALUE (USD)', startX + (colWidth * 2) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
+    doc.text('STORAGE REF', startX + (colWidth * 3) + (colWidth - 5) / 2, detailsY + 6, { align: 'center' });
+    
+    // Values
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${goldGrams.toFixed(4)}g`, startX + (colWidth * 0) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
+    doc.text('999.9', startX + (colWidth * 1) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
+    doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, startX + (colWidth * 2) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text(certificate.wingoldStorageRef || 'N/A', startX + (colWidth * 3) + (colWidth - 5) / 2, detailsY + 18, { align: 'center' });
+    y = detailsY + boxHeight + 15;
+    
+    // Decorative separator
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.5);
+    const sepY = y;
+    doc.line(margin + 30, sepY, margin + 50, sepY);
+    doc.line(pageWidth / 2 - 10, sepY, pageWidth / 2 + 10, sepY);
+    doc.line(pageWidth - margin - 50, sepY, pageWidth - margin - 30, sepY);
+    y += 20;
+    
+    // Date and Authority section
+    const footerY = y;
+    
+    // Date box
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin + 15, footerY - 8, contentWidth / 2 - 25, 25, 2, 2, 'S');
+    doc.roundedRect(pageWidth / 2 + 10, footerY - 8, contentWidth / 2 - 25, 25, 2, 2, 'S');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.text(issueDate, margin + 15 + (contentWidth / 2 - 25) / 2, footerY + 3, { align: 'center' });
+    doc.text('Finatrades Finance SA', pageWidth / 2 + 10 + (contentWidth / 2 - 25) / 2, footerY + 3, { align: 'center' });
+    
+    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('DATE OF ISSUE', margin + 15 + (contentWidth / 2 - 25) / 2, footerY + 11, { align: 'center' });
+    doc.text('ISSUING AUTHORITY', pageWidth / 2 + 10 + (contentWidth / 2 - 25) / 2, footerY + 11, { align: 'center' });
+    y = footerY + 30;
+    
+    // Disclaimer
+    doc.setTextColor(120, 120, 120);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'italic');
+    const disclaimer = 'This Certificate is electronically generated and verified through the Platform\'s secure system. It does not require any physical signature or stamp to be valid.';
+    const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth - 20);
+    doc.text(disclaimerLines, pageWidth / 2, y, { align: 'center' });
+    
+    return doc;
+  };
+
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      
-      // Background
-      doc.setFillColor(13, 5, 21); // #0D0515
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
-      // Border
-      const borderColor = isDigitalOwnership ? [212, 175, 55] : [192, 192, 192]; // Gold or Silver
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(1);
-      doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (margin * 2) + 10, 'S');
-      doc.rect(margin - 3, margin - 3, contentWidth + 6, pageHeight - (margin * 2) + 6, 'S');
-      
-      let y = margin + 15;
-      
-      // Title
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
-      y += 12;
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.text(isDigitalOwnership ? 'OF DIGITAL OWNERSHIP' : 'OF PHYSICAL STORAGE', pageWidth / 2, y, { align: 'center' });
-      y += 15;
-      
-      // Certificate Number
-      doc.setTextColor(200, 200, 200);
-      doc.setFontSize(10);
-      doc.text(certificate.certificateNumber, pageWidth / 2, y, { align: 'center' });
-      y += 10;
-      
-      // Status Badge
-      doc.setFillColor(34, 197, 94); // Green
-      doc.roundedRect(pageWidth / 2 - 15, y - 4, 30, 8, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.text(certificate.status, pageWidth / 2, y + 1, { align: 'center' });
-      y += 15;
-      
-      // Gold Wallet Type Badge
-      if (certificate.goldWalletType) {
-        const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Market Price Gold' : 'FGPW - Fixed Price Gold';
-        doc.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
-        doc.roundedRect(pageWidth / 2 - 35, y - 4, 70, 8, 2, 2, 'F');
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(8);
-        doc.text(walletLabel, pageWidth / 2, y + 1, { align: 'center' });
-        y += 15;
-      }
-      
-      // Main text
-      doc.setTextColor(200, 200, 200);
-      doc.setFontSize(11);
-      const mainText = `This certifies that the holder is the beneficial owner of ${goldGrams.toFixed(4)}g of fine gold, secured and recorded in the Finatrades digital ledger.`;
-      const splitText = doc.splitTextToSize(mainText, contentWidth - 20);
-      doc.text(splitText, pageWidth / 2, y, { align: 'center' });
-      y += splitText.length * 6 + 15;
-      
-      // Details grid
-      const detailsY = y;
-      const colWidth = contentWidth / 4;
-      
-      // Headers
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(8);
-      doc.text('GOLD WEIGHT', margin + colWidth * 0.5, detailsY, { align: 'center' });
-      doc.text('PURITY', margin + colWidth * 1.5, detailsY, { align: 'center' });
-      doc.text('VALUE (USD)', margin + colWidth * 2.5, detailsY, { align: 'center' });
-      doc.text('STORAGE REF', margin + colWidth * 3.5, detailsY, { align: 'center' });
-      
-      // Values
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${goldGrams.toFixed(4)}g`, margin + colWidth * 0.5, detailsY + 8, { align: 'center' });
-      doc.text('999.9', margin + colWidth * 1.5, detailsY + 8, { align: 'center' });
-      doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + colWidth * 2.5, detailsY + 8, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(certificate.wingoldStorageRef || 'N/A', margin + colWidth * 3.5, detailsY + 8, { align: 'center' });
-      y = detailsY + 25;
-      
-      // Separator
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.3);
-      doc.line(margin + 10, y, pageWidth - margin - 10, y);
-      y += 15;
-      
-      // Date and Authority
-      const footerY = y;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.text(issueDate, margin + contentWidth * 0.25, footerY, { align: 'center' });
-      doc.text('Finatrades Finance SA', margin + contentWidth * 0.75, footerY, { align: 'center' });
-      
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('DATE OF ISSUE', margin + contentWidth * 0.25, footerY + 6, { align: 'center' });
-      doc.text('ISSUING AUTHORITY', margin + contentWidth * 0.75, footerY + 6, { align: 'center' });
-      y = footerY + 20;
-      
-      // Disclaimer
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
-      const disclaimer = 'This Certificate is electronically generated and verified through the Platform\'s secure system. It does not require any physical signature or stamp to be valid.';
-      const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth - 20);
-      doc.text(disclaimerLines, pageWidth / 2, y, { align: 'center' });
-      
+      const doc = generateCertificatePDF();
       const filename = `${certificate.type.replace(/\s+/g, '_')}_${certificate.certificateNumber}.pdf`;
       doc.save(filename);
       
@@ -203,111 +296,7 @@ function CertificateDetailModal({ certificate, open, onOpenChange }: Certificate
   const handlePrint = async () => {
     setIsGenerating(true);
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      
-      // Background
-      doc.setFillColor(13, 5, 21);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
-      // Border
-      const borderColor = isDigitalOwnership ? [212, 175, 55] : [192, 192, 192];
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(1);
-      doc.rect(margin - 5, margin - 5, contentWidth + 10, pageHeight - (margin * 2) + 10, 'S');
-      doc.rect(margin - 3, margin - 3, contentWidth + 6, pageHeight - (margin * 2) + 6, 'S');
-      
-      let y = margin + 15;
-      
-      // Title
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
-      y += 12;
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.text(isDigitalOwnership ? 'OF DIGITAL OWNERSHIP' : 'OF PHYSICAL STORAGE', pageWidth / 2, y, { align: 'center' });
-      y += 15;
-      
-      doc.setTextColor(200, 200, 200);
-      doc.setFontSize(10);
-      doc.text(certificate.certificateNumber, pageWidth / 2, y, { align: 'center' });
-      y += 10;
-      
-      doc.setFillColor(34, 197, 94);
-      doc.roundedRect(pageWidth / 2 - 15, y - 4, 30, 8, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.text(certificate.status, pageWidth / 2, y + 1, { align: 'center' });
-      y += 15;
-      
-      if (certificate.goldWalletType) {
-        const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Market Price Gold' : 'FGPW - Fixed Price Gold';
-        doc.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
-        doc.roundedRect(pageWidth / 2 - 35, y - 4, 70, 8, 2, 2, 'F');
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(8);
-        doc.text(walletLabel, pageWidth / 2, y + 1, { align: 'center' });
-        y += 15;
-      }
-      
-      doc.setTextColor(200, 200, 200);
-      doc.setFontSize(11);
-      const mainText = `This certifies that the holder is the beneficial owner of ${goldGrams.toFixed(4)}g of fine gold, secured and recorded in the Finatrades digital ledger.`;
-      const splitText = doc.splitTextToSize(mainText, contentWidth - 20);
-      doc.text(splitText, pageWidth / 2, y, { align: 'center' });
-      y += splitText.length * 6 + 15;
-      
-      const detailsY = y;
-      const colWidth = contentWidth / 4;
-      
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(8);
-      doc.text('GOLD WEIGHT', margin + colWidth * 0.5, detailsY, { align: 'center' });
-      doc.text('PURITY', margin + colWidth * 1.5, detailsY, { align: 'center' });
-      doc.text('VALUE (USD)', margin + colWidth * 2.5, detailsY, { align: 'center' });
-      doc.text('STORAGE REF', margin + colWidth * 3.5, detailsY, { align: 'center' });
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${goldGrams.toFixed(4)}g`, margin + colWidth * 0.5, detailsY + 8, { align: 'center' });
-      doc.text('999.9', margin + colWidth * 1.5, detailsY + 8, { align: 'center' });
-      doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + colWidth * 2.5, detailsY + 8, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(certificate.wingoldStorageRef || 'N/A', margin + colWidth * 3.5, detailsY + 8, { align: 'center' });
-      y = detailsY + 25;
-      
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.3);
-      doc.line(margin + 10, y, pageWidth - margin - 10, y);
-      y += 15;
-      
-      const footerY = y;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.text(issueDate, margin + contentWidth * 0.25, footerY, { align: 'center' });
-      doc.text('Finatrades Finance SA', margin + contentWidth * 0.75, footerY, { align: 'center' });
-      
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('DATE OF ISSUE', margin + contentWidth * 0.25, footerY + 6, { align: 'center' });
-      doc.text('ISSUING AUTHORITY', margin + contentWidth * 0.75, footerY + 6, { align: 'center' });
-      y = footerY + 20;
-      
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
-      const disclaimer = 'This Certificate is electronically generated and verified through the Platform\'s secure system. It does not require any physical signature or stamp to be valid.';
-      const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth - 20);
-      doc.text(disclaimerLines, pageWidth / 2, y, { align: 'center' });
-      
+      const doc = generateCertificatePDF();
       doc.autoPrint();
       window.open(doc.output('bloburl'), '_blank');
       
