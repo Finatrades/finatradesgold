@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Search, RefreshCw, Eye, Download, FileText, Filter, Calendar, User, Activity } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
+import { apiRequest } from '@/lib/queryClient';
 
 interface AuditLogEntry {
   id: string;
@@ -38,7 +39,7 @@ export default function AuditTrail() {
       const params = new URLSearchParams();
       if (entityFilter !== 'all') params.set('entityType', entityFilter);
       if (actionFilter !== 'all') params.set('actionType', actionFilter);
-      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
+      const res = await apiRequest('GET', `/api/admin/audit-logs?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch audit logs');
       return res.json();
     },

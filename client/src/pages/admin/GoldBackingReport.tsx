@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { apiRequest } from '@/lib/queryClient';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -233,13 +234,7 @@ export default function GoldBackingReport() {
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch('/api/admin/gold-backing-report/pdf', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      });
+      const response = await apiRequest('GET', '/api/admin/gold-backing-report/pdf');
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
       }

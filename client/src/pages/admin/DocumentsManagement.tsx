@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Invoice {
   id: string;
@@ -75,9 +76,7 @@ export default function DocumentsManagement() {
   const { data: invoicesData, isLoading: invoicesLoading, refetch: refetchInvoices } = useQuery<{ invoices: Invoice[] }>({
     queryKey: ['/api/admin/documents/invoices'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/documents/invoices', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/documents/invoices');
       if (!res.ok) throw new Error('Failed to fetch invoices');
       return res.json();
     },
@@ -87,9 +86,7 @@ export default function DocumentsManagement() {
   const { data: deliveriesData, isLoading: deliveriesLoading, refetch: refetchDeliveries } = useQuery<{ deliveries: CertificateDelivery[] }>({
     queryKey: ['/api/admin/documents/certificate-deliveries'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/documents/certificate-deliveries', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/documents/certificate-deliveries');
       if (!res.ok) throw new Error('Failed to fetch deliveries');
       return res.json();
     },
@@ -99,9 +96,7 @@ export default function DocumentsManagement() {
   const { data: receiptsData, isLoading: receiptsLoading, refetch: refetchReceipts } = useQuery<{ transactions: TransactionReceipt[] }>({
     queryKey: ['/api/admin/documents/transaction-receipts'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/documents/transaction-receipts', {
-        headers: { 'X-Admin-User-Id': user?.id || '' }
-      });
+      const res = await apiRequest('GET', '/api/admin/documents/transaction-receipts');
       if (!res.ok) throw new Error('Failed to fetch transaction receipts');
       return res.json();
     },
@@ -110,15 +105,7 @@ export default function DocumentsManagement() {
 
   const resendInvoiceMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/documents/invoices/${id}/resend`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || ''
-        },
-        credentials: 'include',
-      });
+      const res = await apiRequest('POST', `/api/admin/documents/invoices/${id}/resend`);
       if (!res.ok) throw new Error('Failed to resend invoice');
       return res.json();
     },
@@ -133,15 +120,7 @@ export default function DocumentsManagement() {
 
   const resendCertificateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/documents/certificates/${id}/resend`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || ''
-        },
-        credentials: 'include',
-      });
+      const res = await apiRequest('POST', `/api/admin/documents/certificates/${id}/resend`);
       if (!res.ok) throw new Error('Failed to resend certificate');
       return res.json();
     },

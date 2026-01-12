@@ -78,7 +78,7 @@ export default function AccountDeletionRequests() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-deletion-requests'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/account-deletion-requests');
+      const res = await apiRequest('GET', '/api/admin/account-deletion-requests');
       if (!res.ok) throw new Error('Failed to fetch deletion requests');
       return res.json();
     },

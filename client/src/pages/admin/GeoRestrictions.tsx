@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -277,7 +278,7 @@ export default function GeoRestrictions() {
   const { data: restrictionsData, isLoading: loadingRestrictions } = useQuery({
     queryKey: ['/api/admin/geo-restrictions'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/geo-restrictions');
+      const res = await apiRequest('GET', '/api/admin/geo-restrictions');
       if (!res.ok) throw new Error('Failed to fetch restrictions');
       return res.json();
     },
@@ -286,7 +287,7 @@ export default function GeoRestrictions() {
   const { data: settingsData, isLoading: loadingSettings } = useQuery({
     queryKey: ['/api/admin/geo-restriction-settings'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/geo-restriction-settings');
+      const res = await apiRequest('GET', '/api/admin/geo-restriction-settings');
       if (!res.ok) throw new Error('Failed to fetch settings');
       return res.json();
     },
@@ -294,15 +295,7 @@ export default function GeoRestrictions() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<GeoRestrictionSettings>) => {
-      const res = await fetch('/api/admin/geo-restriction-settings', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(settings),
-      });
+      const res = await apiRequest('POST', '/api/admin/geo-restriction-settings', settings);
       if (!res.ok) throw new Error('Failed to update settings');
       return res.json();
     },
@@ -317,15 +310,7 @@ export default function GeoRestrictions() {
 
   const createRestrictionMutation = useMutation({
     mutationFn: async (data: typeof newRestriction) => {
-      const res = await fetch('/api/admin/geo-restrictions', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('POST', '/api/admin/geo-restrictions', data);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Failed to create restriction');
@@ -354,15 +339,7 @@ export default function GeoRestrictions() {
 
   const updateRestrictionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<GeoRestriction> }) => {
-      const res = await fetch(`/api/admin/geo-restrictions/${id}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest('PATCH', `/api/admin/geo-restrictions/${id}`, data);
       if (!res.ok) throw new Error('Failed to update restriction');
       return res.json();
     },
@@ -378,11 +355,7 @@ export default function GeoRestrictions() {
 
   const deleteRestrictionMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/geo-restrictions/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'include',
-      });
+      const res = await apiRequest('DELETE', `/api/admin/geo-restrictions/${id}`);
       if (!res.ok) throw new Error('Failed to delete restriction');
       return res.json();
     },

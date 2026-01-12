@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 type TallyStatus = 'PENDING_PAYMENT' | 'PAYMENT_CONFIRMED' | 'PHYSICAL_ORDERED' | 'PHYSICAL_ALLOCATED' | 'CERT_RECEIVED' | 'CREDITED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 type DepositMethod = 'CARD' | 'BANK' | 'CRYPTO' | 'VAULT_GOLD';
@@ -134,7 +135,7 @@ export default function UnifiedGoldTally() {
       if (methodFilter !== 'all') params.set('depositMethod', methodFilter);
       if (search) params.set('search', search);
       
-      const res = await fetch(`/api/admin/unified-tally?${params}`);
+      const res = await apiRequest('GET', `/api/admin/unified-tally?${params}`);
       if (!res.ok) throw new Error('Failed to fetch transactions');
       return res.json();
     },
@@ -143,7 +144,7 @@ export default function UnifiedGoldTally() {
   const { data: stats } = useQuery({
     queryKey: ['/api/admin/unified-tally/stats'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/unified-tally/stats');
+      const res = await apiRequest('GET', '/api/admin/unified-tally/stats');
       if (!res.ok) throw new Error('Failed to fetch stats');
       return res.json();
     },
@@ -475,7 +476,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     queryKey: ['/api/admin/unified-tally', transaction?.id, 'wingold-form'],
     queryFn: async () => {
       if (!transaction?.id) return null;
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/wingold-form`);
+      const res = await apiRequest('GET', `/api/admin/unified-tally/${transaction.id}/wingold-form`);
       if (!res.ok) throw new Error('Failed to fetch form data');
       return res.json();
     },
@@ -486,7 +487,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     queryKey: ['/api/admin/unified-tally', transaction?.id, 'events'],
     queryFn: async () => {
       if (!transaction?.id) return [];
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/events`);
+      const res = await apiRequest('GET', `/api/admin/unified-tally/${transaction.id}/events`);
       if (!res.ok) throw new Error('Failed to fetch events');
       return res.json();
     },
@@ -497,7 +498,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     queryKey: ['/api/admin/unified-tally/user', transaction?.userId, 'holdings-snapshot'],
     queryFn: async () => {
       if (!transaction?.userId) return null;
-      const res = await fetch(`/api/admin/unified-tally/user/${transaction.userId}/holdings-snapshot`);
+      const res = await apiRequest('GET', `/api/admin/unified-tally/user/${transaction.userId}/holdings-snapshot`);
       if (!res.ok) throw new Error('Failed to fetch holdings');
       return res.json();
     },
@@ -508,7 +509,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     queryKey: ['/api/admin/unified-tally', transaction?.id, 'projection'],
     queryFn: async () => {
       if (!transaction?.id) return null;
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/projection`);
+      const res = await apiRequest('GET', `/api/admin/unified-tally/${transaction.id}/projection`);
       if (!res.ok) throw new Error('Failed to fetch projection');
       return res.json();
     },
@@ -581,13 +582,9 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     if (!transaction) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/confirm-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          paymentReference: `PAY-${Date.now()}`,
-          confirmedAmount: transaction.depositAmount
-        }),
+      const res = await apiRequest('POST', `/api/admin/unified-tally/${transaction.id}/confirm-payment`, { 
+        paymentReference: `PAY-${Date.now()}`,
+        confirmedAmount: transaction.depositAmount
       });
       if (!res.ok) throw new Error('Failed to confirm payment');
       toast.success('Payment confirmed');
@@ -604,21 +601,17 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     if (!transaction) return;
     setSavingWingold(true);
     try {
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/wingold-form/save-draft`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wingoldOrderId: wingoldForm.wingoldOrderId || undefined,
-          wingoldSupplierInvoiceId: wingoldForm.wingoldSupplierInvoiceId || undefined,
-          wingoldBuyRate: wingoldForm.wingoldBuyRate || undefined,
-          wingoldCostUsd: wingoldForm.wingoldCostUsd || undefined,
-          vaultLocation: wingoldForm.vaultLocation || undefined,
-          goldRateValue: wingoldForm.wingoldBuyRate || undefined,
-          storageCertificateId: wingoldForm.storageCertificateId || undefined,
-          certificateFileUrl: wingoldForm.certificateFileUrl || undefined,
-          certificateDate: wingoldForm.certificateDate || undefined,
-          barLotSerialsJson: wingoldForm.bars.length > 0 ? wingoldForm.bars : undefined,
-        }),
+      const res = await apiRequest('POST', `/api/admin/unified-tally/${transaction.id}/wingold-form/save-draft`, {
+        wingoldOrderId: wingoldForm.wingoldOrderId || undefined,
+        wingoldSupplierInvoiceId: wingoldForm.wingoldSupplierInvoiceId || undefined,
+        wingoldBuyRate: wingoldForm.wingoldBuyRate || undefined,
+        wingoldCostUsd: wingoldForm.wingoldCostUsd || undefined,
+        vaultLocation: wingoldForm.vaultLocation || undefined,
+        goldRateValue: wingoldForm.wingoldBuyRate || undefined,
+        storageCertificateId: wingoldForm.storageCertificateId || undefined,
+        certificateFileUrl: wingoldForm.certificateFileUrl || undefined,
+        certificateDate: wingoldForm.certificateDate || undefined,
+        barLotSerialsJson: wingoldForm.bars.length > 0 ? wingoldForm.bars : undefined,
       });
       if (!res.ok) {
         const err = await res.json();
@@ -656,17 +649,13 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
 
     setSavingCredit(true);
     try {
-      const res = await fetch(`/api/admin/unified-tally/${transaction.id}/approve-credit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pricingMode: 'MARKET', // Use stored rate
-          goldRateValue: goldRate,
-          gatewayCostUsd: creditForm.gatewayCostUsd || '0',
-          bankCostUsd: creditForm.bankCostUsd || '0',
-          networkCostUsd: creditForm.networkCostUsd || '0',
-          opsCostUsd: creditForm.opsCostUsd || '0',
-        }),
+      const res = await apiRequest('POST', `/api/admin/unified-tally/${transaction.id}/approve-credit`, {
+        pricingMode: 'MARKET',
+        goldRateValue: goldRate,
+        gatewayCostUsd: creditForm.gatewayCostUsd || '0',
+        bankCostUsd: creditForm.bankCostUsd || '0',
+        networkCostUsd: creditForm.networkCostUsd || '0',
+        opsCostUsd: creditForm.opsCostUsd || '0',
       });
       if (!res.ok) {
         const err = await res.json();

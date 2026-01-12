@@ -477,7 +477,7 @@ export default function FinaPayManagement() {
   const fetchLiveGoldPrice = async () => {
     setFetchingLivePrice(true);
     try {
-      const response = await fetch('/api/gold-price');
+      const response = await apiRequest('GET', '/api/gold-price');
       const data = await response.json();
       setLiveGoldPrice(data.pricePerGram);
     } catch (error) {

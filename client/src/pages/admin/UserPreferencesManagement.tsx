@@ -14,6 +14,7 @@ import {
   Eye, EyeOff, Loader2, Edit, Check, X, TrendingUp, DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 interface UserPreferencesData {
   id: string;
@@ -49,7 +50,7 @@ export default function UserPreferencesManagement() {
   const { data, isLoading } = useQuery<{ users: UserWithPrefs[] }>({
     queryKey: ['admin-user-preferences'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/user-preferences');
+      const res = await apiRequest('GET', '/api/admin/user-preferences');
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
@@ -57,15 +58,7 @@ export default function UserPreferencesManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<UserPreferencesData> }) => {
-      const res = await fetch(`/api/admin/users/${userId}/preferences`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(updates),
-      });
+      const res = await apiRequest('PUT', `/api/admin/users/${userId}/preferences`, updates);
       if (!res.ok) throw new Error('Failed to update');
       return res.json();
     },

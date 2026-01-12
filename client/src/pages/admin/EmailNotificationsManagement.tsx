@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 interface EmailNotificationSetting {
   id: string;
@@ -95,10 +96,7 @@ export default function EmailNotificationsManagement() {
   const { data: settingsData, isLoading: settingsLoading, refetch: refetchSettings } = useQuery({
     queryKey: ['email-notification-settings'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/email-notifications', {
-        headers: { 'X-Admin-User-Id': user?.id || '' },
-        credentials: 'include',
-      });
+      const res = await apiRequest('GET', '/api/admin/email-notifications');
       if (!res.ok) throw new Error('Failed to fetch settings');
       return res.json();
     },
@@ -107,10 +105,7 @@ export default function EmailNotificationsManagement() {
   const { data: logsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['email-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/email-logs', {
-        headers: { 'X-Admin-User-Id': user?.id || '' },
-        credentials: 'include',
-      });
+      const res = await apiRequest('GET', '/api/admin/email-logs');
       if (!res.ok) throw new Error('Failed to fetch logs');
       return res.json();
     },
@@ -118,16 +113,7 @@ export default function EmailNotificationsManagement() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ type, isEnabled }: { type: string; isEnabled: boolean }) => {
-      const res = await fetch(`/api/admin/email-notifications/${type}/toggle`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include',
-        body: JSON.stringify({ isEnabled }),
-      });
+      const res = await apiRequest('PATCH', `/api/admin/email-notifications/${type}/toggle`, { isEnabled });
       if (!res.ok) throw new Error('Failed to toggle notification');
       return res.json();
     },
@@ -142,14 +128,7 @@ export default function EmailNotificationsManagement() {
 
   const seedMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/admin/email-notifications/seed', {
-        method: 'POST',
-        headers: { 
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Admin-User-Id': user?.id || '' 
-        },
-        credentials: 'include',
-      });
+      const res = await apiRequest('POST', '/api/admin/email-notifications/seed');
       if (!res.ok) throw new Error('Failed to seed settings');
       return res.json();
     },

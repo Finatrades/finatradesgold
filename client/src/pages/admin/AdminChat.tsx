@@ -15,6 +15,7 @@ import { useChat, ChatProvider } from '@/context/ChatContext';
 import { CallOverlay, IncomingCallModal } from '@/components/chat/CallOverlay';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 interface ChatAgent {
   id: string;
@@ -59,7 +60,7 @@ function AgentManagement() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/chat-agents');
+      const response = await apiRequest('GET', '/api/chat-agents');
       if (!response.ok) throw new Error('Failed to fetch agents');
       const data = await response.json();
       setAgents(data.agents || []);
@@ -74,15 +75,7 @@ function AgentManagement() {
   const toggleAgentStatus = async (agent: ChatAgent) => {
     const newStatus = agent.status === 'active' ? 'inactive' : 'active';
     try {
-      const response = await fetch(`/api/chat-agents/${agent.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus })
-      });
+      const response = await apiRequest('PUT', `/api/chat-agents/${agent.id}`, { status: newStatus });
       if (!response.ok) throw new Error('Failed to update agent');
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a));
       toast({ title: 'Success', description: `${agent.displayName} is now ${newStatus}` });
@@ -104,15 +97,7 @@ function AgentManagement() {
   const saveAgentChanges = async () => {
     if (!editingAgent) return;
     try {
-      const response = await fetch(`/api/chat-agents/${editingAgent.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(editForm)
-      });
+      const response = await apiRequest('PUT', `/api/chat-agents/${editingAgent.id}`, editForm);
       if (!response.ok) throw new Error('Failed to update agent');
       const updatedAgent = await response.json();
       setAgents(prev => prev.map(a => a.id === editingAgent.id ? updatedAgent.agent : a));
@@ -413,15 +398,7 @@ function KnowledgeBaseManagement() {
         : '/api/knowledge/articles';
       const method = editingArticle ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
+      const response = await apiRequest(method, url, payload);
 
       if (!response.ok) throw new Error('Failed to save article');
 
@@ -437,11 +414,7 @@ function KnowledgeBaseManagement() {
   const deleteArticle = async (id: string) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
     try {
-      const response = await fetch(`/api/knowledge/articles/${id}`, { 
-        method: 'DELETE',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'include'
-      });
+      const response = await apiRequest('DELETE', `/api/knowledge/articles/${id}`);
       if (!response.ok) throw new Error('Failed to delete');
       setArticles(prev => prev.filter(a => a.id !== id));
       toast({ title: 'Success', description: 'Article deleted' });
@@ -453,15 +426,7 @@ function KnowledgeBaseManagement() {
   const toggleArticleStatus = async (article: KnowledgeArticle) => {
     const newStatus = article.status === 'published' ? 'draft' : 'published';
     try {
-      const response = await fetch(`/api/knowledge/articles/${article.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus })
-      });
+      const response = await apiRequest('PUT', `/api/knowledge/articles/${article.id}`, { status: newStatus });
       if (!response.ok) throw new Error('Failed to update');
       setArticles(prev => prev.map(a => a.id === article.id ? { ...a, status: newStatus } : a));
       toast({ title: 'Success', description: `Article ${newStatus === 'published' ? 'published' : 'unpublished'}` });

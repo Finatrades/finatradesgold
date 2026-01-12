@@ -81,7 +81,7 @@ export default function ComplianceDashboard() {
   const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
     queryKey: ['admin-aml-alerts'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/aml/alerts');
+      const res = await apiRequest('GET', '/api/admin/aml/alerts');
       if (!res.ok) throw new Error('Failed to fetch AML alerts');
       return res.json();
     },
@@ -91,7 +91,7 @@ export default function ComplianceDashboard() {
   const { data: casesData, isLoading: casesLoading, refetch: refetchCases } = useQuery({
     queryKey: ['admin-aml-cases'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/aml-cases');
+      const res = await apiRequest('GET', '/api/admin/aml-cases');
       if (!res.ok) throw new Error('Failed to fetch AML cases');
       return res.json();
     },
@@ -101,7 +101,7 @@ export default function ComplianceDashboard() {
   const { data: riskProfilesData, isLoading: profilesLoading, refetch: refetchProfiles } = useQuery({
     queryKey: ['admin-risk-profiles'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/risk-profiles');
+      const res = await apiRequest('GET', '/api/admin/risk-profiles');
       if (!res.ok) throw new Error('Failed to fetch risk profiles');
       return res.json();
     },
@@ -111,7 +111,7 @@ export default function ComplianceDashboard() {
   const { data: screeningLogsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['admin-screening-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/screening-logs');
+      const res = await apiRequest('GET', '/api/admin/screening-logs');
       if (!res.ok) throw new Error('Failed to fetch screening logs');
       return res.json();
     },
@@ -121,7 +121,7 @@ export default function ComplianceDashboard() {
   const { data: auditLogsData, isLoading: auditLogsLoading, refetch: refetchAuditLogs } = useQuery({
     queryKey: ['admin-audit-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/audit-logs');
+      const res = await apiRequest('GET', '/api/admin/audit-logs');
       if (!res.ok) throw new Error('Failed to fetch audit logs');
       return res.json();
     },
@@ -130,15 +130,7 @@ export default function ComplianceDashboard() {
 
   const updateCaseMutation = useMutation({
     mutationFn: async ({ caseId, status, notes }: { caseId: string; status: string; notes?: string }) => {
-      const res = await fetch(`/api/admin/aml-cases/${caseId}`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status, notes, reviewedBy: adminUser?.id }),
-      });
+      const res = await apiRequest('POST', `/api/admin/aml-cases/${caseId}`, { status, notes, reviewedBy: adminUser?.id });
       if (!res.ok) throw new Error('Failed to update case');
       return res.json();
     },
@@ -186,7 +178,7 @@ export default function ComplianceDashboard() {
   const { data: rulesData, isLoading: rulesLoading, refetch: refetchRules } = useQuery({
     queryKey: ['admin-aml-rules'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/aml-rules');
+      const res = await apiRequest('GET', '/api/admin/aml-rules');
       if (!res.ok) throw new Error('Failed to fetch AML rules');
       return res.json();
     },

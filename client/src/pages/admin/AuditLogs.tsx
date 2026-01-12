@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Search, RefreshCw, FileText, Filter, User, Calendar, Activity, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { apiRequest } from '@/lib/queryClient';
 
 interface AuditLog {
   id: string;
@@ -43,11 +44,11 @@ export default function AuditLogs() {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/audit-logs');
+      const response = await apiRequest('GET', '/api/admin/audit-logs');
       const data = await response.json();
       setLogs(data.logs || []);
       
-      const usersResponse = await fetch('/api/admin/users');
+      const usersResponse = await apiRequest('GET', '/api/admin/users');
       const usersData = await usersResponse.json();
       const usersMap: Record<string, User> = {};
       (usersData.users || []).forEach((user: User) => {

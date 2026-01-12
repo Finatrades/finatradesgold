@@ -55,7 +55,7 @@ export default function GoldBarOrders() {
   const { data: pendingData, isLoading: pendingLoading } = useQuery({
     queryKey: ['wingold-pending-orders'],
     queryFn: async () => {
-      const res = await fetch('/api/wingold/admin/pending-orders', { credentials: 'include' });
+      const res = await apiRequest('GET', '/api/wingold/admin/pending-orders');
       if (!res.ok) throw new Error('Failed to fetch pending orders');
       return res.json();
     }
@@ -64,7 +64,7 @@ export default function GoldBarOrders() {
   const { data: allData, isLoading: allLoading } = useQuery({
     queryKey: ['wingold-all-orders'],
     queryFn: async () => {
-      const res = await fetch('/api/wingold/admin/all-orders', { credentials: 'include' });
+      const res = await apiRequest('GET', '/api/wingold/admin/all-orders');
       if (!res.ok) throw new Error('Failed to fetch all orders');
       return res.json();
     }

@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 interface UserOption {
   id: string;
@@ -106,7 +107,7 @@ export default function AccountStatements() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearch) params.append('search', debouncedSearch);
-      const res = await fetch(`/api/admin/users/list?${params}`);
+      const res = await apiRequest('GET', `/api/admin/users/list?${params}`);
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     }
@@ -115,7 +116,7 @@ export default function AccountStatements() {
   const { data: statement, isLoading: loadingStatement, refetch: refetchStatement } = useQuery<AccountStatement>({
     queryKey: ['/api/admin/account-statement', selectedUserId, dateFrom, dateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/account-statement/${selectedUserId}?from=${dateFrom}&to=${dateTo}`);
+      const res = await apiRequest('GET', `/api/admin/account-statement/${selectedUserId}?from=${dateFrom}&to=${dateTo}`);
       if (!res.ok) throw new Error('Failed to fetch statement');
       return res.json();
     },
@@ -130,7 +131,7 @@ export default function AccountStatements() {
     
     setIsGenerating(true);
     try {
-      const res = await fetch(`/api/admin/account-statement/${selectedUserId}/pdf?from=${dateFrom}&to=${dateTo}`);
+      const res = await apiRequest('GET', `/api/admin/account-statement/${selectedUserId}/pdf?from=${dateFrom}&to=${dateTo}`);
       if (!res.ok) throw new Error('Failed to generate PDF');
       
       const blob = await res.blob();
@@ -158,7 +159,7 @@ export default function AccountStatements() {
     }
     
     try {
-      const res = await fetch(`/api/admin/account-statement/${selectedUserId}/csv?from=${dateFrom}&to=${dateTo}`);
+      const res = await apiRequest('GET', `/api/admin/account-statement/${selectedUserId}/csv?from=${dateFrom}&to=${dateTo}`);
       if (!res.ok) throw new Error('Failed to generate CSV');
       
       const blob = await res.blob();

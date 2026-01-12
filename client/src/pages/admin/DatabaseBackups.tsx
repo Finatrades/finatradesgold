@@ -49,6 +49,7 @@ import {
   Server,
   Zap
 } from "lucide-react";
+import { apiRequest } from '@/lib/queryClient';
 
 interface Backup {
   id: string;
@@ -171,15 +172,7 @@ export default function DatabaseBackups() {
   
   const triggerSyncMutation = useMutation({
     mutationFn: async (direction: string) => {
-      const res = await fetch("/api/admin/database-sync/trigger", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        credentials: "include",
-        body: JSON.stringify({ direction }),
-      });
+      const res = await apiRequest("POST", "/api/admin/database-sync/trigger", { direction });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to trigger sync");
@@ -201,15 +194,7 @@ export default function DatabaseBackups() {
   
   const schedulerControlMutation = useMutation({
     mutationFn: async (action: 'start' | 'stop') => {
-      const res = await fetch("/api/admin/database-sync/scheduler", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        credentials: "include",
-        body: JSON.stringify({ action }),
-      });
+      const res = await apiRequest("POST", "/api/admin/database-sync/scheduler", { action });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to control scheduler");
@@ -231,15 +216,7 @@ export default function DatabaseBackups() {
   
   const createBackupMutation = useMutation({
     mutationFn: async (otp: string) => {
-      const res = await fetch("/api/admin/backups", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        credentials: "include",
-        body: JSON.stringify({ otpCode: otp }),
-      });
+      const res = await apiRequest("POST", "/api/admin/backups", { otpCode: otp });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create backup");
@@ -262,11 +239,7 @@ export default function DatabaseBackups() {
   
   const deleteBackupMutation = useMutation({
     mutationFn: async (backupId: string) => {
-      const res = await fetch(`/api/admin/backups/${backupId}`, {
-        method: "DELETE",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-        credentials: "include",
-      });
+      const res = await apiRequest("DELETE", `/api/admin/backups/${backupId}`);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to delete backup");
@@ -289,15 +262,7 @@ export default function DatabaseBackups() {
   
   const restoreBackupMutation = useMutation({
     mutationFn: async ({ backupId, otp }: { backupId: string; otp: string }) => {
-      const res = await fetch(`/api/admin/backups/${backupId}/restore`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        credentials: "include",
-        body: JSON.stringify({ confirmed: true, otpCode: otp }),
-      });
+      const res = await apiRequest("POST", `/api/admin/backups/${backupId}/restore`, { confirmed: true, otpCode: otp });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to restore backup");
@@ -323,15 +288,7 @@ export default function DatabaseBackups() {
   
   const handleDownload = async (backup: Backup, otp: string) => {
     try {
-      const res = await fetch(`/api/admin/backups/${backup.id}/download`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        credentials: "include",
-        body: JSON.stringify({ otpCode: otp }),
-      });
+      const res = await apiRequest("POST", `/api/admin/backups/${backup.id}/download`, { otpCode: otp });
       
       if (!res.ok) {
         const error = await res.json();

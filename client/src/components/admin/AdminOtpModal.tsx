@@ -316,12 +316,7 @@ export async function checkOtpRequired(
   adminUserId: string
 ): Promise<boolean> {
   try {
-    const res = await fetch(`/api/admin/action-otp/required/${actionType}`, {
-      headers: {
-        'X-Admin-User-Id': adminUserId,
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-    });
+    const res = await apiRequest('GET', `/api/admin/action-otp/required/${actionType}`);
     const data = await res.json();
     return data.required === true;
   } catch {
