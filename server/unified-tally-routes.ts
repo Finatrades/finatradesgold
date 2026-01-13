@@ -361,7 +361,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
           const linkedNgeniusTx = await storage.getNgeniusTransactionByOrderReference(sourcePayment.cardTransactionRef);
           if (linkedNgeniusTx) {
             await storage.updateNgeniusTransaction(linkedNgeniusTx.id, {
-              status: 'Approved',
+              status: 'Captured', // Use valid ngenius_order_status enum value
               walletTransactionId: 'unified-approval', // Flag to prevent double-processing
             }, tx as any);
           }
