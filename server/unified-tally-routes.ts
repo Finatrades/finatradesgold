@@ -362,7 +362,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
           if (linkedNgeniusTx) {
             await storage.updateNgeniusTransaction(linkedNgeniusTx.id, {
               status: 'Captured', // Use valid ngenius_order_status enum value
-              walletTransactionId: 'unified-approval', // Flag to prevent double-processing
+              // Note: walletTransactionId will be set later when UTT is created
             }, tx as any);
           }
         }
