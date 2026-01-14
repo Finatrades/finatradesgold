@@ -50,6 +50,7 @@ interface PendingPayment {
   cardBrand?: string;
   cardLast4?: string;
   gatewayVerified?: boolean;
+  vaultInspected?: boolean;  // For physical deposits - indicates vault inspection completed
 }
 
 const SOURCE_ICONS = {
@@ -73,6 +74,7 @@ const STATUS_BADGES: Record<string, { variant: 'default' | 'secondary' | 'outlin
   pending_review: { variant: 'secondary', label: 'Pending Review' },
   pending_assay: { variant: 'secondary', label: 'Pending Assay' },
   'Gateway Verified': { variant: 'default', label: '✓ Gateway Verified' },
+  'Ready for Payment': { variant: 'default', label: '✓ Vault Inspected' },
 };
 
 const generateWingoldOrderId = () => {
@@ -148,6 +150,35 @@ export default function UnifiedPaymentManagement() {
   const FEE_PERCENT = 0.5;
 
   const calculations = useMemo(() => {
+    // Physical deposits: Gold grams come from inspection, not USD conversion
+    if (selectedPayment?.sourceType === 'PHYSICAL') {
+      const inspectedGrams = parseFloat(selectedPayment.goldGrams || '0');
+      const goldRate = pricingMode === 'MANUAL' && manualGoldPrice 
+        ? parseFloat(manualGoldPrice) 
+        : goldPrice?.pricePerGram || 0;
+      
+      const buyRate = wingoldBuyRateMode === 'SAME' 
+        ? goldRate 
+        : parseFloat(wingoldBuyRate) || 0;
+      
+      const physicalGold = parseFloat(physicalGoldAllocatedG) || inspectedGrams;
+      const wingoldCost = physicalGold * buyRate;
+      
+      return {
+        depositAmount: 0,
+        feeAmount: 0,
+        netAmount: 0,
+        goldRate,
+        goldEquivalent: inspectedGrams,
+        buyRate,
+        physicalGold,
+        wingoldCost,
+        platformProfit: 0,
+        isPhysicalDeposit: true,
+      };
+    }
+    
+    // Cash deposits: Calculate from USD
     if (!selectedPayment?.amountUsd) return null;
     
     const depositAmount = parseFloat(selectedPayment.amountUsd);
@@ -179,6 +210,7 @@ export default function UnifiedPaymentManagement() {
       physicalGold,
       wingoldCost,
       platformProfit,
+      isPhysicalDeposit: false,
     };
   }, [selectedPayment, pricingMode, manualGoldPrice, goldPrice, wingoldBuyRateMode, wingoldBuyRate, physicalGoldAllocatedG]);
 
@@ -249,15 +281,24 @@ export default function UnifiedPaymentManagement() {
     // Pre-generate IDs so they're visible and editable
     setWingoldOrderId(generateWingoldOrderId());
     setStorageCertificateId(generateCertificateId());
+    
+    // For physical deposits, pre-fill gold grams from inspection data
+    if (payment.sourceType === 'PHYSICAL' && payment.goldGrams) {
+      setPhysicalGoldAllocatedG(payment.goldGrams);
+    }
+    
     setApprovalDialogOpen(true);
   };
 
-  // Update physical gold allocation when gold rate changes
+  // Update physical gold allocation when gold rate changes (only for cash deposits)
   useEffect(() => {
+    // Skip auto-update for physical deposits - they use pre-filled inspection data
+    if (selectedPayment?.sourceType === 'PHYSICAL') return;
+    
     if (calculations && calculations.goldEquivalent > 0 && approvalDialogOpen) {
       setPhysicalGoldAllocatedG(calculations.goldEquivalent.toFixed(4));
     }
-  }, [calculations?.goldEquivalent, approvalDialogOpen]);
+  }, [calculations?.goldEquivalent, approvalDialogOpen, selectedPayment?.sourceType]);
 
   // Check if gold price is loaded
   const isPriceReady = pricingMode === 'MANUAL' 
@@ -456,9 +497,18 @@ export default function UnifiedPaymentManagement() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium">{formatCurrency(payment.amountUsd)}</p>
-                                {payment.goldGrams && (
-                                  <p className="text-xs text-amber-600">≈ {formatGold(payment.goldGrams)}</p>
+                                {payment.sourceType === 'PHYSICAL' ? (
+                                  <>
+                                    <p className="font-medium text-amber-600">{formatGold(payment.goldGrams)}</p>
+                                    <p className="text-xs text-gray-500">{payment.depositType || 'Physical Gold'}</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="font-medium">{formatCurrency(payment.amountUsd)}</p>
+                                    {payment.goldGrams && (
+                                      <p className="text-xs text-amber-600">≈ {formatGold(payment.goldGrams)}</p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </TableCell>
