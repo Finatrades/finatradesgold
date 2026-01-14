@@ -3,6 +3,7 @@ import { storage } from './storage';
 import { z } from 'zod';
 import type { InsertPhysicalDepositRequest, InsertDepositItem, InsertDepositInspection, InsertDepositNegotiationMessage } from '@shared/schema';
 import { sendEmailDirect } from './email';
+import { requireAdmin } from './rbac-middleware';
 
 // Helper to send physical deposit status notification emails
 async function sendPhysicalDepositStatusEmail(
@@ -465,17 +466,8 @@ router.post('/deposits/:id/cancel', async (req: Request, res: Response) => {
 // ADMIN ROUTES
 // ====================================
 
-const isAdmin = (req: Request): boolean => {
-  const session = (req as any).session;
-  return session?.userId && session?.userRole === 'admin';
-};
-
-router.get('/admin/deposits', async (req: Request, res: Response) => {
+router.get('/admin/deposits', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const status = req.query.status as string | undefined;
     const deposits = await storage.getAllPhysicalDeposits(status ? { status } : undefined);
 
@@ -496,12 +488,8 @@ router.get('/admin/deposits', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/admin/deposits/stats', async (req: Request, res: Response) => {
+router.get('/admin/deposits/stats', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const stats = await storage.getPhysicalDepositStats();
     res.json(stats);
   } catch (error) {
@@ -510,12 +498,8 @@ router.get('/admin/deposits/stats', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/admin/deposits/:id', async (req: Request, res: Response) => {
+router.get('/admin/deposits/:id', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const deposit = await storage.getPhysicalDepositById(req.params.id);
     if (!deposit) {
       return res.status(404).json({ error: 'Deposit not found' });
@@ -541,12 +525,8 @@ router.get('/admin/deposits/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/admin/deposits/:id/review', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/review', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
@@ -580,12 +560,8 @@ const receiveSchema = z.object({
   notes: z.string().optional(),
 });
 
-router.post('/admin/deposits/:id/receive', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/receive', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const parsed = receiveSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request' });
@@ -641,12 +617,8 @@ const inspectionSchema = z.object({
   })).optional(),
 });
 
-router.post('/admin/deposits/:id/inspect', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
     const parsed = inspectionSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
@@ -724,11 +696,8 @@ const offerSchema = z.object({
   message: z.string().optional(),
 });
 
-router.post('/admin/deposits/:id/offer', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     const parsed = offerSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -785,11 +754,8 @@ router.post('/admin/deposits/:id/offer', async (req: Request, res: Response) => 
   }
 });
 
-router.post('/admin/deposits/:id/accept-counter', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/accept-counter', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
@@ -843,11 +809,8 @@ const approveSchema = z.object({
   adminNotes: z.string().optional(),
 });
 
-router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     const parsed = approveSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -1073,11 +1036,8 @@ const rejectSchema = z.object({
   reason: z.string().min(1),
 });
 
-router.post('/admin/deposits/:id/reject', async (req: Request, res: Response) => {
+router.post('/admin/deposits/:id/reject', requireAdmin(), async (req: Request, res: Response) => {
   try {
-    if (!isAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     const parsed = rejectSchema.safeParse(req.body);
     if (!parsed.success) {
