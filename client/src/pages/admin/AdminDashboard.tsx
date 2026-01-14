@@ -1,13 +1,75 @@
 import React, { useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Loader2, TrendingUp, BarChart3 } from 'lucide-react';
+import { 
+  Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, 
+  Clock, Loader2, TrendingUp, BarChart3, AlertTriangle, Settings, Briefcase,
+  CreditCard, FileText, UserCheck, Wallet, Building2, Shield, LayoutDashboard
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+
+const QUICK_ACTIONS = [
+  { label: 'Review KYC', href: '/admin/kyc', icon: ShieldCheck, color: 'purple' },
+  { label: 'Deposits', href: '/admin/payment-operations', icon: ArrowDownRight, color: 'green' },
+  { label: 'Withdrawals', href: '/admin/payment-operations', icon: ArrowUpRight, color: 'orange' },
+  { label: 'Transactions', href: '/admin/transactions', icon: Activity, color: 'blue' },
+  { label: 'Users', href: '/admin/users', icon: Users, color: 'indigo' },
+  { label: 'BNSL', href: '/admin/bnsl', icon: TrendingUp, color: 'teal' },
+  { label: 'FinaBridge', href: '/admin/finabridge', icon: Briefcase, color: 'pink' },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, color: 'gray' },
+];
+
+const ACTION_SECTIONS = [
+  {
+    title: 'User Operations',
+    icon: Users,
+    color: 'purple',
+    items: [
+      { label: 'KYC Review', href: '/admin/kyc', badgeKey: 'pendingKycCount' as const },
+      { label: 'User Management', href: '/admin/users' },
+      { label: 'Employee Management', href: '/admin/employees' },
+      { label: 'Role Management', href: '/admin/roles' },
+    ]
+  },
+  {
+    title: 'Financial Operations',
+    icon: DollarSign,
+    color: 'green',
+    items: [
+      { label: 'Payment Operations', href: '/admin/payment-operations', badgeKey: 'pendingDeposits' as const },
+      { label: 'Transactions', href: '/admin/transactions' },
+      { label: 'Financial Reports', href: '/admin/financial-reports' },
+      { label: 'Fee Management', href: '/admin/fees' },
+    ]
+  },
+  {
+    title: 'Products',
+    icon: Briefcase,
+    color: 'blue',
+    items: [
+      { label: 'BNSL Management', href: '/admin/bnsl', badgeKey: 'activeBnslPlans' as const },
+      { label: 'FinaBridge', href: '/admin/finabridge' },
+      { label: 'Vault Management', href: '/admin/vault' },
+      { label: 'Gold Orders', href: '/admin/wingold-orders' },
+    ]
+  },
+  {
+    title: 'System',
+    icon: Settings,
+    color: 'gray',
+    items: [
+      { label: 'Platform Config', href: '/admin/platform-config' },
+      { label: 'Security Settings', href: '/admin/security' },
+      { label: 'Audit Logs', href: '/admin/audit-logs' },
+      { label: 'System Health', href: '/admin/system-health' },
+    ]
+  },
+];
 
 interface AdminStats {
   totalUsers: number;
@@ -117,19 +179,94 @@ export default function AdminDashboard() {
     }
   }, [error]);
 
+  const totalPending = (stats?.pendingKycCount || 0) + (stats?.pendingDeposits || 0) + (stats?.pendingWithdrawals || 0);
+
   return (
     <AdminLayout>
-      <div className="space-y-8">
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground" data-testid="text-admin-title">Dashboard Overview</h1>
-            <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening with your platform today.</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-admin-title">Admin Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Unified control center for platform management</p>
           </div>
           <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <span>Live data</span>
           </div>
         </div>
+
+        {/* Quick Actions Bar */}
+        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+          <div className="flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = action.icon;
+              const colorStyles: Record<string, string> = {
+                purple: 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-500 hover:text-white hover:border-purple-500',
+                green: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white hover:border-green-500',
+                orange: 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500',
+                blue: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-500 hover:text-white hover:border-blue-500',
+                indigo: 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-500 hover:text-white hover:border-indigo-500',
+                teal: 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white hover:border-teal-500',
+                pink: 'border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-500 hover:text-white hover:border-pink-500',
+                gray: 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-500 hover:text-white hover:border-gray-500',
+              };
+              return (
+                <Link key={action.label} href={action.href}>
+                  <button
+                    className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center hover:shadow-md ${colorStyles[action.color]}`}
+                    data-testid={`button-quick-${action.label.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon className="w-4 h-4 mr-1.5" />
+                    {action.label}
+                  </button>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Critical Alerts Banner */}
+        {!isLoading && totalPending > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <span className="font-semibold text-amber-800">Items Requiring Attention:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(stats?.pendingKycCount || 0) > 0 && (
+                  <Link href="/admin/kyc">
+                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer border-none">
+                      <ShieldCheck className="w-3 h-3 mr-1" /> {stats?.pendingKycCount} KYC Pending
+                    </Badge>
+                  </Link>
+                )}
+                {(stats?.pendingDeposits || 0) > 0 && (
+                  <Link href="/admin/payment-operations">
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-none">
+                      <ArrowDownRight className="w-3 h-3 mr-1" /> {stats?.pendingDeposits} Deposits
+                    </Badge>
+                  </Link>
+                )}
+                {(stats?.pendingWithdrawals || 0) > 0 && (
+                  <Link href="/admin/payment-operations">
+                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 cursor-pointer border-none">
+                      <ArrowUpRight className="w-3 h-3 mr-1" /> {stats?.pendingWithdrawals} Withdrawals
+                    </Badge>
+                  </Link>
+                )}
+                {(stats?.pendingTransactions || 0) > 0 && (
+                  <Link href="/admin/transactions">
+                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer border-none">
+                      <Clock className="w-3 h-3 mr-1" /> {stats?.pendingTransactions} Transactions
+                    </Badge>
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -174,32 +311,48 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Pending Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PendingCard
-            title="Pending Deposits"
-            count={stats?.pendingDeposits || 0}
-            icon={<ArrowDownRight className="w-5 h-5" />}
-            color="green"
-            loading={isLoading}
-            href="/admin/payment-operations"
-          />
-          <PendingCard
-            title="Pending Withdrawals"
-            count={stats?.pendingWithdrawals || 0}
-            icon={<ArrowUpRight className="w-5 h-5" />}
-            color="orange"
-            loading={isLoading}
-            href="/admin/payment-operations"
-          />
-          <PendingCard
-            title="Pending Transactions"
-            count={stats?.pendingTransactions || 0}
-            icon={<Clock className="w-5 h-5" />}
-            color="yellow"
-            loading={isLoading}
-            href="/admin/transactions"
-          />
+        {/* Action Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {ACTION_SECTIONS.map((section) => {
+            const SectionIcon = section.icon;
+            const sectionColors: Record<string, { bg: string; border: string; icon: string; text: string }> = {
+              purple: { bg: 'bg-purple-50', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-600', text: 'text-purple-700' },
+              green: { bg: 'bg-green-50', border: 'border-green-200', icon: 'bg-green-100 text-green-600', text: 'text-green-700' },
+              blue: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600', text: 'text-blue-700' },
+              gray: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'bg-gray-100 text-gray-600', text: 'text-gray-700' },
+            };
+            const colors = sectionColors[section.color] || sectionColors.gray;
+            return (
+              <Card key={section.title} className={`${colors.bg} ${colors.border} border shadow-sm`}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg ${colors.icon}`}>
+                      <SectionIcon className="w-4 h-4" />
+                    </div>
+                    <CardTitle className={`text-sm font-semibold ${colors.text}`}>{section.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-1">
+                    {section.items.map((item) => {
+                      const badgeKey = (item as any).badgeKey;
+                      const badgeValue = badgeKey && stats ? (stats as any)[badgeKey] ?? 0 : 0;
+                      return (
+                        <Link key={item.label} href={item.href}>
+                          <div className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer group">
+                            <span className="text-sm text-gray-700 group-hover:text-gray-900">{item.label}</span>
+                            {badgeKey && badgeValue > 0 && (
+                              <Badge variant="secondary" className="bg-white text-xs">{badgeValue}</Badge>
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Operations Overview */}
