@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -209,13 +210,14 @@ export default function PhysicalDepositsAdmin() {
   const [rejectReason, setRejectReason] = useState('');
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-purple-800">Physical Gold Deposits</h1>
-          <p className="text-gray-500">Manage physical gold deposit requests</p>
+    <AdminLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-purple-800">Physical Gold Deposits</h1>
+            <p className="text-gray-500">Manage physical gold deposit requests</p>
+          </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {[
@@ -801,6 +803,7 @@ export default function PhysicalDepositsAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
