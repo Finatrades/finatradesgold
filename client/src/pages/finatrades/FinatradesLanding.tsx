@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { useEffect } from 'react';
 import { ModeProvider } from '../finagold/context/ModeContext';
 import Navbar from '../finagold/components/Navbar';
