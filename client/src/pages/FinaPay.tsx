@@ -301,89 +301,8 @@ export default function FinaPay() {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
-        
-        {/* FinaPay Wallet Card - Only show when user has wallet activity */}
-        {hasWalletActivity && (
-          <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg shrink-0">
-                  <WalletIcon className="w-5 h-5 text-fuchsia-600" />
-                </div>
-                <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <WalletIcon className="w-20 h-20 text-purple-500" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
-                  <p className="text-3xl font-bold text-foreground mb-1">
-                    {goldGrams.toFixed(4)} g
-                  </p>
-                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-muted-foreground mt-3">Gold balance. USD is approximate at current price.</p>
-                </div>
-              </div>
-
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <Lock className="w-20 h-20 text-purple-500" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
-                  <p className="text-3xl font-bold text-purple-500 mb-1">0.0000 g</p>
-                  <p className="text-sm text-purple-500/70">≈ $0.00</p>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    <Lock className="w-3 h-3 inline mr-1" />
-                    Assets locked in active plans and trades.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <TrendingUp className="w-20 h-20 text-purple-500" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
-                  <p className="text-3xl font-bold text-purple-500 mb-1">
-                    {goldGrams.toFixed(4)} g
-                  </p>
-                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* Dual Wallet Display - LGPW/FGPW - Only show when user has wallet activity */}
-        {hasWalletActivity && user && <DualWalletDisplay userId={user.id} />}
-
-        {/* KYC Warning Banner */}
-        {!isKycApproved && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 bg-amber-100 rounded-full shrink-0">
-                <ShieldAlert className="w-5 h-5 text-amber-600" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="font-semibold text-amber-800">KYC Verification Required</h4>
-                <p className="text-sm text-amber-700">Complete your identity verification to access all FinaPay features.</p>
-              </div>
-            </div>
-            <Button onClick={() => setLocation('/kyc')} className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto shrink-0">
-              Verify Now
-            </Button>
-          </div>
-        )}
-
-        {/* Quick Actions - Horizontal Pill Tabs */}
+        {/* Quick Actions - Horizontal Pill Tabs - TOP */}
         <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
           <div className="flex flex-wrap gap-2">
             <button
@@ -471,6 +390,87 @@ export default function FinaPay() {
             </button>
           </div>
         </div>
+        
+        {/* FinaPay Wallet Card - Only show when user has wallet activity */}
+        {hasWalletActivity && (
+          <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg shrink-0">
+                  <WalletIcon className="w-5 h-5 text-fuchsia-600" />
+                </div>
+                <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-5">
+                  <WalletIcon className="w-20 h-20 text-purple-500" />
+                </div>
+                <div className="relative z-10">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
+                  <p className="text-3xl font-bold text-foreground mb-1">
+                    {goldGrams.toFixed(4)} g
+                  </p>
+                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-muted-foreground mt-3">Gold balance. USD is approximate at current price.</p>
+                </div>
+              </div>
+
+              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-5">
+                  <Lock className="w-20 h-20 text-purple-500" />
+                </div>
+                <div className="relative z-10">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
+                  <p className="text-3xl font-bold text-purple-500 mb-1">0.0000 g</p>
+                  <p className="text-sm text-purple-500/70">≈ $0.00</p>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    <Lock className="w-3 h-3 inline mr-1" />
+                    Assets locked in active plans and trades.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-5">
+                  <TrendingUp className="w-20 h-20 text-purple-500" />
+                </div>
+                <div className="relative z-10">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
+                  <p className="text-3xl font-bold text-purple-500 mb-1">
+                    {goldGrams.toFixed(4)} g
+                  </p>
+                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Dual Wallet Display - LGPW/FGPW - Only show when user has wallet activity */}
+        {hasWalletActivity && user && <DualWalletDisplay userId={user.id} />}
+
+        {/* KYC Warning Banner */}
+        {!isKycApproved && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="p-2 bg-amber-100 rounded-full shrink-0">
+                <ShieldAlert className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-amber-800">KYC Verification Required</h4>
+                <p className="text-sm text-amber-700">Complete your identity verification to access all FinaPay features.</p>
+              </div>
+            </div>
+            <Button onClick={() => setLocation('/kyc')} className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto shrink-0">
+              Verify Now
+            </Button>
+          </div>
+        )}
 
         {/* Pending Transfers */}
         <PendingTransfers />
