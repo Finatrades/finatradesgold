@@ -207,7 +207,7 @@ function MyPhysicalDeposits() {
                       <div key={i} className="flex justify-between items-center py-1 border-b last:border-0">
                         <span className="capitalize">{item.quantity}x {item.itemType?.replace('_', ' ')}</span>
                         <span className="text-sm text-muted-foreground">
-                          {item.purity} • {parseFloat(item.declaredWeightGrams).toFixed(4)} g
+                          {item.purity} • {item.declaredWeightGrams ? parseFloat(item.declaredWeightGrams).toFixed(4) : item.weightGrams ? parseFloat(item.weightGrams).toFixed(4) : '—'} g
                         </span>
                       </div>
                     ))}
