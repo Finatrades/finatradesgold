@@ -112,7 +112,7 @@ function FinagoldContent() {
 
 export default function FinagoldLanding() {
   return (
-    <ModeProvider>
+    <ModeProvider defaultMode="personal">
       <FinagoldContent />
     </ModeProvider>
   );

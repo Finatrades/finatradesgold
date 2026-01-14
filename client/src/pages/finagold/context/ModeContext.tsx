@@ -9,10 +9,15 @@ interface ModeContextType {
   isBusiness: boolean;
 }
 
+interface ModeProviderProps {
+  children: ReactNode;
+  defaultMode?: Mode;
+}
+
 const ModeContext = createContext<ModeContextType | undefined>(undefined);
 
-export function ModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<Mode>('business');
+export function ModeProvider({ children, defaultMode = 'personal' }: ModeProviderProps) {
+  const [mode, setMode] = useState<Mode>(defaultMode);
 
   return (
     <ModeContext.Provider value={{ 

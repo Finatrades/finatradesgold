@@ -112,7 +112,7 @@ function FinatradesContent() {
 
 export default function FinatradesLanding() {
   return (
-    <ModeProvider>
+    <ModeProvider defaultMode="business">
       <FinatradesContent />
     </ModeProvider>
   );
