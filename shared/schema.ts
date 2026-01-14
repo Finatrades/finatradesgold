@@ -5562,3 +5562,150 @@ export const insertPhysicalDepositRequestSchema = createInsertSchema(physicalDep
 export type InsertPhysicalDepositRequest = z.infer<typeof insertPhysicalDepositRequestSchema>;
 export type PhysicalDepositRequest = typeof physicalDepositRequests.$inferSelect;
 
+// ============================================
+// VERIFIABLE CREDENTIALS (W3C VC 2.0)
+// ============================================
+
+export const credentialStatusEnum = pgEnum('credential_status', ['active', 'revoked', 'expired', 'suspended']);
+export const credentialTypeEnum = pgEnum('credential_type', ['kyc', 'identity', 'aml_screening', 'address_verification']);
+
+export const verifiableCredentials = pgTable("verifiable_credentials", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  credentialId: varchar("credential_id", { length: 100 }).notNull().unique(), // jti claim - unique identifier
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Credential type and version
+  credentialType: credentialTypeEnum("credential_type").notNull().default('kyc'),
+  schemaVersion: varchar("schema_version", { length: 20 }).notNull().default('1.0'),
+  
+  // W3C VC fields
+  issuerDid: varchar("issuer_did", { length: 255 }).notNull(), // did:web:finatrades.com
+  subjectDid: varchar("subject_did", { length: 255 }), // did:key:user... (optional)
+  
+  // The signed credential
+  vcJwt: text("vc_jwt").notNull(), // Full signed JWT containing the VC
+  vcPayload: json("vc_payload").$type<{
+    '@context': string[];
+    type: string[];
+    issuer: { id: string; name: string };
+    issuanceDate: string;
+    expirationDate: string;
+    credentialSubject: Record<string, any>;
+  }>(), // Decoded payload for querying
+  
+  // Claims summary (for quick access without decoding)
+  claimsSummary: json("claims_summary").$type<{
+    kycLevel?: string;
+    kycStatus?: string;
+    idVerified?: boolean;
+    addressVerified?: boolean;
+    amlPassed?: boolean;
+    documentHashes?: Record<string, string>;
+  }>(),
+  
+  // Status tracking
+  status: credentialStatusEnum("status").notNull().default('active'),
+  
+  // Validity period
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  
+  // Signing key reference
+  keyId: varchar("key_id", { length: 100 }), // kid from JWKS for key rotation
+  signatureAlgorithm: varchar("signature_algorithm", { length: 20 }).notNull().default('RS256'),
+  
+  // Audit fields
+  issuedBy: varchar("issued_by", { length: 255 }), // admin or system
+  presentationCount: integer("presentation_count").notNull().default(0),
+  lastPresentedAt: timestamp("last_presented_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertVerifiableCredentialSchema = createInsertSchema(verifiableCredentials)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    vcPayload: z.any().optional(),
+    claimsSummary: z.any().optional(),
+    subjectDid: z.string().nullable().optional(),
+    keyId: z.string().nullable().optional(),
+    issuedBy: z.string().nullable().optional(),
+    lastPresentedAt: z.date().nullable().optional(),
+  });
+export type InsertVerifiableCredential = z.infer<typeof insertVerifiableCredentialSchema>;
+export type VerifiableCredential = typeof verifiableCredentials.$inferSelect;
+
+// Credential Revocations - Tracks revoked credentials with reasons
+export const revocationReasonEnum = pgEnum('revocation_reason', [
+  'user_request', 'kyc_expired', 'kyc_rejected', 'security_concern', 
+  'data_update', 'key_rotation', 'compliance', 'admin_action'
+]);
+
+export const credentialRevocations = pgTable("credential_revocations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  credentialId: varchar("credential_id", { length: 100 }).notNull().references(() => verifiableCredentials.credentialId),
+  
+  // Revocation details
+  reason: revocationReasonEnum("reason").notNull(),
+  reasonDetails: text("reason_details"),
+  
+  // Who revoked
+  revokedBy: varchar("revoked_by", { length: 255 }).references(() => users.id),
+  revokedBySystem: boolean("revoked_by_system").notNull().default(false),
+  
+  // Replacement credential (if reissued)
+  replacementCredentialId: varchar("replacement_credential_id", { length: 100 }),
+  
+  revokedAt: timestamp("revoked_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCredentialRevocationSchema = createInsertSchema(credentialRevocations)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    reasonDetails: z.string().nullable().optional(),
+    revokedBy: z.string().nullable().optional(),
+    replacementCredentialId: z.string().nullable().optional(),
+  });
+export type InsertCredentialRevocation = z.infer<typeof insertCredentialRevocationSchema>;
+export type CredentialRevocation = typeof credentialRevocations.$inferSelect;
+
+// Credential Presentations - Audit log of when credentials were presented
+export const credentialPresentations = pgTable("credential_presentations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  credentialId: varchar("credential_id", { length: 100 }).notNull().references(() => verifiableCredentials.credentialId),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Where it was presented
+  verifierDomain: varchar("verifier_domain", { length: 255 }).notNull(), // wingoldandmetals.com
+  verifierName: varchar("verifier_name", { length: 255 }), // Wingold & Metals
+  
+  // What was shared (selective disclosure)
+  claimsShared: json("claims_shared").$type<string[]>(), // List of claim names shared
+  
+  // Verification result
+  verificationSuccessful: boolean("verification_successful").notNull().default(true),
+  verificationError: text("verification_error"),
+  
+  // Context
+  presentationContext: varchar("presentation_context", { length: 100 }), // 'sso', 'api_request', 'manual'
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  
+  presentedAt: timestamp("presented_at").notNull().defaultNow(),
+});
+
+export const insertCredentialPresentationSchema = createInsertSchema(credentialPresentations)
+  .omit({ id: true })
+  .extend({
+    verifierName: z.string().nullable().optional(),
+    claimsShared: z.array(z.string()).nullable().optional(),
+    verificationError: z.string().nullable().optional(),
+    presentationContext: z.string().nullable().optional(),
+    ipAddress: z.string().nullable().optional(),
+    userAgent: z.string().nullable().optional(),
+  });
+export type InsertCredentialPresentation = z.infer<typeof insertCredentialPresentationSchema>;
+export type CredentialPresentation = typeof credentialPresentations.$inferSelect;
+
