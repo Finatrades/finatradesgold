@@ -28,6 +28,37 @@ const EMPLOYEE_ROLES = [
   { value: 'compliance', label: 'Compliance', color: 'bg-red-500' },
 ];
 
+const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  super_admin: [
+    'manage_users', 'view_users', 'manage_employees', 'manage_kyc', 'view_kyc',
+    'manage_transactions', 'view_transactions', 'manage_withdrawals', 'manage_deposits',
+    'manage_vault', 'view_vault', 'manage_bnsl', 'view_bnsl', 'manage_finabridge', 'view_finabridge',
+    'manage_support', 'view_support', 'manage_cms', 'view_cms', 'manage_settings',
+    'view_reports', 'generate_reports', 'manage_fees'
+  ],
+  admin: [
+    'manage_users', 'view_users', 'manage_employees', 'manage_kyc', 'view_kyc',
+    'manage_transactions', 'view_transactions', 'manage_withdrawals', 'manage_deposits',
+    'manage_vault', 'view_vault', 'manage_bnsl', 'view_bnsl', 'manage_finabridge', 'view_finabridge',
+    'manage_support', 'view_support', 'view_reports', 'generate_reports'
+  ],
+  manager: [
+    'view_users', 'view_kyc', 'view_transactions', 'view_vault', 'view_bnsl',
+    'view_finabridge', 'manage_support', 'view_support', 'view_reports'
+  ],
+  support: [
+    'view_users', 'view_kyc', 'view_transactions', 'manage_support', 'view_support'
+  ],
+  finance: [
+    'view_users', 'manage_transactions', 'view_transactions', 'manage_withdrawals',
+    'manage_deposits', 'view_vault', 'view_bnsl', 'view_reports', 'generate_reports', 'manage_fees'
+  ],
+  compliance: [
+    'view_users', 'manage_kyc', 'view_kyc', 'view_transactions', 'view_vault',
+    'view_bnsl', 'view_finabridge', 'view_reports', 'generate_reports'
+  ],
+};
+
 const AVAILABLE_PERMISSIONS = [
   { key: 'manage_users', label: 'Manage Users', category: 'Users' },
   { key: 'view_users', label: 'View Users', category: 'Users' },
@@ -90,7 +121,7 @@ export default function EmployeeManagement() {
     role: 'support',
     department: '',
     jobTitle: '',
-    permissions: [] as string[],
+    permissions: ROLE_DEFAULT_PERMISSIONS['support'] || [] as string[],
   });
 
   const { data: employeesData, isLoading } = useQuery({
@@ -184,8 +215,17 @@ export default function EmployeeManagement() {
       role: 'support',
       department: '',
       jobTitle: '',
-      permissions: [],
+      permissions: ROLE_DEFAULT_PERMISSIONS['support'] || [],
     });
+  };
+
+  const handleRoleChange = (role: string) => {
+    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[role] || [];
+    setFormData(prev => ({ 
+      ...prev, 
+      role,
+      permissions: defaultPermissions 
+    }));
   };
 
   const handleEdit = (employee: Employee) => {
@@ -312,7 +352,7 @@ export default function EmployeeManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(v) => setFormData(prev => ({ ...prev, role: v }))}>
+                    <Select value={formData.role} onValueChange={handleRoleChange}>
                       <SelectTrigger data-testid="select-role">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -543,7 +583,7 @@ export default function EmployeeManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-role">Role</Label>
-                  <Select value={formData.role} onValueChange={(v) => setFormData(prev => ({ ...prev, role: v }))}>
+                  <Select value={formData.role} onValueChange={handleRoleChange}>
                     <SelectTrigger data-testid="edit-select-role">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
