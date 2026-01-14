@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,16 +170,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
   const createDepositMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/physical-deposits/deposits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to create deposit');
-      }
+      const res = await apiRequest('POST', '/api/physical-deposits/deposits', data);
       return res.json();
     },
     onSuccess: (data) => {
