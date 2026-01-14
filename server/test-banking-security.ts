@@ -19,7 +19,6 @@ async function testPasswordUtils() {
   
   console.log('\n2. Verifying correct password...');
   const isValid = await verifyPassword(testPassword, hash);
-  console.log(`   Result: ${isValid ? '✅ PASS' : '❌ FAIL'}`);
   
   console.log('\n3. Verifying wrong password...');
   const isInvalid = await verifyPassword('wrongpassword', hash);
@@ -27,7 +26,6 @@ async function testPasswordUtils() {
   console.log('\n4. Testing bcrypt backward compatibility...');
   const bcryptHash = await bcrypt.hash(testPassword, 10);
   const bcryptVerify = await verifyPassword(testPassword, bcryptHash);
-  console.log(`   Bcrypt hash verified: ${bcryptVerify ? '✅ PASS' : '❌ FAIL'}`);
   
   console.log('\n5. Checking if bcrypt hash needs rehash (migration to Argon2)...');
   const shouldRehash = await needsRehash(bcryptHash);
