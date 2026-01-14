@@ -123,7 +123,11 @@ import {
   type PhysicalDepositRequest, type InsertPhysicalDepositRequest,
   type DepositItem, type InsertDepositItem,
   type DepositInspection, type InsertDepositInspection,
-  type DepositNegotiationMessage, type InsertDepositNegotiationMessage
+  type DepositNegotiationMessage, type InsertDepositNegotiationMessage,
+  verifiableCredentials, credentialRevocations, credentialPresentations,
+  type VerifiableCredential, type InsertVerifiableCredential,
+  type CredentialRevocation, type InsertCredentialRevocation,
+  type CredentialPresentation, type InsertCredentialPresentation
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -749,6 +753,25 @@ export interface IStorage {
   getPendingAccountDeletionRequests(): Promise<AccountDeletionRequest[]>;
   createAccountDeletionRequest(request: InsertAccountDeletionRequest): Promise<AccountDeletionRequest>;
   updateAccountDeletionRequest(id: string, updates: Partial<AccountDeletionRequest>): Promise<AccountDeletionRequest | undefined>;
+  
+  // Verifiable Credentials (W3C VC 2.0)
+  getVerifiableCredential(id: string): Promise<VerifiableCredential | undefined>;
+  getVerifiableCredentialByCredentialId(credentialId: string): Promise<VerifiableCredential | undefined>;
+  getUserVerifiableCredentials(userId: string): Promise<VerifiableCredential[]>;
+  getActiveUserCredential(userId: string, credentialType?: string): Promise<VerifiableCredential | undefined>;
+  createVerifiableCredential(credential: InsertVerifiableCredential): Promise<VerifiableCredential>;
+  updateVerifiableCredential(id: string, updates: Partial<VerifiableCredential>): Promise<VerifiableCredential | undefined>;
+  revokeCredential(credentialId: string, reason: string, revokedBy?: string): Promise<CredentialRevocation>;
+  
+  // Credential Revocations
+  getCredentialRevocation(credentialId: string): Promise<CredentialRevocation | undefined>;
+  createCredentialRevocation(revocation: InsertCredentialRevocation): Promise<CredentialRevocation>;
+  
+  // Credential Presentations
+  getCredentialPresentations(credentialId: string): Promise<CredentialPresentation[]>;
+  getUserCredentialPresentations(userId: string): Promise<CredentialPresentation[]>;
+  createCredentialPresentation(presentation: InsertCredentialPresentation): Promise<CredentialPresentation>;
+  incrementPresentationCount(credentialId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -5956,6 +5979,116 @@ export class DatabaseStorage implements IStorage {
       approved: parseInt(row.approved || '0'),
       rejected: parseInt(row.rejected || '0')
     };
+  }
+
+  // ============================================
+  // VERIFIABLE CREDENTIALS (W3C VC 2.0)
+  // ============================================
+  
+  async getVerifiableCredential(id: string): Promise<VerifiableCredential | undefined> {
+    const [result] = await db.select().from(verifiableCredentials)
+      .where(eq(verifiableCredentials.id, id));
+    return result;
+  }
+
+  async getVerifiableCredentialByCredentialId(credentialId: string): Promise<VerifiableCredential | undefined> {
+    const [result] = await db.select().from(verifiableCredentials)
+      .where(eq(verifiableCredentials.credentialId, credentialId));
+    return result;
+  }
+
+  async getUserVerifiableCredentials(userId: string): Promise<VerifiableCredential[]> {
+    return await db.select().from(verifiableCredentials)
+      .where(eq(verifiableCredentials.userId, userId))
+      .orderBy(desc(verifiableCredentials.createdAt));
+  }
+
+  async getActiveUserCredential(userId: string, credentialType?: string): Promise<VerifiableCredential | undefined> {
+    let conditions = [
+      eq(verifiableCredentials.userId, userId),
+      eq(verifiableCredentials.status, 'active'),
+      gt(verifiableCredentials.expiresAt, new Date())
+    ];
+    
+    if (credentialType) {
+      conditions.push(eq(verifiableCredentials.credentialType, credentialType as any));
+    }
+    
+    const [result] = await db.select().from(verifiableCredentials)
+      .where(and(...conditions))
+      .orderBy(desc(verifiableCredentials.issuedAt))
+      .limit(1);
+    return result;
+  }
+
+  async createVerifiableCredential(credential: InsertVerifiableCredential): Promise<VerifiableCredential> {
+    const [result] = await db.insert(verifiableCredentials).values(credential).returning();
+    return result;
+  }
+
+  async updateVerifiableCredential(id: string, updates: Partial<VerifiableCredential>): Promise<VerifiableCredential | undefined> {
+    const [result] = await db.update(verifiableCredentials)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(verifiableCredentials.id, id))
+      .returning();
+    return result;
+  }
+
+  async revokeCredential(credentialId: string, reason: string, revokedBy?: string): Promise<CredentialRevocation> {
+    await db.update(verifiableCredentials)
+      .set({ status: 'revoked', updatedAt: new Date() })
+      .where(eq(verifiableCredentials.credentialId, credentialId));
+    
+    const [revocation] = await db.insert(credentialRevocations).values({
+      credentialId,
+      reason: reason as any,
+      revokedBy,
+      revokedBySystem: !revokedBy,
+    }).returning();
+    
+    return revocation;
+  }
+
+  // Credential Revocations
+  async getCredentialRevocation(credentialId: string): Promise<CredentialRevocation | undefined> {
+    const [result] = await db.select().from(credentialRevocations)
+      .where(eq(credentialRevocations.credentialId, credentialId))
+      .orderBy(desc(credentialRevocations.revokedAt))
+      .limit(1);
+    return result;
+  }
+
+  async createCredentialRevocation(revocation: InsertCredentialRevocation): Promise<CredentialRevocation> {
+    const [result] = await db.insert(credentialRevocations).values(revocation).returning();
+    return result;
+  }
+
+  // Credential Presentations
+  async getCredentialPresentations(credentialId: string): Promise<CredentialPresentation[]> {
+    return await db.select().from(credentialPresentations)
+      .where(eq(credentialPresentations.credentialId, credentialId))
+      .orderBy(desc(credentialPresentations.presentedAt));
+  }
+
+  async getUserCredentialPresentations(userId: string): Promise<CredentialPresentation[]> {
+    return await db.select().from(credentialPresentations)
+      .where(eq(credentialPresentations.userId, userId))
+      .orderBy(desc(credentialPresentations.presentedAt));
+  }
+
+  async createCredentialPresentation(presentation: InsertCredentialPresentation): Promise<CredentialPresentation> {
+    const [result] = await db.insert(credentialPresentations).values(presentation).returning();
+    return result;
+  }
+
+  async incrementPresentationCount(credentialId: string): Promise<void> {
+    await db.execute(sql`
+      UPDATE verifiable_credentials 
+      SET presentation_count = presentation_count + 1, 
+          last_presented_at = now(),
+          updated_at = now()
+      WHERE credential_id = ${credentialId}
+    `);
   }
 }
 

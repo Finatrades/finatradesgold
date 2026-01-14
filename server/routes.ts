@@ -95,6 +95,7 @@ import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
 import { registerSsoRoutes } from "./sso-routes";
+import vcRoutes from "./vc-routes";
 import wingoldRoutes from "./wingold-routes";
 import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
@@ -601,6 +602,8 @@ export async function registerRoutes(
   registerDualWalletRoutes(app);
   // Register SSO routes for Wingold integration
   registerSsoRoutes(app);
+  // Register Verifiable Credentials routes for W3C VC 2.0
+  app.use("/api", vcRoutes);
   // Register Wingold Partner API routes for user data sharing
   registerWingoldPartnerRoutes(app);
   // Register Wingold B2B integration routes
