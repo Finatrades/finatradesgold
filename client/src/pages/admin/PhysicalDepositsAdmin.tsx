@@ -58,6 +58,7 @@ const STATUS_BADGES: Record<string, { label: string; variant: 'default' | 'secon
   INSPECTION: { label: 'Inspection', variant: 'outline' },
   NEGOTIATION: { label: 'Negotiation', variant: 'outline' },
   AGREED: { label: 'Agreed', variant: 'default' },
+  READY_FOR_PAYMENT: { label: 'Ready for UFM', variant: 'default' },
   APPROVED: { label: 'Approved', variant: 'default' },
   REJECTED: { label: 'Rejected', variant: 'destructive' },
   CANCELLED: { label: 'Cancelled', variant: 'destructive' },
@@ -183,6 +184,29 @@ export default function PhysicalDepositsAdmin() {
     },
   });
 
+  // Send deposit to UFM for unified approval flow
+  const sendToUfmMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/send-to-ufm`, {});
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to send to UFM');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['physical-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-pending-payments'] });
+      toast({ 
+        title: 'Sent to UFM', 
+        description: `Deposit ready for final approval in Unified Payment Management (${data.creditedGrams}g)` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const openDialog = (deposit: Deposit, mode: 'view' | 'receive' | 'inspect' | 'offer' | 'reject' | 'approve') => {
     setSelectedDeposit(deposit);
     setDialogMode(mode);
@@ -258,6 +282,7 @@ export default function PhysicalDepositsAdmin() {
                 <SelectItem value="INSPECTION">Inspection</SelectItem>
                 <SelectItem value="NEGOTIATION">Negotiation</SelectItem>
                 <SelectItem value="AGREED">Agreed</SelectItem>
+                <SelectItem value="READY_FOR_PAYMENT">Ready for UFM</SelectItem>
                 <SelectItem value="APPROVED">Approved</SelectItem>
                 <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
@@ -339,11 +364,17 @@ export default function PhysicalDepositsAdmin() {
                           </>
                         )}
                         {(deposit.status === 'AGREED' || (deposit.status === 'INSPECTION' && !deposit.requiresNegotiation)) && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openDialog(deposit, 'approve')} data-testid={`button-approve-${deposit.id}`}>
-                            <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
+                          <Button 
+                            size="sm" 
+                            className="bg-blue-600 hover:bg-blue-700" 
+                            onClick={() => sendToUfmMutation.mutate(deposit.id)} 
+                            disabled={sendToUfmMutation.isPending}
+                            data-testid={`button-send-to-ufm-${deposit.id}`}
+                          >
+                            <ArrowRight className="w-4 h-4 mr-1" /> {sendToUfmMutation.isPending ? 'Sending...' : 'Send to UFM'}
                           </Button>
                         )}
-                        {!['APPROVED', 'REJECTED', 'CANCELLED'].includes(deposit.status) && (
+                        {!['APPROVED', 'REJECTED', 'CANCELLED', 'READY_FOR_PAYMENT'].includes(deposit.status) && (
                           <Button variant="destructive" size="sm" onClick={() => openDialog(deposit, 'reject')} data-testid={`button-reject-${deposit.id}`}>
                             <XCircle className="w-4 h-4 mr-1" /> Reject
                           </Button>
