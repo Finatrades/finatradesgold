@@ -37,6 +37,10 @@ async function sendPhysicalDepositStatusEmail(
         subject: `Physical Gold Deposit ${referenceNumber} - Terms Agreed`,
         body: `The terms for your physical gold deposit (${referenceNumber}) have been agreed upon. Your deposit will now be processed for final approval.`,
       },
+      READY_FOR_PAYMENT: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Ready for Processing`,
+        body: `Your physical gold deposit (${referenceNumber}) has completed inspection and is now ready for final processing. Your gold will be credited to your wallet shortly.`,
+      },
       APPROVED: {
         subject: `Physical Gold Deposit ${referenceNumber} - Approved & Credited`,
         body: `Your physical gold deposit (${referenceNumber}) has been approved and ${additionalInfo?.creditedGrams?.toFixed(4) || 'your gold'} grams have been credited to your LGPW wallet. Certificates have been issued and are available in your account.`,
@@ -824,18 +828,27 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       return res.status(404).json({ error: 'Deposit not found' });
     }
 
-    // GOLDEN RULE ENFORCEMENT: Strict status validation based on deposit type
-    // RAW/OTHER items MUST go through negotiation (reach AGREED status)
-    // GOLD_BAR/GOLD_COIN can be approved after inspection
-    if (deposit.requiresNegotiation && deposit.status !== 'AGREED') {
+    // GOLDEN RULE ENFORCEMENT: Strict status validation
+    // UFM Flow: Accept READY_FOR_PAYMENT status (preferred unified flow)
+    // Legacy Flow: Accept INSPECTION (GOLD_BAR/COIN) or AGREED (RAW/OTHER) for backward compatibility
+    const validStatuses = ['READY_FOR_PAYMENT', 'INSPECTION', 'AGREED'];
+    
+    if (!validStatuses.includes(deposit.status)) {
       return res.status(400).json({ 
-        error: 'RAW/OTHER deposits must complete negotiation (AGREED status) before approval' 
+        error: 'Deposit must complete inspection/negotiation before approval' 
       });
     }
 
-    if (!deposit.requiresNegotiation && deposit.status !== 'INSPECTION') {
+    // For legacy flow (not through UFM), enforce stricter rules
+    if (deposit.status === 'INSPECTION' && deposit.requiresNegotiation) {
       return res.status(400).json({ 
-        error: 'Verified gold deposits must complete inspection before approval' 
+        error: 'RAW/OTHER deposits must complete negotiation before approval' 
+      });
+    }
+    
+    if (deposit.status === 'AGREED' && !deposit.requiresNegotiation) {
+      return res.status(400).json({ 
+        error: 'Unexpected AGREED status for GOLD_BAR/COIN deposit' 
       });
     }
 
@@ -1029,6 +1042,65 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
   } catch (error) {
     console.error('Error approving deposit:', error);
     res.status(500).json({ error: 'Failed to approve deposit' });
+  }
+});
+
+// Endpoint to send deposit to UFM for final approval (after vault inspection/negotiation)
+router.post('/admin/deposits/:id/send-to-ufm', requireAdmin(), async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).session.userId;
+    const deposit = await storage.getPhysicalDepositById(req.params.id);
+
+    if (!deposit) {
+      return res.status(404).json({ error: 'Deposit not found' });
+    }
+
+    // Validate status - must be INSPECTION (GOLD_BAR/COIN) or AGREED (RAW/OTHER)
+    if (deposit.requiresNegotiation && deposit.status !== 'AGREED') {
+      return res.status(400).json({ 
+        error: 'RAW/OTHER deposits must complete negotiation (AGREED status) before sending to UFM' 
+      });
+    }
+
+    if (!deposit.requiresNegotiation && deposit.status !== 'INSPECTION') {
+      return res.status(400).json({ 
+        error: 'Verified gold deposits must complete inspection before sending to UFM' 
+      });
+    }
+
+    // Verify inspection exists with valid credited grams
+    const inspection = await storage.getDepositInspection(deposit.id);
+    if (!inspection) {
+      return res.status(400).json({ error: 'Inspection record required before sending to UFM' });
+    }
+
+    const creditedGrams = parseFloat(inspection.creditedGrams || '0');
+    if (creditedGrams <= 0) {
+      return res.status(400).json({ error: 'Inspection must have positive credited grams' });
+    }
+
+    // Update status to READY_FOR_PAYMENT
+    await storage.updatePhysicalDeposit(deposit.id, {
+      status: 'READY_FOR_PAYMENT',
+    });
+
+    // Create audit log
+    await storage.createAuditLog({
+      entityType: 'physical_deposit',
+      entityId: deposit.id,
+      actor: adminId,
+      actorRole: 'admin',
+      actionType: 'PHYSICAL_DEPOSIT_SENT_TO_UFM',
+      details: JSON.stringify({ creditedGrams, previousStatus: deposit.status }),
+    });
+
+    // Send notification to user
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'READY_FOR_PAYMENT');
+
+    res.json({ success: true, creditedGrams });
+  } catch (error) {
+    console.error('Error sending deposit to UFM:', error);
+    res.status(500).json({ error: 'Failed to send to UFM' });
   }
 });
 

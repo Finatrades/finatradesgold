@@ -5365,6 +5365,7 @@ export const physicalDepositStatusEnum = pgEnum('physical_deposit_status', [
   'INSPECTION',
   'NEGOTIATION',
   'AGREED',
+  'READY_FOR_PAYMENT',  // Ready for UFM approval (after inspection/negotiation complete)
   'APPROVED',
   'REJECTED',
   'CANCELLED'
