@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Eye, CheckCircle, Loader2, Award } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 interface TradeCertificateData {
   id: string;

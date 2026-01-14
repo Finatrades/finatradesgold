@@ -7,7 +7,7 @@ import { FileText, Download, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 type ReportType = 'transactions' | 'portfolio' | 'complete';
 type DateRange = '7days' | '30days' | '90days' | 'all';
