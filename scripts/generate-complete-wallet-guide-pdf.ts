@@ -270,6 +270,7 @@ drawHeader('Part 7: Complete 5-Transaction Example');
 
 drawSubHeader('Phase 1: User Locks Gold (5 Transactions)');
 drawBody('Starting Balance: LGPW = 500g, FGPW = 0g');
+doc.moveDown(0.3);
 drawTable(
   ['#', 'Action', 'Price', 'LGPW After', 'FGPW After', 'USD Reserved'],
   [
@@ -281,8 +282,10 @@ drawTable(
   ]
 );
 
+doc.moveDown(1);
 drawSubHeader('Phase 2: User Unlocks Gold (5 Transactions with FIFO)');
 drawBody('Starting: LGPW = 100g, FGPW = 400g ($60,250 reserved)');
+doc.moveDown(0.3);
 drawTable(
   ['#', 'Unlock', 'Batch Used (FIFO)', 'USD Value', 'Live', 'Received', 'LGPW Total'],
   [
@@ -294,6 +297,7 @@ drawTable(
   ]
 );
 
+doc.moveDown(0.5);
 const resultY = doc.y;
 doc.rect(50, resultY, doc.page.width - 100, 50).fill(lightPurple);
 doc.font('Helvetica-Bold').fontSize(11).fillColor(darkPurple);
@@ -303,8 +307,7 @@ doc.text('Started: 500g total  |  Ended: 504.15g total  |  Net Gain: +4.15g from
 doc.text('All $60,250 USD value was preserved throughout!', 60, resultY + 38);
 doc.y = resultY + 65;
 
-drawDivider();
-
+doc.addPage();
 drawHeader('Part 8: Certificate Trail After All Transactions');
 drawTable(
   ['Certificate', 'Type', 'Final Status', 'Notes'],
