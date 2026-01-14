@@ -322,9 +322,160 @@ doc.text('All $60,250 USD value was preserved throughout!', 60, resultY + 34, { 
 doc.x = 50;
 doc.y = resultY + 55;
 
-// === PAGE 5 - PART 8 ===
+// === PAGE 5 - PART 8: P2P TRANSFERS ===
 doc.addPage();
-drawHeader('Part 8: Certificate Trail After All Transactions');
+drawHeader('Part 8: P2P (Peer-to-Peer) Transfer Flow');
+
+drawSubHeader('Key Rule: Receiver ALWAYS gets LGPW');
+drawBody('All P2P transfers result in the receiver getting gold in their LGPW at live market price.');
+
+const p2pRuleY = doc.y;
+doc.rect(50, p2pRuleY, doc.page.width - 100, 55).fill('#E6F4EA');
+doc.font('Helvetica-Bold').fontSize(9).fillColor(green);
+doc.text('Why?', 60, p2pRuleY + 8, { width: doc.page.width - 120 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('- FGPW is a personal value protection tool, NOT transferable to others', 60, p2pRuleY + 20, { width: doc.page.width - 120 });
+doc.text('- When sending from FGPW, system auto-unlocks to LGPW first, then sends', 60, p2pRuleY + 32, { width: doc.page.width - 120 });
+doc.text('- Receiver gets real gold (LGPW) they can use, lock, or transfer again', 60, p2pRuleY + 44, { width: doc.page.width - 120 });
+doc.x = 50;
+doc.y = p2pRuleY + 65;
+
+drawSubHeader('Transfer Types');
+drawTable(
+  ['From Wallet', 'Process', 'Receiver Gets'],
+  [
+    ['LGPW', 'Direct transfer at live price', 'LGPW (same grams)'],
+    ['FGPW', 'Auto-unlock → then transfer', 'LGPW (converted grams)'],
+  ]
+);
+
+drawDivider();
+
+// P2P Example 1
+drawSubHeader('Example 1: LGPW to LGPW (Simple Transfer)');
+const ex1Y = doc.y;
+doc.rect(50, ex1Y, doc.page.width - 100, 80).fill('#F8F4FC');
+
+drawBox(70, ex1Y + 10, 100, 35, purple, 'Alice LGPW', '100g');
+drawArrow(170, ex1Y + 27, 220, ex1Y + 27, 'Send 30g');
+drawBox(230, ex1Y + 10, 100, 35, '#F0E6FA', 'Transfer', '30g @ $150 live');
+drawArrow(330, ex1Y + 27, 380, ex1Y + 27);
+drawBox(390, ex1Y + 10, 100, 35, purple, 'Bob LGPW', '+30g');
+
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('Result: Alice LGPW: 100g → 70g  |  Bob LGPW: +30g  |  Live Price: $150/g', 60, ex1Y + 55, { width: doc.page.width - 120 });
+doc.text('Certificates: Alice DOC partial surrender, Bob DOC credit, Transfer CONV created', 60, ex1Y + 67, { width: doc.page.width - 120 });
+doc.x = 50;
+doc.y = ex1Y + 90;
+
+drawDivider();
+
+// P2P Example 2
+drawSubHeader('Example 2: FGPW to LGPW (Auto-Unlock Transfer)');
+drawBody('Alice sends 50g from her FGPW (locked @ $160/g) to Bob. Live price = $150/g');
+
+const ex2Y = doc.y;
+doc.rect(50, ex2Y, doc.page.width - 100, 100).fill('#F8F4FC');
+
+drawBox(60, ex2Y + 10, 80, 35, darkPurple, 'Alice FGPW', '50g@$160');
+drawArrow(140, ex2Y + 27, 175, ex2Y + 27);
+drawBox(180, ex2Y + 10, 90, 35, '#FFF8E6', 'Auto-Unlock', 'USD: $8,000');
+drawArrow(270, ex2Y + 27, 305, ex2Y + 27);
+drawBox(310, ex2Y + 10, 90, 35, '#E6F4EA', 'Buy @ Live', '53.33g');
+drawArrow(400, ex2Y + 27, 435, ex2Y + 27);
+drawBox(440, ex2Y + 10, 80, 35, purple, 'Bob LGPW', '+53.33g');
+
+doc.font('Helvetica-Bold').fontSize(8).fillColor(darkPurple);
+doc.text('Calculation:', 60, ex2Y + 55, { width: 400 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('1. Alice FGPW: 50g × $160 locked = $8,000 USD value', 60, ex2Y + 67, { width: 400 });
+doc.text('2. Convert to live: $8,000 ÷ $150/g = 53.33g', 60, ex2Y + 79, { width: 400 });
+doc.text('3. Bob receives: 53.33g in LGPW (more gold because price dropped!)', 60, ex2Y + 91, { width: 400 });
+doc.x = 50;
+doc.y = ex2Y + 110;
+
+// === PAGE 6 - MORE P2P EXAMPLES ===
+doc.addPage();
+drawHeader('Part 8: P2P Transfer Examples (Continued)');
+
+// P2P Example 3
+drawSubHeader('Example 3: FGPW Transfer When Price Rose');
+drawBody('Carol sends 100g from FGPW (locked @ $140/g) to Dave. Live price = $155/g');
+
+const ex3Y = doc.y;
+doc.rect(50, ex3Y, doc.page.width - 100, 95).fill('#F8F4FC');
+
+drawBox(60, ex3Y + 10, 85, 35, darkPurple, 'Carol FGPW', '100g@$140');
+drawArrow(145, ex3Y + 27, 180, ex3Y + 27);
+drawBox(185, ex3Y + 10, 95, 35, '#FFF8E6', 'Auto-Unlock', 'USD: $14,000');
+drawArrow(280, ex3Y + 27, 315, ex3Y + 27);
+drawBox(320, ex3Y + 10, 90, 35, '#E6F4EA', 'Buy @ Live', '90.32g');
+drawArrow(410, ex3Y + 27, 445, ex3Y + 27);
+drawBox(450, ex3Y + 10, 80, 35, purple, 'Dave LGPW', '+90.32g');
+
+doc.font('Helvetica-Bold').fontSize(8).fillColor(darkPurple);
+doc.text('Calculation:', 60, ex3Y + 52, { width: 400 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('1. Carol FGPW: 100g × $140 = $14,000 USD value', 60, ex3Y + 64, { width: 400 });
+doc.text('2. Convert to live: $14,000 ÷ $155/g = 90.32g', 60, ex3Y + 76, { width: 400 });
+doc.text('3. Dave receives: 90.32g in LGPW (less gold because price rose)', 60, ex3Y + 88, { width: 400 });
+doc.x = 50;
+doc.y = ex3Y + 105;
+
+drawDivider();
+
+// P2P Example 4
+drawSubHeader('Example 4: Mixed Wallet Transfer');
+drawBody('Eve sends 80g total: 50g from LGPW + 30g from FGPW (locked @ $145/g). Live = $150/g');
+
+const ex4Y = doc.y;
+doc.rect(50, ex4Y, doc.page.width - 100, 120).fill('#F8F4FC');
+
+doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
+doc.text('Step 1: LGPW portion (direct)', 60, ex4Y + 10, { width: 400 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('50g from LGPW → 50g to Frank (same grams, live transfer)', 60, ex4Y + 22, { width: 400 });
+
+doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
+doc.text('Step 2: FGPW portion (auto-unlock)', 60, ex4Y + 40, { width: 400 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('30g × $145 = $4,350 USD → $4,350 ÷ $150 = 29g to Frank', 60, ex4Y + 52, { width: 400 });
+
+doc.font('Helvetica-Bold').fontSize(9).fillColor(green);
+doc.text('Final Result:', 60, ex4Y + 72, { width: 400 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('Eve sent: 50g LGPW + 30g FGPW = 80g equivalent', 60, ex4Y + 84, { width: 400 });
+doc.text('Frank received: 50g + 29g = 79g in LGPW (1g less due to price rise on FGPW portion)', 60, ex4Y + 96, { width: 400 });
+doc.text('Certificates: Eve DOC surrenders, Frank DOC credit, 2x Transfer CONV records', 60, ex4Y + 108, { width: 400 });
+doc.x = 50;
+doc.y = ex4Y + 130;
+
+drawDivider();
+
+// P2P Summary Table
+drawSubHeader('P2P Transfer Summary');
+drawTable(
+  ['#', 'Sender', 'From Wallet', 'Locked Price', 'Live Price', 'Sent', 'Received'],
+  [
+    ['1', 'Alice', 'LGPW', '-', '$150/g', '30g', '30g'],
+    ['2', 'Alice', 'FGPW', '$160/g', '$150/g', '50g', '53.33g'],
+    ['3', 'Carol', 'FGPW', '$140/g', '$155/g', '100g', '90.32g'],
+    ['4', 'Eve', 'Mixed', '$145/g (FGPW)', '$150/g', '80g', '79g'],
+  ]
+);
+
+const p2pNoteY = doc.y;
+doc.rect(50, p2pNoteY, doc.page.width - 100, 40).fill(lightPurple);
+doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
+doc.text('Key Takeaway:', 60, p2pNoteY + 8, { width: doc.page.width - 120 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('LGPW transfers are 1:1. FGPW transfers convert to live price first - receiver may get more or less gold depending on price movement since lock.', 60, p2pNoteY + 20, { width: doc.page.width - 120 });
+doc.x = 50;
+doc.y = p2pNoteY + 50;
+
+// === PAGE 7 - PART 9 ===
+doc.addPage();
+drawHeader('Part 9: Certificate Trail After All Transactions');
 drawTable(
   ['Certificate', 'Type', 'Final Status', 'Notes'],
   [
@@ -341,8 +492,8 @@ drawTable(
 
 drawDivider();
 
-// === PART 9 ===
-drawHeader('Part 9: Platform Disclaimer');
+// === PART 10 ===
+drawHeader('Part 10: Platform Disclaimer');
 
 const disclaimerY = doc.y;
 doc.rect(50, disclaimerY, doc.page.width - 100, 130).fill('#FFF8E6').stroke('#FFD700');
