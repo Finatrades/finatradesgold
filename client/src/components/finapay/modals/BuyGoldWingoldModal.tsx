@@ -56,6 +56,9 @@ interface WingoldProduct {
   stock: number;
   inStock: boolean;
   imageUrl?: string;
+  thumbnailUrl?: string;
+  galleryUrls?: string[];
+  certificationImageUrl?: string;
   description?: string;
   category?: string;
 }
@@ -678,9 +681,9 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                         <Card key={product.productId} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.weight}`}>
                           <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
                             <div className="absolute inset-0 flex items-center justify-center">
-                              {product.imageUrl ? (
+                              {(product.thumbnailUrl || product.imageUrl) ? (
                                 <img 
-                                  src={product.imageUrl} 
+                                  src={product.thumbnailUrl || product.imageUrl} 
                                   alt={product.name}
                                   className="max-w-full max-h-full object-contain p-2 group-hover:scale-105 transition-transform"
                                   onError={(e) => {
@@ -690,7 +693,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                                   }}
                                 />
                               ) : null}
-                              <div className={`relative ${product.imageUrl ? 'hidden' : ''}`}>
+                              <div className={`relative ${(product.thumbnailUrl || product.imageUrl) ? 'hidden' : ''}`}>
                                 {/* Fallback gold bar placeholder */}
                                 <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
                                   <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
