@@ -12,6 +12,7 @@
 
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { users } from "@shared/schema";
@@ -67,6 +68,9 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
     }
 
     const payload = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -91,7 +95,6 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
 
     res.json({ 
       redirectUrl,
-      token,
       expiresIn: 300
     });
   } catch (error: any) {
@@ -114,6 +117,9 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
     }
 
     const payload = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -156,6 +162,9 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
     }
 
     const payload = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -215,6 +224,9 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
 
     // Payload includes permitted_delivery to enforce SecureVault-only on Wingold
     const payload = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -236,7 +248,7 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
 
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
-      expiresIn: "30m", // Longer expiry for shopping session
+      expiresIn: "15m", // Reduced from 30m for tighter security window
     });
 
     // Redirect to Wingold shop with SSO token
