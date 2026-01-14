@@ -678,8 +678,20 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                         <Card key={product.productId} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.weight}`}>
                           <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="relative">
-                                {/* Gold bar image placeholder */}
+                              {product.imageUrl ? (
+                                <img 
+                                  src={product.imageUrl} 
+                                  alt={product.name}
+                                  className="max-w-full max-h-full object-contain p-2 group-hover:scale-105 transition-transform"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`relative ${product.imageUrl ? 'hidden' : ''}`}>
+                                {/* Fallback gold bar placeholder */}
                                 <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
                                   <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
                                   <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-900 text-xs font-bold">
@@ -692,7 +704,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                                     {product.purity}
                                   </div>
                                 </div>
-                                {/* Certificate */}
+                                {/* Certificate decoration */}
                                 <div className="absolute -right-8 -top-4 w-24 h-32 bg-white rounded shadow-lg transform rotate-12 p-2">
                                   <div className="text-[6px] text-gray-800 font-bold mb-1">WINGOLD</div>
                                   <div className="text-[5px] text-gray-600 leading-tight">

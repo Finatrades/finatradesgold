@@ -679,10 +679,10 @@ async function syncProductsFromWingold(inStock?: boolean, category?: string): Pr
 // Helper: Seed default products when API is unavailable
 async function seedDefaultProducts(): Promise<void> {
   const defaultProducts = [
-    { wingoldProductId: 'WG-1G-BAR', name: '1g Gold Bar - Wingold', weight: '1g', weightGrams: '1.0000', purity: '999.9', stock: 100 },
-    { wingoldProductId: 'WG-10G-BAR', name: '10g Gold Bar - Wingold', weight: '10g', weightGrams: '10.0000', purity: '999.9', stock: 100 },
-    { wingoldProductId: 'WG-100G-BAR', name: '100g Gold Bar - Wingold', weight: '100g', weightGrams: '100.0000', purity: '999.9', stock: 50 },
-    { wingoldProductId: 'WG-1KG-BAR', name: '1kg Gold Bar - Wingold', weight: '1kg', weightGrams: '1000.0000', purity: '999.9', stock: 25 }
+    { wingoldProductId: 'WG-1G-BAR', name: '1g Gold Bar - Wingold', weight: '1g', weightGrams: '1.0000', purity: '999.9', stock: 100, imageUrl: 'https://wingoldandmetals.com/images/products/1g-gold-bar.png' },
+    { wingoldProductId: 'WG-10G-BAR', name: '10g Gold Bar - Wingold', weight: '10g', weightGrams: '10.0000', purity: '999.9', stock: 100, imageUrl: 'https://wingoldandmetals.com/images/products/10g-gold-bar.png' },
+    { wingoldProductId: 'WG-100G-BAR', name: '100g Gold Bar - Wingold', weight: '100g', weightGrams: '100.0000', purity: '999.9', stock: 50, imageUrl: 'https://wingoldandmetals.com/images/products/100g-gold-bar.png' },
+    { wingoldProductId: 'WG-1KG-BAR', name: '1kg Gold Bar - Wingold', weight: '1kg', weightGrams: '1000.0000', purity: '999.9', stock: 25, imageUrl: 'https://wingoldandmetals.com/images/products/1kg-gold-bar.png' }
   ];
 
   for (const product of defaultProducts) {
