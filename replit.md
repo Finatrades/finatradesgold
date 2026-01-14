@@ -64,6 +64,20 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 **KYC System:**
 Supports `kycAml` (tiered verification) and `Finatrades` (personal info + documents + liveness) modes, configurable via admin settings.
 
+**Verifiable Credentials System (W3C VC 2.0 - January 2026):**
+- **Standard**: W3C Verifiable Credentials Data Model 2.0 compliant
+- **Signing**: RS256 JWT with `typ: "vc+ld+jwt"` header per VC 2.0 §4.4
+- **Issuer DID**: `did:web:finatrades.com`
+- **Database Tables**: `verifiable_credentials`, `credential_revocations`, `credential_presentations`
+- **Auto-Issuance**: VC automatically issued on KYC approval
+- **SSO Integration**: SSO tokens include credential reference (id + endpoints), not raw JWT
+- **Partner Fetch**: Secure endpoint at `/api/vc/partner/credential/:id` with Bearer token auth
+- **Status Check**: Public API at `/api/vc/status/:id` for revocation/expiry checks
+- **JWKS**: Public key distribution at `/api/.well-known/jwks.json`
+- **Audit Trail**: All credential presentations logged in `credential_presentations` table
+- **Environment Variables Required**: `SSO_PRIVATE_KEY`, `SSO_PUBLIC_KEY`, `WINGOLD_PARTNER_API_KEY`
+- **Compliance**: Designed for FATF/eIDAS 2.0 regulatory requirements with selective disclosure
+
 **Centralized Platform Configuration:**
 All fees, limits, and system settings are managed via a `platform_config` database table and an admin interface. Settings are exposed to the frontend via `PlatformContext`.
 
