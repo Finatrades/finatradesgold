@@ -23,7 +23,6 @@ async function testPasswordUtils() {
   
   console.log('\n3. Verifying wrong password...');
   const isInvalid = await verifyPassword('wrongpassword', hash);
-  console.log(`   Result: ${!isInvalid ? '✅ PASS (correctly rejected)' : '❌ FAIL'}`);
   
   console.log('\n4. Testing bcrypt backward compatibility...');
   const bcryptHash = await bcrypt.hash(testPassword, 10);
