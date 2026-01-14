@@ -15889,13 +15889,12 @@ ${message}
       }
       
       
-      // P2P RULE: Direct SEND must use LGPW only
-      // Payment Requests can specify LGPW or FGPW, but direct sends are LGPW-only
-      if (goldWalletType && goldWalletType !== 'LGPW') {
-        return res.status(400).json({ 
-          message: "Direct P2P sends must use Live Gold Price Wallet (LGPW). To transfer from FGPW, create a payment request instead."
-        });
-      }
+      // P2P RULE: FGPW transfers auto-unlock to LGPW first
+      // Receiver ALWAYS gets LGPW at live price
+      const sourceWalletType = goldWalletType || 'LGPW';
+      
+      // Import FGPW batch service for FGPW transfers
+      const { previewFpgwBatches, getFpgwBalanceSummary } = await import('./fpgw-batch-service');
       // Validate gold amount is provided (platform is gold-only)
       if (!amountGold || parseFloat(amountGold) <= 0) {
         return res.status(400).json({ message: "Gold amount is required for transfers" });
@@ -15943,12 +15942,47 @@ ${message}
       const availableGold = parseFloat(senderWalletCheck?.goldGrams?.toString() || '0');
       const requestedGold = parseFloat(amountGold);
       
-      if (availableGold - totalLockedGrams < requestedGold) {
-        return res.status(400).json({ 
-          message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
-          lockedGrams: totalLockedGrams.toFixed(4),
-          availableGrams: (availableGold - totalLockedGrams).toFixed(4)
-        });
+      // For FGPW transfers, check FGPW balance instead
+      let fgpwConversionResult: any = null;
+      let receiverGoldGrams = requestedGold; // Default for LGPW (1:1)
+      let fgpwUsdValue = 0;
+      
+      if (sourceWalletType === 'FGPW') {
+        // Get FGPW balance summary
+        const balanceSummary = await getFpgwBalanceSummary(senderId);
+        const fgpwAvailable = balanceSummary.availableGrams;
+        
+        if (fgpwAvailable < requestedGold) {
+          return res.status(400).json({ 
+            message: `Insufficient FGPW balance. You have ${fgpwAvailable.toFixed(4)}g available in FGPW.`,
+            fgpwAvailable: fgpwAvailable.toFixed(4),
+            requestedGrams: requestedGold.toFixed(4)
+          });
+        }
+        
+        // Preview FGPW consumption to calculate USD value and receiver's LGPW grams
+        // This will be done again in the actual transfer, but we need to calculate now
+        fgpwConversionResult = await previewFpgwBatches(senderId, requestedGold, 'Available');
+        if (!fgpwConversionResult.success) {
+          return res.status(400).json({ 
+            message: fgpwConversionResult.error || 'Failed to process FGPW transfer'
+          });
+        }
+        
+        // Calculate receiver's LGPW grams: USD value / live price
+        fgpwUsdValue = fgpwConversionResult.weightedValueUsd;
+        receiverGoldGrams = fgpwUsdValue / goldPrice;
+        
+        console.log(`[P2P-FGPW] Sender sends ${requestedGold}g FGPW (USD ${fgpwUsdValue.toFixed(2)}) -> Receiver gets ${receiverGoldGrams.toFixed(6)}g LGPW at ${goldPrice.toFixed(2)}/g`);
+      } else {
+        // LGPW balance check
+        if (availableGold - totalLockedGrams < requestedGold) {
+          return res.status(400).json({ 
+            message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
+            lockedGrams: totalLockedGrams.toFixed(4),
+            availableGrams: (availableGold - totalLockedGrams).toFixed(4)
+          });
+        }
       }
       
       // Find recipient by email or Finatrades ID
@@ -15967,12 +16001,16 @@ ${message}
         return res.status(400).json({ message: "Sender wallet not found" });
       }
       
-      // Platform is gold-only - calculate USD equivalent (goldAmount already parsed above for limit validation)
-      const usdEquivalent = goldAmount * goldPrice;
+      // Platform is gold-only - calculate USD equivalent
+      // For FGPW: use the previewed USD value; For LGPW: use live price
+      const usdEquivalent = sourceWalletType === 'FGPW' && fgpwConversionResult
+        ? fgpwConversionResult.weightedValueUsd 
+        : goldAmount * goldPrice;
       
       // Validate gold balance before creating pending transfer
+      // Skip for FGPW - already validated in FGPW-specific block above
       const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-      if (senderGoldBalance < goldAmount) {
+      if (sourceWalletType === 'LGPW' && senderGoldBalance < goldAmount) {
         return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
       }
       
@@ -16131,11 +16169,21 @@ ${message}
       const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
       
       // Debit sender immediately (held until accepted/rejected)
-      await storage.updateWallet(senderWallet.id, {
-        goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
-      });
+      // For FGPW: Don't debit wallet - FGPW batches will be consumed at approval time
+      // For LGPW: Debit wallet now (funds held in escrow)
+      if (sourceWalletType === 'LGPW') {
+        await storage.updateWallet(senderWallet.id, {
+          goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
+        });
+      }
+      // Note: For FGPW, we store the preview info and consume batches at approval time
       
       // Create sender transaction (pending)
+      // For FGPW: amountGold = FGPW grams sent, description includes receiver LGPW grams
+      const txDescription = sourceWalletType === 'FGPW' && fgpwConversionResult
+        ? `Pending FGPW transfer to ${recipient.firstName} ${recipient.lastName} (${goldAmount.toFixed(4)}g FGPW @ ${(fgpwConversionResult.weightedValueUsd / goldAmount).toFixed(2)}/g = ${fgpwConversionResult.weightedValueUsd.toFixed(2)} -> ${receiverGoldGrams.toFixed(4)}g LGPW @ ${goldPrice.toFixed(2)}/g)`
+        : memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`;
+      
       const senderTx = await storage.createTransaction({
         userId: sender.id,
         type: 'Send',
@@ -16145,11 +16193,10 @@ ${message}
         goldPriceUsdPerGram: goldPrice.toFixed(2),
         recipientEmail: recipient.email,
         recipientUserId: recipient.id,
-        description: memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`,
+        description: txDescription,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-        goldWalletType: goldWalletType || 'LGPW',
+        goldWalletType: sourceWalletType,
       });
       
       // Record ledger entry
@@ -16842,16 +16889,69 @@ ${message}
       
       // Platform is gold-only - all transfers are gold
       const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
-      const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
+      let goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
       
       if (goldAmount <= 0) {
         return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
+      }
+      
+      // Get the source wallet type from sender's transaction
+      let senderTxInfo: any = null;
+      if (transfer.senderTransactionId) {
+        senderTxInfo = await storage.getTransaction(transfer.senderTransactionId);
+      }
+      const sourceWalletType = senderTxInfo?.goldWalletType || 'LGPW';
+      
+      // For FGPW transfers: Consume FGPW batches now and calculate receiver's LGPW grams
+      let receiverGoldGrams = goldAmount; // Default for LGPW (1:1)
+      let fgpwConversionResult: any = null;
+      
+      if (sourceWalletType === 'FGPW') {
+        // Use STORED price from send time (auto-unlock guarantee per PDF documentation)
+        // goldPrice is already set from transfer.goldPriceUsdPerGram above
+        
+        // Preview FGPW consumption to validate and calculate receiver grams
+        // Actual consumption will happen inside the transaction block for atomicity
+        const { previewFpgwBatches } = await import('./fpgw-batch-service');
+        const fgpwPreview = await previewFpgwBatches(sender.id, goldAmount, 'Available');
+        
+        if (!fgpwPreview.success) {
+          return res.status(400).json({ 
+            message: fgpwPreview.error || 'Insufficient FGPW balance to complete transfer'
+          });
+        }
+        
+        // Calculate receiver's LGPW grams = USD value / stored price
+        fgpwConversionResult = fgpwPreview;
+        receiverGoldGrams = fgpwPreview.weightedValueUsd / goldPrice;
+        
+        console.log(`[P2P-FGPW Accept] Will convert ${goldAmount}g FGPW (USD ${fgpwPreview.weightedValueUsd.toFixed(2)}) -> ${receiverGoldGrams.toFixed(6)}g LGPW at ${goldPrice.toFixed(2)}/g`);
       }
       
       // Process gold transfer - Credit recipient
       const result = await storage.withTransaction(async (txStorage) => {
         const generatedCertificates: any[] = [];
         const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        
+        // For FGPW transfers: Consume batches inside transaction for atomicity
+        if (sourceWalletType === 'FGPW') {
+          const { consumeFpgwBatches, updateFpgwOwnershipSummary } = await import('./fpgw-batch-service');
+          const txDb = txStorage.getDbClient();
+          const consumeResult = await consumeFpgwBatches(sender.id, goldAmount, 'Available', txDb);
+          
+          if (!consumeResult.success) {
+            throw new Error(consumeResult.error || 'Failed to consume FGPW batches');
+          }
+          
+          // Use actual consumption result for receiver grams (not preview)
+          receiverGoldGrams = consumeResult.weightedValueUsd / goldPrice;
+          fgpwConversionResult = consumeResult;
+          
+          // Update sender's FGPW ownership summary inside transaction
+          await updateFpgwOwnershipSummary(sender.id, txDb);
+          
+          console.log(`[P2P-FGPW Accept TX] Consumed ${goldAmount}g FGPW (USD ${consumeResult.weightedValueUsd.toFixed(2)}) -> ${receiverGoldGrams.toFixed(6)}g LGPW from sender ${sender.id}`);
+        }
           
           // Helper to issue certificates
           const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number) => {
@@ -16895,24 +16995,31 @@ ${message}
           };
           
           // 1. Credit recipient wallet gold
+          // For FGPW transfers: use converted LGPW grams; For LGPW: use original amount
           const recipientGoldBalance = parseFloat(recipientWallet.goldGrams?.toString() || '0');
+          const creditGrams = sourceWalletType === 'FGPW' ? receiverGoldGrams : goldAmount;
           await txStorage.updateWallet(recipientWallet.id, {
-            goldGrams: (recipientGoldBalance + goldAmount).toFixed(6)
+            goldGrams: (recipientGoldBalance + creditGrams).toFixed(6)
           });
           
           // 2. Create recipient transaction
+          // For FGPW: receiver gets LGPW, so record the converted grams
+          const recipientDescription = sourceWalletType === 'FGPW' && fgpwConversionResult
+            ? `Received ${creditGrams.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName} (converted from ${goldAmount.toFixed(4)}g FGPW at ${goldPrice.toFixed(2)}/g)`
+            : transfer.memo || `Received ${creditGrams.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`;
+            
           const recipientTx = await txStorage.createTransaction({
             userId: recipient.id,
             type: 'Receive',
             status: 'Completed',
-            amountGold: goldAmount.toFixed(6),
-            amountUsd: (goldAmount * goldPrice).toFixed(2),
+            amountGold: creditGrams.toFixed(6),
+            amountUsd: (creditGrams * goldPrice).toFixed(2),
             goldPriceUsdPerGram: goldPrice.toFixed(2),
             senderEmail: sender.email,
-            description: transfer.memo || `Received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
+            description: recipientDescription,
             referenceId: transfer.referenceNumber,
             sourceModule: 'finapay',
-            goldWalletType: transfer.goldWalletType || 'LGPW',
+            goldWalletType: 'LGPW', // Receiver ALWAYS gets LGPW
             completedAt: new Date(),
           });
           
@@ -16926,7 +17033,7 @@ ${message}
             const rGold = parseFloat(rHolding.goldGrams?.toString() || '0');
             recipientWingoldRef = generateWingoldRef();
             await txStorage.updateVaultHolding(rHolding.id, {
-              goldGrams: (rGold + goldAmount).toFixed(6),
+              goldGrams: (rGold + creditGrams).toFixed(6),
               wingoldStorageRef: recipientWingoldRef
             });
             recipientHoldingId = rHolding.id;
@@ -16934,7 +17041,7 @@ ${message}
             recipientWingoldRef = generateWingoldRef();
             const newHolding = await txStorage.createVaultHolding({
               userId: recipient.id,
-              goldGrams: goldAmount.toFixed(6),
+              goldGrams: creditGrams.toFixed(6),
               vaultLocation: 'Dubai - Wingold & Metals DMCC',
               wingoldStorageRef: recipientWingoldRef,
               purchasePriceUsdPerGram: goldPrice.toFixed(2),
@@ -16944,7 +17051,7 @@ ${message}
           }
           
           // 4. Issue certificates for recipient
-          await issueCertificates(recipient.id, recipientTx.id, recipientHoldingId, recipientWingoldRef, goldAmount);
+          await issueCertificates(recipient.id, recipientTx.id, recipientHoldingId, recipientWingoldRef, creditGrams);
           
           // 5. Update transfer status
           await txStorage.updatePeerTransfer(transfer.id, {

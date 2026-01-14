@@ -150,6 +150,7 @@ export interface TransactionalStorage {
   generateInvoiceNumber(): Promise<string>;
   updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined>;
   updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
+  getDbClient(): DbClient;
 }
 
 function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
@@ -235,6 +236,9 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
     async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
       const [transfer] = await txDb.update(peerTransfers).set({ ...updates, updatedAt: new Date() }).where(eq(peerTransfers.id, id)).returning();
       return transfer || undefined;
+    },
+    getDbClient(): DbClient {
+      return txDb;
     }
   };
 }

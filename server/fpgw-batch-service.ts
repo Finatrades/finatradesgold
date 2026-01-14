@@ -94,12 +94,31 @@ export async function createFpgwBatch(params: CreateBatchParams & { tx?: typeof 
 
 /**
  * Get all active batches for a user, ordered by creation date (FIFO)
+ * @param dbClient - Database client (can be global db or transaction handle)
+ * @param forUpdate - Whether to lock rows for update (for concurrent safety)
  */
 export async function getActiveBatches(
   userId: string, 
-  balanceBucket: BalanceBucket = 'Available'
+  balanceBucket: BalanceBucket = 'Available',
+  dbClient: typeof db = db,
+  forUpdate: boolean = false
 ): Promise<FpgwBatch[]> {
-  return db
+  // Use raw SQL with FOR UPDATE when locking is requested for concurrent safety
+  if (forUpdate) {
+    const result = await dbClient.execute(sql`
+      SELECT * FROM fpgw_batches 
+      WHERE user_id = ${userId} 
+        AND status = 'Active' 
+        AND balance_bucket = ${balanceBucket}
+        AND CAST(remaining_grams AS NUMERIC) > 0
+      ORDER BY created_at ASC
+      FOR UPDATE
+    `);
+    return result.rows as unknown as FpgwBatch[];
+  }
+  
+  // Regular query without locking
+  return dbClient
     .select()
     .from(fpgwBatches)
     .where(
@@ -114,10 +133,11 @@ export async function getActiveBatches(
 }
 
 /**
- * Consume gold from FGPW batches using FIFO order
- * Returns the batches consumed and their locked prices for audit trail
+ * Preview FGPW batch consumption WITHOUT actually consuming
+ * Used for validation and calculations before actual transfer
+ * Returns the same structure as consumeFpgwBatches but doesn't mutate data
  */
-export async function consumeFpgwBatches(
+export async function previewFpgwBatches(
   userId: string,
   goldGrams: number,
   balanceBucket: BalanceBucket = 'Available'
@@ -151,11 +171,73 @@ export async function consumeFpgwBatches(
     const gramsToConsume = Math.min(batchRemaining, remainingToConsume);
     const lockedPrice = parseFloat(batch.lockedPriceUsd);
 
-    // Update batch
+    // Preview only - no database update
+    consumedBatches.push({
+      batchId: batch.id,
+      gramsConsumed: gramsToConsume,
+      lockedPriceUsd: lockedPrice
+    });
+
+    weightedValueUsd += gramsToConsume * lockedPrice;
+    remainingToConsume -= gramsToConsume;
+  }
+
+  return {
+    success: true,
+    consumedBatches,
+    totalGramsConsumed: goldGrams - remainingToConsume,
+    weightedValueUsd
+  };
+}
+
+/**
+ * Consume gold from FGPW batches using FIFO order
+ * Returns the batches consumed and their locked prices for audit trail
+ * @param tx - Optional transaction handle for atomicity (uses FOR UPDATE locking)
+ */
+export async function consumeFpgwBatches(
+  userId: string,
+  goldGrams: number,
+  balanceBucket: BalanceBucket = 'Available',
+  tx?: typeof db
+): Promise<BatchConsumptionResult> {
+  const dbClient = tx || db;
+  // When tx is provided, use FOR UPDATE locking to prevent concurrent double-consumption
+  const useForUpdate = !!tx;
+  const activeBatches = await getActiveBatches(userId, balanceBucket, dbClient, useForUpdate);
+  
+  // Calculate total available
+  const totalAvailable = activeBatches.reduce(
+    (sum, batch) => sum + parseFloat(batch.remainingGrams),
+    0
+  );
+
+  if (totalAvailable < goldGrams) {
+    return {
+      success: false,
+      consumedBatches: [],
+      totalGramsConsumed: 0,
+      weightedValueUsd: 0,
+      error: `Insufficient FGPW balance. Available: ${totalAvailable.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g`
+    };
+  }
+
+  let remainingToConsume = goldGrams;
+  const consumedBatches: BatchConsumptionResult['consumedBatches'] = [];
+  let weightedValueUsd = 0;
+
+  for (const batch of activeBatches) {
+    if (remainingToConsume <= 0) break;
+
+    const batchRemaining = parseFloat(batch.remainingGrams);
+    const gramsToConsume = Math.min(batchRemaining, remainingToConsume);
+    const lockedPrice = parseFloat(batch.lockedPriceUsd);
+
+    // Update batch - use transaction handle if provided
     const newRemaining = batchRemaining - gramsToConsume;
     const newStatus = newRemaining <= 0 ? 'Consumed' : 'Active';
 
-    await db
+    await dbClient
       .update(fpgwBatches)
       .set({
         remainingGrams: newRemaining.toString(),
@@ -183,8 +265,47 @@ export async function consumeFpgwBatches(
 }
 
 /**
- * Transfer FGPW batches from one user to another
- * Creates new batches for recipient with same locked prices
+ * Transfer FGPW to LGPW for P2P transfers
+ * Consumes sender's FGPW batches and converts USD value to LGPW grams at live price
+ * Receiver ALWAYS gets LGPW (not FGPW) - per Finatrades P2P transfer rules
+ */
+export interface FgpwToLgpwTransferResult extends BatchConsumptionResult {
+  receiverLgpwGrams: number;
+  conversionPriceUsd: number;
+}
+
+export async function transferFpgwToLgpw(
+  params: TransferBatchParams & { livePriceUsd: number }
+): Promise<FgpwToLgpwTransferResult> {
+  const { fromUserId, goldGrams, livePriceUsd } = params;
+
+  // Consume from sender's FGPW
+  const consumeResult = await consumeFpgwBatches(fromUserId, goldGrams, 'Available');
+
+  if (!consumeResult.success) {
+    return {
+      ...consumeResult,
+      receiverLgpwGrams: 0,
+      conversionPriceUsd: livePriceUsd
+    };
+  }
+
+  // Convert USD value to LGPW grams at live price
+  // Formula: USD Value / Live Price = LGPW Grams
+  const receiverLgpwGrams = consumeResult.weightedValueUsd / livePriceUsd;
+
+  console.log(`[FGPW->LGPW Transfer] Consumed ${goldGrams}g FGPW (USD $${consumeResult.weightedValueUsd.toFixed(2)}) -> ${receiverLgpwGrams.toFixed(6)}g LGPW at $${livePriceUsd.toFixed(2)}/g`);
+
+  return {
+    ...consumeResult,
+    receiverLgpwGrams,
+    conversionPriceUsd: livePriceUsd
+  };
+}
+
+/**
+ * @deprecated Use transferFpgwToLgpw for P2P transfers - receiver should get LGPW
+ * Legacy function that transfers FGPW with same locked prices (only for internal use)
  */
 export async function transferFpgwBatches(
   params: TransferBatchParams
@@ -261,8 +382,9 @@ export async function getWeightedAveragePrice(
 
 /**
  * Get FGPW balance summary for a user
+ * @param tx - Optional transaction handle for atomicity
  */
-export async function getFpgwBalanceSummary(userId: string): Promise<{
+export async function getFpgwBalanceSummary(userId: string, tx?: typeof db): Promise<{
   availableGrams: number;
   pendingGrams: number;
   lockedBnslGrams: number;
@@ -271,7 +393,8 @@ export async function getFpgwBalanceSummary(userId: string): Promise<{
   weightedAvgPrice: number;
   batches: FpgwBatch[];
 }> {
-  const allBatches = await db
+  const dbClient = tx || db;
+  const allBatches = await dbClient
     .select()
     .from(fpgwBatches)
     .where(
@@ -516,11 +639,13 @@ export async function validateSpendableFpgw(
 
 /**
  * Update vault ownership summary with FGPW totals
+ * @param tx - Optional transaction handle for atomicity
  */
-export async function updateFpgwOwnershipSummary(userId: string): Promise<void> {
-  const summary = await getFpgwBalanceSummary(userId);
+export async function updateFpgwOwnershipSummary(userId: string, tx?: typeof db): Promise<void> {
+  const dbClient = tx || db;
+  const summary = await getFpgwBalanceSummary(userId, dbClient);
 
-  await db
+  await dbClient
     .update(vaultOwnershipSummary)
     .set({
       fpgwAvailableGrams: summary.availableGrams.toString(),
