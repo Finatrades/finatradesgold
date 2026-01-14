@@ -36,14 +36,21 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 };
 
 function MyPhysicalDeposits() {
+  const { user } = useAuth();
   const [selectedDeposit, setSelectedDeposit] = useState<any>(null);
-  const { data, isLoading } = useQuery({
-    queryKey: ['physical-deposits'],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['physical-deposits', user?.id],
     queryFn: async () => {
-      const res = await fetch('/api/physical-deposits/deposits', { credentials: 'include' });
+      const res = await fetch('/api/physical-deposits/deposits', { 
+        credentials: 'include',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (!res.ok) return { deposits: [] };
       return res.json();
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    enabled: !!user?.id,
   });
 
   const deposits = data?.deposits || [];

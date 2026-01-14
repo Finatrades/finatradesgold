@@ -247,7 +247,9 @@ router.get('/deposits', async (req: Request, res: Response) => {
     }
 
     const userId = session.userId;
+    console.log('[Physical Deposits] Fetching deposits for user:', userId);
     const deposits = await storage.getUserPhysicalDeposits(userId);
+    console.log('[Physical Deposits] Found deposits count:', deposits.length);
 
     const depositsWithItems = await Promise.all(deposits.map(async (deposit) => {
       const items = await storage.getDepositItems(deposit.id);
