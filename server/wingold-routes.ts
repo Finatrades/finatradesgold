@@ -235,6 +235,71 @@ router.get('/admin/pending-orders', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/admin/awaiting-finatrades-approval', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orders = await db.select({
+      id: wingoldPurchaseOrders.id,
+      referenceNumber: wingoldPurchaseOrders.referenceNumber,
+      userId: wingoldPurchaseOrders.userId,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userEmail: users.email,
+      barSize: wingoldPurchaseOrders.barSize,
+      barCount: wingoldPurchaseOrders.barCount,
+      totalGrams: wingoldPurchaseOrders.totalGrams,
+      usdAmount: wingoldPurchaseOrders.usdAmount,
+      goldPriceUsdPerGram: wingoldPurchaseOrders.goldPriceUsdPerGram,
+      status: wingoldPurchaseOrders.status,
+      wingoldOrderId: wingoldPurchaseOrders.wingoldOrderId,
+      wingoldVaultLocationId: wingoldPurchaseOrders.wingoldVaultLocationId,
+      errorMessage: wingoldPurchaseOrders.errorMessage,
+      submittedAt: wingoldPurchaseOrders.submittedAt,
+      fulfilledAt: wingoldPurchaseOrders.fulfilledAt,
+      createdAt: wingoldPurchaseOrders.createdAt,
+    })
+      .from(wingoldPurchaseOrders)
+      .leftJoin(users, eq(wingoldPurchaseOrders.userId, users.id))
+      .where(eq(wingoldPurchaseOrders.status, 'wingold_approved'))
+      .orderBy(desc(wingoldPurchaseOrders.createdAt));
+
+    res.json({ orders });
+  } catch (error) {
+    console.error('[Wingold] Failed to fetch orders awaiting approval:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+router.post('/orders/:orderId/finatrades-approve', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const orderId = req.params.orderId;
+    
+    const result = await WingoldIntegrationService.approveAndCreditWingoldOrder(orderId, user.id);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
+    }
+
+    res.json({
+      success: true,
+      message: result.message,
+      txnId: result.txnId
+    });
+  } catch (error) {
+    console.error('[Wingold] Finatrades approval failed:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Approval failed' });
+  }
+});
+
 router.get('/admin/all-orders', async (req: Request, res: Response) => {
   try {
     const user = await getSessionUser(req);

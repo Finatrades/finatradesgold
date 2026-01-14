@@ -2,7 +2,8 @@ import { db } from './db';
 import { 
   wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, 
   wingoldVaultLocations, wingoldReconciliations,
-  vaultHoldings, transactions, wallets, users, certificates
+  vaultHoldings, transactions, wallets, users, certificates,
+  unifiedTallyTransactions, unifiedTallyEvents
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -265,7 +266,7 @@ export class WingoldIntegrationService {
         totalGrams: orderData.totalGrams,
         usdAmount: orderData.usdAmount,
         goldPriceUsdPerGram: goldPrice,
-        preferredVaultLocation: orderData.vaultLocationId,
+        wingoldVaultLocationId: orderData.vaultLocationId,
         status: 'confirmed',
         confirmedAt: new Date()
       }).returning();
@@ -372,19 +373,205 @@ export class WingoldIntegrationService {
     
     if (!order) return;
 
+    // Update order status to wingold_approved (awaiting Finatrades admin approval)
     await db.update(wingoldPurchaseOrders)
       .set({
-        status: 'fulfilled',
+        status: 'wingold_approved',
         fulfilledAt: new Date(),
         updatedAt: new Date()
       })
       .where(eq(wingoldPurchaseOrders.id, orderId));
 
+    // Create vault holdings to track physical gold
     await this.createFinaVaultHolding(orderId);
-    await this.creditLGPWWallet(orderId);
-    await this.issueDigitalOwnershipCertificate(orderId);
     
-    console.log(`[Wingold] Order ${orderId} fulfilled, FinaVault updated, LGPW credited, and Digital Ownership Certificate issued`);
+    // Create UTT entry for Finatrades admin to review in UFM
+    await this.createUttEntryForApproval(orderId);
+    
+    console.log(`[Wingold] Order ${orderId} approved by Wingold - awaiting Finatrades admin approval in UFM`);
+  }
+
+  private static async createUttEntryForApproval(orderId: string): Promise<void> {
+    const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
+    if (!order) return;
+
+    const [user] = await db.select().from(users).where(eq(users.id, order.userId));
+    if (!user) return;
+
+    const barLots = await db.select().from(wingoldBarLots).where(eq(wingoldBarLots.orderId, orderId));
+    const physicalGoldAllocatedG = barLots.reduce((sum, bar) => sum + parseFloat(bar.weightGrams || '0'), 0);
+
+    // Check if UTT entry already exists for this order
+    const existingUtt = await db.select()
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.wingoldOrderId, order.wingoldOrderId || orderId))
+      .limit(1);
+
+    if (existingUtt.length > 0) {
+      const previousStatus = existingUtt[0].status;
+      
+      // Update existing UTT to PHYSICAL_ALLOCATED
+      await db.update(unifiedTallyTransactions)
+        .set({
+          status: 'PHYSICAL_ALLOCATED',
+          physicalGoldAllocatedG: physicalGoldAllocatedG.toFixed(6),
+          barLotSerialsJson: barLots.map(bar => ({
+            serial: bar.serialNumber,
+            purity: parseFloat(bar.purity || '999.9'),
+            weightG: parseFloat(bar.weightGrams || '0'),
+          })),
+          updatedAt: new Date()
+        })
+        .where(eq(unifiedTallyTransactions.id, existingUtt[0].id));
+      
+      // Log the event for complete audit trail
+      await db.insert(unifiedTallyEvents).values({
+        tallyId: existingUtt[0].id,
+        eventType: 'PHYSICAL_ALLOCATED',
+        previousStatus: previousStatus,
+        newStatus: 'PHYSICAL_ALLOCATED',
+        details: {
+          wingoldOrderId: order.wingoldOrderId,
+          referenceNumber: order.referenceNumber,
+          barsAllocated: barLots.length,
+          totalGrams: physicalGoldAllocatedG,
+        },
+        notes: `Wingold approved order ${order.referenceNumber} - physical gold allocated`,
+      });
+      
+      console.log(`[Wingold] Updated UTT ${existingUtt[0].txnId} to PHYSICAL_ALLOCATED`);
+      return;
+    }
+
+    // Generate human-readable transaction ID
+    const year = new Date().getFullYear();
+    const sequence = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(unifiedTallyTransactions);
+    const txnId = `UGT-${year}-${String((sequence[0]?.count || 0) + 1).padStart(6, '0')}`;
+
+    // Create new UTT entry
+    const [uttEntry] = await db.insert(unifiedTallyTransactions).values({
+      txnId,
+      userId: order.userId,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+      userEmail: user.email,
+      txnType: 'FIAT_CRYPTO_DEPOSIT',
+      sourceMethod: 'CARD', // Wingold purchases are treated as card payments
+      walletType: 'LGPW',
+      status: 'PHYSICAL_ALLOCATED', // Awaiting Finatrades admin approval
+      depositCurrency: 'USD',
+      depositAmount: order.usdAmount,
+      netAmount: order.usdAmount,
+      goldRateValue: order.goldPriceUsdPerGram,
+      goldEquivalentG: order.totalGrams,
+      wingoldOrderId: order.wingoldOrderId || orderId,
+      physicalGoldAllocatedG: physicalGoldAllocatedG.toFixed(6),
+      wingoldBuyRate: order.goldPriceUsdPerGram,
+      wingoldCostUsd: order.usdAmount,
+      barLotSerialsJson: barLots.map(bar => ({
+        serial: bar.serialNumber,
+        purity: parseFloat(bar.purity || '999.9'),
+        weightG: parseFloat(bar.weightGrams || '0'),
+      })),
+    }).returning();
+
+    // Log the event
+    await db.insert(unifiedTallyEvents).values({
+      tallyId: uttEntry.id,
+      eventType: 'PHYSICAL_ALLOCATED',
+      newStatus: 'PHYSICAL_ALLOCATED',
+      details: {
+        wingoldOrderId: order.wingoldOrderId,
+        referenceNumber: order.referenceNumber,
+        barsAllocated: barLots.length,
+        totalGrams: physicalGoldAllocatedG,
+      },
+      notes: `Wingold approved order ${order.referenceNumber} - awaiting Finatrades admin approval`,
+    });
+
+    console.log(`[Wingold] Created UTT ${txnId} for Finatrades admin approval (${physicalGoldAllocatedG}g physical gold allocated)`);
+  }
+
+  static async approveAndCreditWingoldOrder(orderId: string, adminId: string): Promise<{ success: boolean; message: string; txnId?: string }> {
+    const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
+    
+    if (!order) {
+      return { success: false, message: 'Order not found' };
+    }
+
+    if (order.status !== 'wingold_approved') {
+      return { success: false, message: `Order is not ready for approval (status: ${order.status})` };
+    }
+
+    // GOLDEN RULE GUARD: Re-verify physical gold allocation before crediting
+    const barLots = await db.select().from(wingoldBarLots).where(eq(wingoldBarLots.orderId, orderId));
+    const physicalGoldAllocatedG = barLots.reduce((sum, bar) => sum + parseFloat(bar.weightGrams || '0'), 0);
+    
+    if (physicalGoldAllocatedG <= 0) {
+      console.error(`[Wingold] GOLDEN RULE VIOLATION BLOCKED: No physical gold allocated for order ${orderId}`);
+      return { success: false, message: 'Cannot approve: No physical gold bars allocated to this order' };
+    }
+
+    const barsWithVaultHoldings = barLots.filter(bar => bar.vaultHoldingId);
+    if (barsWithVaultHoldings.length === 0) {
+      console.error(`[Wingold] GOLDEN RULE VIOLATION BLOCKED: No vault holdings for order ${orderId}`);
+      return { success: false, message: 'Cannot approve: No vault holdings registered for allocated bars' };
+    }
+
+    // Credit the wallet
+    const creditResult = await this.creditLGPWWallet(orderId);
+    if (!creditResult.success) {
+      return { success: false, message: creditResult.message };
+    }
+    
+    // Issue digital ownership certificate
+    await this.issueDigitalOwnershipCertificate(orderId);
+
+    // Update order status to fulfilled
+    await db.update(wingoldPurchaseOrders)
+      .set({
+        status: 'fulfilled',
+        updatedAt: new Date()
+      })
+      .where(eq(wingoldPurchaseOrders.id, orderId));
+
+    // Update UTT status to CREDITED/COMPLETED
+    const [uttEntry] = await db.select()
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.wingoldOrderId, order.wingoldOrderId || orderId));
+
+    if (uttEntry) {
+      const [admin] = await db.select().from(users).where(eq(users.id, adminId));
+      
+      await db.update(unifiedTallyTransactions)
+        .set({
+          status: 'COMPLETED',
+          goldCreditedG: order.totalGrams,
+          goldCreditedValueUsd: order.usdAmount,
+          updatedAt: new Date()
+        })
+        .where(eq(unifiedTallyTransactions.id, uttEntry.id));
+
+      await db.insert(unifiedTallyEvents).values({
+        tallyId: uttEntry.id,
+        eventType: 'CREDITED',
+        previousStatus: 'PHYSICAL_ALLOCATED',
+        newStatus: 'COMPLETED',
+        details: {
+          creditedGrams: order.totalGrams,
+          creditedValueUsd: order.usdAmount,
+        },
+        notes: `Finatrades admin approved and credited ${order.totalGrams}g to user wallet`,
+        triggeredBy: adminId,
+        triggeredByName: admin ? `${admin.firstName || ''} ${admin.lastName || ''}`.trim() : 'Admin',
+      });
+
+      console.log(`[Wingold] Order ${order.referenceNumber} approved by Finatrades admin - ${order.totalGrams}g credited to wallet`);
+      return { success: true, message: 'Order approved and gold credited to wallet', txnId: uttEntry.txnId };
+    }
+
+    console.log(`[Wingold] Order ${order.referenceNumber} approved (no UTT entry found)`);
+    return { success: true, message: 'Order approved and gold credited to wallet' };
   }
 
   private static async handleOrderCancelled(orderId: string, data: { reason?: string }): Promise<void> {
@@ -429,9 +616,9 @@ export class WingoldIntegrationService {
     }
   }
 
-  private static async creditLGPWWallet(orderId: string): Promise<void> {
+  private static async creditLGPWWallet(orderId: string): Promise<{ success: boolean; message: string; creditedGrams?: number }> {
     const [order] = await db.select().from(wingoldPurchaseOrders).where(eq(wingoldPurchaseOrders.id, orderId));
-    if (!order) return;
+    if (!order) return { success: false, message: 'Order not found' };
 
     const barLots = await db.select().from(wingoldBarLots).where(eq(wingoldBarLots.orderId, orderId));
     
@@ -442,19 +629,19 @@ export class WingoldIntegrationService {
     
     if (physicalGoldAllocatedG <= 0) {
       console.error(`[Wingold] GOLDEN RULE VIOLATION: Cannot credit wallet - no physical gold allocated for order ${orderId}`);
-      return;
+      return { success: false, message: 'No physical gold allocated for this order' };
     }
 
     const barsWithCertificates = barLots.filter(bar => bar.storageCertificateId || bar.barCertificateId || bar.vaultHoldingId);
     if (barsWithCertificates.length === 0) {
       console.error(`[Wingold] GOLDEN RULE VIOLATION: Cannot credit wallet - no storage certificates or vault holdings for order ${orderId}`);
-      return;
+      return { success: false, message: 'No storage certificates or vault holdings for this order' };
     }
 
     const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, order.userId));
     if (!wallet) {
       console.error(`[Wingold] No wallet found for user ${order.userId}`);
-      return;
+      return { success: false, message: 'No wallet found for user' };
     }
 
     const currentBalance = parseFloat(wallet.goldGrams || '0');
@@ -481,6 +668,7 @@ export class WingoldIntegrationService {
     });
 
     console.log(`[Wingold] GOLDEN RULE SATISFIED: Credited ${creditAmount}g to LGPW wallet for user ${order.userId} (physical allocation: ${physicalGoldAllocatedG}g, certificates: ${barsWithCertificates.length})`);
+    return { success: true, message: 'Gold credited successfully', creditedGrams: creditAmount };
   }
 
   private static async issueDigitalOwnershipCertificate(orderId: string): Promise<void> {

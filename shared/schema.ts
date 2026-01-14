@@ -3863,7 +3863,7 @@ export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
 
 export const wingoldBarSizeEnum = pgEnum('wingold_bar_size', ['1g', '10g', '100g', '1kg']);
 export const wingoldOrderStatusEnum = pgEnum('wingold_order_status', [
-  'pending', 'submitted', 'confirmed', 'processing', 'fulfilled', 'cancelled', 'failed'
+  'pending', 'submitted', 'confirmed', 'processing', 'wingold_approved', 'fulfilled', 'cancelled', 'failed'
 ]);
 export const wingoldBarCustodyStatusEnum = pgEnum('wingold_bar_custody_status', [
   'in_vault', 'reserved', 'released', 'transferred'
