@@ -49,7 +49,8 @@ const createDepositSchema = z.object({
 
 router.post('/deposits', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -59,7 +60,7 @@ router.post('/deposits', async (req: Request, res: Response) => {
     }
 
     const data = parsed.data;
-    const userId = (req.user as any).id;
+    const userId = session.userId;
 
     if (!data.noLienDispute || !data.acceptVaultTerms) {
       return res.status(400).json({ error: 'Required declarations must be accepted' });
@@ -144,11 +145,12 @@ router.post('/deposits', async (req: Request, res: Response) => {
 
 router.get('/deposits', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = (req.user as any).id;
+    const userId = session.userId;
     const deposits = await storage.getUserPhysicalDeposits(userId);
 
     const depositsWithItems = await Promise.all(deposits.map(async (deposit) => {
@@ -165,11 +167,12 @@ router.get('/deposits', async (req: Request, res: Response) => {
 
 router.get('/deposits/:id', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = (req.user as any).id;
+    const userId = session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit || deposit.userId !== userId) {
@@ -190,11 +193,12 @@ router.get('/deposits/:id', async (req: Request, res: Response) => {
 // Dedicated endpoint for negotiation messages
 router.get('/deposits/:id/negotiation', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = (req.user as any).id;
+    const userId = session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit || deposit.userId !== userId) {
@@ -224,7 +228,8 @@ const userResponseSchema = z.object({
 
 router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -233,7 +238,7 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid request' });
     }
 
-    const userId = (req.user as any).id;
+    const userId = session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit || deposit.userId !== userId) {
@@ -331,11 +336,12 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
 
 router.post('/deposits/:id/cancel', async (req: Request, res: Response) => {
   try {
-    if (!req.isAuthenticated() || !req.user) {
+    const session = (req as any).session;
+    if (!session?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = (req.user as any).id;
+    const userId = session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit || deposit.userId !== userId) {
@@ -369,7 +375,8 @@ router.post('/deposits/:id/cancel', async (req: Request, res: Response) => {
 // ====================================
 
 const isAdmin = (req: Request): boolean => {
-  return req.isAuthenticated() && (req.user as any)?.role === 'admin';
+  const session = (req as any).session;
+  return session?.userId && session?.userRole === 'admin';
 };
 
 router.get('/admin/deposits', async (req: Request, res: Response) => {
@@ -449,7 +456,7 @@ router.post('/admin/deposits/:id/review', async (req: Request, res: Response) =>
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -490,7 +497,7 @@ router.post('/admin/deposits/:id/receive', async (req: Request, res: Response) =
       return res.status(400).json({ error: 'Invalid request' });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -548,7 +555,7 @@ router.post('/admin/deposits/:id/inspect', async (req: Request, res: Response) =
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -628,7 +635,7 @@ router.post('/admin/deposits/:id/offer', async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Invalid request' });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -681,7 +688,7 @@ router.post('/admin/deposits/:id/accept-counter', async (req: Request, res: Resp
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -744,7 +751,7 @@ router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) =
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
@@ -917,7 +924,7 @@ router.post('/admin/deposits/:id/reject', async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'Reason is required' });
     }
 
-    const adminId = (req.user as any).id;
+    const adminId = (req as any).session.userId;
     const deposit = await storage.getPhysicalDepositById(req.params.id);
 
     if (!deposit) {
