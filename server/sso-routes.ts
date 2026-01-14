@@ -16,6 +16,7 @@ import crypto from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { users } from "@shared/schema";
+import { storage } from "./storage";
 
 const router = Router();
 
@@ -54,6 +55,21 @@ function ensureAuthenticated(req: Request, res: Response, next: any) {
   next();
 }
 
+async function getActiveVerifiableCredential(userId: number): Promise<{ credentialId: string } | null> {
+  try {
+    const credential = await storage.getActiveCredentialByUser(userId);
+    if (credential && credential.credentialJwt) {
+      return {
+        credentialId: credential.credentialId,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching verifiable credential:", error);
+    return null;
+  }
+}
+
 router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
   try {
     const session = (req as any).session;
@@ -67,7 +83,9 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const payload = {
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
       sub: String(user.id),
       jti: crypto.randomUUID(),
       aud: "wingoldandmetals.com",
@@ -86,6 +104,15 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       iss: "finatrades.com",
     };
 
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
       expiresIn: "5m",
@@ -95,7 +122,8 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
 
     res.json({ 
       redirectUrl,
-      expiresIn: 300
+      expiresIn: 300,
+      hasVerifiableCredential: !!vcData,
     });
   } catch (error: any) {
     console.error("SSO token generation error:", error);
@@ -116,7 +144,9 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
       return res.redirect("/login?error=user_not_found");
     }
 
-    const payload = {
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
       sub: String(user.id),
       jti: crypto.randomUUID(),
       aud: "wingoldandmetals.com",
@@ -134,6 +164,15 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
       },
       iss: "finatrades.com",
     };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
 
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
@@ -161,7 +200,9 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
       return res.redirect("/login?error=user_not_found");
     }
 
-    const payload = {
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
       sub: String(user.id),
       jti: crypto.randomUUID(),
       aud: "wingoldandmetals.com",
@@ -179,6 +220,15 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
       },
       iss: "finatrades.com",
     };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
 
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
@@ -222,8 +272,9 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
       return res.redirect("/login?error=user_not_found");
     }
 
-    // Payload includes permitted_delivery to enforce SecureVault-only on Wingold
-    const payload = {
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
       sub: String(user.id),
       jti: crypto.randomUUID(),
       aud: "wingoldandmetals.com",
@@ -239,19 +290,25 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
       },
-      // CRITICAL: This tells Wingold to ONLY show SecureVault delivery option
       permitted_delivery: ['SECURE_VAULT'],
-      // Source context for Wingold to know this is a FinaVault purchase
       source: 'finavault_buy_gold_bar',
       iss: "finatrades.com",
     };
 
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
     const token = jwt.sign(payload, getPrivateKey(), { 
       algorithm: "RS256",
-      expiresIn: "15m", // Reduced from 30m for tighter security window
+      expiresIn: "15m",
     });
 
-    // Redirect to Wingold shop with SSO token
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}&redirect=/shop`;
     res.redirect(redirectUrl);
   } catch (error: any) {

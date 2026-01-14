@@ -286,4 +286,69 @@ router.get('/vc/presentations/:credentialId', ensureAuthenticated, async (req: R
   }
 });
 
+router.get('/vc/partner/credential/:credentialId', async (req: Request, res: Response) => {
+  try {
+    const { credentialId } = req.params;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        error: 'Partner authentication required',
+        message: 'Include Bearer token in Authorization header'
+      });
+    }
+    
+    const partnerToken = authHeader.substring(7);
+    const partnerApiKey = process.env.WINGOLD_PARTNER_API_KEY;
+    
+    if (!partnerApiKey || partnerToken !== partnerApiKey) {
+      return res.status(403).json({ 
+        error: 'Invalid partner credentials',
+        message: 'Partner API key not recognized'
+      });
+    }
+    
+    const credential = await storage.getVerifiableCredentialByCredentialId(credentialId);
+    
+    if (!credential) {
+      return res.status(404).json({ error: 'Credential not found' });
+    }
+    
+    if (credential.status !== 'active') {
+      return res.status(410).json({ 
+        error: 'Credential not active',
+        status: credential.status,
+        message: 'This credential has been revoked or expired'
+      });
+    }
+    
+    const verifierDomain = req.get('origin') || req.get('host') || 'wingold-partner-api';
+    await credentialIssuer.recordPresentation(
+      credentialId,
+      credential.userId,
+      verifierDomain,
+      'Wingold Partner API',
+      undefined,
+      {
+        presentationContext: 'partner_api_fetch',
+        ipAddress: req.ip || undefined,
+        userAgent: req.get('user-agent') || undefined
+      }
+    );
+    
+    res.json({
+      '@context': 'https://www.w3.org/2018/credentials/v1',
+      credentialId: credential.credentialId,
+      vcJwt: credential.credentialJwt,
+      status: credential.status,
+      issuedAt: credential.issuedAt,
+      expiresAt: credential.expiresAt,
+      issuer: 'did:web:finatrades.com'
+    });
+  } catch (error: any) {
+    console.error('Partner credential fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch credential' });
+  }
+});
+
 export default router;
