@@ -19,7 +19,134 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import PhysicalGoldDeposit from './PhysicalGoldDeposit';
 import BuyGoldBars from '@/components/finavault/BuyGoldBars';
+import { Badge } from '@/components/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
 
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  SUBMITTED: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Submitted' },
+  UNDER_REVIEW: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Under Review' },
+  RECEIVED: { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Received' },
+  INSPECTION: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Inspection' },
+  NEGOTIATION: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Negotiation' },
+  AGREED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Agreed' },
+  APPROVED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
+  REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
+  CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cancelled' },
+};
+
+function MyPhysicalDeposits() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['physical-deposits'],
+    queryFn: async () => {
+      const res = await fetch('/api/physical-deposits/deposits', { credentials: 'include' });
+      if (!res.ok) return { deposits: [] };
+      return res.json();
+    },
+  });
+
+  const deposits = data?.deposits || [];
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white border">
+        <CardContent className="p-8 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (deposits.length === 0) {
+    return (
+      <Card className="bg-white border">
+        <CardContent className="p-8 text-center">
+          <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">No Deposits Yet</h3>
+          <p className="text-muted-foreground mb-4">
+            You haven't submitted any physical gold deposits yet.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Use the "Deposit Gold" tab to submit your first deposit.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-white border">
+        <CardHeader className="border-b">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            My Physical Gold Deposits
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {deposits.map((deposit: any) => {
+              const statusInfo = STATUS_COLORS[deposit.status] || STATUS_COLORS.SUBMITTED;
+              return (
+                <div key={deposit.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-sm font-semibold">{deposit.referenceNumber}</span>
+                        <Badge className={`${statusInfo.bg} ${statusInfo.text} border-0`}>
+                          {statusInfo.label}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        <span className="capitalize">{deposit.depositType?.toLowerCase().replace('_', ' ')}</span>
+                        {' • '}
+                        <span>{parseFloat(deposit.totalDeclaredWeightGrams).toFixed(4)} g declared</span>
+                        {deposit.finalCreditedGrams && (
+                          <>
+                            {' • '}
+                            <span className="text-green-600 font-medium">
+                              {parseFloat(deposit.finalCreditedGrams).toFixed(4)} g credited
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Submitted {formatDistanceToNow(new Date(deposit.createdAt))} ago
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {deposit.status === 'NEGOTIATION' && (
+                        <Button size="sm" variant="outline" className="border-orange-300 text-orange-600">
+                          View Offer
+                        </Button>
+                      )}
+                      {deposit.status === 'APPROVED' && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">Credited</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {deposit.items && deposit.items.length > 0 && (
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      {deposit.items.length} item{deposit.items.length > 1 ? 's' : ''}: 
+                      {deposit.items.map((item: any, i: number) => (
+                        <span key={i}>
+                          {i > 0 && ', '}
+                          {item.quantity}x {item.itemType?.replace('_', ' ')} ({item.purity})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function FinaVault() {
   const { user } = useAuth();
@@ -683,6 +810,14 @@ export default function FinaVault() {
                       Deposit Gold
                     </TabsTrigger>
                     <TabsTrigger 
+                      value="my-deposits"
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 transition-all data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md"
+                      data-testid="tab-my-deposits"
+                    >
+                      <Clock className="w-4 h-4 mr-1.5" />
+                      My Deposits
+                    </TabsTrigger>
+                    <TabsTrigger 
                       value="buy-gold-bars"
                       className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-amber-200 bg-amber-50 text-amber-700 transition-all data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 data-[state=active]:shadow-md"
                       data-testid="tab-buy-gold-bars"
@@ -729,7 +864,14 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="deposit-gold" className="mt-0">
-                  <PhysicalGoldDeposit embedded={true} />
+                  <PhysicalGoldDeposit embedded={true} onSuccess={() => {
+                    setActiveTab('my-deposits');
+                    queryClient.invalidateQueries({ queryKey: ['physical-deposits'] });
+                  }} />
+                </TabsContent>
+
+                <TabsContent value="my-deposits" className="mt-0">
+                  <MyPhysicalDeposits />
                 </TabsContent>
 
                 <TabsContent value="buy-gold-bars" className="mt-0">
