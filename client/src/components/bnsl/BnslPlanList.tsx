@@ -8,9 +8,10 @@ import { ArrowRight, Clock, Ban, CheckCircle2 } from 'lucide-react';
 interface BnslPlanListProps {
   plans: BnslPlan[];
   onViewPlan: (plan: BnslPlan) => void;
+  onJoinPlan?: () => void;
 }
 
-export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
+export default function BnslPlanList({ plans, onViewPlan, onJoinPlan }: BnslPlanListProps) {
   if (plans.length === 0) {
     return (
       <Card className="bg-white shadow-sm border border-border p-12 text-center">
@@ -22,6 +23,15 @@ export default function BnslPlanList({ plans, onViewPlan }: BnslPlanListProps) {
           <p className="text-muted-foreground max-w-md">
             You haven't started any Buy Now Sell Later plans yet. Start a new plan to begin earning gold-denominated margin.
           </p>
+          {onJoinPlan && (
+            <Button 
+              onClick={onJoinPlan}
+              className="mt-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
+              data-testid="button-join-bnsl-plan"
+            >
+              Join BNSL Plan
+            </Button>
+          )}
         </div>
       </Card>
     );

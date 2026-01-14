@@ -745,6 +745,7 @@ export default function BNSL() {
                <BnslPlanList 
                  plans={plans} 
                  onViewPlan={(plan) => setSelectedPlan(plan)}
+                 onJoinPlan={() => setActiveTab('create')}
                />
                
                {/* Mini Summary Footer */}
