@@ -19,6 +19,7 @@ import {
   invoices, certificateDeliveries, adminActionOtps,
   userRiskProfiles, amlScreeningLogs, amlCases, amlCaseActivities, amlMonitoringRules,
   complianceSettings, finatradesPersonalKyc, finatradesCorporateKyc,
+  sarReports, fraudAlerts,
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
@@ -94,6 +95,8 @@ import {
   type ComplianceSettings, type InsertComplianceSettings,
   type FinatradesPersonalKyc, type InsertFinatradesPersonalKyc,
   type FinatradesCorporateKyc, type InsertFinatradesCorporateKyc,
+  type SarReport, type InsertSarReport,
+  type FraudAlert, type InsertFraudAlert,
   notifications,
   type Notification, type InsertNotification,
   userPreferences,
@@ -4547,27 +4550,16 @@ export class DatabaseStorage implements IStorage {
     return result.rows;
   }
 
-  async updateSarReport(id: string, updates: Record<string, any>): Promise<any> {
-    const setClauses: string[] = [];
-    const values: any[] = [];
+  async updateSarReport(id: string, updates: Partial<SarReport>): Promise<any> {
+    if (Object.keys(updates).length === 0) return null;
     
-    Object.entries(updates).forEach(([key, value]) => {
-      const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      setClauses.push(`${snakeKey} = $${values.length + 1}`);
-      values.push(value);
-    });
+    const [result] = await db
+      .update(sarReports)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(sarReports.id, id))
+      .returning();
     
-    if (setClauses.length === 0) return null;
-    
-    setClauses.push(`updated_at = NOW()`);
-    values.push(id);
-    
-    const result = await db.execute(sql.raw(`
-      UPDATE sar_reports SET ${setClauses.join(', ')}
-      WHERE id = $${values.length}
-      RETURNING *
-    `));
-    return result.rows[0] || null;
+    return result || null;
   }
 
   // ============================================
