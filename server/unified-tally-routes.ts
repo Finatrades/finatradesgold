@@ -117,6 +117,11 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     const cryptoPayments: any[] = [];
     const cardPayments: any[] = [];
     
+    // Fetch physical deposits ready for UFM approval
+    const physicalDeposits = await storage.getAllPhysicalDeposits().then((r: any[]) => r.filter((d: any) => 
+      d.status === 'READY_FOR_PAYMENT'
+    ));
+    
     const pendingPayments: any[] = [];
 
     for (const cp of cryptoPayments) {
@@ -192,12 +197,40 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
       });
     }
 
+    // Physical gold deposits: Already inspected at vault, ready for UFM final approval
+    for (const pd of physicalDeposits) {
+      const user = await storage.getUser(pd.userId);
+      // Get inspection data for credited grams
+      const inspection = await storage.getDepositInspection(pd.id);
+      const creditedGrams = inspection?.creditedGrams ? parseFloat(inspection.creditedGrams) : 0;
+      
+      pendingPayments.push({
+        id: pd.id,
+        sourceType: 'PHYSICAL',
+        sourceTable: 'physical_deposit_requests',
+        userId: pd.userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        userEmail: user?.email || '',
+        amountUsd: pd.usdAgreedValue || null, // May have agreed USD value from negotiation
+        goldGrams: creditedGrams.toString(),
+        goldPriceAtTime: null, // Will be set during approval
+        status: 'Ready for Payment',
+        referenceNumber: pd.referenceNumber,
+        depositType: pd.requiresNegotiation ? 'RAW/OTHER' : 'GOLD_BAR/COIN',
+        deliveryMethod: pd.deliveryMethod,
+        walletType: 'LGPW', // Physical deposits always go to LGPW
+        createdAt: pd.createdAt,
+        vaultInspected: true, // Flag to show inspection completed
+      });
+    }
+
     pendingPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // UNIFIED ARCHITECTURE: Calculate counts by payment method from deposit_requests
     const cryptoCount = depositRequests.filter((d: any) => d.paymentMethod === 'Crypto').length;
     const bankCount = depositRequests.filter((d: any) => d.paymentMethod === 'Bank Transfer' || !d.paymentMethod).length;
     const cardCount = depositRequests.filter((d: any) => d.paymentMethod === 'Card Payment').length;
+    const physicalCount = physicalDeposits.length;
 
     res.json({
       payments: pendingPayments,
@@ -205,7 +238,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
         crypto: cryptoCount,
         bank: bankCount,
         card: cardCount,
-        physical: 0,
+        physical: physicalCount,
         total: pendingPayments.length,
       }
     });
@@ -314,17 +347,46 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         code: 'USE_UNIFIED_APPROVAL'
       });
 
+    } else if (sourceType === 'PHYSICAL') {
+      // Physical gold deposits - already inspected at vault, ready for final approval
+      const deposit = await storage.getPhysicalDepositById(id);
+      if (!deposit) return res.status(404).json({ error: 'Physical deposit not found' });
+      if (deposit.status !== 'READY_FOR_PAYMENT') {
+        return res.status(400).json({ error: 'Physical deposit not ready for payment approval' });
+      }
+      
+      // Get inspection data for credited grams (already validated by vault team)
+      const inspection = await storage.getDepositInspection(id);
+      if (!inspection || !inspection.creditedGrams) {
+        return res.status(400).json({ error: 'Inspection data required for physical deposit' });
+      }
+      
+      userId = deposit.userId;
+      // Physical deposits: No cash amount - gold grams come directly from inspection
+      amountUsd = 0; // Will calculate from gold value below
+      paymentReference = deposit.referenceNumber;
+      sourcePayment = { ...deposit, inspection };
+
     } else {
-      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO or BANK.' });
+      return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or PHYSICAL.' });
     }
 
     // Calculate fees and gold price (outside transaction - read operations)
-    feeAmountUsd = amountUsd * (feePercent / 100);
-    netAmountUsd = amountUsd - feeAmountUsd;
-    
     const { getGoldPricePerGram } = await import('./gold-price-service');
     goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
-    goldGrams = netAmountUsd / goldPrice;
+    
+    if (sourceType === 'PHYSICAL') {
+      // Physical deposits: Gold grams come from inspection, no USD fees
+      // User brings physical gold, not cash - use physicalGoldAllocatedG directly
+      feeAmountUsd = 0;
+      netAmountUsd = 0;
+      goldGrams = parsedAllocation; // Already verified inspection grams
+    } else {
+      // Cash deposits: Calculate fees and convert USD to gold
+      feeAmountUsd = amountUsd * (feePercent / 100);
+      netAmountUsd = amountUsd - feeAmountUsd;
+      goldGrams = netAmountUsd / goldPrice;
+    }
 
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
@@ -386,6 +448,13 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
             }, tx as any);
           }
         }
+      } else if (sourceType === 'PHYSICAL') {
+        // Update physical deposit status to APPROVED
+        await storage.updatePhysicalDeposit(id, {
+          status: 'APPROVED',
+          processedAt: new Date(),
+          finalCreditedGrams: goldGrams.toFixed(6),
+        });
       }
 
       // 0.5. Create Physical Storage Certificate (Golden Rule requirement)
@@ -421,16 +490,22 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
 
       // 1. Create UTT with status COMPLETED (final state)
       // UNIFIED ARCHITECTURE: Determine actual source method from deposit paymentMethod field
-      let actualSourceMethod = sourceType as 'CRYPTO' | 'BANK' | 'CARD';
-      if (sourceType === 'BANK' && sourcePayment?.paymentMethod) {
+      let actualSourceMethod: 'CRYPTO' | 'BANK' | 'CARD' | 'VAULT_GOLD' = sourceType as any;
+      if (sourceType === 'PHYSICAL') {
+        // Physical deposits use VAULT_GOLD source method - user brings their own gold
+        actualSourceMethod = 'VAULT_GOLD';
+      } else if (sourceType === 'BANK' && sourcePayment?.paymentMethod) {
         if (sourcePayment.paymentMethod === 'Crypto') actualSourceMethod = 'CRYPTO';
         else if (sourcePayment.paymentMethod === 'Card Payment') actualSourceMethod = 'CARD';
         // else keep 'BANK' for 'Bank Transfer'
       }
       
+      // Determine transaction type based on source
+      const txnType = sourceType === 'PHYSICAL' ? 'VAULT_GOLD_DEPOSIT' : 'FIAT_CRYPTO_DEPOSIT';
+      
       const tallyRecord = await storage.createUnifiedTallyTransaction({
         userId,
-        txnType: 'FIAT_CRYPTO_DEPOSIT',
+        txnType,
         sourceMethod: actualSourceMethod,
         walletType: dbWalletType as 'LGPW' | 'FGPW',
         status: 'COMPLETED', // Final state - everything done in one step
