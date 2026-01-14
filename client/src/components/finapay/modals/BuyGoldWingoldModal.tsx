@@ -693,32 +693,15 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                                   }}
                                 />
                               ) : null}
-                              <div className={`relative ${(product.thumbnailUrl || product.imageUrl) ? 'hidden' : ''}`}>
-                                {/* Fallback gold bar placeholder */}
-                                <div className="w-32 h-48 bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 rounded-sm shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform">
-                                  <div className="absolute inset-2 border border-amber-600/30 rounded-sm" />
-                                  <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-900 text-xs font-bold">
-                                    Au {product.weight}
-                                  </div>
-                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
-                                    FINE GOLD
-                                  </div>
-                                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-amber-900 text-[10px]">
-                                    {product.purity}
-                                  </div>
+                              <div className={`flex flex-col items-center justify-center text-center p-4 ${(product.thumbnailUrl || product.imageUrl) ? 'hidden' : ''}`}>
+                                {/* Awaiting supplier image */}
+                                <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                                  <span className="text-3xl font-bold text-amber-400">Au</span>
                                 </div>
-                                {/* Certificate decoration */}
-                                <div className="absolute -right-8 -top-4 w-24 h-32 bg-white rounded shadow-lg transform rotate-12 p-2">
-                                  <div className="text-[6px] text-gray-800 font-bold mb-1">WINGOLD</div>
-                                  <div className="text-[5px] text-gray-600 leading-tight">
-                                    Certificate of Authenticity<br/>
-                                    LBMA Certified<br/>
-                                    {product.weight} Pure Gold<br/>
-                                    Purity: {product.purity}
-                                  </div>
-                                  <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                                    <span className="text-[4px] text-amber-800">✓</span>
-                                  </div>
+                                <div className="text-amber-400 font-bold text-lg">{product.weight}</div>
+                                <div className="text-gray-500 text-xs mt-1">LBMA Certified</div>
+                                <div className="text-gray-600 text-[10px] mt-2 px-4">
+                                  Image pending from Wingold
                                 </div>
                               </div>
                             </div>
