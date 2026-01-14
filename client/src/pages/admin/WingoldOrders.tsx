@@ -16,6 +16,9 @@ interface WingoldOrder {
   id: string;
   referenceNumber: string;
   userId: string;
+  userFirstName: string | null;
+  userLastName: string | null;
+  userEmail: string | null;
   barSize: string;
   barCount: number;
   totalGrams: string;
@@ -123,7 +126,11 @@ export default function WingoldOrders() {
       <TableCell>
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">{order.userId.slice(0, 8)}...</span>
+          <span className="text-sm">
+            {order.userFirstName && order.userLastName 
+              ? `${order.userFirstName} ${order.userLastName}`
+              : order.userId.slice(0, 8) + '...'}
+          </span>
         </div>
       </TableCell>
       <TableCell>

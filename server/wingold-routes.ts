@@ -203,8 +203,28 @@ router.get('/admin/pending-orders', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const orders = await db.select()
+    const orders = await db.select({
+      id: wingoldPurchaseOrders.id,
+      referenceNumber: wingoldPurchaseOrders.referenceNumber,
+      userId: wingoldPurchaseOrders.userId,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userEmail: users.email,
+      barSize: wingoldPurchaseOrders.barSize,
+      barCount: wingoldPurchaseOrders.barCount,
+      totalGrams: wingoldPurchaseOrders.totalGrams,
+      usdAmount: wingoldPurchaseOrders.usdAmount,
+      goldPriceUsdPerGram: wingoldPurchaseOrders.goldPriceUsdPerGram,
+      status: wingoldPurchaseOrders.status,
+      wingoldOrderId: wingoldPurchaseOrders.wingoldOrderId,
+      wingoldVaultLocationId: wingoldPurchaseOrders.wingoldVaultLocationId,
+      errorMessage: wingoldPurchaseOrders.errorMessage,
+      submittedAt: wingoldPurchaseOrders.submittedAt,
+      fulfilledAt: wingoldPurchaseOrders.fulfilledAt,
+      createdAt: wingoldPurchaseOrders.createdAt,
+    })
       .from(wingoldPurchaseOrders)
+      .leftJoin(users, eq(wingoldPurchaseOrders.userId, users.id))
       .where(eq(wingoldPurchaseOrders.status, 'pending'))
       .orderBy(desc(wingoldPurchaseOrders.createdAt));
 
@@ -222,8 +242,28 @@ router.get('/admin/all-orders', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const orders = await db.select()
+    const orders = await db.select({
+      id: wingoldPurchaseOrders.id,
+      referenceNumber: wingoldPurchaseOrders.referenceNumber,
+      userId: wingoldPurchaseOrders.userId,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userEmail: users.email,
+      barSize: wingoldPurchaseOrders.barSize,
+      barCount: wingoldPurchaseOrders.barCount,
+      totalGrams: wingoldPurchaseOrders.totalGrams,
+      usdAmount: wingoldPurchaseOrders.usdAmount,
+      goldPriceUsdPerGram: wingoldPurchaseOrders.goldPriceUsdPerGram,
+      status: wingoldPurchaseOrders.status,
+      wingoldOrderId: wingoldPurchaseOrders.wingoldOrderId,
+      wingoldVaultLocationId: wingoldPurchaseOrders.wingoldVaultLocationId,
+      errorMessage: wingoldPurchaseOrders.errorMessage,
+      submittedAt: wingoldPurchaseOrders.submittedAt,
+      fulfilledAt: wingoldPurchaseOrders.fulfilledAt,
+      createdAt: wingoldPurchaseOrders.createdAt,
+    })
       .from(wingoldPurchaseOrders)
+      .leftJoin(users, eq(wingoldPurchaseOrders.userId, users.id))
       .orderBy(desc(wingoldPurchaseOrders.createdAt))
       .limit(100);
 
