@@ -160,12 +160,37 @@ function formatTimeAgo(dateString: string): string {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
+interface PendingCounts {
+  pendingKyc: number;
+  pendingTransactions: number;
+  pendingDeposits: number;
+  pendingWithdrawals: number;
+  pendingVaultRequests: number;
+  pendingTradeCases: number;
+  pendingBnslRequests: number;
+  unreadChats: number;
+  pendingCryptoPayments: number;
+  pendingBuyGold: number;
+  pendingPhysicalDeposits: number;
+  pendingAccountDeletions: number;
+}
+
 export default function AdminDashboard() {
   const { data: stats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/admin/stats');
       if (!res.ok) throw new Error('Failed to fetch stats');
+      return res.json();
+    },
+    refetchInterval: 30000
+  });
+
+  const { data: pendingCounts } = useQuery<PendingCounts>({
+    queryKey: ['/api/admin/pending-counts'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/pending-counts');
+      if (!res.ok) throw new Error('Failed to fetch pending counts');
       return res.json();
     },
     refetchInterval: 30000
@@ -179,7 +204,7 @@ export default function AdminDashboard() {
     }
   }, [error]);
 
-  const totalPending = (stats?.pendingKycCount || 0) + (stats?.pendingDeposits || 0) + (stats?.pendingWithdrawals || 0);
+  const totalPending = (pendingCounts?.pendingKyc || 0) + (pendingCounts?.pendingDeposits || 0) + (pendingCounts?.pendingWithdrawals || 0) + (pendingCounts?.pendingPhysicalDeposits || 0) + (pendingCounts?.pendingTradeCases || 0) + (pendingCounts?.pendingBnslRequests || 0) + (pendingCounts?.pendingAccountDeletions || 0) + (pendingCounts?.unreadChats || 0);
 
   return (
     <AdminLayout>
@@ -232,34 +257,62 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold text-amber-800">Items Requiring Attention:</span>
+                <span className="font-semibold text-amber-800">Items Requiring Attention ({totalPending}):</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(stats?.pendingKycCount || 0) > 0 && (
+                {(pendingCounts?.pendingKyc || 0) > 0 && (
                   <Link href="/admin/kyc">
-                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer border-none">
-                      <ShieldCheck className="w-3 h-3 mr-1" /> {stats?.pendingKycCount} KYC Pending
+                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer border-none" data-testid="badge-pending-kyc">
+                      <ShieldCheck className="w-3 h-3 mr-1" /> {pendingCounts?.pendingKyc} KYC Reviews
                     </Badge>
                   </Link>
                 )}
-                {(stats?.pendingDeposits || 0) > 0 && (
-                  <Link href="/admin/payment-operations">
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-none">
-                      <ArrowDownRight className="w-3 h-3 mr-1" /> {stats?.pendingDeposits} Deposits
+                {(pendingCounts?.pendingDeposits || 0) > 0 && (
+                  <Link href="/admin/unified-payments">
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-none" data-testid="badge-pending-deposits">
+                      <ArrowDownRight className="w-3 h-3 mr-1" /> {pendingCounts?.pendingDeposits} Bank Deposits
                     </Badge>
                   </Link>
                 )}
-                {(stats?.pendingWithdrawals || 0) > 0 && (
-                  <Link href="/admin/payment-operations">
-                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 cursor-pointer border-none">
-                      <ArrowUpRight className="w-3 h-3 mr-1" /> {stats?.pendingWithdrawals} Withdrawals
+                {(pendingCounts?.pendingWithdrawals || 0) > 0 && (
+                  <Link href="/admin/unified-payments">
+                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 cursor-pointer border-none" data-testid="badge-pending-withdrawals">
+                      <ArrowUpRight className="w-3 h-3 mr-1" /> {pendingCounts?.pendingWithdrawals} Withdrawals
                     </Badge>
                   </Link>
                 )}
-                {(stats?.pendingTransactions || 0) > 0 && (
-                  <Link href="/admin/transactions">
-                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer border-none">
-                      <Clock className="w-3 h-3 mr-1" /> {stats?.pendingTransactions} Transactions
+                {(pendingCounts?.pendingPhysicalDeposits || 0) > 0 && (
+                  <Link href="/admin/physical-deposits">
+                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer border-none" data-testid="badge-pending-physical">
+                      <Wallet className="w-3 h-3 mr-1" /> {pendingCounts?.pendingPhysicalDeposits} Physical Gold
+                    </Badge>
+                  </Link>
+                )}
+                {(pendingCounts?.pendingTradeCases || 0) > 0 && (
+                  <Link href="/admin/finabridge">
+                    <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer border-none" data-testid="badge-pending-trades">
+                      <Briefcase className="w-3 h-3 mr-1" /> {pendingCounts?.pendingTradeCases} Trade Cases
+                    </Badge>
+                  </Link>
+                )}
+                {(pendingCounts?.pendingBnslRequests || 0) > 0 && (
+                  <Link href="/admin/bnsl">
+                    <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-200 cursor-pointer border-none" data-testid="badge-pending-bnsl">
+                      <TrendingUp className="w-3 h-3 mr-1" /> {pendingCounts?.pendingBnslRequests} BNSL Requests
+                    </Badge>
+                  </Link>
+                )}
+                {(pendingCounts?.unreadChats || 0) > 0 && (
+                  <Link href="/admin/chat">
+                    <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 cursor-pointer border-none" data-testid="badge-unread-chats">
+                      <Clock className="w-3 h-3 mr-1" /> {pendingCounts?.unreadChats} Support Chats
+                    </Badge>
+                  </Link>
+                )}
+                {(pendingCounts?.pendingAccountDeletions || 0) > 0 && (
+                  <Link href="/admin/account-deletion-requests">
+                    <Badge className="bg-red-100 text-red-800 hover:bg-red-200 cursor-pointer border-none" data-testid="badge-pending-deletions">
+                      <AlertTriangle className="w-3 h-3 mr-1" /> {pendingCounts?.pendingAccountDeletions} Deletion Requests
                     </Badge>
                   </Link>
                 )}
