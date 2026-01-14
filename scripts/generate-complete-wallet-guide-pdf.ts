@@ -13,55 +13,31 @@ const lightPurple = '#E8D5F5';
 const gray = '#666666';
 const green = '#28a745';
 const orange = '#fd7e14';
-const red = '#dc3545';
+
+function resetTextFlow() {
+  doc.x = 50;
+}
 
 function drawHeader(text: string, size = 18) {
-  doc.fontSize(size).fillColor(purple).font('Helvetica-Bold').text(text);
+  resetTextFlow();
+  doc.fontSize(size).fillColor(purple).font('Helvetica-Bold').text(text, 50);
   doc.moveDown(0.5);
 }
 
 function drawSubHeader(text: string, size = 14) {
-  doc.fontSize(size).fillColor(darkPurple).font('Helvetica-Bold').text(text);
+  resetTextFlow();
+  doc.fontSize(size).fillColor(darkPurple).font('Helvetica-Bold').text(text, 50);
   doc.moveDown(0.3);
 }
 
 function drawBody(text: string) {
-  doc.fontSize(10).fillColor(gray).font('Helvetica').text(text);
+  resetTextFlow();
+  doc.fontSize(10).fillColor(gray).font('Helvetica').text(text, 50);
   doc.moveDown(0.3);
 }
 
-function drawBullet(text: string) {
-  doc.fontSize(10).fillColor(gray).font('Helvetica').text(`• ${text}`, { indent: 15 });
-}
-
-function drawBox(x: number, y: number, w: number, h: number, fill: string, text: string, subtext?: string) {
-  doc.rect(x, y, w, h).fill(fill);
-  doc.fillColor(fill === purple || fill === darkPurple ? 'white' : darkPurple);
-  doc.font('Helvetica-Bold').fontSize(11);
-  doc.text(text, x + 5, y + (subtext ? 8 : h/2 - 6), { width: w - 10, align: 'center' });
-  if (subtext) {
-    doc.font('Helvetica').fontSize(9).fillColor(fill === purple || fill === darkPurple ? lightPurple : gray);
-    doc.text(subtext, x + 5, y + 25, { width: w - 10, align: 'center' });
-  }
-}
-
-function drawArrow(fromX: number, fromY: number, toX: number, toY: number, label?: string) {
-  doc.strokeColor(darkPurple).lineWidth(2);
-  doc.moveTo(fromX, fromY).lineTo(toX, toY).stroke();
-  const angle = Math.atan2(toY - fromY, toX - fromX);
-  const headLen = 8;
-  doc.moveTo(toX, toY)
-    .lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6))
-    .lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6))
-    .lineTo(toX, toY)
-    .fill(darkPurple);
-  if (label) {
-    doc.font('Helvetica').fontSize(8).fillColor(gray);
-    doc.text(label, (fromX + toX) / 2 - 30, (fromY + toY) / 2 - 15, { width: 60, align: 'center' });
-  }
-}
-
 function drawTable(headers: string[], rows: string[][], colWidths?: number[]) {
+  resetTextFlow();
   const tableWidth = doc.page.width - 100;
   const defaultColWidth = tableWidth / headers.length;
   const widths = colWidths || headers.map(() => defaultColWidth);
@@ -89,29 +65,62 @@ function drawTable(headers: string[], rows: string[][], colWidths?: number[]) {
     y += 16;
   });
 
+  doc.x = 50;
   doc.y = y + 10;
 }
 
 function drawDivider() {
+  resetTextFlow();
   doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke('#E0E0E0');
   doc.moveDown(0.5);
 }
 
+function drawBox(x: number, y: number, w: number, h: number, fill: string, text: string, subtext?: string) {
+  doc.rect(x, y, w, h).fill(fill);
+  doc.fillColor(fill === purple || fill === darkPurple ? 'white' : darkPurple);
+  doc.font('Helvetica-Bold').fontSize(10);
+  doc.text(text, x + 5, y + (subtext ? 8 : h/2 - 6), { width: w - 10, align: 'center' });
+  if (subtext) {
+    doc.font('Helvetica').fontSize(8).fillColor(fill === purple || fill === darkPurple ? lightPurple : gray);
+    doc.text(subtext, x + 5, y + 22, { width: w - 10, align: 'center' });
+  }
+}
+
+function drawArrow(fromX: number, fromY: number, toX: number, toY: number, label?: string) {
+  doc.strokeColor(darkPurple).lineWidth(2);
+  doc.moveTo(fromX, fromY).lineTo(toX, toY).stroke();
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const headLen = 8;
+  doc.moveTo(toX, toY)
+    .lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6))
+    .lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6))
+    .lineTo(toX, toY)
+    .fill(darkPurple);
+  if (label) {
+    doc.font('Helvetica').fontSize(8).fillColor(gray);
+    doc.text(label, (fromX + toX) / 2 - 25, (fromY + toY) / 2 - 12, { width: 50, align: 'center' });
+  }
+}
+
+// === TITLE PAGE ===
 doc.rect(0, 0, doc.page.width, 100).fill(purple);
 doc.fontSize(24).fillColor('white').font('Helvetica-Bold');
-doc.text('LGPW & FGPW Complete Guide', 50, 30, { align: 'center' });
+doc.text('LGPW & FGPW Complete Guide', 0, 30, { align: 'center', width: doc.page.width });
 doc.fontSize(12).fillColor(lightPurple).font('Helvetica');
-doc.text('Finatrades Dual-Wallet Architecture with Certificates', 50, 60, { align: 'center' });
+doc.text('Finatrades Dual-Wallet Architecture with Certificates', 0, 60, { align: 'center', width: doc.page.width });
+doc.x = 50;
 doc.y = 120;
 
+// === PART 1 ===
 drawHeader('Part 1: System Overview');
 
 const diagramY = doc.y;
-drawBox(80, diagramY, 180, 70, lightPurple, 'LGPW', 'Live Gold Price Wallet\n• Physical gold backing\n• Market price fluctuates');
-drawBox(330, diagramY, 180, 70, lightPurple, 'FGPW', 'Fixed Gold Price Wallet\n• Cash reserve backing\n• Value protected');
-drawArrow(260, diagramY + 25, 330, diagramY + 25, 'Lock');
-drawArrow(330, diagramY + 45, 260, diagramY + 45, 'Unlock');
-doc.y = diagramY + 90;
+drawBox(80, diagramY, 180, 60, lightPurple, 'LGPW', 'Live Gold Price Wallet\nPhysical gold backing');
+drawBox(330, diagramY, 180, 60, lightPurple, 'FGPW', 'Fixed Gold Price Wallet\nCash reserve backing');
+drawArrow(260, diagramY + 20, 330, diagramY + 20, 'Lock');
+drawArrow(330, diagramY + 40, 260, diagramY + 40, 'Unlock');
+doc.x = 50;
+doc.y = diagramY + 80;
 
 drawSubHeader('What Backs Each Wallet?');
 drawTable(
@@ -123,22 +132,23 @@ drawTable(
 );
 
 drawDivider();
+
+// === PART 2 ===
 drawHeader('Part 2: Certificate System');
 
 const certY = doc.y;
-doc.rect(50, certY, doc.page.width - 100, 120).fill('#F8F4FC').stroke(lightPurple);
+doc.rect(50, certY, doc.page.width - 100, 100).fill('#F8F4FC');
 doc.fillColor(darkPurple).font('Helvetica-Bold').fontSize(10);
-doc.text('PHYSICAL STORAGE CERTIFICATE (PSC)', 60, certY + 10);
+doc.text('PHYSICAL STORAGE CERTIFICATE (PSC)', 60, certY + 10, { width: 400 });
 doc.font('Helvetica').fontSize(9).fillColor(gray);
-doc.text('Proves: "100g gold exists in Finatrades vault"', 60, certY + 25);
+doc.text('Proves: "100g gold exists in Finatrades vault"', 60, certY + 25, { width: 400 });
 
-drawBox(80, certY + 45, 150, 50, purple, 'DOC (LGPW)', 'Digital Ownership\n50g at live price');
-drawBox(280, certY + 45, 150, 50, darkPurple, 'DOC (FGPW)', 'Digital Ownership\n50g @ $150/g locked');
+drawBox(80, certY + 45, 140, 45, purple, 'DOC (LGPW)', 'Digital Ownership');
+drawBox(280, certY + 45, 140, 45, darkPurple, 'DOC (FGPW)', 'Digital Ownership');
+drawArrow(220, certY + 67, 280, certY + 67);
 
-drawArrow(230, certY + 70, 280, certY + 70);
-doc.font('Helvetica').fontSize(8).fillColor(gray);
-doc.text('CONV Certificate', 235, certY + 100);
-doc.y = certY + 140;
+doc.x = 50;
+doc.y = certY + 115;
 
 drawTable(
   ['Certificate', 'Type', 'Purpose', 'Status Options'],
@@ -149,78 +159,79 @@ drawTable(
   ]
 );
 
+// === PAGE 2 - PART 3 ===
 doc.addPage();
 drawHeader('Part 3: LGPW to FGPW (Lock Gold)');
 drawSubHeader('User Story: "Protect my gold at today\'s price"');
-doc.moveDown(0.3);
 
-const lockY = doc.y;
-doc.rect(50, lockY, doc.page.width - 100, 180).fill('#F8F4FC');
+const lockY = doc.y + 10;
+doc.rect(50, lockY, doc.page.width - 100, 160).fill('#F8F4FC');
 
-drawBox(70, lockY + 10, 120, 40, purple, 'LGPW', '100g available');
-drawArrow(190, lockY + 30, 240, lockY + 30, 'Lock 50g');
-drawBox(250, lockY + 10, 130, 40, '#F0E6FA', 'Calculate', '50g x $150 = $7,500');
-drawArrow(380, lockY + 30, 420, lockY + 30);
-drawBox(430, lockY + 10, 100, 40, darkPurple, 'FGPW', '50g @ $150');
+drawBox(70, lockY + 15, 100, 35, purple, 'LGPW', '100g available');
+drawArrow(170, lockY + 32, 210, lockY + 32, 'Lock 50g');
+drawBox(220, lockY + 15, 120, 35, '#F0E6FA', 'Calculate', '50g x $150 = $7,500');
+drawArrow(340, lockY + 32, 380, lockY + 32);
+drawBox(390, lockY + 15, 100, 35, darkPurple, 'FGPW', '50g @ $150');
 
 doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
-doc.text('Certificate Updates:', 70, lockY + 65);
+doc.text('Certificate Updates:', 70, lockY + 65, { width: 400 });
 doc.font('Helvetica').fontSize(8).fillColor(gray);
-doc.text('1. DOC-001 (LGPW): 100g -> 50g remaining', 70, lockY + 80);
-doc.text('2. DOC-002 (FGPW): NEW - 50g @ $150/g Active', 70, lockY + 93);
-doc.text('3. CONV-001: NEW - LGPW->FGPW 50g @ $150', 70, lockY + 106);
-doc.text('4. PSC-001: Event logged - WALLET_RECLASSIFICATION', 70, lockY + 119);
+doc.text('1. DOC-001 (LGPW): 100g -> 50g remaining', 70, lockY + 78, { width: 400 });
+doc.text('2. DOC-002 (FGPW): NEW - 50g @ $150/g Active', 70, lockY + 90, { width: 400 });
+doc.text('3. CONV-001: NEW - LGPW->FGPW 50g @ $150', 70, lockY + 102, { width: 400 });
+doc.text('4. PSC-001: Event logged - WALLET_RECLASSIFICATION', 70, lockY + 114, { width: 400 });
 
-doc.rect(70, lockY + 135, 460, 35).fill(lightPurple);
-doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
-doc.text('User Notification:', 80, lockY + 142);
-doc.font('Helvetica').fontSize(8).fillColor(gray);
-doc.text('"Your gold value is now protected at $150/g. Protected Value: $7,500"', 80, lockY + 155);
+doc.rect(70, lockY + 130, 420, 25).fill(lightPurple);
+doc.font('Helvetica').fontSize(8).fillColor(darkPurple);
+doc.text('User Notification: "Your gold value is now protected at $150/g. Protected Value: $7,500"', 80, lockY + 138, { width: 400 });
 
-doc.y = lockY + 200;
+doc.x = 50;
+doc.y = lockY + 175;
 drawDivider();
 
+// === PART 4 ===
 drawHeader('Part 4: FGPW to LGPW (Unlock Gold)');
 drawSubHeader('User Story: "Access my gold again"');
-doc.moveDown(0.3);
 
-const unlockY = doc.y;
-doc.rect(50, unlockY, doc.page.width - 100, 200).fill('#F8F4FC');
+const unlockY = doc.y + 10;
+doc.rect(50, unlockY, doc.page.width - 100, 170).fill('#F8F4FC');
 
-drawBox(70, unlockY + 10, 100, 40, darkPurple, 'FGPW', '50g @ $150');
-drawArrow(170, unlockY + 30, 210, unlockY + 30);
-drawBox(220, unlockY + 10, 130, 40, '#F0E6FA', 'USD Value', '50g x $150 = $7,500');
-drawArrow(350, unlockY + 30, 390, unlockY + 30);
-drawBox(400, unlockY + 10, 130, 40, '#E6F4EA', 'Buy at Live', '$7,500 / $140 = 53.57g');
+drawBox(70, unlockY + 15, 90, 35, darkPurple, 'FGPW', '50g @ $150');
+drawArrow(160, unlockY + 32, 195, unlockY + 32);
+drawBox(205, unlockY + 15, 120, 35, '#F0E6FA', 'USD Value', '50g x $150 = $7,500');
+drawArrow(325, unlockY + 32, 360, unlockY + 32);
+drawBox(370, unlockY + 15, 120, 35, '#E6F4EA', 'Buy at Live', '$7,500 / $140 = 53.57g');
 
-drawArrow(465, unlockY + 50, 465, unlockY + 70);
-drawBox(400, unlockY + 75, 130, 35, purple, 'LGPW', '+53.57g credited');
+drawArrow(430, unlockY + 50, 430, unlockY + 70);
+drawBox(370, unlockY + 75, 120, 30, purple, 'LGPW', '+53.57g credited');
 
-doc.font('Helvetica-Bold').fontSize(10).fillColor(green);
-doc.text('Price dropped: User gets MORE gold!', 70, unlockY + 75);
-doc.font('Helvetica').fontSize(9).fillColor(gray);
-doc.text('Locked at $150/g, Live = $140/g', 70, unlockY + 90);
-doc.text('50g FGPW becomes 53.57g LGPW (+3.57g gain)', 70, unlockY + 103);
+doc.font('Helvetica-Bold').fontSize(9).fillColor(green);
+doc.text('Price dropped: User gets MORE gold!', 70, unlockY + 70, { width: 280 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('Locked at $150/g, Live = $140/g', 70, unlockY + 83, { width: 280 });
+doc.text('50g FGPW becomes 53.57g LGPW (+3.57g gain)', 70, unlockY + 95, { width: 280 });
 
 doc.font('Helvetica-Bold').fontSize(9).fillColor(darkPurple);
-doc.text('Certificate Updates:', 70, unlockY + 125);
+doc.text('Certificate Updates:', 70, unlockY + 115, { width: 280 });
 doc.font('Helvetica').fontSize(8).fillColor(gray);
-doc.text('1. DOC-002 (FGPW): 50g -> 0g, Status: REDEEMED', 70, unlockY + 138);
-doc.text('2. DOC-001 (LGPW): 50g -> 103.57g (credited 53.57g)', 70, unlockY + 151);
-doc.text('3. CONV-002: NEW - FGPW->LGPW 50g -> 53.57g @ $140 live', 70, unlockY + 164);
-doc.text('4. PSC-001: Event - Physical backing restored to LGPW', 70, unlockY + 177);
+doc.text('1. DOC-002 (FGPW): 50g -> 0g, Status: REDEEMED', 70, unlockY + 128, { width: 400 });
+doc.text('2. DOC-001 (LGPW): 50g -> 103.57g (credited 53.57g)', 70, unlockY + 140, { width: 400 });
+doc.text('3. CONV-002: NEW - FGPW->LGPW 50g -> 53.57g @ $140 live', 70, unlockY + 152, { width: 400 });
 
-doc.y = unlockY + 220;
+doc.x = 50;
+doc.y = unlockY + 185;
 
+// === PAGE 3 - PART 5 ===
 doc.addPage();
 drawHeader('Part 5: The Cash-Backed Formula');
 
 const formulaY = doc.y;
-doc.rect(100, formulaY, doc.page.width - 200, 50).fill(purple);
+doc.rect(80, formulaY, doc.page.width - 160, 50).fill(purple);
 doc.fontSize(14).fillColor('white').font('Helvetica-Bold');
-doc.text('LGPW Gold = USD Value / Live Price', 100, formulaY + 10, { width: doc.page.width - 200, align: 'center' });
+doc.text('LGPW Gold = USD Value / Live Price', 80, formulaY + 10, { width: doc.page.width - 160, align: 'center' });
 doc.fontSize(10).fillColor(lightPurple).font('Helvetica');
-doc.text('Where: USD Value = FGPW Grams x Locked Price', 100, formulaY + 30, { width: doc.page.width - 200, align: 'center' });
+doc.text('Where: USD Value = FGPW Grams x Locked Price', 80, formulaY + 30, { width: doc.page.width - 160, align: 'center' });
+doc.x = 50;
 doc.y = formulaY + 70;
 
 drawSubHeader('Three Unlock Scenarios');
@@ -235,9 +246,10 @@ drawTable(
 );
 
 drawBody('Key Point: Your USD value ($7,500) is ALWAYS protected. Only gold grams change based on market price.');
-doc.moveDown(0.5);
+
 drawDivider();
 
+// === PART 6 ===
 drawHeader('Part 6: User-Facing Language');
 
 drawSubHeader('What to Tell Users');
@@ -253,24 +265,28 @@ drawTable(
 );
 
 drawSubHeader('User Messages');
-doc.rect(50, doc.y, doc.page.width - 100, 80).fill('#E6F4EA');
+
+const msgY = doc.y;
+doc.rect(50, msgY, doc.page.width - 100, 70).fill('#E6F4EA');
 doc.font('Helvetica-Bold').fontSize(9).fillColor(green);
-doc.text('When Price Drops (User gains gold):', 60, doc.y + 10);
-doc.font('Helvetica').fontSize(9).fillColor(gray);
-doc.text('"Great news! Gold price dropped since you locked. Your protected value of $7,500 now buys 53.57g! You\'re receiving 3.57g more gold."', 60, doc.y + 25, { width: doc.page.width - 120 });
+doc.text('When Price Drops (User gains gold):', 60, msgY + 8, { width: doc.page.width - 120 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('"Great news! Gold price dropped since you locked. Your protected value of $7,500 now buys 53.57g!"', 60, msgY + 22, { width: doc.page.width - 120 });
 
 doc.font('Helvetica-Bold').fontSize(9).fillColor(orange);
-doc.text('When Price Rises (User gets less gold):', 60, doc.y + 50);
-doc.font('Helvetica').fontSize(9).fillColor(gray);
-doc.text('"Gold price rose since you locked. Your protected value of $7,500 converts to 46.88g. Your dollar value is fully protected!"', 60, doc.y + 65, { width: doc.page.width - 120 });
-doc.y += 95;
+doc.text('When Price Rises (User gets less gold):', 60, msgY + 42, { width: doc.page.width - 120 });
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text('"Gold price rose since you locked. Your protected value of $7,500 converts to 46.88g. Your dollar value is fully protected!"', 60, msgY + 56, { width: doc.page.width - 120 });
 
+doc.x = 50;
+doc.y = msgY + 85;
+
+// === PAGE 4 - PART 7 ===
 doc.addPage();
 drawHeader('Part 7: Complete 5-Transaction Example');
 
 drawSubHeader('Phase 1: User Locks Gold (5 Transactions)');
 drawBody('Starting Balance: LGPW = 500g, FGPW = 0g');
-doc.moveDown(0.3);
 drawTable(
   ['#', 'Action', 'Price', 'LGPW After', 'FGPW After', 'USD Reserved'],
   [
@@ -282,10 +298,9 @@ drawTable(
   ]
 );
 
-doc.moveDown(1);
+doc.moveDown(0.5);
 drawSubHeader('Phase 2: User Unlocks Gold (5 Transactions with FIFO)');
 drawBody('Starting: LGPW = 100g, FGPW = 400g ($60,250 reserved)');
-doc.moveDown(0.3);
 drawTable(
   ['#', 'Unlock', 'Batch Used (FIFO)', 'USD Value', 'Live', 'Received', 'LGPW Total'],
   [
@@ -297,16 +312,17 @@ drawTable(
   ]
 );
 
-doc.moveDown(0.5);
 const resultY = doc.y;
-doc.rect(50, resultY, doc.page.width - 100, 50).fill(lightPurple);
-doc.font('Helvetica-Bold').fontSize(11).fillColor(darkPurple);
-doc.text('Final Result:', 60, resultY + 8);
-doc.font('Helvetica').fontSize(10).fillColor(gray);
-doc.text('Started: 500g total  |  Ended: 504.15g total  |  Net Gain: +4.15g from price movements', 60, resultY + 25);
-doc.text('All $60,250 USD value was preserved throughout!', 60, resultY + 38);
-doc.y = resultY + 65;
+doc.rect(50, resultY, doc.page.width - 100, 45).fill(lightPurple);
+doc.font('Helvetica-Bold').fontSize(10).fillColor(darkPurple);
+doc.text('Final Result:', 60, resultY + 8, { width: doc.page.width - 120 });
+doc.font('Helvetica').fontSize(9).fillColor(gray);
+doc.text('Started: 500g total  |  Ended: 504.15g total  |  Net Gain: +4.15g from price movements', 60, resultY + 22, { width: doc.page.width - 120 });
+doc.text('All $60,250 USD value was preserved throughout!', 60, resultY + 34, { width: doc.page.width - 120 });
+doc.x = 50;
+doc.y = resultY + 55;
 
+// === PAGE 5 - PART 8 ===
 doc.addPage();
 drawHeader('Part 8: Certificate Trail After All Transactions');
 drawTable(
@@ -323,61 +339,67 @@ drawTable(
   ]
 );
 
-doc.addPage();
+drawDivider();
+
+// === PART 9 ===
 drawHeader('Part 9: Platform Disclaimer');
 
-doc.rect(50, doc.y, doc.page.width - 100, 140).fill('#FFF8E6').stroke('#FFD700');
-doc.font('Helvetica-Bold').fontSize(11).fillColor('#856404');
-doc.text('FGPW (Fixed Gold Price Wallet) Protection Disclosure', 60, doc.y + 10);
-doc.moveDown(0.5);
+const disclaimerY = doc.y;
+doc.rect(50, disclaimerY, doc.page.width - 100, 130).fill('#FFF8E6').stroke('#FFD700');
+doc.font('Helvetica-Bold').fontSize(10).fillColor('#856404');
+doc.text('FGPW (Fixed Gold Price Wallet) Protection Disclosure', 60, disclaimerY + 10, { width: doc.page.width - 120 });
+
 doc.font('Helvetica').fontSize(9).fillColor('#856404');
 const disclaimer = `When you transfer gold from LGPW to FGPW, your gold's dollar value is locked at the current market rate. The platform reserves the equivalent USD value to protect your investment.
 
 When you unlock from FGPW to LGPW, you receive physical gold equivalent to your protected dollar value at the current market price. This means:
 
-• If gold price drops: You receive MORE gold grams
-• If gold price rises: You receive LESS gold grams  
-• Your USD value is ALWAYS preserved
+- If gold price drops: You receive MORE gold grams
+- If gold price rises: You receive LESS gold grams
+- Your USD value is ALWAYS preserved
 
-FGPW is a value protection service, not a speculative instrument. Your gold remains fully backed by either physical gold (LGPW) or equivalent cash reserves (FGPW).`;
-doc.text(disclaimer, 60, doc.y + 30, { width: doc.page.width - 120 });
-doc.y += 160;
+FGPW is a value protection service, not a speculative instrument.`;
+doc.text(disclaimer, 60, disclaimerY + 28, { width: doc.page.width - 120 });
+doc.x = 50;
+doc.y = disclaimerY + 145;
 
 drawDivider();
+
+// === SUMMARY ===
 drawHeader('Summary');
 
 const summaryY = doc.y;
-doc.rect(50, summaryY, 240, 100).fill(purple);
-doc.font('Helvetica-Bold').fontSize(11).fillColor('white');
-doc.text('LGPW (Live Gold Price)', 60, summaryY + 10);
-doc.font('Helvetica').fontSize(9).fillColor(lightPurple);
-doc.text('• Physical gold backing', 60, summaryY + 28);
-doc.text('• Value fluctuates with market', 60, summaryY + 41);
-doc.text('• DOC certificate = Active', 60, summaryY + 54);
-doc.text('• PSC certificate = Active', 60, summaryY + 67);
-doc.text('• User sees: "50g at market"', 60, summaryY + 80);
+doc.rect(50, summaryY, 220, 90).fill(purple);
+doc.font('Helvetica-Bold').fontSize(10).fillColor('white');
+doc.text('LGPW (Live Gold Price)', 60, summaryY + 10, { width: 200 });
+doc.font('Helvetica').fontSize(8).fillColor(lightPurple);
+doc.text('- Physical gold backing', 60, summaryY + 26, { width: 200 });
+doc.text('- Value fluctuates with market', 60, summaryY + 38, { width: 200 });
+doc.text('- DOC certificate = Active', 60, summaryY + 50, { width: 200 });
+doc.text('- PSC certificate = Active', 60, summaryY + 62, { width: 200 });
+doc.text('- User sees: "50g at market"', 60, summaryY + 74, { width: 200 });
 
-doc.rect(305, summaryY, 240, 100).fill(darkPurple);
-doc.font('Helvetica-Bold').fontSize(11).fillColor('white');
-doc.text('FGPW (Fixed Gold Price)', 315, summaryY + 10);
-doc.font('Helvetica').fontSize(9).fillColor(lightPurple);
-doc.text('• Cash reserve backing (USD)', 315, summaryY + 28);
-doc.text('• Value protected at lock rate', 315, summaryY + 41);
-doc.text('• DOC certificate = Active/Partial', 315, summaryY + 54);
-doc.text('• PSC event = Reclassification', 315, summaryY + 67);
-doc.text('• User sees: "50g @ $150"', 315, summaryY + 80);
+doc.rect(290, summaryY, 220, 90).fill(darkPurple);
+doc.font('Helvetica-Bold').fontSize(10).fillColor('white');
+doc.text('FGPW (Fixed Gold Price)', 300, summaryY + 10, { width: 200 });
+doc.font('Helvetica').fontSize(8).fillColor(lightPurple);
+doc.text('- Cash reserve backing (USD)', 300, summaryY + 26, { width: 200 });
+doc.text('- Value protected at lock rate', 300, summaryY + 38, { width: 200 });
+doc.text('- DOC certificate = Active/Partial', 300, summaryY + 50, { width: 200 });
+doc.text('- PSC event = Reclassification', 300, summaryY + 62, { width: 200 });
+doc.text('- User sees: "50g @ $150"', 300, summaryY + 74, { width: 200 });
 
-doc.y = summaryY + 120;
+doc.x = 50;
+doc.y = summaryY + 105;
 
-doc.rect(50, doc.y, doc.page.width - 100, 40).fill('#F0F0F0');
-doc.font('Helvetica').fontSize(9).fillColor(gray);
-doc.text(`Generated: ${new Date().toISOString().split('T')[0]}`, 60, doc.y + 10);
-doc.text('Finatrades Finance SA - Confidential', 60, doc.y + 23);
+doc.rect(50, doc.y, doc.page.width - 100, 30).fill('#F0F0F0');
+doc.font('Helvetica').fontSize(8).fillColor(gray);
+doc.text(`Generated: ${new Date().toISOString().split('T')[0]}  |  Finatrades Finance SA - Confidential`, 60, doc.y + 10, { width: doc.page.width - 120 });
 
 doc.end();
-
 console.log(`PDF generated: ${outputPath}`);
 
+// Send email
 async function sendEmail() {
   const pdfBuffer = fs.readFileSync(outputPath);
   
@@ -399,19 +421,15 @@ async function sendEmail() {
       </div>
       
       <div style="padding: 30px; background: #f9f9f9;">
-        <h2 style="color: #5B1A99;">Complete Dual-Wallet Documentation</h2>
+        <h2 style="color: #5B1A99;">Complete Dual-Wallet Documentation (Fixed Alignment)</h2>
         <p style="color: #666;">Please find attached the comprehensive guide including:</p>
         
         <ul style="color: #666;">
-          <li><strong>Part 1:</strong> System Overview with Diagrams</li>
-          <li><strong>Part 2:</strong> Certificate System (PSC, DOC, CONV)</li>
-          <li><strong>Part 3:</strong> LGPW to FGPW Lock Flow</li>
-          <li><strong>Part 4:</strong> FGPW to LGPW Unlock Flow</li>
-          <li><strong>Part 5:</strong> The Cash-Backed Formula</li>
-          <li><strong>Part 6:</strong> User-Facing Language Guide</li>
+          <li><strong>Part 1-2:</strong> System Overview & Certificate System</li>
+          <li><strong>Part 3-4:</strong> Lock & Unlock Flow with Diagrams</li>
+          <li><strong>Part 5-6:</strong> Formula & User-Facing Language</li>
           <li><strong>Part 7:</strong> Complete 5-Transaction Example</li>
-          <li><strong>Part 8:</strong> Certificate Trail</li>
-          <li><strong>Part 9:</strong> Platform Disclaimer</li>
+          <li><strong>Part 8-9:</strong> Certificate Trail & Disclaimer</li>
         </ul>
         
         <p style="color: #666; margin-top: 20px;">
@@ -430,7 +448,7 @@ async function sendEmail() {
   const result = await transporter.sendMail({
     from: '"Finatrades System" <noreply@finatrades.com>',
     to: 'Blockchain@finatrades.com',
-    subject: 'LGPW & FGPW Complete Guide - Dual-Wallet Documentation with Diagrams',
+    subject: 'LGPW & FGPW Complete Guide - Fixed Alignment Version',
     html: htmlBody,
     attachments: [
       {
