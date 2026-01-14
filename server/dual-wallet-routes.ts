@@ -441,10 +441,14 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           { userId }
         );
 
+        // FGPW = Cash-backed. Calculate USD value from locked price, then buy gold at live price
+        const fgpwUsdValue = consumption.weightedValueUsd; // USD value locked in FGPW
+        const lgpwGoldGrams = fgpwUsdValue / currentGoldPrice; // Gold grams at live price
+        
         await tx
           .update(vaultOwnershipSummary)
           .set({
-            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${goldGrams}`,
+            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${lgpwGoldGrams}`,
             fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${goldGrams}`,
             lastUpdated: now
           })
@@ -458,11 +462,11 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
           userId,
           type: 'Swap',
           status: 'Completed',
-          amountGold: goldGrams.toFixed(6),
-          amountUsd: consumption.weightedValueUsd.toFixed(2),
-          goldPriceUsdPerGram: avgPrice.toFixed(2),
-          goldWalletType: 'FGPW',
-          description: `FGPW to LGPW conversion: ${goldGrams.toFixed(6)}g (cost basis: $${avgPrice.toFixed(2)}/g)`,
+          amountGold: lgpwGoldGrams.toFixed(6),
+          amountUsd: fgpwUsdValue.toFixed(2),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
+          goldWalletType: 'LGPW',
+          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g FGPW @ $${avgPrice.toFixed(2)}/g = $${fgpwUsdValue.toFixed(2)} → ${lgpwGoldGrams.toFixed(6)}g LGPW @ $${currentGoldPrice.toFixed(2)}/g`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
