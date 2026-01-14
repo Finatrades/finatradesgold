@@ -200,6 +200,25 @@ router.post('/deposits', async (req: Request, res: Response) => {
       details: JSON.stringify({ referenceNumber, depositType: data.depositType, itemCount: data.items.length, totalWeight }),
     });
 
+    // Create notification for all admin users
+    try {
+      const admins = await storage.getAdminUsers();
+      const user = await storage.getUser(userId);
+      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'A user';
+      
+      for (const admin of admins) {
+        await storage.createNotification({
+          userId: admin.id,
+          title: 'New Physical Gold Deposit',
+          message: `${userName} submitted a physical gold deposit request (${referenceNumber}). Total declared: ${totalWeight.toFixed(2)}g.`,
+          type: 'system',
+          link: '/admin/physical-deposits',
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to create admin notifications:', notifError);
+    }
+
     res.status(201).json({
       success: true,
       deposit: {

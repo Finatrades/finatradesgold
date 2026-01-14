@@ -230,6 +230,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'Vault Dashboard', href: '/admin/vault-dashboard' },
         { label: 'Platform Exposure', href: '/admin/vault-exposure' },
+        { label: 'Physical Deposits', href: '/admin/physical-deposits' },
         { label: 'Physical Registry', href: '/admin/vault-physical-registry' },
         { label: 'Vault Locations', href: '/admin/vault-locations' },
         { label: 'Routing Rules', href: '/admin/vault-routing' },
