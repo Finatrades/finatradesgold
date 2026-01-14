@@ -3461,6 +3461,8 @@ ${message}
 
       let pendingCryptoPayments = 0;
       let pendingBuyGold = 0;
+      let pendingPhysicalDeposits = 0;
+      let pendingAccountDeletions = 0;
 
       try {
         const allCrypto = await db.select().from(cryptoPaymentRequests);
@@ -3470,6 +3472,18 @@ ${message}
       try {
         const allBuyGold = await db.select().from(buyGoldRequests);
         pendingBuyGold = allBuyGold.filter((b: any) => b.status === 'Pending' || b.status === 'Under Review').length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allPhysicalDeposits = await db.select().from(physicalGoldDeposits);
+        pendingPhysicalDeposits = allPhysicalDeposits.filter((p: any) => 
+          ["SUBMITTED", "UNDER_REVIEW", "RECEIVED", "INSPECTION", "NEGOTIATION", "AGREED", "READY_FOR_PAYMENT"].includes(p.status)
+        ).length;
+      } catch (e) { /* table may not exist */ }
+
+      try {
+        const allDeletionRequests = await db.select().from(accountDeletionRequests);
+        pendingAccountDeletions = allDeletionRequests.filter((d: any) => d.status === "Pending").length;
       } catch (e) { /* table may not exist */ }
 
       res.json({
@@ -3482,7 +3496,9 @@ ${message}
         pendingBnslRequests,
         unreadChats,
         pendingCryptoPayments,
-        pendingBuyGold
+        pendingBuyGold,
+        pendingPhysicalDeposits,
+        pendingAccountDeletions
       });
     } catch (error) {
       console.error("Failed to get pending counts:", error);
