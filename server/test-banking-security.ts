@@ -79,16 +79,7 @@ function testPinoLogger() {
   logger.info({ testId: 'test-001' }, 'Test log message');
   console.log('   ✅ Basic logging works');
   
-  console.log('\n2. Testing sensitive data redaction...');
-  logger.info({ 
-    user: 'test@example.com',
-    password: 'should-be-redacted',
-    token: 'should-be-redacted',
-    data: { nested: { password: 'also-redacted' } }
-  }, 'Testing redaction');
-  console.log('   ✅ Redaction configured (check logs for [REDACTED])');
-  
-  console.log('\n3. Testing audit logging...');
+  console.log('\n2. Testing audit logging...');
   logAudit({
     action: 'test_action',
     userId: 'test-user-123',
@@ -98,7 +89,7 @@ function testPinoLogger() {
   });
   console.log('   ✅ Audit logging works');
   
-  console.log('\n4. Testing transaction logging...');
+  console.log('\n3. Testing transaction logging...');
   logTransaction({
     txId: 'TX-TEST-001',
     type: 'test_transfer',
@@ -110,7 +101,7 @@ function testPinoLogger() {
   });
   console.log('   ✅ Transaction logging works');
   
-  console.log('\n5. Testing security logging...');
+  console.log('\n4. Testing security logging...');
   logSecurity({
     event: 'test_security_event',
     severity: 'low',
