@@ -322,8 +322,8 @@ export default function PhysicalDepositsAdmin() {
                             <Button size="sm" onClick={() => openDialog(deposit, 'offer')} data-testid={`button-offer-${deposit.id}`}>
                               <DollarSign className="w-4 h-4 mr-1" /> Send Offer
                             </Button>
-                            {deposit.negotiations?.length > 0 && 
-                             deposit.negotiations[deposit.negotiations.length - 1]?.messageType === 'USER_COUNTER' && (
+                            {(deposit.negotiations?.length ?? 0) > 0 && 
+                             deposit.negotiations?.[deposit.negotiations.length - 1]?.messageType === 'USER_COUNTER' && (
                               <Button 
                                 size="sm" 
                                 className="bg-teal-600 hover:bg-teal-700"

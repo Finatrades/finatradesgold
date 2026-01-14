@@ -2,6 +2,78 @@ import { Router, Request, Response } from 'express';
 import { storage } from './storage';
 import { z } from 'zod';
 import type { InsertPhysicalDepositRequest, InsertDepositItem, InsertDepositInspection, InsertDepositNegotiationMessage } from '@shared/schema';
+import { sendEmailDirect } from './email';
+
+// Helper to send physical deposit status notification emails
+async function sendPhysicalDepositStatusEmail(
+  userId: string,
+  referenceNumber: string,
+  status: string,
+  additionalInfo?: { creditedGrams?: number; reason?: string }
+): Promise<void> {
+  try {
+    const user = await storage.getUser(userId);
+    if (!user || !user.email) return;
+
+    const statusMessages: Record<string, { subject: string; body: string }> = {
+      UNDER_REVIEW: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Under Review`,
+        body: `Your physical gold deposit request (${referenceNumber}) is now under review. Our team will verify your submission and contact you regarding delivery arrangements.`,
+      },
+      RECEIVED: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Received at Vault`,
+        body: `Great news! Your physical gold deposit (${referenceNumber}) has been received at our secure vault facility. We will now proceed with inspection and verification.`,
+      },
+      INSPECTION: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Inspection Complete`,
+        body: `The inspection of your physical gold deposit (${referenceNumber}) has been completed. Please log in to your account to view the inspection results.`,
+      },
+      NEGOTIATION: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Offer Available`,
+        body: `We have sent you an offer for your physical gold deposit (${referenceNumber}). Please log in to your account to review and respond to the offer.`,
+      },
+      AGREED: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Terms Agreed`,
+        body: `The terms for your physical gold deposit (${referenceNumber}) have been agreed upon. Your deposit will now be processed for final approval.`,
+      },
+      APPROVED: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Approved & Credited`,
+        body: `Your physical gold deposit (${referenceNumber}) has been approved and ${additionalInfo?.creditedGrams?.toFixed(4) || 'your gold'} grams have been credited to your LGPW wallet. Certificates have been issued and are available in your account.`,
+      },
+      REJECTED: {
+        subject: `Physical Gold Deposit ${referenceNumber} - Rejected`,
+        body: `Unfortunately, your physical gold deposit (${referenceNumber}) has been rejected. Reason: ${additionalInfo?.reason || 'Please contact support for more information.'}`,
+      },
+    };
+
+    const message = statusMessages[status];
+    if (!message) return;
+
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8A2BE2 0%, #9B30FF 100%); padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Finatrades</h1>
+        </div>
+        <div style="padding: 30px; background: #f9f9f9;">
+          <h2 style="color: #333;">Hello ${user.firstName || 'Valued Customer'},</h2>
+          <p style="color: #555; line-height: 1.6;">${message.body}</p>
+          <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 8px; border-left: 4px solid #8A2BE2;">
+            <p style="margin: 0; color: #666;"><strong>Reference:</strong> ${referenceNumber}</p>
+            <p style="margin: 5px 0 0; color: #666;"><strong>Status:</strong> ${status}</p>
+          </div>
+          <p style="color: #888; font-size: 12px; margin-top: 30px;">
+            This is an automated notification from Finatrades. Please do not reply to this email.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await sendEmailDirect(user.email, message.subject, htmlBody);
+    console.log(`[Physical Deposit] Status email sent to ${user.email} for ${referenceNumber} - ${status}`);
+  } catch (error) {
+    console.error('[Physical Deposit] Failed to send status email:', error);
+  }
+}
 
 const router = Router();
 
@@ -474,6 +546,9 @@ router.post('/admin/deposits/:id/review', async (req: Request, res: Response) =>
       reviewedAt: new Date(),
     });
 
+    // Send email notification
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'UNDER_REVIEW');
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error reviewing deposit:', error);
@@ -515,6 +590,9 @@ router.post('/admin/deposits/:id/receive', async (req: Request, res: Response) =
       batchLotId: parsed.data.batchLotId,
       adminNotes: parsed.data.notes ? `${deposit.adminNotes || ''}\n${new Date().toISOString()}: ${parsed.data.notes}`.trim() : deposit.adminNotes,
     });
+
+    // Send email notification
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'RECEIVED');
 
     res.json({ success: true });
   } catch (error) {
@@ -608,6 +686,9 @@ router.post('/admin/deposits/:id/inspect', async (req: Request, res: Response) =
       inspectionId: inspection.id,
     });
 
+    // Send email notification about inspection completion
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'INSPECTION');
+
     res.json({ success: true, inspectionId: inspection.id, newStatus });
   } catch (error) {
     console.error('Error inspecting deposit:', error);
@@ -674,6 +755,9 @@ router.post('/admin/deposits/:id/offer', async (req: Request, res: Response) => 
       depositUpdate.usdCounterFromAdmin = parsed.data.usdOffer.toString();
     }
     await storage.updatePhysicalDeposit(deposit.id, depositUpdate);
+
+    // Send email notification about offer
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'NEGOTIATION');
 
     res.json({ success: true });
   } catch (error) {
@@ -867,6 +951,56 @@ router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) =
       sourceModule: 'finavault',
     });
 
+    // Create vault holding record for the physical gold
+    const vaultHolding = await storage.createVaultHolding({
+      userId: deposit.userId,
+      goldGrams: creditedGrams.toFixed(6),
+      vaultLocation: vaultLocation,
+      wingoldStorageRef: deposit.referenceNumber,
+      storageFeesAnnualPercent: '0.5',
+      purchasePriceUsdPerGram: goldPriceUsd.toFixed(2),
+      isPhysicallyDeposited: true,
+    });
+
+    // Get user info for UTT entry
+    const user = await storage.getUser(deposit.userId);
+
+    // Create UTT (Unified Tally Tracker) entry for admin visibility in UFM
+    const uttEntry = await storage.createUnifiedTallyTransaction({
+      userId: deposit.userId,
+      userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined,
+      userEmail: user?.email,
+      txnType: 'FIAT_DEPOSIT',
+      sourceMethod: 'VAULT_GOLD_DEPOSIT',
+      walletType: 'LGPW',
+      status: 'CREDITED',
+      depositCurrency: 'USD',
+      depositAmount: (creditedGrams * goldPriceUsd).toFixed(2),
+      feeAmount: '0',
+      netAmount: (creditedGrams * goldPriceUsd).toFixed(2),
+      paymentReference: deposit.referenceNumber,
+      paymentConfirmedAt: new Date(),
+      pricingMode: 'MARKET',
+      goldRateValue: goldPriceUsd.toFixed(4),
+      rateTimestamp: new Date(),
+      goldEquivalentG: creditedGrams.toFixed(6),
+      goldCreditedG: creditedGrams.toFixed(6),
+      goldCreditedValueUsd: (creditedGrams * goldPriceUsd).toFixed(2),
+      vaultGoldDepositedG: creditedGrams.toFixed(6),
+      vaultDepositCertificateId: physicalCert.id,
+      vaultDepositVerifiedBy: adminId,
+      vaultDepositVerifiedAt: new Date(),
+      physicalGoldAllocatedG: creditedGrams.toFixed(6),
+      wingoldBuyRate: goldPriceUsd.toFixed(4),
+      wingoldCostUsd: (creditedGrams * goldPriceUsd).toFixed(2),
+      vaultLocation: vaultLocation,
+      storageCertificateId: physicalCert.id,
+      certificateDate: new Date(),
+      approvedBy: adminId,
+      approvedAt: new Date(),
+      notes: `Physical gold deposit approved: ${deposit.referenceNumber}`,
+    });
+
     await storage.updatePhysicalDeposit(deposit.id, {
       status: 'APPROVED',
       approvedAt: new Date(),
@@ -891,8 +1025,13 @@ router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) =
         physicalCertId: physicalCert.id,
         digitalCertId: digitalCert.id,
         transactionId: transaction.id,
+        vaultHoldingId: vaultHolding.id,
+        uttEntryId: uttEntry.id,
       }),
     });
+
+    // Send approval email notification
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'APPROVED', { creditedGrams });
 
     res.json({
       success: true,
@@ -902,6 +1041,8 @@ router.post('/admin/deposits/:id/approve', async (req: Request, res: Response) =
       digitalCertificateId: digitalCert.id,
       digitalCertificateNumber: digitalCert.certificateNumber,
       transactionId: transaction.id,
+      vaultHoldingId: vaultHolding.id,
+      uttEntryId: uttEntry.id,
     });
   } catch (error) {
     console.error('Error approving deposit:', error);
@@ -944,6 +1085,9 @@ router.post('/admin/deposits/:id/reject', async (req: Request, res: Response) =>
       actionType: 'PHYSICAL_DEPOSIT_REJECTED',
       details: JSON.stringify({ reason: parsed.data.reason }),
     });
+
+    // Send rejection email notification
+    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'REJECTED', { reason: parsed.data.reason });
 
     res.json({ success: true });
   } catch (error) {
