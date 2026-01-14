@@ -14,6 +14,7 @@ import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -35,6 +36,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 };
 
 function MyPhysicalDeposits() {
+  const [selectedDeposit, setSelectedDeposit] = useState<any>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['physical-deposits'],
     queryFn: async () => {
@@ -87,7 +89,12 @@ function MyPhysicalDeposits() {
             {deposits.map((deposit: any) => {
               const statusInfo = STATUS_COLORS[deposit.status] || STATUS_COLORS.SUBMITTED;
               return (
-                <div key={deposit.id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div 
+                  key={deposit.id} 
+                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedDeposit(deposit)}
+                  data-testid={`deposit-item-${deposit.id}`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -125,6 +132,7 @@ function MyPhysicalDeposits() {
                           <span className="text-sm font-medium">Credited</span>
                         </div>
                       )}
+                      <ChevronRight className="w-4 h-4 text-muted-foreground mt-1" />
                     </div>
                   </div>
                   {deposit.items && deposit.items.length > 0 && (
@@ -144,6 +152,102 @@ function MyPhysicalDeposits() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedDeposit} onOpenChange={(open) => !open && setSelectedDeposit(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Deposit Details
+              {selectedDeposit && (
+                <Badge className={`${STATUS_COLORS[selectedDeposit.status]?.bg || 'bg-gray-100'} ${STATUS_COLORS[selectedDeposit.status]?.text || 'text-gray-700'} border-0`}>
+                  {STATUS_COLORS[selectedDeposit.status]?.label || selectedDeposit.status}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedDeposit && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Reference Number</p>
+                  <p className="font-mono font-semibold">{selectedDeposit.referenceNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Deposit Type</p>
+                  <p className="capitalize">{selectedDeposit.depositType?.toLowerCase().replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Declared Weight</p>
+                  <p className="font-semibold">{parseFloat(selectedDeposit.totalDeclaredWeightGrams).toFixed(4)} g</p>
+                </div>
+                {selectedDeposit.finalCreditedGrams && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Credited Weight</p>
+                    <p className="font-semibold text-green-600">{parseFloat(selectedDeposit.finalCreditedGrams).toFixed(4)} g</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">Submitted</p>
+                  <p>{new Date(selectedDeposit.createdAt).toLocaleDateString()}</p>
+                </div>
+                {selectedDeposit.deliveryMethod && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Delivery Method</p>
+                    <p className="capitalize">{selectedDeposit.deliveryMethod?.toLowerCase().replace('_', ' ')}</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedDeposit.items && selectedDeposit.items.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Items ({selectedDeposit.items.length})</p>
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                    {selectedDeposit.items.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center py-1 border-b last:border-0">
+                        <span className="capitalize">{item.quantity}x {item.itemType?.replace('_', ' ')}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {item.purity} • {parseFloat(item.declaredWeightGrams).toFixed(4)} g
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedDeposit.adminNotes && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Admin Notes</p>
+                  <p className="bg-amber-50 p-3 rounded-lg text-sm">{selectedDeposit.adminNotes}</p>
+                </div>
+              )}
+
+              {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.offeredGrams && (
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <p className="text-sm font-semibold text-orange-700 mb-2">Offer Pending</p>
+                  <p className="text-sm">Offered weight: <strong>{parseFloat(selectedDeposit.offeredGrams).toFixed(4)} g</strong></p>
+                  {selectedDeposit.offerMessage && (
+                    <p className="text-sm mt-2 text-muted-foreground">{selectedDeposit.offerMessage}</p>
+                  )}
+                </div>
+              )}
+
+              {selectedDeposit.status === 'REJECTED' && selectedDeposit.rejectionReason && (
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <p className="text-sm font-semibold text-red-700 mb-2">Rejection Reason</p>
+                  <p className="text-sm">{selectedDeposit.rejectionReason}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <Button variant="outline" onClick={() => setSelectedDeposit(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
