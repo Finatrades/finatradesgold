@@ -17,6 +17,7 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/ngenius/webhook',
   '/api/stripe/webhook',
   '/api/wingold/webhooks',
+  '/api/unified/callback/wingold-order', // Wingold order webhooks
   '/api/certificates/verify',
   '/api/verify-certificate',
   '/api/sso/verify-token',

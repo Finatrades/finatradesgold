@@ -370,6 +370,7 @@ app.use((req, res, next) => {
     '/api/binancepay/webhook',
     '/api/ngenius/webhook',
     '/api/stripe/webhook',
+    '/api/unified/callback/wingold-order', // Wingold order webhooks
     // B2B API (uses API key authentication)
     '/api/b2b/',
     '/api/wingold/webhooks',

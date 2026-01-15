@@ -4069,16 +4069,20 @@ export const wingoldOrderEvents = pgTable("wingold_order_events", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   eventId: varchar("event_id", { length: 255 }).notNull().unique(), // For idempotency
   wingoldOrderId: varchar("wingold_order_id", { length: 255 }).notNull(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  // Nullable to allow storing events for idempotency even when user is unknown
+  userId: varchar("user_id", { length: 255 }),
+  finatradesIdFromPayload: varchar("finatrades_id_from_payload", { length: 255 }), // Store the ID from payload for later lookup
   
-  eventType: varchar("event_type", { length: 100 }).notNull(), // WINGOLD_ORDER_APPROVED, etc.
+  eventType: varchar("event_type", { length: 100 }).notNull(), // order.confirmed, order.fulfilled, etc.
   
-  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('AED'),
-  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  // Amounts - may not be available for all event types
+  amount: decimal("amount", { precision: 18, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }),
   
-  paymentMethod: wingoldPaymentMethodEnum("payment_method").notNull(),
-  paymentStatus: wingoldPaymentStatusEnum("payment_status").notNull(),
+  // Payment info - optional, not all events have this
+  paymentMethod: wingoldPaymentMethodEnum("payment_method"),
+  paymentStatus: wingoldPaymentStatusEnum("payment_status"),
   
   bankReference: varchar("bank_reference", { length: 255 }),
   cryptoTxHash: varchar("crypto_tx_hash", { length: 255 }),
