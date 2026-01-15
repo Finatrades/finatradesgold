@@ -684,6 +684,90 @@ Authorization: Bearer {WINGOLD_PARTNER_API_KEY}
 
 ---
 
+## 8. KYC Sync Push (Finatrades → Wingold)
+
+When a user's KYC is approved on Finatrades, the full KYC data is automatically pushed to Wingold.
+
+### Endpoint (Wingold Receives)
+
+```
+POST https://wingold.ae/api/finatrades/kyc/sync
+```
+
+### Authentication
+
+| Header | Value |
+|--------|-------|
+| `X-Finatrades-Signature` | HMAC-SHA256 signature of the JSON payload |
+| `Content-Type` | `application/json` |
+
+**Signature Generation:**
+```javascript
+const crypto = require('crypto');
+const signature = crypto
+  .createHmac('sha256', FINATRADES_WEBHOOK_SECRET)
+  .update(JSON.stringify(payload))
+  .digest('hex');
+```
+
+### When Data is Pushed
+
+| Event | Push to Wingold? |
+|-------|------------------|
+| KYC Submitted | No |
+| KYC Under Review | No |
+| KYC Approved | **Yes** |
+| KYC Rejected | No |
+| KYC Re-verified | Yes |
+
+### Payload Structure
+
+```json
+{
+  "finatradesId": "FT-12345",
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phone": "+971501234567",
+  "accountType": "personal",
+  "kycStatus": "approved",
+  "kycApprovedAt": "2026-01-15",
+  "personal": {
+    "fullName": "John Michael Doe",
+    "dateOfBirth": "1990-05-15",
+    "nationality": "UAE",
+    "occupation": "Business Owner",
+    "sourceOfFunds": "Business Income",
+    "address": "123 Sheikh Zayed Road",
+    "city": "Dubai",
+    "postalCode": "12345",
+    "country": "United Arab Emirates",
+    "idFrontUrl": "https://finatrades.com/docs/id_front.jpg",
+    "passportUrl": "https://finatrades.com/docs/passport.jpg",
+    "passportExpiryDate": "2028-12-01",
+    "riskLevel": "low",
+    "isPep": false
+  }
+}
+```
+
+### Environment Variables Required
+
+| Variable | Description |
+|----------|-------------|
+| `FINATRADES_WEBHOOK_SECRET` | Shared secret for HMAC signature |
+| `WINGOLD_KYC_SYNC_URL` | Override default Wingold endpoint (optional) |
+
+### Response Handling
+
+Finatrades expects:
+- `200` - Success, data synced
+- `401` - Invalid signature (will not retry)
+- `400` - Invalid payload (will not retry)
+- `5xx` - Server error (will retry with exponential backoff)
+
+---
+
 ## Contact
 
 For integration support, contact: blockchain@finatrades.com

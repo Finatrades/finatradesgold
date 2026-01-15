@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { db } from './db';
 import { users, kycSubmissions } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { syncKycToWingoldWithRetry } from './wingold-kyc-sync';
 
 const WINGOLD_API_URL = process.env.WINGOLD_API_URL || 'https://wingoldandmetals--imcharanpratap.replit.app';
 const WINGOLD_SYNC_SECRET = process.env.WINGOLD_SYNC_SECRET;
@@ -193,6 +194,15 @@ export class WingoldUserSyncService {
       };
 
       await this.sendWebhook(payload);
+
+      // Also push full KYC data to Wingold's /api/finatrades/kyc/sync endpoint
+      // Uses retry logic for transient failures
+      const syncResult = await syncKycToWingoldWithRetry(userId, 3);
+      if (syncResult.success) {
+        console.log('[WingoldSync] Full KYC data synced successfully:', syncResult);
+      } else {
+        console.warn('[WingoldSync] Full KYC sync failed after retries:', syncResult.message);
+      }
     } catch (error) {
       console.error('[WingoldSync] onKycApproved error:', error);
     }
