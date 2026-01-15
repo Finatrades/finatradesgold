@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users } from "@shared/schema";
+import { users, wingoldVaultLocations } from "@shared/schema";
 import { storage } from "./storage";
 
 const router = Router();
@@ -410,13 +410,13 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
 
     let validatedVaultId: string | null = null;
     if (vaultLocationId) {
-      const vaultLocations = await storage.getVaultLocations();
-      console.log('[SSO Checkout] Vault validation:', { 
-        receivedVaultId: vaultLocationId, 
-        availableVaults: vaultLocations.map((v: any) => ({ id: v.id, name: v.name }))
-      });
-      const validVault = vaultLocations.find((v: any) => v.id === vaultLocationId);
+      const vaultLocations = await db.select().from(wingoldVaultLocations).where(eq(wingoldVaultLocations.isActive, true));
+      const validVault = vaultLocations.find((v) => v.id === vaultLocationId);
       if (!validVault) {
+        console.log('[SSO Checkout] Vault validation failed:', { 
+          receivedVaultId: vaultLocationId, 
+          availableVaults: vaultLocations.map((v) => ({ id: v.id, name: v.name }))
+        });
         return res.status(400).json({ error: "Invalid vault location" });
       }
       validatedVaultId = validVault.id;
