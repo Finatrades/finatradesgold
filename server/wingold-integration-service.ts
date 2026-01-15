@@ -713,18 +713,6 @@ export class WingoldIntegrationService {
         issuer: 'Finatrades',
         vaultLocation: bar.vaultLocationName || 'SecureVault - Dubai',
         wingoldStorageRef: `WG-${bar.serialNumber}`,
-        metadata: {
-          wingoldOrderId: order.wingoldOrderId,
-          wingoldReferenceNumber: order.referenceNumber,
-          barSerialNumber: bar.serialNumber,
-          barSize: bar.barSize,
-          barPurity: bar.purity,
-          mint: bar.mint,
-          issuedTo: {
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
-            finatradesId: user.finatradesId
-          }
-        }
       });
 
       console.log(`[Wingold] Issued Finatrades Digital Ownership Certificate ${certificateNumber} for bar ${bar.serialNumber}`);
