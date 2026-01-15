@@ -421,6 +421,122 @@ export default function Checkout() {
 
 ---
 
+## 9. Admin Approval Webhook (Wingold → Finatrades)
+
+For orders requiring admin approval (BANK/CRYPTO payments), Wingold should send a webhook to Finatrades when the order is approved.
+
+### Endpoint
+
+```
+POST https://finatrades.com/api/unified/callback/wingold-order
+```
+
+### Headers
+
+| Header | Description |
+|--------|-------------|
+| `X-WINGOLD-SIGNATURE` | HMAC-SHA256 signature of `rawBody + timestamp` using the shared webhook secret |
+| `X-WINGOLD-TIMESTAMP` | Unix timestamp in milliseconds (must be within 5 minutes of server time) |
+| `Content-Type` | `application/json` |
+
+### Signature Generation (Node.js)
+
+```javascript
+const crypto = require('crypto');
+
+function generateWebhookSignature(payload, timestamp, secret) {
+  const rawBody = JSON.stringify(payload);
+  return crypto
+    .createHmac('sha256', secret)
+    .update(rawBody + timestamp)
+    .digest('hex');
+}
+
+// Example usage
+const timestamp = Date.now().toString();
+const signature = generateWebhookSignature(payload, timestamp, WEBHOOK_SECRET);
+```
+
+### Payload Schema
+
+```json
+{
+  "event": "WINGOLD_ORDER_APPROVED",
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",
+  "wingold_order_id": "WG-2026-12345",
+  "finatrades_user_id": "f6a6e447-4770-4d09-9de3-da28fed67875",
+  "amount": 172689.15,
+  "currency": "AED",
+  "gold_items": [
+    {
+      "sku": "GOLD-BAR-10G-999",
+      "weight_g": 10,
+      "purity": "999.9",
+      "qty": 1
+    }
+  ],
+  "payment_method": "BANK",
+  "payment_status": "VERIFIED",
+  "bank_reference": "TRN-2026-001234",
+  "crypto_tx_hash": null,
+  "gateway_ref": null,
+  "timestamps": {
+    "order_created_at": "2026-01-15T10:00:00Z",
+    "payment_confirmed_at": "2026-01-15T11:30:00Z",
+    "approved_at": "2026-01-15T12:00:00Z"
+  }
+}
+```
+
+### Payment Method Behavior
+
+| Payment Method | Finatrades Action |
+|----------------|-------------------|
+| `BANK` | Credit user's wallet with gold grams (if status is PAID/VERIFIED) |
+| `CRYPTO` | Credit user's wallet with gold grams (if status is PAID/VERIFIED) |
+| `CARD` | Store reference only - NO wallet credit (handled by payment gateway) |
+
+### Responses
+
+**Success (200):**
+```json
+{
+  "status": "processed",
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",
+  "order_id": "WG-2026-12345",
+  "wallet_credited": true,
+  "credited_grams": 10,
+  "processing_time_ms": 45
+}
+```
+
+**Already Processed (200):**
+```json
+{
+  "status": "already_processed",
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",
+  "processed_at": "2026-01-15T12:00:05Z"
+}
+```
+
+**Error Responses:**
+- `401` - Invalid or missing signature
+- `400` - Invalid payload schema
+- `500` - Server error
+
+### Idempotency
+
+The webhook is idempotent via `event_id`. Sending the same event multiple times will return `200 already_processed` after the first successful processing.
+
+### Retry Recommendations
+
+If Finatrades returns a non-2xx response:
+1. Retry with exponential backoff (e.g., 1s, 2s, 4s, 8s...)
+2. Maximum 5 retries
+3. Log failures for manual review
+
+---
+
 ## Contact
 
 For integration support, contact: blockchain@finatrades.com

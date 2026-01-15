@@ -110,7 +110,7 @@ function calculateTotalGrams(items: Array<{ weight_g: number; qty: number }>): n
 // Create audit log entry
 async function createAuditLog(
   actor: string,
-  action: string,
+  actionType: string,
   entityType: string,
   entityId: string,
   metadata: Record<string, any>
@@ -118,10 +118,11 @@ async function createAuditLog(
   try {
     await storage.createAuditLog({
       actor,
-      action,
+      actorRole: "system",
+      actionType,
       entityType,
       entityId,
-      metadataJson: metadata,
+      details: JSON.stringify(metadata),
     });
   } catch (error) {
     console.error("[Audit] Failed to create audit log:", error);
@@ -291,16 +292,13 @@ router.post("/api/unified/callback/wingold-order", async (req: Request, res: Res
               })
               .where(eq(wallets.id, wallet.id));
             
-            // Create ledger entry
+            // Create ledger entry for the deposit
             await db.insert(vaultLedgerEntries).values({
-              walletId: wallet.id,
               userId: payload.finatrades_user_id,
-              action: "credit",
+              action: "Deposit",
               goldGrams: String(totalGrams),
-              description: `Wingold order approved - ${payload.payment_method} payment`,
-              referenceType: "wingold_order",
-              referenceId: payload.wingold_order_id,
-              balanceAfter: String(newBalance),
+              balanceAfterGrams: String(newBalance),
+              transactionId: payload.wingold_order_id,
             });
             
             creditedWallet = true;
