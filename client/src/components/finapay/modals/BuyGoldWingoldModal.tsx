@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -80,13 +80,15 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [step, setStep] = useState<'shop' | 'cart' | 'checkout' | 'submitted'>('shop');
+  const [step, setStep] = useState<'shop' | 'cart' | 'checkout' | 'payment' | 'submitted'>('shop');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedVaultId, setSelectedVaultId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<{ orderId: string; referenceNumber: string } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'price-low' | 'price-high' | 'weight'>('price-low');
@@ -136,6 +138,8 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       setWeightFilters([]);
       setShowInStockOnly(true);
       setShowFeaturedOnly(false);
+      setCheckoutUrl(null);
+      setPaymentLoading(false);
       
       fetch('/api/terms/buy_gold')
         .then(res => res.json())
@@ -143,6 +147,76 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
         .catch(() => setTermsContent(null));
     }
   }, [isOpen]);
+
+  const [expectedNonce, setExpectedNonce] = useState<string | null>(null);
+  const [expectedOrderId, setExpectedOrderId] = useState<string | null>(null);
+  const paymentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const ALLOWED_ORIGINS = [
+      'https://wingoldandmetals--imcharanpratap.replit.app',
+      'https://wingoldandmetals.replit.app',
+      'https://wingoldandmetals.com',
+    ];
+
+    const handleMessage = (event: MessageEvent) => {
+      if (!ALLOWED_ORIGINS.includes(event.origin)) {
+        console.warn('[BuyGold] Rejected message from unknown origin:', event.origin);
+        return;
+      }
+      
+      const { type, data } = event.data || {};
+      
+      if (!type || typeof type !== 'string') return;
+
+      if (!expectedNonce || !data?.nonce || data.nonce !== expectedNonce) {
+        console.warn('[BuyGold] Missing or mismatched nonce, ignoring message');
+        return;
+      }
+
+      if (!expectedOrderId || !data?.orderId || data.orderId !== expectedOrderId) {
+        console.warn('[BuyGold] Missing or mismatched orderId, ignoring message');
+        return;
+      }
+      
+      if (type === 'WINGOLD_PAYMENT_SUCCESS') {
+        if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
+        setOrderResult({ 
+          orderId: data.orderId, 
+          referenceNumber: data.referenceNumber || 'WG-' + Date.now() 
+        });
+        setStep('submitted');
+        toast({
+          title: 'Payment Successful',
+          description: 'Your gold bar order has been placed successfully.',
+        });
+      } else if (type === 'WINGOLD_PAYMENT_CANCELLED') {
+        if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
+        setStep('checkout');
+        setCheckoutUrl(null);
+        setExpectedNonce(null);
+        setExpectedOrderId(null);
+        toast({
+          title: 'Payment Cancelled',
+          description: 'You can try again when ready.',
+        });
+      } else if (type === 'WINGOLD_PAYMENT_ERROR') {
+        if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
+        setStep('checkout');
+        setCheckoutUrl(null);
+        setExpectedNonce(null);
+        setExpectedOrderId(null);
+        toast({
+          title: 'Payment Failed',
+          description: data?.message || 'An error occurred during payment.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [toast, expectedNonce, expectedOrderId]);
 
   useEffect(() => {
     if (vaultLocationsData?.locations?.length && !selectedVaultId) {
@@ -233,51 +307,58 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
   const cartTotalUsd = cart.reduce((sum, item) => sum + (item.priceUsd * item.quantity), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleSubmitOrder = async () => {
+  const handleProceedToPayment = async () => {
     if (!user || cart.length === 0) return;
 
-    setIsSubmitting(true);
+    setPaymentLoading(true);
     
     try {
-      const mainItem = cart.reduce((a, b) => a.grams * a.quantity > b.grams * b.quantity ? a : b);
-      const totalBars = cart.reduce((sum, item) => sum + item.quantity, 0);
-      
-      const response = await apiRequest('POST', '/api/wingold/orders', {
-        barSize: mainItem.barSize,
-        barCount: totalBars,
-        vaultLocationId: selectedVaultId || undefined,
+      const response = await apiRequest('POST', '/api/sso/wingold/checkout', {
         cartItems: cart.map(item => ({
           barSize: item.barSize,
           quantity: item.quantity,
-          priceUsdPerGram: goldPriceUsd,
         })),
+        vaultLocationId: selectedVaultId || undefined,
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to submit order');
+        throw new Error(error.error || 'Failed to initiate payment');
       }
 
       const result = await response.json();
-      setOrderResult({ orderId: result.orderId, referenceNumber: result.referenceNumber });
-      setStep('submitted');
+      setCheckoutUrl(result.checkoutUrl);
+      setExpectedNonce(result.nonce);
+      setExpectedOrderId(result.orderId);
+      setStep('payment');
 
-      toast({
-        title: 'Order Submitted',
-        description: 'Your gold bar order is pending admin approval.',
-      });
+      const timeout = setTimeout(() => {
+        toast({
+          title: 'Payment Session Timeout',
+          description: 'The payment session has expired. Please try again.',
+          variant: 'destructive',
+        });
+        setStep('checkout');
+        setCheckoutUrl(null);
+        setExpectedNonce(null);
+        setExpectedOrderId(null);
+      }, 30 * 60 * 1000);
+      paymentTimeoutRef.current = timeout;
     } catch (error: any) {
       toast({
-        title: 'Order Failed',
-        description: error.message || 'Failed to submit gold bar order.',
+        title: 'Payment Error',
+        description: error.message || 'Failed to initiate payment. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsSubmitting(false);
+      setPaymentLoading(false);
     }
   };
 
   const handleClose = () => {
+    if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
+    setExpectedNonce(null);
+    setExpectedOrderId(null);
     if (step === 'submitted') {
       onSuccess();
     }
@@ -313,9 +394,9 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
             <div className="mx-auto w-16 h-16 bg-green-900/50 rounded-full flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-green-400" />
             </div>
-            <h3 className="text-xl font-semibold">Order Submitted Successfully!</h3>
+            <h3 className="text-xl font-semibold">Payment Successful!</h3>
             <p className="text-gray-400">
-              Your gold bar order is pending admin approval.
+              Your gold bar purchase has been completed via Wingold.
             </p>
             <div className="bg-[#1a1a1a] rounded-lg p-4 text-left space-y-2 max-w-md mx-auto">
               <p className="text-sm">
@@ -336,7 +417,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
               </p>
             </div>
             <p className="text-sm text-gray-500">
-              You will be notified when your order is approved and processed.
+              Your gold bars will be allocated to your secure vault storage.
             </p>
             <Button onClick={handleClose} className="mt-4 bg-amber-500 hover:bg-amber-600 text-black" data-testid="button-close-success">
               Close
@@ -434,20 +515,64 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                 Back to Cart
               </Button>
               <Button
-                onClick={handleSubmitOrder}
-                disabled={isSubmitting || (termsContent?.enabled && !termsAccepted)}
+                onClick={handleProceedToPayment}
+                disabled={paymentLoading || (termsContent?.enabled && !termsAccepted)}
                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                data-testid="button-confirm-order"
+                data-testid="button-proceed-payment"
               >
-                {isSubmitting ? (
+                {paymentLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
+                    Connecting to Wingold...
                   </>
                 ) : (
-                  'Place Order'
+                  'Proceed to Payment'
                 )}
               </Button>
+            </div>
+          </div>
+        ) : step === 'payment' && checkoutUrl ? (
+          <div className="bg-[#0a0a0a] text-white h-[80vh] flex flex-col">
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Package className="w-5 h-5 text-amber-400" />
+                Complete Payment via Wingold
+              </h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => { 
+                  if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
+                  setStep('checkout'); 
+                  setCheckoutUrl(null); 
+                  setExpectedNonce(null);
+                  setExpectedOrderId(null);
+                }} 
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Cancel
+              </Button>
+            </div>
+            <div className="flex-1 relative bg-[#111]">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto" />
+                  <p className="text-gray-500 text-sm">Loading Wingold checkout...</p>
+                </div>
+              </div>
+              <iframe
+                src={checkoutUrl}
+                className="w-full h-full border-0 relative z-10"
+                title="Wingold Checkout"
+                allow="payment"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />
+            </div>
+            <div className="p-3 border-t border-gray-800 text-center">
+              <p className="text-xs text-gray-500">
+                Secure payment processed by Wingold & Metals DMCC
+              </p>
             </div>
           </div>
         ) : step === 'cart' ? (
