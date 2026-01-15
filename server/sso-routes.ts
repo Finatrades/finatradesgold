@@ -357,11 +357,14 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
       where: eq(users.id, userId),
     });
 
+    console.log('[SSO Checkout] User lookup:', { userId, user: user ? { id: user.id, email: user.email, kycStatus: user.kycStatus } : null });
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
     if (user.kycStatus !== 'Approved') {
+      console.log('[SSO Checkout] KYC not approved:', { userId, kycStatus: user.kycStatus });
       return res.status(403).json({ error: "KYC approval required" });
     }
 
