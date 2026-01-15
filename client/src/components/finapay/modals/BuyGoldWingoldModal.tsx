@@ -74,6 +74,29 @@ interface ProductsResponse {
 
 const USD_TO_AED = 3.67;
 
+const GOLD_BAR_IMAGES: Record<string, string> = {
+  '1g': '/images/gold-bars/1g_gold_bar_product_photo.png',
+  '10g': '/images/gold-bars/10g_gold_bar_product_photo.png',
+  '100g': '/images/gold-bars/100g_gold_bar_product_photo.png',
+  '1kg': '/images/gold-bars/1kg_gold_bar_product_photo.png',
+};
+
+function getProductImage(product: WingoldProduct): string | null {
+  if (product.thumbnailUrl || product.imageUrl) {
+    return product.thumbnailUrl || product.imageUrl || null;
+  }
+  const weight = product.weight?.toLowerCase().replace(/\s+/g, '');
+  if (weight && GOLD_BAR_IMAGES[weight]) {
+    return GOLD_BAR_IMAGES[weight];
+  }
+  const grams = parseFloat(product.weightGrams);
+  if (grams === 1) return GOLD_BAR_IMAGES['1g'];
+  if (grams === 10) return GOLD_BAR_IMAGES['10g'];
+  if (grams === 100) return GOLD_BAR_IMAGES['100g'];
+  if (grams === 1000) return GOLD_BAR_IMAGES['1kg'];
+  return null;
+}
+
 const COMPLIANCE_NOTICE = `Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold.`;
 
 export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyGoldWingoldModalProps) {
@@ -794,13 +817,14 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredProducts.map((product: WingoldProduct) => {
                       const grams = parseFloat(product.weightGrams);
+                      const productImage = getProductImage(product);
                       return (
                         <Card key={product.productId} className="bg-[#1a1a1a] border-gray-800 overflow-hidden group" data-testid={`product-card-${product.weight}`}>
                           <div className="aspect-square relative bg-gradient-to-br from-gray-900 to-gray-800 p-4">
                             <div className="absolute inset-0 flex items-center justify-center">
-                              {(product.thumbnailUrl || product.imageUrl) ? (
+                              {productImage ? (
                                 <img 
-                                  src={product.thumbnailUrl || product.imageUrl} 
+                                  src={productImage} 
                                   alt={product.name}
                                   className="max-w-full max-h-full object-contain p-2 group-hover:scale-105 transition-transform"
                                   onError={(e) => {
@@ -810,16 +834,12 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
                                   }}
                                 />
                               ) : null}
-                              <div className={`flex flex-col items-center justify-center text-center p-4 ${(product.thumbnailUrl || product.imageUrl) ? 'hidden' : ''}`}>
-                                {/* Awaiting supplier image */}
+                              <div className={`flex flex-col items-center justify-center text-center p-4 ${productImage ? 'hidden' : ''}`}>
                                 <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-3">
                                   <span className="text-3xl font-bold text-amber-400">Au</span>
                                 </div>
                                 <div className="text-amber-400 font-bold text-lg">{product.weight}</div>
                                 <div className="text-gray-500 text-xs mt-1">LBMA Certified</div>
-                                <div className="text-gray-600 text-[10px] mt-2 px-4">
-                                  Image pending from Wingold
-                                </div>
                               </div>
                             </div>
                             {product.stock > 50 && (
