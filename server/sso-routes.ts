@@ -34,12 +34,12 @@ function getPrivateKey(): string {
     .trim();
   
   if (!formattedKey.includes('-----BEGIN')) {
-    formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+    formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`; // gitleaks:allow
   }
   
   if (!formattedKey.includes('\n')) {
-    const header = '-----BEGIN PRIVATE KEY-----';
-    const footer = '-----END PRIVATE KEY-----';
+    const header = '-----BEGIN PRIVATE KEY-----'; // gitleaks:allow
+    const footer = '-----END PRIVATE KEY-----'; // gitleaks:allow
     const keyContent = formattedKey.replace(header, '').replace(footer, '').trim();
     const chunks = keyContent.match(/.{1,64}/g) || [];
     formattedKey = `${header}\n${chunks.join('\n')}\n${footer}`;
