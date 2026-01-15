@@ -47,7 +47,8 @@ https://wingoldandmetals.com/checkout?token=<JWT_TOKEN>
   "kyc": {
     "status": "Approved",
     "isApproved": true,
-    "emailVerified": true
+    "emailVerified": true,
+    "tier": "tier_1_basic"
   },
   "permitted_delivery": ["SECURE_VAULT"],
   "source": "finatrades_redirect_checkout",
@@ -85,6 +86,7 @@ https://wingoldandmetals.com/checkout?token=<JWT_TOKEN>
 | `callbackUrl` | **URL to redirect back to after payment (use for callback redirect)** |
 | `email` | User's verified email |
 | `kyc.isApproved` | Whether KYC is verified |
+| `kyc.tier` | KYC verification tier (`tier_1_basic`, `tier_2_enhanced`, `tier_3_corporate`) |
 | `cart` | Pre-calculated cart with items, prices, and vault location |
 | `embedded` | Always `false` for redirect checkout |
 
@@ -534,6 +536,151 @@ If Finatrades returns a non-2xx response:
 1. Retry with exponential backoff (e.g., 1s, 2s, 4s, 8s...)
 2. Maximum 5 retries
 3. Log failures for manual review
+
+---
+
+## 7. Partner KYC API (Wingold → Finatrades)
+
+For compliance verification or enhanced due diligence, Wingold can fetch full KYC details via the Partner KYC API.
+
+### Endpoint
+
+```
+GET https://finatrades.com/api/partner/kyc/{finatradesId}
+Authorization: Bearer {WINGOLD_PARTNER_API_KEY}
+```
+
+### Request Headers
+
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer {WINGOLD_PARTNER_API_KEY}` |
+| `Content-Type` | `application/json` |
+
+### Response (Personal Account)
+
+```json
+{
+  "finatradesId": "f6a6e447-4770-4d09-9de3-da28fed67875",
+  "email": "user@example.com",
+  "accountType": "personal",
+  "kycStatus": "Approved",
+  "kycTier": "tier_2_enhanced",
+  "emailVerified": true,
+  "createdAt": "2026-01-10T08:00:00Z",
+  "personal": {
+    "fullName": "John Doe",
+    "dateOfBirth": "1990-05-15",
+    "nationality": "UAE",
+    "country": "AE",
+    "city": "Dubai",
+    "address": "123 Business Bay",
+    "postalCode": "00000",
+    "phone": "+971501234567",
+    "occupation": "Software Engineer",
+    "sourceOfFunds": "Employment",
+    "livenessVerified": true,
+    "livenessVerifiedAt": "2026-01-10T10:00:00Z",
+    "status": "Approved",
+    "documents": {
+      "hasIdFront": true,
+      "hasIdBack": true,
+      "hasPassport": true,
+      "hasAddressProof": true
+    },
+    "documentExpiry": {
+      "passportExpiryDate": "2030-05-15"
+    }
+  },
+  "verifiableCredential": {
+    "id": "vc-123456",
+    "statusEndpoint": "https://finatrades.com/api/vc/status/vc-123456",
+    "fetchEndpoint": "https://finatrades.com/api/vc/partner/credential/vc-123456"
+  }
+}
+```
+
+### Response (Business Account)
+
+```json
+{
+  "finatradesId": "b7a8c447-5880-5e19-0ef4-eb39gfe78986",
+  "email": "company@example.com",
+  "accountType": "business",
+  "kycStatus": "Approved",
+  "kycTier": "tier_3_corporate",
+  "emailVerified": true,
+  "createdAt": "2026-01-05T08:00:00Z",
+  "corporate": {
+    "companyName": "Acme Trading LLC",
+    "registrationNumber": "LLC-12345",
+    "incorporationDate": "2020-01-15",
+    "countryOfIncorporation": "UAE",
+    "companyType": "private",
+    "natureOfBusiness": "Gold Trading",
+    "numberOfEmployees": "10-50",
+    "headOfficeAddress": "Business Bay Tower, Dubai",
+    "telephoneNumber": "+97142345678",
+    "website": "https://acmetrading.com",
+    "emailAddress": "info@acmetrading.com",
+    "tradingContact": {
+      "name": "Jane Smith",
+      "email": "jane@acmetrading.com",
+      "phone": "+971501234567"
+    },
+    "financeContact": {
+      "name": "Bob Johnson",
+      "email": "bob@acmetrading.com",
+      "phone": "+971509876543"
+    },
+    "beneficialOwners": [
+      {
+        "name": "Owner 1",
+        "passportNumber": "A12345678",
+        "emailId": "owner1@example.com",
+        "shareholdingPercentage": 60
+      }
+    ],
+    "hasPepOwners": false,
+    "livenessVerified": true,
+    "status": "Approved",
+    "documents": {
+      "hasTradeLicense": true,
+      "hasCertificateOfIncorporation": true,
+      "hasShareholderList": true,
+      "hasUboPassports": true,
+      "hasBankReferenceLetter": false
+    },
+    "documentExpiry": {
+      "tradeLicenseExpiryDate": "2027-01-15",
+      "directorPassportExpiryDate": "2030-06-20"
+    }
+  }
+}
+```
+
+### KYC Tiers
+
+| Tier | Description | Limits |
+|------|-------------|--------|
+| `tier_1_basic` | Basic verification (email + phone) | Lower transaction limits |
+| `tier_2_enhanced` | Full ID + address verification | Standard limits |
+| `tier_3_corporate` | Corporate verification with UBO | Enterprise limits |
+
+### Error Responses
+
+| Code | Description |
+|------|-------------|
+| `401` | Invalid or missing API key |
+| `404` | User not found |
+| `500` | Server error |
+
+### Security Notes
+
+1. **API Key Protection**: Store `WINGOLD_PARTNER_API_KEY` securely - it grants read access to all user KYC data
+2. **Audit Logging**: All API calls are logged with finatradesId and timestamp
+3. **No Document URLs**: Actual document URLs are never exposed - only boolean flags for document presence
+4. **Approved Only**: kycTier only reflects approved KYC submissions
 
 ---
 
