@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, lt, and } from "drizzle-orm";
-import { users, wingoldVaultLocations, wingoldCheckoutSessions } from "@shared/schema";
+import { users, wingoldVaultLocations, wingoldCheckoutSessions, kycSubmissions, finatradesPersonalKyc, finatradesCorporateKyc } from "@shared/schema";
 import { storage } from "./storage";
 import { WingoldIntegrationService } from "./wingold-integration-service";
 
@@ -54,6 +54,22 @@ function ensureAuthenticated(req: Request, res: Response, next: any) {
     return res.status(401).json({ message: "Authentication required" });
   }
   next();
+}
+
+async function getUserKycTier(userId: string): Promise<string | null> {
+  try {
+    const [kycSubmission] = await db.select({ tier: kycSubmissions.tier })
+      .from(kycSubmissions)
+      .where(and(
+        eq(kycSubmissions.userId, userId),
+        eq(kycSubmissions.status, 'Approved')
+      ))
+      .limit(1);
+    return kycSubmission?.tier || null;
+  } catch (error) {
+    console.error("Error fetching KYC tier:", error);
+    return null;
+  }
 }
 
 async function getActiveVerifiableCredential(userId: number): Promise<{ credentialId: string } | null> {
@@ -108,6 +124,7 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
       },
       iss: "finatrades.com",
     };
@@ -176,6 +193,7 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
       },
       iss: "finatrades.com",
     };
@@ -232,6 +250,7 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
       },
       iss: "finatrades.com",
     };
@@ -371,6 +390,7 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
       },
       permitted_delivery: ['SECURE_VAULT'],
       source: 'finavault_buy_gold_bar',
@@ -524,6 +544,7 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     }
 
     const vcData = await getActiveVerifiableCredential(userId);
+    const kycTier = await getUserKycTier(String(user.id));
 
     const orderId = crypto.randomUUID();
     const nonce = crypto.randomBytes(16).toString('hex');
@@ -548,6 +569,7 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
+        tier: kycTier || 'tier_1_basic',
       },
       permitted_delivery: ['SECURE_VAULT'],
       source: 'finatrades_redirect_checkout',
@@ -767,6 +789,182 @@ router.get("/api/sso/wingold/allowed-origins", (req, res) => {
     origins: uniqueOrigins,
     primary: WINGOLD_URL
   });
+});
+
+/**
+ * Partner KYC API - Secure endpoint for Wingold to fetch full KYC details
+ * 
+ * Authentication: Bearer token (WINGOLD_PARTNER_API_KEY)
+ * 
+ * Use Cases:
+ * 1. Compliance verification - Wingold needs full KYC for regulatory requirements
+ * 2. Enhanced due diligence - When SSO token isn't sufficient
+ * 3. Order fulfillment - Verify user identity before physical delivery
+ */
+router.get("/api/partner/kyc/:finatradesId", async (req, res) => {
+  try {
+    // Verify partner API key
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid authorization header' });
+    }
+
+    const providedKey = authHeader.substring(7);
+    const expectedKey = process.env.WINGOLD_PARTNER_API_KEY;
+    
+    if (!expectedKey) {
+      console.error('[Partner KYC API] WINGOLD_PARTNER_API_KEY not configured');
+      return res.status(500).json({ error: 'Partner API not configured' });
+    }
+
+    // Constant-time comparison to prevent timing attacks
+    // First check lengths match to avoid timingSafeEqual length error
+    const providedBuffer = Buffer.from(providedKey);
+    const expectedBuffer = Buffer.from(expectedKey);
+    
+    if (providedBuffer.length !== expectedBuffer.length) {
+      console.warn('[Partner KYC API] Invalid API key attempt (length mismatch)');
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+    
+    const cryptoModule = await import('crypto');
+    if (!cryptoModule.timingSafeEqual(providedBuffer, expectedBuffer)) {
+      console.warn('[Partner KYC API] Invalid API key attempt');
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+
+    const { finatradesId } = req.params;
+    
+    // Fetch user
+    const [user] = await db.select().from(users).where(eq(users.id, finatradesId)).limit(1);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Fetch KYC tier using the helper (approved submissions only)
+    const kycTier = await getUserKycTier(finatradesId);
+
+    // Base response structure
+    const response: Record<string, any> = {
+      finatradesId: user.id,
+      email: user.email,
+      accountType: user.accountType,
+      kycStatus: user.kycStatus,
+      kycTier: kycTier || 'tier_1_basic',
+      emailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+    };
+
+    // Fetch detailed KYC data based on account type
+    // 'business' accounts use corporate KYC, 'personal' accounts use personal KYC
+    if (user.accountType === 'business') {
+      // Corporate KYC
+      const [corporateKyc] = await db.select()
+        .from(finatradesCorporateKyc)
+        .where(eq(finatradesCorporateKyc.userId, finatradesId))
+        .limit(1);
+
+      if (corporateKyc) {
+        response.corporate = {
+          companyName: corporateKyc.companyName,
+          registrationNumber: corporateKyc.registrationNumber,
+          incorporationDate: corporateKyc.incorporationDate,
+          countryOfIncorporation: corporateKyc.countryOfIncorporation,
+          companyType: corporateKyc.companyType,
+          natureOfBusiness: corporateKyc.natureOfBusiness,
+          numberOfEmployees: corporateKyc.numberOfEmployees,
+          headOfficeAddress: corporateKyc.headOfficeAddress,
+          telephoneNumber: corporateKyc.telephoneNumber,
+          website: corporateKyc.website,
+          emailAddress: corporateKyc.emailAddress,
+          tradingContact: {
+            name: corporateKyc.tradingContactName,
+            email: corporateKyc.tradingContactEmail,
+            phone: corporateKyc.tradingContactPhone,
+          },
+          financeContact: {
+            name: corporateKyc.financeContactName,
+            email: corporateKyc.financeContactEmail,
+            phone: corporateKyc.financeContactPhone,
+          },
+          beneficialOwners: corporateKyc.beneficialOwners,
+          hasPepOwners: corporateKyc.hasPepOwners,
+          pepDetails: corporateKyc.pepDetails,
+          livenessVerified: corporateKyc.livenessVerified,
+          livenessVerifiedAt: corporateKyc.livenessVerifiedAt,
+          status: corporateKyc.status,
+          documents: {
+            hasTradeicense: !!corporateKyc.documents?.tradeLicense?.url,
+            hasCertificateOfIncorporation: !!corporateKyc.documents?.certificateOfIncorporation?.url,
+            hasShareholderList: !!corporateKyc.documents?.shareholderList?.url,
+            hasUboPassports: !!corporateKyc.documents?.uboPassports?.url,
+            hasBankReferenceLetter: !!corporateKyc.documents?.bankReferenceLetter?.url,
+          },
+          documentExpiry: {
+            tradeLicenseExpiryDate: corporateKyc.tradeLicenseExpiryDate,
+            directorPassportExpiryDate: corporateKyc.directorPassportExpiryDate,
+          },
+        };
+      }
+    } else {
+      // Personal KYC
+      const [personalKyc] = await db.select()
+        .from(finatradesPersonalKyc)
+        .where(eq(finatradesPersonalKyc.userId, finatradesId))
+        .limit(1);
+
+      if (personalKyc) {
+        response.personal = {
+          fullName: personalKyc.fullName,
+          dateOfBirth: personalKyc.dateOfBirth,
+          nationality: personalKyc.nationality,
+          country: personalKyc.country,
+          city: personalKyc.city,
+          address: personalKyc.address,
+          postalCode: personalKyc.postalCode,
+          phone: personalKyc.phone,
+          occupation: personalKyc.occupation,
+          sourceOfFunds: personalKyc.sourceOfFunds,
+          livenessVerified: personalKyc.livenessVerified,
+          livenessVerifiedAt: personalKyc.livenessVerifiedAt,
+          status: personalKyc.status,
+          documents: {
+            hasIdFront: !!personalKyc.idFrontUrl,
+            hasIdBack: !!personalKyc.idBackUrl,
+            hasPassport: !!personalKyc.passportUrl,
+            hasAddressProof: !!personalKyc.addressProofUrl,
+          },
+          documentExpiry: {
+            passportExpiryDate: personalKyc.passportExpiryDate,
+          },
+        };
+      }
+    }
+
+    // Add Verifiable Credential reference if available
+    const vcData = await storage.getActiveUserCredential(user.id);
+    if (vcData && vcData.credentialId) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      response.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    // Log the access for audit trail
+    console.log('[Partner KYC API] Access granted:', { 
+      finatradesId, 
+      accountType: user.accountType,
+      kycStatus: user.kycStatus 
+    });
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('[Partner KYC API] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch KYC data' });
+  }
 });
 
 export function registerSsoRoutes(app: any) {
