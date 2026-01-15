@@ -244,15 +244,33 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
 });
 
 router.get("/api/sso/public-key", (req, res) => {
-  const publicKey = process.env.SSO_PUBLIC_KEY;
-  if (!publicKey) {
-    return res.status(500).json({ error: "Public key not configured" });
+  try {
+    // Try to derive public key from private key first
+    const privateKey = getPrivateKey();
+    const keyObject = crypto.createPrivateKey(privateKey);
+    const publicKey = crypto.createPublicKey(keyObject).export({ type: 'spki', format: 'pem' }) as string;
+    
+    res.json({ 
+      publicKey,
+      algorithm: "RS256",
+      issuer: "finatrades.com",
+      audience: "wingoldandmetals.com",
+      note: "Configure this public key in Wingold to verify SSO tokens from Finatrades"
+    });
+  } catch (error: any) {
+    console.error("Failed to derive public key:", error);
+    
+    // Fallback to SSO_PUBLIC_KEY env var if private key derivation fails
+    const publicKey = process.env.SSO_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "Could not derive public key. Check FINATRADES_PRIVATE_KEY configuration." });
+    }
+    res.json({ 
+      publicKey: publicKey.replace(/\\n/g, '\n'),
+      algorithm: "RS256",
+      issuer: "finatrades.com"
+    });
   }
-  res.json({ 
-    publicKey: publicKey.replace(/\\n/g, '\n'),
-    algorithm: "RS256",
-    issuer: "finatrades.com"
-  });
 });
 
 /**
@@ -490,6 +508,30 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     console.error("SSO embedded checkout error:", error);
     res.status(500).json({ error: "Failed to generate checkout URL" });
   }
+});
+
+// Returns allowed origins for postMessage validation
+router.get("/api/sso/wingold/allowed-origins", (req, res) => {
+  // Build the allowed origins list from configured WINGOLD_URL and additional known domains
+  const origins = [
+    WINGOLD_URL,
+    'https://wingoldandmetals.com',
+    'https://www.wingoldandmetals.com',
+    'https://wingoldandmetals.replit.app',
+  ];
+  
+  // Add any additional origins from environment (comma-separated)
+  const additionalOrigins = process.env.WINGOLD_ALLOWED_ORIGINS;
+  if (additionalOrigins) {
+    origins.push(...additionalOrigins.split(',').map(o => o.trim()).filter(Boolean));
+  }
+  
+  // Remove duplicates and return
+  const uniqueOrigins = Array.from(new Set(origins));
+  res.json({ 
+    origins: uniqueOrigins,
+    primary: WINGOLD_URL
+  });
 });
 
 export function registerSsoRoutes(app: any) {

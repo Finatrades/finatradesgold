@@ -152,15 +152,34 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
   const [expectedOrderId, setExpectedOrderId] = useState<string | null>(null);
   const paymentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch allowed origins from server (configurable via env)
+  const [allowedOrigins, setAllowedOrigins] = useState<string[]>([
+    'https://wingoldandmetals--imcharanpratap.replit.app',
+    'https://wingoldandmetals.replit.app', 
+    'https://wingoldandmetals.com',
+    'https://www.wingoldandmetals.com',
+  ]);
+
   useEffect(() => {
-    const ALLOWED_ORIGINS = [
-      'https://wingoldandmetals--imcharanpratap.replit.app',
-      'https://wingoldandmetals.replit.app',
-      'https://wingoldandmetals.com',
-    ];
+    // Fetch server-configured allowed origins
+    fetch('/api/sso/wingold/allowed-origins')
+      .then(res => res.json())
+      .then(data => {
+        if (data.origins && Array.isArray(data.origins)) {
+          setAllowedOrigins(data.origins);
+        }
+      })
+      .catch(err => console.warn('[BuyGold] Failed to fetch allowed origins:', err));
+  }, []);
+
+  useEffect(() => {
+    // Use server-provided allowlist for strict origin validation
+    const isAllowedOrigin = (origin: string) => {
+      return allowedOrigins.includes(origin);
+    };
 
     const handleMessage = (event: MessageEvent) => {
-      if (!ALLOWED_ORIGINS.includes(event.origin)) {
+      if (!isAllowedOrigin(event.origin)) {
         console.warn('[BuyGold] Rejected message from unknown origin:', event.origin);
         return;
       }
@@ -216,7 +235,7 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [toast, expectedNonce, expectedOrderId]);
+  }, [toast, expectedNonce, expectedOrderId, allowedOrigins]);
 
   useEffect(() => {
     if (vaultLocationsData?.locations?.length && !selectedVaultId) {
