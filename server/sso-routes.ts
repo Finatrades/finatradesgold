@@ -14,8 +14,8 @@ import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { users, wingoldVaultLocations } from "@shared/schema";
+import { eq, lt, and } from "drizzle-orm";
+import { users, wingoldVaultLocations, wingoldCheckoutSessions } from "@shared/schema";
 import { storage } from "./storage";
 
 const router = Router();
@@ -405,29 +405,21 @@ async function getServerGoldPrice(): Promise<number> {
   return 148;
 }
 
-// In-memory store for pending checkout orders (in production, use Redis or database)
-const pendingCheckoutOrders = new Map<string, {
-  userId: string;
-  orderId: string;
-  nonce: string;
-  totalGrams: number;
-  totalUsd: number;
-  totalAed: number;
-  items: any[];
-  vaultLocationId: string | null;
-  createdAt: Date;
-  status: 'pending' | 'completed' | 'cancelled' | 'failed';
-}>();
-
-// Clean up old pending orders every 30 minutes
-setInterval(() => {
-  const now = Date.now();
-  const THIRTY_MINUTES = 30 * 60 * 1000;
-  const entries = Array.from(pendingCheckoutOrders.entries());
-  for (const [orderId, order] of entries) {
-    if (now - order.createdAt.getTime() > THIRTY_MINUTES) {
-      pendingCheckoutOrders.delete(orderId);
-    }
+// Database-backed checkout sessions (production-ready)
+// Clean up expired sessions every 30 minutes
+setInterval(async () => {
+  try {
+    const now = new Date();
+    await db.delete(wingoldCheckoutSessions)
+      .where(
+        and(
+          eq(wingoldCheckoutSessions.status, 'pending'),
+          lt(wingoldCheckoutSessions.expiresAt, now)
+        )
+      );
+    console.log('[SSO Cleanup] Cleaned up expired checkout sessions');
+  } catch (error) {
+    console.error('[SSO Cleanup] Error:', error);
   }
 }, 30 * 60 * 1000);
 
@@ -571,18 +563,19 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
       expiresIn: "30m",
     });
 
-    // Store the pending order for verification on callback
-    pendingCheckoutOrders.set(orderId, {
+    // Store the pending order in database for verification on callback (production-ready)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    await db.insert(wingoldCheckoutSessions).values({
+      id: orderId,
       userId: String(user.id),
-      orderId,
       nonce,
-      totalGrams: serverTotalGrams,
-      totalUsd: serverTotalUsd,
-      totalAed: serverTotalAed,
+      totalGrams: String(serverTotalGrams),
+      totalUsd: String(serverTotalUsd),
+      totalAed: String(serverTotalAed),
       items: validatedItems,
       vaultLocationId: validatedVaultId,
-      createdAt: new Date(),
       status: 'pending',
+      expiresAt,
     });
 
     // Use redirect checkout URL (full page, not embedded)
@@ -622,10 +615,21 @@ router.get("/api/sso/wingold/callback", async (req, res) => {
       return res.redirect('/dashboard?error=missing_order_id');
     }
 
-    const pendingOrder = pendingCheckoutOrders.get(orderId);
+    // Fetch order from database
+    const [pendingOrder] = await db.select()
+      .from(wingoldCheckoutSessions)
+      .where(eq(wingoldCheckoutSessions.id, orderId))
+      .limit(1);
+      
     if (!pendingOrder) {
       console.log('[Wingold Callback] Order not found:', orderId);
       return res.redirect('/dashboard?error=order_not_found');
+    }
+
+    // Check if order expired
+    if (new Date() > pendingOrder.expiresAt) {
+      console.log('[Wingold Callback] Order expired:', orderId);
+      return res.redirect('/dashboard?error=order_expired');
     }
 
     // Verify the signature from Wingold (HMAC-SHA256 with webhook secret)
@@ -642,27 +646,43 @@ router.get("/api/sso/wingold/callback", async (req, res) => {
       }
     }
 
-    // Update order status
+    const totalGrams = parseFloat(pendingOrder.totalGrams);
+    const totalUsd = parseFloat(pendingOrder.totalUsd);
+
+    // Update order status in database
     if (status === 'success') {
-      pendingOrder.status = 'completed';
+      await db.update(wingoldCheckoutSessions)
+        .set({ 
+          status: 'completed', 
+          wingoldReferenceNumber: String(referenceNumber || ''),
+          completedAt: new Date() 
+        })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
       console.log('[Wingold Callback] Payment successful:', { orderId, referenceNumber });
       
       // Redirect to success page with order details
       const successParams = new URLSearchParams({
         orderId: orderId,
         referenceNumber: String(referenceNumber || ''),
-        grams: String(pendingOrder.totalGrams),
-        usd: String(pendingOrder.totalUsd.toFixed(2)),
+        grams: String(totalGrams),
+        usd: totalUsd.toFixed(2),
       });
       return res.redirect(`/wingold/callback?status=success&${successParams.toString()}`);
       
     } else if (status === 'cancelled') {
-      pendingOrder.status = 'cancelled';
+      await db.update(wingoldCheckoutSessions)
+        .set({ status: 'cancelled' })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
       console.log('[Wingold Callback] Payment cancelled:', { orderId });
       return res.redirect('/wingold/callback?status=cancelled');
       
     } else {
-      pendingOrder.status = 'failed';
+      await db.update(wingoldCheckoutSessions)
+        .set({ status: 'failed', errorMessage: String(errorMsg || 'Payment failed') })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
       console.log('[Wingold Callback] Payment failed:', { orderId, error: errorMsg });
       return res.redirect(`/wingold/callback?status=failed&error=${encodeURIComponent(String(errorMsg || 'Payment failed'))}`);
     }
@@ -681,7 +701,11 @@ router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, r
     const session = (req as any).session;
     const userId = String(session.userId);
 
-    const order = pendingCheckoutOrders.get(orderId);
+    const [order] = await db.select()
+      .from(wingoldCheckoutSessions)
+      .where(eq(wingoldCheckoutSessions.id, orderId))
+      .limit(1);
+      
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
@@ -692,12 +716,13 @@ router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, r
     }
 
     res.json({
-      orderId: order.orderId,
+      orderId: order.id,
       status: order.status,
-      totalGrams: order.totalGrams,
-      totalUsd: order.totalUsd,
-      totalAed: order.totalAed,
+      totalGrams: parseFloat(order.totalGrams),
+      totalUsd: parseFloat(order.totalUsd),
+      totalAed: parseFloat(order.totalAed),
       createdAt: order.createdAt,
+      wingoldReferenceNumber: order.wingoldReferenceNumber,
     });
   } catch (error: any) {
     console.error('[Order Status] Error:', error);

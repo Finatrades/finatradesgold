@@ -4024,6 +4024,43 @@ export const insertWingoldReconciliationSchema = createInsertSchema(wingoldRecon
 export type InsertWingoldReconciliation = z.infer<typeof insertWingoldReconciliationSchema>;
 export type WingoldReconciliation = typeof wingoldReconciliations.$inferSelect;
 
+// Wingold checkout sessions - for redirect checkout flow (production-ready)
+export const wingoldCheckoutSessionStatusEnum = pgEnum('wingold_checkout_session_status', [
+  'pending', 'completed', 'cancelled', 'failed', 'expired'
+]);
+
+export const wingoldCheckoutSessions = pgTable("wingold_checkout_sessions", {
+  id: varchar("id", { length: 255 }).primaryKey(), // orderId from JWT
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  nonce: varchar("nonce", { length: 64 }).notNull(),
+  
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  totalUsd: decimal("total_usd", { precision: 18, scale: 2 }).notNull(),
+  totalAed: decimal("total_aed", { precision: 18, scale: 2 }).notNull(),
+  
+  items: json("items").$type<Array<{
+    barSize: string;
+    grams: number;
+    quantity: number;
+    priceUsd: number;
+    priceAed: number;
+  }>>().notNull(),
+  
+  vaultLocationId: varchar("vault_location_id", { length: 255 }),
+  
+  status: wingoldCheckoutSessionStatusEnum("status").notNull().default('pending'),
+  wingoldReferenceNumber: varchar("wingold_reference_number", { length: 100 }),
+  errorMessage: text("error_message"),
+  
+  expiresAt: timestamp("expires_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldCheckoutSessionSchema = createInsertSchema(wingoldCheckoutSessions).omit({ createdAt: true });
+export type InsertWingoldCheckoutSession = z.infer<typeof insertWingoldCheckoutSessionSchema>;
+export type WingoldCheckoutSession = typeof wingoldCheckoutSessions.$inferSelect;
+
 // Wingold products catalog - synced from B2B API
 export const wingoldProducts = pgTable("wingold_products", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
