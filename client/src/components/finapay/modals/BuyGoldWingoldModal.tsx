@@ -172,6 +172,20 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       .catch(err => console.warn('[BuyGold] Failed to fetch allowed origins:', err));
   }, []);
 
+  // Dynamically add the checkoutUrl origin to allowed list when checkout starts
+  useEffect(() => {
+    if (checkoutUrl) {
+      try {
+        const url = new URL(checkoutUrl);
+        if (!allowedOrigins.includes(url.origin)) {
+          setAllowedOrigins(prev => [...prev, url.origin]);
+        }
+      } catch (e) {
+        console.warn('[BuyGold] Failed to parse checkout URL origin');
+      }
+    }
+  }, [checkoutUrl, allowedOrigins]);
+
   useEffect(() => {
     // Use server-provided allowlist for strict origin validation
     const isAllowedOrigin = (origin: string) => {
