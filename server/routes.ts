@@ -98,6 +98,7 @@ import { registerSsoRoutes } from "./sso-routes";
 import vcRoutes from "./vc-routes";
 import wingoldRoutes from "./wingold-routes";
 import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
+import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
 import unifiedTallyRoutes from "./unified-tally-routes";
@@ -607,6 +608,8 @@ export async function registerRoutes(
   app.use("/api", vcRoutes);
   // Register Wingold Partner API routes for user data sharing
   registerWingoldPartnerRoutes(app);
+  // Register Wingold Admin Approval Webhook routes
+  registerWingoldWebhookRoutes(app);
   // Register Wingold B2B integration routes
   app.use("/api/wingold", wingoldRoutes);
   // Register Admin Vault Exposure routes

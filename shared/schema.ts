@@ -4061,6 +4061,78 @@ export const insertWingoldCheckoutSessionSchema = createInsertSchema(wingoldChec
 export type InsertWingoldCheckoutSession = z.infer<typeof insertWingoldCheckoutSessionSchema>;
 export type WingoldCheckoutSession = typeof wingoldCheckoutSessions.$inferSelect;
 
+// Wingold Order Events - for webhook idempotency and tracking
+export const wingoldPaymentMethodEnum = pgEnum('wingold_payment_method', ['CARD', 'BANK', 'CRYPTO']);
+export const wingoldPaymentStatusEnum = pgEnum('wingold_payment_status', ['PENDING', 'PAID', 'VERIFIED', 'FAILED', 'REFUNDED']);
+
+export const wingoldOrderEvents = pgTable("wingold_order_events", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id", { length: 255 }).notNull().unique(), // For idempotency
+  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  eventType: varchar("event_type", { length: 100 }).notNull(), // WINGOLD_ORDER_APPROVED, etc.
+  
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('AED'),
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  paymentMethod: wingoldPaymentMethodEnum("payment_method").notNull(),
+  paymentStatus: wingoldPaymentStatusEnum("payment_status").notNull(),
+  
+  bankReference: varchar("bank_reference", { length: 255 }),
+  cryptoTxHash: varchar("crypto_tx_hash", { length: 255 }),
+  gatewayRef: varchar("gateway_ref", { length: 255 }),
+  
+  goldItems: json("gold_items").$type<Array<{
+    sku: string;
+    weightGrams: number;
+    purity: string;
+    quantity: number;
+  }>>(),
+  
+  payloadJson: json("payload_json"), // Full webhook payload for audit
+  
+  processedAt: timestamp("processed_at"),
+  walletCredited: boolean("wallet_credited").notNull().default(false),
+  creditedGrams: decimal("credited_grams", { precision: 18, scale: 6 }),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWingoldOrderEventSchema = createInsertSchema(wingoldOrderEvents).omit({ id: true, createdAt: true });
+export type InsertWingoldOrderEvent = z.infer<typeof insertWingoldOrderEventSchema>;
+export type WingoldOrderEvent = typeof wingoldOrderEvents.$inferSelect;
+
+// External Purchase References - for CARD payments (no wallet credit, reference only)
+export const externalPurchaseRefs = pgTable("external_purchase_refs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).notNull(),
+  
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull().default('CARD'),
+  gatewayRef: varchar("gateway_ref", { length: 255 }),
+  
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('AED'),
+  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  goldItems: json("gold_items").$type<Array<{
+    sku: string;
+    weightGrams: number;
+    purity: string;
+    quantity: number;
+  }>>(),
+  
+  note: text("note").default('External purchase via Wingold - Card'),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertExternalPurchaseRefSchema = createInsertSchema(externalPurchaseRefs).omit({ id: true, createdAt: true });
+export type InsertExternalPurchaseRef = z.infer<typeof insertExternalPurchaseRefSchema>;
+export type ExternalPurchaseRef = typeof externalPurchaseRefs.$inferSelect;
+
 // Wingold products catalog - synced from B2B API
 export const wingoldProducts = pgTable("wingold_products", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
