@@ -8,7 +8,7 @@ import {
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
-const WINGOLD_API_URL = process.env.WINGOLD_API_URL || 'https://wingoldandmetals--imcharanpratap.replit.app';
+const WINGOLD_API_URL = process.env.WINGOLD_URL || process.env.WINGOLD_API_URL || 'https://wingoldandmetals--imcharanpratap.replit.app';
 const WINGOLD_WEBHOOK_SECRET = process.env.WINGOLD_WEBHOOK_SECRET;
 
 interface WingoldOrderRequest {
