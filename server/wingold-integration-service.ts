@@ -3,7 +3,7 @@ import {
   wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, 
   wingoldVaultLocations, wingoldReconciliations,
   vaultHoldings, transactions, wallets, users, certificates,
-  unifiedTallyTransactions, unifiedTallyEvents
+  unifiedTallyTransactions, unifiedTallyEvents, kycSubmissions
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -879,5 +879,150 @@ export class WingoldIntegrationService {
       .from(wingoldPurchaseOrders)
       .where(eq(wingoldPurchaseOrders.userId, userId))
       .orderBy(sql`created_at DESC`);
+  }
+
+  /**
+   * Sync KYC data from Finatrades to Wingold
+   * Called when:
+   * 1. KYC is approved on Finatrades
+   * 2. User initiates SSO to Wingold (pre-sync)
+   * 3. Manual admin trigger
+   */
+  static async syncKycToWingold(userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      if (user.kycStatus !== 'Approved') {
+        return { success: false, message: 'KYC not approved, nothing to sync' };
+      }
+
+      // Fetch KYC submission data for detailed info
+      const [kycData] = await db.select()
+        .from(kycSubmissions)
+        .where(eq(kycSubmissions.userId, userId))
+        .orderBy(sql`created_at DESC`)
+        .limit(1);
+
+      // Build KYC payload based on account type
+      const kycPayload: Record<string, any> = {
+        finatradesId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        accountType: user.accountType || 'personal',
+        kycStatus: 'approved',
+      };
+
+      // Add personal or business KYC data
+      if (user.accountType === 'business') {
+        kycPayload.business = {
+          companyName: user.companyName || kycData?.companyName || `${user.firstName} ${user.lastName}`,
+          registrationNumber: user.registrationNumber || kycData?.registrationNumber || '',
+          country: user.country || kycData?.country || '',
+          address: user.address || kycData?.address || '',
+          city: kycData?.city || '',
+          postalCode: kycData?.postalCode || '',
+          representativeName: kycData?.fullName || `${user.firstName} ${user.lastName}`,
+          representativeRole: 'Director',
+        };
+      } else {
+        kycPayload.personal = {
+          fullName: kycData?.fullName || `${user.firstName} ${user.lastName}`,
+          dateOfBirth: kycData?.dateOfBirth || null,
+          nationality: kycData?.nationality || user.country || '',
+          address: kycData?.address || user.address || '',
+          city: kycData?.city || '',
+          postalCode: kycData?.postalCode || '',
+          country: kycData?.country || user.country || '',
+        };
+      }
+
+      // Generate HMAC signature
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const payloadString = JSON.stringify(kycPayload);
+      const webhookSecret = process.env.WINGOLD_WEBHOOK_SECRET;
+      
+      if (!webhookSecret) {
+        console.error('[Wingold KYC Sync] No WINGOLD_WEBHOOK_SECRET configured');
+        return { success: false, message: 'Webhook secret not configured' };
+      }
+
+      const signature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(`${timestamp}.${payloadString}`)
+        .digest('hex');
+
+      const signatureHeader = `t=${timestamp},v1=${signature}`;
+
+      // Send to Wingold
+      const response = await fetch(`${WINGOLD_API_URL}/api/finatrades/kyc/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Finatrades-Signature': signatureHeader,
+        },
+        body: payloadString,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Wingold KYC Sync] Failed:', response.status, errorText);
+        return { success: false, message: `Wingold rejected: ${response.status}` };
+      }
+
+      const result = await response.json() as { success: boolean; message?: string; wingoldUserId?: string };
+      console.log('[Wingold KYC Sync] Success:', result);
+
+      return { 
+        success: true, 
+        message: `KYC synced to Wingold. User ID: ${result.wingoldUserId || 'linked'}` 
+      };
+
+    } catch (error) {
+      console.error('[Wingold KYC Sync] Error:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Check KYC status on Wingold for a Finatrades user
+   */
+  static async checkWingoldKycStatus(finatradesId: string): Promise<{ 
+    exists: boolean; 
+    kycStatus?: string; 
+    wingoldUserId?: string 
+  }> {
+    try {
+      const response = await fetch(`${WINGOLD_API_URL}/api/finatrades/kyc/status/${finatradesId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 404) {
+        return { exists: false };
+      }
+
+      if (!response.ok) {
+        console.error('[Wingold KYC Status] Failed:', response.status);
+        return { exists: false };
+      }
+
+      const result = await response.json() as { 
+        exists: boolean; 
+        kycStatus?: string; 
+        wingoldUserId?: string 
+      };
+      return result;
+
+    } catch (error) {
+      console.error('[Wingold KYC Status] Error:', error);
+      return { exists: false };
+    }
   }
 }

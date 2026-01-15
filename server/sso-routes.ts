@@ -17,6 +17,7 @@ import { db } from "./db";
 import { eq, lt, and } from "drizzle-orm";
 import { users, wingoldVaultLocations, wingoldCheckoutSessions } from "@shared/schema";
 import { storage } from "./storage";
+import { WingoldIntegrationService } from "./wingold-integration-service";
 
 const router = Router();
 
@@ -83,6 +84,13 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Pre-sync KYC to Wingold if user is approved (non-blocking)
+    if (user.kycStatus === 'Approved') {
+      WingoldIntegrationService.syncKycToWingold(userId)
+        .then(result => console.log('[SSO] KYC sync result:', result))
+        .catch(err => console.error('[SSO] KYC sync error:', err));
+    }
+
     const vcData = await getActiveVerifiableCredential(userId);
 
     const payload: Record<string, any> = {
@@ -142,6 +150,13 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
 
     if (!user) {
       return res.redirect("/login?error=user_not_found");
+    }
+
+    // Pre-sync KYC to Wingold if user is approved (non-blocking)
+    if (user.kycStatus === 'Approved') {
+      WingoldIntegrationService.syncKycToWingold(userId)
+        .then(result => console.log('[SSO] KYC sync result:', result))
+        .catch(err => console.error('[SSO] KYC sync error:', err));
     }
 
     const vcData = await getActiveVerifiableCredential(userId);
