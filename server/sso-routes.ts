@@ -57,8 +57,8 @@ function ensureAuthenticated(req: Request, res: Response, next: any) {
 
 async function getActiveVerifiableCredential(userId: number): Promise<{ credentialId: string } | null> {
   try {
-    const credential = await storage.getActiveCredentialByUser(userId);
-    if (credential && credential.credentialJwt) {
+    const credential = await storage.getActiveUserCredential(String(userId));
+    if (credential && credential.vcJwt) {
       return {
         credentialId: credential.credentialId,
       };
