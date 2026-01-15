@@ -182,6 +182,7 @@ import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WingoldOrders from "@/pages/admin/WingoldOrders";
+import WingoldCallback from "@/pages/WingoldCallback";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import FinatradesLanding from "@/pages/finatrades/FinatradesLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
@@ -221,6 +222,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/verify-certificate" component={VerifyCertificate} />
       <Route path="/kyc" component={KYC} />
+      <Route path="/wingold/callback" component={WingoldCallback} />
       
       {/* User Dashboard Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />

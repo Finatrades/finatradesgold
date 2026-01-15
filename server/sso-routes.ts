@@ -405,9 +405,36 @@ async function getServerGoldPrice(): Promise<number> {
   return 148;
 }
 
+// In-memory store for pending checkout orders (in production, use Redis or database)
+const pendingCheckoutOrders = new Map<string, {
+  userId: string;
+  orderId: string;
+  nonce: string;
+  totalGrams: number;
+  totalUsd: number;
+  totalAed: number;
+  items: any[];
+  vaultLocationId: string | null;
+  createdAt: Date;
+  status: 'pending' | 'completed' | 'cancelled' | 'failed';
+}>();
+
+// Clean up old pending orders every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  const THIRTY_MINUTES = 30 * 60 * 1000;
+  const entries = Array.from(pendingCheckoutOrders.entries());
+  for (const [orderId, order] of entries) {
+    if (now - order.createdAt.getTime() > THIRTY_MINUTES) {
+      pendingCheckoutOrders.delete(orderId);
+    }
+  }
+}, 30 * 60 * 1000);
+
 /**
- * SSO endpoint for embedded Wingold checkout with cart data
- * Returns a URL that can be loaded in an iframe for payment processing
+ * SSO endpoint for Wingold checkout with redirect flow
+ * Returns a URL that redirects user to Wingold for payment
+ * After payment, Wingold redirects back to our callback URL
  * Server-side validates and recalculates all prices for security
  */
 router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) => {
@@ -494,6 +521,10 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     const orderId = crypto.randomUUID();
     const nonce = crypto.randomBytes(16).toString('hex');
 
+    // Build the callback URL for redirect flow
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const callbackUrl = `${baseUrl}/wingold/callback`;
+
     const payload: Record<string, any> = {
       sub: String(user.id),
       jti: orderId,
@@ -512,8 +543,9 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
         emailVerified: user.isEmailVerified,
       },
       permitted_delivery: ['SECURE_VAULT'],
-      source: 'finatrades_embedded_checkout',
-      embedded: true,
+      source: 'finatrades_redirect_checkout',
+      embedded: false,
+      callbackUrl,
       iss: "finatrades.com",
       cart: {
         items: validatedItems,
@@ -527,7 +559,6 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     };
 
     if (vcData) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
       payload.verifiableCredential = {
         id: vcData.credentialId,
         statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
@@ -540,13 +571,31 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
       expiresIn: "30m",
     });
 
-    const checkoutUrl = `${WINGOLD_URL}/embedded-checkout?token=${encodeURIComponent(token)}`;
+    // Store the pending order for verification on callback
+    pendingCheckoutOrders.set(orderId, {
+      userId: String(user.id),
+      orderId,
+      nonce,
+      totalGrams: serverTotalGrams,
+      totalUsd: serverTotalUsd,
+      totalAed: serverTotalAed,
+      items: validatedItems,
+      vaultLocationId: validatedVaultId,
+      createdAt: new Date(),
+      status: 'pending',
+    });
+
+    // Use redirect checkout URL (full page, not embedded)
+    const checkoutUrl = `${WINGOLD_URL}/checkout?token=${encodeURIComponent(token)}`;
+
+    console.log('[SSO Checkout] Generated redirect checkout:', { orderId, checkoutUrl: checkoutUrl.substring(0, 100) + '...' });
 
     res.json({ 
       checkoutUrl,
       expiresIn: 1800,
       orderId,
       nonce,
+      callbackUrl,
       serverCalculatedTotal: {
         grams: serverTotalGrams,
         usd: serverTotalUsd,
@@ -554,8 +603,105 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
       },
     });
   } catch (error: any) {
-    console.error("SSO embedded checkout error:", error);
+    console.error("SSO redirect checkout error:", error);
     res.status(500).json({ error: "Failed to generate checkout URL" });
+  }
+});
+
+/**
+ * Callback endpoint for Wingold to redirect back after payment
+ * Verifies the order and updates status
+ */
+router.get("/api/sso/wingold/callback", async (req, res) => {
+  try {
+    const { orderId, status, signature, referenceNumber, error: errorMsg } = req.query;
+
+    console.log('[Wingold Callback] Received:', { orderId, status, referenceNumber });
+
+    if (!orderId || typeof orderId !== 'string') {
+      return res.redirect('/dashboard?error=missing_order_id');
+    }
+
+    const pendingOrder = pendingCheckoutOrders.get(orderId);
+    if (!pendingOrder) {
+      console.log('[Wingold Callback] Order not found:', orderId);
+      return res.redirect('/dashboard?error=order_not_found');
+    }
+
+    // Verify the signature from Wingold (HMAC-SHA256 with webhook secret)
+    const webhookSecret = process.env.WINGOLD_WEBHOOK_SECRET;
+    if (webhookSecret && signature) {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(`${orderId}:${status}:${pendingOrder.nonce}`)
+        .digest('hex');
+      
+      if (signature !== expectedSignature) {
+        console.log('[Wingold Callback] Signature mismatch:', { expected: expectedSignature, received: signature });
+        return res.redirect('/dashboard?error=invalid_signature');
+      }
+    }
+
+    // Update order status
+    if (status === 'success') {
+      pendingOrder.status = 'completed';
+      console.log('[Wingold Callback] Payment successful:', { orderId, referenceNumber });
+      
+      // Redirect to success page with order details
+      const successParams = new URLSearchParams({
+        orderId: orderId,
+        referenceNumber: String(referenceNumber || ''),
+        grams: String(pendingOrder.totalGrams),
+        usd: String(pendingOrder.totalUsd.toFixed(2)),
+      });
+      return res.redirect(`/wingold/callback?status=success&${successParams.toString()}`);
+      
+    } else if (status === 'cancelled') {
+      pendingOrder.status = 'cancelled';
+      console.log('[Wingold Callback] Payment cancelled:', { orderId });
+      return res.redirect('/wingold/callback?status=cancelled');
+      
+    } else {
+      pendingOrder.status = 'failed';
+      console.log('[Wingold Callback] Payment failed:', { orderId, error: errorMsg });
+      return res.redirect(`/wingold/callback?status=failed&error=${encodeURIComponent(String(errorMsg || 'Payment failed'))}`);
+    }
+  } catch (error: any) {
+    console.error('[Wingold Callback] Error:', error);
+    return res.redirect('/dashboard?error=callback_error');
+  }
+});
+
+/**
+ * API endpoint for checking order status (for frontend polling)
+ */
+router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const session = (req as any).session;
+    const userId = String(session.userId);
+
+    const order = pendingCheckoutOrders.get(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Verify the order belongs to this user
+    if (order.userId !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({
+      orderId: order.orderId,
+      status: order.status,
+      totalGrams: order.totalGrams,
+      totalUsd: order.totalUsd,
+      totalAed: order.totalAed,
+      createdAt: order.createdAt,
+    });
+  } catch (error: any) {
+    console.error('[Order Status] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch order status' });
   }
 });
 

@@ -360,30 +360,24 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
       }
 
       const result = await response.json();
-      setCheckoutUrl(result.checkoutUrl);
-      setExpectedNonce(result.nonce);
-      setExpectedOrderId(result.orderId);
-      setStep('payment');
+      
+      // Store order info in session storage for tracking
+      sessionStorage.setItem('wingold_order', JSON.stringify({
+        orderId: result.orderId,
+        nonce: result.nonce,
+        totalGrams: result.serverCalculatedTotal.grams,
+        totalUsd: result.serverCalculatedTotal.usd,
+      }));
 
-      const timeout = setTimeout(() => {
-        toast({
-          title: 'Payment Session Timeout',
-          description: 'The payment session has expired. Please try again.',
-          variant: 'destructive',
-        });
-        setStep('checkout');
-        setCheckoutUrl(null);
-        setExpectedNonce(null);
-        setExpectedOrderId(null);
-      }, 30 * 60 * 1000);
-      paymentTimeoutRef.current = timeout;
+      // Redirect to Wingold checkout (full page redirect, not iframe)
+      window.location.href = result.checkoutUrl;
+      
     } catch (error: any) {
       toast({
         title: 'Payment Error',
         description: error.message || 'Failed to initiate payment. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setPaymentLoading(false);
     }
   };
@@ -564,48 +558,13 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
               </Button>
             </div>
           </div>
-        ) : step === 'payment' && checkoutUrl ? (
-          <div className="bg-[#0a0a0a] text-white h-[80vh] flex flex-col">
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Package className="w-5 h-5 text-amber-400" />
-                Complete Payment via Wingold
-              </h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => { 
-                  if (paymentTimeoutRef.current) clearTimeout(paymentTimeoutRef.current);
-                  setStep('checkout'); 
-                  setCheckoutUrl(null); 
-                  setExpectedNonce(null);
-                  setExpectedOrderId(null);
-                }} 
-                className="text-gray-400 hover:text-white"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Cancel
-              </Button>
-            </div>
-            <div className="flex-1 relative bg-[#111]">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto" />
-                  <p className="text-gray-500 text-sm">Loading Wingold checkout...</p>
-                </div>
-              </div>
-              <iframe
-                src={checkoutUrl}
-                className="w-full h-full border-0 relative z-10"
-                title="Wingold Checkout"
-                allow="payment"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              />
-            </div>
-            <div className="p-3 border-t border-gray-800 text-center">
-              <p className="text-xs text-gray-500">
-                Secure payment processed by Wingold & Metals DMCC
-              </p>
+        ) : step === 'payment' ? (
+          <div className="bg-[#0a0a0a] text-white h-[40vh] flex flex-col items-center justify-center">
+            <div className="text-center space-y-4">
+              <Loader2 className="w-12 h-12 animate-spin text-amber-400 mx-auto" />
+              <h3 className="text-lg font-semibold">Redirecting to Wingold...</h3>
+              <p className="text-gray-500 text-sm">You will be redirected to complete your payment securely.</p>
+              <p className="text-xs text-gray-600">If you are not redirected automatically, please wait a moment.</p>
             </div>
           </div>
         ) : step === 'cart' ? (
