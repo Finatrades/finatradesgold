@@ -53,7 +53,7 @@ NGENIUS_OUTLET_REF = "e1dd74c3-7c14-46f0-9875-53ff4a517617"
 AWS_RDS_RELAXED_SSL = "true"
 FINATRADES_API_KEY = "ft-test-api-key-2025"
 WINGOLD_WEBHOOK_SECRET = "wg-webhook-secret-2025"
-WINGOLD_ALLOWED_ORIGINS = "https://e7e55994-7ffa-4458-b8c4-25893d03b997-00-2vejvte8hikcx.riker.replit.dev"
+WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,https://wingoldandmetals.com,https://www.wingoldandmetals.com"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
@@ -61,3 +61,4 @@ PRODUCTION_DOMAIN = "demo.finatrades.com"
 WINGOLD_URL = "https://wingoldandmetals.com"
 
 [userenv.development]
+WINGOLD_URL = "https://wingoldandmetals--imcharanpratap.replit.app"
