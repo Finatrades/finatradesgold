@@ -1,0 +1,68 @@
+==========================================
+FINATRADES SSO KEYS FOR PRODUCTION SERVER
+==========================================
+
+Add these two environment variables/secrets to your production server:
+
+------------------------------------------
+1. SSO_PRIVATE_KEY
+------------------------------------------
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDEQdrwIQ8Im/+V
+FQpnf0UFpTpOAOtwCiVaxy2ugzADN+2optrs+h8/SKjC/g5dbts/9PQRwWUG6Cv4
+kKsqoqx12QTmETIo46Wazj/RDRkdrbEg0q9BZlXEsDREn/1B587P+jU8nCQcUfMh
+N3945T837WYfC1M84l7j5VhIbiCil1aaRVWdHRNfqr06+vpRzSURWQ69zL/DPfjY
+Fx6tuCeoO9opkDsPCjS+clTZgO/26UHvlR05/gZFnFmMxd4gBAxpQIWM7b6VsVtV
+TpBbyEvxAIefXCaRAoH82KSIDs1YZe92NKjZ35bpIBQ07ObtjWzfu0GpraCGrcRY
+wisyejUPAgMBAAECggEAPwLL2fQrQP7hCMsIG6GrlfvuI9Q8wyymwKYZfyHEnQvs
+ZI0p1hMaTDW2ZWCvWQU6JKcvY7H9j0GkuHouUpKHH5EtdvaHbcRlS7YznBmB+lrl
+d13dgfhqyisupOffJrVX28OAKzUQjP0su/n3Feg4q2qvsoDu2SnvAGmGtj6RgNHY
++iLdqGjoUsWAJSfO3c/ky+la5VbJRIgwuB8S9m4tSIhKz8ILbzBfImZLVwDcTsIA
+bfJx5Zy0Gqf/1HUGm7bP8ThjZRr96Uey7OKIr9zjukClHFA48w0AmNoWyK9h/4bo
+S7z0dH8WlIycVK1OxxdG6qN0ufzSQ0RXJkVsma2bWQKBgQDuYoCeJPLVXCkcbTcp
+fice4b05mRtAw2WoRYr8Ecy7c3oyyLgGaiyJ5xVu7xUjsWOk7obhh1HWt8PaWrgd
+qJ5hMa+iuywp9QJn6xp2eXIZUbzJCppSdSN7KtkzfJGRWtGGpaER+311WCXG1tl9
++DNH/EVYJEfxbL0JambQjuORZwKBgQDSwm5hTako3cMb4KRGI97ua9SqEmFyHHw6
+41jiEOqa3J802uTVAcVo3ZADMMud8kmf2giF4EC/WENyMKyxfJGfzfagXDxjas8g
+6QPGcSCK7KN72USzHcN/j89mmL7bm/H7zs2iDmp21UWNlaHUr/RBlxTOtPrDKBhA
+/dyw3guuGQKBgAjJuNQbqJgU/a7+l7n/3JFW4RLuggKxMV4yshz4ywNeDnMw0xfp
+chrjWfbs+WqHb5T09iP6SRoRTDcQgRkWzj/nBQKKw+YIEj6ifCdB8uLcEImYynef
+ud8ghUFQpk0le/PqxzVSgB2DUmEyKnJqY/mTYzsMm1pbF9zw/zlRCzKhAoGAAX+k
+bUiyFTpOctpMELuckDFwF619x+Pv9jM7pI/eOy+qaiPMUL9seexpY7xrFjpsz5gr
+S1hm3XVxNVSnRbPPDUXXpRhCzaoqwt8lSbnwM0yvdOf8lxF1HGkXXnFjmggn1lSI
+HcjgdOvbTMBtoCeIIxdB7J5Y0h5s3blwYkmR57ECgYANj7Rqp6pIPP2OaEMI0JnW
+TWR270AyhOm/Zl4dHr4K1V9yr+0CzWfRM3nJMRdc46a+u5o07iOhct9s3X9nmAs4
+3oq3qKCim7m4pv74P5I9qO/2Dz7Z3p8AT6+y+Sni9tbje22qmrxS77eaTndCKDKa
+k8as15B6tvWRgqAztRqvVg==
+-----END PRIVATE KEY-----
+
+------------------------------------------
+2. SSO_PUBLIC_KEY
+------------------------------------------
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxEHa8CEPCJv/lRUKZ39F
+BaU6TgDrcAolWsctroMwAzftqKba7PofP0iowv4OXW7bP/T0EcFlBugr+JCrKqKs
+ddkE5hEyKOOlms4/0Q0ZHa2xINKvQWZVxLA0RJ/9QefOz/o1PJwkHFHzITd/eOU/
+N+1mHwtTPOJe4+VYSG4gopdWmkVVnR0TX6q9Ovr6Uc0lEVkOvcy/wz342Bcerbgn
+qDvaKZA7Dwo0vnJU2YDv9ulB75UdOf4GRZxZjMXeIAQMaUCFjO2+lbFbVU6QW8hL
+8QCHn1wmkQKB/NikiA7NWGXvdjSo2d+W6SAUNOzm7Y1s37tBqa2ghq3EWMIrMno1
+DwIDAQAB
+-----END PUBLIC KEY-----
+
+==========================================
+INSTRUCTIONS
+==========================================
+
+1. Copy SSO_PRIVATE_KEY (everything between BEGIN and END, including those lines)
+2. Copy SSO_PUBLIC_KEY (everything between BEGIN and END, including those lines)
+3. Add both as environment variables/secrets on your production server
+4. Restart your production server
+
+IMPORTANT: Keep the private key secret! Never share it publicly.
+
+==========================================
+SHARE WITH WINGOLD
+==========================================
+
+Share only the PUBLIC KEY with Wingold so they can verify your tokens.
+Or tell them to fetch it from: https://finatrades.com/api/sso/public-key
