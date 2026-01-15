@@ -411,6 +411,10 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     let validatedVaultId: string | null = null;
     if (vaultLocationId) {
       const vaultLocations = await storage.getVaultLocations();
+      console.log('[SSO Checkout] Vault validation:', { 
+        receivedVaultId: vaultLocationId, 
+        availableVaults: vaultLocations.map((v: any) => ({ id: v.id, name: v.name }))
+      });
       const validVault = vaultLocations.find((v: any) => v.id === vaultLocationId);
       if (!validVault) {
         return res.status(400).json({ error: "Invalid vault location" });
