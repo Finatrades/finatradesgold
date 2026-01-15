@@ -19,6 +19,7 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/wingold/webhooks',
   '/api/certificates/verify',
   '/api/verify-certificate',
+  '/api/sso/verify-token',
 ];
 
 // Generate secure CSRF token

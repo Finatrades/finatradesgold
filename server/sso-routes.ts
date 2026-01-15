@@ -274,6 +274,55 @@ router.get("/api/sso/public-key", (req, res) => {
 });
 
 /**
+ * Token verification endpoint for debugging
+ * Wingold can POST a token here to verify it's configured correctly
+ */
+router.post("/api/sso/verify-token", (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Token is required in request body" 
+      });
+    }
+    
+    const privateKey = getPrivateKey();
+    const keyObject = crypto.createPrivateKey(privateKey);
+    const publicKey = crypto.createPublicKey(keyObject).export({ type: 'spki', format: 'pem' }) as string;
+    
+    const decoded = jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+      issuer: 'finatrades.com',
+      audience: 'wingoldandmetals.com'
+    });
+    
+    res.json({
+      valid: true,
+      payload: {
+        sub: (decoded as any).sub,
+        email: (decoded as any).email,
+        nonce: (decoded as any).nonce,
+        jti: (decoded as any).jti,
+        exp: (decoded as any).exp,
+        iat: (decoded as any).iat,
+        iss: (decoded as any).iss,
+        aud: (decoded as any).aud,
+      },
+      message: "Token verified successfully. Use the same public key and verification options in Wingold."
+    });
+  } catch (error: any) {
+    console.error("Token verification failed:", error.message);
+    res.status(401).json({ 
+      valid: false, 
+      error: error.message,
+      hint: "Ensure you are using RS256 algorithm, issuer: 'finatrades.com', audience: 'wingoldandmetals.com'"
+    });
+  }
+});
+
+/**
  * SSO redirect specifically for Buy Gold Bar flow
  * Includes permitted_delivery constraint to enforce SecureVault-only on Wingold
  */

@@ -373,6 +373,8 @@ app.use((req, res, next) => {
     // B2B API (uses API key authentication)
     '/api/b2b/',
     '/api/wingold/webhooks',
+    // SSO token verification (server-to-server debug endpoint)
+    '/api/sso/verify-token',
   ];
   
   const isExempt = csrfExemptPaths.some(path => req.path.startsWith(path));
