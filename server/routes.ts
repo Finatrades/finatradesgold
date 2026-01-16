@@ -595,6 +595,16 @@ export async function registerRoutes(
   // Apply request sanitization middleware
   app.use(sanitizeRequest);
   
+  // Public health check endpoint for testing and monitoring
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0'
+    });
+  });
+
   // CSRF token endpoint
   app.get("/api/csrf-token", getCsrfTokenHandler);
   
