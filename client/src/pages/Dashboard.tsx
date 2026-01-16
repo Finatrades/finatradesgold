@@ -97,9 +97,9 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Welcome Header */}
-        <section>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, {userName}</h1>
-          <p className="text-gray-500 text-sm mt-1">Here's an overview of your portfolio performance</p>
+        <section className="pb-1 md:pb-0">
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Welcome, {userName}</h1>
+          <p className="text-gray-500 text-xs md:text-sm mt-0.5 md:mt-1">Your portfolio overview</p>
         </section>
 
         {/* Quick Actions - Colorful buttons */}
@@ -108,90 +108,90 @@ export default function Dashboard() {
         </section>
 
         {/* Stats Cards + Metal Card Layout */}
-        <section className="flex flex-col lg:flex-row gap-6">
+        <section className="flex flex-col lg:flex-row gap-4 md:gap-6">
           {/* Left side - Stats Cards */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-3 md:space-y-4">
             {/* Row 1 - Gold Storage, Gold Value USD, Gold Value AED */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Storage</p>
-                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Database className="w-3.5 h-3.5 text-purple-600" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl col-span-2 md:col-span-1">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">Gold Storage</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Database className="w-3 h-3 md:w-3.5 md:h-3.5 text-purple-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xl md:text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Deposited in FinaVault</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1">Deposited in FinaVault</p>
               </Card>
               
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Value (USD)</p>
-                  <div className="w-6 h-6 rounded bg-yellow-100 flex items-center justify-center">
-                    <span className="text-yellow-600 text-sm font-bold">$</span>
+              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">USD Value</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-yellow-100 flex items-center justify-center">
+                    <span className="text-yellow-600 text-xs md:text-sm font-bold">$</span>
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg md:text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Worth in USD</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">Worth in USD</p>
               </Card>
               
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Value (AED)</p>
-                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
-                    <span className="text-green-600 text-xs font-bold">Dh</span>
+              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">AED Value</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-green-100 flex items-center justify-center">
+                    <span className="text-green-600 text-[10px] md:text-xs font-bold">Dh</span>
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg md:text-2xl font-bold text-gray-900">
                   {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Worth in AED</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">Worth in AED</p>
               </Card>
             </div>
             
             {/* Row 2 - Total Portfolio, BNSL Invested, Total Profit */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Total Portfolio</p>
-                  <div className="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">Portfolio</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-blue-100 flex items-center justify-center">
+                    <TrendingUp className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg md:text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Overall Investment</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">Overall Investment</p>
               </Card>
               
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">BNSL Invested</p>
-                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">BNSL</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-purple-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg md:text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">In active plans</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">In active plans</p>
               </Card>
               
-              <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Total Profit</p>
-                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
+              <Card className="p-3 md:p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl col-span-2 md:col-span-1">
+                <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                  <p className="text-[10px] md:text-xs text-gray-500">Total Profit</p>
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-green-100 flex items-center justify-center">
+                    <ArrowUpRight className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-lg md:text-2xl font-bold text-green-600">
                   {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">ROI from BNSL</p>
+                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1">ROI from BNSL</p>
               </Card>
             </div>
           </div>
@@ -203,82 +203,82 @@ export default function Dashboard() {
         </section>
 
         {/* Dual Wallet Section */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {/* LGPW Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-6">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-4 md:p-6">
+            <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-white/10 rounded-full blur-2xl"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Wallet className="w-6 h-6 text-white" />
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Wallet className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">LGPW</h3>
-                    <p className="text-xs text-purple-200">Live Gold Price Wallet</p>
+                    <h3 className="font-bold text-white text-sm md:text-base">LGPW</h3>
+                    <p className="text-[10px] md:text-xs text-purple-200">Live Gold Price</p>
                   </div>
                 </div>
-                <Badge className="bg-white/20 text-white border-0">Live Price</Badge>
+                <Badge className="bg-white/20 text-white border-0 text-[10px] md:text-xs px-2 py-0.5">Live</Badge>
               </div>
               
-              <div className="mb-4">
-                <p className="text-sm text-purple-200 mb-1">Available Balance</p>
-                <p className="text-4xl font-bold text-white">
+              <div className="mb-3 md:mb-4">
+                <p className="text-xs md:text-sm text-purple-200 mb-0.5 md:mb-1">Available</p>
+                <p className="text-2xl md:text-4xl font-bold text-white">
                   {showBalance ? `${formatNumber(totals.mpgwAvailableGrams || 0, 4)}g` : hiddenValue}
                 </p>
-                <p className="text-sm text-purple-200 mt-1">
+                <p className="text-xs md:text-sm text-purple-200 mt-0.5 md:mt-1">
                   {showBalance ? `≈ ${formatCurrency((totals.mpgwAvailableGrams || 0) * goldPrice)}` : ''}
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
+              <div className="grid grid-cols-2 gap-2 md:gap-3 pt-3 md:pt-4 border-t border-white/20">
                 <div>
-                  <p className="text-xs text-purple-200">Pending</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.mpgwPendingGrams || 0, 4)}g</p>
+                  <p className="text-[10px] md:text-xs text-purple-200">Pending</p>
+                  <p className="text-sm md:text-lg font-semibold text-white">{formatNumber(totals.mpgwPendingGrams || 0, 4)}g</p>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-200">Locked (BNSL)</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.mpgwLockedBnslGrams || 0, 4)}g</p>
+                  <p className="text-[10px] md:text-xs text-purple-200">Locked</p>
+                  <p className="text-sm md:text-lg font-semibold text-white">{formatNumber(totals.mpgwLockedBnslGrams || 0, 4)}g</p>
                 </div>
               </div>
             </div>
           </div>
           
           {/* FGPW Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-6">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-4 md:p-6">
+            <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-white/10 rounded-full blur-2xl"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Database className="w-6 h-6 text-white" />
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Database className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">FGPW</h3>
-                    <p className="text-xs text-amber-100">Fixed Gold Price Wallet</p>
+                    <h3 className="font-bold text-white text-sm md:text-base">FGPW</h3>
+                    <p className="text-[10px] md:text-xs text-amber-100">Fixed Gold Price</p>
                   </div>
                 </div>
-                <Badge className="bg-white/20 text-white border-0">Fixed Price</Badge>
+                <Badge className="bg-white/20 text-white border-0 text-[10px] md:text-xs px-2 py-0.5">Fixed</Badge>
               </div>
               
-              <div className="mb-4">
-                <p className="text-sm text-amber-100 mb-1">Available Balance</p>
-                <p className="text-4xl font-bold text-white">
+              <div className="mb-3 md:mb-4">
+                <p className="text-xs md:text-sm text-amber-100 mb-0.5 md:mb-1">Available</p>
+                <p className="text-2xl md:text-4xl font-bold text-white">
                   {showBalance ? `${formatNumber(totals.fpgwAvailableGrams || 0, 4)}g` : hiddenValue}
                 </p>
-                <p className="text-sm text-amber-100 mt-1">
+                <p className="text-xs md:text-sm text-amber-100 mt-0.5 md:mt-1">
                   {showBalance && totals.fpgwWeightedAvgPriceUsd ? `Cost: $${formatNumber(totals.fpgwWeightedAvgPriceUsd, 2)}/g` : 'No holdings'}
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
+              <div className="grid grid-cols-2 gap-2 md:gap-3 pt-3 md:pt-4 border-t border-white/20">
                 <div>
-                  <p className="text-xs text-amber-100">Pending</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.fpgwPendingGrams || 0, 4)}g</p>
+                  <p className="text-[10px] md:text-xs text-amber-100">Pending</p>
+                  <p className="text-sm md:text-lg font-semibold text-white">{formatNumber(totals.fpgwPendingGrams || 0, 4)}g</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-100">Locked</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.fpgwLockedBnslGrams || 0, 4)}g</p>
+                  <p className="text-[10px] md:text-xs text-amber-100">Locked</p>
+                  <p className="text-sm md:text-lg font-semibold text-white">{formatNumber(totals.fpgwLockedBnslGrams || 0, 4)}g</p>
                 </div>
               </div>
             </div>

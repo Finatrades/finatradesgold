@@ -174,7 +174,46 @@ export default function QuickActionsTop() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-3" data-testid="quick-actions-container">
+      {/* Mobile: Horizontal scrollable compact buttons */}
+      <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" data-testid="quick-actions-mobile">
+        <div className="flex gap-2 min-w-max">
+          {actions.map((action, index) => {
+            const isLocked = action.requiresKyc && !isKycApproved;
+            
+            return (
+              <motion.button
+                key={action.title}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.03 }}
+                whileTap={{ scale: isLocked ? 1 : 0.95 }}
+                onClick={() => handleAction(action)}
+                className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl text-white font-medium shadow-md transition-all relative ${
+                  isLocked 
+                    ? 'bg-gray-400 cursor-not-allowed opacity-60' 
+                    : `bg-gradient-to-br ${action.gradient}`
+                }`}
+                data-testid={`button-action-mobile-${action.title.toLowerCase().replace(' ', '-')}`}
+              >
+                <span className="flex items-center justify-center w-7 h-7 bg-white/20 rounded-lg mb-1">
+                  {React.cloneElement(action.icon as React.ReactElement, { className: 'w-4 h-4' })}
+                </span>
+                <span className="text-[10px] leading-tight text-center px-1 truncate w-full">
+                  {action.title.split(' ')[0]}
+                </span>
+                {isLocked && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5" />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop: Original flex wrap layout */}
+      <div className="hidden md:flex flex-wrap gap-3" data-testid="quick-actions-container">
         {actions.map((action, index) => {
           const isLocked = action.requiresKyc && !isKycApproved;
           
