@@ -16,6 +16,8 @@ import CertificatesCard from '@/components/dashboard/CertificatesCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import MetalCard from '@/components/dashboard/MetalCard';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileDashboard from '@/components/mobile/MobileDashboard';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const { totals, goldPrice, goldPriceSource, isLoading, finaBridge, certificates } = useDashboardData();
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const isMobile = useIsMobile();
   
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -80,6 +83,17 @@ export default function Dashboard() {
     return (
       <DashboardLayout>
         <DashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <DashboardLayout>
+        <MobileDashboard />
+        {showOnboarding && (
+          <OnboardingTour onComplete={completeOnboarding} />
+        )}
       </DashboardLayout>
     );
   }
