@@ -19,6 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'wouter';
 import { format } from 'date-fns';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileShell from '@/components/mobile/MobileShell';
+import MobileHeader from '@/components/mobile/MobileHeader';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -27,6 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [scrolled, setScrolled] = useState(false);
   const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
   const [, setLocation] = useLocation();
+  const isMobile = useIsMobile();
   
   const { showWarning, remainingSeconds, stayActive, logout: idleLogout } = useIdleTimeout({
     timeoutMinutes: 30,
@@ -56,6 +60,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   if (!user) return null;
+
+  if (isMobile) {
+    return (
+      <MobileShell>
+        <MobileHeader />
+        <KycStatusBanner kycStatus={user.kycStatus} />
+        <main className="px-4 py-3 pb-24">
+          {children}
+        </main>
+        <LiveChatWidget />
+        <IdleTimeoutWarning
+          open={showWarning}
+          remainingSeconds={remainingSeconds}
+          onStayActive={stayActive}
+          onLogout={idleLogout}
+        />
+      </MobileShell>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
