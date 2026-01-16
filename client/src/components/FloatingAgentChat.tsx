@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useChat, ChatProvider } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
 import { CallOverlay, IncomingCallModal } from "@/components/chat/CallOverlay";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface ChatbotMessage {
   id: string;
@@ -91,6 +92,7 @@ interface GuestInfo {
 function FloatingAgentChatContent() {
   const { user } = useAuth();
   const { currentSession, sendMessage, createSession, selectSession, sessions, startGuestSession, guestId, incomingCall, acceptCall, rejectCall, activeCall } = useChat();
+  const isMobile = useIsMobile();
   
   const [isOpen, setIsOpen] = useState(false);
   const [currentAgent, setCurrentAgent] = useState(agents[0]);
@@ -372,7 +374,7 @@ function FloatingAgentChatContent() {
             initial={{ opacity: 0, x: 20, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 20, scale: 0.8 }}
-            className="fixed bottom-24 right-6 z-50 bg-popover border border-border rounded-2xl shadow-xl p-4 min-w-[220px]"
+            className={`fixed z-50 bg-popover border border-border rounded-2xl shadow-xl p-4 min-w-[220px] ${isMobile ? 'top-16 right-2' : 'bottom-24 right-6'}`}
           >
             <button
               onClick={() => setShowNotification(false)}
@@ -416,12 +418,12 @@ function FloatingAgentChatContent() {
               }
             }}
             onClick={openChat}
-            className="fixed bottom-6 right-6 z-50 w-20 h-20 flex items-center justify-center"
+            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'top-2 right-2 w-12 h-12' : 'bottom-6 right-6 w-20 h-20'}`}
           >
             <img
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
               alt="Chat"
-              className="w-20 h-20 object-contain drop-shadow-2xl"
+              className={`object-contain drop-shadow-2xl ${isMobile ? 'w-12 h-12' : 'w-20 h-20'}`}
             />
             <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
           </motion.button>
@@ -435,7 +437,7 @@ function FloatingAgentChatContent() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-background border border-border rounded-2xl overflow-hidden shadow-2xl"
+            className={`fixed z-50 bg-background border border-border rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'top-14 right-2 left-2 w-auto max-w-none' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary to-[#FF2FBF] p-4 flex items-center gap-3">
