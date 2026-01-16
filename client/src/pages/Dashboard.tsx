@@ -1,6 +1,6 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase } from 'lucide-react';
+import { Database, TrendingUp, Coins, Wallet, ArrowUpRight, ArrowDownRight, Shield, Clock, ChevronRight, Sparkles, Briefcase, Search, Download, Plus, CreditCard, Send, ArrowRightLeft, RotateCcw, BarChart3 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -9,13 +9,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
-
-import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
-import TransactionsTable from '@/components/dashboard/TransactionsTable';
-import CertificatesCard from '@/components/dashboard/CertificatesCard';
+import { Input } from '@/components/ui/input';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
-import MetalCard from '@/components/dashboard/MetalCard';
+import { useState } from 'react';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -31,11 +28,80 @@ function formatNumber(num: number | null | undefined, decimals = 2): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+function StatCard({ title, value, change, positive, icon: Icon }: { 
+  title: string; 
+  value: string; 
+  change?: string;
+  positive?: boolean;
+  icon: any;
+}) {
+  return (
+    <div className="bg-[#1a1a2e] rounded-xl p-5 border border-[#2a2a4a]">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-gray-400">{title}</p>
+        <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-purple-400" />
+        </div>
+      </div>
+      <p className="text-2xl font-bold text-white mb-1">{value}</p>
+      {change && (
+        <div className={`flex items-center gap-1 text-sm ${positive ? 'text-green-400' : 'text-red-400'}`}>
+          {positive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+          <span>{change}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TransactionRow({ id, user, amount, date, status }: {
+  id: string;
+  user: string;
+  amount: string;
+  date: string;
+  status: string;
+}) {
+  const statusColors: Record<string, string> = {
+    completed: 'bg-green-500/20 text-green-400',
+    pending: 'bg-yellow-500/20 text-yellow-400',
+    failed: 'bg-red-500/20 text-red-400',
+    processing: 'bg-blue-500/20 text-blue-400',
+  };
+
+  return (
+    <tr className="border-b border-[#2a2a4a] hover:bg-[#1f1f3a] transition-colors">
+      <td className="py-4 px-4">
+        <input type="checkbox" className="rounded border-gray-600 bg-transparent" />
+      </td>
+      <td className="py-4 px-4">
+        <span className="text-gray-300 font-mono text-sm">{id}</span>
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-purple-500/30 flex items-center justify-center">
+            <span className="text-purple-300 text-xs font-semibold">{user.charAt(0)}</span>
+          </div>
+          <span className="text-white">{user}</span>
+        </div>
+      </td>
+      <td className="py-4 px-4 text-gray-300">{amount}</td>
+      <td className="py-4 px-4 text-gray-400">{date}</td>
+      <td className="py-4 px-4">
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status.toLowerCase()] || 'bg-gray-500/20 text-gray-400'}`}>
+          {status}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { totals, goldPrice, goldPriceSource, isLoading, finaBridge, certificates } = useDashboardData();
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const [chartPeriod, setChartPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [chartType, setChartType] = useState<'income' | 'expense' | 'saving'>('income');
   
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -61,16 +127,6 @@ export default function Dashboard() {
 
   const prefs = prefsData?.preferences;
   const showBalance = prefs?.showBalance !== false;
-  const displayCurrency = prefs?.displayCurrency || 'USD';
-
-  const formatCurrency = (usdAmount: number) => {
-    if (displayCurrency === 'AED') {
-      return `Dh ${formatNumber(usdAmount * 3.67)}`;
-    } else if (displayCurrency === 'EUR') {
-      return `€${formatNumber(usdAmount * 0.92)}`;
-    }
-    return `$${formatNumber(usdAmount)}`;
-  };
 
   const hiddenValue = '••••••';
 
@@ -86,354 +142,361 @@ export default function Dashboard() {
 
   const userName = user.firstName || user.email?.split('@')[0] || 'User';
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || userName;
-  const isBusinessUser = user.accountType === 'business' || !!user.finabridgeRole;
-  const isGoldPriceLive = goldPriceSource && !goldPriceSource.includes('fallback');
-  
   const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.vaultGoldGrams || 0);
   const totalPortfolioValue = totals.totalPortfolioUsd || 0;
 
+  const chartData = [4, 6, 5, 8, 7, 9, 6, 10, 8, 12, 9, 15];
+  const maxValue = Math.max(...chartData);
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Welcome Header */}
-        <section>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, {userName}</h1>
-          <p className="text-gray-500 text-sm mt-1">Here's an overview of your portfolio performance</p>
-        </section>
-
-        {/* Quick Actions - Colorful buttons */}
-        <section>
-          <QuickActionsTop />
-        </section>
-
-        {/* Stats Cards + Metal Card Layout */}
-        <section className="flex flex-col lg:flex-row gap-6">
-          {/* Left side - Stats Cards */}
-          <div className="flex-1 space-y-4">
-            {/* Row 1 - Gold Storage, Gold Value USD, Gold Value AED */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Storage</p>
-                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Database className="w-3.5 h-3.5 text-purple-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Deposited in FinaVault</p>
-              </Card>
-              
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Value (USD)</p>
-                  <div className="w-6 h-6 rounded bg-yellow-100 flex items-center justify-center">
-                    <span className="text-yellow-600 text-sm font-bold">$</span>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Worth in USD</p>
-              </Card>
-              
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Gold Value (AED)</p>
-                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
-                    <span className="text-green-600 text-xs font-bold">Dh</span>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Worth in AED</p>
-              </Card>
-            </div>
-            
-            {/* Row 2 - Total Portfolio, BNSL Invested, Total Profit */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Total Portfolio</p>
-                  <div className="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Overall Investment</p>
-              </Card>
-              
-              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">BNSL Invested</p>
-                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">In active plans</p>
-              </Card>
-              
-              <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500">Total Profit</p>
-                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-green-600">
-                  {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">ROI from BNSL</p>
-              </Card>
-            </div>
-          </div>
-          
-          {/* Right side - Metal Card */}
-          <div className="hidden lg:flex items-center justify-center">
-            <MetalCard />
-          </div>
-        </section>
-
-        {/* Dual Wallet Section */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* LGPW Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-6">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Wallet className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white">LGPW</h3>
-                    <p className="text-xs text-purple-200">Live Gold Price Wallet</p>
-                  </div>
-                </div>
-                <Badge className="bg-white/20 text-white border-0">Live Price</Badge>
-              </div>
-              
-              <div className="mb-4">
-                <p className="text-sm text-purple-200 mb-1">Available Balance</p>
-                <p className="text-4xl font-bold text-white">
-                  {showBalance ? `${formatNumber(totals.mpgwAvailableGrams || 0, 4)}g` : hiddenValue}
-                </p>
-                <p className="text-sm text-purple-200 mt-1">
-                  {showBalance ? `≈ ${formatCurrency((totals.mpgwAvailableGrams || 0) * goldPrice)}` : ''}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
-                <div>
-                  <p className="text-xs text-purple-200">Pending</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.mpgwPendingGrams || 0, 4)}g</p>
-                </div>
-                <div>
-                  <p className="text-xs text-purple-200">Locked (BNSL)</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.mpgwLockedBnslGrams || 0, 4)}g</p>
-                </div>
+      <div className="min-h-screen bg-[#0f0f1a]">
+        <div className="flex">
+          {/* Main Content */}
+          <div className="flex-1 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" className="bg-transparent border-[#2a2a4a] text-gray-300 hover:bg-[#1a1a2e] hover:text-white">
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Manage Balance
+                </Button>
+                <Button variant="outline" className="bg-transparent border-[#2a2a4a] text-gray-300 hover:bg-[#1a1a2e] hover:text-white">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+                <Link href="/finapay">
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Funds
+                  </Button>
+                </Link>
               </div>
             </div>
-          </div>
-          
-          {/* FGPW Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-6">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Database className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white">FGPW</h3>
-                    <p className="text-xs text-amber-100">Fixed Gold Price Wallet</p>
-                  </div>
-                </div>
-                <Badge className="bg-white/20 text-white border-0">Fixed Price</Badge>
-              </div>
-              
-              <div className="mb-4">
-                <p className="text-sm text-amber-100 mb-1">Available Balance</p>
-                <p className="text-4xl font-bold text-white">
-                  {showBalance ? `${formatNumber(totals.fpgwAvailableGrams || 0, 4)}g` : hiddenValue}
-                </p>
-                <p className="text-sm text-amber-100 mt-1">
-                  {showBalance && totals.fpgwWeightedAvgPriceUsd ? `Cost: $${formatNumber(totals.fpgwWeightedAvgPriceUsd, 2)}/g` : 'No holdings'}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
-                <div>
-                  <p className="text-xs text-amber-100">Pending</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.fpgwPendingGrams || 0, 4)}g</p>
-                </div>
-                <div>
-                  <p className="text-xs text-amber-100">Locked</p>
-                  <p className="text-lg font-semibold text-white">{formatNumber(totals.fpgwLockedBnslGrams || 0, 4)}g</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* FinaBridge Card for Business Users */}
-        {isBusinessUser && (
-          <section>
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Briefcase className="w-6 h-6 text-white" />
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <StatCard 
+                title="Gold Storage" 
+                value={showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
+                change="+8%"
+                positive={true}
+                icon={Database}
+              />
+              <StatCard 
+                title="Portfolio Value" 
+                value={showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                change="+8%"
+                positive={true}
+                icon={TrendingUp}
+              />
+              <StatCard 
+                title="BNSL Profit" 
+                value={showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
+                change="+12%"
+                positive={true}
+                icon={ArrowUpRight}
+              />
+            </div>
+
+            {/* Cash Flow Section */}
+            <div className="bg-[#1a1a2e] rounded-xl p-6 border border-[#2a2a4a] mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-gray-400 text-sm mb-1">Portfolio History</h3>
+                  <p className="text-3xl font-bold text-white">
+                    {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-[#0f0f1a] rounded-lg p-1">
+                    {['income', 'expense', 'saving'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setChartType(type as any)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          chartType === type 
+                            ? 'bg-[#2a2a4a] text-white' 
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <select 
+                    value={chartPeriod}
+                    onChange={(e) => setChartPeriod(e.target.value as any)}
+                    className="bg-[#0f0f1a] border border-[#2a2a4a] text-gray-300 rounded-lg px-4 py-2 text-sm"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                  <button className="p-2 rounded-lg bg-[#0f0f1a] border border-[#2a2a4a] text-gray-400 hover:text-white">
+                    <BarChart3 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Bar Chart */}
+              <div className="relative h-48">
+                <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500 pr-4">
+                  <span>$15</span>
+                  <span>$10</span>
+                  <span>$5</span>
+                  <span>$0</span>
+                </div>
+                <div className="ml-10 h-full flex items-end gap-2">
+                  {chartData.map((value, index) => (
+                    <div key={index} className="flex-1 flex flex-col items-center">
+                      <div 
+                        className={`w-full rounded-t-md transition-all ${
+                          index === chartData.length - 3 
+                            ? 'bg-gradient-to-t from-purple-600 to-purple-400' 
+                            : 'bg-[#2a2a4a] hover:bg-[#3a3a5a]'
+                        }`}
+                        style={{ height: `${(value / maxValue) * 100}%` }}
+                      />
+                      {index === chartData.length - 3 && (
+                        <div className="absolute -top-8 bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                          ${formatNumber(totalPortfolioValue / 1000, 3)}k
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-white">FinaBridge</h3>
-                      <p className="text-xs text-blue-200">Trade Finance</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-[#1a1a2e] rounded-xl border border-[#2a2a4a] overflow-hidden">
+              <div className="p-4 flex items-center justify-between border-b border-[#2a2a4a]">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Input 
+                    placeholder="Search Anything..." 
+                    className="pl-10 bg-[#0f0f1a] border-[#2a2a4a] text-gray-300 placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="bg-transparent border-[#2a2a4a] text-gray-300">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[#0f0f1a]">
+                    <tr className="text-left text-gray-400 text-sm">
+                      <th className="py-3 px-4 font-medium">
+                        <input type="checkbox" className="rounded border-gray-600 bg-transparent" />
+                      </th>
+                      <th className="py-3 px-4 font-medium">Transaction ID</th>
+                      <th className="py-3 px-4 font-medium">Type</th>
+                      <th className="py-3 px-4 font-medium">Amount</th>
+                      <th className="py-3 px-4 font-medium">Date</th>
+                      <th className="py-3 px-4 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.length > 0 ? (
+                      transactions.slice(0, 5).map((tx) => (
+                        <TransactionRow
+                          key={tx.id}
+                          id={`TXN-${tx.id.slice(0, 8).toUpperCase()}`}
+                          user={tx.type}
+                          amount={tx.amountGold ? `${formatNumber(Number(tx.amountGold), 4)}g` : `$${formatNumber(Number(tx.amountUsd) || 0)}`}
+                          date={new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          status={tx.status}
+                        />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-gray-500">
+                          No transactions yet. Start by adding funds to your wallet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="p-4 border-t border-[#2a2a4a]">
+                <Link href="/transactions">
+                  <Button variant="ghost" className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10">
+                    View All Transactions <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="w-80 p-6 border-l border-[#2a2a4a] hidden xl:block">
+            {/* Search */}
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Input 
+                placeholder="Search Anything..." 
+                className="pl-10 bg-[#1a1a2e] border-[#2a2a4a] text-gray-300 placeholder:text-gray-500"
+              />
+            </div>
+
+            {/* Wallet Card */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <button className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                  Gold
+                </button>
+                <button className="flex-1 py-2 px-4 bg-[#1a1a2e] text-gray-400 rounded-lg text-sm font-medium border border-[#2a2a4a]">
+                  USD
+                </button>
+                <button className="py-2 px-4 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Card Display */}
+              <div className="bg-gradient-to-br from-[#1a1a2e] to-[#2a2a4a] rounded-2xl p-5 border border-[#3a3a5a] relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-purple-400/50" />
+                    <div className="w-3 h-3 rounded-full bg-purple-600/50 -ml-1" />
+                  </div>
+                </div>
+                <div className="mb-8">
+                  <p className="text-gray-400 text-xs mb-1">Total Gold Balance</p>
+                  <p className="text-white text-2xl font-bold">
+                    {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs">Account Holder</p>
+                    <p className="text-white font-medium">{fullName}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="text-purple-400 text-xl font-bold">FINA</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mb-6">
+              <h3 className="text-white font-semibold mb-4">Quick Action</h3>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/finapay">
+                  <Button size="sm" variant="outline" className="bg-[#1a1a2e] border-[#2a2a4a] text-gray-300 hover:bg-[#2a2a4a]">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Top up
+                  </Button>
+                </Link>
+                <Link href="/finapay">
+                  <Button size="sm" variant="outline" className="bg-[#1a1a2e] border-[#2a2a4a] text-gray-300 hover:bg-[#2a2a4a]">
+                    <ArrowRightLeft className="w-4 h-4 mr-1" />
+                    Transfers
+                  </Button>
+                </Link>
+                <Link href="/finapay">
+                  <Button size="sm" variant="outline" className="bg-[#1a1a2e] border-[#2a2a4a] text-gray-300 hover:bg-[#2a2a4a]">
+                    <Send className="w-4 h-4 mr-1" />
+                    Request
+                  </Button>
+                </Link>
+                <Button size="sm" variant="outline" className="bg-[#1a1a2e] border-[#2a2a4a] text-gray-300 hover:bg-[#2a2a4a]">
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Daily Limit */}
+            <div className="mb-6 bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
+              <h3 className="text-white font-semibold mb-2">Daily Limit</h3>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-2xl font-bold text-white">
+                  ${formatNumber((totals.mpgwAvailableGrams || 0) * goldPrice * 0.1)}
+                </span>
+                <span className="text-gray-400 text-sm">used from $2,000 limit</span>
+              </div>
+              <div className="w-full h-2 bg-[#0f0f1a] rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full" style={{ width: '30%' }} />
+              </div>
+            </div>
+
+            {/* Portfolio Breakdown */}
+            <div className="mb-6 bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
+              <h3 className="text-white font-semibold mb-4">Portfolio Breakdown</h3>
+              <div className="flex gap-2 mb-4">
+                <div className="flex-1 h-2 bg-purple-500 rounded-full" />
+                <div className="flex-1 h-2 bg-purple-400 rounded-full" />
+                <div className="flex-1 h-2 bg-purple-300 rounded-full" />
+                <div className="flex-1 h-2 bg-gray-500 rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span className="text-gray-400">LGPW (45%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span className="text-gray-400">FGPW (25%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-300" />
+                  <span className="text-gray-400">BNSL (20%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gray-500" />
+                  <span className="text-gray-400">Vault (10%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Certificates */}
+            <div className="bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold">Certificates</h3>
+                <Link href="/finavault">
+                  <Button size="sm" variant="ghost" className="text-purple-400 hover:text-purple-300 p-0 h-auto">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+              
+              {(certificates?.recent?.length ?? 0) > 0 ? (
+                <div className="space-y-3">
+                  {certificates?.recent?.slice(0, 2).map((cert: any) => (
+                    <div key={cert.id} className="flex items-center justify-between p-3 bg-[#0f0f1a] rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <Shield className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">{cert.type || 'Gold Certificate'}</p>
+                          <p className="text-gray-400 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
                     </div>
-                  </div>
-                  <Link href="/finabridge">
-                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
-                      View <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </Link>
+                  ))}
                 </div>
-                
-                <div className="grid grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-sm text-blue-200 mb-1">Available Gold</p>
-                    <p className="text-2xl font-bold text-white">
-                      {showBalance ? `${formatNumber(finaBridge?.goldGrams || 0, 4)}g` : hiddenValue}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-200 mb-1">Active Cases</p>
-                    <p className="text-2xl font-bold text-white">{finaBridge?.activeCases || 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-200 mb-1">Trade Volume</p>
-                    <p className="text-2xl font-bold text-white">${formatNumber(finaBridge?.tradeVolume || 0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-200 mb-1">USD Value</p>
-                    <p className="text-2xl font-bold text-white">{showBalance ? formatCurrency(finaBridge?.usdValue || 0) : hiddenValue}</p>
-                  </div>
-                </div>
-              </div>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-4">No certificates yet</p>
+              )}
+              
+              <Link href="/finavault">
+                <Button variant="ghost" className="w-full mt-3 text-gray-400 hover:text-white border border-[#2a2a4a] hover:bg-[#2a2a4a]">
+                  View All
+                </Button>
+              </Link>
             </div>
-          </section>
-        )}
-
-        {/* Insights Row */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* BNSL Summary */}
-          <Card className="p-5 bg-gradient-to-br from-teal-50 to-emerald-50 border-teal-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-teal-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">BNSL Program</h3>
-                <p className="text-xs text-gray-500">Buy Now, Sell Later</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Invested</span>
-                <span className="font-semibold text-gray-900">{formatNumber(totals.bnslLockedGrams || 0, 4)}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Active Plans</span>
-                <span className="font-semibold text-teal-600">{totals.activeBnslPlans || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total Profit</span>
-                <span className="font-semibold text-emerald-600">+{formatCurrency(totals.bnslTotalProfit || 0)}</span>
-              </div>
-            </div>
-            <Link href="/bnsl">
-              <Button variant="outline" className="w-full mt-4 border-teal-300 text-teal-700 hover:bg-teal-100">
-                View Plans <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </Card>
-          
-          {/* Pending Deposits */}
-          <Card className="p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Pending</h3>
-                <p className="text-xs text-gray-500">Awaiting verification</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Gold Pending</span>
-                <span className="font-semibold text-orange-600">{formatNumber(totals.pendingGoldGrams || 0, 4)}g</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">USD Pending</span>
-                <span className="font-semibold text-gray-900">${formatNumber(totals.pendingDepositUsd || 0)}</span>
-              </div>
-            </div>
-            <Link href="/finapay">
-              <Button variant="outline" className="w-full mt-4 border-orange-300 text-orange-700 hover:bg-orange-100">
-                View Details <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </Card>
-          
-          {/* Certificates */}
-          <Card className="p-5 bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Certificates</h3>
-                <p className="text-xs text-gray-500">Ownership proof</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total</span>
-                <span className="font-semibold text-gray-900">{certificates?.summary?.total || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Active</span>
-                <span className="font-semibold text-purple-600">{certificates?.summary?.active || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Physical Storage</span>
-                <span className="font-semibold text-emerald-600">{certificates?.summary?.physicalStorage || 0}</span>
-              </div>
-            </div>
-            <Link href="/finavault">
-              <Button variant="outline" className="w-full mt-4 border-purple-300 text-purple-700 hover:bg-purple-100">
-                View All <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </Card>
-        </section>
-
-        {/* Recent Transactions & Certificates */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TransactionsTable transactions={transactions} goldPrice={goldPrice} />
-          <CertificatesCard certificates={certificates?.recent || []} isLoading={isLoading} />
-        </section>
-
+          </div>
+        </div>
       </div>
 
       {showOnboarding && (
