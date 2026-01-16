@@ -244,7 +244,7 @@ export default function Hero() {
 
               {/* Product Navigation - Mobile only */}
               <motion.div variants={itemVariants} className="lg:hidden">
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {(isPersonal ? [
                     { label: 'FinaPay', href: '/finagold/finapay' },
                     { label: 'FinaVault', href: '/finagold/finavault' },
@@ -260,7 +260,7 @@ export default function Hero() {
                     <Link
                       key={item.label}
                       href={item.href}
-                      className="flex-shrink-0 px-4 py-2 min-h-[40px] rounded-full bg-white/90 border border-gray-200 text-sm font-medium text-gray-700 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all shadow-sm"
+                      className="px-4 py-1.5 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all"
                       data-testid={`nav-${item.label.toLowerCase()}`}
                     >
                       {item.label}
