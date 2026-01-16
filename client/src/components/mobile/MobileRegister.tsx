@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Building, User, Eye, EyeOff, Camera, RefreshCw, Check, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Building, User, Eye, EyeOff, Camera, RefreshCw, Check, ArrowLeft, ChevronRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 type AccountType = 'personal' | 'business';
 
@@ -240,28 +241,25 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Link href="/finagold">
-            <button className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
-            </button>
-          </Link>
-          <span className="text-sm text-gray-500">Step 1 of 2</span>
-        </div>
-      </div>
-
-      <div className="px-5 py-6">
+      <div className="px-5 py-6 pb-24">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-1 mb-6"
+          className="text-center mb-6"
         >
-          <h1 className="text-2xl font-bold text-gray-900">Create Your Account</h1>
-          <p className="text-gray-500 text-sm">Join Finatrades today</p>
+          <img 
+            src={finatradesLogo} 
+            alt="Finatrades" 
+            className="h-10 mx-auto mb-4"
+            style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
+            data-testid="img-logo"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Join Finatrades today</h1>
+          <p className="text-gray-500 text-sm">Create your account to get started</p>
         </motion.div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-3xl shadow-xl shadow-purple-100/50 p-5 border border-purple-100/50">
+          <form onSubmit={handleSubmit} className="space-y-5">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -608,7 +606,15 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               <Link href="/sign-in" className="text-purple-600 font-medium">Sign In</Link>
             </p>
           </motion.div>
-        </form>
+          </form>
+        </div>
+        
+        <div className="mt-6 text-center">
+          <p className="flex justify-center items-center gap-2 text-xs text-gray-400">
+            <Lock className="w-3 h-3" />
+            Secured by FinaTrades Switzerland
+          </p>
+        </div>
       </div>
     </div>
   );
