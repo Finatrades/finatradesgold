@@ -10,16 +10,28 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileRegister from '@/components/mobile/MobileRegister';
 
 type AccountType = 'personal' | 'business';
 
 export default function Register() {
   const { domainMode } = useAccountType();
-  const { login } = useAuth();
-  const [, setLocation] = useLocation();
+  const isMobile = useIsMobile();
   
   const urlParams = new URLSearchParams(window.location.search);
   const initialReferralCode = urlParams.get('ref') || '';
+
+  if (isMobile) {
+    return <MobileRegister initialReferralCode={initialReferralCode} domainMode={domainMode} />;
+  }
+
+  return <DesktopRegister initialReferralCode={initialReferralCode} domainMode={domainMode} />;
+}
+
+function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralCode: string; domainMode: 'personal' | 'business' }) {
+  const { login } = useAuth();
+  const [, setLocation] = useLocation();
   
   const [accountType, setAccountType] = useState<AccountType>(domainMode);
   const [referralCode, setReferralCode] = useState(initialReferralCode);
