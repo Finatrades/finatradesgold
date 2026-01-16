@@ -9,6 +9,7 @@ import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import MobileBottomNav from './components/MobileBottomNav';
 import { ModeProvider } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -961,6 +962,8 @@ export default function FinaVaultLanding() {
         <FinalCTASection />
         <Footer />
         <FloatingAgentChat />
+        <MobileBottomNav />
+        <div className="lg:hidden h-16" />
       </div>
     </ModeProvider>
   );

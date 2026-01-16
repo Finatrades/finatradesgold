@@ -9,6 +9,7 @@ import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo.png';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import MobileBottomNav from './components/MobileBottomNav';
 import { ModeProvider, useMode } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -1775,6 +1776,8 @@ function FinaBridgeContent() {
           </motion.div>
         </div>
         <Footer />
+        <MobileBottomNav />
+        <div className="lg:hidden h-16" />
       </div>
     );
   }
@@ -1816,6 +1819,8 @@ function FinaBridgeContent() {
       <FinalCTASection />
       <Footer />
       <FloatingAgentChat />
+      <MobileBottomNav />
+      <div className="lg:hidden h-16" />
     </div>
   );
 }
