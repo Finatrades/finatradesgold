@@ -1,7 +1,8 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Home, Wallet, History, User, Plus } from 'lucide-react';
+import { Home, Wallet, History, User, Plus, Vault, CalendarClock, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAccountType } from '@/context/AccountTypeContext';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -16,14 +17,25 @@ interface MobileBottomNavProps {
 
 export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavProps) {
   const [location, setLocation] = useLocation();
+  const { accountType } = useAccountType();
 
-  const navItems: NavItem[] = [
+  const personalNavItems: NavItem[] = [
     { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/dashboard' },
     { icon: <Wallet className="w-5 h-5" />, label: 'Wallet', path: '/finapay' },
     { icon: <Plus className="w-6 h-6" />, label: '', path: '', isCenter: true },
-    { icon: <History className="w-5 h-5" />, label: 'Activity', path: '/activity-log' },
+    { icon: <Vault className="w-5 h-5" />, label: 'Storage', path: '/finavault' },
+    { icon: <CalendarClock className="w-5 h-5" />, label: 'BNSL', path: '/bnsl' },
+  ];
+
+  const businessNavItems: NavItem[] = [
+    { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/dashboard' },
+    { icon: <Building2 className="w-5 h-5" />, label: 'Bridge', path: '/finabridge' },
+    { icon: <Plus className="w-6 h-6" />, label: '', path: '', isCenter: true },
+    { icon: <History className="w-5 h-5" />, label: 'Activity', path: '/activity' },
     { icon: <User className="w-5 h-5" />, label: 'Profile', path: '/profile' },
   ];
+
+  const navItems = accountType === 'business' ? businessNavItems : personalNavItems;
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
