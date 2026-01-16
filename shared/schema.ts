@@ -5823,3 +5823,247 @@ export const insertCredentialPresentationSchema = createInsertSchema(credentialP
 export type InsertCredentialPresentation = z.infer<typeof insertCredentialPresentationSchema>;
 export type CredentialPresentation = typeof credentialPresentations.$inferSelect;
 
+
+// ============================================
+// PRICE ALERTS
+// ============================================
+
+export const priceAlertDirectionEnum = pgEnum('price_alert_direction', ['above', 'below']);
+export const priceAlertChannelEnum = pgEnum('price_alert_channel', ['email', 'push', 'in_app', 'all']);
+
+export const priceAlerts = pgTable("price_alerts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  targetPricePerGram: decimal("target_price_per_gram", { precision: 12, scale: 4 }).notNull(),
+  direction: priceAlertDirectionEnum("direction").notNull(), // 'above' or 'below'
+  channel: priceAlertChannelEnum("channel").notNull().default('all'),
+  isActive: boolean("is_active").notNull().default(true),
+  triggeredAt: timestamp("triggered_at"),
+  notificationSentAt: timestamp("notification_sent_at"),
+  note: text("note"), // Optional user note
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPriceAlertSchema = createInsertSchema(priceAlerts)
+  .omit({ id: true, createdAt: true, updatedAt: true, triggeredAt: true, notificationSentAt: true })
+  .extend({
+    note: z.string().nullable().optional(),
+  });
+export type InsertPriceAlert = z.infer<typeof insertPriceAlertSchema>;
+export type PriceAlert = typeof priceAlerts.$inferSelect;
+
+// ============================================
+// AUTO-BUY / DCA (Dollar Cost Averaging)
+// ============================================
+
+export const dcaFrequencyEnum = pgEnum('dca_frequency', ['daily', 'weekly', 'biweekly', 'monthly']);
+export const dcaPlanStatusEnum = pgEnum('dca_plan_status', ['active', 'paused', 'cancelled', 'completed']);
+export const dcaExecutionStatusEnum = pgEnum('dca_execution_status', ['pending', 'processing', 'completed', 'failed', 'skipped']);
+
+export const dcaPlans = pgTable("dca_plans", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }), // Optional plan name
+  amountUsd: decimal("amount_usd", { precision: 12, scale: 2 }).notNull(), // Amount in USD per purchase
+  frequency: dcaFrequencyEnum("frequency").notNull(),
+  dayOfWeek: integer("day_of_week"), // 0-6 for weekly (Sunday=0)
+  dayOfMonth: integer("day_of_month"), // 1-31 for monthly
+  nextRunAt: timestamp("next_run_at").notNull(),
+  lastRunAt: timestamp("last_run_at"),
+  status: dcaPlanStatusEnum("status").notNull().default('active'),
+  totalExecutions: integer("total_executions").notNull().default(0),
+  totalGoldPurchased: decimal("total_gold_purchased", { precision: 18, scale: 8 }).notNull().default('0'),
+  totalUsdSpent: decimal("total_usd_spent", { precision: 12, scale: 2 }).notNull().default('0'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDcaPlanSchema = createInsertSchema(dcaPlans)
+  .omit({ id: true, createdAt: true, updatedAt: true, lastRunAt: true, totalExecutions: true, totalGoldPurchased: true, totalUsdSpent: true })
+  .extend({
+    name: z.string().nullable().optional(),
+    dayOfWeek: z.number().min(0).max(6).nullable().optional(),
+    dayOfMonth: z.number().min(1).max(31).nullable().optional(),
+    status: z.enum(['active', 'paused', 'cancelled', 'completed']).optional(),
+  });
+export type InsertDcaPlan = z.infer<typeof insertDcaPlanSchema>;
+export type DcaPlan = typeof dcaPlans.$inferSelect;
+
+export const dcaExecutions = pgTable("dca_executions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id", { length: 255 }).notNull().references(() => dcaPlans.id),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
+  amountUsd: decimal("amount_usd", { precision: 12, scale: 2 }).notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 8 }),
+  pricePerGram: decimal("price_per_gram", { precision: 12, scale: 4 }),
+  status: dcaExecutionStatusEnum("status").notNull().default('pending'),
+  errorMessage: text("error_message"),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  executedAt: timestamp("executed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDcaExecutionSchema = createInsertSchema(dcaExecutions)
+  .omit({ id: true, createdAt: true, executedAt: true })
+  .extend({
+    transactionId: z.string().nullable().optional(),
+    goldGrams: z.string().nullable().optional(),
+    pricePerGram: z.string().nullable().optional(),
+    errorMessage: z.string().nullable().optional(),
+  });
+export type InsertDcaExecution = z.infer<typeof insertDcaExecutionSchema>;
+export type DcaExecution = typeof dcaExecutions.$inferSelect;
+
+// ============================================
+// SAVINGS GOALS
+// ============================================
+
+export const savingsGoalStatusEnum = pgEnum('savings_goal_status', ['active', 'completed', 'cancelled']);
+
+export const savingsGoals = pgTable("savings_goals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  targetGrams: decimal("target_grams", { precision: 18, scale: 8 }).notNull(),
+  targetDate: date("target_date"),
+  status: savingsGoalStatusEnum("status").notNull().default('active'),
+  completedAt: timestamp("completed_at"),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSavingsGoalSchema = createInsertSchema(savingsGoals)
+  .omit({ id: true, createdAt: true, updatedAt: true, completedAt: true })
+  .extend({
+    targetDate: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+    status: z.enum(['active', 'completed', 'cancelled']).optional(),
+  });
+export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
+export type SavingsGoal = typeof savingsGoals.$inferSelect;
+
+// ============================================
+// BENEFICIARIES (Estate Planning)
+// ============================================
+
+export const beneficiaryStatusEnum = pgEnum('beneficiary_status', ['pending', 'verified', 'rejected']);
+export const beneficiaryRelationshipEnum = pgEnum('beneficiary_relationship', [
+  'spouse', 'child', 'parent', 'sibling', 'grandchild', 'grandparent', 
+  'other_relative', 'friend', 'business_partner', 'charity', 'trust', 'other'
+]);
+
+export const beneficiaries = pgTable("beneficiaries", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  relationship: beneficiaryRelationshipEnum("relationship").notNull(),
+  email: varchar("email", { length: 255 }),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  address: text("address"),
+  allocationPercent: decimal("allocation_percent", { precision: 5, scale: 2 }).notNull(), // 0.00 to 100.00
+  status: beneficiaryStatusEnum("status").notNull().default('pending'),
+  verifiedAt: timestamp("verified_at"),
+  identificationDocument: text("identification_document"), // Document path/URL
+  note: text("note"),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBeneficiarySchema = createInsertSchema(beneficiaries)
+  .omit({ id: true, createdAt: true, updatedAt: true, verifiedAt: true })
+  .extend({
+    email: z.string().email().nullable().optional(),
+    phoneNumber: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    identificationDocument: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+    isPrimary: z.boolean().optional(),
+    status: z.enum(['pending', 'verified', 'rejected']).optional(),
+  });
+export type InsertBeneficiary = z.infer<typeof insertBeneficiarySchema>;
+export type Beneficiary = typeof beneficiaries.$inferSelect;
+
+// ============================================
+// USER ACTIVITY LOGS (User-facing audit trail)
+// ============================================
+
+export const userActivityTypeEnum = pgEnum('user_activity_type', [
+  'login', 'logout', 'login_failed', 'password_change', 'email_change',
+  'mfa_enabled', 'mfa_disabled', 'profile_update', 'settings_change',
+  'beneficiary_added', 'beneficiary_removed', 'dca_created', 'dca_updated',
+  'price_alert_created', 'price_alert_triggered', 'kyc_submitted', 'kyc_approved'
+]);
+
+export const userActivityLogs = pgTable("user_activity_logs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  activityType: userActivityTypeEnum("activity_type").notNull(),
+  description: text("description"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  deviceInfo: json("device_info").$type<{ browser?: string; os?: string; device?: string }>(),
+  location: varchar("location", { length: 255 }), // City, Country (from IP)
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserActivityLogSchema = createInsertSchema(userActivityLogs)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    description: z.string().nullable().optional(),
+    ipAddress: z.string().nullable().optional(),
+    userAgent: z.string().nullable().optional(),
+    deviceInfo: z.object({
+      browser: z.string().optional(),
+      os: z.string().optional(),
+      device: z.string().optional(),
+    }).nullable().optional(),
+    location: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).nullable().optional(),
+  });
+export type InsertUserActivityLog = z.infer<typeof insertUserActivityLogSchema>;
+export type UserActivityLog = typeof userActivityLogs.$inferSelect;
+
+// ============================================
+// REPORT EXPORTS
+// ============================================
+
+export const reportTypeEnum = pgEnum('report_type', [
+  'transaction_history', 'tax_report', 'portfolio_summary', 
+  'trading_activity', 'vault_holdings', 'fee_summary'
+]);
+export const reportFormatEnum = pgEnum('report_format', ['pdf', 'csv', 'xlsx']);
+export const reportStatusEnum = pgEnum('report_status', ['pending', 'generating', 'completed', 'failed']);
+
+export const reportExports = pgTable("report_exports", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  reportType: reportTypeEnum("report_type").notNull(),
+  format: reportFormatEnum("format").notNull(),
+  status: reportStatusEnum("status").notNull().default('pending'),
+  dateFrom: date("date_from"),
+  dateTo: date("date_to"),
+  filters: json("filters").$type<Record<string, unknown>>(),
+  fileUrl: text("file_url"),
+  fileSizeBytes: integer("file_size_bytes"),
+  errorMessage: text("error_message"),
+  expiresAt: timestamp("expires_at"), // Auto-delete after expiry
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReportExportSchema = createInsertSchema(reportExports)
+  .omit({ id: true, createdAt: true, completedAt: true, fileUrl: true, fileSizeBytes: true, errorMessage: true })
+  .extend({
+    dateFrom: z.string().nullable().optional(),
+    dateTo: z.string().nullable().optional(),
+    filters: z.record(z.unknown()).nullable().optional(),
+    expiresAt: z.date().nullable().optional(),
+    status: z.enum(['pending', 'generating', 'completed', 'failed']).optional(),
+  });
+export type InsertReportExport = z.infer<typeof insertReportExportSchema>;
+export type ReportExport = typeof reportExports.$inferSelect;
