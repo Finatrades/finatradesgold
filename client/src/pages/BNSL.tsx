@@ -254,6 +254,8 @@ function calculateAccruedMargin(plan: BnslPlan): number {
 }
 
 import { useLocation, useSearch } from 'wouter';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileBNSL from '@/components/mobile/MobileBNSL';
 
 export default function BNSL() {
   const { user } = useAuth();
@@ -609,7 +611,17 @@ export default function BNSL() {
     });
   };
 
+  const isMobile = useIsMobile();
+
   if (!user) return null;
+
+  if (isMobile) {
+    return (
+      <DashboardLayout>
+        <MobileBNSL />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -26,6 +26,8 @@ import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 import DualWalletDisplay from "@/components/finapay/DualWalletDisplay";
 import { useLocation, useSearch } from 'wouter';
 import { ShieldAlert } from 'lucide-react';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileFinaPay from '@/components/mobile/MobileFinaPay';
 
 export default function FinaPay() {
   const { user } = useAuth();
@@ -283,6 +285,8 @@ export default function FinaPay() {
     refreshTransactions();
   };
 
+  const isMobile = useIsMobile();
+
   if (!user) return null;
 
   if (loading && !rawWallet) {
@@ -294,6 +298,14 @@ export default function FinaPay() {
             <p className="text-muted-foreground">Loading your wallet...</p>
           </div>
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <DashboardLayout>
+        <MobileFinaPay />
       </DashboardLayout>
     );
   }

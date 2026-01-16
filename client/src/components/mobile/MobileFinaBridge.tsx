@@ -87,16 +87,20 @@ export default function MobileFinaBridge() {
   const [goldPricePerGram, setGoldPricePerGram] = useState(0);
 
   const fetchData = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       const [walletRes, requestsRes, proposalsRes, priceRes] = await Promise.all([
-        fetch('/api/finabridge/wallet').then(r => r.ok ? r.json() : null),
-        fetch('/api/finabridge/trade-requests').then(r => r.ok ? r.json() : { tradeRequests: [] }),
-        fetch('/api/finabridge/proposals/my').then(r => r.ok ? r.json() : { proposals: [] }),
-        fetch('/api/gold-price').then(r => r.ok ? r.json() : { pricePerGram: 0 })
+        fetch(`/api/finabridge/wallet/${user.id}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+        fetch(`/api/finabridge/importer/requests/${user.id}`, { credentials: 'include' }).then(r => r.ok ? r.json() : { requests: [] }),
+        fetch(`/api/finabridge/exporter/proposals/${user.id}`, { credentials: 'include' }).then(r => r.ok ? r.json() : { proposals: [] }),
+        fetch('/api/gold-price', { credentials: 'include' }).then(r => r.ok ? r.json() : { pricePerGram: 0 })
       ]);
       
       if (walletRes?.wallet) setWallet(walletRes.wallet);
-      setTradeRequests(requestsRes.tradeRequests || []);
+      setTradeRequests(requestsRes.requests || []);
       setProposals(proposalsRes.proposals || []);
       setGoldPricePerGram(priceRes.pricePerGram || 0);
     } catch (error) {
@@ -108,7 +112,7 @@ export default function MobileFinaBridge() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user?.id]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

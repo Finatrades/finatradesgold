@@ -22,6 +22,8 @@ import FinaBridgeDisclaimerModal, { FINABRIDGE_TERMS_AND_CONDITIONS, FINABRIDGE_
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import DealRoom from '@/components/finabridge/DealRoom';
 import DealRoomList from '@/components/finabridge/DealRoomList';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import MobileFinaBridge from '@/components/mobile/MobileFinaBridge';
 
 interface TradeRequest {
   id: string;
@@ -824,7 +826,17 @@ export default function FinaBridge() {
     }
   };
 
+  const isMobile = useIsMobile();
+
   if (!user) return null;
+
+  if (isMobile) {
+    return (
+      <DashboardLayout>
+        <MobileFinaBridge />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

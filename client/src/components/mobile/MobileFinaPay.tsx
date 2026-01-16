@@ -84,6 +84,52 @@ export default function MobileFinaPay() {
     description: tx.description || ''
   }));
 
+  const handleSellConfirm = async (grams: number, payout: number, pinToken: string) => {
+    if (grams > goldGrams) {
+      toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'x-pin-token': pinToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: 'Sell',
+          userId: user?.id,
+          amountUsd: payout.toFixed(2),
+          amountGold: grams.toFixed(6),
+          description: 'Gold sale via FinaPay'
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to submit sell order');
+      }
+      
+      handleRefresh();
+      setShowSellModal(false);
+      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted.` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit sell order.", variant: "destructive" });
+    }
+  };
+
+  const handleSendConfirm = async (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
+    setShowSendModal(false);
+    handleRefresh();
+  };
+
+  const handleRequestConfirm = async (from: string, amount: number, asset: 'USD' | 'GOLD') => {
+    setShowRequestModal(false);
+    handleRefresh();
+  };
+
   const quickActions = [
     { icon: Plus, label: 'Add', gradient: 'from-green-500 to-emerald-600', action: () => isKycApproved ? setShowDepositModal(true) : handleKycRequired() },
     { icon: ShoppingCart, label: 'Buy', gradient: 'from-purple-500 to-violet-600', action: () => isKycApproved ? setShowBuyModal(true) : handleKycRequired() },
@@ -324,28 +370,19 @@ export default function MobileFinaPay() {
         goldPrice={currentGoldPriceUsdPerGram}
         walletBalance={goldGrams}
         spreadPercent={settings?.sellSpreadPercent || 1}
-        onConfirm={() => {
-          setShowSellModal(false);
-          handleRefresh();
-        }}
+        onConfirm={handleSellConfirm}
       />
       <SendGoldModal
         isOpen={showSendModal}
         onClose={() => setShowSendModal(false)}
         walletBalance={usdBalance}
         goldBalance={goldGrams}
-        onConfirm={() => {
-          setShowSendModal(false);
-          handleRefresh();
-        }}
+        onConfirm={handleSendConfirm}
       />
       <RequestGoldModal
         isOpen={showRequestModal}
         onClose={() => setShowRequestModal(false)}
-        onConfirm={() => {
-          setShowRequestModal(false);
-          handleRefresh();
-        }}
+        onConfirm={handleRequestConfirm}
       />
       <DepositModal
         isOpen={showDepositModal}
