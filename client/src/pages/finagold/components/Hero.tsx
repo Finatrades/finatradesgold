@@ -242,6 +242,33 @@ export default function Hero() {
                 </button>
               </motion.div>
 
+              {/* Product Navigation - Mobile only */}
+              <motion.div variants={itemVariants} className="lg:hidden">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                  {(isPersonal ? [
+                    { label: 'FinaPay', href: '/finagold/finapay' },
+                    { label: 'FinaVault', href: '/finagold/finavault' },
+                    { label: 'BNSL', href: '/finagold/bnsl' },
+                    { label: 'Login', href: '/sign-in' },
+                  ] : [
+                    { label: 'FinaPay', href: '/finagold/finapay' },
+                    { label: 'FinaVault', href: '/finagold/finavault' },
+                    { label: 'Login', href: '/sign-in' },
+                    { label: 'FinaBridge', href: '/finagold/finabridge' },
+                    { label: 'BNSL', href: '/finagold/bnsl' },
+                  ]).map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="flex-shrink-0 px-4 py-2 min-h-[40px] rounded-full bg-white/90 border border-gray-200 text-sm font-medium text-gray-700 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all shadow-sm"
+                      data-testid={`nav-${item.label.toLowerCase()}`}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+
               {/* Pink/Magenta gradient title */}
               <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
                 <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">{c.headline}</span>
