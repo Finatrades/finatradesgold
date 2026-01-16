@@ -72,7 +72,7 @@ interface KycSyncPayload {
   firstName: string | null;
   lastName: string | null;
   phone?: string | null;
-  accountType: 'personal' | 'business';
+  accountType: 'personal' | 'corporate';  // Wingold expects 'corporate', not 'business'
   kycStatus: 'pending' | 'approved' | 'rejected';
   kycApprovedAt?: string;
   kycApprovedBy?: string;
@@ -117,13 +117,16 @@ export async function syncKycToWingold(userId: string): Promise<KycSyncResult> {
       return { success: false, message: 'KYC not approved', error: 'KYC_NOT_APPROVED' };
     }
 
+    // Map Finatrades 'business' to Wingold's expected 'corporate'
+    const wingoldAccountType = user.accountType === 'business' ? 'corporate' : 'personal';
+    
     const payload: KycSyncPayload = {
       finatradesId: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phoneNumber,
-      accountType: user.accountType as 'personal' | 'business',
+      accountType: wingoldAccountType,
       kycStatus: 'approved',
       kycApprovedAt: new Date().toISOString().split('T')[0],
     };
