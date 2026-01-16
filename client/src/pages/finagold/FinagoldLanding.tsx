@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
 import GeoRestrictionNotice from './components/GeoRestrictionNotice';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
+import MobileBottomNav from './components/MobileBottomNav';
 
 function FinagoldContent() {
   useEffect(() => {
@@ -106,6 +107,8 @@ function FinagoldContent() {
       <GeoRestrictionNotice />
       <CookieConsent />
       <FloatingAgentChat />
+      <MobileBottomNav />
+      <div className="lg:hidden h-16" />
     </div>
   );
 }

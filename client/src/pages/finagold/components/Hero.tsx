@@ -242,33 +242,6 @@ export default function Hero() {
                 </button>
               </motion.div>
 
-              {/* Product Navigation - Mobile only */}
-              <motion.div variants={itemVariants} className="lg:hidden">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(isPersonal ? [
-                    { label: 'FinaPay', href: '/finagold/finapay' },
-                    { label: 'FinaVault', href: '/finagold/finavault' },
-                    { label: 'BNSL', href: '/finagold/bnsl' },
-                    { label: 'Login', href: '/sign-in' },
-                  ] : [
-                    { label: 'FinaPay', href: '/finagold/finapay' },
-                    { label: 'FinaVault', href: '/finagold/finavault' },
-                    { label: 'Login', href: '/sign-in' },
-                    { label: 'FinaBridge', href: '/finagold/finabridge' },
-                    { label: 'BNSL', href: '/finagold/bnsl' },
-                  ]).map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="px-4 py-1.5 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                      data-testid={`nav-${item.label.toLowerCase()}`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </motion.div>
-
               {/* Pink/Magenta gradient title */}
               <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
                 <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">{c.headline}</span>
