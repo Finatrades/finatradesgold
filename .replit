@@ -57,7 +57,7 @@ WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,h
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
-PRODUCTION_DOMAIN = "demo.finatrades.com"
+PRODUCTION_DOMAIN = "finatrades.com"
 WINGOLD_URL = "https://wingoldandmetals.com"
 
 [userenv.development]
