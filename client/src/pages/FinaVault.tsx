@@ -708,8 +708,8 @@ export default function FinaVault() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Header - hidden on mobile since mobile nav shows page context */}
+        <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
              <div className="p-2 bg-purple-100 rounded-lg border border-purple-200 text-primary">
                 <Database className="w-6 h-6" />
