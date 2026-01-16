@@ -96,10 +96,52 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* Welcome Header */}
-        <section className="pb-1 md:pb-0">
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Welcome, {userName}</h1>
-          <p className="text-gray-500 text-xs md:text-sm mt-0.5 md:mt-1">Your portfolio overview</p>
+        {/* Mobile: Hero Balance Card */}
+        <section className="md:hidden">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-500 p-5 shadow-lg">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-white/80 text-xs font-medium">Welcome back</p>
+                  <h1 className="text-white text-xl font-bold">{userName}</h1>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-white/70 text-xs mb-1">Total Portfolio Value</p>
+                <p className="text-white text-3xl font-bold tracking-tight">
+                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                </p>
+                <p className="text-white/60 text-xs mt-1">
+                  {showBalance ? `≈ ${formatNumber(totalGoldGrams, 4)}g gold` : ''}
+                </p>
+              </div>
+              <div className="flex gap-4 mt-4 pt-3 border-t border-white/20">
+                <div className="flex-1">
+                  <p className="text-white/60 text-[10px]">USD</p>
+                  <p className="text-white font-semibold text-sm">${formatNumber(totalGoldGrams * goldPrice)}</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-white/60 text-[10px]">AED</p>
+                  <p className="text-white font-semibold text-sm">Dh {formatNumber(totalGoldGrams * goldPrice * 3.67)}</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-white/60 text-[10px]">Storage</p>
+                  <p className="text-white font-semibold text-sm">{formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Desktop: Welcome Header */}
+        <section className="hidden md:block pb-0">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome, {userName}</h1>
+          <p className="text-gray-500 text-sm mt-1">Your portfolio overview</p>
         </section>
 
         {/* Quick Actions - Colorful buttons */}
@@ -111,38 +153,85 @@ export default function Dashboard() {
         <section className="flex flex-col lg:flex-row gap-4 md:gap-6">
           {/* Left side - Stats Cards */}
           <div className="flex-1 space-y-3 md:space-y-4">
-            {/* Row 1 - Gold Storage, Gold Value USD, Gold Value AED */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl col-span-2 md:col-span-1">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">Gold Storage</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Database className="w-3 h-3 md:w-3.5 md:h-3.5 text-purple-600" />
+            {/* Mobile: Compact 2x2 grid for secondary stats */}
+            <div className="grid grid-cols-2 gap-2 md:hidden">
+              <Card className="p-3 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-sm">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-[11px] text-gray-600 font-medium">BNSL</p>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{formatNumber(totals.bnslLockedGrams || 0, 1)}g</p>
+                <p className="text-[10px] text-green-600 font-medium">+${formatNumber(totals.bnslTotalProfit || 0)}</p>
+              </Card>
+              
+              <Card className="p-3 bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm">
+                    <Database className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-[11px] text-gray-600 font-medium">Vault</p>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{formatNumber((totals.vaultGoldGrams || 0), 2)}g</p>
+                <p className="text-[10px] text-gray-500">FinaVault</p>
+              </Card>
+              
+              <Card className="p-3 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
+                    <ArrowUpRight className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-[11px] text-gray-600 font-medium">Profit</p>
+                </div>
+                <p className="text-lg font-bold text-emerald-600">+${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                <p className="text-[10px] text-gray-500">Total ROI</p>
+              </Card>
+              
+              <Card className="p-3 bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-[11px] text-gray-600 font-medium">Growth</p>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{formatNumber(totals.walletGoldGrams || 0, 2)}g</p>
+                <p className="text-[10px] text-gray-500">Wallet</p>
+              </Card>
+            </div>
+
+            {/* Desktop: Original grid layout */}
+            <div className="hidden md:grid grid-cols-3 gap-4">
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Gold Storage</p>
+                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Database className="w-3.5 h-3.5 text-purple-600" />
                   </div>
                 </div>
-                <p className="text-xl md:text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1">Deposited in FinaVault</p>
+                <p className="text-xs text-gray-400 mt-1">Deposited in FinaVault</p>
               </Card>
               
-              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">USD Value</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-yellow-100 flex items-center justify-center">
-                    <span className="text-yellow-600 text-xs md:text-sm font-bold">$</span>
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">USD Value</p>
+                  <div className="w-6 h-6 rounded bg-yellow-100 flex items-center justify-center">
+                    <span className="text-yellow-600 text-sm font-bold">$</span>
                   </div>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">Worth in USD</p>
+                <p className="text-xs text-gray-400 mt-1">Worth in USD</p>
               </Card>
               
-              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">AED Value</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-green-100 flex items-center justify-center">
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">AED Value</p>
+                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
                     <span className="text-green-600 text-[10px] md:text-xs font-bold">Dh</span>
                   </div>
                 </div>
@@ -153,45 +242,45 @@ export default function Dashboard() {
               </Card>
             </div>
             
-            {/* Row 2 - Total Portfolio, BNSL Invested, Total Profit */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">Portfolio</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-blue-100 flex items-center justify-center">
-                    <TrendingUp className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-600" />
+            {/* Desktop Row 2 - Total Portfolio, BNSL Invested, Total Profit */}
+            <div className="hidden md:grid grid-cols-3 gap-4">
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Total Portfolio</p>
+                  <div className="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
                   </div>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">Overall Investment</p>
+                <p className="text-xs text-gray-400 mt-1">Overall Investment</p>
               </Card>
               
-              <Card className="p-3 md:p-4 bg-white border border-gray-100 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">BNSL</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-purple-100 flex items-center justify-center">
-                    <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-purple-600" />
+              <Card className="p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">BNSL Invested</p>
+                  <div className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                   </div>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 hidden md:block">In active plans</p>
+                <p className="text-xs text-gray-400 mt-1">In active plans</p>
               </Card>
               
-              <Card className="p-3 md:p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl col-span-2 md:col-span-1">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <p className="text-[10px] md:text-xs text-gray-500">Total Profit</p>
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-green-100 flex items-center justify-center">
-                    <ArrowUpRight className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-600" />
+              <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500">Total Profit</p>
+                  <div className="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                    <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
                   </div>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-green-600">
                   {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1">ROI from BNSL</p>
+                <p className="text-xs text-gray-400 mt-1">ROI from BNSL</p>
               </Card>
             </div>
           </div>
