@@ -19094,9 +19094,7 @@ ${message}
       const ngeniusHostedSessionKey = process.env.NGENIUS_HOSTED_SESSION_KEY;
 
       if (!settings?.ngeniusEnabled || !ngeniusOutletRef || !ngeniusHostedSessionKey) {
-
-
-      res.json({ 
+        return res.json({ 
           enabled: false,
           apiKey: '',
           outletRef: '',
