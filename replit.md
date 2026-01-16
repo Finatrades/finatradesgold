@@ -57,8 +57,10 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 
 **Authentication & Authorization:**
 - Email/password authentication with mandatory email verification (OTP).
+- **Login Gating**: Unverified users are blocked from logging in until email is verified (returns 403 with `requiresEmailVerification: true`).
 - Session storage in PostgreSQL.
 - Roles: `user` and `admin`.
+- Admin accounts must use `/admin/login` portal (blocked from regular login endpoint).
 - Multi-tier KYC levels (Not Started, In Progress, Approved, Rejected).
 
 **KYC System:**
