@@ -31,7 +31,13 @@ import {
   sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements,
   depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions, unifiedTallyEvents,
   wallets as walletsTable, transactions as transactionsTable,
-  bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable
+  bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable,
+  priceAlerts, insertPriceAlertSchema,
+  dcaPlans, dcaExecutions, insertDcaPlanSchema,
+  savingsGoals, insertSavingsGoalSchema,
+  beneficiaries, insertBeneficiarySchema,
+  userActivityLogs, insertUserActivityLogSchema, InsertUserActivityLog,
+  reportExports, insertReportExportSchema
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -507,6 +513,98 @@ function sanitizeUser(user: User): Omit<User, 'password' | 'emailVerificationCod
   return safeUser;
 }
 
+// ============================================================================
+// USER ACTIVITY LOGGING HELPER
+// ============================================================================
+
+type UserActivityType = 'login' | 'logout' | 'login_failed' | 'password_change' | 'email_change' |
+  'mfa_enabled' | 'mfa_disabled' | 'profile_update' | 'settings_change' |
+  'beneficiary_added' | 'beneficiary_removed' | 'dca_created' | 'dca_updated' |
+  'price_alert_created' | 'price_alert_triggered' | 'kyc_submitted' | 'kyc_approved';
+
+// Parse device info from user agent string
+function parseDeviceInfo(userAgent: string | undefined): { browser?: string; os?: string; device?: string } {
+  if (!userAgent) return {};
+  
+  const deviceInfo: { browser?: string; os?: string; device?: string } = {};
+  
+  // Parse browser
+  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+    const match = userAgent.match(/Chrome\/(\d+)/);
+    deviceInfo.browser = match ? `Chrome ${match[1]}` : 'Chrome';
+  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    const match = userAgent.match(/Version\/(\d+)/);
+    deviceInfo.browser = match ? `Safari ${match[1]}` : 'Safari';
+  } else if (userAgent.includes('Firefox')) {
+    const match = userAgent.match(/Firefox\/(\d+)/);
+    deviceInfo.browser = match ? `Firefox ${match[1]}` : 'Firefox';
+  } else if (userAgent.includes('Edg')) {
+    const match = userAgent.match(/Edg\/(\d+)/);
+    deviceInfo.browser = match ? `Edge ${match[1]}` : 'Edge';
+  }
+  
+  // Parse OS
+  if (userAgent.includes('Windows NT 10')) {
+    deviceInfo.os = 'Windows 10/11';
+  } else if (userAgent.includes('Windows')) {
+    deviceInfo.os = 'Windows';
+  } else if (userAgent.includes('Mac OS X')) {
+    const match = userAgent.match(/Mac OS X (\d+[._]\d+)/);
+    deviceInfo.os = match ? `macOS ${match[1].replace('_', '.')}` : 'macOS';
+  } else if (userAgent.includes('Android')) {
+    const match = userAgent.match(/Android (\d+)/);
+    deviceInfo.os = match ? `Android ${match[1]}` : 'Android';
+  } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+    const match = userAgent.match(/OS (\d+)/);
+    deviceInfo.os = match ? `iOS ${match[1]}` : 'iOS';
+  } else if (userAgent.includes('Linux')) {
+    deviceInfo.os = 'Linux';
+  }
+  
+  // Parse device type
+  if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+    deviceInfo.device = 'Mobile';
+  } else if (userAgent.includes('iPad') || userAgent.includes('Tablet')) {
+    deviceInfo.device = 'Tablet';
+  } else {
+    deviceInfo.device = 'Desktop';
+  }
+  
+  return deviceInfo;
+}
+
+// Log user activity to the user_activity_logs table
+async function logUserActivity(
+  req: Request,
+  userId: string,
+  activityType: UserActivityType,
+  description: string,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  try {
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+                      req.ip || 
+                      req.socket?.remoteAddress || 
+                      null;
+    const userAgent = req.headers['user-agent'] || null;
+    const deviceInfo = parseDeviceInfo(userAgent || undefined);
+    
+    await db.insert(userActivityLogs).values({
+      userId,
+      activityType,
+      description,
+      ipAddress,
+      userAgent,
+      deviceInfo: Object.keys(deviceInfo).length > 0 ? deviceInfo : null,
+      location: null, // Can be populated with IP geolocation service later
+      metadata: metadata || null,
+    });
+  } catch (error) {
+    console.error('[Activity Log] Failed to log activity:', error);
+    // Don't throw - activity logging should not break the main flow
+  }
+}
+
 // Helper to generate 6-digit verification code
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -669,7 +767,7 @@ export async function registerRoutes(
   app.get("/api/gold-price", async (req, res) => {
     try {
       const priceData = await getGoldPrice();
-      res.json({
+        return res.json({
         pricePerGram: priceData.pricePerGram,
         pricePerOunce: priceData.pricePerOunce,
         currency: priceData.currency,
@@ -707,7 +805,7 @@ export async function registerRoutes(
       const to = (req.query.to as string || 'AED').toUpperCase();
       
       const result = await getExchangeRate(from, to);
-      res.json({
+        return res.json({
         from,
         to,
         rate: result.rate,
@@ -724,7 +822,7 @@ export async function registerRoutes(
   app.get("/api/exchange-rates", async (req, res) => {
     try {
       const rates = await getAllRates();
-      res.json({
+        return res.json({
         base: rates.base,
         rates: rates.rates,
         timestamp: new Date(rates.timestamp).toISOString()
@@ -743,7 +841,7 @@ export async function registerRoutes(
       const to = (req.query.to as string || 'AED').toUpperCase();
       
       const result = await convertCurrency(amount, from, to);
-      res.json({
+        return res.json({
         amount,
         from,
         to,
@@ -911,7 +1009,7 @@ export async function registerRoutes(
         ? new Date(latestTransaction.createdAt).getTime() 
         : Date.now();
 
-      res.json({
+        return res.json({
         wallet: wallet || { goldGrams: '0', usdBalance: '0', eurBalance: '0' },
         vaultHoldings: vaultHoldings || [],
         transactions: allTransactions,
@@ -1531,10 +1629,10 @@ ${message}
       }
       
       if (!isValidPassword) {
+        // Log failed login attempt
+        logUserActivity(req, user.id, "login_failed", "Failed login attempt - invalid password").catch(err => console.error("[Activity Log] Failed login log failed:", err));
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
-      
       // SECURITY: Block unverified users from logging in
       // They must verify their email first via the verification link
       if (!user.isEmailVerified) {
@@ -1618,7 +1716,8 @@ ${message}
       const updatedUser = await storage.updateUser(user.id, {
         lastLoginAt: new Date(),
       });
-      
+      // Log successful login activity
+      logUserActivity(req, user.id, "login", "User logged in successfully").catch(err => console.error("[Activity Log] Login log failed:", err));
       res.json({ user: sanitizeUser(updatedUser || user), adminPortal: false });
     } catch (error) {
       console.error('[Login Error]', error);
@@ -1669,6 +1768,8 @@ ${message}
       }
       
       if (!isValidPassword) {
+        // Log failed login attempt
+        logUserActivity(req, user.id, "login_failed", "Failed login attempt - invalid password").catch(err => console.error("[Activity Log] Failed login log failed:", err));
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -1743,7 +1844,8 @@ ${message}
       const updatedUser = await storage.updateUser(user.id, {
         lastLoginAt: new Date(),
       });
-      
+      // Log successful login activity
+      logUserActivity(req, user.id, "login", "User logged in successfully").catch(err => console.error("[Activity Log] Login log failed:", err));
       // Audit log for admin login
       await storage.createAuditLog({
         entityType: "user",
@@ -1772,6 +1874,45 @@ ${message}
       res.status(400).json({ message: "Failed to get user" });
     }
   });
+
+  // ============================================================================
+  // USER ACTIVITY LOG ENDPOINT
+  // ============================================================================
+  
+  // Get user's activity log with pagination
+  app.get("/api/activity-log", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const logs = await db
+        .select()
+        .from(userActivityLogs)
+        .where(eq(userActivityLogs.userId, userId))
+        .orderBy(desc(userActivityLogs.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(userActivityLogs)
+        .where(eq(userActivityLogs.userId, userId));
+      
+        return res.json({
+        logs,
+        pagination: {
+          limit,
+          offset,
+          total: countResult?.count || 0,
+          hasMore: offset + logs.length < (countResult?.count || 0)
+        }
+      });
+    } catch (error) {
+      console.error('[Activity Log] Failed to fetch activity logs:', error);
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
   
   // Get basic user info (for display in payment requests/transfers)
   // Any authenticated user can fetch public info about other users
@@ -1782,7 +1923,7 @@ ${message}
         return res.status(404).json({ message: "User not found" });
       }
       // Return only public display information
-      res.json({
+        return res.json({
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -1802,6 +1943,8 @@ ${message}
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      // Log profile update activity
+      logUserActivity(req, req.params.userId, "profile_update", "User profile was updated").catch(err => console.error("[Activity Log] Profile update log failed:", err));
       res.json({ user: sanitizeUser(user) });
     } catch (error) {
       res.status(400).json({ message: "Failed to update user" });
@@ -2202,6 +2345,9 @@ ${message}
           details: "User logged out",
         }).catch(err => console.error("Audit log error:", err));
       }
+        
+        // Log logout activity
+        logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, userId, "logout", "User logged out").catch(err => console.error("[Activity Log] Logout log failed:", err));
       
       res.json({ message: "Logged out successfully" });
     });
@@ -2343,6 +2489,9 @@ ${message}
         }).catch(err => console.error('[Email] Password changed notification failed:', err));
       }
       
+      // Log password change activity
+      logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, resetToken.userId, "password_change", "Password was reset via forgot password flow").catch(err => console.error("[Activity Log] Password change log failed:", err));
+
       res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("Password reset error:", error);
@@ -2497,7 +2646,7 @@ ${message}
       // Store secret temporarily (not enabled yet until verified)
       await storage.updateUser(user.id, { mfaSecret: secret });
       
-      res.json({
+        return res.json({
         secret,
         qrCode: qrCodeDataUrl,
         message: "Scan the QR code with your authenticator app, then verify with a code"
@@ -2603,7 +2752,7 @@ ${message}
       
       const updatedUser = await storage.getUser(user.id);
       
-      res.json({
+        return res.json({
         success: true,
         message: "MFA enabled successfully. You are now logged in.",
         backupCodes,
@@ -3318,8 +3467,6 @@ ${message}
         }));
         allPendingItems.push(...pendingBuyGoldReqs);
       } catch (e) { /* table may not exist */ }
-      
-      
       // Pending trade cases
       try {
         const allTrades = await db.select().from(tradeCases);
@@ -3509,7 +3656,7 @@ ${message}
         pendingAccountDeletions = allDeletionRequests.filter((d: any) => d.status === "Pending").length;
       } catch (e) { /* table may not exist */ }
 
-      res.json({
+        return res.json({
         pendingKyc,
         pendingTransactions,
         pendingDeposits,
@@ -3791,7 +3938,7 @@ ${message}
       // Calculate uptime (approximate based on process uptime)
       const uptime = Math.floor(process.uptime());
       
-      res.json({
+        return res.json({
         health: {
           overall,
           checks,
@@ -3835,7 +3982,7 @@ ${message}
       const status = getSyncStatus();
       const verification = await verifySyncStatus();
       
-      res.json({
+        return res.json({
         scheduler: status,
         databases: verification,
         syncDirection: 'AWS RDS → Replit (every 6 hours)'
@@ -4467,7 +4614,7 @@ ${message}
         return res.status(500).json({ message: result.error || "Backup failed" });
       }
       
-      res.json({
+        return res.json({
         message: "Backup created successfully",
         backup: {
           id: result.backupId,
@@ -4632,7 +4779,7 @@ ${message}
         });
       }
       
-      res.json({
+        return res.json({
         message: "Database restored successfully",
         preRestoreBackupId: result.preRestoreBackupId,
         restoredFromBackupId: result.restoredFromBackupId,
@@ -5281,7 +5428,7 @@ ${message}
   // Get country risk information
   app.get("/api/risk/countries", async (req, res) => {
     try {
-      res.json({
+        return res.json({
         highRisk: HIGH_RISK_COUNTRIES,
         elevated: ELEVATED_RISK_COUNTRIES
       });
@@ -6177,8 +6324,6 @@ ${message}
             sourceType: 'buy_gold_request'
           });
         });
-      
-      
       // Unified Gold Tally transactions - show completed deposits from the new unified tally system
       unifiedTallyTxns
         .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
@@ -6240,7 +6385,7 @@ ${message}
       const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
       const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
       
-      res.json({
+        return res.json({
         transactions: paginatedTransactions,
         nextCursor,
         totals
@@ -6441,8 +6586,6 @@ ${message}
           sourceType: 'trade_case'
         });
       });
-      
-      
       // Unified Gold Tally transactions - show completed deposits from the new unified tally system
       unifiedTallyTxns
         .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
@@ -6507,7 +6650,7 @@ ${message}
       const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
       const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
       
-      res.json({
+        return res.json({
         transactions: paginatedTransactions,
         nextCursor,
         totals
@@ -8135,7 +8278,7 @@ ${message}
       // Sort by timestamp
       ledgerHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       
-      res.json({
+        return res.json({
         verificationResult,
         message: verificationResult === "genuine_active" 
           ? "This certificate is genuine and currently active."
@@ -9326,7 +9469,7 @@ ${message}
         status = discrepancy < 0 ? 'error' : 'warning';
       }
       
-      res.json({
+        return res.json({
         runId: 'auto-' + Date.now(),
         runDate: new Date().toISOString(),
         status,
@@ -9396,7 +9539,7 @@ ${message}
         issuesJson: issues
       });
       
-      res.json({
+        return res.json({
         runId: run.id,
         runDate: run.run_date,
         status: run.status,
@@ -9820,7 +9963,7 @@ ${message}
       const discrepancy = physicalTotal - digitalTotal;
       const coverageRatio = digitalTotal > 0 ? (physicalTotal / digitalTotal) * 100 : 100;
       
-      res.json({
+        return res.json({
         report: {
           generatedAt: new Date().toISOString(),
           physical: {
@@ -14021,7 +14164,7 @@ ${message}
       const successRate = totalTrades > 0 ? (completedTrades / totalTrades) * 100 : 0;
       const openDisputes = disputes.filter(d => d.status !== 'Resolved' && d.status !== 'Closed').length;
       
-      res.json({
+        return res.json({
         analytics: {
           totalTrades, activeTrades, completedTrades, totalValueUsd, totalGoldGrams, avgTradeValue, successRate,
           totalProposals: proposals.length, activeSettlements: settlements.filter(s => s.status === 'Locked').length,
@@ -14267,7 +14410,7 @@ ${message}
       const exporter = await storage.getUser(room.exporterUserId);
       const assignedAdmin = room.assignedAdminId ? await storage.getUser(room.assignedAdminId) : null;
       
-      res.json({
+        return res.json({
         room: {
           ...room,
           tradeRequest,
@@ -14478,7 +14621,7 @@ ${message}
       const acceptance = await storage.getDealRoomAgreementAcceptance(req.params.id, userId);
       const allAcceptances = await storage.getDealRoomAgreementAcceptances(req.params.id);
 
-      res.json({
+        return res.json({
         hasAccepted: !!acceptance,
         acceptance,
         allAcceptances,
@@ -14734,6 +14877,199 @@ ${message}
   });
   
   // ============================================================================
+
+  // ============================================================================
+  // LIVE CHAT SUPPORT - USER-FACING ENDPOINTS
+  // ============================================================================
+
+  // POST /api/chat/sessions - Create a new chat session for the user
+  app.post("/api/chat/sessions", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { topic } = req.body;
+
+      const session = await storage.createChatSession({
+        userId,
+        status: "open",
+        context: topic ? JSON.stringify({ topic }) : null,
+        lastMessageAt: new Date(),
+      });
+
+      // Emit socket event for real-time updates
+      const io = getIO();
+      if (io) {
+        io.to('admin-room').emit('chat:session-created', {
+          sessionId: session.id,
+          userId,
+          topic,
+        });
+      }
+
+      res.status(201).json({ session: { ...session, topic } });
+    } catch (error) {
+      console.error('[Chat] Failed to create session:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create chat session" });
+    }
+  });
+
+  // GET /api/chat/sessions - List user's chat sessions (limited to most recent 20)
+  app.get("/api/chat/sessions", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const sessions = await storage.getUserChatSessions(userId, 20);
+
+      // Parse topic from context for each session
+      const sessionsWithTopic = sessions.map(session => {
+        let topic = null;
+        if (session.context) {
+          try {
+            const ctx = JSON.parse(session.context);
+            topic = ctx.topic || null;
+          } catch {}
+        }
+        return { ...session, topic };
+      });
+
+      res.json({ sessions: sessionsWithTopic });
+    } catch (error) {
+      console.error('[Chat] Failed to list sessions:', error);
+      res.status(400).json({ message: "Failed to get chat sessions" });
+    }
+  });
+
+  // GET /api/chat/sessions/:sessionId - Get a specific chat session with messages
+  app.get("/api/chat/sessions/:sessionId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { sessionId } = req.params;
+
+      const session = await storage.getChatSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Chat session not found" });
+      }
+
+      // Verify the session belongs to this user
+      if (session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const messages = await storage.getSessionMessages(sessionId);
+
+      // Parse topic from context
+      let topic = null;
+      if (session.context) {
+        try {
+          const ctx = JSON.parse(session.context);
+          topic = ctx.topic || null;
+        } catch {}
+      }
+
+      res.json({ session: { ...session, topic }, messages });
+    } catch (error) {
+      console.error('[Chat] Failed to get session:', error);
+      res.status(400).json({ message: "Failed to get chat session" });
+    }
+  });
+
+  // POST /api/chat/sessions/:sessionId/messages - Send a message in a chat session
+  app.post("/api/chat/sessions/:sessionId/messages", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { sessionId } = req.params;
+      const { content } = req.body;
+
+      if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+
+      const session = await storage.getChatSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Chat session not found" });
+      }
+
+      // Verify the session belongs to this user
+      if (session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Check if session is closed
+      if (session.status === 'closed') {
+        return res.status(400).json({ message: "Cannot send messages to a closed session" });
+      }
+
+      // Create the message
+      const message = await storage.createChatMessage({
+        sessionId,
+        content: content.trim(),
+        sender: 'user',
+        isRead: false,
+      });
+
+      // Update session last message time
+      await storage.updateChatSession(sessionId, {
+        lastMessageAt: new Date(),
+      });
+
+      // Emit socket events for real-time updates
+      const io = getIO();
+      if (io) {
+        io.to(`session-${sessionId}`).emit('chat:message', {
+          ...message,
+          sessionId,
+        });
+        io.to('admin-room').emit('chat:new-message', {
+          sessionId,
+          message,
+          userId,
+        });
+      }
+
+      res.status(201).json({ message });
+    } catch (error) {
+      console.error('[Chat] Failed to send message:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+    }
+  });
+
+  // PATCH /api/chat/sessions/:sessionId/close - Close a chat session
+  app.patch("/api/chat/sessions/:sessionId/close", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId!;
+      const { sessionId } = req.params;
+
+      const session = await storage.getChatSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Chat session not found" });
+      }
+
+      // Verify the session belongs to this user
+      if (session.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updatedSession = await storage.updateChatSession(sessionId, {
+        status: 'closed',
+      });
+
+      // Emit socket event for real-time updates
+      const io = getIO();
+      if (io) {
+        io.to(`session-${sessionId}`).emit('chat:session-closed', {
+          sessionId,
+        });
+        io.to('admin-room').emit('chat:session-closed', {
+          sessionId,
+          userId,
+        });
+      }
+
+      res.json({ session: updatedSession });
+    } catch (error) {
+      console.error('[Chat] Failed to close session:', error);
+      res.status(400).json({ message: "Failed to close chat session" });
+    }
+  });
+
   // CHAT AGENTS - MULTI-AGENT AI SYSTEM
   // ============================================================================
   
@@ -15935,8 +16271,6 @@ ${message}
       if (req.session?.userId !== senderId) {
         return res.status(403).json({ message: "Not authorized to send from this account" });
       }
-      
-      
       // P2P RULE: FGPW transfers auto-unlock to LGPW first
       // Receiver ALWAYS gets LGPW at live price
       const sourceWalletType = goldWalletType || 'LGPW';
@@ -16317,7 +16651,7 @@ ${message}
         }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
       }
       
-      res.json({
+        return res.json({
         transfer: pendingTransfer,
         pending: true,
         message: `Transfer of ${goldAmount.toFixed(4)}g gold sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
@@ -16533,7 +16867,7 @@ ${message}
         return res.status(404).json({ message: "No attachment found" });
       }
       
-      res.json({
+        return res.json({
         attachmentUrl: request.attachmentUrl,
         attachmentName: request.attachmentName,
         attachmentMime: request.attachmentMime,
@@ -16658,8 +16992,6 @@ ${message}
         senderTransactionId: senderTx.id,
         recipientTransactionId: recipientTx.id,
       });
-      
-      
       // Generate P2P certificates for both parties
       const walletType = (request as any).goldWalletType || 'LGPW';
       const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -17414,6 +17746,11 @@ ${message}
         });
       }
       
+      // Log settings change activity
+      logUserActivity(req, req.params.userId, "settings_change", "User preferences were updated").catch(err => console.error("[Activity Log] Settings change log failed:", err));
+
+
+
       res.json({ 
         message: "Preferences updated",
         requireTransferApproval: true, // Always enabled
@@ -17492,6 +17829,8 @@ ${message}
       const qrPayload = `FTQR:${invoiceCode}`;
       const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
       
+
+
       res.json({ 
         invoice: {
           id: invoiceId,
@@ -17528,6 +17867,8 @@ ${message}
       // Get merchant info
       const merchant = await storage.getUser(invoice.merchantId);
       
+
+
       res.json({ 
         invoice: {
           ...invoice,
@@ -17697,6 +18038,8 @@ ${message}
       emitLedgerEvent(payer.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_sent', data: { goldGrams } });
       emitLedgerEvent(merchant.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_received', data: { goldGrams } });
       
+
+
       res.json({ 
         transaction: payerTx,
         message: `Successfully paid ${goldGrams.toFixed(4)}g gold to ${merchant.firstName} ${merchant.lastName}` 
@@ -17827,6 +18170,8 @@ ${message}
       // Emit sync event
       emitLedgerEvent(userId, { type: 'balance_update', module: 'finapay', action: 'admin_adjustment', data: { adjustmentType, goldGrams: adjustGrams } });
       
+
+
       res.json({ 
         adjustment: { referenceNumber, adjustmentType, goldGrams: adjustGrams, amountUsd: adjustUsd },
         transaction,
@@ -17842,6 +18187,8 @@ ${message}
   app.get("/api/admin/finapay/wallet-adjustments", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
     try {
       const adjustments = await db.select().from(walletAdjustments).orderBy(desc(walletAdjustments.createdAt)).limit(100);
+
+
       res.json({ adjustments });
     } catch (error) {
       res.status(400).json({ message: "Failed to get adjustments" });
@@ -17891,6 +18238,8 @@ ${message}
         details: freeze ? `Account frozen: ${reason}` : "Account unfrozen",
       });
       
+
+
       res.json({ 
         success: true,
         message: freeze ? "Account frozen successfully" : "Account unfrozen successfully"
@@ -17907,6 +18256,8 @@ ${message}
       const { userId } = req.params;
       const [status] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
       
+
+
       res.json({ 
         status: status || { 
           userId, 
@@ -17958,6 +18309,8 @@ ${message}
         details: `Updated transfer limits: Daily $${dailyLimit}, Monthly $${monthlyLimit}`,
       });
       
+
+
       res.json({ success: true, message: "Transfer limits updated" });
     } catch (error) {
       res.status(400).json({ message: "Failed to update limits" });
@@ -17972,7 +18325,9 @@ ${message}
 
   // Check if Binance Pay is configured
   app.get("/api/binance-pay/status", async (req, res) => {
-    res.json({ 
+
+
+      res.json({ 
       configured: BinancePayService.isConfigured(),
       message: BinancePayService.isConfigured() 
         ? "Binance Pay is configured and ready" 
@@ -18031,7 +18386,9 @@ ${message}
         description,
       });
 
-      res.json({
+
+
+        return res.json({
         success: true,
         transaction: {
           id: transaction.id,
@@ -18083,7 +18440,9 @@ ${message}
             });
           }
 
-          return res.json({
+
+
+        return res.json({
             transaction: {
               ...transaction,
               status: newStatus,
@@ -18092,6 +18451,8 @@ ${message}
           });
         }
       }
+
+
 
       res.json({ transaction });
     } catch (error) {
@@ -18217,6 +18578,8 @@ ${message}
         }
       }
 
+
+
       res.json({ returnCode: 'SUCCESS', returnMessage: 'OK' });
     } catch (error) {
       console.error('Binance Pay webhook error:', error);
@@ -18228,6 +18591,8 @@ ${message}
   app.get("/api/binance-pay/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transactions = await storage.getUserBinanceTransactions(req.params.userId);
+
+
       res.json({ transactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
@@ -18244,6 +18609,8 @@ ${message}
         return { ...tx, user };
       }));
       
+
+
       res.json({ transactions: enrichedTransactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
@@ -18260,11 +18627,15 @@ ${message}
   app.get("/api/ngenius/status", async (req, res) => {
     try {
       const settings = await storage.getPaymentGatewaySettings();
+
+
       res.json({ 
         enabled: settings?.ngeniusEnabled || false,
         mode: settings?.ngeniusMode || 'sandbox'
       });
     } catch (error) {
+
+
       res.json({ enabled: false });
     }
   });
@@ -18382,7 +18753,9 @@ ${message}
         details: `Created card deposit order for ${amount} ${currency} (deposit request: ${cardDepositRequest.id})`,
       });
 
-      res.json({
+
+
+        return res.json({
         success: true,
         orderReference,
         paymentUrl,
@@ -18621,7 +18994,9 @@ ${message}
             }
           }
 
-          return res.json({ 
+
+
+      res.json({ 
             ...transaction,
             status: newStatus,
             ngeniusStatus: orderStatus.state
@@ -18697,6 +19072,8 @@ ${message}
         dashboard_url: `${process.env.REPLIT_DOMAINS || 'https://finatrades.com'}/dashboard`,
       });
 
+
+
       res.json({ 
         success: true, 
         message: `Receipt email sent to ${user.email}`,
@@ -18717,7 +19094,9 @@ ${message}
       const ngeniusHostedSessionKey = process.env.NGENIUS_HOSTED_SESSION_KEY;
 
       if (!settings?.ngeniusEnabled || !ngeniusOutletRef || !ngeniusHostedSessionKey) {
-        return res.json({ 
+
+
+      res.json({ 
           enabled: false,
           apiKey: '',
           outletRef: '',
@@ -18731,7 +19110,9 @@ ${message}
         ? 'https://paypage.ngenius-payments.com/hosted-sessions/sdk.js'
         : 'https://paypage-uat.ngenius-payments.com/hosted-sessions/sdk.js';
 
-      res.json({
+
+
+        return res.json({
         enabled: true,
         apiKey: ngeniusHostedSessionKey,
         outletRef: ngeniusOutletRef,
@@ -18801,7 +19182,9 @@ ${message}
         description: `Card deposit - $${amountUsd} USD`,
       });
 
-      res.json({
+
+
+        return res.json({
         success: true,
         sessionId: session.sessionId,
         orderReference,
@@ -18978,14 +19361,18 @@ ${message}
             data: { goldGrams, amountUsd: depositAmount },
           });
 
-          res.json({
+
+
+        return res.json({
             success: true,
             status: 'completed',
             goldGrams: goldGrams.toFixed(6),
             amountUsd: depositAmount,
           });
         } else {
-          res.json({
+
+
+        return res.json({
             success: true,
             status: result.status,
           });
@@ -18995,7 +19382,9 @@ ${message}
           status: 'Failed',
         });
         
-        res.json({
+
+
+        return res.json({
           success: false,
           status: result.status,
           message: "Payment not completed",
@@ -19100,6 +19489,8 @@ ${message}
         
         console.log(`[NGenius] Payment requires 3DS authentication: ${result.threeDSUrl}`);
         
+
+
         return res.json({
           success: false,
           status: 'AWAIT_3DS',
@@ -19157,7 +19548,9 @@ ${message}
 
         console.log(`[NGenius] Payment captured - awaiting admin approval via unified deposit_request`);
 
-        res.json({
+
+
+        return res.json({
           success: true,
           status: 'awaiting_approval',
           message: 'Payment captured successfully. Awaiting admin approval.',
@@ -19170,7 +19563,9 @@ ${message}
         
         console.log(`[NGenius] Payment failed: ${result.message}`);
         
-        res.json({
+
+
+        return res.json({
           success: false,
           status: result.status,
           message: result.message || "Payment failed",
@@ -19253,6 +19648,8 @@ ${message}
         });
       }
 
+
+
       res.json({ success: true });
     } catch (error) {
       console.error('NGenius webhook error:', error);
@@ -19264,6 +19661,8 @@ ${message}
   app.get("/api/ngenius/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const transactions = await storage.getUserNgeniusTransactions(req.params.userId);
+
+
       res.json({ transactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
@@ -19280,6 +19679,8 @@ ${message}
         return { ...tx, user };
       }));
       
+
+
       res.json({ transactions: enrichedTransactions });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
@@ -19405,7 +19806,9 @@ ${message}
         details: `Fixed card payment: created ${createdCerts.length} certificates and vault ledger entry`,
       });
 
-      res.json({
+
+
+        return res.json({
         success: true,
         message: `Fixed card payment: created ${createdCerts.length} certificates`,
         createdCertificates: createdCerts.map(c => ({ number: c.certificateNumber, type: c.type })),
@@ -19512,7 +19915,9 @@ ${message}
       const totalExpenses = totalRevenue * 0.30;
       const netProfit = totalRevenue - totalExpenses;
 
-      res.json({
+
+
+        return res.json({
         // Gold-first: primary metrics in grams
         goldHoldingsGrams: totalGoldGrams,
         physicalGoldGrams,
@@ -19637,7 +20042,9 @@ ${message}
         interestEarnedUsd += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
       }
 
-      res.json({
+
+
+        return res.json({
         finapay: {
           activeWallets,
           transactionCount: allTransactions.length,
@@ -19767,7 +20174,9 @@ ${message}
       const lockedGoldGrams = bnslLockedGrams + finabridgeLockedGrams;
       const freeGoldGrams = totalGoldGrams - lockedGoldGrams;
       
-      res.json({
+
+
+        return res.json({
         totalGoldGrams,
         freeGoldGrams: Math.max(0, freeGoldGrams),
         lockedGoldGrams,
@@ -19827,7 +20236,9 @@ ${message}
         new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime()
       );
       
-      res.json({
+
+
+        return res.json({
         totalCertificates: allCertificates.length,
         activeCertificates,
         digitalOwnership,
@@ -19881,7 +20292,9 @@ ${message}
         };
       });
       
-      res.json({
+
+
+        return res.json({
         activeCases,
         totalCases: tradeCases.length,
         goldInEscrow,
@@ -20030,7 +20443,9 @@ ${message}
         { type: 'Withdrawal Fees', amount: withdrawalFees, count: withdrawalCount, percentage: totalFeesCollected > 0 ? (withdrawalFees / totalFeesCollected) * 100 : 0 }
       ].filter(f => f.amount > 0);
       
-      res.json({
+
+
+        return res.json({
         totalFeesCollected,
         transactionFees,
         storageFees,
@@ -20172,7 +20587,9 @@ ${message}
       const openingGoldUsdValue = openingGold * currentGoldPrice;
       const closingGoldUsdValue = runningGold * currentGoldPrice;
       
-      res.json({
+
+
+        return res.json({
         user: {
           id: user.id,
           finatradesId: user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`,
@@ -20848,6 +21265,8 @@ ${message}
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
       
       if (!settings[0]) {
+
+
         return res.json({
           
           
@@ -20859,7 +21278,9 @@ ${message}
       }
 
       const s = settings[0];
-      res.json({
+
+
+        return res.json({
         bankTransfer: { 
           enabled: s.bankTransferEnabled,
           accounts: s.bankTransferEnabled ? s.bankAccounts : [],
@@ -20936,10 +21357,14 @@ ${message}
       const pin = await storage.getTransactionPin(userId);
       
       if (!pin) {
-        return res.json({ hasPin: false, isLocked: false });
+
+
+      res.json({ hasPin: false, isLocked: false });
       }
       
       const isLocked = pin.lockedUntil ? new Date(pin.lockedUntil) > new Date() : false;
+
+
       res.json({ 
         hasPin: true, 
         isLocked,
@@ -21003,6 +21428,8 @@ ${message}
         details: "Transaction PIN created"
       });
       
+
+
       res.json({ success: true, message: "Transaction PIN set up successfully" });
     } catch (error) {
       console.error("Failed to set up transaction PIN:", error);
@@ -21083,6 +21510,8 @@ ${message}
         expiresAt
       });
       
+
+
       res.json({ 
         success: true, 
         token,
@@ -21152,6 +21581,8 @@ ${message}
         details: existingPin ? "Transaction PIN reset" : "Transaction PIN created"
       });
       
+
+
       res.json({ success: true, message: "Transaction PIN has been reset successfully" });
     } catch (error) {
       console.error("Failed to reset transaction PIN:", error);
@@ -21171,17 +21602,25 @@ ${message}
       const pinToken = await storage.getPinVerificationToken(token);
       
       if (!pinToken) {
-        return res.json({ valid: false, message: "Invalid or expired token" });
+
+
+      res.json({ valid: false, message: "Invalid or expired token" });
       }
       
       if (new Date(pinToken.expiresAt) < new Date()) {
-        return res.json({ valid: false, message: "Token has expired" });
+
+
+      res.json({ valid: false, message: "Token has expired" });
       }
       
       if (pinToken.action !== action) {
-        return res.json({ valid: false, message: "Token action mismatch" });
+
+
+      res.json({ valid: false, message: "Token action mismatch" });
       }
       
+
+
       res.json({ valid: true, userId: pinToken.userId });
     } catch (error) {
       console.error("Failed to validate PIN token:", error);
@@ -21215,6 +21654,8 @@ ${message}
       // Mark token as used
       await storage.usePinVerificationToken(token);
       
+
+
       res.json({ success: true, userId: pinToken.userId });
     } catch (error) {
       console.error("Failed to use PIN token:", error);
@@ -21248,6 +21689,8 @@ ${message}
         details: "Transaction PIN unlocked by admin"
       });
       
+
+
       res.json({ success: true, message: "Transaction PIN unlocked successfully" });
     } catch (error) {
       console.error("Failed to unlock transaction PIN:", error);
@@ -21305,6 +21748,8 @@ ${message}
   app.get("/api/kyc-mode", async (req, res) => {
     try {
       const settings = await storage.getOrCreateComplianceSettings();
+
+
       res.json({ 
         activeKycMode: settings.activeKycMode,
         finatradesPersonalConfig: settings.finatradesPersonalConfig,
@@ -21380,7 +21825,9 @@ ${message}
           link: '/admin/kyc',
         });
         
-        res.json({ success: true, submission: updated });
+
+
+      res.json({ success: true, submission: updated });
       } else {
         // Create new submission
         const submission = await storage.createFinatradesPersonalKyc(kycData);
@@ -21396,7 +21843,9 @@ ${message}
           link: '/admin/kyc',
         });
         
-        res.json({ success: true, submission });
+
+
+      res.json({ success: true, submission });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades personal KYC:", error);
@@ -21409,6 +21858,8 @@ ${message}
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesPersonalKyc(userId);
+
+
       res.json({ submission });
     } catch (error) {
       console.error("Failed to get Finatrades personal KYC:", error);
@@ -21507,7 +21958,9 @@ ${message}
           link: '/admin/kyc',
         });
         
-        res.json({ success: true, submission: updated });
+
+
+      res.json({ success: true, submission: updated });
       } else {
         // Create new submission
         const submission = await storage.createFinatradesCorporateKyc({
@@ -21526,7 +21979,9 @@ ${message}
           link: '/admin/kyc',
         });
         
-        res.json({ success: true, submission });
+
+
+      res.json({ success: true, submission });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades corporate KYC:", error);
@@ -21539,6 +21994,8 @@ ${message}
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesCorporateKyc(userId);
+
+
       res.json({ submission });
     } catch (error) {
       console.error("Failed to get Finatrades corporate KYC:", error);
@@ -21566,7 +22023,9 @@ ${message}
       
       // Check if email OTP is enabled globally
       if (!settings.emailOtpEnabled) {
-        return res.json({ otpRequired: false, message: "Email OTP is not enabled" });
+
+
+      res.json({ otpRequired: false, message: "Email OTP is not enabled" });
       }
       
       // Check if OTP is required for this action
@@ -21586,7 +22045,9 @@ ${message}
       
       const settingKey = otpActionMap[action];
       if (!settingKey || !settings[settingKey]) {
-        return res.json({ otpRequired: false, message: `OTP not required for ${action}` });
+
+
+      res.json({ otpRequired: false, message: `OTP not required for ${action}` });
       }
       
       // Check cooldown - get most recent OTP for this user and action
@@ -21627,6 +22088,8 @@ ${message}
         return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
       }
       
+
+
       res.json({ 
         otpRequired: true,
         otpId: otpVerification.id,
@@ -21697,6 +22160,8 @@ ${message}
         verifiedAt: new Date()
       });
       
+
+
       res.json({ 
         verified: true, 
         message: "Verification successful",
@@ -21716,7 +22181,9 @@ ${message}
       const settings = await storage.getOrCreateSecuritySettings();
       
       if (!settings.emailOtpEnabled) {
-        return res.json({ otpRequired: false });
+
+
+      res.json({ otpRequired: false });
       }
       
       const otpActionMap: Record<string, keyof typeof settings> = {
@@ -21736,6 +22203,8 @@ ${message}
       const settingKey = otpActionMap[action];
       const otpRequired = settingKey ? !!settings[settingKey] : false;
       
+
+
       res.json({ otpRequired });
     } catch (error) {
       console.error("Failed to check OTP requirement:", error);
@@ -21761,6 +22230,8 @@ ${message}
           };
         })
       );
+
+
       res.json({ invoices: enrichedInvoices });
     } catch (error) {
       console.error("Failed to get invoices:", error);
@@ -21786,6 +22257,8 @@ ${message}
           };
         })
       );
+
+
       res.json({ deliveries: enrichedDeliveries });
     } catch (error) {
       console.error("Failed to get certificate deliveries:", error);
@@ -21844,6 +22317,8 @@ ${message}
         details: "Invoice email resent",
       });
       
+
+
       res.json({ message: "Invoice resent successfully" });
     } catch (error) {
       console.error("Failed to resend invoice:", error);
@@ -21868,6 +22343,8 @@ ${message}
         details: "Certificate email resent",
       });
       
+
+
       res.json({ message: "Certificate resent successfully" });
     } catch (error) {
       console.error("Failed to resend certificate:", error);
@@ -21897,6 +22374,8 @@ ${message}
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       
+
+
       res.json({ transactions: transactionsWithUsers });
     } catch (error) {
       console.error("Failed to get transaction receipts:", error);
@@ -22149,6 +22628,8 @@ ${message}
         new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
       );
       
+
+
       res.json({ attachments: allAttachments });
     } catch (error) {
       console.error("Failed to get attachments:", error);
@@ -22201,6 +22682,8 @@ ${message}
   app.get("/api/documents/invoices/user/:userId", async (req, res) => {
     try {
       const invoices = await storage.getUserInvoices(req.params.userId);
+
+
       res.json({ invoices });
     } catch (error) {
       console.error("Failed to get user invoices:", error);
@@ -22245,7 +22728,9 @@ ${message}
       const settings = await storage.getSecuritySettings();
       
       if (!settings || !settings.adminOtpEnabled) {
-        return res.json({ required: false });
+
+
+      res.json({ required: false });
       }
       
       // Map action types to security settings
@@ -22271,6 +22756,8 @@ ${message}
       };
       
       const required = actionToSetting[actionType] ?? false;
+
+
       res.json({ required });
     } catch (error) {
       console.error("Failed to check OTP requirement:", error);
@@ -22413,7 +22900,9 @@ ${message}
       // Check if OTP is required for this action
       const settings = await storage.getSecuritySettings();
       if (!settings || !settings.adminOtpEnabled) {
-        return res.json({ required: false, message: "OTP not required" });
+
+
+      res.json({ required: false, message: "OTP not required" });
       }
       
       // Map action types to security settings
@@ -22439,7 +22928,9 @@ ${message}
       };
       
       if (!actionToSetting[actionType]) {
-        return res.json({ required: false, message: "OTP not required for this action" });
+
+
+      res.json({ required: false, message: "OTP not required for this action" });
       }
       
       // Get OTP context for informative messages
@@ -22574,6 +23065,8 @@ ${message}
         details: `OTP sent for ${actionType} on ${targetType}:${targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
       });
       
+
+
       res.json({ 
         otpId: otp.id,
         message: "Verification code sent to your email",
@@ -22770,6 +23263,8 @@ ${message}
         details: `OTP verified for ${otp.actionType} on ${otp.targetType}:${otp.targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
       });
       
+
+
       res.json({ 
         success: true,
         message: "Verification successful",
@@ -22871,6 +23366,8 @@ ${message}
       
       await sendEmailDirect(admin.email, `Finatrades Admin Verification Code - ${actionLabels[existingOtp.actionType] || existingOtp.actionType}`, htmlBody);
       
+
+
       res.json({ 
         message: "New verification code sent to your email",
         expiresAt: newExpiresAt,
@@ -22889,6 +23386,8 @@ ${message}
   app.get("/api/admin/referrals", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
       const referrals = await storage.getAllReferrals();
+
+
       res.json({ referrals });
     } catch (error) {
       res.status(500).json({ message: "Failed to get referrals" });
@@ -22902,6 +23401,8 @@ ${message}
       if (!referral) {
         return res.status(404).json({ message: "Referral not found" });
       }
+
+
       res.json({ referral });
     } catch (error) {
       res.status(500).json({ message: "Failed to get referral" });
@@ -22915,16 +23416,268 @@ ${message}
       if (!referral) {
         return res.status(404).json({ message: "Referral not found" });
       }
+
+
       res.json({ referral });
     } catch (error) {
       res.status(500).json({ message: "Failed to update referral" });
     }
   });
 
+
+  // ============================================
+  // USER REFERRAL DASHBOARD ENDPOINTS
+  // ============================================
+
+  // GET /api/referrals/dashboard - Get user's referral dashboard data
+  app.get("/api/referrals/dashboard", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get all referrals created by this user
+      const userReferrals = await storage.getUserReferrals(userId);
+
+      // Find the user's active referral code (the one they share - no referredId)
+      let referralCode = userReferrals.find(r => r.status === 'Active' && !r.referredId)?.referralCode;
+
+      // If no referral code, try to find any referral code
+      if (!referralCode) {
+        const codeReferral = userReferrals.find(r => r.referralCode);
+        referralCode = codeReferral?.referralCode || null;
+      }
+
+      // Get referral settings from platform config
+      const configs = await storage.getAllPlatformConfigs();
+      const configMap: Record<string, string> = {};
+      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+
+      const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
+
+      // Calculate stats - only count referrals that have a referredId (actual referrals)
+      const actualReferrals = userReferrals.filter(r => r.referredId);
+      const totalReferrals = actualReferrals.length;
+      const activeReferrals = actualReferrals.filter(r => r.status === 'Active').length;
+      const completedReferrals = actualReferrals.filter(r => r.status === 'Completed');
+      const pendingReferrals = actualReferrals.filter(r => r.status === 'Pending').length;
+      
+      // Calculate total bonus earned (sum of rewardAmount for completed referrals)
+      const totalBonusEarned = completedReferrals.reduce((sum, r) => sum + parseFloat(r.rewardAmount || '0'), 0);
+
+      // Get recent referrals (last 5) with masked data
+      const recentReferrals = await Promise.all(
+        actualReferrals.slice(0, 5).map(async (r) => {
+          let refereeName = 'Unknown';
+          let refereeEmail = '';
+          
+          if (r.referredId) {
+            const referee = await storage.getUser(r.referredId);
+            if (referee) {
+              // Mask name: show first 2 chars + ***
+              const firstName = referee.firstName || '';
+              refereeName = firstName.length > 2 ? firstName.substring(0, 2) + '***' : firstName + '***';
+              // Mask email: show first 3 chars + *** + domain
+              const email = referee.email || '';
+              const atIndex = email.indexOf('@');
+              if (atIndex > 3) {
+                refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
+              } else {
+                refereeEmail = '***' + email.substring(atIndex);
+              }
+            }
+          } else if (r.referredEmail) {
+            const email = r.referredEmail;
+            const atIndex = email.indexOf('@');
+            if (atIndex > 3) {
+              refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
+            } else {
+              refereeEmail = '***' + email.substring(atIndex);
+            }
+          }
+
+          return {
+            id: r.id,
+            refereeName,
+            refereeEmail,
+            status: r.status,
+            bonusEarned: parseFloat(r.rewardAmount || '0'),
+            dateJoined: r.createdAt,
+            completedAt: r.completedAt,
+          };
+        })
+      );
+
+      res.json({
+        referralCode,
+        stats: {
+          totalReferrals,
+          activeReferrals,
+          pendingReferrals,
+          completedReferrals: completedReferrals.length,
+          totalBonusEarned,
+          bonusPerReferral: referrerBonusUsd,
+        },
+        recentReferrals,
+      });
+    } catch (error) {
+      console.error('[Referral Dashboard Error]', error);
+      res.status(500).json({ message: "Failed to get referral dashboard" });
+    }
+  });
+
+  // GET /api/referrals/my-referrals - List users they have referred with pagination
+  app.get("/api/referrals/my-referrals", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 50); // Max 50 per page
+      const status = req.query.status as string | undefined;
+
+      // Get all referrals created by this user that have a referredId
+      let userReferrals = await storage.getUserReferrals(userId);
+      userReferrals = userReferrals.filter(r => r.referredId);
+
+      // Filter by status if provided
+      if (status && ['Pending', 'Active', 'Completed', 'Expired', 'Cancelled'].includes(status)) {
+        userReferrals = userReferrals.filter(r => r.status === status);
+      }
+
+      const totalCount = userReferrals.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const offset = (page - 1) * limit;
+      const paginatedReferrals = userReferrals.slice(offset, offset + limit);
+
+      // Map referrals with masked data and referee info
+      const referralsWithDetails = await Promise.all(
+        paginatedReferrals.map(async (r) => {
+          let refereeName = 'Unknown';
+          let refereeEmail = '';
+          let dateJoined = r.createdAt;
+
+          if (r.referredId) {
+            const referee = await storage.getUser(r.referredId);
+            if (referee) {
+              // Mask name: show first 2 chars + ***
+              const firstName = referee.firstName || '';
+              const lastName = referee.lastName || '';
+              refereeName = (firstName.length > 2 ? firstName.substring(0, 2) : firstName) + '*** ' + 
+                           (lastName.length > 1 ? lastName.substring(0, 1) : '') + '***';
+              // Mask email: show first 3 chars + *** + domain
+              const email = referee.email || '';
+              const atIndex = email.indexOf('@');
+              if (atIndex > 3) {
+                refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
+              } else {
+                refereeEmail = '***' + email.substring(atIndex);
+              }
+              dateJoined = referee.createdAt;
+            }
+          } else if (r.referredEmail) {
+            const email = r.referredEmail;
+            const atIndex = email.indexOf('@');
+            if (atIndex > 3) {
+              refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
+            } else {
+              refereeEmail = '***' + email.substring(atIndex);
+            }
+          }
+
+          return {
+            id: r.id,
+            refereeName,
+            refereeEmail,
+            status: r.status,
+            bonusEarned: parseFloat(r.rewardAmount || '0'),
+            goldWalletType: r.goldWalletType,
+            dateJoined,
+            completedAt: r.completedAt,
+          };
+        })
+      );
+
+      res.json({
+        referrals: referralsWithDetails,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      });
+    } catch (error) {
+      console.error('[My Referrals Error]', error);
+      res.status(500).json({ message: "Failed to get referrals" });
+    }
+  });
+
+  // POST /api/referrals/generate-code - Generate or regenerate referral code
+  app.post("/api/referrals/generate-code", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session!.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get all existing referrals for this user
+      const userReferrals = await storage.getUserReferrals(userId);
+
+      // Check if user already has an active referral code (without referredId)
+      const existingActiveCode = userReferrals.find(r => r.status === 'Active' && !r.referredId);
+      if (existingActiveCode) {
+        return res.json({
+          referralCode: existingActiveCode.referralCode,
+          message: "Existing referral code returned",
+          isNew: false,
+        });
+      }
+
+      // Get max referrals setting
+      const configs = await storage.getAllPlatformConfigs();
+      const configMap: Record<string, string> = {};
+      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+      const maxReferrals = parseInt(configMap['max_referrals_per_user'] || '50');
+
+      // Check if user has reached max referrals
+      const totalReferralsUsed = userReferrals.filter(r => r.referredId).length;
+      if (totalReferralsUsed >= maxReferrals) {
+        return res.status(400).json({ 
+          message: `Maximum referral limit (${maxReferrals}) reached` 
+        });
+      }
+
+      // Generate unique referral code
+      const namePrefix = user.firstName?.substring(0, 3).toUpperCase() || 'FIN';
+      const code = `REF-${namePrefix}${Date.now().toString(36).toUpperCase().slice(-4)}`;
+
+      // Create new referral entry with the code
+      const newReferral = await storage.createReferral({
+        referrerId: userId,
+        referralCode: code,
+        status: 'Active',
+        goldWalletType: 'LGPW',
+      });
+
+      res.json({
+        referralCode: newReferral.referralCode,
+        message: "New referral code generated",
+        isNew: true,
+      });
+    } catch (error) {
+      console.error('[Generate Referral Code Error]', error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
   // Get user's referrals
   app.get("/api/referrals/:userId", async (req, res) => {
     try {
       const referrals = await storage.getUserReferrals(req.params.userId);
+
+
       res.json({ referrals });
     } catch (error) {
       res.status(500).json({ message: "Failed to get referrals" });
@@ -22975,7 +23728,9 @@ ${message}
       const rewardPerReferralGrams = referrerBonusUsd / goldPricePerGram;
       const totalEarnedGrams = totalEarnedUsd / goldPricePerGram;
 
-      res.json({
+
+
+        return res.json({
         referralCode: activeReferral.referralCode,
         stats: {
           totalReferrals,
@@ -23021,6 +23776,8 @@ ${message}
         status: 'Active',
       });
       
+
+
       res.json({ referral });
     } catch (error) {
       res.status(500).json({ message: "Failed to create referral" });
@@ -23036,6 +23793,8 @@ ${message}
     try {
       const { userId } = req.params;
       const notifications = await storage.getUserNotifications(userId);
+
+
       res.json({ notifications });
     } catch (error) {
       console.error('[Notifications Error]', error);
@@ -23051,6 +23810,8 @@ ${message}
   app.get("/api/users/:userId/preferences", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const preferences = await storage.getOrCreateUserPreferences(req.params.userId);
+
+
       res.json({ preferences });
     } catch (error) {
       console.error('[Preferences Error]', error);
@@ -23073,6 +23834,8 @@ ${message}
         return res.status(404).json({ message: "Preferences not found" });
       }
       
+
+
       res.json({ preferences, message: "Settings saved successfully" });
     } catch (error) {
       console.error('[Preferences Error]', error);
@@ -23097,6 +23860,8 @@ ${message}
           };
         })
       );
+
+
       res.json({ users: usersWithPrefs });
     } catch (error) {
       console.error('[Admin Preferences Error]', error);
@@ -23113,6 +23878,8 @@ ${message}
       await storage.getOrCreateUserPreferences(userId);
       const preferences = await storage.updateUserPreferences(userId, updates);
       
+
+
       res.json({ preferences, message: "User preferences updated" });
     } catch (error) {
       console.error('[Admin Preferences Error]', error);
@@ -23191,6 +23958,8 @@ ${message}
       
       console.log(`[Wallet Repair] User ${userId}: ${currentValue} -> ${calculatedBalance.toFixed(6)}g`);
       
+
+
       res.json({ 
         success: true, 
         message: "Wallet repaired successfully",
@@ -23219,6 +23988,8 @@ ${message}
         return res.status(403).json({ message: "Not authorized to modify this notification" });
       }
       await storage.markNotificationRead(notificationId);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark notification as read" });
@@ -23230,6 +24001,8 @@ ${message}
     try {
       const { userId } = req.params;
       await storage.markAllNotificationsRead(userId);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark all as read" });
@@ -23251,6 +24024,8 @@ ${message}
         return res.status(403).json({ message: "Not authorized to delete this notification" });
       }
       await storage.deleteNotification(notificationId);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete notification" });
@@ -23309,6 +24084,8 @@ ${message}
         };
       }));
       
+
+
       res.json({ logs: enrichedLogs });
     } catch (error) {
       res.status(500).json({ message: "Failed to get audit logs" });
@@ -23323,6 +24100,8 @@ ${message}
   app.get("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
     try {
       const wallets = await storage.getAllCryptoWalletConfigs();
+
+
       res.json({ wallets });
     } catch (error) {
       console.error("Failed to get crypto wallets:", error);
@@ -23356,6 +24135,8 @@ ${message}
         details: `Created crypto wallet config: ${networkLabel}`,
       });
       
+
+
       res.json({ wallet });
     } catch (error) {
       console.error("Failed to create crypto wallet:", error);
@@ -23384,6 +24165,8 @@ ${message}
         details: `Updated crypto wallet config: ${wallet.networkLabel}`,
       });
       
+
+
       res.json({ wallet });
     } catch (error) {
       console.error("Failed to update crypto wallet:", error);
@@ -23416,6 +24199,8 @@ ${message}
         details: `Deleted crypto wallet config: ${wallet.networkLabel}`,
       });
       
+
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete crypto wallet:", error);
@@ -23427,6 +24212,8 @@ ${message}
   app.get("/api/crypto-wallets/active", async (req, res) => {
     try {
       const wallets = await storage.getActiveCryptoWalletConfigs();
+
+
       res.json({ wallets });
     } catch (error) {
       console.error("Failed to get active crypto wallets:", error);
@@ -23512,6 +24299,8 @@ ${message}
       });
       
       // Return both for compatibility - frontend may need legacy paymentRequest.id for proof submission
+
+
       res.json({ paymentRequest, depositRequest, walletConfig });
     } catch (error) {
       console.error("Failed to create crypto payment request:", error);
@@ -23578,6 +24367,8 @@ ${message}
         read: false,
       });
       
+
+
       res.json({ paymentRequest: updated });
     } catch (error) {
       console.error("Failed to submit payment proof:", error);
@@ -23601,6 +24392,8 @@ ${message}
         })
       );
       
+
+
       res.json({ requests: enrichedRequests });
     } catch (error) {
       console.error("Failed to get user crypto payments:", error);
@@ -23619,6 +24412,8 @@ ${message}
       // Get wallet config details
       const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
       
+
+
       res.json({ request, walletConfig });
     } catch (error) {
       console.error("Failed to get crypto payment:", error);
@@ -23649,6 +24444,8 @@ ${message}
         };
       }));
       
+
+
       res.json({ requests: enrichedRequests });
     } catch (error) {
       console.error("Failed to get admin crypto payments:", error);
@@ -23873,8 +24670,6 @@ ${message}
         notes: `Streamlined approval - ${pricingMode} pricing`,
         createdBy: adminUser?.id,
       }).returning();
-      
-      
       console.log('[DEBUG] Created COMPLETED Unified Gold Tally entry:', tallyEntry.id);
       
       // Create timeline events for this tally entry
@@ -23976,7 +24771,9 @@ ${message}
         data: { goldGrams, amountUsd: usdAmount },
       });
       
-      return res.json({
+
+
+        return res.json({
         success: true,
         message: "Payment approved - Gold credited to user wallet",
         transaction: {
@@ -24259,6 +25056,8 @@ ${message}
         ).catch(err => console.error('[Email] Failed to send crypto confirmation with PDF:', err));
       }
       
+
+
       res.json({ paymentRequest: updated, transaction });
     } catch (error: any) {
       console.error("[DEBUG] Failed to approve crypto payment - Full error:", error);
@@ -24314,6 +25113,8 @@ ${message}
         read: false,
       });
       
+
+
       res.json({ paymentRequest: updated });
     } catch (error) {
       console.error("Failed to reject crypto payment:", error);
@@ -24396,6 +25197,8 @@ ${message}
         });
       }
       
+
+
       res.json({ 
         success: true, 
         request,
@@ -24411,6 +25214,8 @@ ${message}
   app.get("/api/buy-gold/:userId", async (req, res) => {
     try {
       const requests = await storage.getUserBuyGoldRequests(req.params.userId);
+
+
       res.json({ requests });
     } catch (error) {
       res.status(500).json({ message: "Failed to get buy gold requests" });
@@ -24438,6 +25243,8 @@ ${message}
         })
       );
       
+
+
       res.json({ requests: enrichedRequests });
     } catch (error) {
       res.status(500).json({ message: "Failed to get buy gold requests" });
@@ -24651,6 +25458,8 @@ ${message}
         holdingId: result.holdingId
       });
       
+
+
       res.json({ 
         request: result.updated, 
         transaction: result.newTransaction,
@@ -24710,6 +25519,8 @@ ${message}
         read: false,
       });
       
+
+
       res.json({ request: updated });
     } catch (error) {
       console.error("Failed to reject buy gold request:", error);
@@ -24725,6 +25536,8 @@ ${message}
   app.get("/api/notifications/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const notifications = await storage.getUserNotifications(req.params.userId);
+
+
       res.json({ notifications });
     } catch (error) {
       res.status(500).json({ message: "Failed to get notifications" });
@@ -24743,6 +25556,8 @@ ${message}
         link,
         read: false,
       });
+
+
       res.json({ notification });
     } catch (error) {
       res.status(500).json({ message: "Failed to create notification" });
@@ -24763,6 +25578,8 @@ ${message}
         return res.status(403).json({ message: "Not authorized to modify this notification" });
       }
       const updated = await storage.markNotificationRead(req.params.id);
+
+
       res.json({ notification: updated });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark notification as read" });
@@ -24773,6 +25590,8 @@ ${message}
   app.patch("/api/notifications/:userId/read-all", ensureOwnerOrAdmin, async (req, res) => {
     try {
       await storage.markAllNotificationsRead(req.params.userId);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to mark notifications as read" });
@@ -24793,6 +25612,8 @@ ${message}
         return res.status(403).json({ message: "Not authorized to delete this notification" });
       }
       await storage.deleteNotification(req.params.id);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete notification" });
@@ -24803,6 +25624,8 @@ ${message}
   app.delete("/api/notifications/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       await storage.deleteAllNotifications(req.params.userId);
+
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to clear notifications" });
@@ -24830,6 +25653,8 @@ ${message}
       const { registerDeviceToken } = await import('./push-notifications');
       await registerDeviceToken(userId, token, platform, deviceName, deviceId);
       
+
+
       res.json({ success: true, message: "Device registered for push notifications" });
     } catch (error) {
       console.error("Failed to register push device:", error);
@@ -24850,6 +25675,8 @@ ${message}
       const { unregisterDeviceToken } = await import('./push-notifications');
       await unregisterDeviceToken(userId, token);
       
+
+
       res.json({ success: true, message: "Device unregistered from push notifications" });
     } catch (error) {
       console.error("Failed to unregister push device:", error);
@@ -24864,6 +25691,8 @@ ${message}
       const { getUserDeviceTokens } = await import('./push-notifications');
       const tokens = await getUserDeviceTokens(userId);
       
+
+
       res.json({ devices: tokens.length, hasDevices: tokens.length > 0 });
     } catch (error) {
       console.error("Failed to get push devices:", error);
@@ -24878,6 +25707,8 @@ ${message}
       const { unregisterAllDeviceTokens } = await import('./push-notifications');
       const count = await unregisterAllDeviceTokens(userId);
       
+
+
       res.json({ success: true, devicesUnregistered: count });
     } catch (error) {
       console.error("Failed to unregister all push devices:", error);
@@ -24893,6 +25724,8 @@ ${message}
   app.get("/api/admin/platform-config", ensureAdminAsync, async (req, res) => {
     try {
       const configs = await storage.getAllPlatformConfigs();
+
+
       res.json({ configs });
     } catch (error) {
       console.error("Failed to get platform configs:", error);
@@ -24904,6 +25737,8 @@ ${message}
   app.get("/api/admin/platform-config/category/:category", ensureAdminAsync, async (req, res) => {
     try {
       const configs = await storage.getPlatformConfigsByCategory(req.params.category);
+
+
       res.json({ configs });
     } catch (error) {
       console.error("Failed to get platform configs by category:", error);
@@ -24918,6 +25753,8 @@ ${message}
       if (!config) {
         return res.status(404).json({ message: "Configuration not found" });
       }
+
+
       res.json({ config });
     } catch (error) {
       console.error("Failed to get platform config:", error);
@@ -24957,6 +25794,8 @@ ${message}
         configMap[config.configKey] = value;
       }
       
+
+
       res.json({ configs: configMap });
     } catch (error) {
       console.error("Failed to get public platform configs:", error);
@@ -24995,6 +25834,8 @@ ${message}
         invalidateSystemSettingsCache();
       }
       
+
+
       res.json({ config: updated });
     } catch (error) {
       console.error("Failed to update platform config:", error);
@@ -25039,6 +25880,8 @@ ${message}
         invalidateSystemSettingsCache();
       }
       
+
+
       res.json({ configs: results, updated: results.length });
     } catch (error) {
       console.error("Failed to bulk update platform configs:", error);
@@ -25051,6 +25894,8 @@ ${message}
     try {
       await storage.seedDefaultPlatformConfig();
       const configs = await storage.getAllPlatformConfigs();
+
+
       res.json({ message: "Default platform configuration seeded", configs });
     } catch (error) {
       console.error("Failed to seed platform configs:", error);
@@ -25084,6 +25929,8 @@ ${message}
         details: `Created platform config: ${configKey}`,
       });
       
+
+
       res.json({ config });
     } catch (error) {
       console.error("Failed to create platform config:", error);
@@ -25113,6 +25960,8 @@ ${message}
         details: `Deleted platform config: ${config?.configKey || id}`,
       });
       
+
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete platform config:", error);
@@ -25128,6 +25977,8 @@ ${message}
   app.get("/api/admin/email-notifications", ensureAdminAsync, async (req, res) => {
     try {
       const settings = await storage.getAllEmailNotificationSettings();
+
+
       res.json({ settings });
     } catch (error) {
       console.error("Failed to get email notification settings:", error);
@@ -25140,6 +25991,8 @@ ${message}
     try {
       const { category } = req.params;
       const settings = await storage.getEmailNotificationSettingsByCategory(category);
+
+
       res.json({ settings });
     } catch (error) {
       console.error("Failed to get email notification settings by category:", error);
@@ -25169,6 +26022,8 @@ ${message}
         details: `${isEnabled ? 'Enabled' : 'Disabled'} email notification: ${type}`,
       });
       
+
+
       res.json({ setting });
     } catch (error) {
       console.error("Failed to toggle email notification:", error);
@@ -25201,6 +26056,8 @@ ${message}
         details: `Updated email notification setting: ${setting.notificationType}`,
       });
       
+
+
       res.json({ setting });
     } catch (error) {
       console.error("Failed to update email notification setting:", error);
@@ -25213,6 +26070,8 @@ ${message}
     try {
       await storage.seedDefaultEmailNotificationSettings();
       const settings = await storage.getAllEmailNotificationSettings();
+
+
       res.json({ success: true, count: settings.length });
     } catch (error) {
       console.error("Failed to seed email notification settings:", error);
@@ -25228,6 +26087,8 @@ ${message}
   app.get("/api/admin/email-logs", ensureAdminAsync, async (req, res) => {
     try {
       const logs = await storage.getAllEmailLogs();
+
+
       res.json({ logs });
     } catch (error) {
       console.error("Failed to get email logs:", error);
@@ -25240,6 +26101,8 @@ ${message}
     try {
       const { userId } = req.params;
       const logs = await storage.getEmailLogsByUser(userId);
+
+
       res.json({ logs });
     } catch (error) {
       console.error("Failed to get user email logs:", error);
@@ -25252,6 +26115,8 @@ ${message}
     try {
       const { type } = req.params;
       const logs = await storage.getEmailLogsByType(type);
+
+
       res.json({ logs });
     } catch (error) {
       console.error("Failed to get email logs by type:", error);
@@ -25269,6 +26134,8 @@ ${message}
         return res.status(404).json({ message: "Email log not found" });
       }
       
+
+
       res.json({ log });
     } catch (error) {
       console.error("Failed to get email log:", error);
@@ -25287,7 +26154,7 @@ ${message}
       const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
       
       if (!settings?.isEnabled) {
-        return res.json({ restricted: false });
+      return res.json({ restricted: false });
       }
       
       // Get client IP
@@ -25308,7 +26175,7 @@ ${message}
       }
       
       if (!countryCode) {
-        return res.json({ restricted: false });
+      return res.json({ restricted: false });
       }
       
       // Check if country is restricted
@@ -25334,10 +26201,14 @@ ${message}
         });
       }
       
-      res.json({ restricted: false });
+
+
+      return res.json({ restricted: false });
     } catch (error) {
       console.error("Failed to check geo restriction:", error);
-      res.json({ restricted: false });
+
+
+      return res.json({ restricted: false });
     }
   });
 
@@ -25345,6 +26216,8 @@ ${message}
   app.get("/api/admin/geo-restrictions", ensureAdminAsync, async (req, res) => {
     try {
       const restrictions = await db.select().from(geoRestrictions).orderBy(geoRestrictions.countryName);
+
+
       res.json({ restrictions });
     } catch (error) {
       console.error("Failed to get geo restrictions:", error);
@@ -25356,6 +26229,8 @@ ${message}
   app.get("/api/admin/geo-restriction-settings", ensureAdminAsync, async (req, res) => {
     try {
       const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
+
+
       res.json({ settings: settings || null });
     } catch (error) {
       console.error("Failed to get geo restriction settings:", error);
@@ -25394,7 +26269,9 @@ ${message}
           details: `Updated geo restriction settings: ${isEnabled ? 'Enabled' : 'Disabled'}`,
         });
         
-        return res.json({ settings: updated });
+
+
+      res.json({ settings: updated });
       } else {
         const [created] = await db.insert(geoRestrictionSettings)
           .values({
@@ -25415,7 +26292,9 @@ ${message}
           details: `Created geo restriction settings`,
         });
         
-        return res.json({ settings: created });
+
+
+      res.json({ settings: created });
       }
     } catch (error) {
       console.error("Failed to update geo restriction settings:", error);
@@ -25462,6 +26341,8 @@ ${message}
         details: `Added geo restriction for ${countryName} (${countryCode})`,
       });
       
+
+
       res.json({ restriction: created });
     } catch (error) {
       console.error("Failed to create geo restriction:", error);
@@ -25498,6 +26379,8 @@ ${message}
         details: `Updated geo restriction for ${updated.countryName}`,
       });
       
+
+
       res.json({ restriction: updated });
     } catch (error) {
       console.error("Failed to update geo restriction:", error);
@@ -25528,6 +26411,8 @@ ${message}
         details: `Deleted geo restriction for ${deleted.countryName}`,
       });
       
+
+
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete geo restriction:", error);
@@ -25543,6 +26428,8 @@ ${message}
   app.get("/api/admin/rbac/roles", ensureAdminAsync, async (req, res) => {
     try {
       const roles = await storage.getAllAdminRoles();
+
+
       res.json({ roles });
     } catch (error) {
       console.error('Get roles error:', error);
@@ -25558,6 +26445,8 @@ ${message}
         return res.status(404).json({ error: 'Role not found' });
       }
       const permissions = await storage.getRolePermissions(req.params.id);
+
+
       res.json({ role, permissions });
     } catch (error) {
       console.error('Get role error:', error);
@@ -25579,6 +26468,8 @@ ${message}
         riskLevel: riskLevel || 'Low',
         createdBy: req.session?.userId
       });
+
+
       res.json({ role });
     } catch (error) {
       console.error('Create role error:', error);
@@ -25593,6 +26484,8 @@ ${message}
       if (!role) {
         return res.status(404).json({ error: 'Role not found' });
       }
+
+
       res.json({ role });
     } catch (error) {
       console.error('Update role error:', error);
@@ -25607,6 +26500,8 @@ ${message}
       if (!deleted) {
         return res.status(400).json({ error: 'Cannot delete system role or role not found' });
       }
+
+
       res.json({ success: true });
     } catch (error) {
       console.error('Delete role error:', error);
@@ -25618,6 +26513,8 @@ ${message}
   app.get("/api/admin/rbac/components", ensureAdminAsync, async (req, res) => {
     try {
       const components = await storage.getAllAdminComponents();
+
+
       res.json({ components });
     } catch (error) {
       console.error('Get components error:', error);
@@ -25633,6 +26530,8 @@ ${message}
         return res.status(400).json({ error: 'Role ID and Component ID are required' });
       }
       const result = await storage.updateRoleComponentPermission(roleId, componentId, permissions);
+
+
       res.json({ permission: result });
     } catch (error) {
       console.error('Update permission error:', error);
@@ -25644,6 +26543,8 @@ ${message}
   app.get("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
     try {
       const assignments = await storage.getUserRoleAssignments(req.params.userId);
+
+
       res.json({ assignments });
     } catch (error) {
       console.error('Get user roles error:', error);
@@ -25664,6 +26565,8 @@ ${message}
         req.session?.userId || '',
         expiresAt ? new Date(expiresAt) : undefined
       );
+
+
       res.json({ assignment });
     } catch (error) {
       console.error('Assign role error:', error);
@@ -25675,6 +26578,8 @@ ${message}
   app.delete("/api/admin/rbac/users/:userId/roles/:roleId", ensureAdminAsync, async (req, res) => {
     try {
       const revoked = await storage.revokeUserRole(req.params.userId, req.params.roleId);
+
+
       res.json({ success: revoked });
     } catch (error) {
       console.error('Revoke role error:', error);
@@ -25686,6 +26591,8 @@ ${message}
   app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
     try {
       const permissions = await storage.getUserEffectivePermissions(req.session?.userId || '');
+
+
       res.json({ permissions });
     } catch (error) {
       console.error('Get permissions error:', error);
@@ -25697,6 +26604,8 @@ ${message}
   app.get("/api/admin/rbac/tasks", ensureAdminAsync, async (req, res) => {
     try {
       const tasks = await storage.getAllTaskDefinitions();
+
+
       res.json({ tasks });
     } catch (error) {
       console.error('Get tasks error:', error);
@@ -25712,6 +26621,8 @@ ${message}
         status: status as string,
         initiatorId: initiatorId as string
       });
+
+
       res.json({ queue });
     } catch (error) {
       console.error('Get approval queue error:', error);
@@ -25723,6 +26634,8 @@ ${message}
   app.get("/api/admin/rbac/pending-approvals", ensureAdminAsync, async (req, res) => {
     try {
       const pendingApprovals = await storage.getPendingApprovalsForUser(req.session?.userId || '');
+
+
       res.json({ approvals: pendingApprovals });
     } catch (error) {
       console.error('Get pending approvals error:', error);
@@ -25738,6 +26651,8 @@ ${message}
         return res.status(404).json({ error: 'Approval not found' });
       }
       const history = await storage.getApprovalHistory(req.params.id);
+
+
       res.json({ approval, history });
     } catch (error) {
       console.error('Get approval error:', error);
@@ -25795,6 +26710,8 @@ ${message}
         ipAddress: req.ip
       });
       
+
+
       res.json({ approval: result });
     } catch (error) {
       console.error('Process approval error:', error);
@@ -25833,6 +26750,8 @@ ${message}
         newValue: { taskData, reason }
       });
       
+
+
       res.json({ approval });
     } catch (error) {
       console.error('Create approval error:', error);
@@ -25865,6 +26784,8 @@ ${message}
         timestamp: log.createdAt,
       }));
       
+
+
       res.json({ logs: formatted });
     } catch (error) {
       console.error('Audit logs error:', error);
@@ -25909,7 +26830,9 @@ ${message}
       const totalRevenue = totalFees + totalSpread;
       const previousPeriodStart = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
       
-      res.json({
+
+
+        return res.json({
         summary: {
           totalRevenue,
           totalFees,
@@ -25964,7 +26887,9 @@ ${message}
       const totalGoldInSystem = totalGoldInVault; // Physical gold is the source of truth
       const difference = totalGoldInVault - totalDigitalClaims; // Should be 0 if properly backed
       
-      res.json({
+
+
+        return res.json({
         totalGoldInSystem,
         totalGoldInWallets,
         totalGoldInVault,
@@ -25987,6 +26912,8 @@ ${message}
         .orderBy(desc(reconciliationReports.createdAt))
         .limit(30);
       
+
+
       res.json({ reports });
     } catch (error) {
       console.error('Reconciliation reports error:', error);
@@ -26041,6 +26968,8 @@ ${message}
         generatedBy: adminUser?.id || null,
       }).returning();
       
+
+
       res.json({ report: report[0] });
     } catch (error) {
       console.error('Generate reconciliation error:', error);
@@ -26083,7 +27012,9 @@ ${message}
       else if (riskScore > 50) riskLevel = 'high';
       else if (riskScore > 25) riskLevel = 'medium';
       
-      res.json({
+
+
+        return res.json({
         overallRiskScore: riskScore,
         riskLevel,
         totalExposure: { goldGrams: totalGoldGrams, usdValue: totalExposure },
@@ -26133,6 +27064,8 @@ ${message}
         };
       }));
       
+
+
       res.json({ reports: reportsWithUsers });
     } catch (error) {
       console.error('SAR reports error:', error);
@@ -26159,6 +27092,8 @@ ${message}
         createdBy: adminUser?.id || '',
       }).returning();
       
+
+
       res.json({ report: report[0] });
     } catch (error) {
       console.error('Create SAR error:', error);
@@ -26178,6 +27113,8 @@ ${message}
         .where(eq(sarReports.id, req.params.id))
         .returning();
       
+
+
       res.json({ report: report[0] });
     } catch (error) {
       console.error('Submit SAR error:', error);
@@ -26200,6 +27137,8 @@ ${message}
         };
       }));
       
+
+
       res.json({ alerts: alertsWithUsers });
     } catch (error) {
       console.error('Fraud alerts error:', error);
@@ -26218,6 +27157,8 @@ ${message}
         { id: '5', name: 'Email Queue Processor', description: 'Process pending email notifications', cronExpression: '*/5 * * * *', status: 'active', runCount: 288, failCount: 5, lastRunAt: new Date(Date.now() - 300000).toISOString(), lastRunDurationMs: 3000, nextRunAt: new Date(Date.now() + 300000).toISOString() },
       ];
       
+
+
       res.json({ jobs });
     } catch (error) {
       console.error('Scheduled jobs error:', error);
@@ -26241,6 +27182,8 @@ ${message}
         logs = logs.filter(l => l.source === source);
       }
       
+
+
       res.json({ logs });
     } catch (error) {
       console.error('System logs error:', error);
@@ -26291,6 +27234,8 @@ ${message}
         return { ...s, user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email } : null };
       }));
       
+
+
       res.json({ settlements: settlementsWithUsers });
     } catch (error) {
       console.error('Settlements error:', error);
@@ -26337,7 +27282,9 @@ ${message}
       const availableLiquidity = totalAssets - totalObligations;
       const liquidityRatio = totalObligations > 0 ? totalAssets / totalObligations : 10;
       
-      res.json({
+
+
+        return res.json({
         current: {
           totalGoldGrams,
           totalGoldValueUsd: totalGoldValue,
@@ -26376,6 +27323,8 @@ ${message}
         reports = reports.filter(r => r.status === status);
       }
       
+
+
       res.json({ reports });
     } catch (error) {
       console.error('Regulatory reports error:', error);
@@ -26401,6 +27350,8 @@ ${message}
         summary: `${reportType} report for period ${reportPeriodStart} to ${reportPeriodEnd}`,
       }).returning();
       
+
+
       res.json({ report: report[0] });
     } catch (error) {
       console.error('Generate regulatory report error:', error);
@@ -26422,6 +27373,8 @@ ${message}
         .where(eq(regulatoryReports.id, req.params.id))
         .returning();
       
+
+
       res.json({ report: report[0] });
     } catch (error) {
       console.error('Submit regulatory report error:', error);
@@ -26500,6 +27453,8 @@ ${message}
   app.delete("/api/admin/announcements/:id", ensureAdminAsync, async (req, res) => {
     try {
       await db.delete(announcements).where(eq(announcements.id, req.params.id));
+
+
       res.json({ success: true });
     } catch (error) {
       console.error('Delete announcement error:', error);
@@ -26566,6 +27521,8 @@ ${message}
         limit: limit ? parseInt(limit as string) : 100,
       });
       
+
+
       res.json({ summaries });
     } catch (error: any) {
       console.error('Get workflow audit summaries error:', error);
@@ -26616,6 +27573,8 @@ ${message}
         return res.status(404).json({ error: 'Flow type not found' });
       }
       
+
+
       res.json({ flowType, expectedSteps });
     } catch (error: any) {
       console.error('Get expected steps error:', error);
@@ -26649,6 +27608,621 @@ ${message}
     } catch (error: any) {
       console.error('Get workflow audit stats error:', error);
       res.status(500).json({ error: error.message || 'Failed to get stats' });
+    }
+  });
+
+
+  // ============================================================================
+  // PRICE ALERTS CRUD (User-authenticated routes)
+  // ============================================================================
+
+  // GET /api/price-alerts - List user's price alerts
+  app.get("/api/price-alerts", async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const alerts = await db
+        .select()
+        .from(priceAlerts)
+        .where(eq(priceAlerts.userId, sessionUserId))
+        .orderBy(desc(priceAlerts.createdAt));
+
+
+
+      res.json({ alerts });
+    } catch (error: any) {
+      console.error("Get price alerts error:", error);
+      res.status(500).json({ message: error.message || "Failed to get price alerts" });
+    }
+  });
+
+  // POST /api/price-alerts - Create new price alert
+  app.post("/api/price-alerts", async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const validated = insertPriceAlertSchema.safeParse({
+        ...req.body,
+        userId: sessionUserId,
+      });
+
+      if (!validated.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validated.error.flatten().fieldErrors 
+        });
+      }
+
+      const [alert] = await db
+        .insert(priceAlerts)
+        .values(validated.data)
+        .returning();
+
+      res.status(201).json({ alert });
+    } catch (error: any) {
+      console.error("Create price alert error:", error);
+      res.status(500).json({ message: error.message || "Failed to create price alert" });
+    }
+  });
+
+  // PATCH /api/price-alerts/:id - Update price alert
+  app.patch("/api/price-alerts/:id", async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(priceAlerts)
+        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)));
+
+      if (!existing) {
+        return res.status(404).json({ message: "Price alert not found" });
+      }
+
+      const updateSchema = z.object({
+        targetPricePerGram: z.string().optional(),
+        direction: z.enum(["above", "below"]).optional(),
+        channel: z.enum(["email", "push", "in_app", "all"]).optional(),
+        isActive: z.boolean().optional(),
+        note: z.string().nullable().optional(),
+      });
+
+      const validated = updateSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validated.error.flatten().fieldErrors 
+        });
+      }
+
+      const [updated] = await db
+        .update(priceAlerts)
+        .set({
+          ...validated.data,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)))
+        .returning();
+
+
+
+      res.json({ alert: updated });
+    } catch (error: any) {
+      console.error("Update price alert error:", error);
+      res.status(500).json({ message: error.message || "Failed to update price alert" });
+    }
+  });
+
+  // DELETE /api/price-alerts/:id - Delete price alert
+  app.delete("/api/price-alerts/:id", async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      // Verify ownership and delete
+      const [deleted] = await db
+        .delete(priceAlerts)
+        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)))
+        .returning();
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Price alert not found" });
+      }
+
+
+
+      res.json({ message: "Price alert deleted successfully", alert: deleted });
+    } catch (error: any) {
+      console.error("Delete price alert error:", error);
+      res.status(500).json({ message: error.message || "Failed to delete price alert" });
+    }
+  });
+
+
+
+  // ============================================================================
+  // DCA (Dollar Cost Averaging) AUTO-BUY ENDPOINTS
+  // ============================================================================
+
+  // GET /api/dca-plans - List user's DCA plans
+  app.get("/api/dca-plans", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const plans = await db
+        .select()
+        .from(dcaPlans)
+        .where(eq(dcaPlans.userId, sessionUserId))
+        .orderBy(desc(dcaPlans.createdAt));
+
+
+
+      res.json({ plans });
+    } catch (error: any) {
+      console.error("Get DCA plans error:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch DCA plans" });
+    }
+  });
+
+  // POST /api/dca-plans - Create new DCA plan
+  app.post("/api/dca-plans", ensureAuthenticated, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const createSchema = z.object({
+        name: z.string().nullable().optional(),
+        amountUsd: z.string().refine((val) => parseFloat(val) >= 1, { message: "Minimum amount is $1" }),
+        frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+        dayOfWeek: z.number().min(0).max(6).nullable().optional(),
+        dayOfMonth: z.number().min(1).max(31).nullable().optional(),
+      });
+
+      const validated = createSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: validated.error.flatten().fieldErrors,
+        });
+      }
+
+      const { name, amountUsd, frequency, dayOfWeek, dayOfMonth } = validated.data;
+
+      // Calculate next run time based on frequency
+      const now = new Date();
+      let nextRunAt = new Date();
+
+      switch (frequency) {
+        case "daily":
+          nextRunAt.setDate(nextRunAt.getDate() + 1);
+          nextRunAt.setHours(9, 0, 0, 0); // 9 AM next day
+          break;
+        case "weekly":
+          const targetDay = dayOfWeek ?? 1; // Monday by default
+          const daysUntilTarget = (targetDay - now.getDay() + 7) % 7 || 7;
+          nextRunAt.setDate(nextRunAt.getDate() + daysUntilTarget);
+          nextRunAt.setHours(9, 0, 0, 0);
+          break;
+        case "biweekly":
+          const biweeklyDay = dayOfWeek ?? 1;
+          const daysUntilBiweekly = (biweeklyDay - now.getDay() + 7) % 7 || 7;
+          nextRunAt.setDate(nextRunAt.getDate() + daysUntilBiweekly);
+          nextRunAt.setHours(9, 0, 0, 0);
+          break;
+        case "monthly":
+          const targetDate = dayOfMonth ?? 1;
+          nextRunAt.setMonth(nextRunAt.getMonth() + 1);
+          nextRunAt.setDate(Math.min(targetDate, new Date(nextRunAt.getFullYear(), nextRunAt.getMonth() + 1, 0).getDate()));
+          nextRunAt.setHours(9, 0, 0, 0);
+          break;
+      }
+
+      const [plan] = await db
+        .insert(dcaPlans)
+        .values({
+          userId: sessionUserId,
+          name: name || null,
+          amountUsd,
+          frequency,
+          dayOfWeek: dayOfWeek ?? null,
+          dayOfMonth: dayOfMonth ?? null,
+          nextRunAt,
+          status: "active",
+        })
+        .returning();
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: sessionUserId,
+        action: "dca_plan_created",
+        details: { planId: plan.id, amountUsd, frequency },
+      });
+
+      res.status(201).json({ plan });
+    } catch (error: any) {
+      console.error("Create DCA plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to create DCA plan" });
+    }
+  });
+
+  // PATCH /api/dca-plans/:id - Update DCA plan (including pause/resume)
+  app.patch("/api/dca-plans/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(dcaPlans)
+        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
+
+      if (!existing) {
+        return res.status(404).json({ message: "DCA plan not found" });
+      }
+
+      const updateSchema = z.object({
+        name: z.string().nullable().optional(),
+        amountUsd: z.string().optional(),
+        frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).optional(),
+        dayOfWeek: z.number().min(0).max(6).nullable().optional(),
+        dayOfMonth: z.number().min(1).max(31).nullable().optional(),
+        status: z.enum(["active", "paused", "cancelled"]).optional(),
+      });
+
+      const validated = updateSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: validated.error.flatten().fieldErrors,
+        });
+      }
+
+      const updates: Record<string, any> = { ...validated.data, updatedAt: new Date() };
+
+      // If resuming from paused, recalculate next run time
+      if (validated.data.status === "active" && existing.status === "paused") {
+        const now = new Date();
+        let nextRunAt = new Date();
+        const frequency = validated.data.frequency || existing.frequency;
+        const dayOfWeek = validated.data.dayOfWeek ?? existing.dayOfWeek;
+        const dayOfMonth = validated.data.dayOfMonth ?? existing.dayOfMonth;
+
+        switch (frequency) {
+          case "daily":
+            nextRunAt.setDate(nextRunAt.getDate() + 1);
+            nextRunAt.setHours(9, 0, 0, 0);
+            break;
+          case "weekly":
+          case "biweekly":
+            const targetDay = dayOfWeek ?? 1;
+            const daysUntilTarget = (targetDay - now.getDay() + 7) % 7 || 7;
+            nextRunAt.setDate(nextRunAt.getDate() + daysUntilTarget);
+            nextRunAt.setHours(9, 0, 0, 0);
+            break;
+          case "monthly":
+            const targetDate = dayOfMonth ?? 1;
+            nextRunAt.setMonth(nextRunAt.getMonth() + 1);
+            nextRunAt.setDate(Math.min(targetDate, new Date(nextRunAt.getFullYear(), nextRunAt.getMonth() + 1, 0).getDate()));
+            nextRunAt.setHours(9, 0, 0, 0);
+            break;
+        }
+        updates.nextRunAt = nextRunAt;
+      }
+
+      const [updated] = await db
+        .update(dcaPlans)
+        .set(updates)
+        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)))
+        .returning();
+
+      // Create audit log for status changes
+      if (validated.data.status) {
+        await storage.createAuditLog({
+          userId: sessionUserId,
+          action: "dca_plan_updated",
+          details: { planId: id, status: validated.data.status },
+        });
+      }
+
+
+
+      res.json({ plan: updated });
+    } catch (error: any) {
+      console.error("Update DCA plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to update DCA plan" });
+    }
+  });
+
+  // DELETE /api/dca-plans/:id - Cancel DCA plan
+  app.delete("/api/dca-plans/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(dcaPlans)
+        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
+
+      if (!existing) {
+        return res.status(404).json({ message: "DCA plan not found" });
+      }
+
+      // Soft delete - mark as cancelled instead of hard delete
+      const [cancelled] = await db
+        .update(dcaPlans)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)))
+        .returning();
+
+      await storage.createAuditLog({
+        userId: sessionUserId,
+        action: "dca_plan_cancelled",
+        details: { planId: id },
+      });
+
+
+
+      res.json({ message: "DCA plan cancelled successfully", plan: cancelled });
+    } catch (error: any) {
+      console.error("Cancel DCA plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to cancel DCA plan" });
+    }
+  });
+
+  // GET /api/dca-plans/:id/executions - Get execution history for a plan
+  app.get("/api/dca-plans/:id/executions", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+      const { limit = "50", offset = "0" } = req.query;
+
+      // Verify plan ownership
+      const [plan] = await db
+        .select()
+        .from(dcaPlans)
+        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
+
+      if (!plan) {
+        return res.status(404).json({ message: "DCA plan not found" });
+      }
+
+      const executions = await db
+        .select()
+        .from(dcaExecutions)
+        .where(eq(dcaExecutions.planId, id))
+        .orderBy(desc(dcaExecutions.scheduledAt))
+        .limit(parseInt(limit as string))
+        .offset(parseInt(offset as string));
+
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(dcaExecutions)
+        .where(eq(dcaExecutions.planId, id));
+
+
+
+      res.json({ executions, total: count, plan });
+    } catch (error: any) {
+      console.error("Get DCA executions error:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch DCA executions" });
+    }
+  });
+
+
+  return httpServer;
+
+  // ============================================================================
+  // REPORT EXPORT API ENDPOINTS
+  // ============================================================================
+
+  // GET /api/reports - List user's report exports with pagination
+  app.get("/api/reports", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+      const offset = (page - 1) * limit;
+
+      const reports = await db
+        .select()
+        .from(reportExports)
+        .where(eq(reportExports.userId, sessionUserId))
+        .orderBy(desc(reportExports.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(reportExports)
+        .where(eq(reportExports.userId, sessionUserId));
+
+      const total = Number(countResult?.count || 0);
+
+      res.json({
+        reports,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error: any) {
+      console.error("List reports error:", error);
+      res.status(500).json({ message: error.message || "Failed to list reports" });
+    }
+  });
+
+  // POST /api/reports/generate - Create a new report export request
+  app.post("/api/reports/generate", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const schema = z.object({
+        reportType: z.enum(['transaction_history', 'tax_report', 'portfolio_summary', 'vault_statement', 'bnsl_statement']),
+        format: z.enum(['pdf', 'csv', 'xlsx']),
+        dateFrom: z.string().nullable().optional(),
+        dateTo: z.string().nullable().optional(),
+        filters: z.record(z.unknown()).nullable().optional(),
+      });
+
+      const validated = schema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: "Invalid request data", errors: validated.error.errors });
+      }
+
+      const { reportType, format, dateFrom, dateTo, filters } = validated.data;
+
+      const [report] = await db
+        .insert(reportExports)
+        .values({
+          userId: sessionUserId,
+          reportType,
+          format,
+          status: 'pending',
+          dateFrom: dateFrom || null,
+          dateTo: dateTo || null,
+          filters: filters || null,
+        })
+        .returning();
+
+      await storage.createAuditLog({
+        userId: sessionUserId,
+        action: "report_requested",
+        details: { reportId: report.id, reportType, format },
+      });
+
+      const { processReportExport } = await import("./report-generator");
+      setImmediate(() => processReportExport(report.id).catch(console.error));
+
+      res.status(201).json({ report });
+    } catch (error: any) {
+      console.error("Generate report error:", error);
+      res.status(500).json({ message: error.message || "Failed to create report" });
+    }
+  });
+
+  // GET /api/reports/:id - Get status of a specific report
+  app.get("/api/reports/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      const [report] = await db
+        .select()
+        .from(reportExports)
+        .where(and(eq(reportExports.id, id), eq(reportExports.userId, sessionUserId)));
+
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      res.json({ report });
+    } catch (error: any) {
+      console.error("Get report error:", error);
+      res.status(500).json({ message: error.message || "Failed to get report" });
+    }
+  });
+
+  // GET /api/reports/:id/download - Download the generated report file
+  app.get("/api/reports/:id/download", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { id } = req.params;
+
+      const [report] = await db
+        .select()
+        .from(reportExports)
+        .where(and(eq(reportExports.id, id), eq(reportExports.userId, sessionUserId)));
+
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      if (report.status !== 'completed') {
+        return res.status(400).json({ message: `Report is not ready. Status: ${report.status}` });
+      }
+
+      if (!report.fileUrl) {
+        return res.status(400).json({ message: "Report file not available" });
+      }
+
+      const filePath = report.fileUrl;
+      const fs = await import("fs");
+      const path = await import("path");
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "Report file not found on disk" });
+      }
+
+      const fileName = path.basename(filePath);
+      const ext = path.extname(fileName).toLowerCase();
+      
+      const mimeTypes: Record<string, string> = {
+        '.pdf': 'application/pdf',
+        '.csv': 'text/csv',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      };
+
+      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error: any) {
+      console.error("Download report error:", error);
+      res.status(500).json({ message: error.message || "Failed to download report" });
     }
   });
 

@@ -464,6 +464,7 @@ export interface IStorage {
   getChatSessionById(id: string): Promise<ChatSession | undefined>;
   getChatSessionByGuest(guestName?: string, guestEmail?: string): Promise<ChatSession | undefined>;
   getAllChatSessions(): Promise<ChatSession[]>;
+  getUserChatSessions(userId: string, limit?: number): Promise<ChatSession[]>;
   createChatSession(session: InsertChatSession): Promise<ChatSession>;
   updateChatSession(id: string, updates: Partial<ChatSession>): Promise<ChatSession | undefined>;
   
@@ -1798,12 +1799,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(chatSessions).orderBy(desc(chatSessions.lastMessageAt));
   }
 
+  async getUserChatSessions(userId: string, limit: number = 20): Promise<ChatSession[]> {
+    return await db.select().from(chatSessions)
+      .where(eq(chatSessions.userId, userId))
+      .orderBy(desc(chatSessions.lastMessageAt))
+      .limit(limit);
+  }
+
   async getChatSessionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<ChatSession>[]; total: number }> {
     const { status, limit = 50, offset = 0 } = options;
     const lightweightColumns = {
       id: chatSessions.id,
       userId: chatSessions.userId,
-      agentId: chatSessions.agentId,
+      currentAgentId: chatSessions.currentAgentId,
       status: chatSessions.status,
       guestName: chatSessions.guestName,
       guestEmail: chatSessions.guestEmail,

@@ -183,6 +183,13 @@ import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WingoldOrders from "@/pages/admin/WingoldOrders";
 import WingoldCallback from "@/pages/WingoldCallback";
+import PriceAlertsPage from "@/pages/PriceAlertsPage";
+import DCAPage from "@/pages/DCAPage";
+import SavingsGoalsPage from "@/pages/SavingsGoalsPage";
+import BeneficiariesPage from "@/pages/BeneficiariesPage";
+import ActivityLogPage from "@/pages/ActivityLogPage";
+import ReportsPage from "@/pages/ReportsPage";
+import ReferralsPage from "@/pages/ReferralsPage";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import FinatradesLanding from "@/pages/finatrades/FinatradesLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
@@ -246,6 +253,13 @@ function Router() {
       <ProtectedRoute path="/notifications" component={Notifications} />
       <ProtectedRoute path="/help" component={HelpCenter} />
       <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/price-alerts" component={PriceAlertsPage} />
+      <ProtectedRoute path="/auto-buy" component={DCAPage} />
+      <ProtectedRoute path="/savings-goals" component={SavingsGoalsPage} />
+      <ProtectedRoute path="/beneficiaries" component={BeneficiariesPage} />
+      <ProtectedRoute path="/activity" component={ActivityLogPage} />
+      <ProtectedRoute path="/reports" component={ReportsPage} />
+      <ProtectedRoute path="/referrals" component={ReferralsPage} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />

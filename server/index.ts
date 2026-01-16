@@ -471,6 +471,14 @@ app.use((req, res, next) => {
     initializeJobQueues();
     startJobProcessors();
     console.log('[Enterprise] Background job processing enabled');
+  // Start DCA (Dollar Cost Averaging) processor
+  try {
+    const { startDcaProcessor } = await import('./dca-processor');
+    startDcaProcessor();
+    console.log('[DCA] DCA auto-buy processor enabled');
+  } catch (error) {
+    console.warn('[DCA] DCA processor initialization skipped:', error);
+  }
   } catch (error) {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
   }

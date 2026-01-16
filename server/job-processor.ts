@@ -23,11 +23,11 @@ function processEmailQueue(): void {
     try {
       const { sendEmail } = await import('./email');
       
-      await sendEmail({
-        to: data.to,
-        subject: data.subject,
-        html: data.template,
-      });
+      await sendEmail(
+        data.to,
+        data.template,
+        { subject: data.subject }
+      );
       
       job.progress(100);
       console.log(`[JobProcessor] Email job ${job.id} completed`);
