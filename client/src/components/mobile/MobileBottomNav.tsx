@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Home, Wallet, History, User, Plus, Vault, CalendarClock, Building2 } from 'lucide-react';
+import { Home, Wallet, History, User, Plus, Shield, Clock, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccountType } from '@/context/AccountTypeContext';
 
@@ -23,8 +23,8 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
     { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/dashboard' },
     { icon: <Wallet className="w-5 h-5" />, label: 'Wallet', path: '/finapay' },
     { icon: <Plus className="w-6 h-6" />, label: '', path: '', isCenter: true },
-    { icon: <Vault className="w-5 h-5" />, label: 'Storage', path: '/finavault' },
-    { icon: <CalendarClock className="w-5 h-5" />, label: 'BNSL', path: '/bnsl' },
+    { icon: <Shield className="w-5 h-5" />, label: 'Storage', path: '/finavault' },
+    { icon: <Clock className="w-5 h-5" />, label: 'BNSL', path: '/bnsl' },
   ];
 
   const businessNavItems: NavItem[] = [
