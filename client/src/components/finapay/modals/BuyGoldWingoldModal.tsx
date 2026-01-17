@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Loader2, AlertCircle, CheckCircle2, ShoppingCart, Search, SlidersHorizontal, X, MapPin, Clock, FileText, ChevronDown, Package } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, ShoppingCart, Search, SlidersHorizontal, X, MapPin, Clock, FileText, ChevronDown, Package, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -430,14 +430,50 @@ export default function BuyGoldWingoldModal({ isOpen, onClose, onSuccess }: BuyG
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 overflow-hidden bg-[#0a0a0a]" data-testid="modal-buy-gold-wingold">
         {!isKycApproved ? (
-          <div className="p-6">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Your KYC verification must be approved before you can purchase gold bars.
-                Please complete your KYC verification first.
-              </AlertDescription>
-            </Alert>
+          <div className="py-16 px-8 text-center space-y-6 bg-gradient-to-b from-[#0a0a0a] to-[#1a1a1a]">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
+              <ShieldCheck className="w-10 h-10 text-amber-400" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-white">KYC Verification Required</h3>
+              <p className="text-gray-400 max-w-md mx-auto">
+                Your identity verification must be approved before you can purchase gold bars. 
+                This helps us ensure secure transactions for all users.
+              </p>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 max-w-sm mx-auto">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/20 rounded-full">
+                  <Clock className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-amber-300">Status: {user?.kycStatus || 'Not Started'}</p>
+                  <p className="text-xs text-gray-400">
+                    {user?.kycStatus === 'In Progress' ? 'Under review - usually takes 1-2 business days' : 'Complete your verification to continue'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={handleClose}
+                className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                data-testid="button-close-kyc-required"
+              >
+                Close
+              </Button>
+              {user?.kycStatus !== 'In Progress' && (
+                <Button 
+                  onClick={() => { handleClose(); window.location.href = '/kyc'; }}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-medium"
+                  data-testid="button-complete-kyc"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Complete KYC
+                </Button>
+              )}
+            </div>
           </div>
         ) : step === 'submitted' && orderResult ? (
           <div className="py-12 px-6 text-center space-y-4 bg-[#0a0a0a] text-white">
