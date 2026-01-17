@@ -20,7 +20,8 @@ interface WithdrawalModalProps {
 export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'form' | 'submitted'>('form');
-  const [amountGrams, setAmountGrams] = useState('');
+  const [inputMode, setInputMode] = useState<'usd' | 'grams'>('grams');
+  const [inputValue, setInputValue] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -42,15 +43,17 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   const goldPricePerGram = dualBalance?.goldPricePerGram || 0;
   const walletBalance = availableGrams * goldPricePerGram;
 
-  // Calculate USD from grams
-  const grams = parseFloat(amountGrams) || 0;
-  const amountUsd = grams * goldPricePerGram;
+  // Calculate grams and USD based on input mode
+  const numericValue = parseFloat(inputValue) || 0;
+  const grams = inputMode === 'grams' ? numericValue : (goldPricePerGram > 0 ? numericValue / goldPricePerGram : 0);
+  const amountUsd = inputMode === 'usd' ? numericValue : numericValue * goldPricePerGram;
 
   useEffect(() => {
     if (isOpen) {
       setStep('form');
       setSelectedWalletType('LGPW');
-      setAmountGrams('');
+      setInputMode('grams');
+      setInputValue('');
       setBankName('');
       setAccountName('');
       setAccountNumber('');
@@ -60,13 +63,13 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!user || !amountGrams || !bankName || !accountName || !accountNumber) {
+    if (!user || !inputValue || !bankName || !accountName || !accountNumber) {
       toast.error("Please fill in all required fields");
       return;
     }
     
     if (grams <= 0) {
-      toast.error("Please enter a valid gold amount");
+      toast.error("Please enter a valid amount");
       return;
     }
 
@@ -179,27 +182,53 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                   />
                 </div>
 
-                  <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (Gold Grams) *</Label>
-                  <div className="relative mt-2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">g</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        type="button"
+                        onClick={() => { setInputMode('grams'); setInputValue(''); }}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
+                      >
+                        Grams
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setInputMode('usd'); setInputValue(''); }}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
+                      >
+                        USD
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    {inputMode === 'usd' ? (
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    ) : (
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">g</span>
+                    )}
                     <Input 
                       type="number"
-                      value={amountGrams}
-                      onChange={(e) => setAmountGrams(e.target.value)}
-                      placeholder="0.0000"
-                      step="0.0001"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder={inputMode === 'grams' ? "0.0000" : "0.00"}
+                      step={inputMode === 'grams' ? "0.0001" : "0.01"}
                       className="pl-9 bg-white border-gray-200 text-lg font-semibold"
-                      max={availableGrams}
                       data-testid="input-withdrawal-amount"
                     />
                   </div>
-                  {/* Show USD equivalent */}
-                  {grams > 0 && goldPricePerGram > 0 && (
+                  {/* Show calculated equivalent */}
+                  {numericValue > 0 && goldPricePerGram > 0 && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3 animate-in fade-in">
                       <div className="flex justify-between items-center">
-                        <span className="text-purple-700 text-sm font-medium">USD Equivalent</span>
+                        <span className="text-purple-700 text-sm font-medium">
+                          {inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}
+                        </span>
                         <span className="text-lg font-bold text-purple-700">
-                          ${amountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {inputMode === 'grams' 
+                            ? `$${amountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : `${grams.toFixed(4)}g`
+                          }
                         </span>
                       </div>
                     </div>
@@ -356,7 +385,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amountGrams || !bankName || !accountName || !accountNumber || submitting || grams > availableGrams}
+                disabled={!inputValue || !bankName || !accountName || !accountNumber || submitting || grams > availableGrams}
                 className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
