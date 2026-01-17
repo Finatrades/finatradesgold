@@ -356,7 +356,7 @@ export default function FinaVaultHistory() {
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                                       entry.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
                                     }`}>
-                                      {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
+                                      {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Digital Storage'}
                                     </span>
                                   </td>
                                   <td className="py-2 px-4 text-sm text-muted-foreground">

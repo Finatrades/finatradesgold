@@ -1480,7 +1480,7 @@ export default function FinaVault() {
                                               <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                                                 child.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
                                               }`}>
-                                                {child.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
+                                                {child.action === 'Vault_Transfer' ? 'Physical Storage' : 'Digital Storage'}
                                               </span>
                                             </td>
                                             <td className="p-4">
