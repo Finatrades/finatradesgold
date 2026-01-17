@@ -1,6 +1,5 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TrendingUp, Lock, HelpCircle } from 'lucide-react';
 import {
   Tooltip,
@@ -31,11 +30,11 @@ export default function WalletTypeSelector({
   return (
     <div className={`space-y-3 ${className}`} data-testid="wallet-type-selector">
       <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label className="text-sm font-medium text-gray-700">{label}</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p className="text-sm">
@@ -47,76 +46,54 @@ export default function WalletTypeSelector({
         </TooltipProvider>
       </div>
       
-      <RadioGroup
-        value={value}
-        onValueChange={(v) => onChange(v as GoldWalletType)}
-        disabled={disabled}
-        className="grid grid-cols-2 gap-3"
-      >
-        <div className="relative">
-          <RadioGroupItem
-            value="LGPW"
-            id="wallet-mpgw"
-            className="peer sr-only"
-          />
-          <Label
-            htmlFor="wallet-mpgw"
-            className={`
-              flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer
-              transition-all duration-200
-              ${value === 'LGPW' 
-                ? 'border-primary bg-primary/5 shadow-sm' 
-                : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-            data-testid="select-mpgw"
-          >
-            <TrendingUp className={`h-6 w-6 mb-2 ${value === 'LGPW' ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`font-semibold text-sm ${value === 'LGPW' ? 'text-primary' : ''}`}>
-              Market Price
-            </span>
-            <span className="text-xs text-muted-foreground text-center">LGPW</span>
-            {showDescription && (
-              <span className="text-xs text-muted-foreground text-center mt-1">
-                Value follows market
-              </span>
-            )}
-          </Label>
-        </div>
+      <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+        <button
+          type="button"
+          onClick={() => !disabled && onChange('LGPW')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
+            transition-all duration-200 touch-target
+            ${value === 'LGPW' 
+              ? 'bg-white text-purple-600 shadow-sm' 
+              : 'text-gray-500 hover:text-gray-700'
+            }
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
+          `}
+          data-testid="select-mpgw"
+        >
+          <TrendingUp className="h-4 w-4" />
+          <span>LGPW</span>
+        </button>
         
-        <div className="relative">
-          <RadioGroupItem
-            value="FGPW"
-            id="wallet-fpgw"
-            className="peer sr-only"
-          />
-          <Label
-            htmlFor="wallet-fpgw"
-            className={`
-              flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer
-              transition-all duration-200
-              ${value === 'FGPW' 
-                ? 'border-amber-500 bg-amber-500/5 shadow-sm' 
-                : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-            data-testid="select-fpgw"
-          >
-            <Lock className={`h-6 w-6 mb-2 ${value === 'FGPW' ? 'text-amber-500' : 'text-muted-foreground'}`} />
-            <span className={`font-semibold text-sm ${value === 'FGPW' ? 'text-amber-600' : ''}`}>
-              Fixed Price
-            </span>
-            <span className="text-xs text-muted-foreground text-center">FGPW</span>
-            {showDescription && (
-              <span className="text-xs text-muted-foreground text-center mt-1">
-                Price locked at purchase
-              </span>
-            )}
-          </Label>
-        </div>
-      </RadioGroup>
+        <button
+          type="button"
+          onClick={() => !disabled && onChange('FGPW')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
+            transition-all duration-200 touch-target
+            ${value === 'FGPW' 
+              ? 'bg-white text-amber-600 shadow-sm' 
+              : 'text-gray-500 hover:text-gray-700'
+            }
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
+          `}
+          data-testid="select-fpgw"
+        >
+          <Lock className="h-4 w-4" />
+          <span>FGPW</span>
+        </button>
+      </div>
+      
+      {showDescription && (
+        <p className="text-xs text-gray-500 text-center">
+          {value === 'LGPW' 
+            ? 'Market Price - Value follows live market' 
+            : 'Fixed Price - Value locked at purchase'
+          }
+        </p>
+      )}
     </div>
   );
 }
