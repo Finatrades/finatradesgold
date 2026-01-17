@@ -348,9 +348,19 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Deposit is not in negotiation status' });
     }
 
+    // Get latest negotiation message
     const latestMsg = await storage.getLatestNegotiationMessage(deposit.id);
+    
+    // Only block if user has already responded to admin's current offer
+    // Check: if admin has made an offer (usdCounterFromAdmin exists) AND
+    // the latest message is a USER_COUNTER or USER_ACCEPT/USER_REJECT after admin's offer
     if (latestMsg && latestMsg.senderRole === 'user') {
-      return res.status(400).json({ error: 'Waiting for admin response' });
+      // If the latest user message is a counter/accept/reject (response to admin), block
+      // But allow if it's just the initial estimate (messageType might be null or 'USER_ESTIMATE')
+      const isUserResponse = ['USER_COUNTER', 'USER_ACCEPT', 'USER_REJECT'].includes(latestMsg.messageType);
+      if (isUserResponse) {
+        return res.status(400).json({ error: 'Waiting for admin response' });
+      }
     }
 
     const { action, counterGrams, counterUsd, counterFees, message } = parsed.data;
