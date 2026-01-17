@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Package, ExternalLink, ShieldCheck, Clock, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
+import { Package, ExternalLink, ShieldCheck, Clock, CheckCircle, AlertCircle, Loader2, X, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface WingoldOrder {
@@ -20,13 +20,33 @@ interface WingoldOrder {
 }
 
 const WINGOLD_SHOP_URL = 'https://wingoldandmetals--imcharanpratap.replit.app';
+const IFRAME_TIMEOUT_MS = 15000;
 
 export default function BuyGoldBars() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showShopModal, setShowShopModal] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [iframeTimeout, setIframeTimeout] = useState(false);
   const [ssoUrl, setSsoUrl] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (showShopModal && iframeLoading && ssoUrl) {
+      timeoutRef.current = setTimeout(() => {
+        if (iframeLoading) {
+          console.log('[Wingold Shop] Iframe load timeout - shop may be unavailable');
+          setIframeTimeout(true);
+          setIframeLoading(false);
+        }
+      }, IFRAME_TIMEOUT_MS);
+    }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [showShopModal, iframeLoading, ssoUrl]);
 
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['wingold-orders', user?.id],
@@ -86,7 +106,23 @@ export default function BuyGoldBars() {
   const handleCloseShop = () => {
     setShowShopModal(false);
     setSsoUrl(null);
+    setIframeTimeout(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     setIframeLoading(true);
+  };
+
+  const handleRetry = () => {
+    setIframeTimeout(false);
+    setIframeLoading(true);
+    handleOpenShop();
+  };
+
+  const handleOpenInNewTab = () => {
+    if (ssoUrl) {
+      window.open(ssoUrl, '_blank');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -234,10 +270,15 @@ export default function BuyGoldBars() {
       <Dialog open={showShopModal} onOpenChange={handleCloseShop}>
         <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] p-0 overflow-hidden">
           <DialogHeader className="px-4 py-3 border-b bg-amber-50 flex flex-row items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-amber-900">
-              <Package className="w-5 h-5" />
-              Wingold & Metals Shop
-            </DialogTitle>
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-amber-900">
+                <Package className="w-5 h-5" />
+                Wingold & Metals Shop
+              </DialogTitle>
+              <DialogDescription className="text-amber-700 text-xs mt-1">
+                Browse and purchase physical gold bars
+              </DialogDescription>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -248,7 +289,7 @@ export default function BuyGoldBars() {
             </Button>
           </DialogHeader>
           <div className="flex-1 relative h-full">
-            {iframeLoading && (
+            {iframeLoading && !iframeTimeout && (
               <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
                 <div className="text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-amber-600 mx-auto mb-2" />
@@ -256,7 +297,40 @@ export default function BuyGoldBars() {
                 </div>
               </div>
             )}
-            {ssoUrl && (
+            {iframeTimeout && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                <div className="text-center max-w-md px-6">
+                  <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Shop Loading Issue
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    The Wingold shop is taking longer than expected to load. 
+                    This may be due to temporary connectivity issues.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      onClick={handleRetry}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleOpenInNewTab}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Open in New Tab
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    If the issue persists, please contact support.
+                  </p>
+                </div>
+              </div>
+            )}
+            {ssoUrl && !iframeTimeout && (
               <iframe
                 src={ssoUrl}
                 className="w-full h-full border-0"
@@ -264,10 +338,15 @@ export default function BuyGoldBars() {
                 onLoad={() => {
                   console.log('[Wingold Shop] Iframe loaded successfully');
                   setIframeLoading(false);
+                  setIframeTimeout(false);
+                  if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                  }
                 }}
                 onError={(e) => {
                   console.error('[Wingold Shop] Iframe load error:', e);
                   setIframeLoading(false);
+                  setIframeTimeout(true);
                 }}
                 title="Wingold & Metals Shop"
                 allow="payment"
