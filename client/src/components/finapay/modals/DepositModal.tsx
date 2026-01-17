@@ -631,14 +631,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details') {
+    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details' || step === 'card-embedded' || step === 'crypto-address') {
       // Go back to combined amount+method step
       setStep('amount');
       setPaymentMethod(null);
       setSelectedAccount(null);
-      setSelectedCryptoWallet(null);
-    } else if (step === 'crypto-address') {
-      setStep('crypto-select-wallet');
       setSelectedCryptoWallet(null);
       setTransactionHash('');
       setCryptoReceipt(null);
@@ -1793,7 +1790,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               goldWalletType={selectedWalletType}
               onSuccess={handleCardSuccess}
               onError={handleCardError}
-              onCancel={() => setStep('card-amount')}
+              onCancel={handleBack}
             />
           </div>
         ) : step === 'card-success' ? (
