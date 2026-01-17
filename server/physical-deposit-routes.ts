@@ -320,6 +320,7 @@ router.get('/deposits/:id/negotiation', async (req: Request, res: Response) => {
 const userResponseSchema = z.object({
   action: z.enum(['ACCEPT', 'COUNTER', 'REJECT']),
   counterGrams: z.number().optional(),
+  counterUsd: z.number().optional(),
   counterFees: z.number().optional(),
   message: z.string().optional(),
 });
@@ -352,12 +353,13 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Waiting for admin response' });
     }
 
-    const { action, counterGrams, counterFees, message } = parsed.data;
+    const { action, counterGrams, counterUsd, counterFees, message } = parsed.data;
 
     let messageType: string;
     let newStatus: string | undefined;
     let finalGrams: string | undefined;
     let finalFees: string | undefined;
+    let proposedUsd: string | undefined;
 
     switch (action) {
       case 'ACCEPT':
@@ -373,6 +375,7 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
         messageType = 'USER_COUNTER';
         finalGrams = counterGrams?.toString();
         finalFees = counterFees?.toString();
+        proposedUsd = counterUsd?.toString();
         break;
       case 'REJECT':
         messageType = 'USER_REJECT';
@@ -382,6 +385,11 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid action' });
     }
 
+    // Include counter USD in message if provided
+    const finalMessage = proposedUsd 
+      ? `${message || ''} [Counter USD: $${proposedUsd}]`.trim()
+      : message;
+    
     await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
       messageType,
@@ -389,7 +397,7 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       senderRole: 'user',
       proposedGrams: finalGrams,
       proposedFees: finalFees,
-      message,
+      message: finalMessage,
       isLatest: true,
     });
 
