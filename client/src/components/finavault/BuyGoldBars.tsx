@@ -61,18 +61,23 @@ export default function BuyGoldBars() {
     }
 
     try {
+      console.log('[Wingold Shop] Fetching SSO URL...');
       const res = await fetch('/api/sso/wingold', { credentials: 'include' });
       if (!res.ok) {
-        throw new Error('Failed to generate SSO token');
+        const errorText = await res.text();
+        console.error('[Wingold Shop] SSO Error:', res.status, errorText);
+        throw new Error(`Failed to generate SSO token: ${res.status}`);
       }
       const data = await res.json();
+      console.log('[Wingold Shop] SSO URL received:', data.redirectUrl?.substring(0, 100) + '...');
       setSsoUrl(data.redirectUrl);
       setIframeLoading(true);
       setShowShopModal(true);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[Wingold Shop] Connection error:', error);
       toast({
         title: 'Connection Error',
-        description: 'Unable to connect to Wingold shop. Please try again.',
+        description: error.message || 'Unable to connect to Wingold shop. Please try again.',
         variant: 'destructive'
       });
     }
@@ -256,7 +261,14 @@ export default function BuyGoldBars() {
                 src={ssoUrl}
                 className="w-full h-full border-0"
                 style={{ minHeight: 'calc(90vh - 60px)' }}
-                onLoad={() => setIframeLoading(false)}
+                onLoad={() => {
+                  console.log('[Wingold Shop] Iframe loaded successfully');
+                  setIframeLoading(false);
+                }}
+                onError={(e) => {
+                  console.error('[Wingold Shop] Iframe load error:', e);
+                  setIframeLoading(false);
+                }}
                 title="Wingold & Metals Shop"
                 allow="payment"
               />
