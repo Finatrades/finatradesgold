@@ -8713,42 +8713,6 @@ ${message}
       if (totalAvailableGold < parseFloat(goldGrams)) {
         return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
       }
-      // Check if user has sufficient gold balance using spend-guard
-      const balanceSummary = await getBalanceSummary(userId);
-      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
-      
-      if (totalAvailableGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
-      }
-      // Check if user has sufficient gold balance using spend-guard
-      const balanceSummary = await getBalanceSummary(userId);
-      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
-      
-      if (totalAvailableGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
-      }
-      // Check if user has sufficient gold balance using spend-guard
-      const balanceSummary = await getBalanceSummary(userId);
-      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
-      
-      if (totalAvailableGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
-      }
-      // Check if user has sufficient gold balance using spend-guard
-      const balanceSummary = await getBalanceSummary(userId);
-      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
-      
-      if (totalAvailableGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
-      }
-      // Check if user has sufficient gold balance using spend-guard
-      const balanceSummary = await getBalanceSummary(userId);
-      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
-      
-      if (totalAvailableGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
-      }
-      }
 
       const referenceNumber = storage.generateVaultWithdrawalReferenceNumber();
       const totalValueUsd = parseFloat(goldGrams) * parseFloat(goldPriceUsdPerGram);
