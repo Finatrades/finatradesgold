@@ -161,7 +161,7 @@ function MyPhysicalDeposits() {
       </Card>
 
       <Dialog open={!!selectedDeposit} onOpenChange={(open) => !open && setSelectedDeposit(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Deposit Details
@@ -174,61 +174,162 @@ function MyPhysicalDeposits() {
           </DialogHeader>
           
           {selectedDeposit && (
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Reference Number</p>
+                  <p className="text-xs text-muted-foreground">Reference Number</p>
                   <p className="font-mono font-semibold">{selectedDeposit.referenceNumber}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Deposit Type</p>
-                  <p className="capitalize">{selectedDeposit.depositType?.toLowerCase().replace('_', ' ')}</p>
+                  <p className="text-xs text-muted-foreground">Deposit Type</p>
+                  <p className="capitalize font-medium">{selectedDeposit.depositType?.toLowerCase().replace('_', ' ')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Declared Weight</p>
+                  <p className="text-xs text-muted-foreground">Declared Weight</p>
                   <p className="font-semibold">{parseFloat(selectedDeposit.totalDeclaredWeightGrams).toFixed(4)} g</p>
                 </div>
                 {selectedDeposit.finalCreditedGrams && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Credited Weight</p>
+                    <p className="text-xs text-muted-foreground">Credited Weight</p>
                     <p className="font-semibold text-green-600">{parseFloat(selectedDeposit.finalCreditedGrams).toFixed(4)} g</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-muted-foreground">Submitted</p>
-                  <p>{new Date(selectedDeposit.createdAt).toLocaleDateString()}</p>
-                </div>
-                {selectedDeposit.deliveryMethod && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Delivery Method</p>
-                    <p className="capitalize">{selectedDeposit.deliveryMethod?.toLowerCase().replace('_', ' ')}</p>
                   </div>
                 )}
               </div>
 
+              {/* Submission & Delivery */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Submitted</p>
+                  <p className="font-medium">{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(selectedDeposit.createdAt), { addSuffix: true })}</p>
+                </div>
+                {selectedDeposit.deliveryMethod && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Delivery Method</p>
+                    <p className="capitalize font-medium">{selectedDeposit.deliveryMethod?.toLowerCase().replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Source of Metal */}
+              {(selectedDeposit.sourceOfMetal || selectedDeposit.sourceDetails) && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Source of Metal</p>
+                  <p className="font-medium">{selectedDeposit.sourceOfMetal || 'Not specified'}</p>
+                  {selectedDeposit.sourceDetails && (
+                    <p className="text-sm text-muted-foreground mt-1">{selectedDeposit.sourceDetails}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Courier/Pickup Details */}
+              {selectedDeposit.deliveryMethod !== 'PERSONAL_DROPOFF' && (selectedDeposit.pickupContactName || selectedDeposit.pickupAddress) && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <p className="text-xs text-blue-700 font-semibold mb-2">Pickup Details</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedDeposit.pickupContactName && (
+                      <div><span className="text-muted-foreground">Contact:</span> <span className="font-medium">{selectedDeposit.pickupContactName}</span></div>
+                    )}
+                    {selectedDeposit.pickupContactPhone && (
+                      <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium">{selectedDeposit.pickupContactPhone}</span></div>
+                    )}
+                    {selectedDeposit.pickupAddress && (
+                      <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{selectedDeposit.pickupAddress}</span></div>
+                    )}
+                    {selectedDeposit.preferredDatetime && (
+                      <div><span className="text-muted-foreground">Preferred:</span> <span className="font-medium">{new Date(selectedDeposit.preferredDatetime).toLocaleString()}</span></div>
+                    )}
+                    {selectedDeposit.scheduledDatetime && (
+                      <div><span className="text-muted-foreground">Scheduled:</span> <span className="font-medium text-green-600">{new Date(selectedDeposit.scheduledDatetime).toLocaleString()}</span></div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Uploaded Documents */}
+              {(selectedDeposit.invoiceUrl || selectedDeposit.assayCertificateUrl || (selectedDeposit.additionalDocuments && selectedDeposit.additionalDocuments.length > 0)) && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Your Documents</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDeposit.invoiceUrl && (
+                      <a href={selectedDeposit.invoiceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
+                        <FileText className="w-4 h-4" /> Invoice
+                      </a>
+                    )}
+                    {selectedDeposit.assayCertificateUrl && (
+                      <a href={selectedDeposit.assayCertificateUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
+                        <FileText className="w-4 h-4" /> Assay Certificate
+                      </a>
+                    )}
+                    {selectedDeposit.additionalDocuments?.map((doc: any, idx: number) => (
+                      <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                        <FileText className="w-4 h-4" /> {doc.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Items */}
               {selectedDeposit.items && selectedDeposit.items.length > 0 && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Items ({selectedDeposit.items.length})</p>
+                  <p className="text-xs text-muted-foreground mb-2">Items ({selectedDeposit.items.length})</p>
                   <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
                     {selectedDeposit.items.map((item: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center py-1 border-b last:border-0">
-                        <span className="capitalize">{item.quantity}x {item.itemType?.replace('_', ' ')}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {item.purity} • {item.declaredWeightGrams ? parseFloat(item.declaredWeightGrams).toFixed(4) : item.weightGrams ? parseFloat(item.weightGrams).toFixed(4) : '—'} g
-                        </span>
+                      <div key={i} className="py-2 border-b last:border-0">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium capitalize">{item.quantity}x {item.itemType?.replace('_', ' ')}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {item.purity} • {item.totalDeclaredWeightGrams ? parseFloat(item.totalDeclaredWeightGrams).toFixed(4) : item.weightPerUnitGrams ? (parseFloat(item.weightPerUnitGrams) * item.quantity).toFixed(4) : '—'} g
+                          </span>
+                        </div>
+                        {(item.brand || item.mint || item.serialNumber) && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {item.brand && <span>Brand: {item.brand} </span>}
+                            {item.mint && <span>• Mint: {item.mint} </span>}
+                            {item.serialNumber && <span>• Serial: <span className="font-mono">{item.serialNumber}</span></span>}
+                          </div>
+                        )}
+                        {item.customDescription && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">{item.customDescription}</p>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {selectedDeposit.adminNotes && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Admin Notes</p>
-                  <p className="bg-amber-50 p-3 rounded-lg text-sm">{selectedDeposit.adminNotes}</p>
+              {/* Inspection Results (if available) */}
+              {selectedDeposit.inspection && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <p className="text-xs font-semibold text-green-700 mb-2">Inspection Results</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedDeposit.inspection.grossWeightGrams && (
+                      <div><span className="text-muted-foreground">Gross:</span> <span className="font-medium">{selectedDeposit.inspection.grossWeightGrams}g</span></div>
+                    )}
+                    {selectedDeposit.inspection.netWeightGrams && (
+                      <div><span className="text-muted-foreground">Net:</span> <span className="font-medium">{selectedDeposit.inspection.netWeightGrams}g</span></div>
+                    )}
+                    {selectedDeposit.inspection.creditedGrams && (
+                      <div><span className="text-muted-foreground">Credited:</span> <span className="font-bold text-green-600">{selectedDeposit.inspection.creditedGrams}g</span></div>
+                    )}
+                    {selectedDeposit.inspection.purityResult && (
+                      <div><span className="text-muted-foreground">Purity:</span> <span className="font-medium">{selectedDeposit.inspection.purityResult}</span></div>
+                    )}
+                  </div>
                 </div>
               )}
 
+              {/* Admin Notes */}
+              {selectedDeposit.adminNotes && (
+                <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                  <p className="text-xs text-amber-700 font-semibold mb-1">Notes from Admin</p>
+                  <p className="text-sm">{selectedDeposit.adminNotes}</p>
+                </div>
+              )}
+
+              {/* Negotiation Section */}
               {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.offeredGrams && (
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <p className="text-sm font-semibold text-orange-700 mb-2">Offer Pending</p>
@@ -239,6 +340,7 @@ function MyPhysicalDeposits() {
                 </div>
               )}
 
+              {/* Rejection Reason */}
               {selectedDeposit.status === 'REJECTED' && selectedDeposit.rejectionReason && (
                 <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                   <p className="text-sm font-semibold text-red-700 mb-2">Rejection Reason</p>
