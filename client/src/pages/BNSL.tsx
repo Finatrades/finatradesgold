@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins, FileText, Eye, Download, CheckCircle } from 'lucide-react';
+import { TrendingUp, Info, Briefcase, PlusCircle, BarChart3, Clock, Calendar, Plus, Loader2, Coins, FileText, Eye, Download, CheckCircle, ArrowLeft } from 'lucide-react';
 import { BnslPlan, BnslPlanStatus, BnslMarginPayout } from '@/types/bnsl';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -618,7 +618,8 @@ export default function BNSL() {
 
   if (!user) return null;
 
-  if (isMobile) {
+  // On mobile, show desktop create form when tab=create, otherwise show mobile overview
+  if (isMobile && tabParam !== 'create') {
     return (
       <DashboardLayout>
         <MobileBNSL />
@@ -629,6 +630,17 @@ export default function BNSL() {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-8 pb-12">
+        
+        {/* Mobile Back Button when in create mode */}
+        {isMobile && tabParam === 'create' && (
+          <Button 
+            variant="ghost" 
+            className="mb-4 -ml-2" 
+            onClick={() => setLocation('/bnsl')}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to BNSL
+          </Button>
+        )}
         
         {/* TOP BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
