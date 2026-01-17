@@ -28,7 +28,6 @@ import { PlatformProvider } from "@/context/PlatformContext";
 import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
 import { UserProvider } from "@/context/UserContext";
 import { useEffect } from "react";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -398,7 +397,6 @@ function App() {
                                     <TourProvider>
                                       <Toaster />
                                       <SonnerToaster position="top-right" richColors />
-                                      <PWAInstallPrompt />
                                       <MaintenanceGuard>
                                         <Router />
                                       </MaintenanceGuard>

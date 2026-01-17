@@ -428,8 +428,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Background initialization tasks - run AFTER server is listening
-async function startBackgroundServices() {
+(async () => {
   // Initialize Redis connection
   try {
     const redis = getRedisClient();
@@ -472,23 +471,23 @@ async function startBackgroundServices() {
     initializeJobQueues();
     startJobProcessors();
     console.log('[Enterprise] Background job processing enabled');
-    
-    // Start DCA (Dollar Cost Averaging) processor
-    try {
-      const { startDcaProcessor } = await import('./dca-processor');
-      startDcaProcessor();
-      console.log('[DCA] DCA auto-buy processor enabled');
-    } catch (error) {
-      console.warn('[DCA] DCA processor initialization skipped:', error);
-    }
+  // Start DCA (Dollar Cost Averaging) processor
+  try {
+    const { startDcaProcessor } = await import('./dca-processor');
+    startDcaProcessor();
+    console.log('[DCA] DCA auto-buy processor enabled');
+  } catch (error) {
+    console.warn('[DCA] DCA processor initialization skipped:', error);
+  }
   } catch (error) {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
   
-  // AUTO-REPAIR: Fix all corrupted wallets and orphaned transfers on startup (don't await - run in background)
+  // AUTO-REPAIR: Fix all corrupted wallets and orphaned transfers on startup
   try {
     const { runAllRepairs, startExpiryScheduler } = await import('./repair-wallet');
-    runAllRepairs().catch((err: Error) => console.warn('[Data Repair] Automatic repair failed:', err));
+    await runAllRepairs();
+    // Start the periodic scheduler for expiring unclaimed invitation transfers
     startExpiryScheduler();
   } catch (error) {
     console.warn('[Data Repair] Automatic repair failed:', error);
@@ -502,26 +501,22 @@ async function startBackgroundServices() {
     console.warn('[DB Sync] Scheduler initialization failed:', error);
   }
   
-  console.log('[Background] All background services started');
-}
-
-(async () => {
-  // Setup Socket.IO for real-time chat (fast, required before routes)
+  // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   
-  // Register routes (required before serving)
   await registerRoutes(httpServer, app);
 
-  // Error handler
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const isServerError = status >= 500;
     const isProd = process.env.NODE_ENV === 'production';
     
+    // In production, don't expose internal error messages for 5xx errors
     const clientMessage = isServerError && isProd 
       ? "An unexpected error occurred. Please try again later."
       : (err.message || "Internal Server Error");
 
+    // Send error notification for server errors (5xx)
     if (isServerError) {
       import('./system-notifications').then(({ notifyError }) => {
         notifyError({
@@ -540,10 +535,13 @@ async function startBackgroundServices() {
     }
 
     res.status(status).json({ message: clientMessage });
+    // Log full error details on server (never sent to client in production)
     console.error(`[Error] ${req.method} ${req.path}:`, isProd ? err.message : err);
   });
 
-  // Setup static serving / Vite
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -551,7 +549,10 @@ async function startBackgroundServices() {
     await setupVite(httpServer, app);
   }
 
-  // START LISTENING IMMEDIATELY - this is critical for deployment health checks
+  // ALWAYS serve the app on the port specified in the environment variable PORT
+  // Other ports are firewalled. Default to 5000 if not specified.
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -561,13 +562,6 @@ async function startBackgroundServices() {
     },
     () => {
       log(`serving on port ${port}`);
-      
-      // Start background services AFTER port is open (non-blocking)
-      setImmediate(() => {
-        startBackgroundServices().catch((err) => {
-          console.error('[Background] Failed to start background services:', err);
-        });
-      });
     },
   );
 })();
