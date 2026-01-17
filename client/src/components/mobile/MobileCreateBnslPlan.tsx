@@ -223,7 +223,7 @@ export default function MobileCreateBnslPlan({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto pb-4">
         <AnimatePresence mode="wait">
           {currentStep === 0 && (
             <motion.div
@@ -639,7 +639,7 @@ export default function MobileCreateBnslPlan({
       </div>
 
       {/* Fixed Bottom CTA */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 pb-6 safe-area-inset-bottom">
+      <div className="bg-white border-t border-gray-200 p-4 pb-6 mt-auto">
         <Button 
           onClick={handleNext}
           disabled={!canProceed}
