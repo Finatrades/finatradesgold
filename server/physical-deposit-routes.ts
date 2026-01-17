@@ -386,8 +386,8 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       case 'COUNTER':
         messageType = 'USER_COUNTER';
         // Convert USD to grams using the deposit's price snapshot
-        if (counterUsd && deposit.priceSnapshotUsdPerGram) {
-          const pricePerGram = parseFloat(deposit.priceSnapshotUsdPerGram);
+        if (counterUsd && (deposit as any).priceSnapshotUsdPerGram) {
+          const pricePerGram = parseFloat((deposit as any).priceSnapshotUsdPerGram);
           if (pricePerGram > 0) {
             const gramsFromUsd = parseFloat(counterUsd.toString()) / pricePerGram;
             finalGrams = gramsFromUsd.toFixed(6);
@@ -510,6 +510,7 @@ router.get('/admin/deposits', requireAdmin(), async (req: Request, res: Response
       const items = await storage.getDepositItems(deposit.id);
       const user = await storage.getUser(deposit.userId);
       const negotiations = await storage.getNegotiationMessages(deposit.id);
+      console.log(`[Admin Deposits] ${deposit.referenceNumber}: ${negotiations.length} negotiations, latest: ${negotiations[negotiations.length-1]?.messageType || 'none'}`);
       return { 
         ...deposit, 
         items,
