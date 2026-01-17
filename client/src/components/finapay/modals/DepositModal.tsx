@@ -631,13 +631,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet') {
+    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details') {
       // Go back to combined amount+method step
       setStep('amount');
       setPaymentMethod(null);
+      setSelectedAccount(null);
       setSelectedCryptoWallet(null);
-    } else if (step === 'details') {
-      setStep('select');
     } else if (step === 'crypto-address') {
       setStep('crypto-select-wallet');
       setSelectedCryptoWallet(null);
