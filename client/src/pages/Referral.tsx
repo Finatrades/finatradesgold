@@ -46,7 +46,9 @@ export default function Referral() {
   const { data, isLoading } = useQuery<ReferralStats>({
     queryKey: ['referral-stats', user?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/referrals/${user?.id}/stats`);
+      const res = await fetch(`/api/referrals/${user?.id}/stats`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to fetch referral stats');
       return res.json();
     },
