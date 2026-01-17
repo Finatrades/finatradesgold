@@ -1637,7 +1637,7 @@ ${message}
       // They must verify their email first via the verification link
       if (!user.isEmailVerified) {
         return res.status(403).json({ 
-          message: "Please verify your email before logging in. Check your inbox for the verification link.",
+          message: "Please verify your email before logging in. Enter the 6-digit verification code sent to your email.",
           requiresEmailVerification: true,
           email: user.email
         });

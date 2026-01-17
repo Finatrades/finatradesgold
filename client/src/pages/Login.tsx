@@ -156,6 +156,8 @@ function DesktopLogin() {
     } catch (error) {
       // Check if this is an admin redirect error
       const err = error as Error & { redirectTo?: string };
+      const errorMessage = error instanceof Error ? error.message : "";
+      
       if (err.redirectTo) {
         toast.error("Admin Account Detected", {
           description: err.message,
@@ -166,6 +168,18 @@ function DesktopLogin() {
         });
         // Also auto-redirect after 2 seconds
         setTimeout(() => setLocation(err.redirectTo!), 2000);
+      } else if (errorMessage.toLowerCase().includes("verify your email")) {
+        // Store email and redirect to verification page
+        sessionStorage.setItem('verificationEmail', email);
+        toast.error("Email Verification Required", {
+          description: "Please enter the 6-digit code sent to your email.",
+          action: {
+            label: "Enter Code",
+            onClick: () => setLocation('/verify-email')
+          }
+        });
+        // Auto-redirect after 2 seconds
+        setTimeout(() => setLocation('/verify-email'), 2000);
       } else {
         toast.error("Invalid Credentials", {
           description: error instanceof Error ? error.message : "Please check your email and password."
