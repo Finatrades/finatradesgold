@@ -851,25 +851,43 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 )}
               </div>
               
-              {/* Quick Preset Amounts */}
+              {/* Quick Preset Amounts - Dynamic based on mode */}
               <div className="flex flex-wrap justify-center gap-2">
-                {[50, 100, 250, 500, 1000].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    data-testid={`preset-amount-${preset}`}
-                    onClick={() => {
-                      setInputMode('usd');
-                      setAmount(preset.toString());
-                      if (goldPrice?.pricePerGram) {
-                        setGoldAmount((preset / goldPrice.pricePerGram).toFixed(4));
-                      }
-                    }}
-                    className="px-4 py-2 rounded-full border border-slate-200 hover:border-primary hover:bg-primary/5 text-sm font-medium text-foreground transition-all"
-                  >
-                    ${preset}
-                  </button>
-                ))}
+                {inputMode === 'usd' ? (
+                  [50, 100, 250, 500, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      data-testid={`preset-amount-${preset}`}
+                      onClick={() => {
+                        setAmount(preset.toString());
+                        if (goldPrice?.pricePerGram) {
+                          setGoldAmount((preset / goldPrice.pricePerGram).toFixed(4));
+                        }
+                      }}
+                      className="px-4 py-2 rounded-full border border-slate-200 hover:border-primary hover:bg-primary/5 text-sm font-medium text-foreground transition-all"
+                    >
+                      ${preset}
+                    </button>
+                  ))
+                ) : (
+                  [1, 10, 31.1, 100, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      data-testid={`preset-gold-${preset}`}
+                      onClick={() => {
+                        setGoldAmount(preset.toString());
+                        if (goldPrice?.pricePerGram) {
+                          setAmount((preset * goldPrice.pricePerGram).toFixed(2));
+                        }
+                      }}
+                      className="px-4 py-2 rounded-full border border-amber-200 hover:border-amber-500 hover:bg-amber-50 text-sm font-medium text-foreground transition-all"
+                    >
+                      {preset === 1000 ? '1kg' : `${preset}g`}
+                    </button>
+                  ))
+                )}
               </div>
               
               {/* Live Price Badge */}
