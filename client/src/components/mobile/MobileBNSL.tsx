@@ -204,7 +204,7 @@ export default function MobileBNSL() {
         data-testid="btn-create-plan"
       >
         <Plus className="w-5 h-5" />
-        <span className="font-medium">Create New BNSL Plan</span>
+        <span className="font-medium">Join BNSL Plan</span>
       </motion.button>
 
       {/* Active Plans */}

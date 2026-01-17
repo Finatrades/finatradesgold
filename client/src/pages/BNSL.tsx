@@ -272,17 +272,20 @@ export default function BNSL() {
     refreshPlans();
   }, [refreshPlans]);
 
-  // Check URL for step parameter to auto-navigate to create tab
+  // Check URL for step/tab parameter to auto-navigate to create tab
   const urlParams = new URLSearchParams(searchString);
   const stepParam = urlParams.get('step');
+  const tabParam = urlParams.get('tab');
   
-  // State - default to 'create' tab if step=configure is in URL
-  const [activeTab, setActiveTab] = useState(stepParam === 'configure' ? 'create' : 'plans');
+  // State - default to 'create' tab if step=configure or tab=create is in URL
+  const [activeTab, setActiveTab] = useState(
+    stepParam === 'configure' || tabParam === 'create' ? 'create' : 'plans'
+  );
   const [highlightCreate, setHighlightCreate] = useState(false);
   
-  // Auto-scroll and highlight create section when coming from dashboard with step=configure
+  // Auto-scroll and highlight create section when coming from dashboard with step=configure or tab=create
   useEffect(() => {
-    if (stepParam === 'configure') {
+    if (stepParam === 'configure' || tabParam === 'create') {
       // Small delay to ensure the tab content is rendered
       setTimeout(() => {
         const createSection = document.getElementById('bnsl-create-section');
@@ -296,7 +299,7 @@ export default function BNSL() {
         }
       }, 100);
     }
-  }, [stepParam]);
+  }, [stepParam, tabParam]);
   const [selectedPlan, setSelectedPlan] = useState<BnslPlan | null>(null);
   
   // Real Wallet State from API
