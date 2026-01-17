@@ -37,7 +37,12 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 
 function MyPhysicalDeposits() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedDeposit, setSelectedDeposit] = useState<any>(null);
+  const [showCounterInput, setShowCounterInput] = useState(false);
+  const [counterValue, setCounterValue] = useState('');
+  const [isResponding, setIsResponding] = useState(false);
+  
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['physical-deposits', user?.id],
     queryFn: async () => {
@@ -54,6 +59,54 @@ function MyPhysicalDeposits() {
   });
 
   const deposits = data?.deposits || [];
+
+  // Handle user response to admin's offer
+  const handleRespond = async (action: 'ACCEPT' | 'COUNTER' | 'REJECT') => {
+    if (!selectedDeposit) return;
+    
+    setIsResponding(true);
+    try {
+      const body: any = { action };
+      if (action === 'COUNTER' && counterValue) {
+        body.counterUsd = parseFloat(counterValue);
+        body.message = `User counter-offer: $${parseFloat(counterValue).toLocaleString()}`;
+      }
+      
+      const res = await fetch(`/api/physical-deposits/deposits/${selectedDeposit.id}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to respond');
+      }
+      
+      toast({
+        title: action === 'ACCEPT' ? 'Offer Accepted!' : action === 'COUNTER' ? 'Counter Offer Sent' : 'Offer Rejected',
+        description: action === 'ACCEPT' 
+          ? 'The negotiation is complete. Your gold will be credited soon.' 
+          : action === 'COUNTER'
+          ? 'Your counter offer has been sent to the admin.'
+          : 'You have rejected the offer.',
+      });
+      
+      setSelectedDeposit(null);
+      setShowCounterInput(false);
+      setCounterValue('');
+      refetch();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to respond to offer',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResponding(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -368,6 +421,85 @@ function MyPhysicalDeposits() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Action Buttons - Only show if NEGOTIATION status and admin has made an offer */}
+                  {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.usdCounterFromAdmin && (
+                    <div className="mt-4 pt-4 border-t border-orange-200">
+                      {!showCounterInput ? (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium text-orange-800">How would you like to respond?</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleRespond('ACCEPT')}
+                              disabled={isResponding}
+                            >
+                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+                              Accept Offer
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-orange-400 text-orange-700 hover:bg-orange-100"
+                              onClick={() => setShowCounterInput(true)}
+                              disabled={isResponding}
+                            >
+                              Counter Offer
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-red-300 text-red-600 hover:bg-red-50"
+                              onClick={() => handleRespond('REJECT')}
+                              disabled={isResponding}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium text-orange-800">Enter your counter offer (USD):</p>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                              <input
+                                type="number"
+                                value={counterValue}
+                                onChange={(e) => setCounterValue(e.target.value)}
+                                placeholder="Enter amount"
+                                className="w-full pl-7 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              className="bg-purple-600 hover:bg-purple-700"
+                              onClick={() => handleRespond('COUNTER')}
+                              disabled={isResponding || !counterValue}
+                            >
+                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                              Submit Counter Offer
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setShowCounterInput(false);
+                                setCounterValue('');
+                              }}
+                              disabled={isResponding}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
