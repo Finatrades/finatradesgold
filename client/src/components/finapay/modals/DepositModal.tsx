@@ -631,11 +631,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'method') {
+    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet') {
+      // Go back to combined amount+method step
       setStep('amount');
-      setPaymentMethod(null);
-    } else if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet') {
-      setStep('method');
       setPaymentMethod(null);
       setSelectedCryptoWallet(null);
     } else if (step === 'details') {
@@ -719,20 +717,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
         {step === 'amount' ? (
           <div className="space-y-6 py-4">
-            {/* Progress Stepper */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            {/* Progress Stepper - 2 Steps Only */}
+            <div className="flex items-center justify-center gap-3 mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
-                <span className="text-sm font-medium text-foreground hidden sm:inline">Amount</span>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Setup</span>
               </div>
-              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="w-12 h-0.5 bg-muted"></div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Method</span>
-              </div>
-              <div className="w-8 h-0.5 bg-muted"></div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
                 <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
               </div>
             </div>
@@ -930,6 +923,100 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 <p className="text-xs text-muted-foreground pt-2 border-t border-slate-200">
                   Final rate confirmed upon fund receipt. Gold deposited to LGPW.
                 </p>
+              </div>
+            )}
+            
+            {/* Payment Method Selection - Compact Cards */}
+            {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-center text-foreground">Choose payment method</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Bank Transfer */}
+                  <button
+                    onClick={() => {
+                      const minDeposit = platformSettings.minDeposit || 50;
+                      const effectiveUsd = getEffectiveUsdAmount();
+                      if (effectiveUsd < minDeposit) {
+                        toast.error(`Minimum deposit: $${minDeposit}`);
+                        return;
+                      }
+                      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                        setAmount(effectiveUsd.toFixed(2));
+                      }
+                      setPaymentMethod('bank');
+                      setStep('select');
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-left"
+                    data-testid="button-method-bank"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <Building className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-foreground">Bank Transfer</p>
+                      <p className="text-xs text-muted-foreground">1-3 days • No fees</p>
+                    </div>
+                  </button>
+                  
+                  {/* Card Payment */}
+                  {ngeniusEnabled && (
+                    <button
+                      onClick={() => {
+                        const minDeposit = platformSettings.minDeposit || 50;
+                        const effectiveUsd = getEffectiveUsdAmount();
+                        if (effectiveUsd < minDeposit) {
+                          toast.error(`Minimum deposit: $${minDeposit}`);
+                          return;
+                        }
+                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                          setAmount(effectiveUsd.toFixed(2));
+                        }
+                        setPaymentMethod('card');
+                        handleCardPayment();
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all text-left"
+                      data-testid="button-method-card"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <CreditCard className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground">Card</p>
+                        <p className="text-xs text-muted-foreground">Instant • 2.5% fee</p>
+                      </div>
+                    </button>
+                  )}
+                  
+                  {/* Crypto */}
+                  {cryptoWallets.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const minDeposit = platformSettings.minDeposit || 50;
+                        const effectiveUsd = getEffectiveUsdAmount();
+                        if (effectiveUsd < minDeposit) {
+                          toast.error(`Minimum deposit: $${minDeposit}`);
+                          return;
+                        }
+                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                          setAmount(effectiveUsd.toFixed(2));
+                        }
+                        setPaymentMethod('crypto');
+                        setStep('crypto-select-wallet');
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50/50 transition-all text-left"
+                      data-testid="button-method-crypto"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center flex-shrink-0">
+                        <Bitcoin className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground">Crypto</p>
+                        <p className="text-xs text-muted-foreground">~30 min • No fees</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             
@@ -2245,27 +2332,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
         <DialogFooter>
           {step === 'amount' && (
-            <>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
-              <Button 
-                onClick={handleAmountContinue}
-                disabled={
-                  inputMode === 'gold' 
-                    ? !goldAmount || parseFloat(goldAmount) <= 0
-                    : !amount || parseFloat(amount) <= 0
-                }
-                data-testid="button-continue-deposit"
-              >
-                Continue
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </>
-          )}
-          {step === 'method' && (
-            <>
-              <Button variant="outline" onClick={() => setStep('amount')}>Back</Button>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
-            </>
+            <Button variant="outline" onClick={handleClose}>Cancel</Button>
           )}
           {(step === 'select' || step === 'card-amount') && (
             <>
