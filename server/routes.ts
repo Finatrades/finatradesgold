@@ -22726,9 +22726,7 @@ ${message}
       const settings = await storage.getSecuritySettings();
       
       if (!settings || !settings.adminOtpEnabled) {
-
-
-      res.json({ required: false });
+        return res.json({ required: false });
       }
       
       // Map action types to security settings
@@ -22898,9 +22896,7 @@ ${message}
       // Check if OTP is required for this action
       const settings = await storage.getSecuritySettings();
       if (!settings || !settings.adminOtpEnabled) {
-
-
-      res.json({ required: false, message: "OTP not required" });
+        return res.json({ required: false, message: "OTP not required" });
       }
       
       // Map action types to security settings
