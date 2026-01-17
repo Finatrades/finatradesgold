@@ -330,12 +330,45 @@ function MyPhysicalDeposits() {
               )}
 
               {/* Negotiation Section */}
-              {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.offeredGrams && (
+              {(selectedDeposit.status === 'NEGOTIATION' || selectedDeposit.status === 'AGREED' || selectedDeposit.usdCounterFromAdmin || selectedDeposit.usdEstimateFromUser) && (
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <p className="text-sm font-semibold text-orange-700 mb-2">Offer Pending</p>
-                  <p className="text-sm">Offered weight: <strong>{parseFloat(selectedDeposit.offeredGrams).toFixed(4)} g</strong></p>
-                  {selectedDeposit.offerMessage && (
-                    <p className="text-sm mt-2 text-muted-foreground">{selectedDeposit.offerMessage}</p>
+                  <p className="text-sm font-semibold text-orange-700 mb-3">
+                    {selectedDeposit.status === 'AGREED' ? 'Negotiation Completed' : 'Negotiation'}
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    {selectedDeposit.usdEstimateFromUser && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Your USD Estimate:</span>
+                        <span className="font-medium">${parseFloat(selectedDeposit.usdEstimateFromUser).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedDeposit.usdCounterFromAdmin && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Admin's USD Offer:</span>
+                        <span className="font-semibold text-purple-700">${parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedDeposit.usdAgreedValue && (
+                      <div className="flex justify-between pt-2 border-t border-orange-200">
+                        <span className="font-medium text-green-700">Agreed Value:</span>
+                        <span className="font-bold text-green-700">${parseFloat(selectedDeposit.usdAgreedValue).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-orange-200">
+                      <p className="text-xs text-muted-foreground mb-2">Negotiation History</p>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {selectedDeposit.negotiations.map((msg: any, idx: number) => (
+                          <div key={idx} className={`text-xs p-2 rounded ${msg.senderRole === 'admin' ? 'bg-purple-100' : 'bg-white'}`}>
+                            <span className="font-medium">{msg.senderRole === 'admin' ? 'Admin' : 'You'}:</span>{' '}
+                            <span>{msg.messageType?.replace(/_/g, ' ')}</span>
+                            {msg.proposedGrams && <span className="ml-1">({msg.proposedGrams}g)</span>}
+                            {msg.proposedUsd && <span className="ml-1">(${parseFloat(msg.proposedUsd).toLocaleString()})</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
