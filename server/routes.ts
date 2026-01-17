@@ -93,6 +93,7 @@ import {
   logBackupAction,
   getBackupAuditLogs
 } from "./backup-service";
+import { getBalanceSummary, validateSpend, type GoldWalletType } from "./spend-guard";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
@@ -12136,17 +12137,31 @@ ${message}
         });
       }
       
-      // Check user has sufficient balance
-      const wallet = await storage.getWallet(userId);
-      if (!wallet) {
-        return res.status(400).json({ message: "Wallet not found" });
+      // GOLD-ONLY COMPLIANCE: Check user has sufficient gold balance
+      // Convert requested USD to gold grams at current price
+      
+      // Get current gold price for conversion
+      const goldPricePerGram = await getGoldPricePerGram();
+      if (!goldPricePerGram || goldPricePerGram <= 0) {
+        return res.status(503).json({ message: "Unable to fetch gold price. Please try again." });
       }
       
-      const currentBalance = parseFloat(wallet.usdBalance.toString());
-      const withdrawAmount = parseFloat(amountUsd);
+      const withdrawAmountUsd = parseFloat(amountUsd);
+      const goldGramsRequired = withdrawAmountUsd / goldPricePerGram;
       
-      if (currentBalance < withdrawAmount) {
-        return res.status(400).json({ message: "Insufficient balance" });
+      // Get the selected wallet type from request (LGPW or FGPW)
+      const selectedWalletType = (bankDetails.goldWalletType || 'LGPW') as GoldWalletType;
+      
+      // Use canonical spend-guard validation
+      const spendValidation = await validateSpend(userId, goldGramsRequired, selectedWalletType);
+      if (!spendValidation.valid) {
+        const availableUsd = spendValidation.availableGrams * goldPricePerGram;
+        return res.status(400).json({ 
+          message: spendValidation.error || `Insufficient balance. You have ${spendValidation.availableGrams.toFixed(4)}g gold (≈$${availableUsd.toFixed(2)}) available in ${selectedWalletType}.`,
+          availableGrams: spendValidation.availableGrams,
+          availableUsd,
+          requiredGrams: goldGramsRequired
+        });
       }
       
       // Generate reference number
@@ -12159,12 +12174,28 @@ ${message}
         ...bankDetails,
       });
       
-      // Debit the amount from wallet immediately (hold)
-      await storage.updateWallet(wallet.id, {
-        usdBalance: (currentBalance - withdrawAmount).toString(),
+      // GOLD-ONLY: Deduct gold grams from the selected wallet type atomically with request creation
+      const request = await storage.withTransaction(async (txStorage) => {
+        // Update the vault ownership summary to hold the gold
+        const [existingSummary] = await db.select().from(vaultOwnershipSummary)
+          .where(eq(vaultOwnershipSummary.userId, userId));
+        
+        if (existingSummary) {
+          if (selectedWalletType === 'LGPW') {
+            const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
+            await db.update(vaultOwnershipSummary).set({
+              mpgwAvailableGrams: (currentMpgw - goldGramsRequired).toFixed(6),
+              lastUpdated: new Date()
+            }).where(eq(vaultOwnershipSummary.userId, userId));
+          } else {
+            // For FGPW, need to consume from FGPW batches
+            const { consumeFpgwBatches } = await import("./fpgw-batch-service");
+            await consumeFpgwBatches(userId, goldGramsRequired, 'withdrawal_hold');
+          }
+        }
+        
+        return await txStorage.createWithdrawalRequest(requestData);
       });
-      
-      const request = await storage.createWithdrawalRequest(requestData);
       
       // Notify all admins of new withdrawal request (reusing withdrawUser from limit validation above)
       notifyAllAdmins({
