@@ -686,15 +686,17 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       <DialogContent className={`bg-white border-border text-foreground overflow-x-hidden ${
         isCardPayment 
           ? 'w-[95vw] max-w-xl overflow-hidden' 
-          : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
+          : step === 'amount' 
+            ? 'fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto sm:w-[95vw] sm:max-w-lg sm:max-h-[90vh] sm:rounded-2xl rounded-none overflow-y-auto pb-[env(safe-area-inset-bottom)]'
+            : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
       }`}>
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+        <DialogHeader className={step === 'amount' ? 'text-center pb-2' : ''}>
+          <DialogTitle className={`text-xl font-bold flex items-center gap-2 ${step === 'amount' ? 'justify-center' : ''}`}>
             <Wallet className="w-5 h-5 text-primary" />
             <span>Deposit Funds</span>
           </DialogTitle>
-          <p className="font-bold text-foreground text-sm">(Fund your account through buying equivalent amount of gold)</p>
-          <DialogDescription className="text-muted-foreground">
+          <p className="font-semibold text-foreground text-sm">(Fund your account through buying equivalent amount of gold)</p>
+          <DialogDescription className="text-muted-foreground text-sm">
             {step === 'amount' && "Fund your account through buying equivalent amount of gold"}
             {step === 'method' && "Choose your preferred deposit method"}
             {step === 'select' && "Select a bank account to deposit to"}
@@ -712,18 +714,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         </DialogHeader>
 
         {step === 'amount' ? (
-          <div className="space-y-6 py-4">
-            {/* Progress Stepper - 2 Steps Only */}
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
-                <span className="text-sm font-medium text-foreground hidden sm:inline">Setup</span>
-              </div>
-              <div className="w-12 h-0.5 bg-muted"></div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
-              </div>
+          <div className="space-y-5 py-2">
+            {/* Progress Stepper - Mobile App Style */}
+            <div className="flex items-center justify-center gap-0 mb-4">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shadow-md">1</div>
+              <div className="w-16 h-0.5 bg-muted"></div>
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
             </div>
             
             {/* Modern Fintech Amount Input */}
@@ -782,15 +778,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
               </div>
               
-              {/* Single Large Input */}
-              <div className="relative">
-                <div className={`border-2 rounded-2xl bg-white transition-colors ${
-                  inputMode === 'usd' ? 'border-primary/30 focus-within:border-primary' : 'border-amber-300 focus-within:border-amber-500'
+              {/* Single Large Input - Mobile App Style */}
+              <div className="relative mx-auto max-w-xs">
+                <div className={`border-2 rounded-2xl bg-amber-50/30 transition-colors ${
+                  inputMode === 'usd' ? 'border-amber-400 focus-within:border-amber-500' : 'border-amber-400 focus-within:border-amber-500'
                 }`}>
-                  <div className="flex items-center justify-center py-6 px-4">
-                    <span className={`text-3xl font-bold mr-2 ${inputMode === 'usd' ? 'text-primary' : 'text-amber-600'}`}>
-                      {inputMode === 'usd' ? '$' : ''}
-                    </span>
+                  <div className="flex items-center justify-center py-8 px-4">
                     <Input
                       type="number"
                       step={inputMode === 'usd' ? '0.01' : '0.0001'}
@@ -815,10 +808,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           }
                         }
                       }}
-                      className="text-4xl font-bold text-center border-0 focus-visible:ring-0 bg-transparent w-full max-w-[200px] p-0"
+                      className="text-4xl font-bold text-center border-0 focus-visible:ring-0 bg-transparent w-full p-0 text-foreground"
                       data-testid={inputMode === 'usd' ? 'input-usd-amount' : 'input-gold-amount'}
                     />
-                    <span className={`text-xl font-semibold ml-2 ${inputMode === 'usd' ? 'text-primary' : 'text-amber-600'}`}>
+                    <span className="text-2xl font-bold ml-1 text-amber-600">
                       {inputMode === 'gold' ? 'g' : ''}
                     </span>
                   </div>
@@ -886,6 +879,27 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <span>Live: <span className="font-semibold text-foreground">${goldPrice.pricePerGram.toFixed(2)}/g</span></span>
                 </div>
               )}
+              
+              {/* Trust Badges - Mobile App Style */}
+              <div className="flex items-center justify-center gap-4 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Shield className="w-3.5 h-3.5 text-green-500" />
+                  <span>Secure Payment</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Instant Processing</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Globe className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Live Rates</span>
+                </div>
+              </div>
+              
+              {/* Minimum Deposit Notice */}
+              <p className="text-center text-xs text-muted-foreground pt-2">
+                Minimum deposit: <span className="font-semibold">${platformSettings.minDeposit || 50} USD</span>
+              </p>
             </div>
 
             {/* Compact Summary Card - Only shows when amount entered */}
@@ -2367,9 +2381,9 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : null}
 
-        <DialogFooter>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
           {step === 'amount' && (
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto" data-testid="button-cancel-deposit">Cancel</Button>
           )}
           {(step === 'select' || step === 'card-amount') && (
             <>
