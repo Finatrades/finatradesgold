@@ -227,8 +227,8 @@ export default function KYC() {
     shareholderList?: File;
     uboPassports?: File;
     boardResolution?: File;
-    authorizedSignatoryList?: File;
-    bankAccountDetails?: File;
+    authorizedSignatories?: File;
+    bankReferenceLetter?: File;
     financialStatements?: File;
     taxCertificate?: File;
     pepSelfDeclaration?: File;
@@ -1626,8 +1626,8 @@ export default function KYC() {
                           { key: 'shareholderList', label: 'List of Shareholders', required: true },
                           { key: 'uboPassports', label: 'UBO Passports (all beneficial owners)', required: true },
                           { key: 'boardResolution', label: 'Board Resolution', required: false },
-                          { key: 'authorizedSignatoryList', label: 'Authorized Signatory List', required: false },
-                          { key: 'bankAccountDetails', label: 'Bank Account Details / Statement', required: false },
+                          { key: 'authorizedSignatories', label: 'Authorized Signatories', required: false },
+                          { key: 'bankReferenceLetter', label: 'Bank Reference Letter', required: false },
                           { key: 'financialStatements', label: 'Financial Statements (last 2 years)', required: false },
                           { key: 'taxCertificate', label: 'Tax Certificate / VAT Registration', required: false },
                           { key: 'pepSelfDeclaration', label: 'PEP Self-Declaration Form', required: hasPepOwners },

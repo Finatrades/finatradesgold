@@ -21870,7 +21870,7 @@ ${message}
     try {
       const { 
         userId, 
-        representativeLiveness,
+        livenessCapture: representativeLiveness,
         companyName,
         registrationNumber,
         incorporationDate,
@@ -21932,7 +21932,7 @@ ${message}
         documents,
         tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
         directorPassportExpiryDate: directorPassportExpiryDate || null,
-        representativeLiveness,
+        livenessCapture: representativeLiveness,
         livenessVerified: !!representativeLiveness,
         livenessVerifiedAt: representativeLiveness ? new Date() : null,
         status: status || 'In Progress',
