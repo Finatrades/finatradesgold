@@ -922,76 +922,80 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             )}
             
-            {/* Payment Method Selection - Compact Cards */}
+            {/* Payment Method Selection */}
             {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
               (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <p className="text-sm font-semibold text-center text-foreground">Choose payment method</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {/* Bank Transfer USD */}
-                  {bankAccounts.filter(a => a.currency === 'USD' && a.status === 'Active').length > 0 && (
-                    <button
-                      onClick={() => {
-                        const minDeposit = platformSettings.minDeposit || 50;
-                        const effectiveUsd = getEffectiveUsdAmount();
-                        if (effectiveUsd < minDeposit) {
-                          toast.error(`Minimum deposit: $${minDeposit}`);
-                          return;
-                        }
-                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                          setAmount(effectiveUsd.toFixed(2));
-                        }
-                        const usdAccount = bankAccounts.find(a => a.currency === 'USD' && a.status === 'Active');
-                        if (usdAccount) {
-                          setPaymentMethod('bank');
-                          handleSelectAccount(usdAccount);
-                        }
-                      }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-center"
-                      data-testid="button-method-bank-usd"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-                        <Building className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">Bank USD</p>
-                        <p className="text-xs text-muted-foreground">1-3 days</p>
-                      </div>
-                    </button>
-                  )}
-                  
-                  {/* Bank Transfer AED */}
-                  {bankAccounts.filter(a => a.currency === 'AED' && a.status === 'Active').length > 0 && (
-                    <button
-                      onClick={() => {
-                        const minDeposit = platformSettings.minDeposit || 50;
-                        const effectiveUsd = getEffectiveUsdAmount();
-                        if (effectiveUsd < minDeposit) {
-                          toast.error(`Minimum deposit: $${minDeposit}`);
-                          return;
-                        }
-                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                          setAmount(effectiveUsd.toFixed(2));
-                        }
-                        const aedAccount = bankAccounts.find(a => a.currency === 'AED' && a.status === 'Active');
-                        if (aedAccount) {
-                          setPaymentMethod('bank');
-                          handleSelectAccount(aedAccount);
-                        }
-                      }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 transition-all text-center"
-                      data-testid="button-method-bank-aed"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center">
-                        <Building className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">Bank AED</p>
-                        <p className="text-xs text-muted-foreground">1-3 days</p>
-                      </div>
-                    </button>
-                  )}
-                  
+                
+                {/* Bank Transfer Section */}
+                {(bankAccounts.filter(a => a.status === 'Active').length > 0) && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <Building className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank Transfer</span>
+                      <span className="text-xs text-muted-foreground">• 1-3 days • No fees</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* AED - Left */}
+                      {bankAccounts.filter(a => a.currency === 'AED' && a.status === 'Active').length > 0 && (
+                        <button
+                          onClick={() => {
+                            const minDeposit = platformSettings.minDeposit || 50;
+                            const effectiveUsd = getEffectiveUsdAmount();
+                            if (effectiveUsd < minDeposit) {
+                              toast.error(`Minimum deposit: $${minDeposit}`);
+                              return;
+                            }
+                            if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                              setAmount(effectiveUsd.toFixed(2));
+                            }
+                            const aedAccount = bankAccounts.find(a => a.currency === 'AED' && a.status === 'Active');
+                            if (aedAccount) {
+                              setPaymentMethod('bank');
+                              handleSelectAccount(aedAccount);
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 transition-all"
+                          data-testid="button-method-bank-aed"
+                        >
+                          <span className="text-lg">🇦🇪</span>
+                          <span className="font-semibold text-foreground">AED</span>
+                        </button>
+                      )}
+                      
+                      {/* USD - Right */}
+                      {bankAccounts.filter(a => a.currency === 'USD' && a.status === 'Active').length > 0 && (
+                        <button
+                          onClick={() => {
+                            const minDeposit = platformSettings.minDeposit || 50;
+                            const effectiveUsd = getEffectiveUsdAmount();
+                            if (effectiveUsd < minDeposit) {
+                              toast.error(`Minimum deposit: $${minDeposit}`);
+                              return;
+                            }
+                            if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                              setAmount(effectiveUsd.toFixed(2));
+                            }
+                            const usdAccount = bankAccounts.find(a => a.currency === 'USD' && a.status === 'Active');
+                            if (usdAccount) {
+                              setPaymentMethod('bank');
+                              handleSelectAccount(usdAccount);
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all"
+                          data-testid="button-method-bank-usd"
+                        >
+                          <span className="text-lg">🇺🇸</span>
+                          <span className="font-semibold text-foreground">USD</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Other Payment Methods */}
+                <div className="grid grid-cols-2 gap-2">
                   {/* Card Payment */}
                   {ngeniusEnabled && (
                     <button
@@ -1008,15 +1012,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         setPaymentMethod('card');
                         handleCardPayment();
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all text-center"
+                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"
                       data-testid="button-method-card"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
                         <CreditCard className="w-5 h-5 text-white" />
                       </div>
-                      <div>
+                      <div className="text-left">
                         <p className="font-semibold text-sm text-foreground">Card</p>
-                        <p className="text-xs text-muted-foreground">Instant</p>
+                        <p className="text-xs text-muted-foreground">Instant • 2.5%</p>
                       </div>
                     </button>
                   )}
@@ -1037,15 +1041,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         setPaymentMethod('crypto');
                         setStep('crypto-select-wallet');
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50/50 transition-all text-center"
+                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50/50 transition-all"
                       data-testid="button-method-crypto"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center flex-shrink-0">
                         <Bitcoin className="w-5 h-5 text-white" />
                       </div>
-                      <div>
+                      <div className="text-left">
                         <p className="font-semibold text-sm text-foreground">Crypto</p>
-                        <p className="text-xs text-muted-foreground">~30 min</p>
+                        <p className="text-xs text-muted-foreground">~30 min • No fees</p>
                       </div>
                     </button>
                   )}
