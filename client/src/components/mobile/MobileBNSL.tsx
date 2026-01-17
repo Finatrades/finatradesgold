@@ -139,62 +139,64 @@ export default function MobileBNSL() {
         </div>
       </motion.div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-700">Active Plans</span>
-          </div>
-          <p className="text-2xl font-bold text-green-900">{activePlans.length}</p>
-        </motion.div>
+      {/* KPI Grid - only show when user has plans */}
+      {plans.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <span className="text-xs font-medium text-green-700">Active Plans</span>
+            </div>
+            <p className="text-2xl font-bold text-green-900">{activePlans.length}</p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.15 }}
-          className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span className="text-xs font-medium text-amber-700">Pending</span>
-          </div>
-          <p className="text-2xl font-bold text-amber-900">{pendingPlans.length}</p>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">Pending</span>
+            </div>
+            <p className="text-2xl font-bold text-amber-900">{pendingPlans.length}</p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-700">Completed</span>
-          </div>
-          <p className="text-2xl font-bold text-blue-900">{completedPlans.length}</p>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-medium text-blue-700">Completed</span>
+            </div>
+            <p className="text-2xl font-bold text-blue-900">{completedPlans.length}</p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.25 }}
-          className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-4 border border-purple-100"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-medium text-purple-700">Expected Returns</span>
-          </div>
-          <p className="text-xl font-bold text-purple-900">
-            {showBalance ? `$${totalExpectedReturns.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '••••'}
-          </p>
-        </motion.div>
-      </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 }}
+            className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-4 border border-purple-100"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-medium text-purple-700">Expected Returns</span>
+            </div>
+            <p className="text-xl font-bold text-purple-900">
+              {showBalance ? `$${totalExpectedReturns.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '••••'}
+            </p>
+          </motion.div>
+        </div>
+      )}
 
       {/* Create New Plan Button */}
       <motion.button
