@@ -687,7 +687,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         isCardPayment 
           ? 'w-[95vw] max-w-xl overflow-hidden' 
           : step === 'amount' 
-            ? 'fixed inset-0 sm:relative sm:inset-auto w-full h-full sm:h-auto sm:w-[95vw] sm:max-w-lg sm:max-h-[90vh] sm:rounded-2xl rounded-none overflow-y-auto pb-[env(safe-area-inset-bottom)]'
+            ? '!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 !w-full !h-full !max-w-none !rounded-none sm:!relative sm:!inset-auto sm:!left-[50%] sm:!top-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:!w-[95vw] sm:!max-w-lg sm:!h-auto sm:!max-h-[90vh] sm:!rounded-2xl overflow-y-auto pb-[env(safe-area-inset-bottom)]'
             : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
       }`}>
         <DialogHeader className={step === 'amount' ? 'text-center pb-2' : ''}>
