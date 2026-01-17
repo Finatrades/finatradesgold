@@ -256,6 +256,7 @@ function calculateAccruedMargin(plan: BnslPlan): number {
 import { useLocation, useSearch } from 'wouter';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileBNSL from '@/components/mobile/MobileBNSL';
+import MobileCreateBnslPlan from '@/components/mobile/MobileCreateBnslPlan';
 
 export default function BNSL() {
   const { user } = useAuth();
@@ -618,8 +619,20 @@ export default function BNSL() {
 
   if (!user) return null;
 
-  // On mobile, show desktop create form when tab=create, otherwise show mobile overview
-  if (isMobile && tabParam !== 'create') {
+  // On mobile, show MobileCreateBnslPlan when tab=create, otherwise show mobile overview
+  if (isMobile) {
+    if (tabParam === 'create') {
+      return (
+        <DashboardLayout>
+          <MobileCreateBnslPlan 
+            bnslWalletBalance={bnslWalletBalance}
+            currentGoldPrice={currentGoldPrice}
+            onSuccess={handleCreatePlan}
+            onBack={() => setLocation('/bnsl')}
+          />
+        </DashboardLayout>
+      );
+    }
     return (
       <DashboardLayout>
         <MobileBNSL />
@@ -630,17 +643,6 @@ export default function BNSL() {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-8 pb-12">
-        
-        {/* Mobile Back Button when in create mode */}
-        {isMobile && tabParam === 'create' && (
-          <Button 
-            variant="ghost" 
-            className="mb-4 -ml-2" 
-            onClick={() => setLocation('/bnsl')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to BNSL
-          </Button>
-        )}
         
         {/* TOP BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
