@@ -16,6 +16,8 @@ import { useQuery } from '@tanstack/react-query';
 import QRScanner from '../QRScanner';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
 import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
+import MobileFullScreenPage from '@/components/mobile/MobileFullScreenPage';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 const PAYMENT_REASONS = [
   'Buying Gold / Precious Metals',
@@ -86,6 +88,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   
   // Transaction PIN verification
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
+  
+  // Mobile detection
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const { data: goldPrice } = useQuery<{ pricePerGram: number }>({
     queryKey: ['/api/gold-price'],
@@ -301,6 +306,636 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   };
 
   const goldEquivalent = numericAmount > 0 ? (numericAmount / currentGoldPrice).toFixed(4) : '0.0000';
+
+  const searchContent = (
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setFoundUser(null); setSearchError(''); setIdentifier(''); }}>
+        <TabsList className={`grid w-full grid-cols-3 bg-muted border border-border ${isMobile ? 'h-12' : ''}`}>
+          <TabsTrigger value="email" className={`text-xs ${isMobile ? 'h-10' : ''}`}>
+            <Mail className="w-3 h-3 mr-1" />
+            Email
+          </TabsTrigger>
+          <TabsTrigger value="finatrades_id" className={`text-xs ${isMobile ? 'h-10' : ''}`}>
+            <Hash className="w-3 h-3 mr-1" />
+            Finatrades ID
+          </TabsTrigger>
+          <TabsTrigger value="qr_code" className={`text-xs ${isMobile ? 'h-10' : ''}`}>
+            <QrCode className="w-3 h-3 mr-1" />
+            QR Code
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="email" className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label>Recipient Email</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="recipient@email.com" 
+                  className={`bg-background border-input pl-9 ${isMobile ? 'h-14 rounded-xl text-base' : ''}`}
+                  value={identifier}
+                  onChange={(e) => { setIdentifier(e.target.value); setFoundUser(null); setSearchError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()} className={isMobile ? 'h-14 w-14 rounded-xl' : ''}>
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="finatrades_id" className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label>Finatrades ID</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="FT12345678" 
+                  className={`bg-background border-input pl-9 uppercase ${isMobile ? 'h-14 rounded-xl text-base' : ''}`}
+                  value={identifier}
+                  onChange={(e) => { setIdentifier(e.target.value.toUpperCase()); setFoundUser(null); setSearchError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()} className={isMobile ? 'h-14 w-14 rounded-xl' : ''}>
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="qr_code" className="space-y-4 mt-4">
+          <QRScanner 
+            onScan={handleQRScan} 
+            isActive={isOpen && activeTab === 'qr_code'}
+          />
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Or enter Finatrades ID from QR</Label>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="FT12345678" 
+                className={`bg-background border-input uppercase ${isMobile ? 'h-14 rounded-xl text-base' : ''}`}
+                value={identifier}
+                onChange={(e) => { setIdentifier(e.target.value.toUpperCase()); setFoundUser(null); setSearchError(''); }}
+                data-testid="input-qr-finatrades-id"
+              />
+              <Button onClick={() => handleSearch()} disabled={isSearching || !identifier.trim()} data-testid="button-search-qr-id" className={isMobile ? 'h-14 w-14 rounded-xl' : ''}>
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {searchError && (
+        <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+          <AlertCircle className="w-4 h-4" />
+          {searchError}
+        </div>
+      )}
+
+      {notFoundEmail && !inviteSent && (
+        <div className="space-y-3">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
+                <UserPlus className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground text-sm">New User</p>
+                <p className="text-xs text-muted-foreground truncate">{notFoundEmail}</p>
+              </div>
+              <Mail className="w-4 h-4 text-purple-500" />
+            </div>
+          </div>
+
+          <WalletTypeSelector
+            value={selectedWalletType}
+            onChange={setSelectedWalletType}
+            className="mb-2"
+          />
+
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <Label className="text-xs">Amount <span className="text-red-500">*</span></Label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                <div className="flex bg-gray-100 rounded-md p-0.5">
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">{inputMode === 'usd' ? '$' : 'g'}</span>
+              <Input 
+                type="number" 
+                placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                step={inputMode === 'usd' ? '0.01' : '0.0001'}
+                className={`bg-background pl-7 font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500' : 'border-input'} ${isMobile ? 'h-14 rounded-xl text-base' : ''}`}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                data-testid="input-invite-amount"
+              />
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 text-xs text-primary px-2"
+                onClick={() => setInputValue(inputMode === 'usd' ? availableGoldValueUsd.toFixed(2) : goldBalance.toFixed(4))}
+              >
+                MAX
+              </Button>
+            </div>
+            {numericInput > 0 && (
+              <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+            )}
+            {numericAmount > availableGoldValueUsd && (
+              <p className="text-xs text-red-500">Insufficient funds</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Payment Reason <span className="text-red-500">*</span></Label>
+            <Select value={paymentReason} onValueChange={setPaymentReason}>
+              <SelectTrigger className={`bg-background border-input text-xs ${isMobile ? 'h-14 rounded-xl' : 'h-9'}`} data-testid="select-invite-payment-reason">
+                <SelectValue placeholder="Select reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_REASONS.map((reason) => (
+                  <SelectItem key={reason} value={reason} className="text-xs">
+                    {reason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Source of Funds <span className="text-red-500">*</span></Label>
+            <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
+              <SelectTrigger className={`bg-background border-input text-xs ${isMobile ? 'h-14 rounded-xl' : 'h-9'}`} data-testid="select-invite-source-of-funds">
+                <SelectValue placeholder="Select source" />
+              </SelectTrigger>
+              <SelectContent>
+                {SOURCE_OF_FUNDS.map((source) => (
+                  <SelectItem key={source} value={source} className="text-xs">
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Note (Optional)</Label>
+            <Input 
+              placeholder="What's this for?" 
+              className={`bg-background border-input text-sm ${isMobile ? 'h-14 rounded-xl text-base' : 'h-9'}`}
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              data-testid="input-invite-memo"
+            />
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-700 text-sm mb-3">Transfer Summary</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">To:</span>
+                <span className="font-medium text-xs truncate max-w-[140px]">{notFoundEmail}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-bold text-purple-700">${numericAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Gold:</span>
+                <span className="font-medium">{(numericAmount / currentGoldPrice).toFixed(4)}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className="text-purple-600 font-medium">Pending Claim</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-amber-700 text-xs">24-Hour Window</p>
+                <p className="text-amber-600 text-xs mt-0.5">
+                  Gold debited now. Refunded if unclaimed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {termsContent?.enabled && (
+            <div className="flex items-start gap-2">
+              <Checkbox 
+                id="invite-terms-mobile" 
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(!!checked)}
+                data-testid="checkbox-invite-terms"
+                className="mt-0.5"
+              />
+              <Label htmlFor="invite-terms-mobile" className="text-xs text-muted-foreground cursor-pointer leading-tight">
+                I agree to the terms and conditions for this transfer
+              </Label>
+            </div>
+          )}
+        </div>
+      )}
+
+      {inviteSent && (
+        <div className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-2" />
+            <h3 className="font-semibold text-green-700 text-lg">Gold Sent!</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {(numericAmount / currentGoldPrice).toFixed(4)}g (${numericAmount.toFixed(2)}) sent to
+            </p>
+            <p className="font-medium text-foreground">{notFoundEmail}</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-center">
+            <p className="text-amber-700">
+              They have <strong>24 hours</strong> to register and claim. If unclaimed, gold refunds automatically.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {foundUser && (
+        <div className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12 border-2 border-green-300">
+                {foundUser.profilePhotoUrl && (
+                  <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
+                )}
+                <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                  {foundUser.firstName[0]}{foundUser.lastName[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">{foundUser.firstName} {foundUser.lastName}</p>
+                <p className="text-xs text-muted-foreground truncate">{foundUser.email}</p>
+                <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+              </div>
+              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+            </div>
+          </div>
+
+          <WalletTypeSelector
+            value={selectedWalletType}
+            onChange={setSelectedWalletType}
+            className="mb-2"
+          />
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Amount <span className="text-red-500">*</span></Label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                <div className="flex bg-gray-100 rounded-md p-0.5">
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{inputMode === 'usd' ? '$' : 'g'}</span>
+              <Input 
+                type="number" 
+                placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                step={inputMode === 'usd' ? '0.01' : '0.0001'}
+                className={`bg-background pl-8 font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'} ${isMobile ? 'h-14 rounded-xl text-base' : 'text-lg'}`}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+              />
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
+                onClick={() => setInputValue(inputMode === 'usd' ? availableGoldValueUsd.toFixed(2) : goldBalance.toFixed(4))}
+              >
+                MAX
+              </Button>
+            </div>
+            {numericInput > 0 && (
+              <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+            )}
+            {numericAmount > availableGoldValueUsd && (
+              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Insufficient funds. Your gold balance is ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Payment Reason <span className="text-red-500">*</span></Label>
+            <Select value={paymentReason} onValueChange={setPaymentReason}>
+              <SelectTrigger className={`bg-background border-input ${isMobile ? 'h-14 rounded-xl' : ''}`} data-testid="select-payment-reason">
+                <SelectValue placeholder="Select payment reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_REASONS.map((reason) => (
+                  <SelectItem key={reason} value={reason} data-testid={`option-reason-${reason.replace(/\s/g, '-').toLowerCase()}`}>
+                    {reason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Source of Funds <span className="text-red-500">*</span></Label>
+            <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
+              <SelectTrigger className={`bg-background border-input ${isMobile ? 'h-14 rounded-xl' : ''}`} data-testid="select-source-of-funds">
+                <SelectValue placeholder="Select source of funds" />
+              </SelectTrigger>
+              <SelectContent>
+                {SOURCE_OF_FUNDS.map((source) => (
+                  <SelectItem key={source} value={source} data-testid={`option-source-${source.replace(/\s/g, '-').toLowerCase()}`}>
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Note (Optional)</Label>
+            <Textarea 
+              placeholder="What's this for?" 
+              className={`bg-background border-input resize-none ${isMobile ? 'rounded-xl' : 'h-16'}`}
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+            />
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+            <div className="flex items-center gap-2 text-purple-700 font-semibold">
+              <Send className="w-4 h-4" />
+              <span>Send Summary</span>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                <span className="text-muted-foreground">Send Amount:</span>
+                <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                <span className="text-muted-foreground">Transaction Fee:</span>
+                <span className="font-semibold text-green-600">$0.00</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                <span className="text-muted-foreground font-medium">Recipient Receives:</span>
+                <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-muted-foreground">Gold Equivalent:</span>
+                <span className="font-bold text-primary">{goldEquivalent}g</span>
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+              Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
+            </div>
+          </div>
+
+          {termsContent?.enabled && (
+            <div className="border border-border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-start gap-3">
+                <Checkbox 
+                  id="transfer-terms-mobile"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  className="mt-0.5"
+                  data-testid="checkbox-transfer-terms"
+                />
+                <div className="flex-1">
+                  <label htmlFor="transfer-terms-mobile" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    I accept the Terms & Conditions
+                  </label>
+                  <details className="mt-2">
+                    <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                    <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                      {termsContent.terms}
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const confirmContent = foundUser && (
+    <div className="space-y-6 py-4">
+      <div className="bg-muted/30 p-6 rounded-xl border border-border text-center space-y-4">
+        <div className="space-y-1">
+          <p className="text-muted-foreground text-sm uppercase tracking-wider">Sending To</p>
+          <div className="flex items-center justify-center gap-3">
+            <Avatar className="w-12 h-12 border border-border">
+              {foundUser.profilePhotoUrl && (
+                <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
+              )}
+              <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                {foundUser.firstName[0]}{foundUser.lastName[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-left">
+              <p className="font-semibold">{foundUser.firstName} {foundUser.lastName}</p>
+              <p className="text-xs text-muted-foreground font-mono">{foundUser.finatradesId}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <p className="text-4xl font-bold text-primary">${numericAmount.toFixed(2)}</p>
+          {memo && <p className="text-muted-foreground text-sm mt-2">"{memo}"</p>}
+        </div>
+
+        <div className="border-t border-border pt-3 text-left text-sm space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Payment Reason:</span>
+            <span className="font-medium" data-testid="text-confirm-payment-reason">{paymentReason}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Source of Funds:</span>
+            <span className="font-medium" data-testid="text-confirm-source-of-funds">{sourceOfFunds}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const successContent = foundUser && (
+    <div className="space-y-6 py-4 text-center">
+      <div className="flex justify-center">
+        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+          <CheckCircle2 className="w-10 h-10 text-green-500" />
+        </div>
+      </div>
+      
+      <div>
+        <p className="text-2xl font-bold text-foreground">Transfer Complete!</p>
+        <p className="text-muted-foreground mt-1">
+          ${numericAmount.toFixed(2)} sent to {foundUser.firstName}
+        </p>
+      </div>
+
+      <div className="bg-muted/30 p-4 rounded-lg text-sm">
+        <p className="text-muted-foreground">Reference Number</p>
+        <p className="font-mono font-bold text-foreground">{transferRef}</p>
+      </div>
+    </div>
+  );
+
+  const getMobileFooterButton = () => {
+    if (step === 'search') {
+      if (inviteSent) {
+        return (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              className="flex-1 h-14 rounded-xl"
+              onClick={() => {
+                setNotFoundEmail('');
+                setInviteSent(false);
+                setIdentifier('');
+                setInputValue('');
+                setPaymentReason('');
+                setSourceOfFunds('');
+                setMemo('');
+              }}
+              data-testid="button-try-another"
+            >
+              Send More
+            </Button>
+            <Button 
+              className="flex-1 h-14 rounded-xl bg-primary"
+              onClick={handleClose}
+              data-testid="button-done-invite"
+            >
+              Done
+            </Button>
+          </div>
+        );
+      }
+      if (notFoundEmail && !inviteSent) {
+        return (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              className="flex-1 h-14 rounded-xl"
+              onClick={() => {
+                setNotFoundEmail('');
+                setIdentifier('');
+                setInputValue('');
+                setPaymentReason('');
+                setSourceOfFunds('');
+                setMemo('');
+              }}
+              data-testid="button-cancel-invite"
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="flex-1 h-14 rounded-xl bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={handleSendInvitation}
+              disabled={
+                isSendingInvite || 
+                numericAmount <= 0 || 
+                numericAmount > availableGoldValueUsd ||
+                !paymentReason ||
+                !sourceOfFunds ||
+                (termsContent?.enabled && !termsAccepted)
+              }
+              data-testid="button-send-invitation-transfer"
+            >
+              {isSendingInvite ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-1" />
+                  Send Gold
+                </>
+              )}
+            </Button>
+          </div>
+        );
+      }
+      if (foundUser) {
+        return (
+          <Button 
+            className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold"
+            disabled={numericAmount <= 0 || numericAmount > availableGoldValueUsd || !paymentReason || !sourceOfFunds || (termsContent?.enabled && !termsAccepted)}
+            onClick={() => setStep('confirm')}
+          >
+            Continue to Review
+          </Button>
+        );
+      }
+      return null;
+    }
+    if (step === 'confirm') {
+      return (
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1 h-14 rounded-xl" onClick={() => setStep('search')}>
+            Back
+          </Button>
+          <Button 
+            className="flex-1 h-14 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold"
+            disabled={isLoading}
+            onClick={handleConfirmSend}
+          >
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+            Send Now
+          </Button>
+        </div>
+      );
+    }
+    if (step === 'success') {
+      return (
+        <Button className="w-full h-14 rounded-xl" onClick={handleClose}>
+          Done
+        </Button>
+      );
+    }
+    return null;
+  };
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileFullScreenPage
+          isOpen={isOpen}
+          onClose={handleClose}
+          title="Send Gold"
+          subtitle="Transfer gold to another user"
+          headerColor="purple"
+          footer={getMobileFooterButton()}
+        >
+          <div className="p-4">
+            {step === 'search' && searchContent}
+            {step === 'confirm' && confirmContent}
+            {step === 'success' && successContent}
+          </div>
+        </MobileFullScreenPage>
+        {TransactionPinPromptComponent}
+      </>
+    );
+  }
 
   return (
     <>
