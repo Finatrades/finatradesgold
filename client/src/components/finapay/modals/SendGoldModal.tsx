@@ -61,7 +61,8 @@ interface FoundUser {
 export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBalance, onConfirm }: SendGoldModalProps) {
   const { user } = useAuth();
   const [identifier, setIdentifier] = useState('');
-  const [amount, setAmount] = useState('');
+  const [inputMode, setInputMode] = useState<'usd' | 'grams'>('usd');
+  const [inputValue, setInputValue] = useState('');
   const [memo, setMemo] = useState('');
   const [step, setStep] = useState<'search' | 'confirm' | 'success'>('search');
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +101,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     if (isOpen) {
       setStep('search');
       setIdentifier('');
-      setAmount('');
+      setInputMode('usd');
+      setInputValue('');
       setMemo('');
       setIsLoading(false);
       setIsSearching(false);
@@ -124,7 +126,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     }
   }, [isOpen]);
 
-  const numericAmount = parseFloat(amount) || 0;
+  const numericInput = parseFloat(inputValue) || 0;
+  const numericAmount = inputMode === 'usd' ? numericInput : numericInput * currentGoldPrice;
+  const gramsAmount = inputMode === 'grams' ? numericInput : (currentGoldPrice > 0 ? numericInput / currentGoldPrice : 0);
 
   const handleSearch = async (searchIdentifier?: string) => {
     const searchValue = searchIdentifier || identifier;
@@ -429,31 +433,41 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                     className="mb-2"
                   />
 
-                  {/* Amount Input */}
+                  {/* Amount Input with Toggle */}
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <Label className="text-xs">Amount (USD) <span className="text-red-500">*</span></Label>
-                      <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                      <Label className="text-xs">Amount <span className="text-red-500">*</span></Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                        <div className="flex bg-gray-100 rounded-md p-0.5">
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                        </div>
+                      </div>
                     </div>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">{inputMode === 'usd' ? '$' : 'g'}</span>
                       <Input 
                         type="number" 
-                        placeholder="0.00" 
+                        placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                        step={inputMode === 'usd' ? '0.01' : '0.0001'}
                         className={`bg-background pl-7 font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500' : 'border-input'}`}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                         data-testid="input-invite-amount"
                       />
                       <Button 
                         size="sm" 
                         variant="ghost" 
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-6 text-xs text-primary px-2"
-                        onClick={() => setAmount(availableGoldValueUsd.toFixed(2))}
+                        onClick={() => setInputValue(inputMode === 'usd' ? availableGoldValueUsd.toFixed(2) : goldBalance.toFixed(4))}
                       >
                         MAX
                       </Button>
                     </div>
+                    {numericInput > 0 && (
+                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                    )}
                     {numericAmount > availableGoldValueUsd && (
                       <p className="text-xs text-red-500">Insufficient funds</p>
                     )}
@@ -569,7 +583,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       onClick={() => {
                         setNotFoundEmail('');
                         setIdentifier('');
-                        setAmount('');
+                        setInputValue('');
                         setPaymentReason('');
                         setSourceOfFunds('');
                         setMemo('');
@@ -629,7 +643,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       setNotFoundEmail('');
                       setInviteSent(false);
                       setIdentifier('');
-                      setAmount('');
+                      setInputValue('');
                       setPaymentReason('');
                       setSourceOfFunds('');
                       setMemo('');
@@ -680,30 +694,40 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                   />
 
 
-                  {/* Amount Input */}
+                  {/* Amount Input with Toggle */}
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Amount (USD) <span className="text-red-500">*</span></Label>
-                      <span className="text-xs text-muted-foreground">Balance: ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
+                    <div className="flex justify-between items-center">
+                      <Label>Amount <span className="text-red-500">*</span></Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
+                        <div className="flex bg-gray-100 rounded-md p-0.5">
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                        </div>
+                      </div>
                     </div>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{inputMode === 'usd' ? '$' : 'g'}</span>
                       <Input 
                         type="number" 
-                        placeholder="0.00" 
+                        placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                        step={inputMode === 'usd' ? '0.01' : '0.0001'}
                         className={`bg-background pl-8 text-lg font-medium ${numericAmount > availableGoldValueUsd ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                       />
                       <Button 
                         size="sm" 
                         variant="ghost" 
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs text-primary"
-                        onClick={() => setAmount(availableGoldValueUsd.toFixed(2))}
+                        onClick={() => setInputValue(inputMode === 'usd' ? availableGoldValueUsd.toFixed(2) : goldBalance.toFixed(4))}
                       >
                         MAX
                       </Button>
                     </div>
+                    {numericInput > 0 && (
+                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                    )}
                     {numericAmount > availableGoldValueUsd && (
                       <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />

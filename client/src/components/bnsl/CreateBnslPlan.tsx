@@ -224,7 +224,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [goldAmount, setGoldAmount] = useState<string>('100');
+  const [inputMode, setInputMode] = useState<'usd' | 'grams'>('grams');
+  const [inputValue, setInputValue] = useState<string>('100');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [hasDownloadedDraft, setHasDownloadedDraft] = useState(false);
   const [signatureName, setSignatureName] = useState('');
@@ -266,7 +267,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const availableVariants = currentTemplate?.variants || [];
   const currentVariant = availableVariants.find(v => v.id === selectedVariantId) || availableVariants[0];
 
-  const amount = parseFloat(goldAmount) || 0;
+  const numericInput = parseFloat(inputValue) || 0;
+  const amount = inputMode === 'grams' ? numericInput : (currentGoldPrice > 0 ? numericInput / currentGoldPrice : 0);
   const enrollmentPrice = currentGoldPrice;
   const basePriceComponent = amount * enrollmentPrice;
   
@@ -400,17 +402,38 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             />
           </div>
 
-            <Label className="text-base font-semibold">Gold Amount to Sell</Label>
+            <div className="flex justify-between items-center">
+              <Label className="text-base font-semibold">Gold Amount to Sell</Label>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
+                <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+              </div>
+            </div>
             <div className="relative">
+              {inputMode === 'usd' ? (
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">$</span>
+              ) : (
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">g</span>
+              )}
               <Input 
                 type="number" 
-                value={goldAmount}
-                onChange={(e) => setGoldAmount(e.target.value)}
-                className={`bg-background h-14 text-xl font-bold pr-12 ${amount > bnslWalletBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={inputMode === 'grams' ? '0.0000' : '0.00'}
+                step={inputMode === 'grams' ? '0.0001' : '0.01'}
+                className={`bg-background h-14 text-xl font-bold ${inputMode === 'usd' ? 'pl-10 pr-4' : 'pl-4 pr-12'} ${amount > bnslWalletBalance ? 'border-red-500 focus-visible:ring-red-500' : 'border-input'}`}
                 data-testid="input-gold-amount"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">g</span>
             </div>
+            {/* Show calculated equivalent */}
+            {numericInput > 0 && currentGoldPrice > 0 && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 animate-in fade-in">
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-700 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
+                  <span className="text-lg font-bold text-purple-700">{inputMode === 'grams' ? `$${basePriceComponent.toFixed(2)}` : `${amount.toFixed(4)}g`}</span>
+                </div>
+              </div>
+            )}
             {amount > bnslWalletBalance && (
               <div className="flex items-center gap-2 text-sm text-red-500 font-medium" data-testid="error-insufficient-balance">
                 <AlertTriangle className="w-4 h-4" />

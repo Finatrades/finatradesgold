@@ -21,7 +21,8 @@ interface RequestGoldModalProps {
 
 export default function RequestGoldModal({ isOpen, onClose, onConfirm }: RequestGoldModalProps) {
   const { user } = useAuth();
-  const [amount, setAmount] = useState('');
+  const [inputMode, setInputMode] = useState<'usd' | 'grams'>('usd');
+  const [inputValue, setInputValue] = useState('');
   const [memo, setMemo] = useState('');
   const [targetIdentifier, setTargetIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +45,8 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
   const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   useEffect(() => {
     if (isOpen) {
-      setAmount('');
+      setInputMode('usd');
+      setInputValue('');
       setMemo('');
       setTargetIdentifier('');
       setIsLoading(false);
@@ -104,8 +106,10 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
     }
   };
 
-  const numericAmount = parseFloat(amount) || 0;
-  const goldEquivalent = currentGoldPrice > 0 ? (numericAmount / currentGoldPrice).toFixed(4) : '0.0000';
+  const numericInput = parseFloat(inputValue) || 0;
+  const numericAmount = inputMode === 'usd' ? numericInput : numericInput * currentGoldPrice;
+  const gramsAmount = inputMode === 'grams' ? numericInput : (currentGoldPrice > 0 ? numericInput / currentGoldPrice : 0);
+  const goldEquivalent = gramsAmount.toFixed(4);
 
   const handleCreateRequest = async () => {
     if (!user || numericAmount <= 0) return;
@@ -210,17 +214,27 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Amount (USD)</Label>
+                    <div className="flex justify-between items-center">
+                      <Label>Amount</Label>
+                      <div className="flex bg-gray-100 rounded-md p-0.5">
+                        <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                        <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                      </div>
+                    </div>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{inputMode === 'usd' ? '$' : 'g'}</span>
                       <Input 
                         type="number" 
-                        placeholder="0.00" 
+                        placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                        step={inputMode === 'usd' ? '0.01' : '0.0001'}
                         className="bg-background border-input pl-8 text-lg font-medium"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                       />
                     </div>
+                    {numericInput > 0 && (
+                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                    )}
                   </div>
 
                   <WalletTypeSelector

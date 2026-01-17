@@ -39,7 +39,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
   const priceChange24h = goldPriceData?.priceChange24h || 0;
   
   const [step, setStep] = useState<'input' | 'confirm' | 'success'>('input');
-  const [amountGrams, setAmountGrams] = useState('');
+  const [inputMode, setInputMode] = useState<'usd' | 'grams'>('grams');
+  const [inputValue, setInputValue] = useState('');
   const [withdrawalMethod, setWithdrawalMethod] = useState<'Bank Transfer' | 'Crypto'>('Bank Transfer');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -60,7 +61,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
   const cashoutFeePercent = getFeeValue(FEE_KEYS.FINAVAULT_CASHOUT, 1.5);
   
-  const grams = parseFloat(amountGrams) || 0;
+  const numericInput = parseFloat(inputValue) || 0;
+  const grams = inputMode === 'grams' ? numericInput : (goldPriceUsd > 0 ? numericInput / goldPriceUsd : 0);
   const grossAmount = grams * goldPriceUsd;
   const fee = grossAmount * (cashoutFeePercent / 100);
   const netAmount = grossAmount - fee;
@@ -132,7 +134,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
   const reset = () => {
     setStep('input');
-    setAmountGrams('');
+    setInputMode('grams');
+    setInputValue('');
     setBankName('');
     setAccountName('');
     setAccountNumber('');
@@ -168,28 +171,48 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   
-                  {/* Amount Input */}
+                  {/* Amount Input with Toggle */}
                   <div className="space-y-4">
-                    <div className="flex justify-between">
-                       <Label className="text-foreground">Amount to Withdraw (Grams)</Label>
-                       <span 
-                         className="text-xs text-secondary cursor-pointer hover:underline" 
-                         onClick={() => setAmountGrams(vaultBalance.toFixed(3))}
-                       >
-                         Max: {vaultBalance.toFixed(3)}g
-                       </span>
+                    <div className="flex justify-between items-center">
+                       <Label className="text-foreground">Amount to Withdraw</Label>
+                       <div className="flex items-center gap-3">
+                         <span 
+                           className="text-xs text-secondary cursor-pointer hover:underline" 
+                           onClick={() => setInputValue(inputMode === 'grams' ? vaultBalance.toFixed(4) : (vaultBalance * goldPriceUsd).toFixed(2))}
+                         >
+                           Max: {vaultBalance.toFixed(3)}g
+                         </span>
+                         <div className="flex bg-gray-100 rounded-lg p-1">
+                           <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
+                           <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+                         </div>
+                       </div>
                     </div>
                     <div className="relative">
+                      {inputMode === 'usd' ? (
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">g</span>
+                      )}
                       <Input 
                         type="number" 
-                        placeholder="0.00" 
-                        className="bg-background border-input text-foreground h-14 text-lg pl-4 pr-12 font-bold"
-                        value={amountGrams}
-                        onChange={(e) => setAmountGrams(e.target.value)}
+                        placeholder={inputMode === 'grams' ? '0.0000' : '0.00'}
+                        step={inputMode === 'grams' ? '0.0001' : '0.01'}
+                        className="bg-background border-input text-foreground h-14 text-lg pl-10 pr-4 font-bold"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                         data-testid="input-withdrawal-amount"
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">g</div>
                     </div>
+                    {/* Show calculated equivalent */}
+                    {numericInput > 0 && goldPriceUsd > 0 && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 animate-in fade-in">
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-700 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
+                          <span className="text-lg font-bold text-purple-700">{inputMode === 'grams' ? `$${grossAmount.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Insufficient Balance Warning */}
                     {grams > vaultBalance && (
