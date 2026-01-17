@@ -195,6 +195,21 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                       <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
                     </div>
                   )}
+                  {amount && parseFloat(amount) > 0 && parseFloat(amount) <= walletBalance && goldPricePerGram > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3 animate-in fade-in">
+                      <div className="flex justify-between items-center">
+                        <span className="text-green-700 text-sm font-medium">Remaining Balance</span>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-green-700">
+                            {(availableGrams - (parseFloat(amount) / goldPricePerGram)).toFixed(4)}g
+                          </span>
+                          <span className="text-sm text-green-600 ml-2">
+                            ≈ ${((availableGrams - (parseFloat(amount) / goldPricePerGram)) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               

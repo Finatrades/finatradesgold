@@ -203,9 +203,18 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     
                     {/* Live Conversion Preview */}
                     {grams > 0 && grams <= vaultBalance && (
-                      <div className="p-4 bg-muted/30 border border-border rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-2">
-                         <span className="text-muted-foreground text-sm">Estimated Value</span>
-                         <span className="text-xl font-bold text-primary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="p-4 bg-muted/30 border border-border rounded-lg flex justify-between items-center">
+                           <span className="text-muted-foreground text-sm">Estimated Value</span>
+                           <span className="text-xl font-bold text-primary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+                           <span className="text-green-700 text-sm font-medium">Remaining Balance After Withdrawal</span>
+                           <div className="text-right">
+                             <span className="text-lg font-bold text-green-700">{(vaultBalance - grams).toFixed(4)}g</span>
+                             <span className="text-sm text-green-600 ml-2">≈ ${((vaultBalance - grams) * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                           </div>
+                        </div>
                       </div>
                     )}
                   </div>
