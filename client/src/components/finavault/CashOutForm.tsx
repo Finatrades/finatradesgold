@@ -424,8 +424,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     </div>
                     <Separator className="bg-border" />
                     <div className="flex justify-between items-end">
-                      <span className="text-foreground/80 font-medium">Net Payout</span>
-                      <span className="text-2xl font-bold text-secondary">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-foreground font-semibold">Net Payout</span>
+                      <span className="text-2xl font-bold text-green-600">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
