@@ -404,9 +404,17 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
 
             <div className="flex justify-between items-center">
               <Label className="text-base font-semibold">Gold Amount to Sell</Label>
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
-                <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+              <div className="flex items-center gap-3">
+                <span 
+                  className="text-xs text-secondary cursor-pointer hover:underline" 
+                  onClick={() => setInputValue(inputMode === 'grams' ? bnslWalletBalance.toFixed(4) : (bnslWalletBalance * currentGoldPrice).toFixed(2))}
+                >
+                  Max: {inputMode === 'grams' ? `${bnslWalletBalance.toFixed(3)}g` : `$${(bnslWalletBalance * currentGoldPrice).toFixed(2)}`}
+                </span>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+                </div>
               </div>
             </div>
             <div className="relative">

@@ -180,7 +180,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                            className="text-xs text-secondary cursor-pointer hover:underline" 
                            onClick={() => setInputValue(inputMode === 'grams' ? vaultBalance.toFixed(4) : (vaultBalance * goldPriceUsd).toFixed(2))}
                          >
-                           Max: {vaultBalance.toFixed(3)}g
+                           Max: {inputMode === 'grams' ? `${vaultBalance.toFixed(3)}g` : `$${(vaultBalance * goldPriceUsd).toFixed(2)}`}
                          </span>
                          <div className="flex bg-gray-100 rounded-lg p-1">
                            <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
