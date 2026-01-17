@@ -373,7 +373,16 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
         break;
       case 'COUNTER':
         messageType = 'USER_COUNTER';
-        finalGrams = counterGrams?.toString();
+        // Convert USD to grams using the deposit's price snapshot
+        if (counterUsd && deposit.priceSnapshotUsdPerGram) {
+          const pricePerGram = parseFloat(deposit.priceSnapshotUsdPerGram);
+          if (pricePerGram > 0) {
+            const gramsFromUsd = parseFloat(counterUsd.toString()) / pricePerGram;
+            finalGrams = gramsFromUsd.toFixed(6);
+          }
+        } else if (counterGrams) {
+          finalGrams = counterGrams.toString();
+        }
         finalFees = counterFees?.toString();
         proposedUsd = counterUsd?.toString();
         break;

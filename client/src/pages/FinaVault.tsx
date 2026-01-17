@@ -42,6 +42,17 @@ function MyPhysicalDeposits() {
   const [showCounterInput, setShowCounterInput] = useState(false);
   const [counterValue, setCounterValue] = useState('');
   const [isResponding, setIsResponding] = useState(false);
+
+  // Get live gold price for real-time USD calculations
+  const { data: goldPriceData } = useQuery({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-price', { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
   
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['physical-deposits', user?.id],
@@ -59,6 +70,25 @@ function MyPhysicalDeposits() {
   });
 
   const deposits = data?.deposits || [];
+
+  // Keep selectedDeposit in sync with latest data
+  React.useEffect(() => {
+    if (selectedDeposit && deposits.length > 0) {
+      const updated = deposits.find((d: any) => d.id === selectedDeposit.id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedDeposit)) {
+        setSelectedDeposit(updated);
+      }
+    }
+  }, [deposits, selectedDeposit]);
+
+  // Calculate real-time USD from grams using live gold price
+  const calculateUsd = (grams: string | number | null) => {
+    if (!grams) return null;
+    const gramsNum = typeof grams === 'string' ? parseFloat(grams) : grams;
+    const pricePerGram = goldPriceData?.pricePerGram || selectedDeposit?.priceSnapshotUsdPerGram;
+    if (!pricePerGram || isNaN(gramsNum)) return null;
+    return (gramsNum * parseFloat(pricePerGram.toString())).toFixed(2);
+  };
 
   // Handle user response to admin's offer
   const handleRespond = async (action: 'ACCEPT' | 'COUNTER' | 'REJECT') => {
