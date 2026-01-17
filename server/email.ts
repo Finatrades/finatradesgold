@@ -468,7 +468,12 @@ export function queueEmail(to: string, subject: string, html: string) {
   setImmediate(() => processEmailQueue().catch(console.error));
 }
 
-export async function queueEmailWithTemplate(to: string, templateSlug: string, data: EmailData): Promise<void> {
+export async function queueEmailWithTemplate(
+  to: string, 
+  templateSlug: string, 
+  data: EmailData,
+  options?: { notificationType?: string; userId?: string; metadata?: Record<string, any> }
+): Promise<void> {
   const template = await getEmailTemplate(templateSlug);
   if (!template) {
     console.error(`[Email Queue] Template not found: ${templateSlug}`);
@@ -477,6 +482,26 @@ export async function queueEmailWithTemplate(to: string, templateSlug: string, d
   
   const subject = replaceVariables(template.subject, data);
   const htmlBody = replaceVariables(template.body, data);
+  
+  // Log to email_logs table if notificationType is provided (for duplicate prevention)
+  if (options?.notificationType) {
+    try {
+      const { emailLogs } = await import('@shared/schema');
+      const { db } = await import('./db');
+      await db.insert(emailLogs).values({
+        recipientEmail: to,
+        userId: options.userId || null,
+        notificationType: options.notificationType,
+        templateSlug: templateSlug,
+        subject: subject,
+        status: 'Queued',
+        metadata: options.metadata || null,
+      });
+    } catch (error) {
+      console.error('[Email Queue] Failed to log email:', error);
+    }
+  }
+  
   queueEmail(to, subject, htmlBody);
 }
 

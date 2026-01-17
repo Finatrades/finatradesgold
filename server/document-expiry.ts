@@ -1,10 +1,39 @@
 import { db } from './db';
-import { kycSubmissions, users, finatradesPersonalKyc, finatradesCorporateKyc } from '@shared/schema';
-import { and, lte, gte, eq, isNotNull, count, sql, or } from 'drizzle-orm';
+import { kycSubmissions, users, finatradesPersonalKyc, finatradesCorporateKyc, emailLogs } from '@shared/schema';
+import { and, lte, gte, eq, isNotNull, count, sql, or, like } from 'drizzle-orm';
 import { queueEmailWithTemplate, EMAIL_TEMPLATES } from './email';
-import { format, addDays, differenceInCalendarDays, parseISO } from 'date-fns';
+import { format, addDays, differenceInCalendarDays, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 const REMINDER_THRESHOLDS = [30, 14, 7, 3, 1];
+
+async function wasReminderSentToday(
+  userEmail: string, 
+  documentType: string, 
+  daysUntilExpiry: number
+): Promise<boolean> {
+  try {
+    const today = new Date();
+    const todayStart = startOfDay(today);
+    const todayEnd = endOfDay(today);
+    
+    const notificationType = `document_expiry_${documentType}_${daysUntilExpiry}d`;
+    
+    const [existingLog] = await db.select({ id: emailLogs.id })
+      .from(emailLogs)
+      .where(and(
+        eq(emailLogs.recipientEmail, userEmail),
+        like(emailLogs.notificationType, `document_expiry_${documentType}%`),
+        gte(emailLogs.createdAt, todayStart),
+        lte(emailLogs.createdAt, todayEnd)
+      ))
+      .limit(1);
+    
+    return !!existingLog;
+  } catch (error) {
+    console.error('[Document Expiry] Error checking sent reminders:', error);
+    return false;
+  }
+}
 
 export interface ExpiringDocument {
   userId: string;
@@ -173,13 +202,15 @@ const DOCUMENT_TYPE_LABELS: Record<ExpiringDocument['documentType'], string> = {
 export async function sendDocumentExpiryReminders(): Promise<{
   sent: number;
   errors: number;
-  details: Array<{ email: string; daysRemaining: number; documentType: string; success: boolean }>;
+  skipped: number;
+  details: Array<{ email: string; daysRemaining: number; documentType: string; success: boolean; skipped?: boolean }>;
 }> {
   const expiringDocs = await getExpiringDocuments(30);
   
-  const results: Array<{ email: string; daysRemaining: number; documentType: string; success: boolean }> = [];
+  const results: Array<{ email: string; daysRemaining: number; documentType: string; success: boolean; skipped?: boolean }> = [];
   let sent = 0;
   let errors = 0;
+  let skipped = 0;
 
   for (const doc of expiringDocs) {
     const shouldSendReminder = REMINDER_THRESHOLDS.includes(doc.daysUntilExpiry);
@@ -188,12 +219,21 @@ export async function sendDocumentExpiryReminders(): Promise<{
       continue;
     }
 
+    const documentLabel = DOCUMENT_TYPE_LABELS[doc.documentType];
+
+    // Check if reminder was already sent today to prevent duplicates
+    const alreadySent = await wasReminderSentToday(doc.userEmail, doc.documentType, doc.daysUntilExpiry);
+    if (alreadySent) {
+      console.log(`[Document Expiry] SKIPPED (already sent today): ${doc.userEmail} - ${documentLabel}`);
+      results.push({ email: doc.userEmail, daysRemaining: doc.daysUntilExpiry, documentType: documentLabel, success: true, skipped: true });
+      skipped++;
+      continue;
+    }
+
     try {
       const baseUrl = process.env.REPLIT_DEV_DOMAIN
         ? `https://${process.env.REPLIT_DEV_DOMAIN}`
         : 'https://finatrades.com';
-      
-      const documentLabel = DOCUMENT_TYPE_LABELS[doc.documentType];
       
       await queueEmailWithTemplate(doc.userEmail, EMAIL_TEMPLATES.DOCUMENT_EXPIRY_REMINDER, {
         user_name: doc.userName,
@@ -201,6 +241,9 @@ export async function sendDocumentExpiryReminders(): Promise<{
         expiry_date: format(doc.expiryDate, 'MMMM d, yyyy'),
         days_remaining: doc.daysUntilExpiry.toString(),
         kyc_url: `${baseUrl}/kyc`,
+      }, {
+        notificationType: `document_expiry_${doc.documentType}_${doc.daysUntilExpiry}d`,
+        userId: doc.userId,
       });
 
       console.log(`[Document Expiry] Queued reminder for ${doc.userEmail} - ${documentLabel} expires in ${doc.daysUntilExpiry} days`);
@@ -213,8 +256,8 @@ export async function sendDocumentExpiryReminders(): Promise<{
     }
   }
 
-  console.log(`[Document Expiry] Sent ${sent} reminders, ${errors} errors`);
-  return { sent, errors, details: results };
+  console.log(`[Document Expiry] Sent ${sent} reminders, ${skipped} skipped (already sent), ${errors} errors`);
+  return { sent, errors, skipped, details: results };
 }
 
 export async function getDocumentExpiryStats(): Promise<{
