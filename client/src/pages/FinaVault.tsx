@@ -92,7 +92,11 @@ function MyPhysicalDeposits() {
 
   // Handle user response to admin's offer
   const handleRespond = async (action: 'ACCEPT' | 'COUNTER' | 'REJECT') => {
-    if (!selectedDeposit) return;
+    console.log('[FinaVault] handleRespond called:', action, 'selectedDeposit:', selectedDeposit?.id);
+    if (!selectedDeposit) {
+      console.log('[FinaVault] No selectedDeposit, returning');
+      return;
+    }
     
     setIsResponding(true);
     try {
@@ -101,6 +105,7 @@ function MyPhysicalDeposits() {
         body.counterUsd = parseFloat(counterValue);
         body.message = `User counter-offer: $${parseFloat(counterValue).toLocaleString()}`;
       }
+      console.log('[FinaVault] Sending POST with body:', body);
       
       const res = await fetch(`/api/physical-deposits/deposits/${selectedDeposit.id}/respond`, {
         method: 'POST',
