@@ -504,7 +504,7 @@ export default function KYC() {
         description: "Your verification is now under review."
       });
       
-      setLocation('/kyc');
+      setLocation("/dashboard");
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
@@ -577,7 +577,7 @@ export default function KYC() {
         description: "Your verification is now under review."
       });
       
-      setLocation('/kyc');
+      setLocation("/dashboard");
     } catch (error) {
       toast.error("Submission Failed", {
         description: "Please try again later."
