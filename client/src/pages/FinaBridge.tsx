@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { useCMSPage } from '@/context/CMSContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFinaPay } from '@/context/FinaPayContext';
@@ -313,10 +313,14 @@ export default function FinaBridge() {
   const { user, refreshUser } = useAuth();
   const { accountType } = useAccountType();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
   const { getContent } = useCMSPage('finabridge');
   const { currentGoldPriceUsdPerGram } = useFinaPay();
+  
+  const urlParams = new URLSearchParams(searchString);
+  const tabParam = urlParams.get('tab');
 
   useEffect(() => {
     if (accountType !== 'business') {
@@ -335,7 +339,12 @@ export default function FinaBridge() {
     // Otherwise default to importer (for importer, both, or undefined)
     return 'importer';
   });
-  const [activeTab, setActiveTab] = useState('requests');
+  // Handle URL tab parameter: ?tab=create or ?tab=browse
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam === 'create') return 'create';
+    if (tabParam === 'browse') return 'marketplace';
+    return 'requests';
+  });
   const [selectedDealRoom, setSelectedDealRoom] = useState<{ id: string; userRole: 'importer' | 'exporter' | 'admin' } | null>(null);
   const [loading, setLoading] = useState(true);
   
