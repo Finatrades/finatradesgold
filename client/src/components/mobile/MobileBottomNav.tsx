@@ -45,8 +45,8 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg" 
-         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/80 shadow-2xl mobile-bottom-nav" 
+         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}>
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item, index) => {
           if (item.isCenter) {
@@ -55,11 +55,15 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
                 key="quick-action"
                 whileTap={{ scale: 0.9 }}
                 onClick={onQuickActionClick}
-                className="relative -mt-6 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-600 shadow-lg flex items-center justify-center text-white"
+                className="relative -mt-7 w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-fuchsia-600 shadow-xl flex items-center justify-center text-white border-4 border-white"
                 data-testid="button-mobile-quick-action"
               >
-                <Plus className="w-7 h-7" />
-                <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-30"></div>
+                <Plus className="w-8 h-8" />
+                <motion.div 
+                  className="absolute inset-0 rounded-full bg-white/20"
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
               </motion.button>
             );
           }
@@ -69,23 +73,23 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
           return (
             <motion.button
               key={item.path}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => setLocation(item.path)}
-              className={`flex flex-col items-center justify-center min-w-[60px] py-1 rounded-lg transition-colors ${
+              className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] py-1.5 rounded-xl transition-colors touch-target ${
                 active ? 'text-purple-600' : 'text-gray-500'
               }`}
               data-testid={`button-nav-${item.label.toLowerCase()}`}
             >
-              <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-purple-100' : ''}`}>
+              <div className={`p-2 rounded-xl transition-all ${active ? 'bg-purple-100' : ''}`}>
                 {item.icon}
               </div>
-              <span className={`text-[10px] mt-0.5 font-medium ${active ? 'text-purple-600' : 'text-gray-500'}`}>
+              <span className={`text-[11px] mt-0.5 font-semibold ${active ? 'text-purple-600' : 'text-gray-500'}`}>
                 {item.label}
               </span>
               {active && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute bottom-0 w-1 h-1 bg-purple-600 rounded-full"
+                  className="absolute bottom-1 w-1.5 h-1.5 bg-purple-600 rounded-full"
                   initial={false}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />

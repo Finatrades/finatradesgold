@@ -119,22 +119,22 @@ export default function MobileQuickActions({
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-4 py-2">
       {actions.map((action, index) => (
         <motion.button
           key={action.label}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          whileTap={{ scale: 0.95 }}
+          transition={{ delay: index * 0.04 }}
+          whileTap={{ scale: 0.92 }}
           onClick={action.onClick}
-          className="flex flex-col items-center gap-2 p-3"
+          className="flex flex-col items-center gap-2.5 p-2 touch-target"
           data-testid={`button-quick-${action.label.toLowerCase().replace(' ', '-')}`}
         >
-          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${action.gradient} flex items-center justify-center text-white shadow-lg`}>
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${action.gradient} flex items-center justify-center text-white shadow-lg haptic-press`}>
             {action.icon}
           </div>
-          <span className="text-xs font-medium text-gray-700 text-center">{action.label}</span>
+          <span className="text-[11px] font-semibold text-gray-700 text-center leading-tight">{action.label}</span>
         </motion.button>
       ))}
     </div>

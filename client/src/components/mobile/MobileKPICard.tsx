@@ -75,17 +75,17 @@ export default function MobileKPICard({
       transition={{ delay: delay * 0.1 }}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      className={`relative overflow-hidden p-3 bg-gradient-to-br ${style.bg} border ${style.border} rounded-xl shadow-sm ${onClick ? 'cursor-pointer active:shadow-md' : ''}`}
+      className={`relative overflow-hidden p-4 bg-gradient-to-br ${style.bg} border ${style.border} rounded-2xl shadow-sm mobile-card ${onClick ? 'cursor-pointer' : ''}`}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-8 h-8 rounded-lg ${style.iconBg} flex items-center justify-center shadow-sm`}>
-          <Icon className={`w-4 h-4 ${style.iconColor}`} />
+      <div className="flex items-center gap-2.5 mb-2">
+        <div className={`w-10 h-10 rounded-xl ${style.iconBg} flex items-center justify-center shadow-sm`}>
+          <Icon className={`w-5 h-5 ${style.iconColor}`} />
         </div>
-        <p className="text-[11px] text-gray-600 font-medium">{label}</p>
+        <p className="text-xs text-gray-600 font-medium">{label}</p>
       </div>
-      <p className="text-lg font-bold text-gray-900">{value}</p>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
       {subValue && (
-        <p className={`text-[10px] font-medium ${style.subColor}`}>{subValue}</p>
+        <p className={`text-[11px] font-medium ${style.subColor}`}>{subValue}</p>
       )}
     </motion.div>
   );

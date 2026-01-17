@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
 import MobileBottomNav from './MobileBottomNav';
 import BottomSheet from './BottomSheet';
 import MobileQuickActions from './MobileQuickActions';
@@ -37,9 +39,21 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
   const walletBalance = parseFloat(walletData?.wallet?.usdBalance || '0');
   const goldBalance = parseFloat(walletData?.wallet?.goldGrams || '0');
 
+  const [location] = useLocation();
+  
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {children}
+    <div className="min-h-screen bg-gray-50 page-container" style={{ paddingTop: 'var(--safe-area-top)' }}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={location}
+          initial={{ opacity: 0, x: 15 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -15 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
 
       {!hideNav && (
         <MobileBottomNav onQuickActionClick={() => setQuickActionsOpen(true)} />

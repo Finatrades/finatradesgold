@@ -44,31 +44,39 @@ export default function BottomSheet({ isOpen, onClose, title, children }: Bottom
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-hidden"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            transition={{ type: 'spring', damping: 32, stiffness: 400 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.3 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 100 || info.velocity.y > 500) {
+                onClose();
+              }
+            }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[28px] shadow-2xl max-h-[90vh] overflow-hidden"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
             role="dialog"
             aria-modal="true"
             aria-label={title || 'Bottom sheet'}
           >
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            <div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
             {title && (
-              <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+              <div className="flex items-center justify-between px-5 pb-4 border-b border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
             )}
 
-            <div className="overflow-y-auto max-h-[70vh] px-5 py-4">
+            <div className="overflow-y-auto max-h-[75vh] px-5 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               {children}
             </div>
           </motion.div>

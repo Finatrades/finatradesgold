@@ -49,20 +49,21 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
   };
 
   return (
-    <header className={`sticky top-0 z-40 ${transparent ? 'bg-transparent' : 'bg-white/95 backdrop-blur-md border-b border-gray-100'}`}>
+    <header className={`sticky top-0 z-40 mobile-header ${transparent ? 'bg-transparent' : 'bg-white/95 backdrop-blur-lg border-b border-gray-100/80 mobile-header-blur'}`}
+            style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0px))' }}>
       <div className="h-14 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {showBack ? (
             <button
               onClick={() => window.history.back()}
-              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"
+              className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
               data-testid="button-mobile-back"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
+              <ChevronLeft className="w-6 h-6 text-gray-700" />
             </button>
           ) : (
             <Avatar 
-              className="w-9 h-9 cursor-pointer border-2 border-purple-200"
+              className="w-11 h-11 cursor-pointer border-2 border-purple-200 touch-target"
               onClick={() => setLocation('/profile')}
             >
               <AvatarImage src={(user as any)?.profilePhoto || ''} />
@@ -80,22 +81,22 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setLocation('/notifications')}
-            className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative"
+            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center relative touch-target haptic-press active:bg-gray-200"
             data-testid="button-mobile-notifications"
           >
-            <Bell className="w-4.5 h-4.5 text-gray-700" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <Bell className="w-5 h-5 text-gray-700" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
           
           <button
             onClick={() => setLocation('/settings')}
-            className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"
+            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
             data-testid="button-mobile-settings"
           >
-            <Settings className="w-4.5 h-4.5 text-gray-700" />
+            <Settings className="w-5 h-5 text-gray-700" />
           </button>
         </div>
       </div>
