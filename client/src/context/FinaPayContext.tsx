@@ -59,6 +59,14 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       refreshWallet();
       refreshTransactions();
+      
+      // Auto-refresh transactions and wallet every 15 seconds for real-time updates
+      const transactionInterval = setInterval(() => {
+        refreshWallet();
+        refreshTransactions();
+      }, 15000);
+      
+      return () => clearInterval(transactionInterval);
     }
   }, [user]);
 
