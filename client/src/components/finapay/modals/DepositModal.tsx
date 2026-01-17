@@ -737,187 +737,181 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             </div>
             
-            {/* Hero Section */}
-            <div className="text-center space-y-3 pb-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-                <Coins className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">How much gold would you like?</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">Enter amount in gold grams or USD. We'll convert it at live market rates.</p>
-            </div>
-            
-            {/* Dual Amount Inputs - Both Visible with Auto-Conversion */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Gold Input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-amber-700 flex items-center gap-2">
-                  <Coins className="w-4 h-4" />
-                  Gold (grams)
-                </Label>
-                <div className="relative group">
-                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-amber-600 rounded-xl transition-opacity ${inputMode === 'gold' ? 'opacity-30' : 'opacity-10'}`}></div>
-                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-amber-400' : 'border-amber-200'}`}>
-                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      placeholder="0.0000"
-                      value={goldAmount}
-                      onChange={(e) => {
-                        setInputMode('gold');
-                        setGoldAmount(e.target.value);
-                        if (goldPrice?.pricePerGram && e.target.value) {
-                          const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
-                          setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+            {/* Modern Fintech Amount Input */}
+            <div className="space-y-4">
+              {/* Unit Toggle */}
+              <div className="flex justify-center">
+                <div className="inline-flex bg-slate-100 rounded-full p-1">
+                  <button
+                    type="button"
+                    data-testid="toggle-usd"
+                    onClick={() => {
+                      if (inputMode !== 'usd') {
+                        setInputMode('usd');
+                        // Sync: convert gold to USD or clear if empty
+                        if (goldPrice?.pricePerGram && goldAmount && parseFloat(goldAmount) > 0) {
+                          const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
+                          setAmount(usdValue.toFixed(2));
                         } else {
                           setAmount('');
+                          setGoldAmount('');
+                        }
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                      inputMode === 'usd' 
+                        ? 'bg-primary text-white shadow-md' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    USD
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="toggle-grams"
+                    onClick={() => {
+                      if (inputMode !== 'gold') {
+                        setInputMode('gold');
+                        // Sync: convert USD to gold or clear if empty
+                        if (goldPrice?.pricePerGram && amount && parseFloat(amount) > 0) {
+                          const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
+                          setGoldAmount(goldValue.toFixed(4));
+                        } else {
+                          setAmount('');
+                          setGoldAmount('');
+                        }
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                      inputMode === 'gold' 
+                        ? 'bg-amber-500 text-white shadow-md' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Grams
+                  </button>
+                </div>
+              </div>
+              
+              {/* Single Large Input */}
+              <div className="relative">
+                <div className={`border-2 rounded-2xl bg-white transition-colors ${
+                  inputMode === 'usd' ? 'border-primary/30 focus-within:border-primary' : 'border-amber-300 focus-within:border-amber-500'
+                }`}>
+                  <div className="flex items-center justify-center py-6 px-4">
+                    <span className={`text-3xl font-bold mr-2 ${inputMode === 'usd' ? 'text-primary' : 'text-amber-600'}`}>
+                      {inputMode === 'usd' ? '$' : ''}
+                    </span>
+                    <Input
+                      type="number"
+                      step={inputMode === 'usd' ? '0.01' : '0.0001'}
+                      placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                      value={inputMode === 'usd' ? amount : goldAmount}
+                      onChange={(e) => {
+                        if (inputMode === 'usd') {
+                          setAmount(e.target.value);
+                          if (goldPrice?.pricePerGram && e.target.value) {
+                            const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
+                            setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
+                          } else {
+                            setGoldAmount('');
+                          }
+                        } else {
+                          setGoldAmount(e.target.value);
+                          if (goldPrice?.pricePerGram && e.target.value) {
+                            const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
+                            setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+                          } else {
+                            setAmount('');
+                          }
                         }
                       }}
-                      onFocus={() => setInputMode('gold')}
-                      className="pl-11 pr-8 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
-                      data-testid="input-gold-amount"
+                      className="text-4xl font-bold text-center border-0 focus-visible:ring-0 bg-transparent w-full max-w-[200px] p-0"
+                      data-testid={inputMode === 'usd' ? 'input-usd-amount' : 'input-gold-amount'}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-amber-600">g</span>
+                    <span className={`text-xl font-semibold ml-2 ${inputMode === 'usd' ? 'text-primary' : 'text-amber-600'}`}>
+                      {inputMode === 'gold' ? 'g' : ''}
+                    </span>
                   </div>
                 </div>
               </div>
               
-              {/* USD Input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-emerald-700 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  USD Amount
-                </Label>
-                <div className="relative group">
-                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl transition-opacity ${inputMode === 'usd' ? 'opacity-30' : 'opacity-10'}`}></div>
-                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200'}`}>
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => {
-                        setInputMode('usd');
-                        setAmount(e.target.value);
-                        if (goldPrice?.pricePerGram && e.target.value) {
-                          const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
-                          setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
-                        } else {
-                          setGoldAmount('');
-                        }
-                      }}
-                      onFocus={() => setInputMode('usd')}
-                      className="pl-11 pr-12 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
-                      data-testid="input-usd-amount"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-emerald-600">USD</span>
-                  </div>
-                </div>
+              {/* Conversion Row - Always Visible (Stable Height) */}
+              <div className="h-8 flex items-center justify-center">
+                {goldPrice && (
+                  <p className="text-sm text-muted-foreground">
+                    {inputMode === 'usd' && amount && parseFloat(amount) > 0 ? (
+                      <>≈ <span className="font-semibold text-amber-600">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span> gold</>
+                    ) : inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0 ? (
+                      <>≈ <span className="font-semibold text-primary">${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</span> USD</>
+                    ) : (
+                      <span className="text-muted-foreground/50">Enter amount to see conversion</span>
+                    )}
+                  </p>
+                )}
               </div>
+              
+              {/* Quick Preset Amounts */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {[50, 100, 250, 500, 1000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    data-testid={`preset-amount-${preset}`}
+                    onClick={() => {
+                      setInputMode('usd');
+                      setAmount(preset.toString());
+                      if (goldPrice?.pricePerGram) {
+                        setGoldAmount((preset / goldPrice.pricePerGram).toFixed(4));
+                      }
+                    }}
+                    className="px-4 py-2 rounded-full border border-slate-200 hover:border-primary hover:bg-primary/5 text-sm font-medium text-foreground transition-all"
+                  >
+                    ${preset}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Live Price Badge */}
+              {goldPrice && (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                  <span>Live: <span className="font-semibold text-foreground">${goldPrice.pricePerGram.toFixed(2)}/g</span></span>
+                </div>
+              )}
             </div>
 
-            {/* Deposit Summary Preview - Step 1 */}
+            {/* Compact Summary Card - Only shows when amount entered */}
             {goldPrice && ((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
               (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
-              <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-xl p-5 border border-amber-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-                    <Coins className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="font-bold text-amber-800">Deposit Summary</h4>
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                {/* You'll Receive - Main highlight */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">You'll receive:</span>
+                  <span className="text-lg font-bold text-amber-600">
+                    {inputMode === 'gold' 
+                      ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toFixed(4)
+                      : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toFixed(4)}g gold
+                  </span>
                 </div>
                 
-                <div className="space-y-3">
-                  {/* Deposit Amount - What user is depositing (gross) */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Deposit Amount:</span>
-                    <span className="font-medium">
+                {/* Fee info - small text */}
+                {depositFee && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Processing fee ({depositFee.feeValue}%):</span>
+                    <span className="text-red-500">
                       {inputMode === 'gold' 
-                        ? `${parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g (≈ $${(parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
-                        : `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        ? `-${(parseFloat(goldAmount) * parseFloat(depositFee.feeValue) / 100).toFixed(4)}g`
+                        : `-$${calculateFee(parseFloat(amount) || 0).toFixed(2)}`
+                      }
                     </span>
                   </div>
-                  
-                  {/* Processing Fee - DEDUCTED from deposit (universal bank rule) */}
-                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
-                    <div className="flex items-center justify-between text-sm text-red-500">
-                      <span>Processing Fee ({depositFee.feeValue}%):</span>
-                      <span className="font-medium">
-                        {inputMode === 'gold' 
-                          ? `-${(parseFloat(goldAmount) * parseFloat(depositFee.feeValue) / 100).toFixed(4)}g`
-                          : `-$${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Net Amount after fee deduction */}
-                  {depositFee && ((inputMode === 'usd' && parseFloat(amount) > 0) || (inputMode === 'gold' && parseFloat(goldAmount) > 0)) && (
-                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-2">
-                      <span>Net After Fee:</span>
-                      <span className="font-medium">
-                        {inputMode === 'gold' 
-                          ? `${(parseFloat(goldAmount) * (1 - parseFloat(depositFee.feeValue) / 100)).toFixed(4)}g`
-                          : `$${((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Gold You'll Receive - After fee deduction */}
-                  <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-200">
-                    <span className="flex items-center gap-2 text-amber-700 font-medium">
-                      <Coins className="w-4 h-4" />
-                      Gold You'll Receive:
-                    </span>
-                    <span className="text-xl font-bold text-amber-700">
-                      {inputMode === 'gold' 
-                        ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-                        : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
-                    </span>
-                  </div>
-                  
-                  {/* Live Price */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-amber-200">
-                    <span className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                      Live gold price:
-                    </span>
-                    <span className="font-medium">${goldPrice.pricePerGram.toFixed(2)}/gram</span>
-                  </div>
-                  
-                  {/* Important Notice */}
-                  <div className="bg-gradient-to-r from-amber-100 to-orange-50 border border-amber-300 rounded-lg p-4 mt-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-4 h-4 text-amber-700" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-amber-800 text-sm mb-1">Important Notice</p>
-                        <p className="text-xs text-amber-700 leading-relaxed">
-                          Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
-                          After verification, gold will be deposited to your <strong>Live Gold Price Wallet (LGPW)</strong> at the final confirmed rate.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Live Price Display when no amount entered */}
-            {goldPrice && !((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
-              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Live Gold Price</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-amber-600" />
-                    <span className="font-bold text-amber-700">${goldPrice.pricePerGram.toFixed(2)}<span className="text-xs font-normal text-muted-foreground">/gram</span></span>
-                  </div>
-                </div>
+                )}
+                
+                {/* Notice */}
+                <p className="text-xs text-muted-foreground pt-2 border-t border-slate-200">
+                  Final rate confirmed upon fund receipt. Gold deposited to LGPW.
+                </p>
               </div>
             )}
             
