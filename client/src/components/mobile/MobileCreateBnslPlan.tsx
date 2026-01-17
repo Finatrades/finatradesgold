@@ -162,7 +162,6 @@ export default function MobileCreateBnslPlan({
       basePriceComponentUsd: basePriceUsd,
       totalMarginComponentUsd: totalMarginUsd,
       quarterlyMarginUsd: quarterlyMarginUsd,
-      termsAcceptedAt: signedAt,
     };
 
     onSuccess(planData, { signatureName: signatureName.trim(), signedAt });

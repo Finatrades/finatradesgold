@@ -286,9 +286,10 @@ export function BnslProvider({ children }: { children: ReactNode }) {
         return transformDbPlanToFrontend(data.plan, [], undefined, planData.participant || user);
       }
       return null;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create BNSL plan:', err);
-      toast.error('Failed to create plan');
+      const errorMessage = err?.message || 'Failed to create plan';
+      toast.error(errorMessage);
       return null;
     }
   };
