@@ -20,7 +20,7 @@ interface WithdrawalModalProps {
 export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'form' | 'submitted'>('form');
-  const [amount, setAmount] = useState('');
+  const [amountGrams, setAmountGrams] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -42,11 +42,15 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   const goldPricePerGram = dualBalance?.goldPricePerGram || 0;
   const walletBalance = availableGrams * goldPricePerGram;
 
+  // Calculate USD from grams
+  const grams = parseFloat(amountGrams) || 0;
+  const amountUsd = grams * goldPricePerGram;
+
   useEffect(() => {
     if (isOpen) {
       setStep('form');
       setSelectedWalletType('LGPW');
-      setAmount('');
+      setAmountGrams('');
       setBankName('');
       setAccountName('');
       setAccountNumber('');
@@ -56,19 +60,18 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!user || !amount || !bankName || !accountName || !accountNumber) {
+    if (!user || !amountGrams || !bankName || !accountName || !accountNumber) {
       toast.error("Please fill in all required fields");
       return;
     }
     
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error("Please enter a valid amount");
+    if (grams <= 0) {
+      toast.error("Please enter a valid gold amount");
       return;
     }
 
-    if (amountNum > walletBalance) {
-      toast.error("Insufficient balance");
+    if (grams > availableGrams) {
+      toast.error("Insufficient gold balance");
       return;
     }
 
@@ -78,7 +81,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         userId: user.id,
         action: 'withdraw_funds',
         title: 'Authorize Withdrawal',
-        description: `Enter your 6-digit PIN to withdraw $${amountNum.toFixed(2)}`,
+        description: `Enter your 6-digit PIN to withdraw ${grams.toFixed(4)}g ($${amountUsd.toFixed(2)})`,
       });
     } catch (error) {
       return;
@@ -96,7 +99,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         credentials: 'include',
         body: JSON.stringify({
           userId: user.id,
-          amountUsd: parseFloat(amount).toString(),
+          amountUsd: amountUsd.toFixed(2),
           bankName,
           accountName,
           accountNumber,
@@ -176,46 +179,47 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                   />
                 </div>
 
-                  <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (USD) *</Label>
+                  <Label className="text-sm font-medium text-gray-700">Amount to Withdraw (Gold Grams) *</Label>
                   <div className="relative mt-2">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">g</span>
                     <Input 
                       type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0.00"
+                      value={amountGrams}
+                      onChange={(e) => setAmountGrams(e.target.value)}
+                      placeholder="0.0000"
+                      step="0.0001"
                       className="pl-9 bg-white border-gray-200 text-lg font-semibold"
-                      max={walletBalance}
+                      max={availableGrams}
                       data-testid="input-withdrawal-amount"
                     />
                   </div>
-                  {/* Show gold grams being withdrawn */}
-                  {amount && parseFloat(amount) > 0 && goldPricePerGram > 0 && (
+                  {/* Show USD equivalent */}
+                  {grams > 0 && goldPricePerGram > 0 && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3 animate-in fade-in">
                       <div className="flex justify-between items-center">
-                        <span className="text-purple-700 text-sm font-medium">Gold Amount</span>
+                        <span className="text-purple-700 text-sm font-medium">USD Equivalent</span>
                         <span className="text-lg font-bold text-purple-700">
-                          {(parseFloat(amount) / goldPricePerGram).toFixed(4)}g
+                          ${amountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                     </div>
                   )}
-                  {amount && parseFloat(amount) > walletBalance && (
+                  {grams > availableGrams && (
                     <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
                       <span className="text-red-500">⚠️</span>
-                      <span>Insufficient funds. Your balance is ${walletBalance.toFixed(2)}</span>
+                      <span>Insufficient gold. You have {availableGrams.toFixed(4)}g available.</span>
                     </div>
                   )}
-                  {amount && parseFloat(amount) > 0 && parseFloat(amount) <= walletBalance && goldPricePerGram > 0 && (
+                  {grams > 0 && grams <= availableGrams && goldPricePerGram > 0 && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3 animate-in fade-in">
                       <div className="flex justify-between items-center">
                         <span className="text-green-700 text-sm font-medium">Remaining Balance</span>
                         <div className="text-right">
                           <span className="text-lg font-bold text-green-700">
-                            {(availableGrams - (parseFloat(amount) / goldPricePerGram)).toFixed(4)}g
+                            {(availableGrams - grams).toFixed(4)}g
                           </span>
                           <span className="text-sm text-green-600 ml-2">
-                            ≈ ${((availableGrams - (parseFloat(amount) / goldPricePerGram)) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ≈ ${((availableGrams - grams) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>
@@ -315,7 +319,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
               </div>
               <div className="bg-success-muted border border-success/20 rounded-xl p-4 text-center">
                 <p className="text-xs text-muted-foreground mb-1">Amount</p>
-                <p className="font-mono font-bold text-lg text-success">${parseFloat(amount).toFixed(2)}</p>
+                <p className="font-mono font-bold text-lg text-success">{grams.toFixed(4)}g ≈ ${amountUsd.toFixed(2)}</p>
               </div>
             </div>
             
@@ -352,7 +356,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button 
                 onClick={handleSubmit} 
-                disabled={!amount || !bankName || !accountName || !accountNumber || submitting || parseFloat(amount) > walletBalance}
+                disabled={!amountGrams || !bankName || !accountName || !accountNumber || submitting || grams > availableGrams}
                 className="bg-purple-500 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
