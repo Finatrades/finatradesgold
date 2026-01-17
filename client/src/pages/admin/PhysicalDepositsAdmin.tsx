@@ -390,50 +390,145 @@ export default function PhysicalDepositsAdmin() {
       </Card>
 
       <Dialog open={dialogMode === 'view' && !!selectedDeposit} onOpenChange={() => setDialogMode(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Deposit Details: {selectedDeposit?.referenceNumber}</DialogTitle>
             <DialogDescription>View complete deposit information</DialogDescription>
           </DialogHeader>
           {selectedDeposit && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-gray-500 text-xs">Status</Label>
+                  <Badge variant={STATUS_BADGES[selectedDeposit.status]?.variant}>{STATUS_BADGES[selectedDeposit.status]?.label}</Badge>
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Type</Label>
+                  <p className="font-medium text-sm">{selectedDeposit.depositType.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Total Weight</Label>
+                  <p className="font-medium text-sm">{parseFloat(selectedDeposit.totalDeclaredWeightGrams).toFixed(4)} g</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Delivery Method</Label>
+                  <p className="font-medium text-sm">{selectedDeposit.deliveryMethod.replace(/_/g, ' ')}</p>
+                </div>
+              </div>
+
+              {/* User Info */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="py-3">
+                  <div className="flex items-center gap-3">
+                    <User className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="font-medium">{selectedDeposit.user?.firstName} {selectedDeposit.user?.lastName}</p>
+                      <p className="text-sm text-gray-600">{selectedDeposit.user?.email}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Submission Date & Ownership */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-500">Status</Label>
-                  <p className="font-medium">{STATUS_BADGES[selectedDeposit.status]?.label}</p>
+                  <Label className="text-gray-500 text-xs">Submitted</Label>
+                  <p className="font-medium text-sm">{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(selectedDeposit.createdAt), { addSuffix: true })}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-500">Type</Label>
-                  <p className="font-medium">{selectedDeposit.depositType.replace('_', ' ')}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Total Weight</Label>
-                  <p className="font-medium">{parseFloat(selectedDeposit.totalDeclaredWeightGrams).toFixed(4)} g</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Delivery Method</Label>
-                  <p className="font-medium">{selectedDeposit.deliveryMethod.replace(/_/g, ' ')}</p>
+                  <Label className="text-gray-500 text-xs">Beneficial Owner</Label>
+                  <p className="font-medium text-sm">{(selectedDeposit as any).isBeneficialOwner ? 'Yes' : 'No'}</p>
                 </div>
               </div>
+
+              {/* Source of Metal */}
+              {((selectedDeposit as any).sourceOfMetal || (selectedDeposit as any).sourceDetails) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {(selectedDeposit as any).sourceOfMetal && (
+                    <div>
+                      <Label className="text-gray-500 text-xs">Source of Metal</Label>
+                      <p className="font-medium text-sm">{(selectedDeposit as any).sourceOfMetal}</p>
+                    </div>
+                  )}
+                  {(selectedDeposit as any).sourceDetails && (
+                    <div>
+                      <Label className="text-gray-500 text-xs">Source Details</Label>
+                      <p className="text-sm text-gray-700">{(selectedDeposit as any).sourceDetails}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Delivery/Pickup Details */}
+              {selectedDeposit.deliveryMethod !== 'PERSONAL_DROPOFF' && (
+                <Card className="bg-gray-50">
+                  <CardContent className="py-3">
+                    <Label className="text-gray-500 text-xs block mb-2">Pickup/Courier Details</Label>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {(selectedDeposit as any).pickupContactName && (
+                        <div><span className="text-gray-500">Contact:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactName}</span></div>
+                      )}
+                      {(selectedDeposit as any).pickupContactPhone && (
+                        <div><span className="text-gray-500">Phone:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactPhone}</span></div>
+                      )}
+                      {(selectedDeposit as any).pickupAddress && (
+                        <div className="col-span-2"><span className="text-gray-500">Address:</span> <span className="font-medium">{(selectedDeposit as any).pickupAddress}</span></div>
+                      )}
+                      {(selectedDeposit as any).preferredDatetime && (
+                        <div><span className="text-gray-500">Preferred:</span> <span className="font-medium">{new Date((selectedDeposit as any).preferredDatetime).toLocaleString()}</span></div>
+                      )}
+                      {(selectedDeposit as any).scheduledDatetime && (
+                        <div><span className="text-gray-500">Scheduled:</span> <span className="font-medium text-green-600">{new Date((selectedDeposit as any).scheduledDatetime).toLocaleString()}</span></div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Documents */}
+              {((selectedDeposit as any).invoiceUrl || (selectedDeposit as any).assayCertificateUrl || (selectedDeposit as any).additionalDocuments?.length > 0) && (
+                <div>
+                  <Label className="text-gray-500 text-xs block mb-2">Documents</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(selectedDeposit as any).invoiceUrl && (
+                      <a href={(selectedDeposit as any).invoiceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
+                        <FileCheck className="w-4 h-4" /> Invoice
+                      </a>
+                    )}
+                    {(selectedDeposit as any).assayCertificateUrl && (
+                      <a href={(selectedDeposit as any).assayCertificateUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
+                        <FileCheck className="w-4 h-4" /> Assay Certificate
+                      </a>
+                    )}
+                    {(selectedDeposit as any).additionalDocuments?.map((doc: any, idx: number) => (
+                      <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                        <FileCheck className="w-4 h-4" /> {doc.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Items */}
               <div>
-                <Label className="text-gray-500">User</Label>
-                <p className="font-medium">{selectedDeposit.user?.firstName} {selectedDeposit.user?.lastName} ({selectedDeposit.user?.email})</p>
-              </div>
-              <div>
-                <Label className="text-gray-500 mb-2 block">Items ({selectedDeposit.items?.length})</Label>
+                <Label className="text-gray-500 text-xs mb-2 block">Items ({selectedDeposit.items?.length})</Label>
                 <div className="space-y-2">
                   {selectedDeposit.items?.map((item, i) => (
                     <Card key={item.id} className="bg-gray-50">
                       <CardContent className="py-3">
                         <div className="flex justify-between items-start">
-                          <div>
+                          <div className="space-y-1">
                             <p className="font-medium">Item #{i + 1}: {item.itemType.replace('_', ' ')}</p>
                             <p className="text-sm text-gray-500">
                               {item.quantity}x @ {item.weightPerUnitGrams}g = {parseFloat(item.totalDeclaredWeightGrams).toFixed(4)}g
                             </p>
                             <p className="text-sm text-gray-500">Purity: {item.purity}</p>
                             {item.brand && <p className="text-sm text-gray-500">Brand: {item.brand}</p>}
-                            {item.customDescription && <p className="text-sm text-gray-500">{item.customDescription}</p>}
+                            {item.mint && <p className="text-sm text-gray-500">Mint: {item.mint}</p>}
+                            {item.serialNumber && <p className="text-sm text-gray-500">Serial: <span className="font-mono">{item.serialNumber}</span></p>}
+                            {item.customDescription && <p className="text-sm text-gray-500 italic">{item.customDescription}</p>}
                           </div>
                           {item.verifiedWeightGrams && (
                             <Badge variant="outline" className="text-green-600">
@@ -446,10 +541,53 @@ export default function PhysicalDepositsAdmin() {
                   ))}
                 </div>
               </div>
+
+              {/* Inspection Results */}
+              {selectedDeposit.inspection && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="py-3">
+                    <Label className="text-green-700 text-xs font-semibold block mb-2">Inspection Results</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      {selectedDeposit.inspection.grossWeightGrams && (
+                        <div><span className="text-gray-500">Gross Weight:</span> <span className="font-medium">{selectedDeposit.inspection.grossWeightGrams}g</span></div>
+                      )}
+                      {selectedDeposit.inspection.netWeightGrams && (
+                        <div><span className="text-gray-500">Net Weight:</span> <span className="font-medium">{selectedDeposit.inspection.netWeightGrams}g</span></div>
+                      )}
+                      {selectedDeposit.inspection.creditedGrams && (
+                        <div><span className="text-gray-500">Credited:</span> <span className="font-bold text-green-600">{selectedDeposit.inspection.creditedGrams}g</span></div>
+                      )}
+                      {selectedDeposit.inspection.purityResult && (
+                        <div><span className="text-gray-500">Purity:</span> <span className="font-medium">{selectedDeposit.inspection.purityResult}</span></div>
+                      )}
+                      {selectedDeposit.inspection.assayMethod && (
+                        <div><span className="text-gray-500">Assay Method:</span> <span className="font-medium">{selectedDeposit.inspection.assayMethod}</span></div>
+                      )}
+                    </div>
+                    {(selectedDeposit.inspection.assayFeeUsd || selectedDeposit.inspection.refiningFeeUsd || selectedDeposit.inspection.handlingFeeUsd) && (
+                      <div className="mt-3 pt-2 border-t border-green-200 grid grid-cols-3 gap-3 text-sm">
+                        {selectedDeposit.inspection.assayFeeUsd && (
+                          <div><span className="text-gray-500">Assay Fee:</span> <span className="font-medium">${selectedDeposit.inspection.assayFeeUsd}</span></div>
+                        )}
+                        {selectedDeposit.inspection.refiningFeeUsd && (
+                          <div><span className="text-gray-500">Refining Fee:</span> <span className="font-medium">${selectedDeposit.inspection.refiningFeeUsd}</span></div>
+                        )}
+                        {selectedDeposit.inspection.handlingFeeUsd && (
+                          <div><span className="text-gray-500">Handling Fee:</span> <span className="font-medium">${selectedDeposit.inspection.handlingFeeUsd}</span></div>
+                        )}
+                      </div>
+                    )}
+                    {selectedDeposit.inspection.notes && (
+                      <div className="mt-2 p-2 bg-white rounded text-sm"><span className="text-gray-500">Notes:</span> {selectedDeposit.inspection.notes}</div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
               
+              {/* Negotiation */}
               {selectedDeposit.requiresNegotiation && (
                 <div>
-                  <Label className="text-gray-500 mb-2 block">Negotiation</Label>
+                  <Label className="text-gray-500 text-xs mb-2 block">Negotiation</Label>
                   <Card className="bg-amber-50 border-amber-200">
                     <CardContent className="py-3 space-y-2">
                       {(selectedDeposit as any).usdEstimateFromUser && (
@@ -486,6 +624,14 @@ export default function PhysicalDepositsAdmin() {
                       )}
                     </CardContent>
                   </Card>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {(selectedDeposit as any).adminNotes && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <Label className="text-purple-700 text-xs font-semibold block mb-1">Admin Notes</Label>
+                  <p className="text-sm text-gray-700">{(selectedDeposit as any).adminNotes}</p>
                 </div>
               )}
             </div>
