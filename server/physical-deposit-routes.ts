@@ -509,9 +509,11 @@ router.get('/admin/deposits', requireAdmin(), async (req: Request, res: Response
     const depositsWithDetails = await Promise.all(deposits.map(async (deposit) => {
       const items = await storage.getDepositItems(deposit.id);
       const user = await storage.getUser(deposit.userId);
+      const negotiations = await storage.getNegotiationMessages(deposit.id);
       return { 
         ...deposit, 
         items,
+        negotiations,
         user: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : null
       };
     }));
