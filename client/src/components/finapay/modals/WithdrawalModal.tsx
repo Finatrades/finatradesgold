@@ -189,6 +189,17 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                       data-testid="input-withdrawal-amount"
                     />
                   </div>
+                  {/* Show gold grams being withdrawn */}
+                  {amount && parseFloat(amount) > 0 && goldPricePerGram > 0 && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3 animate-in fade-in">
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-700 text-sm font-medium">Gold Amount</span>
+                        <span className="text-lg font-bold text-purple-700">
+                          {(parseFloat(amount) / goldPricePerGram).toFixed(4)}g
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {amount && parseFloat(amount) > walletBalance && (
                     <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
                       <span className="text-red-500">⚠️</span>
