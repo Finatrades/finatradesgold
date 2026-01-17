@@ -107,17 +107,10 @@ function MyPhysicalDeposits() {
       }
       console.log('[FinaVault] Sending POST with body:', body);
       
-      const res = await fetch(`/api/physical-deposits/deposits/${selectedDeposit.id}/respond`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to respond');
-      }
+      // Use apiRequest which handles CSRF token automatically
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', `/api/physical-deposits/deposits/${selectedDeposit.id}/respond`, body);
+      console.log('[FinaVault] Response received:', res.status);
       
       toast({
         title: action === 'ACCEPT' ? 'Offer Accepted!' : action === 'COUNTER' ? 'Counter Offer Sent' : 'Offer Rejected',
@@ -133,6 +126,7 @@ function MyPhysicalDeposits() {
       setCounterValue('');
       refetch();
     } catch (err: any) {
+      console.log('[FinaVault] Error responding:', err.message);
       toast({
         title: 'Error',
         description: err.message || 'Failed to respond to offer',
