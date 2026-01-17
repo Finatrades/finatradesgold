@@ -9,14 +9,15 @@ import { ArrowUpRight, CheckCircle2, DollarSign, Loader2, Building2, CreditCard 
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
+import { useDualWalletBalance } from '@/hooks/useDualWallet';
 
 interface WithdrawalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  walletBalance: number;
+  walletBalance?: number; // Made optional - we now fetch from dual wallet
 }
 
-export default function WithdrawalModal({ isOpen, onClose, walletBalance }: WithdrawalModalProps) {
+export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'form' | 'submitted'>('form');
   const [amount, setAmount] = useState('');
@@ -30,6 +31,16 @@ export default function WithdrawalModal({ isOpen, onClose, walletBalance }: With
   const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
+  
+  // Fetch actual dual wallet balance (LGPW/FGPW)
+  const { data: dualBalance, isLoading: balanceLoading } = useDualWalletBalance(user?.id);
+  
+  // Calculate available balance based on selected wallet type
+  const availableGrams = selectedWalletType === 'LGPW' 
+    ? (dualBalance?.mpgw?.availableGrams || 0)
+    : (dualBalance?.fpgw?.availableGrams || 0);
+  const goldPricePerGram = dualBalance?.goldPricePerGram || 0;
+  const walletBalance = availableGrams * goldPricePerGram;
 
   useEffect(() => {
     if (isOpen) {
