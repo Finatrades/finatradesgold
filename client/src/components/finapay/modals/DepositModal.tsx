@@ -1353,25 +1353,25 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 {/* Bank Details - Vertical Stack for Maximum Readability */}
-                <div className="relative space-y-4">
+                <div className="relative space-y-3">
                   {/* Beneficiary - Full Width */}
                   <div className="group">
-                    <span className="text-base text-amber-400 uppercase tracking-wider font-bold block mb-2">BENEFICIARY NAME</span>
-                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-amber-500/50 hover:bg-white/15 transition-colors">
-                      <span className="font-bold text-2xl text-white leading-tight">{selectedAccount.accountName}</span>
-                      <Button variant="ghost" size="icon" className="h-12 w-12 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-xl" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
-                        <Copy className="w-6 h-6" />
+                    <span className="text-xs text-amber-400 uppercase tracking-wider font-semibold block mb-1.5">BENEFICIARY NAME</span>
+                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/40 hover:bg-white/15 transition-colors">
+                      <span className="font-semibold text-lg text-white leading-tight">{selectedAccount.accountName}</span>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
+                        <Copy className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Account Number - Full Width */}
                   <div className="group">
-                    <span className="text-base text-amber-400 uppercase tracking-wider font-bold block mb-2">ACCOUNT NUMBER</span>
-                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-amber-500/50 hover:bg-white/15 transition-colors">
-                      <span className="font-mono text-3xl font-black text-amber-300 tracking-wider">{selectedAccount.accountNumber}</span>
-                      <Button variant="ghost" size="icon" className="h-12 w-12 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-xl" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
-                        <Copy className="w-6 h-6" />
+                    <span className="text-xs text-amber-400 uppercase tracking-wider font-semibold block mb-1.5">ACCOUNT NUMBER</span>
+                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/40 hover:bg-white/15 transition-colors">
+                      <span className="font-mono text-xl font-bold text-amber-300 tracking-wide">{selectedAccount.accountNumber}</span>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
+                        <Copy className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -1379,11 +1379,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {/* SWIFT Code - Full Width */}
                   {selectedAccount.swiftCode && (
                     <div className="group">
-                      <span className="text-base text-amber-400 uppercase tracking-wider font-bold block mb-2">SWIFT CODE</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-amber-500/50 hover:bg-white/15 transition-colors">
-                        <span className="font-mono text-3xl font-black text-white tracking-widest">{selectedAccount.swiftCode}</span>
-                        <Button variant="ghost" size="icon" className="h-12 w-12 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-xl" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
-                          <Copy className="w-6 h-6" />
+                      <span className="text-xs text-amber-400 uppercase tracking-wider font-semibold block mb-1.5">SWIFT CODE</span>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/40 hover:bg-white/15 transition-colors">
+                        <span className="font-mono text-xl font-bold text-white tracking-widest">{selectedAccount.swiftCode}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -1392,11 +1392,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {/* IBAN - Full Width with Wrap */}
                   {selectedAccount.iban && (
                     <div className="group">
-                      <span className="text-base text-amber-400 uppercase tracking-wider font-bold block mb-2">IBAN</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-amber-500/50 hover:bg-white/15 transition-colors">
-                        <span className="font-mono text-xl font-black text-amber-300 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
-                        <Button variant="ghost" size="icon" className="h-12 w-12 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-xl ml-3" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
-                          <Copy className="w-6 h-6" />
+                      <span className="text-xs text-amber-400 uppercase tracking-wider font-semibold block mb-1.5">IBAN</span>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/40 hover:bg-white/15 transition-colors">
+                        <span className="font-mono text-base font-bold text-amber-300 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-lg ml-2" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -1405,11 +1405,11 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {/* Routing Number - Full Width */}
                   {selectedAccount.routingNumber && (
                     <div className="group">
-                      <span className="text-base text-amber-400 uppercase tracking-wider font-bold block mb-2">ROUTING NUMBER</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-amber-500/50 hover:bg-white/15 transition-colors">
-                        <span className="font-mono text-3xl font-black text-white tracking-wider">{selectedAccount.routingNumber}</span>
-                        <Button variant="ghost" size="icon" className="h-12 w-12 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-xl" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
-                          <Copy className="w-6 h-6" />
+                      <span className="text-xs text-amber-400 uppercase tracking-wider font-semibold block mb-1.5">ROUTING NUMBER</span>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-amber-500/40 hover:bg-white/15 transition-colors">
+                        <span className="font-mono text-xl font-bold text-white tracking-wide">{selectedAccount.routingNumber}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-amber-500/20 text-amber-400 hover:text-white hover:bg-amber-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
