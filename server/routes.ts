@@ -8706,12 +8706,48 @@ ${message}
         }
       }
 
-      // Check if user has sufficient vault holdings
-      const holdings = await storage.getUserVaultHoldings(userId);
-      const totalVaultGold = holdings.reduce((sum, h) => sum + parseFloat(h.goldGrams), 0);
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
       
-      if (totalVaultGold < parseFloat(goldGrams)) {
-        return res.status(400).json({ message: "Insufficient vault holdings" });
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
+      
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
+      
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
+      
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
+      
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
+      // Check if user has sufficient gold balance using spend-guard
+      const balanceSummary = await getBalanceSummary(userId);
+      const totalAvailableGold = balanceSummary.mpgw.availableGrams + balanceSummary.fpgw.availableGrams;
+      
+      if (totalAvailableGold < parseFloat(goldGrams)) {
+        return res.status(400).json({ message: `Insufficient gold balance. You have ${totalAvailableGold.toFixed(4)}g available.` });
+      }
       }
 
       const referenceNumber = storage.generateVaultWithdrawalReferenceNumber();
