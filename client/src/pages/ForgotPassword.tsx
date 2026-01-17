@@ -126,7 +126,7 @@ export default function ForgotPassword() {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all"
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 h-12 text-lg font-bold rounded-xl shadow-lg transition-all"
                 data-testid="button-send-reset-link"
               >
                 {isLoading ? "Sending..." : (
