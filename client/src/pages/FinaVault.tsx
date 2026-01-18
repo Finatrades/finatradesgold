@@ -262,14 +262,22 @@ function MyPhysicalDeposits() {
                         <span className="capitalize">{deposit.depositType?.toLowerCase().replace('_', ' ')}</span>
                         {' • '}
                         <span>{parseFloat(deposit.totalDeclaredWeightGrams).toFixed(4)} g declared</span>
-                        {deposit.finalCreditedGrams && (
+                        {/* Show credited grams from final approval OR inspection summary */}
+                        {deposit.finalCreditedGrams ? (
                           <>
                             {' • '}
                             <span className="text-green-600 font-medium">
                               {parseFloat(deposit.finalCreditedGrams).toFixed(4)} g credited
                             </span>
                           </>
-                        )}
+                        ) : deposit.inspectionSummary?.creditedGrams ? (
+                          <>
+                            {' • '}
+                            <span className="text-amber-600 font-medium">
+                              {parseFloat(deposit.inspectionSummary.creditedGrams).toFixed(4)} g (pending approval)
+                            </span>
+                          </>
+                        ) : null}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Submitted {formatDistanceToNow(new Date(deposit.createdAt))} ago
@@ -280,6 +288,12 @@ function MyPhysicalDeposits() {
                         <Button size="sm" variant="outline" className="border-orange-300 text-orange-600">
                           View Offer
                         </Button>
+                      )}
+                      {deposit.status === 'READY_FOR_PAYMENT' && (
+                        <div className="flex items-center gap-1 text-indigo-600">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-sm font-medium">Pending</span>
+                        </div>
                       )}
                       {deposit.status === 'APPROVED' && (
                         <div className="flex items-center gap-1 text-green-600">

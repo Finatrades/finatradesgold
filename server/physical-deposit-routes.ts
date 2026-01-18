@@ -282,12 +282,26 @@ router.get('/deposits', async (req: Request, res: Response) => {
     const deposits = await storage.getUserPhysicalDeposits(userId);
     console.log('[Physical Deposits] Found deposits count:', deposits.length);
 
-    const depositsWithItems = await Promise.all(deposits.map(async (deposit) => {
+    const depositsWithDetails = await Promise.all(deposits.map(async (deposit) => {
       const items = await storage.getDepositItems(deposit.id);
-      return { ...deposit, items };
+      // Include inspection data for user to see credited grams after inspection
+      const inspection = await storage.getDepositInspection(deposit.id);
+      return { 
+        ...deposit, 
+        items,
+        // Include inspection summary for display (credited grams, purity, fees)
+        inspectionSummary: inspection ? {
+          creditedGrams: inspection.creditedGrams,
+          grossWeightGrams: inspection.grossWeightGrams,
+          netWeightGrams: inspection.netWeightGrams,
+          purityResult: inspection.purityResult,
+          totalFeesUsd: inspection.totalFeesUsd,
+          inspectedAt: inspection.inspectedAt,
+        } : null,
+      };
     }));
 
-    res.json({ deposits: depositsWithItems });
+    res.json({ deposits: depositsWithDetails });
   } catch (error) {
     console.error('Error fetching deposits:', error);
     res.status(500).json({ error: 'Failed to fetch deposits' });
