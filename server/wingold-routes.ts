@@ -2,9 +2,10 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { WingoldIntegrationService } from './wingold-integration-service';
 import { WingoldUserSyncService } from './wingold-user-sync-service';
 import { wingoldSecurityMiddleware, wingoldSecurityPostProcessor, WingoldSecurityService } from './wingold-security';
+import { getGoldPrice, getGoldPricePerGram } from './gold-price-service';
 import { db } from './db';
 import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations, wingoldProducts, users } from '@shared/schema';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, count } from 'drizzle-orm';
 
 const router = Router();
 
@@ -62,9 +63,7 @@ router.post('/orders', async (req: Request, res: Response) => {
 
     const totalGrams = (gramsPerBar * barCount).toFixed(6);
 
-    const goldPriceRes = await fetch(`http://localhost:5000/api/gold-price`);
-    const goldPriceData = await goldPriceRes.json();
-    const goldPricePerGram = goldPriceData?.pricePerGram || 142;
+    const goldPricePerGram = await getGoldPricePerGram();
     const usdAmount = (parseFloat(totalGrams) * goldPricePerGram).toFixed(2);
 
     const { orderId, referenceNumber } = await WingoldIntegrationService.createPurchaseOrder({
@@ -582,6 +581,13 @@ router.get('/products', async (req: Request, res: Response) => {
   try {
     const { inStock, category, refresh } = req.query;
     
+    // Check if database has any products - seed if empty (production safety)
+    const productCount = await db.select({ count: count() }).from(wingoldProducts);
+    if (productCount[0]?.count === 0) {
+      console.log('[Wingold] No products in database, seeding defaults...');
+      await seedDefaultProducts();
+    }
+    
     // Check if we should refresh from Wingold API
     if (refresh === 'true' || !(await hasRecentProducts())) {
       await syncProductsFromWingold(inStock === 'true', category as string);
@@ -596,14 +602,14 @@ router.get('/products', async (req: Request, res: Response) => {
     
     const products = await query.orderBy(wingoldProducts.weightGrams);
     
-    // Get current gold price for live pricing
-    const goldPriceRes = await fetch('http://localhost:5000/api/gold-price');
-    const goldPriceData = await goldPriceRes.json();
+    // Get current gold price using internal service (works in production)
+    const goldPriceData = await getGoldPrice();
+    const pricePerGram = goldPriceData.pricePerGram;
     
     res.json({
       timestamp: new Date().toISOString(),
       spotPrice: goldPriceData.pricePerOunce,
-      pricePerGram: goldPriceData.pricePerGram?.toFixed(4),
+      pricePerGram: pricePerGram.toFixed(4),
       currency: 'USD',
       totalProducts: products.length,
       products: products.map(p => ({
@@ -612,8 +618,8 @@ router.get('/products', async (req: Request, res: Response) => {
         weight: p.weight,
         weightGrams: p.weightGrams,
         purity: p.purity,
-        livePrice: (parseFloat(p.weightGrams || '0') * goldPriceData.pricePerGram).toFixed(2),
-        livePriceAed: (parseFloat(p.weightGrams || '0') * goldPriceData.pricePerGram * 3.67).toFixed(2),
+        livePrice: (parseFloat(p.weightGrams || '0') * pricePerGram).toFixed(2),
+        livePriceAed: (parseFloat(p.weightGrams || '0') * pricePerGram * 3.67).toFixed(2),
         stock: p.stock,
         inStock: p.inStock,
         imageUrl: p.imageUrl,
