@@ -229,88 +229,112 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            {/* Desktop: Original grid layout - PhonePe Style */}
+            {/* Desktop: Premium Gradient KPI Cards */}
             <div className="hidden md:grid grid-cols-3 gap-5">
-              <Card className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">Gold Storage</p>
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                    <Database className="w-5 h-5 text-purple-600" />
+              {/* Gold Storage - Purple Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-purple-200">Gold Storage</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Database className="w-4 h-4 text-white" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
+                  </p>
+                  <p className="text-sm text-purple-200 mt-2">Deposited in FinaVault</p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                  {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">Deposited in FinaVault</p>
-              </Card>
+              </div>
               
-              <Card className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">Gold Value (USD)</p>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <span className="text-emerald-600 text-lg font-bold">$</span>
+              {/* Gold Value USD - Emerald Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-emerald-100">Gold Value (USD)</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <span className="text-white text-lg font-bold">$</span>
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
+                  </p>
+                  <p className="text-sm text-emerald-100 mt-2">Worth in USD</p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                  {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">Worth in USD</p>
-              </Card>
+              </div>
               
-              <Card className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">Gold Value (AED)</p>
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-600 text-sm font-bold">AED</span>
+              {/* Gold Value AED - Blue Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-blue-100">Gold Value (AED)</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">AED</span>
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
+                  </p>
+                  <p className="text-sm text-blue-100 mt-2">Worth in AED</p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                  {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">Worth in AED</p>
-              </Card>
+              </div>
             </div>
             
-            {/* Desktop Row 2 - Total Portfolio, BNSL Invested, Total Profit - PhonePe Style */}
+            {/* Desktop Row 2 - Premium Gradient Cards */}
             <div className="hidden md:grid grid-cols-3 gap-5">
-              <Card className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">Total Portfolio</p>
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-indigo-600" />
+              {/* Total Portfolio - Indigo/Violet Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-700 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-indigo-100">Total Portfolio</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-white" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                  </p>
+                  <p className="text-sm text-indigo-100 mt-2">Overall Investment</p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">Overall Investment</p>
-              </Card>
+              </div>
               
-              <Card className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">BNSL Invested</p>
-                  <div className="w-10 h-10 rounded-xl bg-fuchsia-100 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-fuchsia-600" />
+              {/* BNSL Invested - Fuchsia/Pink Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 via-pink-600 to-rose-700 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-fuchsia-100">BNSL Invested</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
+                  </p>
+                  <p className="text-sm text-fuchsia-100 mt-2">In active plans</p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                  {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">In active plans</p>
-              </Card>
+              </div>
               
-              <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-600">Total Profit</p>
-                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                    <ArrowUpRight className="w-5 h-5 text-green-600" />
+              {/* Total Profit - Green Gradient */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-green-100">Total Profit</p>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <ArrowUpRight className="w-4 h-4 text-white" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
+                  </p>
+                  <p className="text-sm text-green-100 mt-2">ROI from BNSL</p>
                 </div>
-                <p className="text-3xl font-bold text-green-600 tracking-tight">
-                  {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">ROI from BNSL</p>
-              </Card>
+              </div>
             </div>
           </div>
           
