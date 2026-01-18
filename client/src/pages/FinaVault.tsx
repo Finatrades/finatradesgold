@@ -1120,50 +1120,44 @@ export default function FinaVault() {
 
           {/* Dual-Wallet Breakdown (LGPW/FGPW) */}
           {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
-            <div className="mt-6 pt-6 border-t border-border">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Wallet Type Breakdown</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-4 pt-4 border-t border-border">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Wallet Type Breakdown</h3>
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
                 
                 {/* LGPW - Live Gold Price Wallet */}
-                <div className="relative p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white overflow-hidden" data-testid="card-mpgw-balance">
-                  <div className="absolute right-2 bottom-2 opacity-10">
-                    <TrendingUp className="w-16 h-16 text-amber-500" />
+                <div className="relative p-3 rounded-lg border border-amber-200 bg-gradient-to-br from-amber-50 to-white overflow-hidden" data-testid="card-mpgw-balance">
+                  <div className="absolute right-1 bottom-1 opacity-10">
+                    <TrendingUp className="w-10 h-10 text-amber-500" />
                   </div>
                   <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">LGPW - Market Price</p>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                      <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">LGPW - Market Price</p>
                     </div>
-                    <p className="text-2xl font-bold text-amber-600 mb-0.5">
+                    <p className="text-lg font-bold text-amber-600">
                       {mpgwAvailableGrams.toFixed(4)}g
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      ≈ ${(mpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Reference
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Value follows live market price
+                    <p className="text-xs text-muted-foreground">
+                      ≈ ${(mpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
 
                 {/* FGPW - Fixed Gold Price Wallet */}
-                <div className="relative p-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden" data-testid="card-fpgw-balance">
-                  <div className="absolute right-2 bottom-2 opacity-10">
-                    <Lock className="w-16 h-16 text-blue-500" />
+                <div className="relative p-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden" data-testid="card-fpgw-balance">
+                  <div className="absolute right-1 bottom-1 opacity-10">
+                    <Lock className="w-10 h-10 text-blue-500" />
                   </div>
                   <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">FGPW - Fixed Price</p>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">FGPW - Fixed Price</p>
                     </div>
-                    <p className="text-2xl font-bold text-blue-600 mb-0.5">
+                    <p className="text-lg font-bold text-blue-600">
                       {fpgwAvailableGrams.toFixed(4)}g
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      ≈ ${(fpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Reference
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Value locked at purchase price
+                    <p className="text-xs text-muted-foreground">
+                      ≈ ${(fpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
