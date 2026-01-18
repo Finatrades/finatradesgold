@@ -741,13 +741,22 @@ export default function PhysicalDepositsAdmin() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Purity Result</Label>
+                <Label>Purity Result (Fineness: 0-999.9)</Label>
                 <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="999.9"
                   value={inspectForm.purityResult}
                   onChange={(e) => setInspectForm({ ...inspectForm, purityResult: e.target.value })}
-                  placeholder="e.g. 999.9"
+                  placeholder="e.g. 999.9 (24K = 999.9, 22K = 916.7)"
+                  className={inspectForm.purityResult && parseFloat(inspectForm.purityResult) > 999.9 ? 'border-red-500' : ''}
                   data-testid="input-purity-result"
                 />
+                {inspectForm.purityResult && parseFloat(inspectForm.purityResult) > 999.9 && (
+                  <p className="text-xs text-red-500">Purity must be between 0-999.9</p>
+                )}
+                <p className="text-xs text-gray-400">Fineness scale: 999.9 = 99.99% pure (24K), 916.7 = 91.67% (22K)</p>
               </div>
               <div className="space-y-2">
                 <Label>Assay Method</Label>
@@ -797,41 +806,128 @@ export default function PhysicalDepositsAdmin() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Credited Grams (Final)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Credited Grams (Final)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => {
+                    const netWeight = parseFloat(inspectForm.netWeightGrams) || 0;
+                    const purity = parseFloat(inspectForm.purityResult) || 0;
+                    if (netWeight > 0 && purity > 0 && purity <= 999.9) {
+                      const calculated = (netWeight * purity / 999.9).toFixed(4);
+                      setInspectForm({ ...inspectForm, creditedGrams: calculated });
+                    }
+                  }}
+                  disabled={!inspectForm.netWeightGrams || !inspectForm.purityResult || parseFloat(inspectForm.purityResult) > 999.9}
+                  data-testid="button-auto-calc"
+                >
+                  Auto Calculate
+                </Button>
+              </div>
               <Input
                 type="number"
                 step="0.0001"
                 value={inspectForm.creditedGrams}
                 onChange={(e) => setInspectForm({ ...inspectForm, creditedGrams: e.target.value })}
+                className={parseFloat(inspectForm.creditedGrams) > parseFloat(inspectForm.netWeightGrams) ? 'border-red-500' : ''}
                 data-testid="input-credited-grams"
               />
+              {parseFloat(inspectForm.creditedGrams) > parseFloat(inspectForm.netWeightGrams) && (
+                <p className="text-xs text-red-500">Credited grams cannot exceed net weight</p>
+              )}
             </div>
             
-            {/* Summary Card - Shows credited gold and USD equivalent */}
+            {/* Summary Card - Shows credited gold, fees, and USD equivalent */}
             {inspectForm.creditedGrams && parseFloat(inspectForm.creditedGrams) > 0 && (
-              <Card className="bg-gradient-to-r from-purple-50 to-amber-50 border-purple-200">
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-700">Credit Summary</span>
-                    <span className="text-xs text-gray-500">@ ${goldPrice?.pricePerGram?.toFixed(2) || '---'}/g</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
-                      <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
-                      <p className="text-xl font-bold text-amber-600">{parseFloat(inspectForm.creditedGrams).toFixed(4)} g</p>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                      <p className="text-xs text-gray-500 mb-1">≈ USD Value</p>
-                      <p className="text-xl font-bold text-green-600">
-                        ${goldPrice?.pricePerGram 
-                          ? (parseFloat(inspectForm.creditedGrams) * goldPrice.pricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                          : '---'}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2 text-center">* USD value is approximate based on current gold rate</p>
-                </CardContent>
-              </Card>
+              (() => {
+                const creditedGrams = parseFloat(inspectForm.creditedGrams) || 0;
+                const pricePerGram = goldPrice?.pricePerGram;
+                const hasPriceData = pricePerGram && pricePerGram > 0;
+                const grossUsdValue = hasPriceData ? creditedGrams * pricePerGram : 0;
+                const assayFee = parseFloat(inspectForm.assayFeeUsd) || 0;
+                const refiningFee = parseFloat(inspectForm.refiningFeeUsd) || 0;
+                const handlingFee = parseFloat(inspectForm.handlingFeeUsd) || 0;
+                const totalFees = assayFee + refiningFee + handlingFee;
+                const netUsdValue = hasPriceData ? grossUsdValue - totalFees : 0;
+                const netWeight = parseFloat(inspectForm.netWeightGrams) || 0;
+                const purity = parseFloat(inspectForm.purityResult);
+                const hasValidation = creditedGrams > netWeight && netWeight > 0;
+                const hasPurityError = !isNaN(purity) && purity > 999.9;
+                const hasNegativeFees = assayFee < 0 || refiningFee < 0 || handlingFee < 0;
+                
+                return (
+                  <Card className={`border-2 ${hasValidation || hasPurityError || hasNegativeFees ? 'bg-red-50 border-red-300' : 'bg-gradient-to-r from-purple-50 to-amber-50 border-purple-200'}`}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-purple-700">Credit Summary</span>
+                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                          @ {hasPriceData ? `$${pricePerGram.toFixed(2)}/g` : '---'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
+                          <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
+                          <p className="text-lg font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
+                        </div>
+                        <div className="text-center p-3 bg-white rounded-lg border border-blue-200">
+                          <p className="text-xs text-gray-500 mb-1">Gross USD Value</p>
+                          <p className="text-lg font-bold text-blue-600">
+                            {hasPriceData 
+                              ? `$${grossUsdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : '---'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {totalFees > 0 && (
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 mb-3 space-y-1">
+                          <p className="text-xs font-medium text-gray-600 mb-2">Fee Deductions:</p>
+                          {assayFee > 0 && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Assay Fee:</span>
+                              <span className="text-red-500">-${assayFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          )}
+                          {refiningFee > 0 && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Refining Fee:</span>
+                              <span className="text-red-500">-${refiningFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          )}
+                          {handlingFee > 0 && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Handling Fee:</span>
+                              <span className="text-red-500">-${handlingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs font-medium pt-1 border-t">
+                            <span className="text-gray-600">Total Fees:</span>
+                            <span className="text-red-600">-${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`text-center p-3 rounded-lg border-2 ${!hasPriceData ? 'bg-gray-50 border-gray-300' : netUsdValue >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+                        <p className="text-xs text-gray-500 mb-1">Net USD Value</p>
+                        <p className={`text-xl font-bold ${!hasPriceData ? 'text-gray-400' : netUsdValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {hasPriceData 
+                            ? `$${netUsdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : '---'}
+                        </p>
+                      </div>
+
+                      {hasNegativeFees && (
+                        <p className="text-xs text-red-500 mt-2 text-center">⚠️ Fees cannot be negative</p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-2 text-center">* USD values are approximate based on current gold rate</p>
+                    </CardContent>
+                  </Card>
+                );
+              })()
             )}
 
             <div className="space-y-2">
@@ -848,7 +944,25 @@ export default function PhysicalDepositsAdmin() {
             <Button variant="outline" onClick={() => setDialogMode(null)}>Cancel</Button>
             <Button 
               onClick={() => selectedDeposit && inspectMutation.mutate({ id: selectedDeposit.id, data: inspectForm })}
-              disabled={!inspectForm.grossWeightGrams || !inspectForm.netWeightGrams || !inspectForm.creditedGrams || inspectMutation.isPending}
+              disabled={(() => {
+                const grossWeight = parseFloat(inspectForm.grossWeightGrams);
+                const netWeight = parseFloat(inspectForm.netWeightGrams);
+                const purity = parseFloat(inspectForm.purityResult);
+                const creditedGrams = parseFloat(inspectForm.creditedGrams);
+                const assayFee = parseFloat(inspectForm.assayFeeUsd) || 0;
+                const refiningFee = parseFloat(inspectForm.refiningFeeUsd) || 0;
+                const handlingFee = parseFloat(inspectForm.handlingFeeUsd) || 0;
+                
+                return (
+                  isNaN(grossWeight) || grossWeight <= 0 ||
+                  isNaN(netWeight) || netWeight <= 0 ||
+                  isNaN(purity) || purity <= 0 || purity > 999.9 ||
+                  isNaN(creditedGrams) || creditedGrams <= 0 ||
+                  creditedGrams > netWeight ||
+                  assayFee < 0 || refiningFee < 0 || handlingFee < 0 ||
+                  inspectMutation.isPending
+                );
+              })()}
               data-testid="button-confirm-inspect"
             >
               Submit Inspection
