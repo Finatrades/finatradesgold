@@ -399,9 +399,9 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
       
       const defaultSecureVault = [{
         id: 'sv-dubai-default',
-        name: 'SecureVault - Dubai',
+        name: 'SecureVault Dubai',
         code: 'SV-DXB',
-        city: 'Dubai',
+        city: 'DMCC',
         country: 'UAE',
         address: 'Dubai Multi Commodities Centre',
         isActive: true
