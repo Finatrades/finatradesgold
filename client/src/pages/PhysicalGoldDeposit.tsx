@@ -246,15 +246,28 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
   const [isUploading, setIsUploading] = useState(false);
 
+  const getCsrfToken = (): string => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : '';
+  };
+
   const uploadPhoto = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
+    const csrfToken = getCsrfToken();
     const res = await fetch('/api/documents/upload', {
       method: 'POST',
       credentials: 'include',
+      headers: {
+        'x-csrf-token': csrfToken,
+      },
       body: formData,
     });
-    if (!res.ok) throw new Error('Failed to upload photo');
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Upload error:', res.status, errText);
+      throw new Error('Failed to upload photo');
+    }
     const data = await res.json();
     return data.url;
   };
