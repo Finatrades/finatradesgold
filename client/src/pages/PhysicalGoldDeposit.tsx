@@ -260,6 +260,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       credentials: 'include',
       headers: {
         'x-csrf-token': csrfToken,
+        'x-requested-with': 'XMLHttpRequest',
       },
       body: formData,
     });
