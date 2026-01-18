@@ -391,6 +391,14 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or PHYSICAL.' });
     }
 
+    // SECURITY: Prevent self-approval - admin cannot approve their own deposits
+    if (adminUser && userId === adminUser.id) {
+      return res.status(403).json({ 
+        error: 'Self-approval not allowed. An admin cannot approve their own deposits.',
+        code: 'SELF_APPROVAL_BLOCKED'
+      });
+    }
+
     // Calculate fees and gold price (outside transaction - read operations)
     const { getGoldPricePerGram } = await import('./gold-price-service');
     goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);

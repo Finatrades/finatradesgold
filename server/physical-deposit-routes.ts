@@ -913,6 +913,14 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       return res.status(404).json({ error: 'Deposit not found' });
     }
 
+    // SECURITY: Prevent self-approval - admin cannot approve their own deposits
+    if (adminId && deposit.userId === adminId) {
+      return res.status(403).json({ 
+        error: 'Self-approval not allowed. An admin cannot approve their own deposits.',
+        code: 'SELF_APPROVAL_BLOCKED'
+      });
+    }
+
     // GOLDEN RULE ENFORCEMENT: Strict status validation
     // UFM Flow: Accept READY_FOR_PAYMENT status (preferred unified flow)
     // Legacy Flow: Accept INSPECTION (GOLD_BAR/COIN) or AGREED (RAW/OTHER) for backward compatibility
