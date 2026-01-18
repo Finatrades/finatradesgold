@@ -410,17 +410,17 @@ function MyPhysicalDeposits() {
                   <p className="text-xs text-muted-foreground mb-2">Your Documents</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedDeposit.invoiceUrl && (
-                      <a href={selectedDeposit.invoiceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
+                      <a href={toProxyUrl(selectedDeposit.invoiceUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
                         <FileText className="w-4 h-4" /> Invoice
                       </a>
                     )}
                     {selectedDeposit.assayCertificateUrl && (
-                      <a href={selectedDeposit.assayCertificateUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
+                      <a href={toProxyUrl(selectedDeposit.assayCertificateUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
                         <FileText className="w-4 h-4" /> Assay Certificate
                       </a>
                     )}
                     {selectedDeposit.additionalDocuments?.map((doc: any, idx: number) => (
-                      <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
                         <FileText className="w-4 h-4" /> {doc.name}
                       </a>
                     ))}
