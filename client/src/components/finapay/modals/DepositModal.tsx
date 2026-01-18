@@ -919,8 +919,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         }}
                         className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 transition-all"
                       >
-                        <span className="text-lg">🇦🇪</span>
-                        <span className="font-semibold text-foreground">AED</span>
+                        <span className="font-bold text-teal-600">AED</span>
+                        <span className="text-xs text-muted-foreground">Dirham</span>
                       </button>
                     )}
                     
@@ -944,8 +944,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         }}
                         className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all"
                       >
-                        <span className="text-lg">🇺🇸</span>
-                        <span className="font-semibold text-foreground">USD</span>
+                        <span className="font-bold text-blue-600">USD</span>
+                        <span className="text-xs text-muted-foreground">Dollar</span>
                       </button>
                     )}
                   </div>
@@ -1623,8 +1623,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 transition-all"
                           data-testid="button-method-bank-aed"
                         >
-                          <span className="text-lg">🇦🇪</span>
-                          <span className="font-semibold text-foreground">AED</span>
+                          <span className="font-bold text-teal-600">AED</span>
+                          <span className="text-xs text-muted-foreground">Dirham</span>
                         </button>
                       )}
                       
@@ -1650,8 +1650,8 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                           className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all"
                           data-testid="button-method-bank-usd"
                         >
-                          <span className="text-lg">🇺🇸</span>
-                          <span className="font-semibold text-foreground">USD</span>
+                          <span className="font-bold text-blue-600">USD</span>
+                          <span className="text-xs text-muted-foreground">Dollar</span>
                         </button>
                       )}
                     </div>
