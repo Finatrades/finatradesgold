@@ -52,11 +52,11 @@ export default function FinaVaultHistory() {
   };
 
   const { data: depositsData, isLoading: depositsLoading } = useQuery({
-    queryKey: ['vault-deposits', user?.id],
+    queryKey: ['physical-deposits', user?.id],
     queryFn: async () => {
-      if (!user?.id) return { requests: [] };
-      const res = await fetch(`/api/vault/deposits/${user.id}`);
-      if (!res.ok) return { requests: [] };
+      if (!user?.id) return { deposits: [] };
+      const res = await fetch(`/api/physical-deposits/deposits`);
+      if (!res.ok) return { deposits: [] };
       return res.json();
     },
     enabled: !!user?.id
@@ -112,14 +112,14 @@ export default function FinaVaultHistory() {
   }, [ledgerEntries]);
 
   const allTransactions: VaultTransaction[] = [
-    ...(depositsData?.requests || []).map((d: any) => ({
+    ...(depositsData?.deposits || []).map((d: any) => ({
       id: d.id,
       type: 'deposit' as const,
-      goldGrams: d.totalDeclaredWeightGrams,
+      goldGrams: d.finalCreditedGrams || d.inspectionSummary?.creditedGrams || d.totalDeclaredWeightGrams,
       status: d.status,
       createdAt: d.createdAt,
       referenceNumber: d.referenceNumber,
-      vaultLocation: d.vaultLocation,
+      vaultLocation: d.depositType,
     })),
     ...(withdrawalsData?.requests || []).map((w: any) => ({
       id: w.id,
@@ -132,12 +132,17 @@ export default function FinaVaultHistory() {
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+    const s = status.toLowerCase().replace(/_/g, '');
+    switch (s) {
       case 'completed':
       case 'approved':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'pending':
-      case 'in_progress':
+      case 'inprogress':
+      case 'submitted':
+      case 'underreview':
+      case 'received':
+      case 'readyforpayment':
         return <Clock className="w-4 h-4 text-purple-500" />;
       case 'rejected':
       case 'cancelled':
@@ -148,13 +153,19 @@ export default function FinaVaultHistory() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    const s = status.toLowerCase().replace(/_/g, '');
+    switch (s) {
       case 'completed':
       case 'approved':
         return 'bg-green-100 text-green-700';
       case 'pending':
-      case 'in_progress':
+      case 'inprogress':
+      case 'submitted':
+      case 'underreview':
         return 'bg-purple-100 text-fuchsia-700';
+      case 'received':
+      case 'readyforpayment':
+        return 'bg-amber-100 text-amber-700';
       case 'rejected':
       case 'cancelled':
         return 'bg-red-100 text-red-700';
