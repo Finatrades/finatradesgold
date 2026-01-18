@@ -235,15 +235,29 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
   const [isUploading, setIsUploading] = useState(false);
 
-  const getCsrfToken = (): string => {
+  const ensureCsrfToken = async (): Promise<string> => {
+    // Try to get from cookie first
     const match = document.cookie.match(/csrf_token=([^;]+)/);
-    return match ? match[1] : '';
+    if (match && match[1]) {
+      return match[1];
+    }
+    // Fetch token if not present
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.csrfToken || '';
+      }
+    } catch (e) {
+      console.warn('Failed to fetch CSRF token:', e);
+    }
+    return '';
   };
 
   const uploadPhoto = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
-    const csrfToken = getCsrfToken();
+    const csrfToken = await ensureCsrfToken();
     const res = await fetch('/api/documents/upload', {
       method: 'POST',
       credentials: 'include',
