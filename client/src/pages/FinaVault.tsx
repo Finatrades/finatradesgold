@@ -795,7 +795,7 @@ export default function FinaVault() {
     enabled: !!user?.id
   });
 
-  // Fetch vault ledger history
+  // Fetch vault ledger history - always refetch on mount to ensure fresh data
   const { data: ledgerData } = useQuery({
     queryKey: ['vault-ledger', user?.id],
     queryFn: async () => {
@@ -804,7 +804,9 @@ export default function FinaVault() {
       if (!res.ok) return { entries: [] };
       return res.json();
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    staleTime: 0,
+    refetchOnMount: 'always'
   });
 
   // Fetch user transactions for history display
