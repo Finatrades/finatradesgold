@@ -27,11 +27,43 @@ interface AuditLogEntry {
   timestamp: string;
 }
 
+interface UserInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export default function AuditTrail() {
   const [searchQuery, setSearchQuery] = useState('');
   const [entityFilter, setEntityFilter] = useState<string>('all');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+
+  const { data: usersData } = useQuery<{ users: UserInfo[] }>({
+    queryKey: ['/api/admin/users'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/users');
+      if (!res.ok) throw new Error('Failed to fetch users');
+      return res.json();
+    },
+  });
+
+  const usersMap = React.useMemo(() => {
+    const map: Record<string, UserInfo> = {};
+    (usersData?.users || []).forEach(user => {
+      map[user.id] = user;
+    });
+    return map;
+  }, [usersData]);
+
+  const getActorName = (actorId: string) => {
+    const user = usersMap[actorId];
+    if (user) {
+      return `${user.firstName} ${user.lastName}`.trim() || user.email;
+    }
+    return actorId;
+  };
 
   const { data, isLoading, refetch } = useQuery<{ logs: AuditLogEntry[] }>({
     queryKey: ['/api/admin/audit-logs', entityFilter, actionFilter],
@@ -47,12 +79,16 @@ export default function AuditTrail() {
 
   const logs = data?.logs || [];
 
-  const filteredLogs = logs.filter(log =>
-    log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.entityType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.actionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (log.entityId && log.entityId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredLogs = logs.filter(log => {
+    const actorName = getActorName(log.actor).toLowerCase();
+    return (
+      actorName.includes(searchQuery.toLowerCase()) ||
+      log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.entityType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.actionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (log.entityId && log.entityId.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  });
 
   const entityTypes = [...new Set(logs.map(l => l.entityType))];
   const actionTypes = [...new Set(logs.map(l => l.actionType))];
@@ -79,7 +115,7 @@ export default function AuditTrail() {
   const handleExportCSV = () => {
     exportToCSV(filteredLogs.map(log => ({
       Timestamp: format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-      Actor: log.actor,
+      Actor: getActorName(log.actor),
       Role: log.actorRole,
       Entity: log.entityType,
       EntityID: log.entityId || '-',
@@ -94,7 +130,7 @@ export default function AuditTrail() {
       ['Timestamp', 'Actor', 'Role', 'Entity', 'Action'],
       filteredLogs.map(log => [
         format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm'),
-        log.actor,
+        getActorName(log.actor),
         log.actorRole,
         log.entityType,
         log.actionType,
@@ -249,7 +285,7 @@ export default function AuditTrail() {
                       <TableCell className="text-sm">
                         {format(new Date(log.timestamp), 'MMM d, HH:mm:ss')}
                       </TableCell>
-                      <TableCell className="font-medium">{log.actor}</TableCell>
+                      <TableCell className="font-medium">{getActorName(log.actor)}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{log.actorRole}</Badge>
                       </TableCell>
@@ -304,7 +340,7 @@ export default function AuditTrail() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Actor</p>
-                    <p className="font-medium">{selectedLog.actor}</p>
+                    <p className="font-medium">{getActorName(selectedLog.actor)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Role</p>
