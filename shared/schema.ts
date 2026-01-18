@@ -912,6 +912,11 @@ export const wallets = pgTable("wallets", {
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   // @deprecated - DO NOT USE. Will be removed. Compute EUR from gold × price instead.
   eurBalance: decimal("eur_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  // Legacy currency columns (preserved for production data compatibility)
+  gbpBalance: decimal("gbp_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  aedBalance: decimal("aed_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  chfBalance: decimal("chf_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  sarBalance: decimal("sar_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -947,6 +952,10 @@ export const transactions = pgTable("transactions", {
   exchangeRateId: varchar("exchange_rate_id", { length: 255 }),
   exchangeRateToUsd: decimal("exchange_rate_to_usd", { precision: 18, scale: 6 }),
   goldPriceInPrimaryCurrency: decimal("gold_price_in_primary_currency", { precision: 18, scale: 6 }),
+  amountGbp: decimal("amount_gbp", { precision: 18, scale: 2 }),
+  amountAed: decimal("amount_aed", { precision: 18, scale: 2 }),
+  primaryCurrency: varchar("primary_currency", { length: 10 }),
+  primaryAmount: decimal("primary_amount", { precision: 18, scale: 6 }),
   
   // LGPW/FGPW wallet selection
   goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FGPW'
@@ -1270,6 +1279,8 @@ export const vaultHoldings = pgTable("vault_holdings", {
   storageFeesAnnualPercent: decimal("storage_fees_annual_percent", { precision: 5, scale: 2 }).notNull().default('0.5'),
   purchasePriceUsdPerGram: decimal("purchase_price_usd_per_gram", { precision: 12, scale: 2 }),
   isPhysicallyDeposited: boolean("is_physically_deposited").notNull().default(false),
+  // Legacy column (preserved for production data compatibility)
+  goldWalletType: varchar("gold_wallet_type", { length: 10 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -6072,3 +6083,34 @@ export const insertReportExportSchema = createInsertSchema(reportExports)
   });
 export type InsertReportExport = z.infer<typeof insertReportExportSchema>;
 export type ReportExport = typeof reportExports.$inferSelect;
+
+// ============================================
+// LEGACY TABLES (preserved for production data compatibility)
+// ============================================
+
+export const exchangeRates = pgTable("exchange_rates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  baseCurrency: varchar("base_currency", { length: 10 }).notNull(),
+  targetCurrency: varchar("target_currency", { length: 10 }).notNull(),
+  rate: decimal("rate", { precision: 18, scale: 6 }).notNull(),
+  source: varchar("source", { length: 100 }),
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const supportedCurrencies = pgTable("supported_currencies", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 10 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  symbol: varchar("symbol", { length: 10 }).notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const userSessions = pgTable("user_sessions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  sessionToken: text("session_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
