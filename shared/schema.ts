@@ -6091,10 +6091,16 @@ export type ReportExport = typeof reportExports.$inferSelect;
 export const exchangeRates = pgTable("exchange_rates", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   baseCurrency: varchar("base_currency", { length: 10 }).notNull(),
-  targetCurrency: varchar("target_currency", { length: 10 }).notNull(),
+  targetCurrency: varchar("target_currency", { length: 10 }),
+  quoteCurrency: varchar("quote_currency", { length: 10 }),
   rate: decimal("rate", { precision: 18, scale: 6 }).notNull(),
+  inverseRate: decimal("inverse_rate", { precision: 18, scale: 6 }),
   source: varchar("source", { length: 100 }),
+  provider: varchar("provider", { length: 100 }),
   metadata: json("metadata").$type<Record<string, unknown>>(),
+  validFrom: timestamp("valid_from"),
+  validUntil: timestamp("valid_until"),
+  isActive: boolean("is_active").default(true),
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
