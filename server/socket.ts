@@ -19,7 +19,7 @@ export function getIO(): Server | null {
 
 // Emit ledger sync event to a specific user
 export function emitLedgerEvent(userId: string, event: {
-  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected';
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'physical_deposit_update';
   module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system';
   action: string;
   data?: any;

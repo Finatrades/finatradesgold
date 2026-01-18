@@ -4,6 +4,23 @@ import { z } from 'zod';
 import type { InsertPhysicalDepositRequest, InsertDepositItem, InsertDepositInspection, InsertDepositNegotiationMessage } from '@shared/schema';
 import { sendEmailDirect } from './email';
 import { requireAdmin } from './rbac-middleware';
+import { emitLedgerEvent } from './socket';
+
+// Helper to emit real-time physical deposit status updates
+function emitPhysicalDepositUpdate(userId: string, depositId: string, referenceNumber: string, status: string, data?: any) {
+  emitLedgerEvent(userId, {
+    type: 'physical_deposit_update',
+    module: 'finavault',
+    action: `deposit_${status.toLowerCase()}`,
+    data: {
+      depositId,
+      referenceNumber,
+      status,
+      ...data,
+      timestamp: new Date().toISOString(),
+    }
+  });
+}
 
 // Helper to send physical deposit status notification emails
 async function sendPhysicalDepositStatusEmail(
@@ -585,6 +602,9 @@ router.post('/admin/deposits/:id/review', requireAdmin(), async (req: Request, r
 
     // Send email notification
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'UNDER_REVIEW');
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'UNDER_REVIEW');
 
     res.json({ success: true });
   } catch (error) {
@@ -626,6 +646,9 @@ router.post('/admin/deposits/:id/receive', requireAdmin(), async (req: Request, 
 
     // Send email notification
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'RECEIVED');
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'RECEIVED');
 
     res.json({ success: true });
   } catch (error) {
@@ -717,6 +740,12 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
 
     // Send email notification about inspection completion
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'INSPECTION');
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'INSPECTION', {
+      creditedGrams: parsed.data.creditedGrams,
+      purityResult: parsed.data.purityResult,
+    });
 
     res.json({ success: true, inspectionId: inspection.id, newStatus });
   } catch (error) {
@@ -784,6 +813,13 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
 
     // Send email notification about offer
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'NEGOTIATION');
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'NEGOTIATION', {
+      proposedGrams: parsed.data.proposedGrams,
+      proposedFees: parsed.data.proposedFees,
+      usdOffer: parsed.data.usdOffer,
+    });
 
     res.json({ success: true });
   } catch (error) {
@@ -1061,6 +1097,12 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
 
     // Send approval email notification
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'APPROVED', { creditedGrams });
+    
+    // Real-time WebSocket notification with balance update
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'APPROVED', {
+      creditedGrams,
+      message: `${creditedGrams.toFixed(4)}g gold credited to your wallet`,
+    });
 
     res.json({
       success: true,
@@ -1130,6 +1172,12 @@ router.post('/admin/deposits/:id/send-to-ufm', requireAdmin(), async (req: Reque
 
     // Send notification to user
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'READY_FOR_PAYMENT');
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'READY_FOR_PAYMENT', {
+      creditedGrams,
+      message: 'Your deposit is ready for final processing',
+    });
 
     res.json({ success: true, creditedGrams });
   } catch (error) {
@@ -1173,6 +1221,11 @@ router.post('/admin/deposits/:id/reject', requireAdmin(), async (req: Request, r
 
     // Send rejection email notification
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'REJECTED', { reason: parsed.data.reason });
+    
+    // Real-time WebSocket notification
+    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'REJECTED', {
+      reason: parsed.data.reason,
+    });
 
     res.json({ success: true });
   } catch (error) {
