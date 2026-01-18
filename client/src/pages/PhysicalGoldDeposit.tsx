@@ -155,8 +155,9 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   
-  // Optional USD estimate for negotiation
+  // Optional estimates for negotiation
   const [usdEstimate, setUsdEstimate] = useState<string>('');
+  const [goldEstimate, setGoldEstimate] = useState<string>('');
 
   const createDepositMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -341,6 +342,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         noLienDispute,
         acceptVaultTerms,
         usdEstimateFromUser: isNegotiationRequired && usdEstimate ? parseFloat(usdEstimate) : undefined,
+        goldEstimateFromUser: isNegotiationRequired && goldEstimate ? parseFloat(goldEstimate) : undefined,
         invoiceUrl,
         assayCertificateUrl,
       };
@@ -715,27 +717,43 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 </div>
               </div>
               
-              <div className="pl-8 pt-2 border-t border-amber-200">
-                <Label className="text-sm text-amber-800 mb-2 block">
-                  Target USD Value (Optional)
-                </Label>
-                <div className="flex items-center gap-3">
-                  <div className="relative max-w-[200px]">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={usdEstimate}
-                      onChange={(e) => setUsdEstimate(e.target.value)}
-                      placeholder="0.00"
-                      className="pl-7 bg-white"
-                      data-testid="input-usd-estimate"
-                    />
+              <div className="pl-8 pt-2 border-t border-amber-200 space-y-3">
+                <p className="text-sm text-amber-800">
+                  Enter your target value (optional). This helps start the negotiation. Final value is determined after assay.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-amber-700">Target Gold (grams)</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        value={goldEstimate}
+                        onChange={(e) => setGoldEstimate(e.target.value)}
+                        placeholder="0.0000"
+                        className="bg-white pr-8"
+                        data-testid="input-gold-estimate"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-amber-600">
-                    This helps start the negotiation. Final value is determined after assay.
-                  </span>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-amber-700">Target USD Value</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={usdEstimate}
+                        onChange={(e) => setUsdEstimate(e.target.value)}
+                        placeholder="0.00"
+                        className="pl-7 bg-white"
+                        data-testid="input-usd-estimate"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
