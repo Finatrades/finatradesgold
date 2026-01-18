@@ -49,6 +49,16 @@ const SOURCE_OPTIONS = [
   { value: 'Other', label: 'Other' },
 ];
 
+const BRAND_OPTIONS = [
+  { value: 'Wingold', label: 'Wingold' },
+  { value: 'PAMP Suisse', label: 'PAMP Suisse' },
+  { value: 'Valcambi', label: 'Valcambi' },
+  { value: 'Credit Suisse', label: 'Credit Suisse' },
+  { value: 'Perth Mint', label: 'Perth Mint' },
+  { value: 'Argor-Heraeus', label: 'Argor-Heraeus' },
+  { value: 'Other', label: 'Other' },
+];
+
 interface VaultLocation {
   id: string;
   name: string;
@@ -622,25 +632,51 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                   </div>
 
                   {(depositType === 'GOLD_BAR' || depositType === 'GOLD_COIN') && (
-                    <div className="grid grid-cols-3 gap-3">
-                      <Input
-                        value={item.brand || ''}
-                        onChange={(e) => updateItem(item.id, { brand: e.target.value })}
-                        placeholder="Brand"
-                        data-testid={`input-brand-${index}`}
-                      />
-                      <Input
-                        value={item.mint || ''}
-                        onChange={(e) => updateItem(item.id, { mint: e.target.value })}
-                        placeholder="Mint"
-                        data-testid={`input-mint-${index}`}
-                      />
-                      <Input
-                        value={item.serialNumber || ''}
-                        onChange={(e) => updateItem(item.id, { serialNumber: e.target.value })}
-                        placeholder="Serial #"
-                        data-testid={`input-serial-${index}`}
-                      />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Brand</Label>
+                          <Select
+                            value={BRAND_OPTIONS.some(opt => opt.value === item.brand) ? item.brand : (item.brand ? 'Other' : '')}
+                            onValueChange={(value) => {
+                              if (value === 'Other') {
+                                updateItem(item.id, { brand: 'Other' });
+                              } else {
+                                updateItem(item.id, { brand: value });
+                              }
+                            }}
+                          >
+                            <SelectTrigger data-testid={`select-brand-${index}`}>
+                              <SelectValue placeholder="Select Brand" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BRAND_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Input
+                          value={item.mint || ''}
+                          onChange={(e) => updateItem(item.id, { mint: e.target.value })}
+                          placeholder="Mint"
+                          data-testid={`input-mint-${index}`}
+                        />
+                        <Input
+                          value={item.serialNumber || ''}
+                          onChange={(e) => updateItem(item.id, { serialNumber: e.target.value })}
+                          placeholder="Serial #"
+                          data-testid={`input-serial-${index}`}
+                        />
+                      </div>
+                      {item.brand === 'Other' && (
+                        <Input
+                          value={item.customDescription || ''}
+                          onChange={(e) => updateItem(item.id, { customDescription: e.target.value })}
+                          placeholder="Enter brand name..."
+                          data-testid={`input-custom-brand-${index}`}
+                        />
+                      )}
                     </div>
                   )}
 
