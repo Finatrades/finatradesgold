@@ -244,7 +244,22 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
   const totalWeight = items.reduce((sum, item) => sum + parseFloat(item.totalDeclaredWeightGrams || '0'), 0);
 
-  const handleSubmit = () => {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const uploadPhoto = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/documents/upload', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Failed to upload photo');
+    const data = await res.json();
+    return data.url;
+  };
+
+  const handleSubmit = async () => {
     if (!noLienDispute || !acceptVaultTerms) {
       toast({
         title: 'Required Declarations',
@@ -274,33 +289,59 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       return;
     }
 
-    const preferredDatetime = pickupDate && pickupTime 
-      ? `${pickupDate}T${pickupTime.split('-')[0]}:00` 
-      : pickupDate 
-        ? `${pickupDate}T09:00:00` 
-        : undefined;
+    try {
+      setIsUploading(true);
+      toast({
+        title: 'Uploading Photos',
+        description: 'Please wait while we upload your photos...',
+      });
 
-    const data = {
-      vaultLocation,
-      depositType,
-      items: items.map(({ id, photos, ...item }) => item),
-      isBeneficialOwner,
-      sourceOfMetal,
-      sourceDetails,
-      deliveryMethod,
-      pickupAddress: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupAddress : undefined,
-      pickupContactName: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactName : undefined,
-      pickupContactPhone: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactPhone : undefined,
-      preferredDatetime,
-      noLienDispute,
-      acceptVaultTerms,
-      // Optional USD estimate for negotiation types
-      usdEstimateFromUser: isNegotiationRequired && usdEstimate ? parseFloat(usdEstimate) : undefined,
-      // Include photo counts for backend validation (actual upload happens separately)
-      itemPhotoCounts: items.map(item => item.photos.length),
-    };
+      // Upload all photos and get URLs
+      const itemsWithPhotoUrls = await Promise.all(items.map(async (item) => {
+        const photoUrls = await Promise.all(item.photos.map(uploadPhoto));
+        const { id, photos, ...itemData } = item;
+        return {
+          ...itemData,
+          photoFrontUrl: photoUrls[0] || undefined,
+          photoBackUrl: photoUrls[1] || undefined,
+          additionalPhotos: photoUrls.slice(2),
+        };
+      }));
 
-    createDepositMutation.mutate(data);
+      const preferredDatetime = pickupDate && pickupTime 
+        ? `${pickupDate}T${pickupTime.split('-')[0]}:00` 
+        : pickupDate 
+          ? `${pickupDate}T09:00:00` 
+          : undefined;
+
+      const data = {
+        vaultLocation,
+        depositType,
+        items: itemsWithPhotoUrls,
+        isBeneficialOwner,
+        sourceOfMetal,
+        sourceDetails,
+        deliveryMethod,
+        pickupAddress: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupAddress : undefined,
+        pickupContactName: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactName : undefined,
+        pickupContactPhone: deliveryMethod !== 'PERSONAL_DROPOFF' ? pickupContactPhone : undefined,
+        preferredDatetime,
+        noLienDispute,
+        acceptVaultTerms,
+        usdEstimateFromUser: isNegotiationRequired && usdEstimate ? parseFloat(usdEstimate) : undefined,
+      };
+
+      createDepositMutation.mutate(data);
+    } catch (error) {
+      console.error('Photo upload failed:', error);
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload photos. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const isNegotiationRequired = depositType === 'RAW' || depositType === 'OTHER';
@@ -860,11 +901,11 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         <div className="flex gap-4">
           <Button
             onClick={handleSubmit}
-            disabled={!canSubmit || createDepositMutation.isPending}
+            disabled={!canSubmit || createDepositMutation.isPending || isUploading}
             className="flex-1 bg-purple-600 hover:bg-purple-700"
             data-testid="button-submit-deposit"
           >
-            {createDepositMutation.isPending ? 'Submitting...' : 'Submit Deposit Request'}
+            {isUploading ? 'Uploading Photos...' : createDepositMutation.isPending ? 'Submitting...' : 'Submit Deposit Request'}
           </Button>
           <Button
             variant="outline"

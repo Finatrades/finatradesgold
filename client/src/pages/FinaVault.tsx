@@ -431,9 +431,9 @@ function MyPhysicalDeposits() {
               {selectedDeposit.items && selectedDeposit.items.length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Items ({selectedDeposit.items.length})</p>
-                  <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                  <div className="space-y-3 bg-gray-50 p-3 rounded-lg">
                     {selectedDeposit.items.map((item: any, i: number) => (
-                      <div key={i} className="py-2 border-b last:border-0">
+                      <div key={i} className="py-3 border-b last:border-0">
                         <div className="flex justify-between items-center">
                           <span className="font-medium capitalize">{item.quantity}x {item.itemType?.replace('_', ' ')}</span>
                           <span className="text-sm text-muted-foreground">
@@ -449,6 +449,41 @@ function MyPhysicalDeposits() {
                         )}
                         {item.customDescription && (
                           <p className="text-xs text-muted-foreground mt-1 italic">{item.customDescription}</p>
+                        )}
+                        {/* Item Photos */}
+                        {(item.photoFrontUrl || item.photoBackUrl || (item.additionalPhotos && item.additionalPhotos.length > 0)) && (
+                          <div className="mt-3">
+                            <p className="text-xs text-muted-foreground mb-2">Photos</p>
+                            <div className="flex flex-wrap gap-2">
+                              {item.photoFrontUrl && (
+                                <a href={item.photoFrontUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={item.photoFrontUrl} 
+                                    alt="Front view" 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              )}
+                              {item.photoBackUrl && (
+                                <a href={item.photoBackUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={item.photoBackUrl} 
+                                    alt="Back view" 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              )}
+                              {item.additionalPhotos?.map((photoUrl: string, photoIdx: number) => (
+                                <a key={photoIdx} href={photoUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={photoUrl} 
+                                    alt={`Photo ${photoIdx + 1}`} 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}
