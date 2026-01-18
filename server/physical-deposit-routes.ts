@@ -1003,17 +1003,8 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       goldGrams: newGrams.toFixed(6),
     });
 
-    const transaction = await storage.createTransaction({
-      userId: deposit.userId,
-      type: 'Deposit',
-      amountGold: creditedGrams.toFixed(6),
-      amountUsd: (creditedGrams * goldPriceUsd).toFixed(2),
-      goldPriceUsdPerGram: goldPriceUsd.toFixed(2),
-      status: 'Completed',
-      description: `Physical gold deposit - ${deposit.referenceNumber}`,
-      goldWalletType: 'LGPW',
-      sourceModule: 'finavault',
-    });
+    // NOTE: Transaction creation removed - UTT is the single source of truth
+    // User transaction history is derived from unified_tally_transactions
 
     // Create vault holding record for the physical gold
     const vaultHolding = await storage.createVaultHolding({
@@ -1073,7 +1064,7 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       goldPriceAtApproval: goldPriceUsd.toFixed(2),
       physicalStorageCertificateId: physicalCert.id,
       digitalOwnershipCertificateId: digitalCert.id,
-      walletTransactionId: transaction.id,
+      walletTransactionId: uttEntry.id,
       adminNotes: adminNotes ? `${deposit.adminNotes || ''}\n${new Date().toISOString()}: ${adminNotes}`.trim() : deposit.adminNotes,
     });
 
@@ -1088,9 +1079,8 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
         goldPriceUsd,
         physicalCertId: physicalCert.id,
         digitalCertId: digitalCert.id,
-        transactionId: transaction.id,
-        vaultHoldingId: vaultHolding.id,
         uttEntryId: uttEntry.id,
+        vaultHoldingId: vaultHolding.id,
       }),
     });
 
@@ -1110,9 +1100,8 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       physicalCertificateNumber: physicalCert.certificateNumber,
       digitalCertificateId: digitalCert.id,
       digitalCertificateNumber: digitalCert.certificateNumber,
-      transactionId: transaction.id,
-      vaultHoldingId: vaultHolding.id,
       uttEntryId: uttEntry.id,
+      vaultHoldingId: vaultHolding.id,
     });
   } catch (error) {
     console.error('Error approving deposit:', error);

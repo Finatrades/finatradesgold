@@ -55,6 +55,13 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - **Schema**: Defined in `shared/schema.ts`, shared across client and server.
 - **Safety**: Hourly backup sync from AWS Production to Replit PostgreSQL (configurable), manual backup scripts, and safety guards for destructive operations.
 
+**Transaction Architecture (Jan 2026):**
+- **Single Source of Truth**: `unified_tally_transactions` (UTT) table is the PRIMARY source for all deposit/credit transactions.
+- **Legacy Table Deprecated**: The `transactions` table is NO LONGER written to for new deposits. Existing code that called `storage.createTransaction()` has been removed.
+- **User Transaction History**: The `/api/user/unified-transactions` endpoint derives transaction history from UTT + `physical_deposit_requests` (for pending physical deposits).
+- **Physical Deposit Flow**: `physical_deposit_requests` → inspection → negotiation (if RAW) → UTT approval → wallet credit + certificates.
+- **Admin Views**: UFM uses UTT, Vault Operations uses `vault_ledger_entries`, and both share transaction visibility.
+
 **Authentication & Authorization:**
 - Email/password authentication with mandatory email verification (OTP).
 - **Login Gating**: Unverified users are blocked from logging in until email is verified (returns 403 with `requiresEmailVerification: true`).

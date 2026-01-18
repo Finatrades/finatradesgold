@@ -476,7 +476,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       }
 
       // 0.5. Create Physical Storage Certificate (Golden Rule requirement)
-      const physicalCert = await storage.createCertificate({
+      const physicalCert = await storage.createCertificateTx(tx as any, {
         userId,
         type: 'Physical Storage',
         certificateNumber: storageCertificateId, // Use admin-provided Wingold certificate number
@@ -488,11 +488,11 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         wingoldStorageRef: wingoldOrderId,
         goldWalletType: dbWalletType,
         issuer: 'Wingold & Metals DMCC',
-      }, tx as any);
+      });
 
       // 0.6. Create Digital Ownership Certificate (links to physical cert)
       const digitalCertNumber = `DOC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const digitalCert = await storage.createCertificate({
+      const digitalCert = await storage.createCertificateTx(tx as any, {
         userId,
         type: 'Digital Ownership',
         certificateNumber: digitalCertNumber,
@@ -504,7 +504,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         goldWalletType: dbWalletType,
         issuer: 'Finatrades Finance SA',
         relatedCertificateId: physicalCert.id,
-      }, tx as any);
+      });
 
       // 1. Create UTT with status COMPLETED (final state)
       // UNIFIED ARCHITECTURE: Determine actual source method from deposit paymentMethod field
@@ -566,19 +566,8 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         tx: tx as any,
       });
 
-      // 2b. Create transaction record for Wallet/Activity display
-      await storage.createTransaction({
-        userId,
-        type: 'Deposit',
-        status: 'Completed',
-        amountGold: parsedAllocation.toFixed(6),
-        amountUsd: String((parsedAllocation * goldPrice).toFixed(2)),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        goldWalletType: dbWalletType,
-        description: `${actualSourceMethod} deposit: ${parsedAllocation.toFixed(6)}g credited to ${dbWalletType} wallet`,
-        sourceModule: 'unified-tally',
-        completedAt: new Date(),
-      }, tx as any);
+      // NOTE: Transaction creation removed - UTT is the single source of truth
+      // User transaction history is derived from unified_tally_transactions
 
       // 3. Create FGPW batch if it's a fixed-price wallet
       if (dbWalletType === 'FGPW') {
@@ -594,7 +583,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       }
 
       // 4. For CARD payments, mark as linked
-      if (sourceType === 'CARD') {
+      if (actualSourceMethod === 'CARD') {
         await storage.updateNgeniusTransaction(sourceId, {
           walletTransactionId: tallyRecord.txnId,
         }, tx as any);
@@ -1208,19 +1197,8 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
         tx: tx as any,
       });
 
-      // Create transaction record for Wallet/Activity display
-      await storage.createTransaction({
-        userId: transaction.userId,
-        type: 'Deposit',
-        status: 'Completed',
-        amountGold: physicalGoldAllocatedG.toFixed(6),
-        amountUsd: String((physicalGoldAllocatedG * goldRateValue).toFixed(2)),
-        goldPriceUsdPerGram: goldRateValue.toFixed(2),
-        goldWalletType: transaction.walletType,
-        description: `${transaction.sourceMethod} deposit: ${physicalGoldAllocatedG.toFixed(6)}g credited to ${transaction.walletType} wallet`,
-        sourceModule: 'unified-tally',
-        completedAt: new Date(),
-      }, tx as any);
+      // NOTE: Transaction creation removed - UTT is the single source of truth
+      // User transaction history is derived from unified_tally_transactions
 
       if (transaction.walletType === 'FGPW') {
         await createFpgwBatch({
