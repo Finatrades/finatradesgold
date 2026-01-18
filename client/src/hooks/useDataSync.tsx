@@ -45,11 +45,22 @@ export function useDataSync() {
   const queryClient = useQueryClient();
   const processedEvents = useRef<Set<string>>(new Set());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastReconnectRef = useRef<number>(0);
+  const reconnectCooldown = 5000; // 5 seconds cooldown between reconnection syncs
 
   useEffect(() => {
     if (isConnected) {
-      processedEvents.current.clear();
-      console.log('[DataSync] Cleared event cache on reconnect');
+      const now = Date.now();
+      const timeSinceLastReconnect = now - lastReconnectRef.current;
+      
+      // Only clear cache if enough time has passed since last reconnect (prevents mobile flicker)
+      if (timeSinceLastReconnect > reconnectCooldown) {
+        processedEvents.current.clear();
+        lastReconnectRef.current = now;
+        console.log('[DataSync] Cleared event cache on reconnect');
+      } else {
+        console.log('[DataSync] Skipping cache clear - reconnected too quickly (mobile network)');
+      }
     }
   }, [isConnected]);
 

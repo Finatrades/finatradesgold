@@ -134,7 +134,7 @@ export const queryClient = new QueryClient({
       staleTime: 300000, // 5 minutes - enterprise caching for reduced latency
       gcTime: 1800000, // 30 minutes - keep data much longer
       refetchOnWindowFocus: false, // Disable automatic refetch on focus - use socket events instead
-      refetchOnReconnect: 'always', // Only refetch on network reconnection
+      refetchOnReconnect: false, // Disabled - socket events handle sync to prevent mobile auto-refresh issues
       retry: 1,
       refetchInterval: false,
     },
