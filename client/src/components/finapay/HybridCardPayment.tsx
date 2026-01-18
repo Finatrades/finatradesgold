@@ -550,35 +550,35 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
     return (
       <div className="flex flex-col w-full overflow-hidden">
         <div 
-          className="w-full" 
+          className="w-full rounded-lg overflow-hidden border border-gray-200" 
           style={{ 
-            height: '500px',
-            overflow: 'hidden'
+            height: 'min(400px, 60vh)',
+            minHeight: '300px',
           }}
         >
           <iframe
             src={paymentUrl}
             title="Secure Payment"
             allow="payment"
-            scrolling="no"
+            scrolling="yes"
             style={{ 
               width: '100%', 
-              height: '500px',
+              height: '100%',
               border: 'none',
-              overflow: 'hidden'
+              minHeight: '300px',
             }}
           />
         </div>
 
-        <div className="pt-6">
-          <p className="text-2xl font-bold text-center text-foreground mb-4">${amount.toFixed(2)}</p>
+        <div className="pt-4">
+          <p className="text-xl font-bold text-center text-foreground mb-3">${amount.toFixed(2)}</p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={onCancel} className="flex-1 h-12">
+            <Button variant="outline" onClick={onCancel} className="flex-1 h-11">
               Cancel
             </Button>
             <Button
               onClick={() => window.open(paymentUrl, '_blank')}
-              className="flex-1 h-12 bg-primary hover:bg-primary/90"
+              className="flex-1 h-11 bg-primary hover:bg-primary/90"
             >
               <CreditCard className="w-4 h-4 mr-2" />
               Pay ${amount.toFixed(2)}
