@@ -570,8 +570,19 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         tx: tx as any,
       });
 
-      // NOTE: Transaction creation removed - UTT is the single source of truth
-      // User transaction history is derived from unified_tally_transactions
+      // Create transaction record for backward compatibility with Vault Activity UI
+      await storage.createTransactionTx(tx as any, {
+        userId,
+        type: 'Deposit',
+        status: 'Completed',
+        amountGold: parsedAllocation.toFixed(6),
+        amountUsd: (parsedAllocation * goldPrice).toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        goldWalletType: dbWalletType,
+        description: `${actualSourceMethod} deposit: ${parsedAllocation.toFixed(6)}g credited to ${dbWalletType} wallet`,
+        sourceModule: 'unified-tally',
+        completedAt: new Date(),
+      });
 
       // 3. Create FGPW batch if it's a fixed-price wallet
       if (dbWalletType === 'FGPW') {
