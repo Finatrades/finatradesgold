@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiRequest } from '@/lib/queryClient';
+import { toProxyUrl } from '@/lib/file-utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from './AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,9 @@ interface DepositItem {
   customDescription?: string;
   verifiedWeightGrams?: string;
   verifiedPurity?: string;
+  photoFrontUrl?: string;
+  photoBackUrl?: string;
+  additionalPhotos?: string[];
 }
 
 interface Deposit {
@@ -493,17 +497,17 @@ export default function PhysicalDepositsAdmin() {
                   <Label className="text-gray-500 text-xs block mb-2">Documents</Label>
                   <div className="flex flex-wrap gap-2">
                     {(selectedDeposit as any).invoiceUrl && (
-                      <a href={(selectedDeposit as any).invoiceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
+                      <a href={toProxyUrl((selectedDeposit as any).invoiceUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
                         <FileCheck className="w-4 h-4" /> Invoice
                       </a>
                     )}
                     {(selectedDeposit as any).assayCertificateUrl && (
-                      <a href={(selectedDeposit as any).assayCertificateUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
+                      <a href={toProxyUrl((selectedDeposit as any).assayCertificateUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
                         <FileCheck className="w-4 h-4" /> Assay Certificate
                       </a>
                     )}
                     {(selectedDeposit as any).additionalDocuments?.map((doc: any, idx: number) => (
-                      <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
                         <FileCheck className="w-4 h-4" /> {doc.name}
                       </a>
                     ))}
@@ -536,6 +540,40 @@ export default function PhysicalDepositsAdmin() {
                             </Badge>
                           )}
                         </div>
+                        {(item.photoFrontUrl || item.photoBackUrl || (item.additionalPhotos && item.additionalPhotos.length > 0)) && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-xs text-gray-500 mb-2">Photos</p>
+                            <div className="flex flex-wrap gap-2">
+                              {item.photoFrontUrl && (
+                                <a href={toProxyUrl(item.photoFrontUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={toProxyUrl(item.photoFrontUrl) || ''} 
+                                    alt="Front view" 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              )}
+                              {item.photoBackUrl && (
+                                <a href={toProxyUrl(item.photoBackUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={toProxyUrl(item.photoBackUrl) || ''} 
+                                    alt="Back view" 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              )}
+                              {item.additionalPhotos?.map((photoUrl: string, photoIdx: number) => (
+                                <a key={photoIdx} href={toProxyUrl(photoUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
+                                  <img 
+                                    src={toProxyUrl(photoUrl) || ''} 
+                                    alt={`Photo ${photoIdx + 1}`} 
+                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
