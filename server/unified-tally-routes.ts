@@ -202,7 +202,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     // Physical gold deposits: Already inspected at vault, ready for UFM final approval
     for (const pd of physicalDeposits) {
       const user = await storage.getUser(pd.userId);
-      // Get inspection data for credited grams
+      // Get full inspection data
       const inspection = await storage.getDepositInspection(pd.id);
       const creditedGrams = inspection?.creditedGrams ? parseFloat(inspection.creditedGrams) : 0;
       
@@ -215,7 +215,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
         userEmail: user?.email || '',
         amountUsd: pd.usdAgreedValue || null, // May have agreed USD value from negotiation
         goldGrams: creditedGrams.toString(),
-        goldPriceAtTime: null, // Will be set during approval
+        goldPriceAtTime: null, // Will be set during UFM approval
         status: 'Ready for Payment',
         referenceNumber: pd.referenceNumber,
         depositType: pd.requiresNegotiation ? 'RAW/OTHER' : 'GOLD_BAR/COIN',
@@ -223,6 +223,20 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
         walletType: 'LGPW', // Physical deposits always go to LGPW
         createdAt: pd.createdAt,
         vaultInspected: true, // Flag to show inspection completed
+        // Include full inspection data for UFM display
+        inspectionData: inspection ? {
+          grossWeightGrams: inspection.grossWeightGrams,
+          netWeightGrams: inspection.netWeightGrams,
+          purityResult: inspection.purityResult,
+          assayFeeUsd: inspection.assayFeeUsd,
+          refiningFeeUsd: inspection.refiningFeeUsd,
+          handlingFeeUsd: inspection.handlingFeeUsd,
+          creditedGrams: inspection.creditedGrams,
+          totalFeesUsd: inspection.totalFeesUsd,
+          inspectorNotes: inspection.inspectorNotes,
+          assayMethod: inspection.assayMethod,
+          inspectedAt: inspection.inspectedAt,
+        } : null,
       });
     }
 

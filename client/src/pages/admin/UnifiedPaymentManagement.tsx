@@ -18,12 +18,26 @@ import {
   Bitcoin, Building2, Coins, Clock, CheckCircle, XCircle, 
   RefreshCw, Eye, ArrowRight, AlertTriangle, TrendingUp,
   FileText, ExternalLink, Package, CreditCard, ChevronDown,
-  DollarSign, Calculator, Sparkles, Shield
+  DollarSign, Calculator, Sparkles, Shield, Scale
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useLocation } from 'wouter';
+
+interface InspectionData {
+  grossWeightGrams: string;
+  netWeightGrams: string;
+  purityResult: string;
+  assayFeeUsd: string;
+  refiningFeeUsd: string;
+  handlingFeeUsd: string;
+  creditedGrams: string;
+  totalFeesUsd?: string;
+  inspectorNotes?: string;
+  assayMethod?: string;
+  inspectedAt?: string;
+}
 
 interface PendingPayment {
   id: string;
@@ -51,6 +65,7 @@ interface PendingPayment {
   cardLast4?: string;
   gatewayVerified?: boolean;
   vaultInspected?: boolean;  // For physical deposits - indicates vault inspection completed
+  inspectionData?: InspectionData;  // Full inspection data for physical deposits
 }
 
 const SOURCE_ICONS = {
@@ -713,38 +728,99 @@ export default function UnifiedPaymentManagement() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Gold Allocation & Verification</h3>
 
-                <Card className="border-green-200 bg-green-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Calculator className="w-4 h-4 text-green-600" />
-                      Auto-Calculated Values
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Deposit Amount:</span>
-                      <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Platform Fee ({FEE_PERCENT}%):</span>
-                      <span>- {formatCurrency(calculations.feeAmount)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-medium">
-                      <span>Net Amount for Gold:</span>
-                      <span>{formatCurrency(calculations.netAmount)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gold Rate Used:</span>
-                      <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
-                    </div>
-                    <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
-                      <span className="font-semibold text-amber-800">Gold to Credit User:</span>
-                      <span className="font-bold text-amber-900">{calculations.goldEquivalent.toFixed(4)}g</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Show Inspection Data for Physical Deposits, Cash Calculations for others */}
+                {selectedPayment.sourceType === 'PHYSICAL' && selectedPayment.inspectionData ? (
+                  <Card className="border-amber-200 bg-amber-50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-amber-600" />
+                        Vault Inspection Results
+                        <Badge variant="outline" className="ml-auto text-xs bg-green-100 text-green-700 border-green-300">
+                          ✓ Inspected
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Gross Weight:</span>
+                          <span className="font-medium">{parseFloat(selectedPayment.inspectionData.grossWeightGrams).toFixed(4)}g</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Net Weight:</span>
+                          <span className="font-medium">{parseFloat(selectedPayment.inspectionData.netWeightGrams).toFixed(4)}g</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Purity (Fineness):</span>
+                        <span className="font-medium">{selectedPayment.inspectionData.purityResult}</span>
+                      </div>
+                      <Separator />
+                      <div className="text-xs text-gray-500 font-medium">Fees Deducted:</div>
+                      <div className="grid grid-cols-3 gap-1 text-xs">
+                        <div className="flex justify-between text-red-600">
+                          <span>Assay:</span>
+                          <span>-${parseFloat(selectedPayment.inspectionData.assayFeeUsd || '0').toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Refining:</span>
+                          <span>-${parseFloat(selectedPayment.inspectionData.refiningFeeUsd || '0').toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Handling:</span>
+                          <span>-${parseFloat(selectedPayment.inspectionData.handlingFeeUsd || '0').toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <Separator />
+                      {selectedPayment.inspectionData.assayMethod && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Assay Method:</span>
+                          <span className="font-medium">{selectedPayment.inspectionData.assayMethod}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
+                        <span className="font-semibold text-amber-800">Credited Gold:</span>
+                        <span className="font-bold text-amber-900">{parseFloat(selectedPayment.inspectionData.creditedGrams).toFixed(4)}g</span>
+                      </div>
+                      <div className="text-xs text-gray-400 text-center">
+                        ≈ ${(parseFloat(selectedPayment.inspectionData.creditedGrams) * calculations.goldRate).toFixed(2)} equivalent @ current rate
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-green-200 bg-green-50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-green-600" />
+                        Auto-Calculated Values
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Deposit Amount:</span>
+                        <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>Platform Fee ({FEE_PERCENT}%):</span>
+                        <span>- {formatCurrency(calculations.feeAmount)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-medium">
+                        <span>Net Amount for Gold:</span>
+                        <span>{formatCurrency(calculations.netAmount)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Gold Rate Used:</span>
+                        <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
+                      </div>
+                      <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
+                        <span className="font-semibold text-amber-800">Gold to Credit User:</span>
+                        <span className="font-bold text-amber-900">{calculations.goldEquivalent.toFixed(4)}g</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card className="border-yellow-200">
                   <CardHeader className="pb-2">
