@@ -332,6 +332,17 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         };
       }));
 
+      // Upload document files if provided
+      let invoiceUrl: string | undefined;
+      let assayCertificateUrl: string | undefined;
+      
+      if (invoiceFile) {
+        invoiceUrl = await uploadPhoto(invoiceFile);
+      }
+      if (certificateFile) {
+        assayCertificateUrl = await uploadPhoto(certificateFile);
+      }
+
       const preferredDatetime = pickupDate && pickupTime 
         ? `${pickupDate}T${pickupTime.split('-')[0]}:00` 
         : pickupDate 
@@ -353,6 +364,8 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         noLienDispute,
         acceptVaultTerms,
         usdEstimateFromUser: isNegotiationRequired && usdEstimate ? parseFloat(usdEstimate) : undefined,
+        invoiceUrl,
+        assayCertificateUrl,
       };
 
       createDepositMutation.mutate(data);
