@@ -1198,8 +1198,8 @@ export default function PhysicalDepositsAdmin() {
               <Input
                 type="number"
                 step="0.0001"
-                value={offerForm.proposedGrams}
-                onChange={(e) => setOfferForm({ ...offerForm, proposedGrams: parseFloat(e.target.value) })}
+                value={offerForm.proposedGrams || ''}
+                onChange={(e) => setOfferForm({ ...offerForm, proposedGrams: parseFloat(e.target.value) || 0 })}
                 data-testid="input-proposed-grams"
               />
             </div>
@@ -1208,8 +1208,8 @@ export default function PhysicalDepositsAdmin() {
               <Input
                 type="number"
                 step="0.01"
-                value={offerForm.proposedFees}
-                onChange={(e) => setOfferForm({ ...offerForm, proposedFees: parseFloat(e.target.value) })}
+                value={offerForm.proposedFees || ''}
+                onChange={(e) => setOfferForm({ ...offerForm, proposedFees: parseFloat(e.target.value) || 0 })}
                 data-testid="input-proposed-fees"
               />
             </div>

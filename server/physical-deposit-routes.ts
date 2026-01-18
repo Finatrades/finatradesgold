@@ -836,20 +836,21 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
 });
 
 const offerSchema = z.object({
-  proposedGrams: z.number(),
+  proposedGrams: z.number().positive(),
   proposedPurity: z.string().optional(),
-  proposedFees: z.number().optional(),
-  goldPriceAtTime: z.number().optional(),
-  usdOffer: z.number().positive().optional(), // Admin's USD valuation offer
+  proposedFees: z.number().nonnegative().optional(), // Fees can be 0
+  goldPriceAtTime: z.number().positive().optional(),
+  usdOffer: z.number().nonnegative().optional(), // Admin's USD valuation offer (can be 0 for pure gram-based)
   message: z.string().optional(),
 });
 
 router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, res: Response) => {
   try {
-
+    console.log('[Offer] Received body:', JSON.stringify(req.body));
     const parsed = offerSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Invalid request' });
+      console.error('[Offer] Validation error:', JSON.stringify(parsed.error.issues));
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.issues });
     }
 
     const adminId = (req as any).session.userId;
