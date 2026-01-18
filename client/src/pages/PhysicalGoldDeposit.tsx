@@ -721,40 +721,91 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 <p className="text-sm text-amber-800">
                   Enter your target value (optional). This helps start the negotiation. Final value is determined after assay.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-amber-700">Target Gold (grams)</Label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.0001"
-                        value={goldEstimate}
-                        onChange={(e) => setGoldEstimate(e.target.value)}
-                        placeholder="0.0000"
-                        className="bg-white pr-8"
-                        data-testid="input-gold-estimate"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                {priceMode === 'live' ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-amber-600">
+                      Using live price @ ${effectivePrice.toFixed(2)}/g - Enter USD and gold grams will auto-calculate.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-amber-700">Target USD Value</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={usdEstimate}
+                            onChange={(e) => {
+                              const usd = e.target.value;
+                              setUsdEstimate(usd);
+                              if (usd && effectivePrice > 0) {
+                                setGoldEstimate((parseFloat(usd) / effectivePrice).toFixed(4));
+                              } else {
+                                setGoldEstimate('');
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="pl-7 bg-white"
+                            data-testid="input-usd-estimate"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-amber-700">Target Gold (auto-calculated)</Label>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            value={goldEstimate ? `${goldEstimate} g` : '—'}
+                            disabled
+                            className="bg-gray-100 text-gray-600"
+                            data-testid="input-gold-estimate"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-amber-700">Target USD Value</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={usdEstimate}
-                        onChange={(e) => setUsdEstimate(e.target.value)}
-                        placeholder="0.00"
-                        className="pl-7 bg-white"
-                        data-testid="input-usd-estimate"
-                      />
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-amber-600">
+                      Using manual price - Enter your target gold grams and USD value independently.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-amber-700">Target Gold (grams)</Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            value={goldEstimate}
+                            onChange={(e) => setGoldEstimate(e.target.value)}
+                            placeholder="0.0000"
+                            className="bg-white pr-8"
+                            data-testid="input-gold-estimate"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-amber-700">Target USD Value</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={usdEstimate}
+                            onChange={(e) => setUsdEstimate(e.target.value)}
+                            placeholder="0.00"
+                            className="pl-7 bg-white"
+                            data-testid="input-usd-estimate"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
