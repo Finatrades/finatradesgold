@@ -716,13 +716,16 @@ export default function PhysicalDepositsAdmin() {
       </Dialog>
 
       <Dialog open={dialogMode === 'inspect' && !!selectedDeposit} onOpenChange={() => setDialogMode(null)}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Inspection Results</DialogTitle>
             <DialogDescription>Enter assay and inspection details</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6">
+            {/* LEFT PANEL - Input Fields */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Inspection Data</h3>
+              <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Gross Weight (g)</Label>
                 <Input
@@ -878,6 +881,22 @@ export default function PhysicalDepositsAdmin() {
                 <p className="text-xs text-red-500">Credited grams cannot exceed net weight</p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label>Inspector Notes</Label>
+              <Textarea
+                value={inspectForm.inspectorNotes}
+                onChange={(e) => setInspectForm({ ...inspectForm, inspectorNotes: e.target.value })}
+                placeholder="Any observations or notes..."
+                rows={3}
+                data-testid="input-inspector-notes"
+              />
+            </div>
+            </div>
+            
+            {/* RIGHT PANEL - Valuation Summary */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Valuation Summary</h3>
             
             {/* Summary Card - Shows weight valuations, credited gold, fees, and USD equivalent */}
             {(inspectForm.grossWeightGrams || inspectForm.netWeightGrams || inspectForm.creditedGrams) && (
@@ -1003,14 +1022,12 @@ export default function PhysicalDepositsAdmin() {
               })()
             )}
 
-            <div className="space-y-2">
-              <Label>Inspector Notes</Label>
-              <Textarea
-                value={inspectForm.inspectorNotes}
-                onChange={(e) => setInspectForm({ ...inspectForm, inspectorNotes: e.target.value })}
-                placeholder="Any observations or notes..."
-                data-testid="input-inspector-notes"
-              />
+            {/* Show placeholder when no data entered */}
+            {!inspectForm.grossWeightGrams && !inspectForm.netWeightGrams && !inspectForm.creditedGrams && (
+              <div className="text-center p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <p className="text-gray-400 text-sm">Enter inspection data to see valuation summary</p>
+              </div>
+            )}
             </div>
           </div>
           <DialogFooter>
