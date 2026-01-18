@@ -4,7 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
 interface LedgerEvent {
-  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer' | 'physical_deposit_update' | 'negotiation_message';
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer' | 'physical_deposit_update' | 'negotiation_message' | 'negotiation_update';
   module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system' | 'admin';
   action: string;
   data?: any;
@@ -26,6 +26,7 @@ const QUERY_KEY_MAP: Record<string, string[][]> = {
   'admin_update': [['admin-transactions'], ['admin-users']], // Minimal admin updates
   'physical_deposit_update': [['physical-deposits'], ['user-physical-deposits']], // Physical deposit status updates
   'negotiation_message': [['physical-deposits'], ['user-physical-deposits']], // Negotiation messages
+  'negotiation_update': [['physical-deposits'], ['user-physical-deposits']], // Admin notification of negotiation updates
 };
 
 const MODULE_QUERY_MAP: Record<string, string[][]> = {

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { InsertPhysicalDepositRequest, InsertDepositItem, InsertDepositInspection, InsertDepositNegotiationMessage } from '@shared/schema';
 import { sendEmailDirect } from './email';
 import { requireAdmin } from './rbac-middleware';
-import { emitLedgerEvent } from './socket';
+import { emitLedgerEvent, emitAdminNotification } from './socket';
 import { getGoldPricePerGram } from './gold-price-service';
 
 // Helper to emit real-time physical deposit status updates
@@ -481,8 +481,15 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       isLatest: true,
     });
 
-    // Emit real-time negotiation update to all parties
+    // Emit real-time negotiation update to user
     emitNegotiationUpdate(deposit.userId, deposit.id, newMessage);
+    
+    // Also notify admins about the user's response
+    emitAdminNotification({
+      type: 'negotiation_update',
+      action: messageType.toLowerCase(),
+      data: { depositId: deposit.id, referenceNumber: deposit.referenceNumber, message: newMessage },
+    });
 
     if (latestMsg) {
       await storage.markNegotiationResponded(latestMsg.id);

@@ -19,7 +19,7 @@ export function getIO(): Server | null {
 
 // Emit ledger sync event to a specific user
 export function emitLedgerEvent(userId: string, event: {
-  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'physical_deposit_update';
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'physical_deposit_update' | 'negotiation_message';
   module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system';
   action: string;
   data?: any;
@@ -31,6 +31,25 @@ export function emitLedgerEvent(userId: string, event: {
       syncVersion: Date.now(),
     });
     console.log(`[Socket] Emitted ledger:sync to user ${userId}: ${event.type}/${event.action}`);
+  }
+}
+
+// Emit admin-specific notifications (to all admins in admin-room)
+export function emitAdminNotification(event: {
+  type: 'negotiation_update' | 'physical_deposit_update' | 'user_action';
+  action: string;
+  data?: any;
+}) {
+  if (ioInstance) {
+    ioInstance.to('admin-room').emit('ledger:sync', {
+      type: event.type,
+      module: 'finavault',
+      action: event.action,
+      data: event.data,
+      timestamp: new Date().toISOString(),
+      syncVersion: Date.now(),
+    });
+    console.log(`[Socket] Emitted admin notification: ${event.type}/${event.action}`);
   }
 }
 
