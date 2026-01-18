@@ -280,7 +280,11 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       wingoldBuyRate,
       storageCertificateId,
     } = req.body;
-    const adminUser = (req as any).adminUser;
+    
+    // Get admin user from session (fix: adminUser was not being set by middleware)
+    const session = (req as any).session;
+    const adminUserId = session?.userId;
+    const adminUser = adminUserId ? await storage.getUser(adminUserId) : null;
 
     // Map UI pricing mode to schema enum
     const pricingMode = uiPricingMode === 'LIVE' ? 'MARKET' : 'FIXED';
