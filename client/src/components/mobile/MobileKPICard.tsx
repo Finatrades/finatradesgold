@@ -14,46 +14,52 @@ interface MobileKPICardProps {
 
 const gradientStyles = {
   purple: {
-    bg: 'from-purple-50 to-white',
-    border: 'border-purple-100',
-    iconBg: 'bg-purple-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-purple-200/50',
+    iconBg: 'bg-gradient-to-br from-purple-500 to-violet-600',
     iconColor: 'text-white',
     subColor: 'text-purple-600',
+    glow: 'shadow-purple-200/50',
   },
   amber: {
-    bg: 'from-amber-50 to-white',
-    border: 'border-amber-100',
-    iconBg: 'bg-amber-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-amber-200/50',
+    iconBg: 'bg-gradient-to-br from-amber-400 to-orange-500',
     iconColor: 'text-white',
     subColor: 'text-amber-600',
+    glow: 'shadow-amber-200/50',
   },
   emerald: {
-    bg: 'from-emerald-50 to-white',
-    border: 'border-emerald-100',
-    iconBg: 'bg-emerald-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-emerald-200/50',
+    iconBg: 'bg-gradient-to-br from-emerald-400 to-green-600',
     iconColor: 'text-white',
     subColor: 'text-emerald-600',
+    glow: 'shadow-emerald-200/50',
   },
   blue: {
-    bg: 'from-blue-50 to-white',
-    border: 'border-blue-100',
-    iconBg: 'bg-blue-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-blue-200/50',
+    iconBg: 'bg-gradient-to-br from-blue-400 to-indigo-600',
     iconColor: 'text-white',
     subColor: 'text-blue-600',
+    glow: 'shadow-blue-200/50',
   },
   pink: {
-    bg: 'from-pink-50 to-white',
-    border: 'border-pink-100',
-    iconBg: 'bg-pink-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-pink-200/50',
+    iconBg: 'bg-gradient-to-br from-pink-400 to-rose-600',
     iconColor: 'text-white',
     subColor: 'text-pink-600',
+    glow: 'shadow-pink-200/50',
   },
   teal: {
-    bg: 'from-teal-50 to-white',
-    border: 'border-teal-100',
-    iconBg: 'bg-teal-500',
+    bg: 'bg-white/80 backdrop-blur-xl',
+    border: 'border-teal-200/50',
+    iconBg: 'bg-gradient-to-br from-teal-400 to-cyan-600',
     iconColor: 'text-white',
     subColor: 'text-teal-600',
+    glow: 'shadow-teal-200/50',
   },
 };
 
@@ -70,23 +76,36 @@ export default function MobileKPICard({
   
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay * 0.1 }}
-      whileTap={onClick ? { scale: 0.98 } : undefined}
+      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        delay: delay * 0.08, 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 25 
+      }}
+      whileTap={onClick ? { scale: 0.96 } : undefined}
+      whileHover={onClick ? { y: -2 } : undefined}
       onClick={onClick}
-      className={`relative overflow-hidden p-4 bg-gradient-to-br ${style.bg} border ${style.border} rounded-2xl shadow-sm mobile-card ${onClick ? 'cursor-pointer' : ''}`}
+      className={`relative overflow-hidden p-4 ${style.bg} border ${style.border} rounded-2xl shadow-lg ${style.glow} mobile-card ${onClick ? 'cursor-pointer active:shadow-md' : ''} transition-shadow duration-200`}
     >
-      <div className="flex items-center gap-2.5 mb-2">
-        <div className={`w-10 h-10 rounded-xl ${style.iconBg} flex items-center justify-center shadow-sm`}>
-          <Icon className={`w-5 h-5 ${style.iconColor}`} />
+      <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-2xl" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-2.5 mb-2">
+          <motion.div 
+            className={`w-10 h-10 rounded-xl ${style.iconBg} flex items-center justify-center shadow-lg`}
+            whileHover={{ rotate: [0, -10, 10, 0] }}
+            transition={{ duration: 0.4 }}
+          >
+            <Icon className={`w-5 h-5 ${style.iconColor}`} />
+          </motion.div>
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{label}</p>
         </div>
-        <p className="text-xs text-gray-600 font-medium">{label}</p>
+        <p className="text-xl font-bold text-gray-900 tracking-tight">{value}</p>
+        {subValue && (
+          <p className={`text-[11px] font-semibold ${style.subColor} mt-0.5`}>{subValue}</p>
+        )}
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
-      {subValue && (
-        <p className={`text-[11px] font-medium ${style.subColor}`}>{subValue}</p>
-      )}
     </motion.div>
   );
 }

@@ -76,59 +76,105 @@ export default function MobileDashboard() {
 
   return (
     <div className="space-y-4 pb-4">
-      {/* Hero Balance Card */}
+      {/* Hero Balance Card - Premium Glassmorphism */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-500 p-5 shadow-xl"
+        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-pink-500 p-6 shadow-2xl"
       >
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-400/30 rounded-full blur-3xl -ml-16 -mb-16" />
+        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+        
+        <motion.div 
+          className="absolute top-4 right-4 w-20 h-20 rounded-full border border-white/10"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
         
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-white/80 text-xs font-medium">Welcome back</p>
-              <h1 className="text-white text-xl font-bold">{userName}</h1>
+              <motion.p 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-white/80 text-xs font-medium tracking-wide"
+              >
+                Welcome back
+              </motion.p>
+              <motion.h1 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-white text-2xl font-bold"
+              >
+                {userName}
+              </motion.h1>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center"
+                className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg"
               >
                 <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+              </motion.button>
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg"
+              >
                 <Coins className="w-5 h-5 text-white" />
-              </div>
+              </motion.div>
             </div>
           </div>
           
-          <div className="mt-4">
-            <p className="text-white/70 text-xs mb-1">Total Portfolio Value</p>
-            <p className="text-white text-3xl font-bold tracking-tight">
-              ${formatNumber(totalPortfolioValue)}
-            </p>
-            <p className="text-white/60 text-xs mt-1">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-5"
+          >
+            <p className="text-white/70 text-xs mb-1 uppercase tracking-wider font-medium">Total Portfolio</p>
+            <div className="flex items-baseline gap-2">
+              <motion.p 
+                key={totalPortfolioValue}
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                className="text-white text-4xl font-bold tracking-tight"
+              >
+                ${formatNumber(totalPortfolioValue)}
+              </motion.p>
+              <span className="text-emerald-300 text-sm font-semibold flex items-center gap-0.5">
+                <TrendingUp className="w-3 h-3" />
+              </span>
+            </div>
+            <p className="text-white/60 text-sm mt-1 font-medium">
               ≈ {formatNumber(totalGoldGrams, 4)}g gold
             </p>
-          </div>
+          </motion.div>
           
-          <div className="flex gap-4 mt-4 pt-3 border-t border-white/20">
-            <div className="flex-1">
-              <p className="text-white/60 text-[10px]">USD</p>
-              <p className="text-white font-semibold text-sm">${formatNumber(totalGoldGrams * goldPrice)}</p>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/20"
+          >
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+              <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">USD</p>
+              <p className="text-white font-bold text-sm">${formatNumber(totalGoldGrams * goldPrice)}</p>
             </div>
-            <div className="flex-1">
-              <p className="text-white/60 text-[10px]">AED</p>
-              <p className="text-white font-semibold text-sm">Dh {formatNumber(totalGoldGrams * goldPrice * 3.67)}</p>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+              <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">AED</p>
+              <p className="text-white font-bold text-sm">{formatNumber(totalGoldGrams * goldPrice * 3.67)}</p>
             </div>
-            <div className="flex-1">
-              <p className="text-white/60 text-[10px]">Storage</p>
-              <p className="text-white font-semibold text-sm">{formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg</p>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+              <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Vault</p>
+              <p className="text-white font-bold text-sm">{formatNumber((totals.vaultGoldGrams || 0), 2)}g</p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
 
