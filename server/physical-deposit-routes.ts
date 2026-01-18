@@ -555,11 +555,13 @@ router.get('/admin/deposits', requireAdmin(), async (req: Request, res: Response
       const items = await storage.getDepositItems(deposit.id);
       const user = await storage.getUser(deposit.userId);
       const negotiations = await storage.getNegotiationMessages(deposit.id);
-      console.log(`[Admin Deposits] ${deposit.referenceNumber}: ${negotiations.length} negotiations, latest: ${negotiations[negotiations.length-1]?.messageType || 'none'}`);
+      const inspection = await storage.getDepositInspection(deposit.id);
+      console.log(`[Admin Deposits] ${deposit.referenceNumber}: ${negotiations.length} negotiations, inspection: ${inspection?.creditedGrams || 'none'}`);
       return { 
         ...deposit, 
         items,
         negotiations,
+        inspection,
         user: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email } : null
       };
     }));
