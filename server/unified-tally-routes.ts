@@ -107,14 +107,16 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     const terminalStatuses = ['Approved', 'Confirmed', 'Rejected', 'Cancelled', 'Completed'];
     // UNIFIED ARCHITECTURE: All payments now flow through deposit_requests
     // Crypto/Card payments create deposit_requests with appropriate paymentMethod
-    // Legacy crypto_payment_requests and ngenius_transactions are kept for reference only
+    // But we also need to show LEGACY crypto_payment_requests that are still pending
     const depositRequests = await storage.getAllDepositRequests().then((r: any[]) => r.filter((d: any) => 
       !terminalStatuses.includes(d.status)
     ));
     
-    // No separate crypto/card payment arrays - everything unified in deposit_requests
-    // This prevents duplicate entries in admin queue
-    const cryptoPayments: any[] = [];
+    // LEGACY SUPPORT: Fetch pending crypto payments from legacy table
+    // These are real customer payments that were created before unified architecture
+    const cryptoPayments = await storage.getAllCryptoPaymentRequests().then((r: any[]) => r.filter((c: any) => 
+      !terminalStatuses.includes(c.status) && c.status !== 'Confirmed'
+    ));
     const cardPayments: any[] = [];
     
     // Fetch physical deposits ready for UFM approval
