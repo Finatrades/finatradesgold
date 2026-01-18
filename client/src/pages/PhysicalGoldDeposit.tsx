@@ -59,16 +59,6 @@ const BRAND_OPTIONS = [
   { value: 'Other', label: 'Other' },
 ];
 
-interface VaultLocation {
-  id: string;
-  name: string;
-  code: string;
-  city: string;
-  country: string;
-  address?: string;
-  isActive: boolean;
-}
-
 interface PhysicalGoldDepositProps {
   embedded?: boolean;
   onSuccess?: () => void;
@@ -77,17 +67,6 @@ interface PhysicalGoldDepositProps {
 export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: PhysicalGoldDepositProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  
-  const { data: vaultLocationsData, isLoading: vaultLocationsLoading } = useQuery({
-    queryKey: ['wingold-vault-locations'],
-    queryFn: async () => {
-      const res = await fetch('/api/wingold/vault-locations', { credentials: 'include' });
-      if (!res.ok) return { locations: [] };
-      return res.json();
-    },
-  });
-  
-  const vaultLocations: VaultLocation[] = vaultLocationsData?.locations || [];
   
   // Fetch live gold price
   const { data: goldPriceData } = useQuery({
@@ -102,7 +81,6 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
   
   const liveGoldPrice = goldPriceData?.pricePerGram || 0;
   
-  const [vaultLocation, setVaultLocation] = useState('');
   const [depositType, setDepositType] = useState<'RAW' | 'GOLD_BAR' | 'GOLD_COIN' | 'OTHER'>('GOLD_BAR');
   
   // Input mode and price mode state
@@ -293,7 +271,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       return;
     }
 
-    if (!vaultLocation || !sourceOfMetal || totalWeight <= 0) {
+    if (!sourceOfMetal || totalWeight <= 0) {
       toast({
         title: 'Missing Information',
         description: 'Please fill in all required fields',
@@ -350,7 +328,6 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
           : undefined;
 
       const data = {
-        vaultLocation,
         depositType,
         items: itemsWithPhotoUrls,
         isBeneficialOwner,
@@ -383,7 +360,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
   const isNegotiationRequired = depositType === 'RAW' || depositType === 'OTHER';
   const allItemsHavePhotos = items.every(item => item.photos.length >= 2);
-  const canSubmit = vaultLocation && sourceOfMetal && totalWeight > 0 && isBeneficialOwner && noLienDispute && acceptVaultTerms && allItemsHavePhotos;
+  const canSubmit = sourceOfMetal && totalWeight > 0 && isBeneficialOwner && noLienDispute && acceptVaultTerms && allItemsHavePhotos;
 
   return (
     <div className={embedded ? "" : "max-w-4xl mx-auto py-4"}>
@@ -451,22 +428,6 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
             <CardTitle className="text-lg">1. Gold Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select Vault Location</Label>
-              <Select value={vaultLocation} onValueChange={setVaultLocation}>
-                <SelectTrigger data-testid="select-vault-location">
-                  <SelectValue placeholder={vaultLocationsLoading ? "Loading..." : "Select vault"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {vaultLocations.map(vault => (
-                    <SelectItem key={vault.id} value={vault.id}>
-                      {vault.name} - {vault.city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label>Gold Type</Label>
               <RadioGroup
