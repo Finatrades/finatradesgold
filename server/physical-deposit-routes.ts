@@ -766,14 +766,38 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
       inspectionId: inspection.id,
     });
 
-    // Send email notification about inspection completion
-    await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'INSPECTION');
-    
-    // Real-time WebSocket notification
-    emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'INSPECTION', {
-      creditedGrams: parsed.data.creditedGrams,
-      purityResult: parsed.data.purityResult,
-    });
+    // For negotiation items, automatically create the first offer from inspection data
+    if (deposit.requiresNegotiation) {
+      await storage.createNegotiationMessage({
+        depositRequestId: deposit.id,
+        messageType: 'ADMIN_OFFER',
+        senderId: adminId,
+        senderRole: 'admin',
+        proposedGrams: data.creditedGrams,
+        proposedFees: totalFees.toString(),
+        message: `Based on inspection: ${data.creditedGrams}g credited after ${data.purityResult} purity verification. Total fees: $${totalFees.toFixed(2)}`,
+        isLatest: true,
+      });
+
+      // Send negotiation email
+      await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'NEGOTIATION');
+      
+      // Real-time WebSocket notification for negotiation
+      emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'NEGOTIATION', {
+        creditedGrams: data.creditedGrams,
+        proposedFees: totalFees,
+        purityResult: data.purityResult,
+      });
+    } else {
+      // Send email notification about inspection completion
+      await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'INSPECTION');
+      
+      // Real-time WebSocket notification
+      emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'INSPECTION', {
+        creditedGrams: data.creditedGrams,
+        purityResult: data.purityResult,
+      });
+    }
 
     res.json({ success: true, inspectionId: inspection.id, newStatus });
   } catch (error) {
