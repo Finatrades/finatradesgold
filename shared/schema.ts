@@ -6094,6 +6094,7 @@ export const exchangeRates = pgTable("exchange_rates", {
   targetCurrency: varchar("target_currency", { length: 10 }).notNull(),
   rate: decimal("rate", { precision: 18, scale: 6 }).notNull(),
   source: varchar("source", { length: 100 }),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -6103,14 +6104,17 @@ export const supportedCurrencies = pgTable("supported_currencies", {
   code: varchar("code", { length: 10 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   symbol: varchar("symbol", { length: 10 }).notNull(),
+  symbolPosition: varchar("symbol_position", { length: 10 }).default('before'),
+  decimalPlaces: integer("decimal_places").default(2),
+  isDefault: boolean("is_default").default(false),
+  displayOrder: integer("display_order").default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const userSessions = pgTable("user_sessions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  sessionToken: text("session_token").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  sid: varchar("sid", { length: 255 }).primaryKey(),
+  sess: json("sess").notNull().$type<Record<string, unknown>>(),
+  expire: timestamp("expire").notNull(),
 });
