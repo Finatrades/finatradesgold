@@ -12,7 +12,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
-import LiveChatWidget from '@/components/LiveChatWidget';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -69,7 +68,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="px-4 py-3 pb-24">
           {children}
         </main>
-        <LiveChatWidget />
         <IdleTimeoutWarning
           open={showWarning}
           remainingSeconds={remainingSeconds}
@@ -218,7 +216,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
         
         <FloatingAgentChat />
-        <LiveChatWidget />
         
         <IdleTimeoutWarning
           open={showWarning}
