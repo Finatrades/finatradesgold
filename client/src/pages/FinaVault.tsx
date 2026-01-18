@@ -308,8 +308,8 @@ function MyPhysicalDeposits() {
       </Card>
 
       <Dialog open={!!selectedDeposit} onOpenChange={(open) => !open && setSelectedDeposit(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="flex items-center gap-2">
               Deposit Details
               {selectedDeposit && (
@@ -321,7 +321,7 @@ function MyPhysicalDeposits() {
           </DialogHeader>
           
           {selectedDeposit && (
-            <div className="space-y-5">
+            <div className="space-y-5 px-6 pb-6 overflow-y-auto flex-1" style={{ maxHeight: 'calc(90vh - 100px)' }}>
               {/* Status Timeline */}
               <DepositStatusTimeline deposit={selectedDeposit} />
               
@@ -670,13 +670,15 @@ function MyPhysicalDeposits() {
                 </div>
               )}
 
-              <div className="flex justify-end pt-4">
-                <Button variant="outline" onClick={() => setSelectedDeposit(null)}>
-                  Close
-                </Button>
-              </div>
             </div>
           )}
+          
+          {/* Fixed footer outside scrollable area */}
+          <div className="flex justify-end px-6 py-4 border-t bg-white">
+            <Button variant="outline" onClick={() => setSelectedDeposit(null)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
