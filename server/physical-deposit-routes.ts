@@ -300,10 +300,16 @@ router.get('/deposits', async (req: Request, res: Response) => {
       const items = await storage.getDepositItems(deposit.id);
       // Include inspection data for user to see credited grams after inspection
       const inspection = await storage.getDepositInspection(deposit.id);
+      // Include negotiation messages for user to see admin offers
+      const negotiations = await storage.getNegotiationMessages(deposit.id);
       return { 
         ...deposit, 
         items,
-        // Include inspection summary for display (credited grams, purity, fees)
+        // Include full inspection object for frontend compatibility
+        inspection: inspection || null,
+        // Include negotiations array for frontend to display offers
+        negotiations,
+        // Also keep inspectionSummary for backward compatibility
         inspectionSummary: inspection ? {
           creditedGrams: inspection.creditedGrams,
           grossWeightGrams: inspection.grossWeightGrams,
