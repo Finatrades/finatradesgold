@@ -630,42 +630,107 @@ export default function PhysicalDepositsAdmin() {
                 </Card>
               )}
               
-              {/* Negotiation */}
+              {/* Negotiation Chat */}
               {selectedDeposit.requiresNegotiation && (
                 <div>
-                  <Label className="text-gray-500 text-xs mb-2 block">Negotiation</Label>
-                  <Card className="bg-amber-50 border-amber-200">
-                    <CardContent className="py-3 space-y-2">
-                      {(selectedDeposit as any).usdEstimateFromUser && (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">User's USD Estimate:</span>
-                          <span className="font-medium">${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>
+                  <Label className="text-gray-500 text-xs mb-2 block">Negotiation Chat</Label>
+                  <Card className="bg-gray-50 border-gray-200">
+                    <CardContent className="py-3 space-y-3">
+                      {/* User's target values */}
+                      {((selectedDeposit as any).goldEstimateFromUser || (selectedDeposit as any).usdEstimateFromUser) && (
+                        <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                          <span className="font-medium text-amber-700">User's Target: </span>
+                          {(selectedDeposit as any).goldEstimateFromUser && <span>{parseFloat((selectedDeposit as any).goldEstimateFromUser).toLocaleString()}g</span>}
+                          {(selectedDeposit as any).goldEstimateFromUser && (selectedDeposit as any).usdEstimateFromUser && <span className="mx-1">|</span>}
+                          {(selectedDeposit as any).usdEstimateFromUser && <span>≈ ${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>}
                         </div>
                       )}
-                      {(selectedDeposit as any).usdCounterFromAdmin && (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Admin's USD Offer:</span>
-                          <span className="font-medium">${parseFloat((selectedDeposit as any).usdCounterFromAdmin).toLocaleString()}</span>
+                      
+                      {/* Chat messages */}
+                      {selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 ? (
+                        <div className="flex flex-col space-y-2 max-h-48 overflow-y-auto p-2 bg-white rounded border">
+                          {[...selectedDeposit.negotiations].reverse().map((msg: any, idx: number) => (
+                            <div 
+                              key={idx} 
+                              className={`flex ${msg.senderRole === 'admin' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div 
+                                className={`max-w-[80%] p-2 rounded-lg text-sm ${
+                                  msg.senderRole === 'admin' 
+                                    ? 'bg-purple-100 text-purple-900 rounded-br-none' 
+                                    : 'bg-blue-50 text-blue-900 rounded-bl-none'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-xs">
+                                    {msg.senderRole === 'admin' ? 'Finatrades' : 'User'}
+                                  </span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                    msg.messageType.includes('OFFER') ? 'bg-purple-200' :
+                                    msg.messageType.includes('COUNTER') ? 'bg-blue-200' :
+                                    msg.messageType.includes('ACCEPT') ? 'bg-green-200' :
+                                    msg.messageType.includes('REJECT') ? 'bg-red-200' : 'bg-gray-200'
+                                  }`}>
+                                    {msg.messageType.replace(/_/g, ' ')}
+                                  </span>
+                                </div>
+                                {msg.proposedGrams && (
+                                  <div className="font-bold text-base">{parseFloat(msg.proposedGrams).toLocaleString()}g</div>
+                                )}
+                                {msg.proposedFees && (
+                                  <div className="text-xs text-gray-600">Fees: ${parseFloat(msg.proposedFees).toLocaleString()}</div>
+                                )}
+                                {msg.message && (
+                                  <p className="text-xs mt-1 text-gray-700">{msg.message}</p>
+                                )}
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  {new Date(msg.createdAt).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 text-center py-4">
+                          No messages yet. Click "Send Offer" to start negotiation.
                         </div>
                       )}
+                      
+                      {/* Agreed value display */}
                       {(selectedDeposit as any).usdAgreedValue && (
-                        <div className="flex justify-between text-green-700">
-                          <span className="text-sm font-medium">Agreed USD Value:</span>
+                        <div className="flex justify-between p-2 bg-green-50 border border-green-200 rounded text-green-700">
+                          <span className="text-sm font-medium">Agreed Value:</span>
                           <span className="font-bold">${parseFloat((selectedDeposit as any).usdAgreedValue).toLocaleString()}</span>
                         </div>
                       )}
-                      {selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 && (
-                        <div className="pt-2 border-t border-amber-200">
-                          <p className="text-xs text-gray-500 mb-2">Message History ({selectedDeposit.negotiations.length})</p>
-                          <div className="space-y-1 max-h-32 overflow-y-auto">
-                            {selectedDeposit.negotiations.map((msg: any, idx: number) => (
-                              <div key={idx} className={`text-xs p-2 rounded ${msg.senderRole === 'admin' ? 'bg-purple-100' : 'bg-gray-100'}`}>
-                                <span className="font-medium">{msg.senderRole === 'admin' ? 'Admin' : 'User'}:</span>{' '}
-                                <span>{msg.messageType.replace(/_/g, ' ')}</span>
-                                {msg.proposedGrams && <span className="ml-2">({msg.proposedGrams}g)</span>}
-                              </div>
-                            ))}
-                          </div>
+                      
+                      {/* Action buttons for negotiation status */}
+                      {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 && (
+                        <div className="flex gap-2 pt-2 border-t">
+                          {selectedDeposit.negotiations[selectedDeposit.negotiations.length - 1]?.messageType === 'USER_COUNTER' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => acceptCounterMutation.mutate({ id: selectedDeposit.id })}
+                                disabled={acceptCounterMutation.isPending}
+                                data-testid="button-accept-counter-chat"
+                              >
+                                Accept Counter
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => { setDialogMode('offer'); }}
+                                data-testid="button-counter-back"
+                              >
+                                Counter Back
+                              </Button>
+                            </>
+                          )}
+                          {selectedDeposit.negotiations[selectedDeposit.negotiations.length - 1]?.senderRole === 'admin' && (
+                            <p className="text-xs text-gray-500">Waiting for user response...</p>
+                          )}
                         </div>
                       )}
                     </CardContent>

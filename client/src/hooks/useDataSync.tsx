@@ -4,7 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
 interface LedgerEvent {
-  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer';
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer' | 'physical_deposit_update' | 'negotiation_message';
   module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system' | 'admin';
   action: string;
   data?: any;
@@ -24,11 +24,13 @@ const QUERY_KEY_MAP: Record<string, string[][]> = {
   'crypto_rejected': [['crypto-payments'], ['notifications']],
   'pending_transfer': [['pendingTransfers'], ['wallet']], // Pending affects wallet
   'admin_update': [['admin-transactions'], ['admin-users']], // Minimal admin updates
+  'physical_deposit_update': [['physical-deposits'], ['user-physical-deposits']], // Physical deposit status updates
+  'negotiation_message': [['physical-deposits'], ['user-physical-deposits']], // Negotiation messages
 };
 
 const MODULE_QUERY_MAP: Record<string, string[][]> = {
   'finapay': [['dashboard'], ['wallet'], ['transactions']],
-  'finavault': [['vault-deposits'], ['vault-withdrawals'], ['certificates'], ['dashboard']],
+  'finavault': [['vault-deposits'], ['vault-withdrawals'], ['certificates'], ['dashboard'], ['physical-deposits'], ['user-physical-deposits']],
   'bnsl': [['bnsl-plans'], ['bnsl-payouts'], ['dashboard']],
   'finabridge': [['trade-cases'], ['trade-documents']],
   'system': [['notifications'], ['platform-config']],
