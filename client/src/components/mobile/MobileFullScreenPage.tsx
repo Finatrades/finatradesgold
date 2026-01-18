@@ -53,7 +53,7 @@ export default function MobileFullScreenPage({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-          className="fixed inset-0 z-50 bg-gray-50 flex flex-col"
+          className="fixed inset-0 z-[55] bg-gray-50 flex flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           <header
