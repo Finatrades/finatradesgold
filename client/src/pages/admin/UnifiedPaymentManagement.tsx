@@ -561,7 +561,7 @@ export default function UnifiedPaymentManagement() {
         </Tabs>
 
         <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -573,32 +573,36 @@ export default function UnifiedPaymentManagement() {
             </DialogHeader>
 
             {selectedPayment && calculations && (
-              <div className="space-y-4">
-                <Card className="bg-gray-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Deposit Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-gray-500">User:</span>
-                        <span className="ml-2 font-medium">{selectedPayment.userName}</span>
+              <div className="grid grid-cols-2 gap-6">
+                {/* LEFT PANEL - Input & Configuration */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Payment Details</h3>
+                  
+                  <Card className="bg-gray-50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Deposit Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-gray-500">User:</span>
+                          <span className="ml-2 font-medium">{selectedPayment.userName}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Method:</span>
+                          <Badge variant="outline" className="ml-2">{selectedPayment.sourceType}</Badge>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Method:</span>
-                        <Badge variant="outline" className="ml-2">{selectedPayment.sourceType}</Badge>
+                      <Separator />
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Deposit Amount:</span>
+                        <span className="font-semibold">{formatCurrency(calculations.depositAmount)}</span>
                       </div>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Deposit Amount:</span>
-                      <span className="font-semibold">{formatCurrency(calculations.depositAmount)}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
 
                 <Card className="border-purple-200">
                   <CardHeader className="pb-2">
@@ -633,39 +637,6 @@ export default function UnifiedPaymentManagement() {
                         />
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-
-                <Card className="border-green-200 bg-green-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Calculator className="w-4 h-4 text-green-600" />
-                      Auto-Calculated Values
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Deposit Amount:</span>
-                      <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Platform Fee ({FEE_PERCENT}%):</span>
-                      <span>- {formatCurrency(calculations.feeAmount)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-medium">
-                      <span>Net Amount for Gold:</span>
-                      <span>{formatCurrency(calculations.netAmount)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gold Rate Used:</span>
-                      <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
-                    </div>
-                    <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
-                      <span className="font-semibold text-amber-800">Gold to Credit User:</span>
-                      <span className="font-bold text-amber-900">{calculations.goldEquivalent.toFixed(4)}g</span>
-                    </div>
                   </CardContent>
                 </Card>
 
@@ -733,6 +704,44 @@ export default function UnifiedPaymentManagement() {
                           onChange={(e) => setWingoldBuyRate(e.target.value)}
                         />
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+                </div>
+
+                {/* RIGHT PANEL - Calculations & Certificates */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Gold Allocation & Verification</h3>
+
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Calculator className="w-4 h-4 text-green-600" />
+                      Auto-Calculated Values
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Deposit Amount:</span>
+                      <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
+                    </div>
+                    <div className="flex justify-between text-red-600">
+                      <span>Platform Fee ({FEE_PERCENT}%):</span>
+                      <span>- {formatCurrency(calculations.feeAmount)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-medium">
+                      <span>Net Amount for Gold:</span>
+                      <span>{formatCurrency(calculations.netAmount)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Gold Rate Used:</span>
+                      <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
+                    </div>
+                    <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
+                      <span className="font-semibold text-amber-800">Gold to Credit User:</span>
+                      <span className="font-bold text-amber-900">{calculations.goldEquivalent.toFixed(4)}g</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -867,6 +876,7 @@ export default function UnifiedPaymentManagement() {
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">Target Wallet:</Label>
                   <Badge variant="secondary" className="bg-purple-100 text-purple-700">{walletType}</Badge>
+                </div>
                 </div>
               </div>
             )}
