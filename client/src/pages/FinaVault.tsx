@@ -168,8 +168,8 @@ function MyPhysicalDeposits() {
     try {
       const body: any = { action };
       if (action === 'COUNTER' && counterValue) {
-        body.counterUsd = parseFloat(counterValue);
-        body.message = `User counter-offer: $${parseFloat(counterValue).toLocaleString()}`;
+        body.counterGrams = parseFloat(counterValue);
+        body.message = `User counter-offer: ${parseFloat(counterValue).toLocaleString()}g`;
       }
       console.log('[FinaVault] Sending POST with body:', body);
       
