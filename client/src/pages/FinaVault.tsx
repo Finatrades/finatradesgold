@@ -30,10 +30,75 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
   INSPECTION: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Inspection' },
   NEGOTIATION: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Negotiation' },
   AGREED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Agreed' },
+  READY_FOR_PAYMENT: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Ready' },
   APPROVED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
   REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
   CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cancelled' },
 };
+
+const STATUS_FLOW = ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'];
+
+function DepositStatusTimeline({ deposit }: { deposit: any }) {
+  const currentStatus = deposit.status;
+  const isRejected = currentStatus === 'REJECTED' || currentStatus === 'CANCELLED';
+  const requiresNegotiation = deposit.depositType === 'RAW' || deposit.depositType === 'OTHER';
+  
+  const timeline = requiresNegotiation 
+    ? STATUS_FLOW 
+    : STATUS_FLOW.filter(s => !['NEGOTIATION', 'AGREED'].includes(s));
+  
+  const currentIndex = timeline.indexOf(currentStatus);
+  
+  const getStepInfo = (step: string, index: number) => {
+    const isCompleted = currentIndex > index || (currentIndex === timeline.length - 1 && index === currentIndex);
+    const isCurrent = currentIndex === index;
+    const isPending = currentIndex < index;
+    
+    if (isRejected && step === currentStatus) {
+      return { icon: <XCircle className="w-4 h-4" />, color: 'bg-red-500 text-white', lineColor: 'bg-red-300' };
+    }
+    if (isCompleted) {
+      return { icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-500 text-white', lineColor: 'bg-green-400' };
+    }
+    if (isCurrent) {
+      return { icon: <Loader2 className="w-4 h-4 animate-spin" />, color: 'bg-purple-500 text-white', lineColor: 'bg-gray-300' };
+    }
+    return { icon: <Clock className="w-4 h-4" />, color: 'bg-gray-200 text-gray-400', lineColor: 'bg-gray-200' };
+  };
+  
+  return (
+    <div className="py-4 px-2 bg-gray-50 rounded-lg">
+      <p className="text-xs font-medium text-muted-foreground mb-3 px-2">Progress Timeline</p>
+      <div className="flex items-start justify-between relative">
+        {timeline.map((step, index) => {
+          const { icon, color, lineColor } = getStepInfo(step, index);
+          const label = STATUS_COLORS[step]?.label || step;
+          const isLast = index === timeline.length - 1;
+          
+          return (
+            <div key={step} className="flex flex-col items-center flex-1 relative">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${color} z-10`}>
+                {icon}
+              </div>
+              <span className="text-[10px] text-center mt-1.5 leading-tight max-w-[60px]">{label}</span>
+              {!isLast && (
+                <div className={`absolute top-4 left-1/2 w-full h-0.5 ${lineColor}`} style={{ transform: 'translateX(50%)' }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {isRejected && (
+        <div className="mt-3 px-2">
+          <div className="flex items-center gap-2 text-red-600 text-sm">
+            <XCircle className="w-4 h-4" />
+            <span className="font-medium">{currentStatus === 'REJECTED' ? 'Rejected' : 'Cancelled'}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MyPhysicalDeposits() {
   const { user } = useAuth();
@@ -257,6 +322,9 @@ function MyPhysicalDeposits() {
           
           {selectedDeposit && (
             <div className="space-y-5">
+              {/* Status Timeline */}
+              <DepositStatusTimeline deposit={selectedDeposit} />
+              
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -275,6 +343,12 @@ function MyPhysicalDeposits() {
                   <div>
                     <p className="text-xs text-muted-foreground">Credited Weight</p>
                     <p className="font-semibold text-green-600">{parseFloat(selectedDeposit.finalCreditedGrams).toFixed(4)} g</p>
+                  </div>
+                )}
+                {selectedDeposit.goldPriceAtSubmission && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Price at Submission</p>
+                    <p className="font-medium text-purple-600">${parseFloat(selectedDeposit.goldPriceAtSubmission).toFixed(2)}/g</p>
                   </div>
                 )}
               </div>
@@ -411,88 +485,143 @@ function MyPhysicalDeposits() {
                 </div>
               )}
 
-              {/* Negotiation Section */}
+              {/* Negotiation Section - Chat-like UI */}
               {(selectedDeposit.status === 'NEGOTIATION' || selectedDeposit.status === 'AGREED' || selectedDeposit.usdCounterFromAdmin || selectedDeposit.usdEstimateFromUser) && (
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <p className="text-sm font-semibold text-orange-700 mb-3">
-                    {selectedDeposit.status === 'AGREED' ? 'Negotiation Completed' : 'Negotiation'}
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    {selectedDeposit.usdEstimateFromUser && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Your USD Estimate:</span>
-                        <span className="font-medium">${parseFloat(selectedDeposit.usdEstimateFromUser).toLocaleString()}</span>
-                      </div>
-                    )}
-                    {selectedDeposit.usdCounterFromAdmin && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Admin's USD Offer:</span>
-                        <span className="font-semibold text-purple-700">${parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString()}</span>
-                      </div>
-                    )}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${selectedDeposit.status === 'AGREED' ? 'bg-green-500' : 'bg-orange-500 animate-pulse'}`} />
+                      <p className="text-sm font-semibold text-orange-800">
+                        {selectedDeposit.status === 'AGREED' ? 'Deal Agreed!' : 'Negotiation in Progress'}
+                      </p>
+                    </div>
                     {selectedDeposit.usdAgreedValue && (
-                      <div className="flex justify-between pt-2 border-t border-orange-200">
-                        <span className="font-medium text-green-700">Agreed Value:</span>
-                        <span className="font-bold text-green-700">${parseFloat(selectedDeposit.usdAgreedValue).toLocaleString()}</span>
-                      </div>
+                      <Badge className="bg-green-100 text-green-700 border-green-300">
+                        Final: ${parseFloat(selectedDeposit.usdAgreedValue).toLocaleString()}
+                      </Badge>
                     )}
                   </div>
-                  {selectedDeposit.negotiations && selectedDeposit.negotiations.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-orange-200">
-                      <p className="text-xs text-muted-foreground mb-2">Negotiation History</p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {selectedDeposit.negotiations.map((msg: any, idx: number) => (
-                          <div key={idx} className={`text-xs p-2 rounded ${msg.senderRole === 'admin' ? 'bg-purple-100' : 'bg-white'}`}>
-                            <span className="font-medium">{msg.senderRole === 'admin' ? 'Admin' : 'You'}:</span>{' '}
-                            <span>{msg.messageType?.replace(/_/g, ' ')}</span>
-                            {msg.proposedGrams && <span className="ml-1">({msg.proposedGrams}g)</span>}
-                            {msg.proposedUsd && <span className="ml-1">(${parseFloat(msg.proposedUsd).toLocaleString()})</span>}
+                  
+                  {/* Chat-like Negotiation History */}
+                  <div className="bg-white rounded-lg border border-orange-100 p-3 mb-4 max-h-48 overflow-y-auto">
+                    <div className="space-y-3">
+                      {selectedDeposit.usdEstimateFromUser && (
+                        <div className="flex justify-end">
+                          <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg rounded-br-none max-w-[80%]">
+                            <p className="text-xs text-blue-600 mb-1">Your initial estimate</p>
+                            <p className="font-semibold">${parseFloat(selectedDeposit.usdEstimateFromUser).toLocaleString()}</p>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      {selectedDeposit.negotiations && selectedDeposit.negotiations.map((msg: any, idx: number) => (
+                        <div key={idx} className={`flex ${msg.senderRole === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                          <div className={`px-3 py-2 rounded-lg max-w-[80%] ${
+                            msg.senderRole === 'admin' 
+                              ? 'bg-purple-100 text-purple-800 rounded-bl-none' 
+                              : 'bg-blue-100 text-blue-800 rounded-br-none'
+                          }`}>
+                            <p className={`text-xs mb-1 ${msg.senderRole === 'admin' ? 'text-purple-600' : 'text-blue-600'}`}>
+                              {msg.senderRole === 'admin' ? 'Finatrades' : 'You'} • {msg.messageType?.replace(/_/g, ' ')}
+                            </p>
+                            {msg.proposedUsd && (
+                              <p className="font-semibold">${parseFloat(msg.proposedUsd).toLocaleString()}</p>
+                            )}
+                            {msg.proposedGrams && (
+                              <p className="text-sm">{msg.proposedGrams}g gold</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {selectedDeposit.usdCounterFromAdmin && !selectedDeposit.negotiations?.length && (
+                        <div className="flex justify-start">
+                          <div className="bg-purple-100 text-purple-800 px-3 py-2 rounded-lg rounded-bl-none max-w-[80%]">
+                            <p className="text-xs text-purple-600 mb-1">Finatrades offer</p>
+                            <p className="font-semibold">${parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+                      <p className="text-xs text-muted-foreground">Latest Offer</p>
+                      <p className="text-lg font-bold text-purple-700">
+                        ${selectedDeposit.usdCounterFromAdmin ? parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString() : '--'}
+                      </p>
+                    </div>
+                    <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+                      <p className="text-xs text-muted-foreground">≈ Per Gram</p>
+                      <p className="text-lg font-bold text-orange-700">
+                        ${selectedDeposit.usdCounterFromAdmin && selectedDeposit.totalDeclaredWeightGrams 
+                          ? (parseFloat(selectedDeposit.usdCounterFromAdmin) / parseFloat(selectedDeposit.totalDeclaredWeightGrams)).toFixed(2) 
+                          : '--'}
+                      </p>
+                    </div>
+                  </div>
                   
                   {/* Action Buttons - Only show if NEGOTIATION status and admin has made an offer */}
                   {selectedDeposit.status === 'NEGOTIATION' && selectedDeposit.usdCounterFromAdmin && (
-                    <div className="mt-4 pt-4 border-t border-orange-200">
+                    <div className="space-y-4">
                       {!showCounterInput ? (
-                        <div className="space-y-3">
-                          <p className="text-sm font-medium text-orange-800">How would you like to respond?</p>
-                          <div className="flex flex-wrap gap-2">
+                        <>
+                          <div className="flex gap-2">
                             <Button 
-                              size="sm" 
-                              className="bg-green-600 hover:bg-green-700"
+                              className="flex-1 bg-green-600 hover:bg-green-700 h-12"
                               onClick={() => handleRespond('ACCEPT')}
                               disabled={isResponding}
+                              data-testid="button-accept-offer"
                             >
-                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-                              Accept Offer
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="border-orange-400 text-orange-700 hover:bg-orange-100"
-                              onClick={() => setShowCounterInput(true)}
-                              disabled={isResponding}
-                            >
-                              Counter Offer
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="border-red-300 text-red-600 hover:bg-red-50"
-                              onClick={() => handleRespond('REJECT')}
-                              disabled={isResponding}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
+                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                              Accept ${parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString()}
                             </Button>
                           </div>
-                        </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline"
+                              className="flex-1 border-orange-400 text-orange-700 hover:bg-orange-100"
+                              onClick={() => setShowCounterInput(true)}
+                              disabled={isResponding}
+                              data-testid="button-counter-offer"
+                            >
+                              Make Counter Offer
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              className="border-red-300 text-red-600 hover:bg-red-50 px-4"
+                              onClick={() => handleRespond('REJECT')}
+                              disabled={isResponding}
+                              data-testid="button-reject-offer"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </>
                       ) : (
-                        <div className="space-y-3">
-                          <p className="text-sm font-medium text-orange-800">Enter your counter offer (USD):</p>
+                        <div className="bg-white p-3 rounded-lg border border-orange-200 space-y-3">
+                          <p className="text-sm font-medium text-orange-800">Your counter offer</p>
+                          
+                          {/* Quick value buttons */}
+                          <div className="flex flex-wrap gap-2">
+                            {[0.95, 0.97, 0.99, 1.02, 1.05].map((multiplier) => {
+                              const value = Math.round(parseFloat(selectedDeposit.usdCounterFromAdmin) * multiplier);
+                              const label = multiplier === 1.02 ? '+2%' : multiplier === 1.05 ? '+5%' : 
+                                           multiplier === 0.99 ? '-1%' : multiplier === 0.97 ? '-3%' : '-5%';
+                              return (
+                                <Button
+                                  key={multiplier}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-8"
+                                  onClick={() => setCounterValue(value.toString())}
+                                >
+                                  {label} (${value.toLocaleString()})
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          
                           <div className="flex gap-2">
                             <div className="relative flex-1">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
@@ -502,31 +631,30 @@ function MyPhysicalDeposits() {
                                 onChange={(e) => setCounterValue(e.target.value)}
                                 placeholder="Enter amount"
                                 className="w-full pl-7 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                data-testid="input-counter-amount"
                               />
                             </div>
-                          </div>
-                          <div className="flex gap-2">
                             <Button 
-                              size="sm"
                               className="bg-purple-600 hover:bg-purple-700"
                               onClick={() => handleRespond('COUNTER')}
                               disabled={isResponding || !counterValue}
+                              data-testid="button-submit-counter"
                             >
-                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                              Submit Counter Offer
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setShowCounterInput(false);
-                                setCounterValue('');
-                              }}
-                              disabled={isResponding}
-                            >
-                              Cancel
+                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
                             </Button>
                           </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="w-full text-gray-500"
+                            onClick={() => {
+                              setShowCounterInput(false);
+                              setCounterValue('');
+                            }}
+                            disabled={isResponding}
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       )}
                     </div>

@@ -5,6 +5,7 @@ import type { InsertPhysicalDepositRequest, InsertDepositItem, InsertDepositInsp
 import { sendEmailDirect } from './email';
 import { requireAdmin } from './rbac-middleware';
 import { emitLedgerEvent } from './socket';
+import { getGoldPricePerGram } from './gold-price-service';
 
 // Helper to emit real-time physical deposit status updates
 function emitPhysicalDepositUpdate(userId: string, depositId: string, referenceNumber: string, status: string, data?: any) {
@@ -165,6 +166,17 @@ router.post('/deposits', async (req: Request, res: Response) => {
     const totalWeight = data.items.reduce((sum, item) => sum + parseFloat(item.totalDeclaredWeightGrams), 0);
 
     const referenceNumber = await storage.generatePhysicalDepositReference();
+    
+    // Lock the gold price at submission time
+    let goldPriceAtSubmission: string | undefined;
+    try {
+      const currentPrice = await getGoldPricePerGram();
+      if (currentPrice > 0) {
+        goldPriceAtSubmission = currentPrice.toFixed(2);
+      }
+    } catch (priceError) {
+      console.error('Failed to fetch gold price for submission lock:', priceError);
+    }
 
     const depositRequest: InsertPhysicalDepositRequest = {
       referenceNumber,
@@ -191,6 +203,8 @@ router.post('/deposits', async (req: Request, res: Response) => {
       status: 'SUBMITTED',
       // USD estimate from user (optional, for negotiation)
       usdEstimateFromUser: data.usdEstimateFromUser?.toString(),
+      // Lock the gold price at submission time for reference
+      goldPriceAtSubmission,
     };
 
     const deposit = await storage.createPhysicalDepositRequest(depositRequest);

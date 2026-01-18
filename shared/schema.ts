@@ -5672,6 +5672,7 @@ export const physicalDepositRequests = pgTable("physical_deposit_requests", {
   // Credited amount
   finalCreditedGrams: decimal("final_credited_grams", { precision: 18, scale: 6 }),
   goldPriceAtApproval: decimal("gold_price_at_approval", { precision: 12, scale: 2 }),
+  goldPriceAtSubmission: decimal("gold_price_at_submission", { precision: 12, scale: 2 }), // Price locked at submission time
   
   // Generated certificates (dual)
   physicalStorageCertificateId: varchar("physical_storage_certificate_id", { length: 255 }).references(() => certificates.id),

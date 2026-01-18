@@ -26,6 +26,7 @@ interface DepositItem {
   mint?: string;
   serialNumber?: string;
   customDescription?: string;
+  photos: File[];
 }
 
 type InputMode = 'grams' | 'usd';
@@ -113,6 +114,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
     totalDeclaredWeightGrams: '',
     usdValuePerUnit: '',
     purity: '999.9',
+    photos: [],
   }]);
   
   // Recalculate items when effective price changes
@@ -202,6 +204,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       totalDeclaredWeightGrams: '',
       usdValuePerUnit: '',
       purity: '999.9',
+      photos: [],
     }]);
   };
 
@@ -260,6 +263,17 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       return;
     }
 
+    // Check that all items have at least 2 photos
+    const itemsWithoutEnoughPhotos = items.filter(item => item.photos.length < 2);
+    if (itemsWithoutEnoughPhotos.length > 0) {
+      toast({
+        title: 'Photos Required',
+        description: `Please add at least 2 photos for each item. ${itemsWithoutEnoughPhotos.length} item(s) need more photos.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const preferredDatetime = pickupDate && pickupTime 
       ? `${pickupDate}T${pickupTime.split('-')[0]}:00` 
       : pickupDate 
@@ -269,7 +283,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
     const data = {
       vaultLocation,
       depositType,
-      items: items.map(({ id, ...item }) => item),
+      items: items.map(({ id, photos, ...item }) => item),
       isBeneficialOwner,
       sourceOfMetal,
       sourceDetails,
@@ -282,13 +296,16 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
       acceptVaultTerms,
       // Optional USD estimate for negotiation types
       usdEstimateFromUser: isNegotiationRequired && usdEstimate ? parseFloat(usdEstimate) : undefined,
+      // Include photo counts for backend validation (actual upload happens separately)
+      itemPhotoCounts: items.map(item => item.photos.length),
     };
 
     createDepositMutation.mutate(data);
   };
 
   const isNegotiationRequired = depositType === 'RAW' || depositType === 'OTHER';
-  const canSubmit = vaultLocation && sourceOfMetal && totalWeight > 0 && isBeneficialOwner && noLienDispute && acceptVaultTerms;
+  const allItemsHavePhotos = items.every(item => item.photos.length >= 2);
+  const canSubmit = vaultLocation && sourceOfMetal && totalWeight > 0 && isBeneficialOwner && noLienDispute && acceptVaultTerms && allItemsHavePhotos;
 
   return (
     <div className={embedded ? "" : "max-w-4xl mx-auto py-4"}>
@@ -581,6 +598,62 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                       data-testid={`input-description-${index}`}
                     />
                   )}
+
+                  {/* Mandatory Photos Section */}
+                  <div className="space-y-2 mt-3">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      Photos <span className="text-red-500">*</span>
+                      <span className="text-gray-500 font-normal">(min 2 required)</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {item.photos.map((photo, photoIdx) => (
+                        <div key={photoIdx} className="relative group">
+                          <img
+                            src={URL.createObjectURL(photo)}
+                            alt={`Item ${index + 1} photo ${photoIdx + 1}`}
+                            className="w-16 h-16 object-cover rounded-lg border"
+                          />
+                          <button
+                            type="button"
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              const newPhotos = [...item.photos];
+                              newPhotos.splice(photoIdx, 1);
+                              updateItem(item.id, { photos: newPhotos });
+                            }}
+                            data-testid={`button-remove-photo-${index}-${photoIdx}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <label
+                        className={`w-16 h-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                          item.photos.length < 2 ? 'border-red-300 bg-red-50 hover:border-red-400' : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        <Upload className="w-5 h-5 text-gray-400" />
+                        <span className="text-xs text-gray-500 mt-1">Add</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length > 0) {
+                              updateItem(item.id, { photos: [...item.photos, ...files] });
+                            }
+                            e.target.value = '';
+                          }}
+                          data-testid={`input-photo-${index}`}
+                        />
+                      </label>
+                    </div>
+                    {item.photos.length < 2 && (
+                      <p className="text-xs text-red-500">Please add at least 2 photos of this item</p>
+                    )}
+                  </div>
                 </div>
               ))}
 
