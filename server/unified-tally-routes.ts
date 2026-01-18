@@ -468,8 +468,10 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
         // Update physical deposit status to APPROVED
         await storage.updatePhysicalDeposit(id, {
           status: 'APPROVED',
-          processedAt: new Date(),
+          approvedAt: new Date(),
+          approvedBy: adminId,
           finalCreditedGrams: goldGrams.toFixed(6),
+          goldPriceAtApproval: goldPrice.toFixed(2),
         });
       }
 
