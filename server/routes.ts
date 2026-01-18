@@ -6074,7 +6074,8 @@ ${message}
         tradeCases,
         userCertificates,
         buyGoldRequests,
-        unifiedTallyTxns
+        unifiedTallyTxns,
+        physicalDeposits
       ] = await Promise.all([
         storage.getUserTransactions(userId),
         storage.getUserDepositRequests(userId),
@@ -6087,7 +6088,8 @@ ${message}
         storage.getUserTradeCases(userId),
         storage.getUserCertificates(userId),
         storage.getUserBuyGoldRequests(userId),
-        storage.getUserUnifiedTallyTransactions(userId)
+        storage.getUserUnifiedTallyTransactions(userId),
+        storage.getUserPhysicalDeposits(userId)
       ]);
       
       // Normalize all transactions to unified format
@@ -6267,6 +6269,31 @@ ${message}
           createdAt: dep.createdAt,
           completedAt: dep.processedAt || dep.storedAt,
           sourceType: 'vault_deposit'
+        });
+      });
+      
+      // Physical gold deposits (from physical_deposit_requests table)
+      physicalDeposits.forEach((dep: any) => {
+        const isApproved = dep.status === 'APPROVED';
+        const goldWeight = dep.finalCreditedGrams || dep.totalDeclaredWeightGrams || '0';
+        unifiedTransactions.push({
+          id: dep.id,
+          userId: dep.userId,
+          module: 'finavault',
+          actionType: 'DEPOSIT_PHYSICAL_GOLD',
+          grams: goldWeight,
+          usd: null,
+          usdPerGram: dep.goldPriceAtApproval || null,
+          status: isApproved ? 'COMPLETED' : dep.status === 'REJECTED' ? 'FAILED' : 'PENDING',
+          referenceId: dep.referenceNumber,
+          description: isApproved 
+            ? `Physical gold ${parseFloat(goldWeight).toFixed(4)}g deposited` 
+            : `Physical Deposit - ${dep.status}`,
+          counterpartyUserId: null,
+          createdAt: dep.createdAt,
+          completedAt: dep.approvedAt,
+          sourceType: 'physical_deposit',
+          goldWalletType: 'LGPW'
         });
       });
       
