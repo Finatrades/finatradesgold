@@ -94,7 +94,7 @@ export default function MobileFullScreenPage({
 
           {footer && (
             <div
-              className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg"
+              className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-gray-200 px-4 py-4 shadow-lg"
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
             >
               {footer}
