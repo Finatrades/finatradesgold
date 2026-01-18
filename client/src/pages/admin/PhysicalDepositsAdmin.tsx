@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -221,6 +222,8 @@ export default function PhysicalDepositsAdmin() {
     handlingFeeUsd: '0',
     creditedGrams: '',
     inspectorNotes: '',
+    useManualPrice: false,
+    manualPricePerGram: '',
   });
   const [offerForm, setOfferForm] = useState({
     proposedGrams: 0,
@@ -805,6 +808,42 @@ export default function PhysicalDepositsAdmin() {
                 />
               </div>
             </div>
+            
+            {/* Gold Price Selection */}
+            <div className="p-3 bg-gray-50 rounded-lg border space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Gold Price for Calculation</Label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs ${!inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-gray-400'}`}>Live</span>
+                  <Switch
+                    checked={inspectForm.useManualPrice}
+                    onCheckedChange={(checked) => setInspectForm({ ...inspectForm, useManualPrice: checked })}
+                    data-testid="switch-manual-price"
+                  />
+                  <span className={`text-xs ${inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-gray-400'}`}>Manual</span>
+                </div>
+              </div>
+              {inspectForm.useManualPrice ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter price per gram"
+                    value={inspectForm.manualPricePerGram}
+                    onChange={(e) => setInspectForm({ ...inspectForm, manualPricePerGram: e.target.value })}
+                    className="w-40"
+                    data-testid="input-manual-price"
+                  />
+                  <span className="text-sm text-gray-500">/ gram</span>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Live Price: <span className="font-medium text-purple-600">${goldPrice?.pricePerGram?.toFixed(2) || '---'}/g</span>
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Credited Grams (Final)</Label>
@@ -846,8 +885,15 @@ export default function PhysicalDepositsAdmin() {
                 const grossWeight = parseFloat(inspectForm.grossWeightGrams) || 0;
                 const netWeight = parseFloat(inspectForm.netWeightGrams) || 0;
                 const creditedGrams = parseFloat(inspectForm.creditedGrams) || 0;
-                const pricePerGram = goldPrice?.pricePerGram;
+                
+                // Use manual price if enabled, otherwise use live price
+                const livePrice = goldPrice?.pricePerGram;
+                const manualPrice = parseFloat(inspectForm.manualPricePerGram);
+                const pricePerGram = inspectForm.useManualPrice 
+                  ? (!isNaN(manualPrice) && manualPrice > 0 ? manualPrice : undefined)
+                  : livePrice;
                 const hasPriceData = pricePerGram && pricePerGram > 0;
+                const priceSource = inspectForm.useManualPrice ? 'Manual' : 'Live';
                 
                 const grossWeightUsd = hasPriceData ? grossWeight * pricePerGram : 0;
                 const netWeightUsd = hasPriceData ? netWeight * pricePerGram : 0;
@@ -873,8 +919,8 @@ export default function PhysicalDepositsAdmin() {
                     <CardContent className="pt-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-purple-700">Valuation Summary</span>
-                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                          @ {hasPriceData ? `$${pricePerGram.toFixed(2)}/g` : '---'}
+                        <span className={`text-xs px-2 py-1 rounded ${inspectForm.useManualPrice ? 'bg-amber-100 text-amber-700' : 'bg-white text-gray-500'}`}>
+                          {priceSource}: {hasPriceData ? `$${pricePerGram.toFixed(2)}/g` : '---'}
                         </span>
                       </div>
                       
