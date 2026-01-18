@@ -147,14 +147,23 @@ export default function PhysicalDepositsAdmin() {
 
   const offerMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      console.log('[Admin] Sending offer:', { id, data });
       const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/offer`, data);
-      if (!res.ok) throw new Error('Failed to send offer');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('[Admin] Offer failed:', res.status, errorData);
+        throw new Error(errorData.error || 'Failed to send offer');
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['physical-deposits'] });
       setDialogMode(null);
       toast({ title: 'Offer sent to user' });
+    },
+    onError: (error: Error) => {
+      console.error('[Admin] Offer mutation error:', error.message);
+      toast({ title: 'Failed to send offer', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -721,7 +730,7 @@ export default function PhysicalDepositsAdmin() {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => { setDialogMode('offer'); }}
+                                onClick={() => openDialog(selectedDeposit, 'offer')}
                                 data-testid="button-counter-back"
                               >
                                 Counter Back
@@ -1234,11 +1243,16 @@ export default function PhysicalDepositsAdmin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogMode(null)}>Cancel</Button>
             <Button 
-              onClick={() => selectedDeposit && offerMutation.mutate({ id: selectedDeposit.id, data: offerForm })}
+              onClick={() => {
+                console.log('[Admin] Send Offer clicked', { selectedDeposit: selectedDeposit?.id, offerForm, disabled: offerForm.proposedGrams <= 0 });
+                if (selectedDeposit) {
+                  offerMutation.mutate({ id: selectedDeposit.id, data: offerForm });
+                }
+              }}
               disabled={offerForm.proposedGrams <= 0 || offerMutation.isPending}
               data-testid="button-send-offer"
             >
-              Send Offer
+              {offerMutation.isPending ? 'Sending...' : 'Send Offer'}
             </Button>
           </DialogFooter>
         </DialogContent>
