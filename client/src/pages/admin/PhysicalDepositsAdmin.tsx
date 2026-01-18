@@ -897,17 +897,12 @@ export default function PhysicalDepositsAdmin() {
                         </div>
                       </div>
 
-                      {/* Credited Gold */}
+                      {/* Credited Gold - PRIMARY VALUE */}
                       {creditedGrams > 0 && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
-                            <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
-                            <p className="text-lg font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
-                          </div>
-                          <div className="text-center p-3 bg-white rounded-lg border border-blue-200">
-                            <p className="text-xs text-gray-500 mb-1">Credited USD Value</p>
-                            <p className="text-lg font-bold text-blue-600">{formatUsd(creditedUsd)}</p>
-                          </div>
+                        <div className="text-center p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-2 border-amber-300">
+                          <p className="text-xs text-amber-700 font-medium mb-1">Final Gold to Credit</p>
+                          <p className="text-2xl font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
+                          <p className="text-sm text-gray-500 mt-1">≈ {formatUsd(creditedUsd)} equivalent</p>
                         </div>
                       )}
 
@@ -940,12 +935,14 @@ export default function PhysicalDepositsAdmin() {
                         </div>
                       )}
 
-                      {/* Net USD Value */}
-                      {creditedGrams > 0 && (
-                        <div className={`text-center p-3 rounded-lg border-2 ${!hasPriceData ? 'bg-gray-50 border-gray-300' : netUsdValue >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
-                          <p className="text-xs text-gray-500 mb-1">Net USD Value (After Fees)</p>
-                          <p className={`text-xl font-bold ${!hasPriceData ? 'text-gray-400' : netUsdValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatUsd(netUsdValue)}
+                      {/* Fee Summary - Shows deduction in equivalent terms */}
+                      {totalFees > 0 && creditedGrams > 0 && hasPriceData && (
+                        <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Fees Equivalent</p>
+                          <p className="text-sm text-gray-600">
+                            Total Fees: <span className="font-medium text-red-500">-{formatUsd(totalFees)}</span>
+                            <span className="text-gray-400 mx-1">≈</span>
+                            <span className="text-red-500">-{(totalFees / pricePerGram).toFixed(4)}g</span>
                           </p>
                         </div>
                       )}
