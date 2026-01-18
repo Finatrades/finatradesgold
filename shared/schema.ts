@@ -943,6 +943,10 @@ export const transactions = pgTable("transactions", {
   // Gold price at transaction time (for historical value calculation)
   goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
   
+  // Legacy columns (preserved for production data compatibility)
+  exchangeRateId: varchar("exchange_rate_id", { length: 255 }),
+  goldPriceInPrimaryCurrency: decimal("gold_price_in_primary_currency", { precision: 18, scale: 6 }),
+  
   // LGPW/FGPW wallet selection
   goldWalletType: varchar("gold_wallet_type", { length: 10 }), // 'LGPW' or 'FGPW'
   fpgwBatchId: varchar("fpgw_batch_id", { length: 255 }), // For FGPW transactions, links to batch
