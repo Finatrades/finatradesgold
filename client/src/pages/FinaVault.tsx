@@ -1128,26 +1128,6 @@ export default function FinaVault() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header - hidden on mobile since mobile nav shows page context */}
-        <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-purple-100 rounded-lg border border-purple-200 text-primary">
-                <Database className="w-6 h-6" />
-             </div>
-             <h1 className="text-2xl font-bold text-foreground" data-testid="text-finavault-title">
-               {getContent('hero', 'title', 'FinaVault')} — <span className="text-muted-foreground font-normal">Gold Deposit</span>
-             </h1>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
-               <Bell className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full">
-               <Settings className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
         
         {/* FinaVault Wallet Card - Only show when user has vault activity */}
         {hasVaultActivity && (
