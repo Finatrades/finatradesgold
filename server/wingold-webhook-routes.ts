@@ -22,7 +22,7 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { z } from "zod";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { 
   wingoldOrderEvents, 
   users,
@@ -30,7 +30,8 @@ import {
   vaultHoldings,
   certificates,
   transactions,
-  notifications
+  notifications,
+  unifiedTallyTransactions
 } from "@shared/schema";
 import { storage } from "./storage";
 
@@ -486,6 +487,8 @@ async function handleOrderApproved(
   payload: WingoldWebhookPayload,
   user: any
 ): Promise<{ success: boolean; message: string }> {
+  const dataResult = OrderConfirmedDataSchema.safeParse(payload.data);
+  
   await createAuditLog(
     "wingold-webhook", 
     "ORDER_APPROVED",
@@ -494,7 +497,62 @@ async function handleOrderApproved(
     { data: payload.data }
   );
   
-  return { success: true, message: "Order approved logged" };
+  // Create UTT entry for Finatrades admin to approve (appears in UFM)
+  if (user && dataResult.success) {
+    const data = dataResult.data;
+    
+    // Generate UTT reference number
+    const year = new Date().getFullYear();
+    const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM unified_tally_transactions WHERE txn_id LIKE ${'UGT-' + year + '-%'}`);
+    const count = parseInt((countResult.rows[0] as any)?.count || '0') + 1;
+    const txnId = `UGT-${year}-${String(count).padStart(6, '0')}`;
+    
+    // Check if UTT already exists for this Wingold order
+    const existingUtt = await db.select()
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.wingoldOrderId, payload.orderId))
+      .limit(1);
+    
+    if (existingUtt.length === 0) {
+      // Create new UTT entry for Finatrades admin approval
+      await db.insert(unifiedTallyTransactions).values({
+        txnId,
+        userId: user.id,
+        userName: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email,
+        userEmail: user.email,
+        txnType: 'FIAT_CRYPTO_DEPOSIT',
+        sourceMethod: 'CARD', // Wingold purchases treated as card payments
+        walletType: 'LGPW',
+        status: 'PHYSICAL_ORDERED', // Will appear in UFM for Finatrades admin
+        depositCurrency: 'USD',
+        depositAmount: data.usdAmount,
+        netAmount: data.usdAmount,
+        goldRateValue: data.goldPricePerGram,
+        goldEquivalentG: data.totalGrams,
+        wingoldOrderId: payload.orderId,
+        wingoldBuyRate: data.goldPricePerGram,
+        notes: `Wingold order approved. Reference: ${data.wingoldReference}. Awaiting Finatrades admin approval.`,
+      });
+      
+      console.log("[Wingold Webhook] UTT created for Finatrades approval:", {
+        txnId,
+        userId: user.id,
+        totalGrams: data.totalGrams,
+        wingoldOrderId: payload.orderId
+      });
+      
+      // Notify user
+      await db.insert(notifications).values({
+        userId: user.id,
+        title: "Wingold Order Approved",
+        message: `Your Wingold order for ${data.totalGrams}g has been approved. Awaiting final processing.`,
+        type: "transaction",
+        link: "/dashboard"
+      });
+    }
+  }
+  
+  return { success: true, message: "Order approved - UTT created for Finatrades approval" };
 }
 
 async function handleBarAllocated(
@@ -574,118 +632,98 @@ async function handleOrderFulfilled(
   const totalGrams = parseFloat(data.totalGrams);
   
   try {
-    // 1. Get user's wallet
-    const [wallet] = await db.select()
-      .from(wallets)
-      .where(eq(wallets.userId, user.id))
+    // Check if UTT exists for this Wingold order
+    const existingUtt = await db.select()
+      .from(unifiedTallyTransactions)
+      .where(eq(unifiedTallyTransactions.wingoldOrderId, payload.orderId))
       .limit(1);
     
-    if (!wallet) {
-      console.error("[Wingold Webhook] Wallet not found for user:", user.id);
-      return { success: false, message: "Wallet not found" };
+    if (existingUtt.length > 0) {
+      // Update existing UTT with fulfillment data - mark ready for Finatrades admin approval
+      await db.update(unifiedTallyTransactions)
+        .set({
+          status: 'CERT_RECEIVED', // Ready for Finatrades admin to approve
+          storageCertificateId: data.storageCertificateNumber || null,
+          physicalGoldAllocatedG: data.totalGrams,
+          notes: `Wingold order fulfilled. Reference: ${data.wingoldReference}. Certificate: ${data.storageCertificateNumber || 'pending'}. Ready for Finatrades admin approval.`,
+          updatedAt: new Date(),
+        })
+        .where(eq(unifiedTallyTransactions.wingoldOrderId, payload.orderId));
+      
+      console.log("[Wingold Webhook] UTT updated for Finatrades approval:", {
+        wingoldOrderId: payload.orderId,
+        totalGrams,
+        storageCertificate: data.storageCertificateNumber
+      });
+    } else {
+      // Create new UTT if it doesn't exist (fallback for direct orders)
+      const year = new Date().getFullYear();
+      const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM unified_tally_transactions WHERE txn_id LIKE ${'UGT-' + year + '-%'}`);
+      const count = parseInt((countResult.rows[0] as any)?.count || '0') + 1;
+      const txnId = `UGT-${year}-${String(count).padStart(6, '0')}`;
+      
+      await db.insert(unifiedTallyTransactions).values({
+        txnId,
+        userId: user.id,
+        userName: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email,
+        userEmail: user.email,
+        txnType: 'FIAT_CRYPTO_DEPOSIT',
+        sourceMethod: 'CARD', // Wingold purchases treated as card payments
+        walletType: 'LGPW',
+        status: 'CERT_RECEIVED',
+        goldEquivalentG: data.totalGrams,
+        physicalGoldAllocatedG: data.totalGrams,
+        storageCertificateId: data.storageCertificateNumber || null,
+        wingoldOrderId: payload.orderId,
+        notes: `Wingold order fulfilled. Reference: ${data.wingoldReference}. Ready for Finatrades admin approval.`,
+      });
+      
+      console.log("[Wingold Webhook] UTT created from order.fulfilled:", {
+        txnId,
+        userId: user.id,
+        totalGrams
+      });
     }
     
-    // 2. Credit wallet with gold
-    const currentBalance = parseFloat(wallet.goldGrams || "0");
-    const newBalance = currentBalance + totalGrams;
-    
-    await db.update(wallets)
-      .set({ 
-        goldGrams: newBalance.toFixed(6),
-        updatedAt: new Date() 
-      })
-      .where(eq(wallets.id, wallet.id));
-    
-    // 3. Create Physical Storage Certificate (from Wingold)
-    const pscNumber = data.storageCertificateNumber || generateCertificateNumber("Physical Storage");
-    await db.insert(certificates).values({
-      certificateNumber: pscNumber,
-      userId: user.id,
-      type: "Physical Storage",
-      status: "Active",
-      goldGrams: data.totalGrams,
-      issuer: "Wingold & Metals DMCC",
-      vaultLocation: data.vaultLocation || "Wingold & Metals DMCC",
-      wingoldStorageRef: data.wingoldReference,
-      issuedAt: new Date()
-    });
-    
-    // 4. Create Digital Ownership Certificate (from Finatrades)
-    const docNumber = generateCertificateNumber("Digital Ownership");
-    await db.insert(certificates).values({
-      certificateNumber: docNumber,
-      userId: user.id,
-      type: "Digital Ownership",
-      status: "Active",
-      goldGrams: data.totalGrams,
-      issuer: "Finatrades FZE",
-      vaultLocation: data.vaultLocation || "Wingold & Metals DMCC",
-      wingoldStorageRef: data.wingoldReference,
-      relatedCertificateId: pscNumber,
-      issuedAt: new Date()
-    });
-    
-    // 5. Create vault holding record
-    await db.insert(vaultHoldings).values({
-      userId: user.id,
-      goldGrams: data.totalGrams,
-      vaultLocation: data.vaultLocation || "Wingold & Metals DMCC",
-      wingoldStorageRef: data.wingoldReference,
-      storageFeesAnnualPercent: "0.50",
-      isPhysicallyDeposited: true
-    });
-    
-    // 6. Create transaction record
-    await db.insert(transactions).values({
-      userId: user.id,
-      type: "Deposit",
-      status: "Completed",
-      amountGold: data.totalGrams,
-      goldWalletType: "LGPW",
-      description: `Gold purchase via Wingold - ${data.wingoldReference}`,
-      sourceModule: "wingold"
-    });
-    
-    // 7. Send notification
+    // Notify user that order is ready for final processing
     await db.insert(notifications).values({
       userId: user.id,
-      title: "Gold Purchase Complete!",
-      message: `Your ${data.totalGrams}g gold purchase from Wingold has been completed and added to your wallet.`,
-      type: "success",
+      title: "Wingold Order Fulfilled",
+      message: `Your ${data.totalGrams}g gold purchase from Wingold has been fulfilled and is being processed.`,
+      type: "transaction",
       link: "/dashboard"
     });
     
     await createAuditLog(
       "wingold-webhook",
-      "ORDER_FULFILLED_WALLET_CREDITED",
-      "wallet",
-      wallet.id,
+      "ORDER_FULFILLED_PENDING_APPROVAL",
+      "unified_tally",
+      payload.orderId,
       {
         orderId: payload.orderId,
         grams: totalGrams,
         wingoldReference: data.wingoldReference,
-        pscNumber,
-        docNumber
+        storageCertificate: data.storageCertificateNumber
       }
     );
     
-    console.log("[Wingold Webhook] Order fulfilled - wallet credited:", {
+    console.log("[Wingold Webhook] Order fulfilled - awaiting Finatrades admin approval:", {
       userId: user.id,
       grams: totalGrams,
-      newBalance,
       wingoldReference: data.wingoldReference
     });
     
+    // NOTE: Wallet is NOT credited here. Finatrades admin must approve in UFM first.
     return { 
       success: true, 
-      message: `Wallet credited with ${totalGrams}g gold`,
-      walletCredited: true,
-      creditedGrams: totalGrams
+      message: `Order fulfilled - pending Finatrades admin approval in UFM`,
+      walletCredited: false,
+      creditedGrams: 0
     };
     
   } catch (error) {
     console.error("[Wingold Webhook] Failed to process order.fulfilled:", error);
-    return { success: false, message: "Failed to credit wallet" };
+    return { success: false, message: "Failed to process order" };
   }
 }
 
