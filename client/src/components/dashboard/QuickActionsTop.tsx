@@ -196,7 +196,7 @@ export default function QuickActionsTop() {
                 data-testid={`button-action-mobile-${action.title.toLowerCase().replace(' ', '-')}`}
               >
                 <span className="flex items-center justify-center w-7 h-7 bg-white/20 rounded-lg mb-1">
-                  {React.cloneElement(action.icon as React.ReactElement, { className: 'w-4 h-4' })}
+                  {action.icon}
                 </span>
                 <span className="text-[10px] leading-tight text-center px-1 truncate w-full">
                   {action.title.split(' ')[0]}
@@ -212,7 +212,7 @@ export default function QuickActionsTop() {
         </div>
       </div>
 
-      {/* Desktop: Original flex wrap layout */}
+      {/* Desktop: Modern Premium Quick Actions */}
       <div className="hidden md:flex flex-wrap gap-3" data-testid="quick-actions-container">
         {actions.map((action, index) => {
           const isLocked = action.requiresKyc && !isKycApproved;
@@ -220,25 +220,32 @@ export default function QuickActionsTop() {
           return (
             <motion.button
               key={action.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: isLocked ? 1 : 1.02 }}
-              whileTap={{ scale: isLocked ? 1 : 0.98 }}
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ 
+                delay: index * 0.05,
+                type: "spring",
+                stiffness: 300,
+                damping: 25
+              }}
+              whileHover={{ scale: isLocked ? 1 : 1.05, y: isLocked ? 0 : -2 }}
+              whileTap={{ scale: isLocked ? 1 : 0.95 }}
               onClick={() => handleAction(action)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium text-sm shadow-md transition-all relative ${
+              className={`group flex items-center gap-2.5 px-5 py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-300 relative overflow-hidden ${
                 isLocked 
                   ? 'bg-gray-400 cursor-not-allowed opacity-60' 
-                  : `bg-gradient-to-r ${action.gradient} ${action.hoverGradient}`
+                  : `bg-gradient-to-r ${action.gradient} hover:shadow-xl`
               }`}
               data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
             >
-              <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10" />
+              <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/10 rounded-t-xl" />
+              <span className="relative z-10 flex items-center justify-center w-7 h-7 bg-white/25 backdrop-blur-sm rounded-lg shadow-sm group-hover:bg-white/30 transition-colors">
                 {action.icon}
               </span>
-              <span className="whitespace-nowrap">{action.title}</span>
+              <span className="relative z-10 whitespace-nowrap">{action.title}</span>
               {isLocked && (
-                <Lock className="w-3 h-3 ml-1 opacity-70" />
+                <Lock className="relative z-10 w-3.5 h-3.5 ml-1 opacity-80" />
               )}
             </motion.button>
           );

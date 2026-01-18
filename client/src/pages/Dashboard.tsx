@@ -152,10 +152,25 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Desktop: Welcome Header */}
+        {/* Desktop: Welcome Header - Modern Design */}
         <section className="hidden md:block pb-0">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome, {userName}</h1>
-          <p className="text-gray-500 text-sm mt-1">Your portfolio overview</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
+                Welcome back, {userName}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">Your portfolio overview • Last updated just now</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/50 rounded-xl">
+                <p className="text-xs text-emerald-600 font-medium">Gold Price</p>
+                <p className="text-lg font-bold text-emerald-700 flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" />
+                  ${goldPrice.toFixed(2)}/g
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Quick Actions - Colorful buttons */}
