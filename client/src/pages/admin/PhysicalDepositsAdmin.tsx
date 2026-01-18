@@ -96,6 +96,16 @@ export default function PhysicalDepositsAdmin() {
     },
   });
 
+  const { data: goldPrice } = useQuery({
+    queryKey: ['gold-price'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/gold-price');
+      if (!res.ok) throw new Error('Failed to fetch gold price');
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
   const reviewMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/review`, {});
@@ -796,6 +806,34 @@ export default function PhysicalDepositsAdmin() {
                 data-testid="input-credited-grams"
               />
             </div>
+            
+            {/* Summary Card - Shows credited gold and USD equivalent */}
+            {inspectForm.creditedGrams && parseFloat(inspectForm.creditedGrams) > 0 && (
+              <Card className="bg-gradient-to-r from-purple-50 to-amber-50 border-purple-200">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-700">Credit Summary</span>
+                    <span className="text-xs text-gray-500">@ ${goldPrice?.pricePerGram?.toFixed(2) || '---'}/g</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
+                      <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
+                      <p className="text-xl font-bold text-amber-600">{parseFloat(inspectForm.creditedGrams).toFixed(4)} g</p>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg border border-green-200">
+                      <p className="text-xs text-gray-500 mb-1">≈ USD Value</p>
+                      <p className="text-xl font-bold text-green-600">
+                        ${goldPrice?.pricePerGram 
+                          ? (parseFloat(inspectForm.creditedGrams) * goldPrice.pricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : '---'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2 text-center">* USD value is approximate based on current gold rate</p>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-2">
               <Label>Inspector Notes</Label>
               <Textarea
