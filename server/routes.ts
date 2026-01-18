@@ -3208,13 +3208,22 @@ ${message}
 
       const startTime = now;
       
-      // Fetch all data in parallel for speed
-      const [users, kycSubmissions, allTransactions, allDepositRequests] = await Promise.all([
-        storage.getAllUsers(),
-        storage.getAllKycSubmissions(),
-        storage.getAllTransactions(),
-        storage.getAllDepositRequests()
-      ]);
+      // Fetch all data in parallel for speed with defensive error handling
+      let users: any[] = [];
+      let kycSubmissions: any[] = [];
+      let allTransactions: any[] = [];
+      let allDepositRequests: any[] = [];
+      
+      try {
+        [users, kycSubmissions, allTransactions, allDepositRequests] = await Promise.all([
+          storage.getAllUsers().catch(() => []),
+          storage.getAllKycSubmissions().catch(() => []),
+          storage.getAllTransactions().catch(() => []),
+          storage.getAllDepositRequests().catch(() => [])
+        ]);
+      } catch (e) {
+        console.error('[admin/stats] Core data fetch failed:', e);
+      }
       
       // Date calculations for period comparisons
       const currentDate = new Date();
@@ -3581,12 +3590,21 @@ ${message}
   // Admin Pending Counts for Sidebar Badges
   app.get("/api/admin/pending-counts", ensureAdminAsync, async (req, res) => {
     try {
-      const [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
-        storage.getAllKycSubmissions(),
-        storage.getAllTransactions(),
-        storage.getAllDepositRequests(),
-        storage.getAllUsers()
-      ]);
+      let kycSubmissions: any[] = [];
+      let allTransactions: any[] = [];
+      let allDepositRequests: any[] = [];
+      let allUsers: any[] = [];
+
+      try {
+        [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
+          storage.getAllKycSubmissions().catch(() => []),
+          storage.getAllTransactions().catch(() => []),
+          storage.getAllDepositRequests().catch(() => []),
+          storage.getAllUsers().catch(() => [])
+        ]);
+      } catch (e) {
+        console.error('[pending-counts] Core data fetch failed:', e);
+      }
 
       // Count pending KYC from both kyc_submissions and users table
       const pendingKycSubmissions = kycSubmissions.filter(k => k.status === 'In Progress').length;
