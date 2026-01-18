@@ -376,11 +376,9 @@ router.get('/deposits/:id/negotiation', async (req: Request, res: Response) => {
   }
 });
 
+// Simplified: User can only ACCEPT or REJECT (no counter-offers)
 const userResponseSchema = z.object({
-  action: z.enum(['ACCEPT', 'COUNTER', 'REJECT']),
-  counterGrams: z.number().optional(),
-  counterUsd: z.number().optional(),
-  counterFees: z.number().optional(),
+  action: z.enum(['ACCEPT', 'REJECT']),
   message: z.string().optional(),
 });
 
@@ -408,67 +406,36 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
     }
 
     if (deposit.status !== 'NEGOTIATION') {
-      return res.status(400).json({ error: 'Deposit is not in negotiation status' });
+      return res.status(400).json({ error: 'No pending offer to respond to' });
     }
 
-    // Get latest negotiation message
+    // Get latest negotiation message (should be admin offer)
     const latestMsg = await storage.getLatestNegotiationMessage(deposit.id);
     console.log('[Respond] Latest message:', latestMsg);
     
-    // Only block if user has already responded to admin's current offer
-    if (latestMsg && latestMsg.senderRole === 'user') {
-      const isUserResponse = ['USER_COUNTER', 'USER_ACCEPT', 'USER_REJECT'].includes(latestMsg.messageType);
-      console.log('[Respond] Is user response?', isUserResponse, 'messageType:', latestMsg.messageType);
-      if (isUserResponse) {
-        return res.status(400).json({ error: 'Waiting for admin response' });
-      }
+    // Ensure there's an admin offer to respond to
+    if (!latestMsg || latestMsg.messageType !== 'ADMIN_OFFER') {
+      return res.status(400).json({ error: 'No pending offer to respond to' });
     }
 
-    const { action, counterGrams, counterUsd, counterFees, message } = parsed.data;
+    const { action, message } = parsed.data;
 
     let messageType: string;
-    let newStatus: string | undefined;
+    let newStatus: string;
     let finalGrams: string | undefined;
     let finalFees: string | undefined;
-    let proposedUsd: string | undefined;
 
-    switch (action) {
-      case 'ACCEPT':
-        messageType = 'USER_ACCEPT';
-        newStatus = 'AGREED';
-        // When accepting, carry forward the admin's offer values
-        if (latestMsg?.messageType === 'ADMIN_OFFER') {
-          finalGrams = latestMsg.proposedGrams || undefined;
-          finalFees = latestMsg.proposedFees || undefined;
-        }
-        break;
-      case 'COUNTER':
-        messageType = 'USER_COUNTER';
-        // Prefer counterGrams if provided, otherwise convert USD to grams
-        if (counterGrams) {
-          finalGrams = counterGrams.toString();
-        } else if (counterUsd && (deposit as any).priceSnapshotUsdPerGram) {
-          const pricePerGram = parseFloat((deposit as any).priceSnapshotUsdPerGram);
-          if (pricePerGram > 0) {
-            const gramsFromUsd = parseFloat(counterUsd.toString()) / pricePerGram;
-            finalGrams = gramsFromUsd.toFixed(6);
-          }
-        }
-        finalFees = counterFees?.toString();
-        proposedUsd = counterUsd?.toString();
-        break;
-      case 'REJECT':
-        messageType = 'USER_REJECT';
-        newStatus = 'CANCELLED';
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid action' });
+    if (action === 'ACCEPT') {
+      messageType = 'USER_ACCEPT';
+      newStatus = 'AGREED';
+      // Carry forward the admin's offer values
+      finalGrams = latestMsg.proposedGrams || undefined;
+      finalFees = latestMsg.proposedFees || undefined;
+    } else {
+      // REJECT - goes back to INSPECTION so admin can send new offer
+      messageType = 'USER_REJECT';
+      newStatus = 'INSPECTION';
     }
-
-    // Include counter USD in message if provided
-    const finalMessage = proposedUsd 
-      ? `${message || ''} [Counter USD: $${proposedUsd}]`.trim()
-      : message;
     
     const newMessage = await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
@@ -477,42 +444,33 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       senderRole: 'user',
       proposedGrams: finalGrams,
       proposedFees: finalFees,
-      message: finalMessage,
+      message: message,
       isLatest: true,
     });
 
-    // Emit real-time negotiation update to user
+    // Emit real-time update
     emitNegotiationUpdate(deposit.userId, deposit.id, newMessage);
     
-    // Also notify admins about the user's response
+    // Notify admins
     emitAdminNotification({
       type: 'negotiation_update',
       action: messageType.toLowerCase(),
       data: { depositId: deposit.id, referenceNumber: deposit.referenceNumber, message: newMessage },
     });
 
-    if (latestMsg) {
-      await storage.markNegotiationResponded(latestMsg.id);
-    }
+    await storage.markNegotiationResponded(latestMsg.id);
 
-    // Build update object for deposit
-    const depositUpdate: any = {};
-    if (newStatus) {
-      depositUpdate.status = newStatus;
-    }
+    // Update deposit status
+    const depositUpdate: any = { status: newStatus };
     
-    // When user accepts admin's offer, record timestamp and agreed USD value
-    if (action === 'ACCEPT' && latestMsg?.messageType === 'ADMIN_OFFER') {
+    if (action === 'ACCEPT') {
       depositUpdate.userAcceptedAt = new Date();
-      // Get the USD value from the admin's counter offer (stored on the deposit)
       if (deposit.usdCounterFromAdmin) {
         depositUpdate.usdAgreedValue = deposit.usdCounterFromAdmin;
       }
     }
     
-    if (Object.keys(depositUpdate).length > 0) {
-      await storage.updatePhysicalDeposit(deposit.id, depositUpdate);
-    }
+    await storage.updatePhysicalDeposit(deposit.id, depositUpdate);
 
     await storage.createAuditLog({
       entityType: 'physical_deposit',
@@ -520,10 +478,10 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       actor: userId,
       actorRole: 'user',
       actionType: `PHYSICAL_DEPOSIT_${messageType}`,
-      details: JSON.stringify({ action, counterGrams, counterFees, message }),
+      details: JSON.stringify({ action, message }),
     });
 
-    res.json({ success: true, newStatus: newStatus || deposit.status });
+    res.json({ success: true, newStatus });
   } catch (error) {
     console.error('Error responding to offer:', error);
     res.status(500).json({ error: 'Failed to respond' });
@@ -860,15 +818,18 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
       return res.status(404).json({ error: 'Deposit not found' });
     }
 
+    // Allow sending offer on INSPECTION, NEGOTIATION, or if user rejected previous offer
     if (!['INSPECTION', 'NEGOTIATION'].includes(deposit.status)) {
       return res.status(400).json({ error: 'Invalid status for offer' });
     }
 
+    // Mark any previous messages as responded (simplified - no turn-based check)
     const latestMsg = await storage.getLatestNegotiationMessage(deposit.id);
-    if (latestMsg && latestMsg.senderRole === 'admin') {
-      return res.status(400).json({ error: 'Waiting for user response' });
+    if (latestMsg) {
+      await storage.markNegotiationResponded(latestMsg.id);
     }
 
+    // Create the new offer message
     const offerMsg = await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
       messageType: 'ADMIN_OFFER',
@@ -882,15 +843,15 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
       isLatest: true,
     });
 
-    // Emit real-time negotiation message
+    // Emit real-time notification
     emitNegotiationUpdate(deposit.userId, deposit.id, offerMsg);
 
-    if (latestMsg) {
-      await storage.markNegotiationResponded(latestMsg.id);
-    }
-
-    // Update deposit status and USD counter offer
-    const depositUpdate: any = { status: 'NEGOTIATION' };
+    // Update deposit status and store offer details
+    const depositUpdate: any = { 
+      status: 'NEGOTIATION',
+      // Store the latest offer on the deposit for easy access
+      finalCreditedGrams: parsed.data.proposedGrams.toString(),
+    };
     if (parsed.data.usdOffer) {
       depositUpdate.usdCounterFromAdmin = parsed.data.usdOffer.toString();
     }
@@ -913,57 +874,7 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
   }
 });
 
-router.post('/admin/deposits/:id/accept-counter', requireAdmin(), async (req: Request, res: Response) => {
-  try {
-
-    const adminId = (req as any).session.userId;
-    const deposit = await storage.getPhysicalDepositById(req.params.id);
-
-    if (!deposit) {
-      return res.status(404).json({ error: 'Deposit not found' });
-    }
-
-    if (deposit.status !== 'NEGOTIATION') {
-      return res.status(400).json({ error: 'Deposit not in negotiation' });
-    }
-
-    const latestMsg = await storage.getLatestNegotiationMessage(deposit.id);
-    if (!latestMsg || latestMsg.messageType !== 'USER_COUNTER') {
-      return res.status(400).json({ error: 'No counter-offer to accept' });
-    }
-
-    const acceptMsg = await storage.createNegotiationMessage({
-      depositRequestId: deposit.id,
-      messageType: 'ADMIN_ACCEPT',
-      senderId: adminId,
-      senderRole: 'admin',
-      proposedGrams: latestMsg.proposedGrams,
-      proposedFees: latestMsg.proposedFees,
-      message: req.body.message,
-      isLatest: true,
-    });
-
-    // Emit real-time negotiation message
-    emitNegotiationUpdate(deposit.userId, deposit.id, acceptMsg);
-
-    await storage.markNegotiationResponded(latestMsg.id);
-
-    // When admin accepts user's counter, record both timestamps and agreed value
-    await storage.updatePhysicalDeposit(deposit.id, { 
-      status: 'AGREED',
-      finalCreditedGrams: latestMsg.proposedGrams,
-      adminAcceptedAt: new Date(),
-      userAcceptedAt: new Date(), // User already accepted by counter-offering
-      // If counter had USD value in message, use it; otherwise keep existing
-      usdAgreedValue: deposit.usdCounterFromAdmin || undefined,
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error accepting counter:', error);
-    res.status(500).json({ error: 'Failed to accept' });
-  }
-});
+// accept-counter route removed - simplified to one-way offer flow
 
 const approveSchema = z.object({
   goldPriceUsd: z.number().positive(),

@@ -105,8 +105,7 @@ function MyPhysicalDeposits() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDeposit, setSelectedDeposit] = useState<any>(null);
-  const [showCounterInput, setShowCounterInput] = useState(false);
-  const [counterValue, setCounterValue] = useState('');
+  // Counter input removed - simplified to Accept/Reject only
   const [isResponding, setIsResponding] = useState(false);
 
   // Get live gold price for real-time USD calculations
@@ -156,8 +155,8 @@ function MyPhysicalDeposits() {
     return (gramsNum * parseFloat(pricePerGram.toString())).toFixed(2);
   };
 
-  // Handle user response to admin's offer
-  const handleRespond = async (action: 'ACCEPT' | 'COUNTER' | 'REJECT') => {
+  // Handle user response to admin's offer (simplified: Accept or Reject only)
+  const handleRespond = async (action: 'ACCEPT' | 'REJECT') => {
     console.log('[FinaVault] handleRespond called:', action, 'selectedDeposit:', selectedDeposit?.id);
     if (!selectedDeposit) {
       console.log('[FinaVault] No selectedDeposit, returning');
@@ -166,11 +165,7 @@ function MyPhysicalDeposits() {
     
     setIsResponding(true);
     try {
-      const body: any = { action };
-      if (action === 'COUNTER' && counterValue) {
-        body.counterGrams = parseFloat(counterValue);
-        body.message = `User counter-offer: ${parseFloat(counterValue).toLocaleString()}g`;
-      }
+      const body = { action };
       console.log('[FinaVault] Sending POST with body:', body);
       
       // Use apiRequest which handles CSRF token automatically
@@ -179,17 +174,13 @@ function MyPhysicalDeposits() {
       console.log('[FinaVault] Response received:', res.status);
       
       toast({
-        title: action === 'ACCEPT' ? 'Offer Accepted!' : action === 'COUNTER' ? 'Counter Offer Sent' : 'Offer Rejected',
+        title: action === 'ACCEPT' ? 'Offer Accepted!' : 'Offer Rejected',
         description: action === 'ACCEPT' 
           ? 'The negotiation is complete. Your gold will be credited soon.' 
-          : action === 'COUNTER'
-          ? 'Your counter offer has been sent to the admin.'
-          : 'You have rejected the offer.',
+          : 'You have rejected the offer. Admin will send a revised offer.',
       });
       
       setSelectedDeposit(null);
-      setShowCounterInput(false);
-      setCounterValue('');
       refetch();
     } catch (err: any) {
       console.log('[FinaVault] Error responding:', err.message);
@@ -628,103 +619,34 @@ function MyPhysicalDeposits() {
                       const latestAdminOffer = selectedDeposit.negotiations?.filter((m: any) => m.senderRole === 'admin').pop();
                       const offeredGrams = latestAdminOffer?.proposedGrams || selectedDeposit.inspection?.creditedGrams;
                       return (
-                        <div className="space-y-4">
-                          {!showCounterInput ? (
-                            <>
-                              <div className="flex gap-2">
-                                <Button 
-                                  className="flex-1 bg-green-600 hover:bg-green-700 h-12"
-                                  onClick={() => handleRespond('ACCEPT')}
-                                  disabled={isResponding}
-                                  data-testid="button-accept-offer"
-                                >
-                                  {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-                                  Accept {offeredGrams ? `${parseFloat(offeredGrams).toLocaleString()}g` : 'Offer'}
-                                </Button>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline"
-                                  className="flex-1 border-orange-400 text-orange-700 hover:bg-orange-100"
-                                  onClick={() => setShowCounterInput(true)}
-                                  disabled={isResponding}
-                                  data-testid="button-counter-offer"
-                                >
-                                  Make Counter Offer
-                                </Button>
-                                <Button 
-                                  variant="outline"
-                                  className="border-red-300 text-red-600 hover:bg-red-50 px-4"
-                                  onClick={() => handleRespond('REJECT')}
-                                  disabled={isResponding}
-                                  data-testid="button-reject-offer"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="bg-white p-3 rounded-lg border border-orange-200 space-y-3">
-                              <p className="text-sm font-medium text-orange-800">Your counter offer (in grams)</p>
-                              
-                              {/* Quick value buttons based on offered grams */}
-                              {offeredGrams && (
-                                <div className="flex flex-wrap gap-2">
-                                  {[0.95, 0.97, 0.99, 1.02, 1.05].map((multiplier) => {
-                                    const value = (parseFloat(offeredGrams) * multiplier).toFixed(4);
-                                    const label = multiplier === 1.02 ? '+2%' : multiplier === 1.05 ? '+5%' : 
-                                                 multiplier === 0.99 ? '-1%' : multiplier === 0.97 ? '-3%' : '-5%';
-                                    return (
-                                      <Button
-                                        key={multiplier}
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-xs h-8"
-                                        onClick={() => setCounterValue(value)}
-                                      >
-                                        {label} ({value}g)
-                                      </Button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              
-                              <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                  <input
-                                    type="number"
-                                    step="0.0001"
-                                    value={counterValue}
-                                    onChange={(e) => setCounterValue(e.target.value)}
-                                    placeholder="Enter grams"
-                                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                    data-testid="input-counter-amount"
-                                  />
-                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">g</span>
-                                </div>
-                                <Button 
-                                  className="bg-purple-600 hover:bg-purple-700"
-                                  onClick={() => handleRespond('COUNTER')}
-                                  disabled={isResponding || !counterValue}
-                                  data-testid="button-submit-counter"
-                                >
-                                  {isResponding ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
-                                </Button>
-                              </div>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                className="w-full text-gray-500"
-                                onClick={() => {
-                                  setShowCounterInput(false);
-                                  setCounterValue('');
-                                }}
-                                disabled={isResponding}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
+                        <div className="space-y-3">
+                          <p className="text-sm text-center text-gray-600">
+                            Do you accept this offer?
+                          </p>
+                          <div className="flex gap-3">
+                            <Button 
+                              className="flex-1 bg-green-600 hover:bg-green-700 h-12"
+                              onClick={() => handleRespond('ACCEPT')}
+                              disabled={isResponding}
+                              data-testid="button-accept-offer"
+                            >
+                              {isResponding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                              Accept
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              className="flex-1 border-red-300 text-red-600 hover:bg-red-50 h-12"
+                              onClick={() => handleRespond('REJECT')}
+                              disabled={isResponding}
+                              data-testid="button-reject-offer"
+                            >
+                              <XCircle className="w-5 h-5 mr-2" />
+                              Reject
+                            </Button>
+                          </div>
+                          <p className="text-xs text-center text-gray-500">
+                            Rejecting will allow admin to send a revised offer
+                          </p>
                         </div>
                       );
                     })()
