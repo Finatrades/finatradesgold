@@ -379,48 +379,6 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         </CardHeader>
       </Card>
 
-      {isNegotiationRequired && (
-        <Card className="mb-6 border-amber-200 bg-amber-50">
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-amber-800">Negotiation Required</p>
-                <p className="text-sm text-amber-700">
-                  Raw gold and other items require professional assay and valuation. 
-                  After inspection, you will receive an offer which you can accept, counter, or reject.
-                  The equivalent USD value will be determined through negotiation and acceptance by both parties.
-                </p>
-              </div>
-            </div>
-            
-            <div className="pl-8 pt-2 border-t border-amber-200">
-              <Label className="text-sm text-amber-800 mb-2 block">
-                Target USD Value (Optional)
-              </Label>
-              <div className="flex items-center gap-3">
-                <div className="relative max-w-[200px]">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={usdEstimate}
-                    onChange={(e) => setUsdEstimate(e.target.value)}
-                    placeholder="0.00"
-                    className="pl-7 bg-white"
-                    data-testid="input-usd-estimate"
-                  />
-                </div>
-                <span className="text-xs text-amber-600">
-                  This helps start the negotiation. Final value is determined after assay.
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="space-y-6">
         {/* Section 1: Gold Details */}
         <Card>
@@ -740,6 +698,49 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
             </div>
           </CardContent>
         </Card>
+
+        {/* Negotiation Required Notice - shown for RAW and OTHER types */}
+        {isNegotiationRequired && (
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-800">Negotiation Required</p>
+                  <p className="text-sm text-amber-700">
+                    Raw gold and other items require professional assay and valuation. 
+                    After inspection, you will receive an offer which you can accept, counter, or reject.
+                    The equivalent USD value will be determined through negotiation and acceptance by both parties.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="pl-8 pt-2 border-t border-amber-200">
+                <Label className="text-sm text-amber-800 mb-2 block">
+                  Target USD Value (Optional)
+                </Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative max-w-[200px]">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={usdEstimate}
+                      onChange={(e) => setUsdEstimate(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-7 bg-white"
+                      data-testid="input-usd-estimate"
+                    />
+                  </div>
+                  <span className="text-xs text-amber-600">
+                    This helps start the negotiation. Final value is determined after assay.
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Section 2: Ownership */}
         <Card>
