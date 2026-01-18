@@ -23,6 +23,20 @@ function emitPhysicalDepositUpdate(userId: string, depositId: string, referenceN
   });
 }
 
+// Helper to emit real-time negotiation message updates
+function emitNegotiationUpdate(userId: string, depositId: string, message: any) {
+  emitLedgerEvent(userId, {
+    type: 'negotiation_message',
+    module: 'finavault',
+    action: 'new_message',
+    data: {
+      depositId,
+      message,
+      timestamp: new Date().toISOString(),
+    }
+  });
+}
+
 // Helper to send physical deposit status notification emails
 async function sendPhysicalDepositStatusEmail(
   userId: string,
@@ -456,7 +470,7 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       ? `${message || ''} [Counter USD: $${proposedUsd}]`.trim()
       : message;
     
-    await storage.createNegotiationMessage({
+    const newMessage = await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
       messageType,
       senderId: userId,
@@ -466,6 +480,9 @@ router.post('/deposits/:id/respond', async (req: Request, res: Response) => {
       message: finalMessage,
       isLatest: true,
     });
+
+    // Emit real-time negotiation update to all parties
+    emitNegotiationUpdate(deposit.userId, deposit.id, newMessage);
 
     if (latestMsg) {
       await storage.markNegotiationResponded(latestMsg.id);
@@ -770,7 +787,7 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
 
     // For negotiation items, automatically create the first offer from inspection data
     if (deposit.requiresNegotiation) {
-      await storage.createNegotiationMessage({
+      const autoOfferMsg = await storage.createNegotiationMessage({
         depositRequestId: deposit.id,
         messageType: 'ADMIN_OFFER',
         senderId: adminId,
@@ -780,6 +797,9 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
         message: `Based on inspection: ${data.creditedGrams}g credited after ${data.purityResult} purity verification. Total fees: $${totalFees.toFixed(2)}`,
         isLatest: true,
       });
+      
+      // Emit real-time negotiation message
+      emitNegotiationUpdate(deposit.userId, deposit.id, autoOfferMsg);
 
       // Send negotiation email
       await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'NEGOTIATION');
@@ -841,7 +861,7 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
       return res.status(400).json({ error: 'Waiting for user response' });
     }
 
-    await storage.createNegotiationMessage({
+    const offerMsg = await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
       messageType: 'ADMIN_OFFER',
       senderId: adminId,
@@ -853,6 +873,9 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
       message: parsed.data.message,
       isLatest: true,
     });
+
+    // Emit real-time negotiation message
+    emitNegotiationUpdate(deposit.userId, deposit.id, offerMsg);
 
     if (latestMsg) {
       await storage.markNegotiationResponded(latestMsg.id);
@@ -901,7 +924,7 @@ router.post('/admin/deposits/:id/accept-counter', requireAdmin(), async (req: Re
       return res.status(400).json({ error: 'No counter-offer to accept' });
     }
 
-    await storage.createNegotiationMessage({
+    const acceptMsg = await storage.createNegotiationMessage({
       depositRequestId: deposit.id,
       messageType: 'ADMIN_ACCEPT',
       senderId: adminId,
@@ -911,6 +934,9 @@ router.post('/admin/deposits/:id/accept-counter', requireAdmin(), async (req: Re
       message: req.body.message,
       isLatest: true,
     });
+
+    // Emit real-time negotiation message
+    emitNegotiationUpdate(deposit.userId, deposit.id, acceptMsg);
 
     await storage.markNegotiationResponded(latestMsg.id);
 
