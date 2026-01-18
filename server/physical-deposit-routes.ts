@@ -163,6 +163,16 @@ router.post('/deposits', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // SECURITY: Block admin accounts from submitting physical deposits
+    // Admins should not use user-side deposit flow - prevents self-approval conflicts
+    const user = await storage.getUser(session.userId);
+    if (user?.role === 'admin') {
+      return res.status(403).json({ 
+        error: 'Admin accounts cannot submit physical deposits. Please use a regular user account.',
+        code: 'ADMIN_DEPOSIT_BLOCKED'
+      });
+    }
+
     const parsed = createDepositSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
