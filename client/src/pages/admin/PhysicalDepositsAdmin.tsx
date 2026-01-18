@@ -209,6 +209,18 @@ export default function PhysicalDepositsAdmin() {
   const openDialog = (deposit: Deposit, mode: 'view' | 'receive' | 'inspect' | 'offer' | 'reject') => {
     setSelectedDeposit(deposit);
     setDialogMode(mode);
+    
+    if (mode === 'offer' && deposit.inspection) {
+      const totalFees = (parseFloat(deposit.inspection.assayFeeUsd) || 0) + 
+                        (parseFloat(deposit.inspection.refiningFeeUsd) || 0) + 
+                        (parseFloat(deposit.inspection.handlingFeeUsd) || 0);
+      setOfferForm({
+        proposedGrams: parseFloat(deposit.inspection.creditedGrams) || 0,
+        proposedFees: totalFees,
+        usdOffer: 0,
+        message: ''
+      });
+    }
   };
 
   const [receiveForm, setReceiveForm] = useState({ batchLotId: '', notes: '' });
@@ -1068,13 +1080,43 @@ export default function PhysicalDepositsAdmin() {
             <DialogDescription>Propose credited grams to the user</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {(selectedDeposit as any)?.usdEstimateFromUser && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-amber-800">User's Target USD Value:</span>
-                  <span className="font-bold text-amber-900">${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>
+            {((selectedDeposit as any)?.usdEstimateFromUser || (selectedDeposit as any)?.goldEstimateFromUser) && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                <p className="text-xs text-amber-600 font-medium">User's Target Values:</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {(selectedDeposit as any)?.goldEstimateFromUser && (
+                    <div>
+                      <span className="text-xs text-amber-700">Target Gold:</span>
+                      <span className="block font-bold text-amber-900">{parseFloat((selectedDeposit as any).goldEstimateFromUser).toLocaleString()} g</span>
+                    </div>
+                  )}
+                  {(selectedDeposit as any)?.usdEstimateFromUser && (
+                    <div>
+                      <span className="text-xs text-amber-700">Target USD:</span>
+                      <span className="block font-bold text-amber-900">${parseFloat((selectedDeposit as any).usdEstimateFromUser).toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-amber-600 mt-1">Consider this when making your offer</p>
+                <p className="text-xs text-amber-600">Consider these when making your offer</p>
+              </div>
+            )}
+            {selectedDeposit?.inspection && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-2">
+                <p className="text-xs text-green-600 font-medium">Inspection Results (auto-filled):</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-green-700">Credited Grams:</span>
+                    <span className="block font-bold text-green-900">{selectedDeposit.inspection.creditedGrams} g</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-green-700">Total Fees:</span>
+                    <span className="block font-bold text-green-900">
+                      ${((parseFloat(selectedDeposit.inspection.assayFeeUsd) || 0) + 
+                         (parseFloat(selectedDeposit.inspection.refiningFeeUsd) || 0) + 
+                         (parseFloat(selectedDeposit.inspection.handlingFeeUsd) || 0)).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
             <div className="space-y-2">
