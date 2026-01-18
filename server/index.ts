@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { registerR2ProxyRoutes } from "./r2-proxy";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
@@ -505,6 +506,8 @@ app.use((req, res, next) => {
   setupSocketIO(httpServer);
   
   await registerRoutes(httpServer, app);
+  
+  registerR2ProxyRoutes(app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

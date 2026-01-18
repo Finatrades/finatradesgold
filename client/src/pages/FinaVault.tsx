@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useLocation, Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { toProxyUrl } from '@/lib/file-utils';
 import PhysicalGoldDeposit from './PhysicalGoldDeposit';
 import BuyGoldBars from '@/components/finavault/BuyGoldBars';
 import { Badge } from '@/components/ui/badge';
@@ -456,27 +457,27 @@ function MyPhysicalDeposits() {
                             <p className="text-xs text-muted-foreground mb-2">Photos</p>
                             <div className="flex flex-wrap gap-2">
                               {item.photoFrontUrl && (
-                                <a href={item.photoFrontUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                <a href={toProxyUrl(item.photoFrontUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
                                   <img 
-                                    src={item.photoFrontUrl} 
+                                    src={toProxyUrl(item.photoFrontUrl) || ''} 
                                     alt="Front view" 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
                                   />
                                 </a>
                               )}
                               {item.photoBackUrl && (
-                                <a href={item.photoBackUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                <a href={toProxyUrl(item.photoBackUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
                                   <img 
-                                    src={item.photoBackUrl} 
+                                    src={toProxyUrl(item.photoBackUrl) || ''} 
                                     alt="Back view" 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
                                   />
                                 </a>
                               )}
                               {item.additionalPhotos?.map((photoUrl: string, photoIdx: number) => (
-                                <a key={photoIdx} href={photoUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                <a key={photoIdx} href={toProxyUrl(photoUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
                                   <img 
-                                    src={photoUrl} 
+                                    src={toProxyUrl(photoUrl) || ''} 
                                     alt={`Photo ${photoIdx + 1}`} 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
                                   />

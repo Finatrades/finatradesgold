@@ -28,7 +28,17 @@ function getR2Client(): S3Client {
 }
 
 export function isR2Configured(): boolean {
-  return !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME);
+  const configured = !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME);
+  return configured;
+}
+
+export function logR2Config(): void {
+  console.log(`[R2 Config] ACCOUNT_ID: ${R2_ACCOUNT_ID ? 'set' : 'NOT SET'}`);
+  console.log(`[R2 Config] ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID ? 'set' : 'NOT SET'}`);
+  console.log(`[R2 Config] SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY ? 'set' : 'NOT SET'}`);
+  console.log(`[R2 Config] BUCKET_NAME: ${R2_BUCKET_NAME ? 'set' : 'NOT SET'}`);
+  console.log(`[R2 Config] PUBLIC_URL: ${R2_PUBLIC_URL ? 'set' : 'NOT SET'}`);
+  console.log(`[R2 Config] isR2Configured(): ${isR2Configured()}`);
 }
 
 export async function uploadToR2(
@@ -120,4 +130,17 @@ export function generateR2Key(prefix: string, filename: string): string {
   const random = Math.round(Math.random() * 1e9);
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
   return `${prefix}/${timestamp}-${random}-${sanitizedFilename}`;
+}
+
+export function extractKeyFromR2Url(url: string): string | null {
+  if (!R2_PUBLIC_URL) return null;
+  if (url.startsWith(R2_PUBLIC_URL)) {
+    return url.substring(R2_PUBLIC_URL.length + 1);
+  }
+  const match = url.match(/r2\.dev\/(.+)$/);
+  return match ? match[1] : null;
+}
+
+export function getR2PublicUrl(): string | undefined {
+  return R2_PUBLIC_URL;
 }
