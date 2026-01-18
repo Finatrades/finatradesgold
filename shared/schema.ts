@@ -945,6 +945,7 @@ export const transactions = pgTable("transactions", {
   
   // Legacy columns (preserved for production data compatibility)
   exchangeRateId: varchar("exchange_rate_id", { length: 255 }),
+  exchangeRateToUsd: decimal("exchange_rate_to_usd", { precision: 18, scale: 6 }),
   goldPriceInPrimaryCurrency: decimal("gold_price_in_primary_currency", { precision: 18, scale: 6 }),
   
   // LGPW/FGPW wallet selection
