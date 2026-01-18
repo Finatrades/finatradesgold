@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
   RECEIVED: { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Received' },
   INSPECTION: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Inspection' },
   NEGOTIATION: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Negotiation' },
-  AGREED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Agreed' },
+  AGREED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Credit Pending' },
   READY_FOR_PAYMENT: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Ready' },
   APPROVED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
   REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
@@ -533,7 +533,7 @@ function MyPhysicalDeposits() {
                     <div className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${selectedDeposit.status === 'AGREED' ? 'bg-green-500' : 'bg-orange-500 animate-pulse'}`} />
                       <p className="text-sm font-semibold text-orange-800">
-                        {selectedDeposit.status === 'AGREED' ? 'Deal Agreed!' : 'Negotiation in Progress'}
+                        {selectedDeposit.status === 'AGREED' ? 'Credit Pending - Awaiting Admin Approval' : 'Negotiation in Progress'}
                       </p>
                     </div>
                     {selectedDeposit.usdAgreedValue && (
