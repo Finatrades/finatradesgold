@@ -89,18 +89,21 @@ async function getActiveVerifiableCredential(userId: number): Promise<{ credenti
 
 router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
   try {
+    console.log('[SSO] Starting token generation...');
     const session = (req as any).session;
     const userId = session.userId;
+    console.log('[SSO] User ID:', userId);
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
 
     if (!user) {
+      console.log('[SSO] User not found for ID:', userId);
       return res.status(404).json({ error: "User not found" });
     }
+    console.log('[SSO] User found:', user.email);
 
-    // Pre-sync KYC to Wingold if user is approved (non-blocking)
     if (user.kycStatus === 'Approved') {
       WingoldIntegrationService.syncKycToWingold(userId)
         .then(result => console.log('[SSO] KYC sync result:', result))
@@ -108,6 +111,7 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
     }
 
     const vcData = await getActiveVerifiableCredential(userId);
+    console.log('[SSO] VC data:', vcData ? 'present' : 'none');
 
     const payload: Record<string, any> = {
       sub: String(user.id),
@@ -138,10 +142,22 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       };
     }
 
-    const token = jwt.sign(payload, getPrivateKey(), { 
+    console.log('[SSO] Getting private key...');
+    let privateKey: string;
+    try {
+      privateKey = getPrivateKey();
+      console.log('[SSO] Private key loaded, length:', privateKey.length);
+    } catch (keyError: any) {
+      console.error('[SSO] Private key error:', keyError.message);
+      return res.status(500).json({ error: "SSO configuration error" });
+    }
+
+    console.log('[SSO] Signing JWT...');
+    const token = jwt.sign(payload, privateKey, { 
       algorithm: "RS256",
       expiresIn: "5m",
     });
+    console.log('[SSO] JWT signed successfully');
 
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
 
@@ -151,7 +167,8 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
       hasVerifiableCredential: !!vcData,
     });
   } catch (error: any) {
-    console.error("SSO token generation error:", error);
+    console.error("[SSO] Token generation error:", error.message);
+    console.error("[SSO] Stack trace:", error.stack);
     res.status(500).json({ error: "Failed to generate SSO token" });
   }
 });
