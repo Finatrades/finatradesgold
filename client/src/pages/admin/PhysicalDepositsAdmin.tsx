@@ -840,51 +840,80 @@ export default function PhysicalDepositsAdmin() {
               )}
             </div>
             
-            {/* Summary Card - Shows credited gold, fees, and USD equivalent */}
-            {inspectForm.creditedGrams && parseFloat(inspectForm.creditedGrams) > 0 && (
+            {/* Summary Card - Shows weight valuations, credited gold, fees, and USD equivalent */}
+            {(inspectForm.grossWeightGrams || inspectForm.netWeightGrams || inspectForm.creditedGrams) && (
               (() => {
+                const grossWeight = parseFloat(inspectForm.grossWeightGrams) || 0;
+                const netWeight = parseFloat(inspectForm.netWeightGrams) || 0;
                 const creditedGrams = parseFloat(inspectForm.creditedGrams) || 0;
                 const pricePerGram = goldPrice?.pricePerGram;
                 const hasPriceData = pricePerGram && pricePerGram > 0;
-                const grossUsdValue = hasPriceData ? creditedGrams * pricePerGram : 0;
+                
+                const grossWeightUsd = hasPriceData ? grossWeight * pricePerGram : 0;
+                const netWeightUsd = hasPriceData ? netWeight * pricePerGram : 0;
+                const creditedUsd = hasPriceData ? creditedGrams * pricePerGram : 0;
+                
                 const assayFee = parseFloat(inspectForm.assayFeeUsd) || 0;
                 const refiningFee = parseFloat(inspectForm.refiningFeeUsd) || 0;
                 const handlingFee = parseFloat(inspectForm.handlingFeeUsd) || 0;
                 const totalFees = assayFee + refiningFee + handlingFee;
-                const netUsdValue = hasPriceData ? grossUsdValue - totalFees : 0;
-                const netWeight = parseFloat(inspectForm.netWeightGrams) || 0;
+                const netUsdValue = hasPriceData ? creditedUsd - totalFees : 0;
+                
                 const purity = parseFloat(inspectForm.purityResult);
                 const hasValidation = creditedGrams > netWeight && netWeight > 0;
                 const hasPurityError = !isNaN(purity) && purity > 999.9;
                 const hasNegativeFees = assayFee < 0 || refiningFee < 0 || handlingFee < 0;
                 
+                const formatUsd = (val: number) => hasPriceData 
+                  ? `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : '---';
+                
                 return (
                   <Card className={`border-2 ${hasValidation || hasPurityError || hasNegativeFees ? 'bg-red-50 border-red-300' : 'bg-gradient-to-r from-purple-50 to-amber-50 border-purple-200'}`}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-purple-700">Credit Summary</span>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-purple-700">Valuation Summary</span>
                         <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                           @ {hasPriceData ? `$${pricePerGram.toFixed(2)}/g` : '---'}
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
-                          <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
-                          <p className="text-lg font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
-                        </div>
-                        <div className="text-center p-3 bg-white rounded-lg border border-blue-200">
-                          <p className="text-xs text-gray-500 mb-1">Gross USD Value</p>
-                          <p className="text-lg font-bold text-blue-600">
-                            {hasPriceData 
-                              ? `$${grossUsdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                              : '---'}
-                          </p>
+                      {/* Weight Valuations */}
+                      <div className="bg-white rounded-lg border border-gray-200 p-3">
+                        <p className="text-xs font-medium text-gray-600 mb-2">Weight Valuations:</p>
+                        <div className="space-y-2">
+                          {grossWeight > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Gross Weight ({grossWeight.toFixed(2)}g):</span>
+                              <span className="font-medium text-gray-700">{formatUsd(grossWeightUsd)}</span>
+                            </div>
+                          )}
+                          {netWeight > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Net Weight ({netWeight.toFixed(2)}g):</span>
+                              <span className="font-medium text-purple-600">{formatUsd(netWeightUsd)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {totalFees > 0 && (
-                        <div className="bg-white rounded-lg border border-gray-200 p-3 mb-3 space-y-1">
+                      {/* Credited Gold */}
+                      {creditedGrams > 0 && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="text-center p-3 bg-white rounded-lg border border-amber-200">
+                            <p className="text-xs text-gray-500 mb-1">Gold to Credit</p>
+                            <p className="text-lg font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
+                          </div>
+                          <div className="text-center p-3 bg-white rounded-lg border border-blue-200">
+                            <p className="text-xs text-gray-500 mb-1">Credited USD Value</p>
+                            <p className="text-lg font-bold text-blue-600">{formatUsd(creditedUsd)}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fee Deductions */}
+                      {totalFees > 0 && creditedGrams > 0 && (
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-1">
                           <p className="text-xs font-medium text-gray-600 mb-2">Fee Deductions:</p>
                           {assayFee > 0 && (
                             <div className="flex justify-between text-xs">
@@ -911,19 +940,20 @@ export default function PhysicalDepositsAdmin() {
                         </div>
                       )}
 
-                      <div className={`text-center p-3 rounded-lg border-2 ${!hasPriceData ? 'bg-gray-50 border-gray-300' : netUsdValue >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
-                        <p className="text-xs text-gray-500 mb-1">Net USD Value</p>
-                        <p className={`text-xl font-bold ${!hasPriceData ? 'text-gray-400' : netUsdValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {hasPriceData 
-                            ? `$${netUsdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            : '---'}
-                        </p>
-                      </div>
+                      {/* Net USD Value */}
+                      {creditedGrams > 0 && (
+                        <div className={`text-center p-3 rounded-lg border-2 ${!hasPriceData ? 'bg-gray-50 border-gray-300' : netUsdValue >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+                          <p className="text-xs text-gray-500 mb-1">Net USD Value (After Fees)</p>
+                          <p className={`text-xl font-bold ${!hasPriceData ? 'text-gray-400' : netUsdValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatUsd(netUsdValue)}
+                          </p>
+                        </div>
+                      )}
 
                       {hasNegativeFees && (
-                        <p className="text-xs text-red-500 mt-2 text-center">⚠️ Fees cannot be negative</p>
+                        <p className="text-xs text-red-500 text-center">⚠️ Fees cannot be negative</p>
                       )}
-                      <p className="text-xs text-gray-400 mt-2 text-center">* USD values are approximate based on current gold rate</p>
+                      <p className="text-xs text-gray-400 text-center">* USD values are approximate based on current gold rate</p>
                     </CardContent>
                   </Card>
                 );
