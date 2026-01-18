@@ -72,7 +72,7 @@ export default function PhysicalDepositsAdmin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null);
-  const [dialogMode, setDialogMode] = useState<'view' | 'receive' | 'inspect' | 'offer' | 'reject' | 'approve' | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'receive' | 'inspect' | 'offer' | 'reject' | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: stats } = useQuery({
@@ -172,22 +172,6 @@ export default function PhysicalDepositsAdmin() {
     },
   });
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await apiRequest('POST', `/api/physical-deposits/admin/deposits/${id}/approve`, data);
-      if (!res.ok) throw new Error('Failed to approve');
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['physical-deposits'] });
-      setDialogMode(null);
-      toast({ 
-        title: 'Deposit Approved', 
-        description: `Certificates: ${data.physicalCertificateNumber} & ${data.digitalCertificateNumber}` 
-      });
-    },
-  });
-
   // Send deposit to UFM for unified approval flow
   const sendToUfmMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -211,13 +195,12 @@ export default function PhysicalDepositsAdmin() {
     },
   });
 
-  const openDialog = (deposit: Deposit, mode: 'view' | 'receive' | 'inspect' | 'offer' | 'reject' | 'approve') => {
+  const openDialog = (deposit: Deposit, mode: 'view' | 'receive' | 'inspect' | 'offer' | 'reject') => {
     setSelectedDeposit(deposit);
     setDialogMode(mode);
   };
 
   const [receiveForm, setReceiveForm] = useState({ batchLotId: '', notes: '' });
-  const [approveForm, setApproveForm] = useState({ goldPriceUsd: 0, vaultLocation: 'Wingold & Metals DMCC', adminNotes: '' });
   const [inspectForm, setInspectForm] = useState({
     grossWeightGrams: '',
     netWeightGrams: '',
@@ -944,80 +927,6 @@ export default function PhysicalDepositsAdmin() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialogMode === 'approve' && !!selectedDeposit} onOpenChange={() => setDialogMode(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve Deposit</DialogTitle>
-            <DialogDescription>
-              Generate dual certificates and credit user's wallet
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Card className="bg-purple-50 border-purple-200">
-              <CardContent className="pt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Reference:</span>
-                  <span className="font-medium">{selectedDeposit?.referenceNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Declared Weight:</span>
-                  <span className="font-medium">{parseFloat(selectedDeposit?.totalDeclaredWeightGrams || '0').toFixed(4)} g</span>
-                </div>
-              </CardContent>
-            </Card>
-            <div className="space-y-2">
-              <Label>Current Gold Price (USD/g)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={approveForm.goldPriceUsd}
-                onChange={(e) => setApproveForm({ ...approveForm, goldPriceUsd: parseFloat(e.target.value) })}
-                placeholder="e.g. 65.50"
-                data-testid="input-gold-price"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Vault Location</Label>
-              <Input
-                value={approveForm.vaultLocation}
-                onChange={(e) => setApproveForm({ ...approveForm, vaultLocation: e.target.value })}
-                data-testid="input-vault-location"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Admin Notes (Optional)</Label>
-              <Textarea
-                value={approveForm.adminNotes}
-                onChange={(e) => setApproveForm({ ...approveForm, adminNotes: e.target.value })}
-                placeholder="Any notes about this approval..."
-                data-testid="input-approve-notes"
-              />
-            </div>
-            <Card className="bg-green-50 border-green-200">
-              <CardContent className="pt-4 text-sm">
-                <p className="font-medium text-green-800">This will:</p>
-                <ul className="list-disc list-inside text-green-700 mt-2 space-y-1">
-                  <li>Generate Physical Storage Certificate (Wingold)</li>
-                  <li>Generate Digital Ownership Certificate (Finatrades)</li>
-                  <li>Credit user's LGPW wallet</li>
-                  <li>Create deposit transaction</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogMode(null)}>Cancel</Button>
-            <Button 
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => selectedDeposit && approveMutation.mutate({ id: selectedDeposit.id, data: approveForm })}
-              disabled={approveForm.goldPriceUsd <= 0 || approveMutation.isPending}
-              data-testid="button-confirm-approve"
-            >
-              {approveMutation.isPending ? 'Approving...' : 'Approve & Generate Certificates'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       </div>
     </AdminLayout>
   );
