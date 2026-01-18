@@ -278,8 +278,8 @@ export default function AllTransactions() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center justify-between sm:justify-start gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">All Transactions</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">View all your transactions across all modules</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">Transaction History</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Complete history of all your transactions</p>
           </div>
           {getSyncStatusIndicator()}
         </div>

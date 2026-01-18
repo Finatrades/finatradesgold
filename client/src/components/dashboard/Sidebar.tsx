@@ -11,7 +11,6 @@ import {
   Shield, 
   LogOut,
   ShieldCheck,
-  Receipt,
   History,
   FileText,
   Send,
@@ -39,12 +38,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
   const mainMenuItems: MenuItem[] = [
     { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', href: '/dashboard' },
-    { icon: <Receipt className="w-5 h-5" />, label: 'All Transactions', href: '/transactions' },
+    { icon: <History className="w-5 h-5" />, label: 'Transaction History', href: '/transactions' },
     { icon: <Wallet className="w-5 h-5" />, label: 'Wallet', href: '/finapay' },
     { icon: <Database className="w-5 h-5" />, label: 'Gold Storage', href: '/finavault' },
-    { icon: <History className="w-5 h-5" />, label: 'Storage History', href: '/finavault/history' },
     { icon: <TrendingUp className="w-5 h-5" />, label: 'Buy Now, Sell Later', href: '/bnsl' },
-    { icon: <History className="w-5 h-5" />, label: 'BNSL History', href: '/bnsl/history' },
   ];
 
   const businessMenuItems: MenuItem[] = accountType === 'business' ? [
