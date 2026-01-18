@@ -20,18 +20,51 @@ export default function WingoldCallback() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get('status');
+    const orderId = params.get('orderId');
     
-    if (statusParam === 'success') {
-      setStatus('success');
-      setOrderDetails({
-        orderId: params.get('orderId') || '',
-        referenceNumber: params.get('referenceNumber') || '',
-        grams: params.get('grams') || '0',
-        usd: params.get('usd') || '0',
-      });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    const verifyOrder = async (id: string) => {
+      try {
+        const res = await fetch(`/api/sso/wingold/order/${id}`, { credentials: 'include' });
+        if (!res.ok) {
+          console.error('[WingoldCallback] Order verification failed:', res.status);
+          setStatus('failed');
+          setErrorMessage('Could not verify order status. Please check your dashboard.');
+          return;
+        }
+        const order = await res.json();
+        
+        if (order.status === 'completed') {
+          setStatus('success');
+          setOrderDetails({
+            orderId: order.orderId,
+            referenceNumber: order.wingoldReferenceNumber || '',
+            grams: String(order.totalGrams || 0),
+            usd: String(order.totalUsd || 0),
+          });
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['wallet'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        } else if (order.status === 'pending') {
+          setStatus('failed');
+          setErrorMessage('Payment is still pending. Please complete payment in the Wingold checkout.');
+        } else if (order.status === 'cancelled') {
+          setStatus('cancelled');
+        } else {
+          setStatus('failed');
+          setErrorMessage(order.errorMessage || 'Payment was not completed.');
+        }
+      } catch (error) {
+        console.error('[WingoldCallback] Verification error:', error);
+        setStatus('failed');
+        setErrorMessage('Could not verify payment status. Please check your dashboard.');
+      }
+    };
+    
+    if (statusParam === 'success' && orderId) {
+      verifyOrder(orderId);
+    } else if (statusParam === 'success') {
+      setStatus('failed');
+      setErrorMessage('Invalid callback - missing order information. Please try again.');
     } else if (statusParam === 'cancelled') {
       setStatus('cancelled');
     } else if (statusParam === 'failed') {
