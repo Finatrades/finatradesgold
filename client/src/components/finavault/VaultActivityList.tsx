@@ -1004,7 +1004,7 @@ export default function VaultActivityList() {
                     </div>
                     <Badge 
                       variant="secondary" 
-                      className="absolute right-16 top-1/2 -translate-y-1/2 text-xs cursor-pointer hover:bg-muted"
+                      className="absolute right-36 top-1/2 -translate-y-1/2 text-xs cursor-pointer hover:bg-muted z-10"
                       onClick={(e) => { e.stopPropagation(); toggleGroup(primary.id); }}
                     >
                       +{related.length} related
