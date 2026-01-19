@@ -808,44 +808,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             )}
           </div>
           
-          {/* Quick Preset Amounts */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {inputMode === 'usd' ? (
-              [50, 100, 250, 500, 1000].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    setAmount(preset.toString());
-                    if (goldPrice?.pricePerGram) {
-                      setGoldAmount((preset / goldPrice.pricePerGram).toFixed(4));
-                    }
-                  }}
-                  className="h-14 px-4 rounded-xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-sm font-medium text-foreground transition-all"
-                >
-                  ${preset}
-                </button>
-              ))
-            ) : (
-              [1, 10, 31.1, 100, 1000].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    setGoldAmount(preset.toString());
-                    if (goldPrice?.pricePerGram) {
-                      setAmount((preset * goldPrice.pricePerGram).toFixed(2));
-                    }
-                  }}
-                  className="h-14 px-4 rounded-xl border border-purple-200 hover:border-purple-500 hover:bg-purple-50 text-sm font-medium text-foreground transition-all"
-                >
-                  {preset === 1000 ? '1kg' : `${preset}g`}
-                </button>
-              ))
-            )}
-          </div>
-          
-          {/* Live Price Badge */}
           {goldPrice && (
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
@@ -1542,14 +1504,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   ))
                 )}
               </div>
-              
-              {/* Live Price Badge */}
-              {goldPrice && (
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                  <span>Live: <span className="font-semibold text-foreground">${goldPrice.pricePerGram.toFixed(2)}/g</span></span>
-                </div>
-              )}
             </div>
 
             {/* Compact Summary Card - Only shows when amount entered */}
@@ -1778,20 +1732,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             )}
 
-            {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-6 pt-2">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Shield className="w-3.5 h-3.5 text-green-600" />
-                <span>Secure Payment</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Zap className="w-3.5 h-3.5 text-purple-600" />
-                <span>Instant Processing</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Globe className="w-3.5 h-3.5 text-blue-600" />
-                <span>Live Rates</span>
-              </div>
             </div>
 
             {/* Minimum Deposit Notice */}
