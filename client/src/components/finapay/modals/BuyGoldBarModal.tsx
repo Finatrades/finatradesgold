@@ -177,19 +177,19 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-amber-50 to-yellow-50 shrink-0">
+        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-50 to-violet-50 shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-amber-900">
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-purple-900">
                 <Package className="w-6 h-6" />
                 Buy Gold Bars
               </DialogTitle>
-              <DialogDescription className="text-amber-700 mt-1 text-xs leading-relaxed">
+              <DialogDescription className="text-purple-700 mt-1 text-xs leading-relaxed">
                 Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system, and the Platform serves solely as a technology and execution infrastructure for such gold-based services.
               </DialogDescription>
             </div>
             {cart.length > 0 && (
-              <Badge className="bg-amber-500 text-white px-3 py-1">
+              <Badge className="bg-purple-600 text-white px-3 py-1">
                 <ShoppingCart className="w-4 h-4 mr-1" />
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} items
               </Badge>
@@ -201,7 +201,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
           <div className="flex-1 overflow-y-auto p-6">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
               </div>
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -216,11 +216,11 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                   return (
                     <Card 
                       key={product.productId} 
-                      className="overflow-hidden hover:shadow-md transition-shadow border-amber-100 flex flex-col"
+                      className="overflow-hidden hover:shadow-md transition-shadow border-purple-100 flex flex-col"
                       data-testid={`product-card-${product.productId}`}
                     >
                       {/* Product Image */}
-                      <div className="h-40 bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center p-3">
+                      <div className="h-40 bg-gradient-to-br from-purple-50 to-violet-50 flex items-center justify-center p-3">
                         <img
                           src={getProductImage(product)}
                           alt={product.name}
@@ -236,7 +236,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900 text-sm leading-tight">{product.name}</h3>
                           {product.inStock ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs shrink-0">
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs shrink-0">
                               In Stock
                             </Badge>
                           ) : (
@@ -251,7 +251,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                         </p>
                         
                         {/* Price Section - AED only */}
-                        <p className="text-lg font-bold text-amber-600 mb-3">
+                        <p className="text-lg font-bold text-purple-600 mb-3">
                           AED {unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         
@@ -259,7 +259,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                         <Button
                           onClick={() => addToCart(product)}
                           disabled={!product.inStock}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                           data-testid={`add-to-cart-${product.productId}`}
                         >
                           <ShoppingCart className="w-4 h-4 mr-2" />
@@ -338,7 +338,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                               <Plus className="w-3 h-3" />
                             </Button>
                           </div>
-                          <p className="font-semibold text-amber-600">
+                          <p className="font-semibold text-purple-600">
                             AED {itemBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
@@ -380,14 +380,14 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                   )}
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total</span>
-                    <span className="text-lg font-bold text-amber-600" data-testid="text-total-aed">
+                    <span className="text-lg font-bold text-purple-600" data-testid="text-total-aed">
                       AED {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
                 
                 <Button
-                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+                  className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold"
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
                   data-testid="button-checkout"
