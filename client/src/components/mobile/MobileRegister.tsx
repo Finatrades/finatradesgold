@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 type AccountType = 'personal' | 'business';
 

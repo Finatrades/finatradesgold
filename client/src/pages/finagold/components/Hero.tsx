@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Phone, Shield, CheckCircle, X } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 const content = {
   personal: {

@@ -6,7 +6,7 @@ import {
   CircleDot, ChevronRight, Sparkles, MapPin
 } from 'lucide-react';
 import { Link } from 'wouter';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import MobileBottomNav from './components/MobileBottomNav';

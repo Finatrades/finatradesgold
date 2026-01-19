@@ -1,7 +1,7 @@
 import { Twitter, Linkedin, Instagram, Facebook } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 const footerLinks = {
   Products: [
@@ -37,7 +37,7 @@ export default function Footer() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-10 w-auto mb-2 brightness-0 invert"
+                className="h-10 w-auto mb-2 brightness-[2] saturate-[1.5]"
               />
               <p className="text-white/60 text-sm">Swiss Regulated Financial Gold-Backed Platform</p>
             </div>

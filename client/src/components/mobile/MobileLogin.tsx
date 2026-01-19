@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import BiometricService from '@/lib/biometric-service';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 export default function MobileLogin() {
   const { login, verifyMfa, user, loading, setUser } = useAuth();

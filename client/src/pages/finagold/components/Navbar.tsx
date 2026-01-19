@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useMode } from '../context/ModeContext';
-import finatradesLogo from '@/assets/finatrades-logo.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 type NavLink = {
   label: string;
@@ -73,7 +73,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             <img 
               src={finatradesLogo} 
               alt="Finatrades" 
-              className="h-8 w-auto brightness-0 invert"
+              className="h-8 w-auto brightness-[2] saturate-[1.5]"
               data-testid="logo-finatrades"
             />
           </Link>

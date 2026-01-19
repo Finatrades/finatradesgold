@@ -22,7 +22,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
-import finatradesLogo from '@/assets/finatrades-logo-dark.png';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 interface MenuItem {
   icon: React.ReactNode;
