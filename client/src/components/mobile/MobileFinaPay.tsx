@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 
-import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
@@ -418,14 +417,6 @@ export default function MobileFinaPay() {
       </motion.div>
 
       {/* Modals */}
-      <BuyGoldWingoldModal
-        isOpen={showBuyModal}
-        onClose={() => setShowBuyModal(false)}
-        onSuccess={() => {
-          setShowBuyModal(false);
-          handleRefresh();
-        }}
-      />
       <SellGoldModal
         isOpen={showSellModal}
         onClose={() => setShowSellModal(false)}

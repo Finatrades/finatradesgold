@@ -13,7 +13,6 @@ import { useLocation } from 'wouter';
 import MobileKPICard from './MobileKPICard';
 import MobileQuickActionButton from './MobileQuickActionButton';
 import MobileRecentActivity from './MobileRecentActivity';
-import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 
 function formatNumber(num: number | null | undefined, decimals = 2): string {
   if (num === null || num === undefined || isNaN(num)) return '0.00';
@@ -340,15 +339,6 @@ export default function MobileDashboard() {
         maxItems={5}
       />
 
-      {/* Modals */}
-      <BuyGoldWingoldModal
-        isOpen={showBuyModal}
-        onClose={() => setShowBuyModal(false)}
-        onSuccess={() => {
-          setShowBuyModal(false);
-          handleRefresh();
-        }}
-      />
     </div>
   );
 }

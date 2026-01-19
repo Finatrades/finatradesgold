@@ -7,7 +7,6 @@ import MobileQuickActions from './MobileQuickActions';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
-import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
@@ -22,7 +21,6 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
-  const [buyGoldModalOpen, setBuyGoldModalOpen] = useState(false);
   
   const { user } = useAuth();
 
@@ -69,7 +67,6 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
           onOpenDeposit={() => setDepositModalOpen(true)}
           onOpenSend={() => setSendModalOpen(true)}
           onOpenRequest={() => setRequestModalOpen(true)}
-          onOpenBuyGold={() => setBuyGoldModalOpen(true)}
         />
       </BottomSheet>
 
@@ -92,11 +89,6 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
         onConfirm={() => setRequestModalOpen(false)}
       />
       
-      <BuyGoldWingoldModal
-        isOpen={buyGoldModalOpen}
-        onClose={() => setBuyGoldModalOpen(false)}
-        onSuccess={() => setBuyGoldModalOpen(false)}
-      />
     </div>
   );
 }

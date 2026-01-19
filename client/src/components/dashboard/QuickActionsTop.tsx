@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Database, Send, ArrowDownLeft, Lock, TrendingUp, ExternalLink } from 'lucide-react';
+import { Plus, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -9,7 +9,6 @@ import { apiRequest } from '@/lib/queryClient';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
-import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PhysicalGoldDeposit from '@/pages/PhysicalGoldDeposit';
 
@@ -20,15 +19,6 @@ const actions = [
     icon: <Plus className="w-4 h-4" />,
     gradient: 'from-emerald-500 to-green-600',
     hoverGradient: 'hover:from-emerald-600 hover:to-green-700',
-    requiresKyc: true,
-    isModal: true
-  },
-  {
-    title: 'Buy Gold Bar',
-    path: '',
-    icon: <ShoppingCart className="w-4 h-4" />,
-    gradient: 'from-fuchsia-400 to-yellow-500',
-    hoverGradient: 'hover:from-purple-500 hover:to-yellow-600',
     requiresKyc: true,
     isModal: true
   },
@@ -68,16 +58,6 @@ const actions = [
     requiresKyc: true,
     isModal: false
   },
-  {
-    title: 'Wingold Portal',
-    path: '',
-    icon: <ExternalLink className="w-4 h-4" />,
-    gradient: 'from-amber-500 to-yellow-600',
-    hoverGradient: 'hover:from-amber-600 hover:to-yellow-700',
-    requiresKyc: true,
-    isModal: true,
-    isExternalSSO: true
-  }
 ];
 
 export default function QuickActionsTop() {
@@ -86,7 +66,6 @@ export default function QuickActionsTop() {
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
-  const [buyGoldModalOpen, setBuyGoldModalOpen] = useState(false);
   const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
@@ -104,25 +83,6 @@ export default function QuickActionsTop() {
 
   const walletBalance = parseFloat(walletData?.wallet?.usdBalance || '0');
   const goldBalance = parseFloat(walletData?.wallet?.goldGrams || '0');
-
-  const handleWingoldSSO = async () => {
-    try {
-      toast.info('Connecting to Wingold Portal...');
-      const res = await apiRequest('GET', '/api/sso/wingold');
-      const data = await res.json();
-      
-      if (data.redirectUrl) {
-        window.open(data.redirectUrl, '_blank');
-      } else {
-        throw new Error('No redirect URL received');
-      }
-    } catch (error: any) {
-      console.error('SSO error:', error);
-      toast.error('Connection Failed', {
-        description: 'Unable to connect to Wingold Portal. Please try again.',
-      });
-    }
-  };
 
   const handleAction = (action: typeof actions[0]) => {
     if (action.requiresKyc && !isKycApproved) {
@@ -147,20 +107,12 @@ export default function QuickActionsTop() {
         setDepositModalOpen(true);
         return;
       }
-      if (action.title === 'Buy Gold Bar') {
-        setBuyGoldModalOpen(true);
-        return;
-      }
       if (action.title === 'Send Payment') {
         setSendModalOpen(true);
         return;
       }
       if (action.title === 'Request Payment') {
         setRequestModalOpen(true);
-        return;
-      }
-      if (action.title === 'Wingold Portal') {
-        handleWingoldSSO();
         return;
       }
       if (action.title === 'Deposit Gold') {
@@ -269,12 +221,6 @@ export default function QuickActionsTop() {
         isOpen={requestModalOpen} 
         onClose={() => setRequestModalOpen(false)}
         onConfirm={() => setRequestModalOpen(false)}
-      />
-      
-      <BuyGoldWingoldModal
-        isOpen={buyGoldModalOpen}
-        onClose={() => setBuyGoldModalOpen(false)}
-        onSuccess={() => setBuyGoldModalOpen(false)}
       />
       
       <Dialog open={depositGoldModalOpen} onOpenChange={setDepositGoldModalOpen}>

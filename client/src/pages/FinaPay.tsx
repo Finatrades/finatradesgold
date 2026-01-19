@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import PendingTransfers from '@/components/finapay/PendingTransfers';
 
-import BuyGoldWingoldModal from '@/components/finapay/modals/BuyGoldWingoldModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
@@ -534,15 +533,6 @@ export default function FinaPay() {
           onClose={handleModalClose}
           walletBalance={usdBalance}
         />
-        <BuyGoldWingoldModal
-          isOpen={activeModal === 'buyWingold'}
-          onClose={handleModalClose}
-          onSuccess={() => {
-            refreshWallet();
-            refreshTransactions();
-          }}
-        />
-
         {/* Deposit Callback Modal */}
         <Dialog open={depositCallbackStatus !== null} onOpenChange={closeDepositCallback}>
           <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
