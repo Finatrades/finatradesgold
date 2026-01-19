@@ -231,22 +231,21 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
   const secondaryColor = '#A78BFA'; // Light purple
   const darkPurple = '#4B0082'; // Dark purple for accents
   
-  // Styled text logo that works in all email clients (images often blocked by default)
-  // Using purple gradient text simulation with background for professional look
+  // Styled text logo with high contrast colors for dark header background
   const logoSection = `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
       <tr>
         <td style="padding-right: 12px; vertical-align: middle;">
-          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8A2BE2, #A78BFA); border-radius: 8px; text-align: center; line-height: 40px;">
-            <span style="color: white; font-size: 24px; font-weight: bold;">F</span>
+          <div style="width: 44px; height: 44px; background-color: #8A2BE2; border-radius: 10px; text-align: center; line-height: 44px;">
+            <span style="color: #ffffff; font-size: 26px; font-weight: bold; font-family: Arial, sans-serif;">F</span>
           </div>
         </td>
         <td style="vertical-align: middle;">
-          <div style="font-size: 28px; font-weight: 800; color: #8A2BE2; letter-spacing: 1px; font-family: 'Segoe UI', Arial, sans-serif;">FINATRADES</div>
+          <div style="font-size: 26px; font-weight: 800; color: #A78BFA; letter-spacing: 2px; font-family: 'Segoe UI', Arial, sans-serif;">FINATRADES</div>
         </td>
       </tr>
     </table>
-    <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 12px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`;
+    <div style="font-size: 12px; color: #F59E0B; letter-spacing: 3px; margin-top: 10px; text-transform: uppercase; font-weight: 600;">Gold-Backed Digital Finance</div>`;
 
   // Check if body already has the full wrapper structure - extract inner content
   let innerContent = body;
