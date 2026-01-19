@@ -20,7 +20,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { toProxyUrl } from '@/lib/file-utils';
 import PhysicalGoldDeposit from './PhysicalGoldDeposit';
-import BuyGoldBars from '@/components/finavault/BuyGoldBars';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -1323,14 +1322,6 @@ export default function FinaVault() {
                       My Deposits
                     </TabsTrigger>
                     <TabsTrigger 
-                      value="buy-gold-bars"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-amber-200 bg-amber-50 text-amber-700 transition-all data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-500 data-[state=active]:shadow-md"
-                      data-testid="tab-buy-gold-bars"
-                    >
-                      <Briefcase className="w-4 h-4 mr-1.5" />
-                      Buy Gold Bars
-                    </TabsTrigger>
-                    <TabsTrigger 
                       value="cash-out"
                       className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-md"
                     >
@@ -1379,9 +1370,6 @@ export default function FinaVault() {
                   <MyPhysicalDeposits />
                 </TabsContent>
 
-                <TabsContent value="buy-gold-bars" className="mt-0">
-                  <BuyGoldBars />
-                </TabsContent>
                 
                 <TabsContent value="cash-out">
                   <CashOutForm vaultBalance={totalVaultGold} />
