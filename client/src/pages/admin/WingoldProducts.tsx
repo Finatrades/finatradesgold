@@ -176,9 +176,20 @@ export default function WingoldProducts() {
     }
   };
 
-  const getCsrfToken = (): string | null => {
+  const ensureCsrfToken = async (): Promise<string | null> => {
     const match = document.cookie.match(/csrf_token=([^;]+)/);
-    return match ? match[1] : null;
+    if (match) return match[1];
+    
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.csrfToken;
+      }
+    } catch (e) {
+      console.error('Failed to fetch CSRF token:', e);
+    }
+    return null;
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,7 +211,7 @@ export default function WingoldProducts() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const csrfToken = getCsrfToken();
+      const csrfToken = await ensureCsrfToken();
       const headers: HeadersInit = {};
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
@@ -215,7 +226,7 @@ export default function WingoldProducts() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload image');
+        throw new Error(errorData.error || errorData.message || 'Failed to upload image');
       }
 
       const data = await res.json();
