@@ -742,12 +742,8 @@ export default function FinaPayManagement() {
           </Card>
         </div>
 
-        <Tabs defaultValue="deposits" className="w-full">
+        <Tabs defaultValue="withdrawals" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-            <TabsTrigger value="deposits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
-              <ArrowDownLeft className="w-4 h-4 mr-2" />
-              Deposits {pendingDeposits.length > 0 && `(${pendingDeposits.length})`}
-            </TabsTrigger>
             <TabsTrigger value="withdrawals" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <ArrowUpRight className="w-4 h-4 mr-2" />
               Withdrawals {pendingWithdrawals.length > 0 && `(${pendingWithdrawals.length})`}
@@ -763,10 +759,6 @@ export default function FinaPayManagement() {
             <TabsTrigger value="peer-requests" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <CreditCard className="w-4 h-4 mr-2" />
               Peer Requests {peerRequests.filter(r => r.status === 'Pending').length > 0 && `(${peerRequests.filter(r => r.status === 'Pending').length})`}
-            </TabsTrigger>
-            <TabsTrigger value="crypto" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
-              <Bitcoin className="w-4 h-4 mr-2" />
-              Crypto {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length > 0 && `(${cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length})`}
             </TabsTrigger>
             <TabsTrigger value="buy-gold" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 py-3 px-1">
               <Coins className="w-4 h-4 mr-2" />
@@ -1085,106 +1077,6 @@ export default function FinaPayManagement() {
               )}
             </TabsContent>
 
-            <TabsContent value="crypto">
-              {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-4">Pending Crypto Payments</h2>
-                  <div className="space-y-3 mb-8">
-                    {cryptoPayments.filter(p => p.status === 'Pending' || p.status === 'Under Review').map(payment => (
-                      <Card key={payment.id} data-testid={`card-crypto-${payment.id}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-yellow-100 text-yellow-700 rounded-lg">
-                                <Bitcoin className="w-6 h-6" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-gray-900 text-lg">${parseFloat(payment.amountUsd).toFixed(2)}</span>
-                                  <Badge variant="secondary">{payment.status}</Badge>
-                                </div>
-                                <p className="text-sm text-gray-600">
-                                  {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : getUserName(payment.userId)} 
-                                  {' '}({payment.user?.email || getUserEmail(payment.userId)})
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  {payment.walletConfig?.networkLabel || 'Unknown Network'} • {parseFloat(payment.goldGrams).toFixed(4)}g Gold
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <p className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleString()}</p>
-                              </div>
-                              <Button size="sm" onClick={() => openCryptoDialog(payment)} data-testid={`button-review-crypto-${payment.id}`}>
-                                Review
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              <h2 className="text-lg font-semibold mb-4">Processed Crypto Payments</h2>
-              {cryptoPayments.filter(p => p.status !== 'Pending' && p.status !== 'Under Review').length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No processed crypto payments</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {cryptoPayments.filter(p => p.status !== 'Pending' && p.status !== 'Under Review').map(payment => (
-                    <Card key={payment.id} data-testid={`card-crypto-${payment.id}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-lg ${payment.status === 'Credited' || payment.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              <Bitcoin className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-lg">${parseFloat(payment.amountUsd).toFixed(2)}</span>
-                                {getStatusBadge(payment.status)}
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : getUserName(payment.userId)} 
-                                {' '}({payment.user?.email || getUserEmail(payment.userId)})
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {payment.walletConfig?.networkLabel || 'Unknown Network'} • {parseFloat(payment.goldGrams).toFixed(4)}g Gold
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleString()}</p>
-                              {payment.reviewedAt && (
-                                <p className="text-xs text-gray-400">Reviewed: {new Date(payment.reviewedAt).toLocaleString()}</p>
-                              )}
-                            </div>
-                            <Button size="sm" variant="ghost" onClick={() => openCryptoDialog(payment)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="buy-gold">
-              {buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-4">Pending Buy Gold Requests</h2>
-                  <div className="space-y-3 mb-8">
-                    {buyGoldRequests.filter(r => r.status === 'Pending' || r.status === 'Under Review').map(request => (
                       <Card key={request.id} data-testid={`card-buy-gold-${request.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
