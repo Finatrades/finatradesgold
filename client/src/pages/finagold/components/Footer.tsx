@@ -37,7 +37,7 @@ export default function Footer() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-14 w-auto mb-2"
+                className="h-14 w-auto mb-2 brightness-0 invert"
               />
               <p className="text-white/60 text-sm">Swiss Regulated Financial Gold-Backed Platform</p>
             </div>
