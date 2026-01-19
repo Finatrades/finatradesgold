@@ -306,6 +306,7 @@ function DesktopLogin() {
                 src={finatradesLogo} 
                 alt="Finatrades" 
                 className="h-16 w-auto"
+                style={{ filter: 'hue-rotate(260deg) saturate(1.2)' }}
               />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
