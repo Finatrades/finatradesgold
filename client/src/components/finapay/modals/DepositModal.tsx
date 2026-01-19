@@ -1997,7 +1997,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="group">
                       <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">IBAN</span>
                       <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
-                        <span className="font-mono text-base font-bold text-purple-200 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
+                        <span className="font-mono text-xl font-bold text-purple-200 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
                         <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg ml-2" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
                           <Copy className="w-4 h-4" />
                         </Button>
