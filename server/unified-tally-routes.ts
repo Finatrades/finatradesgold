@@ -407,7 +407,27 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
 
     // Calculate fees and gold price (outside transaction - read operations)
     const { getGoldPricePerGram } = await import('./gold-price-service');
-    goldPrice = pricingMode === 'MARKET' ? await getGoldPricePerGram() : Number(manualGoldPrice);
+    
+    // Validate gold price based on pricing mode
+    if (pricingMode === 'FIXED') {
+      if (!manualGoldPrice || isNaN(Number(manualGoldPrice)) || Number(manualGoldPrice) <= 0) {
+        return res.status(400).json({
+          error: 'Fixed pricing mode requires a valid manual gold price greater than 0',
+          code: 'INVALID_MANUAL_GOLD_PRICE'
+        });
+      }
+      goldPrice = Number(manualGoldPrice);
+    } else {
+      goldPrice = await getGoldPricePerGram();
+    }
+    
+    // Guard against invalid gold price
+    if (!goldPrice || isNaN(goldPrice) || goldPrice <= 0) {
+      return res.status(400).json({
+        error: 'Unable to determine a valid gold price. Please try again or use fixed pricing mode.',
+        code: 'INVALID_GOLD_PRICE'
+      });
+    }
     
     if (sourceType === 'PHYSICAL') {
       // Physical deposits: Gold grams come from inspection, no USD fees
@@ -415,18 +435,58 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       feeAmountUsd = 0;
       netAmountUsd = 0;
       goldGrams = parsedAllocation; // Already verified inspection grams
+      
+      // VALIDATION 2: Physical deposit - allocated grams must match inspection credited grams
+      const inspectionCreditedGrams = parseFloat(sourcePayment.inspection?.creditedGrams || '0');
+      if (inspectionCreditedGrams > 0 && Math.abs(parsedAllocation - inspectionCreditedGrams) > 0.0001) {
+        // Allow small variance for rounding, but require notes for any significant difference
+        const variancePercent = Math.abs((parsedAllocation - inspectionCreditedGrams) / inspectionCreditedGrams) * 100;
+        if (variancePercent > 0.1 && (!notes || notes.trim().length < 10)) {
+          return res.status(400).json({
+            error: `Physical deposit allocation (${parsedAllocation.toFixed(4)}g) differs from inspection credited grams (${inspectionCreditedGrams.toFixed(4)}g). Please provide notes explaining the variance.`,
+            code: 'PHYSICAL_ALLOCATION_MISMATCH',
+            expected: inspectionCreditedGrams.toFixed(4),
+            provided: parsedAllocation.toFixed(4),
+            variancePercent: variancePercent.toFixed(2)
+          });
+        }
+      }
     } else {
       // Cash deposits: Calculate fees and convert USD to gold
       feeAmountUsd = amountUsd * (feePercent / 100);
       netAmountUsd = amountUsd - feeAmountUsd;
       goldGrams = netAmountUsd / goldPrice;
+      
+      // VALIDATION 1: Variance check - require notes if allocation differs ±2% from expected
+      const expectedGold = goldGrams;
+      
+      // Guard against division by zero or invalid expected gold
+      if (expectedGold > 0 && !isNaN(expectedGold)) {
+        const variancePercent = Math.abs((parsedAllocation - expectedGold) / expectedGold) * 100;
+        if (variancePercent > 2 && (!notes || notes.trim().length < 10)) {
+          return res.status(400).json({
+            error: `Allocation variance of ${variancePercent.toFixed(2)}% detected. Expected ${expectedGold.toFixed(4)}g based on net amount, but allocating ${parsedAllocation.toFixed(4)}g. Please provide notes explaining the variance (min 10 characters).`,
+            code: 'ALLOCATION_VARIANCE_REQUIRES_NOTES',
+            expected: expectedGold.toFixed(4),
+            provided: parsedAllocation.toFixed(4),
+            variancePercent: variancePercent.toFixed(2)
+          });
+        }
+      } else if (netAmountUsd > 0) {
+        // Net amount is positive but expected gold is invalid - something is wrong
+        return res.status(400).json({
+          error: 'Unable to calculate expected gold allocation. Please verify gold price and deposit amount.',
+          code: 'INVALID_EXPECTED_GOLD'
+        });
+      }
     }
 
     // Store original source ID for linking back after UTT creation
     const sourceId = id;
     
+    // VALIDATION 3: WalletType enforcement - physical deposits always go to LGPW
     // Use LGPW/FGPW directly (database enum already migrated)
-    const dbWalletType = walletType;
+    const dbWalletType = sourceType === 'PHYSICAL' ? 'LGPW' : walletType;
     
     // Calculate Wingold cost (buy rate * physical grams)
     const wingoldCostUsd = parsedAllocation * parseFloat(wingoldBuyRate);
