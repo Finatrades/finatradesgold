@@ -210,25 +210,152 @@ function replaceVariables(template: string, data: EmailData): string {
   });
 }
 
-// Wrap email body with professional header including logo
+// Creative purple email template wrapper with logo header and footer
 function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }): string {
-  const logoSection = branding.logoUrl 
-    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 50px; max-width: 200px; margin-bottom: 15px;" />`
-    : `<div style="font-size: 28px; font-weight: bold; color: white; letter-spacing: 1px;">${branding.companyName}</div>`;
-
-  // Check if body already has the full wrapper structure
-  if (body.includes('max-width: 600px') && body.includes('font-family:')) {
-    // Extract the inner content and wrap it properly with logo
-    // Replace the existing header to add logo
-    return body.replace(
-      /(<div style="background: linear-gradient[^>]+>)\s*(<h1[^>]*>[^<]+<\/h1>)/gi,
-      `$1
-        ${branding.logoUrl ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 40px; max-width: 180px; margin-bottom: 10px;" /><br/>` : ''}
-        $2`
-    );
-  }
+  const primaryColor = '#8B5CF6'; // Vibrant purple
+  const secondaryColor = '#A78BFA'; // Light purple
+  const darkPurple = '#6D28D9'; // Dark purple for accents
   
-  return body;
+  const logoSection = branding.logoUrl 
+    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 60px; max-width: 220px;" />`
+    : `<div style="font-size: 32px; font-weight: 800; color: white; letter-spacing: 2px; text-transform: uppercase;">FINATRADES</div>
+       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 5px;">GOLD-BACKED DIGITAL FINANCE</div>`;
+
+  // Check if body already has the full wrapper structure - extract inner content
+  let innerContent = body;
+  if (body.includes('max-width: 600px') && body.includes('font-family:')) {
+    // Extract content between the main wrapper divs
+    const contentMatch = body.match(/<div style="padding:\s*30px[^>]*>([\s\S]*?)<\/div>\s*<div style="padding:\s*20px/);
+    if (contentMatch) {
+      innerContent = contentMatch[1];
+    } else {
+      // Try to get content after header div
+      const headerEndMatch = body.match(/<\/div>\s*<div style="padding:\s*30px[^>]*>([\s\S]*)/);
+      if (headerEndMatch) {
+        innerContent = headerEndMatch[1].replace(/<div style="padding:\s*20px[^>]*>[\s\S]*$/, '');
+      }
+    }
+  }
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finatrades</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f3f4f6;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);">
+          
+          <!-- Creative Purple Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${primaryColor} 0%, ${darkPurple} 50%, #4C1D95 100%); padding: 0;">
+              <!-- Gold accent line at top -->
+              <div style="height: 4px; background: linear-gradient(90deg, #F59E0B, #FBBF24, #F59E0B);"></div>
+              
+              <!-- Header content -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 35px 30px 30px;">
+                    <!-- Logo/Brand -->
+                    ${logoSection}
+                    
+                    <!-- Decorative gold bar -->
+                    <div style="width: 80px; height: 3px; background: linear-gradient(90deg, transparent, #F59E0B, transparent); margin: 20px auto 0;"></div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Email Content -->
+          <tr>
+            <td style="padding: 40px 35px; background-color: #ffffff;">
+              ${innerContent}
+            </td>
+          </tr>
+          
+          <!-- Creative Purple Footer -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1F2937 0%, #111827 100%); padding: 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <!-- Purple accent line -->
+                <tr>
+                  <td>
+                    <div style="height: 3px; background: linear-gradient(90deg, ${primaryColor}, ${secondaryColor}, ${primaryColor});"></div>
+                  </td>
+                </tr>
+                
+                <!-- Footer content -->
+                <tr>
+                  <td align="center" style="padding: 30px 30px 25px;">
+                    <!-- Services icons row -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                      <tr>
+                        <td align="center" style="padding: 0 12px;">
+                          <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.2); border-radius: 10px; display: inline-block; line-height: 40px; text-align: center;">
+                            <span style="color: ${secondaryColor}; font-size: 18px;">💳</span>
+                          </div>
+                          <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-top: 5px;">FinaPay</div>
+                        </td>
+                        <td align="center" style="padding: 0 12px;">
+                          <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.2); border-radius: 10px; display: inline-block; line-height: 40px; text-align: center;">
+                            <span style="color: ${secondaryColor}; font-size: 18px;">🔐</span>
+                          </div>
+                          <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-top: 5px;">FinaVault</div>
+                        </td>
+                        <td align="center" style="padding: 0 12px;">
+                          <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.2); border-radius: 10px; display: inline-block; line-height: 40px; text-align: center;">
+                            <span style="color: ${secondaryColor}; font-size: 18px;">📈</span>
+                          </div>
+                          <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-top: 5px;">BNSL</div>
+                        </td>
+                        <td align="center" style="padding: 0 12px;">
+                          <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.2); border-radius: 10px; display: inline-block; line-height: 40px; text-align: center;">
+                            <span style="color: ${secondaryColor}; font-size: 18px;">🌉</span>
+                          </div>
+                          <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-top: 5px;">FinaBridge</div>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <!-- Divider -->
+                    <div style="width: 100%; height: 1px; background: rgba(139, 92, 246, 0.3); margin: 15px 0;"></div>
+                    
+                    <!-- Company info -->
+                    <p style="color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 600; margin: 15px 0 5px; letter-spacing: 1px;">
+                      FINATRADES
+                    </p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 11px; margin: 0 0 15px; letter-spacing: 0.5px;">
+                      Gold-Backed Digital Finance Platform
+                    </p>
+                    
+                    <!-- Contact & Links -->
+                    <p style="color: rgba(255,255,255,0.5); font-size: 11px; margin: 10px 0 5px;">
+                      Need help? Contact us at <a href="mailto:support@finatrades.com" style="color: ${secondaryColor}; text-decoration: none;">support@finatrades.com</a>
+                    </p>
+                    
+                    <!-- Legal -->
+                    <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 15px 0 0; line-height: 1.5;">
+                      This email was sent by Finatrades. Please do not reply directly to this email.<br/>
+                      &copy; ${new Date().getFullYear()} Finatrades Finance SA. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 export async function getEmailTemplate(slug: string): Promise<{ subject: string; body: string } | null> {
@@ -599,7 +726,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </ul>
           <p>Get started by completing your KYC verification to unlock all features.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Go to Dashboard</a>
+            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">Go to Dashboard</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -628,7 +755,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <p>Hello {{user_name}},</p>
           <p>Your verification code is:</p>
           <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">{{verification_code}}</span>
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8B5CF6;">{{verification_code}}</span>
           </div>
           <p>This code expires in <strong>10 minutes</strong>.</p>
           <p>If you didn't request this code, please ignore this email.</p>
@@ -667,7 +794,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             <li>Apply for trade finance</li>
           </ul>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Start Trading</a>
+            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);">Start Trading</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
