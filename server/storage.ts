@@ -3339,7 +3339,7 @@ export class DatabaseStorage implements IStorage {
       idBackUrl: finatradesPersonalKyc.idBackUrl,
       passportUrl: finatradesPersonalKyc.passportUrl,
       addressProofUrl: finatradesPersonalKyc.addressProofUrl,
-      livenessImageUrl: finatradesPersonalKyc.livenessImageUrl,
+      livenessCapture: finatradesPersonalKyc.livenessCapture,
       passportExpiryDate: finatradesPersonalKyc.passportExpiryDate,
       status: finatradesPersonalKyc.status,
       livenessVerified: finatradesPersonalKyc.livenessVerified,
