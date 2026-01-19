@@ -20785,7 +20785,16 @@ ${message}
       doc.pipe(res);
       
       // Header
-      doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      // Add logo image
+      const path = require('path');
+      const fs = require('fs');
+      const logoPath = path.join(__dirname, 'assets', 'finatrades-logo.png');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, (doc.page.width - 180) / 2, doc.y, { width: 180 });
+        doc.moveDown(3);
+      } else {
+        doc.fillColor('#8B5CF6').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      }
       doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
       doc.moveDown(1.5);
       
@@ -21084,7 +21093,16 @@ ${message}
       
       doc.pipe(res);
       
-      doc.fillColor('#f97316').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      // Add logo image
+      const path2 = require('path');
+      const fs2 = require('fs');
+      const logoPath2 = path2.join(__dirname, 'assets', 'finatrades-logo.png');
+      if (fs2.existsSync(logoPath2)) {
+        doc.image(logoPath2, (doc.page.width - 180) / 2, doc.y, { width: 180 });
+        doc.moveDown(3);
+      } else {
+        doc.fillColor('#8B5CF6').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
+      }
       doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
       doc.moveDown(1.5);
       
