@@ -184,8 +184,8 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                 <Package className="w-6 h-6" />
                 Buy Gold Bars
               </DialogTitle>
-              <DialogDescription className="text-amber-700 mt-1">
-                Browse and purchase certified LBMA gold bars
+              <DialogDescription className="text-amber-700 mt-1 text-xs leading-relaxed">
+                Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system, and the Platform serves solely as a technology and execution infrastructure for such gold-based services.
               </DialogDescription>
             </div>
             {cart.length > 0 && (
