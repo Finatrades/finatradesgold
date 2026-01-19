@@ -1086,6 +1086,38 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Credit Summary - What will be approved */}
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-md space-y-2">
+                    <p className="text-xs font-semibold text-purple-800 uppercase tracking-wide">Credit Summary</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">User:</span>
+                        <p className="font-medium truncate">{transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Wallet:</span>
+                        <p className="font-medium">{transaction.walletType === 'LGPW' ? '🏆 LGPW (Physical)' : '💰 FGPW (Cash-Backed)'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Gold to Credit:</span>
+                        <p className="font-bold text-green-700">{formatGold(wingoldForm.physicalGoldAllocatedG || '0')}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Deposit Amount:</span>
+                        <p className="font-medium">{formatCurrency(transaction.depositAmount)} → {formatCurrency(transaction.netAmount)}</p>
+                      </div>
+                    </div>
+                    <div className="pt-1 border-t border-purple-200">
+                      <span className="text-xs text-gray-500">Wingold Order:</span>
+                      <span className="ml-1 text-xs font-mono">{wingoldForm.wingoldOrderId || 'Not set'}</span>
+                      <span className="mx-2 text-gray-300">|</span>
+                      <span className="text-xs text-gray-500">Certificate:</span>
+                      <span className="ml-1 text-xs font-mono">{wingoldForm.storageCertificateId || 'Not set'}</span>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Pricing Mode</Label>
