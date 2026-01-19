@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Database, Send, ArrowDownLeft, Lock, TrendingUp } from 'lucide-react';
+import { Plus, Database, Send, ArrowDownLeft, Lock, TrendingUp, ShoppingCart } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -21,6 +21,15 @@ const actions = [
     hoverGradient: 'hover:from-emerald-600 hover:to-green-700',
     requiresKyc: true,
     isModal: true
+  },
+  {
+    title: 'Buy Gold Bar',
+    path: '/finavault',
+    icon: <ShoppingCart className="w-4 h-4" />,
+    gradient: 'from-amber-500 to-yellow-500',
+    hoverGradient: 'hover:from-amber-600 hover:to-yellow-600',
+    requiresKyc: true,
+    isModal: false
   },
   {
     title: 'Deposit Gold',
