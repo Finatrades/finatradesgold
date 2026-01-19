@@ -292,11 +292,6 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                           <p className="text-xs text-muted-foreground">
                             AED {(unitBreakdown.total * 3.67).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
-                          {(unitBreakdown.makingFee > 0 || unitBreakdown.premium > 0) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Includes premium + making
-                            </p>
-                          )}
                         </div>
                         
                         {/* Full-width Add to Cart button */}
