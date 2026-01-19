@@ -176,6 +176,11 @@ export default function WingoldProducts() {
     }
   };
 
+  const getCsrfToken = (): string | null => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : null;
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,19 +200,29 @@ export default function WingoldProducts() {
       const formData = new FormData();
       formData.append('image', file);
 
+      const csrfToken = getCsrfToken();
+      const headers: HeadersInit = {};
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+
       const res = await fetch('/api/wingold/admin/products/upload-image', {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers,
       });
 
-      if (!res.ok) throw new Error('Failed to upload image');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
 
       const data = await res.json();
       setForm({ ...form, imageUrl: data.imageUrl });
       toast.success('Image uploaded successfully');
-    } catch (error) {
-      toast.error('Failed to upload image');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload image');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
