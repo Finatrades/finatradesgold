@@ -302,10 +302,9 @@ function DesktopLogin() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
-                src="/finatrades-logo.png" 
+                src="/finatrades-logo-pink.svg" 
                 alt="Finatrades" 
-                className="h-16 w-auto"
-                style={{ filter: 'hue-rotate(320deg) saturate(2) brightness(1.1)' }}
+                className="h-14 w-auto"
               />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>

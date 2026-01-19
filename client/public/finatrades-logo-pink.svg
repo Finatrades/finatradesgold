@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <defs>
+    <linearGradient id="pinkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B9D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8FB1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10, 12)">
+    <path d="M0 28 L12 0 L24 28 L18 28 L12 14 L6 28 Z" fill="#FF6B9D"/>
+    <path d="M26 28 L38 0 L50 28 L44 28 L38 14 L32 28 Z" fill="#FF8FB1"/>
+  </g>
+  <text x="70" y="50" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="700" letter-spacing="-0.5">
+    <tspan fill="#FF6B9D">FINA</tspan><tspan fill="#FF8FB1">TRADES</tspan>
+  </text>
+</svg>
