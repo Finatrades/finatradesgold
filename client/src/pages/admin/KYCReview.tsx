@@ -557,7 +557,7 @@ export default function KYCReview() {
   
   // Helper to check if this is a Finatrades personal KYC submission
   const isFinatradesKyc = (app: any) => {
-    return app?.kycType === 'finatrades' || app?.idFrontUrl || app?.idBackUrl || app?.addressProofUrl;
+    return app?.kycType?.startsWith('finatrades') || app?.idFrontUrl || app?.idBackUrl || app?.addressProofUrl;
   };
 
   const { data, isLoading, refetch } = useQuery({
