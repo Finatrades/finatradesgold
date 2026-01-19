@@ -206,7 +206,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl h-[85vh] p-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-amber-50 to-yellow-50 shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -240,15 +240,17 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                 <p className="text-sm">Check back later for gold bar offerings</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {products.map((product) => (
-                  <Card 
-                    key={product.productId} 
-                    className="overflow-hidden hover:shadow-lg transition-shadow border-amber-100"
-                    data-testid={`product-card-${product.productId}`}
-                  >
-                    <div className="flex">
-                      <div className="w-32 h-32 bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center p-2 shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {products.map((product) => {
+                  const unitBreakdown = calculatePriceBreakdown(product, 1);
+                  return (
+                    <Card 
+                      key={product.productId} 
+                      className="overflow-hidden hover:shadow-lg transition-shadow border-amber-100 flex flex-col"
+                      data-testid={`product-card-${product.productId}`}
+                    >
+                      {/* Product Image - Large at top */}
+                      <div className="aspect-square bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center p-4">
                         <img
                           src={getProductImage(product)}
                           alt={product.name}
@@ -258,51 +260,59 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                           }}
                         />
                       </div>
-                      <CardContent className="flex-1 p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {product.weight} • {product.purity} Purity
-                            </p>
-                          </div>
+                      
+                      {/* Product Details */}
+                      <CardContent className="flex-1 p-4 flex flex-col">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 text-sm leading-tight">{product.name}</h3>
                           {product.inStock ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs shrink-0">
                               In Stock
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs shrink-0">
                               Out of Stock
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                        
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {product.weight} • {product.purity} Purity
+                        </p>
+                        
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2 flex-1">
                           {product.description || 'LBMA Certified pure gold bar with assay certificate'}
                         </p>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-lg font-bold text-amber-600">
-                              ${parseFloat(product.livePrice).toLocaleString()}
+                        
+                        {/* Price Section */}
+                        <div className="mb-3">
+                          <p className="text-lg font-bold text-amber-600">
+                            ${unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            AED {(unitBreakdown.total * 3.67).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          {(unitBreakdown.makingFee > 0 || unitBreakdown.premium > 0) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Includes premium + making
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              AED {parseFloat(product.livePriceAed || '0').toLocaleString()}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => addToCart(product)}
-                            disabled={!product.inStock}
-                            className="bg-amber-500 hover:bg-amber-600 text-white"
-                            data-testid={`add-to-cart-${product.productId}`}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Add
-                          </Button>
+                          )}
                         </div>
+                        
+                        {/* Full-width Add to Cart button */}
+                        <Button
+                          onClick={() => addToCart(product)}
+                          disabled={!product.inStock}
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                          data-testid={`add-to-cart-${product.productId}`}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add to Cart
+                        </Button>
                       </CardContent>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
