@@ -391,6 +391,12 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       return res.status(400).json({ error: 'Invalid source type. Use CRYPTO, BANK, or PHYSICAL.' });
     }
 
+    // Fetch user data for denormalized storage in UTT
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     // SECURITY: Prevent self-approval - admin cannot approve their own deposits
     if (adminUser && userId === adminUser.id) {
       return res.status(403).json({ 
@@ -535,6 +541,8 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       
       const tallyRecord = await storage.createUnifiedTallyTransaction({
         userId,
+        userName: `${user.firstName} ${user.lastName}`,
+        userEmail: user.email,
         txnType,
         sourceMethod: actualSourceMethod,
         walletType: dbWalletType as 'LGPW' | 'FGPW',
