@@ -386,20 +386,20 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         </Button>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-2xl text-purple-800">Deposit Physical Gold</CardTitle>
-          <CardDescription>
+      <Card className="mb-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl text-purple-800">Deposit Physical Gold</CardTitle>
+          <CardDescription className="text-sm">
             Submit your physical gold for secure vault storage and receive digital ownership credits
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Section 1: Gold Details */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">1. Gold Details</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base font-semibold">1. Gold Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -826,9 +826,9 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         )}
 
         {/* Section 2: Ownership */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">2. Ownership</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base font-semibold">2. Ownership</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3 p-3 border rounded-lg">
@@ -857,9 +857,9 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         </Card>
 
         {/* Section 3: Delivery Method */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">3. Delivery Method</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base font-semibold">3. Delivery Method</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <RadioGroup
@@ -924,9 +924,9 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
         </Card>
 
         {/* Section 4: Documents */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">4. Documents</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base font-semibold">4. Documents</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
