@@ -160,51 +160,14 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
       return;
     }
 
-    setIsCheckingOut(true);
-    try {
-      const cartItems = cart.map(item => {
-        const breakdown = calculatePriceBreakdown(item.product, item.quantity);
-        return {
-          barSize: item.product.weight,
-          grams: parseFloat(item.product.weightGrams),
-          quantity: item.quantity,
-          priceAed: breakdown.total, // Total price including all fees (AED)
-          goldPrice: breakdown.goldPrice,
-          makingFee: breakdown.makingFee,
-          premium: breakdown.premium,
-          vat: breakdown.vat,
-        };
-      });
-
-      const res = await apiRequest('POST', '/api/sso/wingold/checkout', {
-        cartItems: cartItems,
-        totalGrams: cartTotalGrams,
-        totalAed: cartTotal,
-      });
-
-      const data = await res.json();
-
-      if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank');
-        toast({
-          title: 'Redirecting to Wingold',
-          description: 'Complete your purchase on Wingold & Metals',
-        });
-        clearCart();
-        onClose();
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error: any) {
-      console.error('Checkout error:', error);
-      toast({
-        title: 'Checkout Failed',
-        description: error.message || 'Unable to proceed to checkout. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCheckingOut(false);
-    }
+    // Redirect directly to Wingold website
+    window.open('https://wingoldandmetals.com', '_blank');
+    toast({
+      title: 'Redirecting to Wingold',
+      description: 'Complete your purchase on Wingold & Metals',
+    });
+    clearCart();
+    onClose();
   };
 
   const handleClose = () => {
