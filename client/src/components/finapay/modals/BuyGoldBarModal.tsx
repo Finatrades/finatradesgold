@@ -177,7 +177,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
       });
 
       const res = await apiRequest('POST', '/api/sso/wingold/checkout', {
-        cart: cartItems,
+        cartItems: cartItems,
         totalGrams: cartTotalGrams,
         totalAed: cartTotal,
       });
