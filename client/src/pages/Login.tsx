@@ -300,6 +300,13 @@ function DesktopLogin() {
         <div className="container mx-auto px-6 max-w-md">
           
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/finatrades-logo-purple.svg" 
+                alt="Finatrades" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
             <p className="text-muted-foreground">Sign in to access your FinaTrades dashboard.</p>
           </div>
