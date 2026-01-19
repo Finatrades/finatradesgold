@@ -210,7 +210,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                 <p className="text-sm">Check back later for gold bar offerings</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {products.map((product) => {
                   const unitBreakdown = calculatePriceBreakdown(product, 1);
                   return (
