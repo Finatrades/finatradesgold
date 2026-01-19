@@ -232,8 +232,9 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
   const darkPurple = '#4B0082'; // Dark purple for accents
   
   // Use logo from branding settings if available, otherwise show text fallback
+  // Email-compatible img attributes: explicit width/height, display:block, border:0
   const logoSection = branding.logoUrl 
-    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 60px; max-width: 220px; filter: brightness(0) invert(1);" />
+    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" width="200" height="50" style="display:block; border:0; max-width:200px; height:auto;" />
        <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`
     : `<div style="font-size: 32px; font-weight: 800; color: white; letter-spacing: 2px; text-transform: uppercase;">FINATRADES</div>
        <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 5px;">GOLD-BACKED DIGITAL FINANCE</div>`;
