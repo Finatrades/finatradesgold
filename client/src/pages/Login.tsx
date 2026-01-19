@@ -305,7 +305,6 @@ function DesktopLogin() {
                 src="/finatrades-logo.png" 
                 alt="Finatrades" 
                 className="h-16 w-auto"
-                style={{ filter: 'sepia(1) saturate(5) hue-rotate(300deg) brightness(1)' }}
               />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
