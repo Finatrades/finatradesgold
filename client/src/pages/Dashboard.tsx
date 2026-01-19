@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase, Copy, Check } from 'lucide-react';
+import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase, Copy, Check, Info } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { Card } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
@@ -243,9 +244,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Storage</p>
-                  <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center">
-                    <Database className="w-3.5 h-3.5 text-gray-500" />
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Total physical gold stored in your FinaVault secure storage facility.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
@@ -257,9 +267,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Value (USD)</p>
-                  <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <span className="text-emerald-600 text-sm font-bold">$</span>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Current market value of your total gold holdings in US Dollars based on live gold price.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
@@ -271,9 +290,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Value (AED)</p>
-                  <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-600 text-xs font-bold">Dh</span>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Current market value of your total gold holdings in UAE Dirhams (AED).</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
@@ -288,9 +316,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Total Portfolio</p>
-                  <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Combined value of all your investments including wallet gold, vault storage, and BNSL plans.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
@@ -302,9 +339,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">BNSL Invested</p>
-                  <div className="w-7 h-7 rounded-lg bg-fuchsia-100 flex items-center justify-center">
-                    <Sparkles className="w-3.5 h-3.5 text-fuchsia-600" />
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Gold locked in Buy Now Sell Later (BNSL) investment plans earning returns over time.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
                   {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
@@ -316,9 +362,18 @@ export default function Dashboard() {
               <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Total Profit</p>
-                  <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+                          <Info className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-sm">
+                        <p>Total return on investment earned from your BNSL plans.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-green-600">
                   {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
