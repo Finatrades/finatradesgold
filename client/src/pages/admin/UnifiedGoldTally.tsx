@@ -565,6 +565,13 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     }
   }, [formData]);
 
+  // Check if critical Wingold data is already saved (makes fields read-only for audit integrity)
+  const isWingoldDataLocked = !!(
+    formData?.formData?.wingoldOrderId && 
+    formData?.formData?.storageCertificateId && 
+    Number(formData?.formData?.physicalGoldAllocatedG) > 0
+  );
+
   React.useEffect(() => {
     if (transaction) {
       setCreditForm({
@@ -874,6 +881,13 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {isWingoldDataLocked && (
+                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-md mb-2">
+                      <p className="text-xs text-blue-700 flex items-center gap-1">
+                        🔒 Wingold data is locked for audit integrity. Contact supervisor to modify.
+                      </p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Wingold Order ID *</Label>
@@ -881,7 +895,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="WG-2026-001234"
                         value={wingoldForm.wingoldOrderId}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldOrderId: e.target.value }))}
-                        className="h-8 text-sm"
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        disabled={isWingoldDataLocked}
                       />
                     </div>
                     <div className="space-y-1">
@@ -890,7 +905,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="INV-2026-5678"
                         value={wingoldForm.wingoldSupplierInvoiceId}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldSupplierInvoiceId: e.target.value }))}
-                        className="h-8 text-sm"
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        disabled={isWingoldDataLocked}
                       />
                     </div>
                   </div>
@@ -903,7 +919,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="95.50"
                         value={wingoldForm.wingoldBuyRate}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldBuyRate: e.target.value }))}
-                        className="h-8 text-sm"
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        disabled={isWingoldDataLocked}
                       />
                     </div>
                     <div className="space-y-1">
@@ -914,7 +931,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="28500.00"
                         value={wingoldForm.wingoldCostUsd}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldCostUsd: e.target.value }))}
-                        className="h-8 text-sm"
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        disabled={isWingoldDataLocked}
                       />
                     </div>
                   </div>
@@ -923,8 +941,9 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     <Select
                       value={wingoldForm.vaultLocation}
                       onValueChange={(value) => setWingoldForm(prev => ({ ...prev, vaultLocation: value }))}
+                      disabled={isWingoldDataLocked}
                     >
-                      <SelectTrigger className="h-8 text-sm">
+                      <SelectTrigger className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}>
                         <SelectValue placeholder="Select vault location" />
                       </SelectTrigger>
                       <SelectContent>
@@ -955,7 +974,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       placeholder="298.4567"
                       value={wingoldForm.physicalGoldAllocatedG}
                       onChange={(e) => setWingoldForm(prev => ({ ...prev, physicalGoldAllocatedG: e.target.value }))}
-                      className="h-8 text-sm"
+                      className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                      disabled={isWingoldDataLocked}
                     />
                   </div>
 
@@ -1027,7 +1047,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       placeholder="CERT-ZH-2026-001234"
                       value={wingoldForm.storageCertificateId}
                       onChange={(e) => setWingoldForm(prev => ({ ...prev, storageCertificateId: e.target.value }))}
-                      className="h-8 text-sm"
+                      className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                      disabled={isWingoldDataLocked}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -1071,11 +1092,12 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
 
               <Button
                 onClick={handleSaveWingoldForm}
-                disabled={savingWingold}
+                disabled={savingWingold || isWingoldDataLocked}
                 className="w-full"
+                variant={isWingoldDataLocked ? "secondary" : "default"}
               >
                 {savingWingold ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save Wingold Data
+                {isWingoldDataLocked ? '🔒 Wingold Data Saved' : 'Save Wingold Data'}
               </Button>
 
               <Card className="border-purple-200">
