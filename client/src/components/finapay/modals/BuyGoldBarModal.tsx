@@ -210,7 +210,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                 <p className="text-sm">Check back later for gold bar offerings</p>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-4">
                 {products.map((product) => {
                   const unitBreakdown = calculatePriceBreakdown(product, 1);
                   return (
@@ -219,8 +219,8 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                       className="overflow-hidden hover:shadow-md transition-shadow border-amber-100 flex flex-col"
                       data-testid={`product-card-${product.productId}`}
                     >
-                      {/* Compact Product Image */}
-                      <div className="h-28 bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center p-2">
+                      {/* Product Image */}
+                      <div className="h-40 bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center p-3">
                         <img
                           src={getProductImage(product)}
                           alt={product.name}
@@ -231,39 +231,38 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                         />
                       </div>
                       
-                      {/* Compact Product Details */}
-                      <CardContent className="flex-1 p-3 flex flex-col">
-                        <div className="flex items-start justify-between gap-1 mb-1">
-                          <h3 className="font-semibold text-gray-900 text-xs leading-tight">{product.name}</h3>
+                      {/* Product Details */}
+                      <CardContent className="flex-1 p-4 flex flex-col">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-gray-900 text-sm leading-tight">{product.name}</h3>
                           {product.inStock ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 shrink-0">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs shrink-0">
                               In Stock
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0 shrink-0">
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs shrink-0">
                               Out of Stock
                             </Badge>
                           )}
                         </div>
                         
-                        <p className="text-[10px] text-muted-foreground mb-1">
+                        <p className="text-xs text-muted-foreground mb-2">
                           {product.weight} • {product.purity} Purity
                         </p>
                         
                         {/* Price Section - AED only */}
-                        <p className="text-sm font-bold text-amber-600 mb-2">
+                        <p className="text-lg font-bold text-amber-600 mb-3">
                           AED {unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         
-                        {/* Compact Add to Cart button */}
+                        {/* Add to Cart button */}
                         <Button
                           onClick={() => addToCart(product)}
                           disabled={!product.inStock}
-                          size="sm"
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs h-8"
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white"
                           data-testid={`add-to-cart-${product.productId}`}
                         >
-                          <ShoppingCart className="w-3 h-3 mr-1" />
+                          <ShoppingCart className="w-4 h-4 mr-2" />
                           Add to Cart
                         </Button>
                       </CardContent>
