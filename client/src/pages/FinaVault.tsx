@@ -683,8 +683,10 @@ export default function FinaVault() {
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   
-  // State
-  const [activeTab, setActiveTab] = useState('vault-activity');
+  // State - Default to terms tab if KYC not approved
+  const [activeTab, setActiveTab] = useState(() => {
+    return user?.kycStatus === 'Approved' ? 'vault-activity' : 'terms';
+  });
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
   const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
 
@@ -1293,56 +1295,99 @@ export default function FinaVault() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* KYC Verification Required Banner */}
+              {user?.kycStatus !== 'Approved' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-amber-800">KYC Verification Required</h3>
+                      <p className="text-sm text-amber-700">Complete your identity verification to access FinaVault features.</p>
+                    </div>
+                    <Link href="/kyc">
+                      <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                        Verify Now
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              <Tabs value={activeTab} onValueChange={(val) => {
+                // Only allow changing to terms tab if KYC not approved
+                if (user?.kycStatus !== 'Approved' && val !== 'terms') {
+                  toast({
+                    title: "KYC Required",
+                    description: "Please complete your identity verification to access this feature.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setActiveTab(val);
+              }} className="w-full">
                 {/* Tabs navigation with proper styling */}
                 <div className="bg-white rounded-2xl border border-border p-3 shadow-sm mb-6 overflow-x-auto">
                   <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto">
                     <TabsTrigger 
                       value="vault-activity"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="tab-vault-activity"
                     >
                       <History className="w-4 h-4 mr-1.5" />
                       Vault Activity
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="deposit-gold"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500 data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
                       data-testid="tab-deposit-gold"
                     >
                       <PlusCircle className="w-4 h-4 mr-1.5" />
                       Deposit Gold
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="my-deposits"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 transition-all data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 transition-all data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
                       data-testid="tab-my-deposits"
                     >
                       <Clock className="w-4 h-4 mr-1.5" />
                       My Deposits
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="cash-out"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
                     >
                       <Banknote className="w-4 h-4 mr-1.5" />
                       Cash Out
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="ownership-ledger"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="tab-ownership-ledger"
                     >
                       <Lock className="w-4 h-4 mr-1.5" />
                       Ownership Ledger
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="certificates"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
+                      disabled={user?.kycStatus !== 'Approved'}
+                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="tab-certificates"
                     >
                       <Award className="w-4 h-4 mr-1.5" />
                       Certificates
+                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
                     </TabsTrigger>
                     <TabsTrigger 
                       value="terms"
