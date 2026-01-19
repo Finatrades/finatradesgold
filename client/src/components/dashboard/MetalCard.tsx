@@ -19,14 +19,21 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
-      className={`${className}`}
+      whileHover={{ scale: 1.02, y: -4 }}
+      className={`${className} group cursor-pointer`}
     >
-      <div className="w-[340px] h-[220px] rounded-2xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-5 shadow-2xl relative overflow-hidden border border-gray-700/50">
+      <div className="w-[340px] h-[220px] rounded-2xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-5 shadow-2xl relative overflow-hidden border border-gray-700/50 transition-all duration-300 group-hover:shadow-[0_8px_40px_-8px_rgba(139,92,246,0.5)] group-hover:border-purple-500/50">
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
           style={{
             backgroundImage: `radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.3) 0%, transparent 50%),
                               radial-gradient(circle at 0% 100%, rgba(234, 179, 8, 0.2) 0%, transparent 50%)`
+          }}
+        />
+        <div 
+          className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            backgroundImage: `radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 70%)`
           }}
         />
         
