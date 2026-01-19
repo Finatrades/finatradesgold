@@ -2529,18 +2529,9 @@ function BrandingTab({
                       formDataUpload.append('logo', file);
                       
                       try {
-                        // Get CSRF token from cookie
-                        const csrfToken = document.cookie
-                          .split('; ')
-                          .find(row => row.startsWith('csrf_token='))
-                          ?.split('=')[1] || '';
-                        
                         const res = await fetch('/api/admin/branding/logo', {
                           method: 'POST',
                           credentials: 'include',
-                          headers: {
-                            'x-csrf-token': csrfToken
-                          },
                           body: formDataUpload
                         });
                         

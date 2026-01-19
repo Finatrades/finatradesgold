@@ -21,6 +21,8 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/certificates/verify',
   '/api/verify-certificate',
   '/api/sso/verify-token',
+  '/api/admin/branding/logo', // Admin-authenticated file upload
+  '/api/documents/upload', // Authenticated file upload
 ];
 
 // Generate secure CSRF token
