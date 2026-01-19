@@ -659,7 +659,10 @@ router.get('/products', async (req: Request, res: Response) => {
         certificationImageUrl: p.certificationImageUrl,
         description: p.description,
         category: p.category,
-        syncedAt: p.syncedAt
+        syncedAt: p.syncedAt,
+        makingFee: p.makingFee || '0',
+        premiumFeePercent: p.premiumFeePercent || '0',
+        vatPercent: p.vatPercent || '0'
       }))
     });
   } catch (error) {
@@ -815,6 +818,19 @@ async function seedDefaultProducts(): Promise<void> {
 // ADMIN PRODUCT MANAGEMENT CRUD
 // ============================================
 
+// Helper: Validate and sanitize fee values
+function sanitizeFeeValue(value: any, fieldName: string): string {
+  const parsed = parseFloat(value);
+  if (isNaN(parsed) || parsed < 0) {
+    return '0';
+  }
+  // Cap VAT and premium at 100%, making fee at reasonable max
+  if (fieldName === 'vatPercent' || fieldName === 'premiumFeePercent') {
+    return Math.min(parsed, 100).toFixed(2);
+  }
+  return parsed.toFixed(2);
+}
+
 // Get all products for admin (including inactive)
 router.get('/admin/products', async (req: Request, res: Response) => {
   try {
@@ -839,7 +855,7 @@ router.post('/admin/products', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock } = req.body;
+    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock, makingFee, premiumFeePercent, vatPercent } = req.body;
 
     if (!name || !weight || !weightGrams) {
       return res.status(400).json({ error: 'Name, weight, and weightGrams are required' });
@@ -860,6 +876,9 @@ router.post('/admin/products', async (req: Request, res: Response) => {
         description,
         currency: 'USD',
         category: 'bars',
+        makingFee: sanitizeFeeValue(makingFee, 'makingFee'),
+        premiumFeePercent: sanitizeFeeValue(premiumFeePercent, 'premiumFeePercent'),
+        vatPercent: sanitizeFeeValue(vatPercent, 'vatPercent'),
         syncedAt: new Date()
       })
       .returning();
@@ -881,7 +900,7 @@ router.put('/admin/products/:id', async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock } = req.body;
+    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock, makingFee, premiumFeePercent, vatPercent } = req.body;
 
     const [updated] = await db.update(wingoldProducts)
       .set({
@@ -893,6 +912,9 @@ router.put('/admin/products/:id', async (req: Request, res: Response) => {
         imageUrl,
         description,
         inStock,
+        makingFee: sanitizeFeeValue(makingFee, 'makingFee'),
+        premiumFeePercent: sanitizeFeeValue(premiumFeePercent, 'premiumFeePercent'),
+        vatPercent: sanitizeFeeValue(vatPercent, 'vatPercent'),
         syncedAt: new Date()
       })
       .where(eq(wingoldProducts.id, id))

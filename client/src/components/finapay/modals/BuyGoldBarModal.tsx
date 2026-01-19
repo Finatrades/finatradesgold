@@ -26,6 +26,32 @@ interface GoldProduct {
   inStock: boolean;
   imageUrl?: string;
   description?: string;
+  makingFee?: string;
+  premiumFeePercent?: string;
+  vatPercent?: string;
+}
+
+// Calculate price breakdown for a product
+function calculatePriceBreakdown(product: GoldProduct, quantity: number = 1) {
+  const basePrice = parseFloat(product.livePrice) || 0;
+  const makingFee = parseFloat(product.makingFee || '0') * quantity;
+  const premiumPercent = parseFloat(product.premiumFeePercent || '0');
+  const vatPercent = parseFloat(product.vatPercent || '0');
+  
+  const premium = (basePrice * quantity * premiumPercent) / 100;
+  const subtotal = (basePrice * quantity) + makingFee + premium;
+  const vat = (subtotal * vatPercent) / 100;
+  const total = subtotal + vat;
+  
+  return {
+    basePrice: basePrice * quantity,
+    makingFee,
+    premium,
+    vat,
+    total,
+    vatPercent,
+    premiumPercent,
+  };
 }
 
 interface CartItem {
@@ -99,9 +125,19 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
 
   const clearCart = () => setCart([]);
 
-  const cartTotal = cart.reduce((sum, item) => {
-    return sum + parseFloat(item.product.livePrice) * item.quantity;
-  }, 0);
+  // Calculate cart totals with fee breakdown
+  const cartBreakdown = cart.reduce((totals, item) => {
+    const breakdown = calculatePriceBreakdown(item.product, item.quantity);
+    return {
+      basePrice: totals.basePrice + breakdown.basePrice,
+      makingFee: totals.makingFee + breakdown.makingFee,
+      premium: totals.premium + breakdown.premium,
+      vat: totals.vat + breakdown.vat,
+      total: totals.total + breakdown.total,
+    };
+  }, { basePrice: 0, makingFee: 0, premium: 0, vat: 0, total: 0 });
+
+  const cartTotal = cartBreakdown.total;
 
   const cartTotalGrams = cart.reduce((sum, item) => {
     return sum + parseFloat(item.product.weightGrams) * item.quantity;
@@ -119,12 +155,19 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
 
     setIsCheckingOut(true);
     try {
-      const cartItems = cart.map(item => ({
-        barSize: item.product.weight,
-        grams: parseFloat(item.product.weightGrams),
-        quantity: item.quantity,
-        priceUsd: parseFloat(item.product.livePrice) * item.quantity,
-      }));
+      const cartItems = cart.map(item => {
+        const breakdown = calculatePriceBreakdown(item.product, item.quantity);
+        return {
+          barSize: item.product.weight,
+          grams: parseFloat(item.product.weightGrams),
+          quantity: item.quantity,
+          priceUsd: breakdown.total, // Total price including all fees
+          basePrice: breakdown.basePrice,
+          makingFee: breakdown.makingFee,
+          premium: breakdown.premium,
+          vat: breakdown.vat,
+        };
+      });
 
       const res = await apiRequest('POST', '/api/sso/wingold/checkout', {
         cart: cartItems,
@@ -281,72 +324,98 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {cart.map((item) => (
-                    <div
-                      key={item.product.productId}
-                      className="bg-white rounded-lg p-3 shadow-sm border"
-                      data-testid={`cart-item-${item.product.productId}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-sm">{item.product.weight} Gold Bar</p>
-                          <p className="text-xs text-muted-foreground">
-                            ${parseFloat(item.product.livePrice).toLocaleString()} each
+                  {cart.map((item) => {
+                    const itemBreakdown = calculatePriceBreakdown(item.product, item.quantity);
+                    const unitPrice = calculatePriceBreakdown(item.product, 1).total;
+                    return (
+                      <div
+                        key={item.product.productId}
+                        className="bg-white rounded-lg p-3 shadow-sm border"
+                        data-testid={`cart-item-${item.product.productId}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-sm">{item.product.weight} Gold Bar</p>
+                            <p className="text-xs text-muted-foreground">
+                              ${unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeFromCart(item.product.productId)}
+                            data-testid={`button-remove-${item.product.productId}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.product.productId, -1)}
+                              data-testid={`button-decrease-${item.product.productId}`}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-8 text-center font-medium" data-testid={`text-quantity-${item.product.productId}`}>{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.product.productId, 1)}
+                              data-testid={`button-increase-${item.product.productId}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <p className="font-semibold text-amber-600">
+                            ${itemBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeFromCart(item.product.productId)}
-                          data-testid={`button-remove-${item.product.productId}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateQuantity(item.product.productId, -1)}
-                            data-testid={`button-decrease-${item.product.productId}`}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-medium" data-testid={`text-quantity-${item.product.productId}`}>{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateQuantity(item.product.productId, 1)}
-                            data-testid={`button-increase-${item.product.productId}`}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <p className="font-semibold text-amber-600">
-                          ${(parseFloat(item.product.livePrice) * item.quantity).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
 
             {cart.length > 0 && (
               <div className="p-4 border-t bg-white space-y-3">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Gold</span>
                     <span className="font-medium" data-testid="text-total-grams">{cartTotalGrams.toFixed(2)}g</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="text-xl font-bold text-amber-600" data-testid="text-total-usd">
-                      ${cartTotal.toLocaleString()}
+                    <span className="text-muted-foreground">Gold Price</span>
+                    <span data-testid="text-gold-price">${cartBreakdown.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {cartBreakdown.makingFee > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Making Fee</span>
+                      <span data-testid="text-making-fee">${cartBreakdown.makingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  {cartBreakdown.premium > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Premium</span>
+                      <span data-testid="text-premium">${cartBreakdown.premium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  {cartBreakdown.vat > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">VAT</span>
+                      <span data-testid="text-vat">${cartBreakdown.vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-2 flex justify-between">
+                    <span className="font-medium">Total</span>
+                    <span className="text-lg font-bold text-amber-600" data-testid="text-total-usd">
+                      ${cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>

@@ -26,6 +26,9 @@ interface Product {
   inStock: boolean;
   imageUrl?: string;
   description?: string;
+  makingFee?: string;
+  premiumFeePercent?: string;
+  vatPercent?: string;
 }
 
 interface ProductForm {
@@ -37,6 +40,9 @@ interface ProductForm {
   imageUrl: string;
   description: string;
   inStock: boolean;
+  makingFee: string;
+  premiumFeePercent: string;
+  vatPercent: string;
 }
 
 const defaultForm: ProductForm = {
@@ -48,6 +54,9 @@ const defaultForm: ProductForm = {
   imageUrl: '',
   description: 'LBMA Certified pure gold bar with assay certificate',
   inStock: true,
+  makingFee: '0',
+  premiumFeePercent: '0',
+  vatPercent: '5',
 };
 
 export default function WingoldProducts() {
@@ -147,6 +156,9 @@ export default function WingoldProducts() {
       imageUrl: product.imageUrl || '',
       description: product.description || '',
       inStock: product.inStock,
+      makingFee: product.makingFee || '0',
+      premiumFeePercent: product.premiumFeePercent || '0',
+      vatPercent: product.vatPercent || '5',
     });
     setIsModalOpen(true);
   };
@@ -411,6 +423,53 @@ export default function WingoldProducts() {
                   />
                 </div>
               </div>
+              
+              {/* Fee Configuration */}
+              <div className="border rounded-lg p-4 space-y-4 bg-amber-50/50">
+                <h4 className="font-medium text-sm text-amber-800">Fee Configuration</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="makingFee">Making Fee (USD)</Label>
+                    <Input
+                      id="makingFee"
+                      type="number"
+                      step="0.01"
+                      value={form.makingFee}
+                      onChange={(e) => setForm({ ...form, makingFee: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-making-fee"
+                    />
+                    <p className="text-xs text-muted-foreground">Flat fee per bar</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="premiumFeePercent">Premium (%)</Label>
+                    <Input
+                      id="premiumFeePercent"
+                      type="number"
+                      step="0.01"
+                      value={form.premiumFeePercent}
+                      onChange={(e) => setForm({ ...form, premiumFeePercent: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-premium-fee"
+                    />
+                    <p className="text-xs text-muted-foreground">% of gold price</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vatPercent">VAT (%)</Label>
+                    <Input
+                      id="vatPercent"
+                      type="number"
+                      step="0.01"
+                      value={form.vatPercent}
+                      onChange={(e) => setForm({ ...form, vatPercent: e.target.value })}
+                      placeholder="5.00"
+                      data-testid="input-vat-percent"
+                    />
+                    <p className="text-xs text-muted-foreground">Applied to total</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Product Image</Label>
                 <div className="flex gap-2">

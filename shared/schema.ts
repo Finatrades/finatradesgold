@@ -4173,6 +4173,10 @@ export const wingoldProducts = pgTable("wingold_products", {
   certificationImageUrl: text("certification_image_url"),
   description: text("description"),
   metadata: json("metadata"),
+  // Fee fields for pricing breakdown
+  makingFee: decimal("making_fee", { precision: 18, scale: 2 }).default('0'), // Flat USD amount per bar
+  premiumFeePercent: decimal("premium_fee_percent", { precision: 5, scale: 2 }).default('0'), // Premium as % of gold price
+  vatPercent: decimal("vat_percent", { precision: 5, scale: 2 }).default('0'), // VAT percentage
   syncedAt: timestamp("synced_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
