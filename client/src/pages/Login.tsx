@@ -12,6 +12,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import BiometricService from '@/lib/biometric-service';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileLogin from '@/components/mobile/MobileLogin';
+import finatradesLogo from '@/assets/finatrades-logo.png';
 
 export default function Login() {
   const isMobile = useIsMobile();
@@ -302,7 +303,7 @@ function DesktopLogin() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
-                src="/finatrades-logo.png" 
+                src={finatradesLogo} 
                 alt="Finatrades" 
                 className="h-16 w-auto"
               />
