@@ -111,7 +111,7 @@ import b2bRoutes from "./b2b-routes";
 import unifiedTallyRoutes from "./unified-tally-routes";
 import physicalDepositRoutes from "./physical-deposit-routes";
 import { WingoldUserSyncService } from "./wingold-user-sync-service";
-import { CredentialIssuerService } from "./services/credential-issuer";
+import { credentialIssuer } from "./services/credential-issuer";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 
 // ============================================================================
@@ -4967,7 +4967,7 @@ ${message}
             WingoldUserSyncService.onKycApproved(submission.userId).catch(err => console.error("[WingoldSync] KYC approval sync failed:", err));
 
             // Issue Verifiable Credential on KYC approval (non-blocking)
-            CredentialIssuerService.getInstance().issueKycCredential(user).then(credential => {
+            credentialIssuer.issueKycCredential(user).then(credential => {
               console.log("[VC] Verifiable credential issued on KYC approval for user:", submission.userId, "credentialId:", credential?.credentialId);
             }).catch(err => console.error("[VC] Failed to issue verifiable credential on KYC approval:", err));
           } else if (req.body.status === 'Rejected') {
