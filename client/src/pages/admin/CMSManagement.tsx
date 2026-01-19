@@ -46,7 +46,8 @@ import {
   Settings,
   RefreshCw,
   Download,
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ContentPage, ContentBlock, Template } from '@shared/schema';
@@ -2355,6 +2356,7 @@ function BrandingTab({
   onSave: (data: any) => void;
   isPending: boolean;
 }) {
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     tagline: '',
@@ -2522,6 +2524,7 @@ function BrandingTab({
                       const file = e.target.files?.[0];
                       if (!file) return;
                       
+                      setIsUploading(true);
                       const formDataUpload = new FormData();
                       formDataUpload.append('logo', file);
                       
@@ -2544,18 +2547,23 @@ function BrandingTab({
                         if (res.ok) {
                           const data = await res.json();
                           updateField('logoUrl', data.url);
+                          alert('Logo uploaded successfully!');
                         } else {
-                          console.error('Logo upload failed');
+                          const errData = await res.json();
+                          alert('Upload failed: ' + (errData.message || 'Unknown error'));
                         }
                       } catch (err) {
                         console.error('Logo upload error:', err);
+                        alert('Upload error: ' + (err instanceof Error ? err.message : 'Unknown error'));
+                      } finally {
+                        setIsUploading(false);
                       }
                       e.target.value = '';
                     }}
                   />
-                  <div className="h-10 px-4 py-2 border rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center gap-2 text-sm font-medium transition-colors">
-                    <Upload className="w-4 h-4" />
-                    Upload
+                  <div className={`h-10 px-4 py-2 border rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${isUploading ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 cursor-pointer'}`}>
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isUploading ? 'Uploading...' : 'Upload'}
                   </div>
                 </label>
               </div>
