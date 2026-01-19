@@ -27,7 +27,7 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
   const recentCertificates = Array.isArray(certificates) ? certificates.slice(0, 5) : [];
 
   return (
-    <Card className="p-5 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] transition-all duration-300">
+    <Card className="p-5 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">Certificates</h3>
         <Link href="/finavault">
