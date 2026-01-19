@@ -164,5 +164,26 @@ export function prefetchDashboardData(userId: string) {
 
 export function clearQueryCache() {
   console.log('[Cache] Clearing all query cache on logout');
+  // Clear all React Query cache
   queryClient.clear();
+  // Reset all queries to ensure no stale data
+  queryClient.resetQueries();
+  // Remove any cached query data
+  queryClient.removeQueries();
+  // Clear any session-specific storage
+  try {
+    // Clear IndexedDB cache if any
+    if (typeof indexedDB !== 'undefined') {
+      indexedDB.databases?.().then(dbs => {
+        dbs.forEach(db => {
+          if (db.name?.includes('query') || db.name?.includes('cache')) {
+            indexedDB.deleteDatabase(db.name);
+          }
+        });
+      }).catch(() => {});
+    }
+  } catch (e) {
+    console.log('[Cache] IndexedDB cleanup skipped');
+  }
+  console.log('[Cache] All caches cleared successfully');
 }
