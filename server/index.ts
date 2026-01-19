@@ -377,6 +377,10 @@ app.use((req, res, next) => {
     '/api/wingold/webhooks',
     // SSO token verification (server-to-server debug endpoint)
     '/api/sso/verify-token',
+    // Admin-authenticated file uploads and testing
+    '/api/admin/branding/logo',
+    '/api/admin/email-test',
+    '/api/documents/upload',
   ];
   
   const isExempt = csrfExemptPaths.some(path => req.path.startsWith(path));

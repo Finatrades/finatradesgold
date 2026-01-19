@@ -26266,6 +26266,43 @@ ${message}
     }
   });
 
+
+  // Send test email to verify template design
+  app.post("/api/admin/email-test", ensureAdminAsync, async (req, res) => {
+    try {
+      const { email, templateType } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+
+      const testData = {
+        user_name: "Test User",
+        otp_code: "123456",
+        amount: "1.5g",
+        transaction_id: "TEST-" + Date.now(),
+        dashboard_url: `${process.env.APP_URL || "https://finatrades.com"}/dashboard`,
+        gold_amount: "1.5g",
+        usd_value: "$225.00",
+        certificate_id: "CERT-TEST-001",
+        status: "Approved",
+        date: new Date().toLocaleDateString()
+      };
+
+      await sendEmailDirect({
+        to: email,
+        subject: "Finatrades Email Template Test",
+        templateSlug: templateType || "email_verification",
+        data: testData,
+        notificationType: "system"
+      });
+
+      res.json({ success: true, message: `Test email sent to ${email}` });
+    } catch (error) {
+      console.error("Failed to send test email:", error);
+      res.status(500).json({ message: "Failed to send test email: " + (error as Error).message });
+    }
+  });
   // ============================================
   // GEO RESTRICTIONS ROUTES
   // ============================================

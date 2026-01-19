@@ -23,6 +23,7 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/sso/verify-token',
   '/api/admin/branding/logo', // Admin-authenticated file upload
   '/api/documents/upload', // Authenticated file upload
+  '/api/admin/email-test', // Admin-authenticated test email
 ];
 
 // Generate secure CSRF token

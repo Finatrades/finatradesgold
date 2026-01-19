@@ -12,9 +12,24 @@ const BRANDING_CACHE_TTL = 60000; // 1 minute
 
 async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: string; primaryColor: string }> {
   const now = Date.now();
+  
+  // Helper to convert relative URLs to full URLs for email clients
+  const getFullLogoUrl = (url: string): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // Use APP_URL or REPLIT_DOMAINS for full URL
+    const baseUrl = process.env.APP_URL || 
+                    (process.env.REPL_SLUG && process.env.REPL_OWNER 
+                      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER.toLowerCase()}.repl.co`
+                      : process.env.REPLIT_DOMAINS?.split(',')[0] 
+                        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+                        : '');
+    return baseUrl ? `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}` : '';
+  };
+  
   if (brandingCache && (now - brandingCacheTime) < BRANDING_CACHE_TTL) {
     return {
-      logoUrl: brandingCache.logoUrl || '',
+      logoUrl: getFullLogoUrl(brandingCache.logoUrl || ''),
       companyName: brandingCache.companyName || 'Finatrades',
       primaryColor: brandingCache.primaryColor || '#8A2BE2'
     };
@@ -25,7 +40,7 @@ async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: st
     brandingCache = {
       logoUrl: settings?.logoUrl || '',
       companyName: settings?.companyName || 'Finatrades',
-      primaryColor: settings?.primaryColor || '#f97316'
+      primaryColor: settings?.primaryColor || '#8A2BE2'
     };
     brandingCacheTime = now;
   } catch (error) {
@@ -34,7 +49,7 @@ async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: st
   }
   
   return {
-    logoUrl: brandingCache.logoUrl || '',
+    logoUrl: getFullLogoUrl(brandingCache.logoUrl || ''),
     companyName: brandingCache.companyName || 'Finatrades',
     primaryColor: brandingCache.primaryColor || '#8A2BE2'
   };
