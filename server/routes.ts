@@ -20786,9 +20786,7 @@ ${message}
       
       // Header
       // Add logo image
-      const path = require('path');
-      const fs = require('fs');
-      const logoPath = path.join(__dirname, 'assets', 'finatrades-logo.png');
+      const logoPath = path.join(import.meta.dirname, 'assets', 'finatrades-logo.png');
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, (doc.page.width - 180) / 2, doc.y, { width: 180 });
         doc.moveDown(3);
@@ -21094,10 +21092,8 @@ ${message}
       doc.pipe(res);
       
       // Add logo image
-      const path2 = require('path');
-      const fs2 = require('fs');
-      const logoPath2 = path2.join(__dirname, 'assets', 'finatrades-logo.png');
-      if (fs2.existsSync(logoPath2)) {
+      const logoPath2 = path.join(import.meta.dirname, 'assets', 'finatrades-logo.png');
+      if (fs.existsSync(logoPath2)) {
         doc.image(logoPath2, (doc.page.width - 180) / 2, doc.y, { width: 180 });
         doc.moveDown(3);
       } else {
