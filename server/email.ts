@@ -212,14 +212,24 @@ function replaceVariables(template: string, data: EmailData): string {
 
 // Creative purple email template wrapper with logo header and footer
 function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }): string {
-  const primaryColor = '#8B5CF6'; // Vibrant purple
+  const primaryColor = '#8A2BE2'; // Official Finatrades purple
   const secondaryColor = '#A78BFA'; // Light purple
-  const darkPurple = '#6D28D9'; // Dark purple for accents
+  const darkPurple = '#4B0082'; // Dark purple for accents
   
-  const logoSection = branding.logoUrl 
-    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 60px; max-width: 220px;" />`
-    : `<div style="font-size: 32px; font-weight: 800; color: white; letter-spacing: 2px; text-transform: uppercase;">FINATRADES</div>
-       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 5px;">GOLD-BACKED DIGITAL FINANCE</div>`;
+  // Official white Finatrades logo section - matching homepage navbar style
+  const logoSection = `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+      <tr>
+        <td style="padding-right: 12px; vertical-align: middle;">
+          <!-- Finatrades butterfly/wing icon in white -->
+          <div style="font-size: 36px; color: white;">🦋</div>
+        </td>
+        <td style="vertical-align: middle;">
+          <div style="font-size: 28px; font-weight: 700; color: white; letter-spacing: 1px; font-family: 'Segoe UI', Tahoma, sans-serif;">FINATRADES</div>
+        </td>
+      </tr>
+    </table>
+    <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`;
 
   // Check if body already has the full wrapper structure - extract inner content
   let innerContent = body;
@@ -253,7 +263,7 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
           
           <!-- Creative Purple Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, ${primaryColor} 0%, ${darkPurple} 50%, #4C1D95 100%); padding: 0;">
+            <td style="background: linear-gradient(135deg, #0D001E 0%, #2A0055 50%, #4B0082 100%); padding: 0;">
               <!-- Gold accent line at top -->
               <div style="height: 4px; background: linear-gradient(90deg, #F59E0B, #FBBF24, #F59E0B);"></div>
               
