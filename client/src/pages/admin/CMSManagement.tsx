@@ -2502,14 +2502,63 @@ function BrandingTab({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                value={formData.logoUrl}
-                onChange={(e) => updateField('logoUrl', e.target.value)}
-                placeholder="https://example.com/logo.png"
-                data-testid="input-logo-url"
-              />
+              <Label htmlFor="logoUrl">Logo</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="logoUrl"
+                  value={formData.logoUrl}
+                  onChange={(e) => updateField('logoUrl', e.target.value)}
+                  placeholder="https://example.com/logo.png or upload below"
+                  data-testid="input-logo-url"
+                  className="flex-1"
+                />
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    data-testid="input-logo-file"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const formDataUpload = new FormData();
+                      formDataUpload.append('logo', file);
+                      
+                      try {
+                        // Get CSRF token from cookie
+                        const csrfToken = document.cookie
+                          .split('; ')
+                          .find(row => row.startsWith('csrf_token='))
+                          ?.split('=')[1] || '';
+                        
+                        const res = await fetch('/api/admin/branding/logo', {
+                          method: 'POST',
+                          credentials: 'include',
+                          headers: {
+                            'x-csrf-token': csrfToken
+                          },
+                          body: formDataUpload
+                        });
+                        
+                        if (res.ok) {
+                          const data = await res.json();
+                          updateField('logoUrl', data.url);
+                        } else {
+                          console.error('Logo upload failed');
+                        }
+                      } catch (err) {
+                        console.error('Logo upload error:', err);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  <div className="h-10 px-4 py-2 border rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center gap-2 text-sm font-medium transition-colors">
+                    <Upload className="w-4 h-4" />
+                    Upload
+                  </div>
+                </label>
+              </div>
               {formData.logoUrl && (
                 <div className="mt-2 p-4 bg-gray-100 rounded flex items-center justify-center">
                   <img src={formData.logoUrl} alt="Logo preview" className="max-h-16 max-w-full" />

@@ -16209,6 +16209,41 @@ ${message}
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update branding settings" });
     }
   });
+
+  // Upload logo file (Admin only)
+  app.post("/api/admin/branding/logo", upload.single('logo'), async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId || req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'No logo file uploaded' });
+      }
+      
+      let logoUrl: string;
+      
+      // Upload to R2 if configured, otherwise use local disk
+      if (isR2Configured() && req.file.buffer) {
+        const r2Key = generateR2Key('branding', `logo-${Date.now()}-${req.file.originalname}`);
+        const result = await uploadToR2(r2Key, req.file.buffer, req.file.mimetype);
+        logoUrl = result.url;
+        console.log(`[R2] Logo uploaded: ${r2Key}`);
+      } else {
+        // Fallback to local disk storage
+        logoUrl = `/uploads/${(req.file as any).filename}`;
+      }
+      
+      res.json({ 
+        url: logoUrl,
+        filename: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      res.status(500).json({ message: 'Failed to upload logo' });
+    }
+  });
   
   // === Public Content API (for frontend consumption) ===
   
