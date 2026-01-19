@@ -216,20 +216,12 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
   const secondaryColor = '#A78BFA'; // Light purple
   const darkPurple = '#4B0082'; // Dark purple for accents
   
-  // Official white Finatrades logo section - matching homepage navbar style
-  const logoSection = `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-      <tr>
-        <td style="padding-right: 12px; vertical-align: middle;">
-          <!-- Finatrades butterfly/wing icon in white -->
-          <div style="font-size: 36px; color: white;">🦋</div>
-        </td>
-        <td style="vertical-align: middle;">
-          <div style="font-size: 28px; font-weight: 700; color: white; letter-spacing: 1px; font-family: 'Segoe UI', Tahoma, sans-serif;">FINATRADES</div>
-        </td>
-      </tr>
-    </table>
-    <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`;
+  // Use logo from branding settings if available, otherwise show text fallback
+  const logoSection = branding.logoUrl 
+    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" style="max-height: 60px; max-width: 220px; filter: brightness(0) invert(1);" />
+       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`
+    : `<div style="font-size: 32px; font-weight: 800; color: white; letter-spacing: 2px; text-transform: uppercase;">FINATRADES</div>
+       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 5px;">GOLD-BACKED DIGITAL FINANCE</div>`;
 
   // Check if body already has the full wrapper structure - extract inner content
   let innerContent = body;
