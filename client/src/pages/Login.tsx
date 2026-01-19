@@ -305,7 +305,7 @@ function DesktopLogin() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-16 w-auto"
+                className="h-20 w-auto"
               />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>

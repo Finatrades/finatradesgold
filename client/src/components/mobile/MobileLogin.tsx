@@ -193,7 +193,7 @@ export default function MobileLogin() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades" 
-                className="h-12 mx-auto mb-6"
+                className="h-16 mx-auto mb-6"
                 style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
                 data-testid="img-logo"
               />
@@ -270,7 +270,7 @@ export default function MobileLogin() {
             <img 
               src={finatradesLogo} 
               alt="Finatrades" 
-              className="h-12 mx-auto mb-6"
+              className="h-16 mx-auto mb-6"
               style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
               data-testid="img-logo"
             />

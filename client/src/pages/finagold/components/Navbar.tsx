@@ -73,7 +73,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
             <img 
               src={finatradesLogo} 
               alt="Finatrades" 
-              className="h-8 w-auto brightness-[2] saturate-[1.5]"
+              className="h-12 w-auto brightness-[2] saturate-[1.5]"
               data-testid="logo-finatrades"
             />
           </Link>
