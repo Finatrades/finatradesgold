@@ -31,20 +31,27 @@ interface GoldProduct {
   vatPercent?: string;
 }
 
-// Calculate price breakdown for a product
+// AED/USD conversion rate
+const AED_USD_RATE = 3.67;
+
+// Calculate price breakdown for a product (all in AED)
+// VAT is applied only to making fee
 function calculatePriceBreakdown(product: GoldProduct, quantity: number = 1) {
-  const basePrice = parseFloat(product.livePrice) || 0;
-  const makingFee = parseFloat(product.makingFee || '0') * quantity;
+  // Use AED price as base (convert from USD if needed)
+  const basePriceAed = parseFloat(product.livePriceAed) || (parseFloat(product.livePrice) || 0) * AED_USD_RATE;
+  const makingFeePerUnit = parseFloat(product.makingFee || '0') * AED_USD_RATE; // Making fee stored in USD, convert to AED
+  const makingFee = makingFeePerUnit * quantity;
   const premiumPercent = parseFloat(product.premiumFeePercent || '0');
   const vatPercent = parseFloat(product.vatPercent || '0');
   
-  const premium = (basePrice * quantity * premiumPercent) / 100;
-  const subtotal = (basePrice * quantity) + makingFee + premium;
-  const vat = (subtotal * vatPercent) / 100;
-  const total = subtotal + vat;
+  const goldPrice = basePriceAed * quantity;
+  const premium = (goldPrice * premiumPercent) / 100;
+  // VAT applies only to making fee
+  const vat = (makingFee * vatPercent) / 100;
+  const total = goldPrice + makingFee + premium + vat;
   
   return {
-    basePrice: basePrice * quantity,
+    goldPrice,
     makingFee,
     premium,
     vat,
@@ -125,17 +132,17 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
 
   const clearCart = () => setCart([]);
 
-  // Calculate cart totals with fee breakdown
+  // Calculate cart totals with fee breakdown (all in AED)
   const cartBreakdown = cart.reduce((totals, item) => {
     const breakdown = calculatePriceBreakdown(item.product, item.quantity);
     return {
-      basePrice: totals.basePrice + breakdown.basePrice,
+      goldPrice: totals.goldPrice + breakdown.goldPrice,
       makingFee: totals.makingFee + breakdown.makingFee,
       premium: totals.premium + breakdown.premium,
       vat: totals.vat + breakdown.vat,
       total: totals.total + breakdown.total,
     };
-  }, { basePrice: 0, makingFee: 0, premium: 0, vat: 0, total: 0 });
+  }, { goldPrice: 0, makingFee: 0, premium: 0, vat: 0, total: 0 });
 
   const cartTotal = cartBreakdown.total;
 
@@ -161,8 +168,8 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
           barSize: item.product.weight,
           grams: parseFloat(item.product.weightGrams),
           quantity: item.quantity,
-          priceUsd: breakdown.total, // Total price including all fees
-          basePrice: breakdown.basePrice,
+          priceAed: breakdown.total, // Total price including all fees (AED)
+          goldPrice: breakdown.goldPrice,
           makingFee: breakdown.makingFee,
           premium: breakdown.premium,
           vat: breakdown.vat,
@@ -172,7 +179,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
       const res = await apiRequest('POST', '/api/sso/wingold/checkout', {
         cart: cartItems,
         totalGrams: cartTotalGrams,
-        totalUsd: cartTotal,
+        totalAed: cartTotal,
       });
 
       const data = await res.json();
@@ -284,13 +291,10 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                           {product.description || 'LBMA Certified pure gold bar with assay certificate'}
                         </p>
                         
-                        {/* Price Section */}
+                        {/* Price Section - AED only */}
                         <div className="mb-3">
                           <p className="text-lg font-bold text-amber-600">
-                            ${unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            AED {(unitBreakdown.total * 3.67).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            AED {unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
                         
@@ -342,7 +346,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                           <div>
                             <p className="font-medium text-sm">{item.product.weight} Gold Bar</p>
                             <p className="text-xs text-muted-foreground">
-                              ${unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
+                              AED {unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
                             </p>
                           </div>
                           <Button
@@ -378,7 +382,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                             </Button>
                           </div>
                           <p className="font-semibold text-amber-600">
-                            ${itemBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            AED {itemBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
                       </div>
@@ -397,30 +401,30 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Gold Price</span>
-                    <span data-testid="text-gold-price">${cartBreakdown.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span data-testid="text-gold-price">AED {cartBreakdown.goldPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   {cartBreakdown.makingFee > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Making Fee</span>
-                      <span data-testid="text-making-fee">${cartBreakdown.makingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span data-testid="text-making-fee">AED {cartBreakdown.makingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
                   {cartBreakdown.premium > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Premium</span>
-                      <span data-testid="text-premium">${cartBreakdown.premium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span data-testid="text-premium">AED {cartBreakdown.premium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
                   {cartBreakdown.vat > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">VAT</span>
-                      <span data-testid="text-vat">${cartBreakdown.vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span data-testid="text-vat">AED {cartBreakdown.vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total</span>
-                    <span className="text-lg font-bold text-amber-600" data-testid="text-total-usd">
-                      ${cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span className="text-lg font-bold text-amber-600" data-testid="text-total-aed">
+                      AED {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
