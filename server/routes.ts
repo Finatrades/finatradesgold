@@ -28,7 +28,7 @@ import {
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
   tradeRequests, tradeProposals, settlementHolds,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
-  sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements,
+  sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements, amlCases,
   depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions, unifiedTallyEvents,
   wallets as walletsTable, transactions as transactionsTable,
   bnslPlans as bnslPlansTable, withdrawalRequests as withdrawalRequestsTable,
@@ -3675,6 +3675,12 @@ ${message}
         pendingAccountDeletions = allDeletionRequests.filter((d: any) => d.status === "Pending").length;
       } catch (e) { /* table may not exist */ }
 
+      let openAmlCases = 0;
+      try {
+        const allAmlCases = await db.select().from(amlCases);
+        openAmlCases = allAmlCases.filter((c: any) => c.status === "Open" || c.status === "Under Investigation").length;
+      } catch (e) { /* table may not exist */ }
+
         return res.json({
         pendingKyc,
         pendingTransactions,
@@ -3687,7 +3693,8 @@ ${message}
         pendingCryptoPayments,
         pendingBuyGold,
         pendingPhysicalDeposits,
-        pendingAccountDeletions
+        pendingAccountDeletions,
+        openAmlCases
       });
     } catch (error) {
       console.error("Failed to get pending counts:", error);

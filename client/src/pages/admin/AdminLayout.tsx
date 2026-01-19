@@ -151,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       '/admin/users': 0,
       '/admin/employees': 0,
       '/admin/kyc': pendingCounts.pendingKyc || 0,
-      '/admin/compliance': pendingCounts.pendingKyc || 0,
+      '/admin/compliance': pendingCounts.openAmlCases || 0,
       '/admin/referrals': 0,
       '/admin/account-deletion-requests': pendingCounts.pendingAccountDeletions || 0,
       '/admin/transactions': pendingCounts.pendingTransactions || 0,
