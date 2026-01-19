@@ -780,6 +780,159 @@ async function seedDefaultProducts(): Promise<void> {
   console.log('[Wingold] Seeded default products');
 }
 
+// ============================================
+// ADMIN PRODUCT MANAGEMENT CRUD
+// ============================================
+
+// Get all products for admin (including inactive)
+router.get('/admin/products', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const products = await db.select().from(wingoldProducts).orderBy(wingoldProducts.weightGrams);
+    res.json({ products });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to fetch products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
+// Create new product
+router.post('/admin/products', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock } = req.body;
+
+    if (!name || !weight || !weightGrams) {
+      return res.status(400).json({ error: 'Name, weight, and weightGrams are required' });
+    }
+
+    const wingoldProductId = `WG-${weight.toUpperCase().replace(/\s/g, '')}-${Date.now()}`;
+
+    const [newProduct] = await db.insert(wingoldProducts)
+      .values({
+        wingoldProductId,
+        name,
+        weight,
+        weightGrams: String(weightGrams),
+        purity: purity || '999.9',
+        stock: stock || 0,
+        inStock: inStock !== false,
+        imageUrl,
+        description,
+        currency: 'USD',
+        category: 'bars',
+        syncedAt: new Date()
+      })
+      .returning();
+
+    console.log(`[Wingold Admin] Product created: ${name} (${wingoldProductId})`);
+    res.status(201).json({ success: true, product: newProduct });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to create product:', error);
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+// Update product
+router.put('/admin/products/:id', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const { name, weight, weightGrams, purity, stock, imageUrl, description, inStock } = req.body;
+
+    const [updated] = await db.update(wingoldProducts)
+      .set({
+        name,
+        weight,
+        weightGrams: String(weightGrams),
+        purity,
+        stock,
+        imageUrl,
+        description,
+        inStock,
+        syncedAt: new Date()
+      })
+      .where(eq(wingoldProducts.id, id))
+      .returning();
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    console.log(`[Wingold Admin] Product updated: ${name}`);
+    res.json({ success: true, product: updated });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to update product:', error);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+// Toggle product active status
+router.patch('/admin/products/:id/toggle', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+
+    const [product] = await db.select().from(wingoldProducts).where(eq(wingoldProducts.id, id));
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const [updated] = await db.update(wingoldProducts)
+      .set({ inStock: !product.inStock, syncedAt: new Date() })
+      .where(eq(wingoldProducts.id, id))
+      .returning();
+
+    console.log(`[Wingold Admin] Product ${updated.name} set to ${updated.inStock ? 'active' : 'inactive'}`);
+    res.json({ success: true, product: updated });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to toggle product:', error);
+    res.status(500).json({ error: 'Failed to toggle product' });
+  }
+});
+
+// Delete product
+router.delete('/admin/products/:id', async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+
+    const [deleted] = await db.delete(wingoldProducts)
+      .where(eq(wingoldProducts.id, id))
+      .returning();
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    console.log(`[Wingold Admin] Product deleted: ${deleted.name}`);
+    res.json({ success: true, message: 'Product deleted' });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to delete product:', error);
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
 router.get('/shop-redirect', async (req: Request, res: Response) => {
   try {
     const ssoSecret = process.env.WINGOLD_SYNC_SECRET;

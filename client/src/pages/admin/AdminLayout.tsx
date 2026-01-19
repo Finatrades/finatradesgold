@@ -94,6 +94,7 @@ const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/api-logs': ['manage_settings'],
   '/admin/unified-gold-tally': ['view_vault', 'manage_vault'],
   '/admin/unified-payments': ['manage_deposits', 'manage_withdrawals'],
+  '/admin/wingold-products': ['view_vault', 'manage_vault'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -252,6 +253,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'Products',
       icon: <Package className="w-4 h-4" />,
       items: [
+        { label: 'Gold Bar Catalog', href: '/admin/wingold-products' },
         { label: 'FinaPay', href: '/admin/finapay' },
         { label: 'FinaVault', href: '/admin/vault' },
         { label: 'FinaBridge', href: '/admin/finabridge' },

@@ -182,6 +182,7 @@ import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WingoldOrders from "@/pages/admin/WingoldOrders";
+import WingoldProducts from "@/pages/admin/WingoldProducts";
 import WingoldCallback from "@/pages/WingoldCallback";
 import PriceAlertsPage from "@/pages/PriceAlertsPage";
 import DCAPage from "@/pages/DCAPage";
@@ -328,6 +329,7 @@ function Router() {
       {/* Operations & Finance */}
       <Route path="/admin/interest-calculator" component={InterestCalculator} />
       <Route path="/admin/wingold-orders" component={WingoldOrders} />
+      <Route path="/admin/wingold-products" component={WingoldProducts} />
       
       {/* Analytics & Business Intelligence */}
       
