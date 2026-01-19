@@ -179,67 +179,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {userName}
-              </h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's an overview of your portfolio performance</p>
-            </div>
-            <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-              <span className="text-xs text-gray-500">FINATRADES ID:</span>
-              <span className="text-sm font-semibold text-purple-700">{finatradesId}</span>
-              <button onClick={copyFinatradesId} className="p-1 hover:bg-purple-100 rounded transition-colors" title="Copy ID">
-                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-purple-600" />}
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {userName}
-              </h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's an overview of your portfolio performance</p>
-            </div>
-            <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-              <span className="text-xs text-gray-500">FINATRADES ID:</span>
-              <span className="text-sm font-semibold text-purple-700">{finatradesId}</span>
-              <button onClick={copyFinatradesId} className="p-1 hover:bg-purple-100 rounded transition-colors" title="Copy ID">
-                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-purple-600" />}
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {userName}
-              </h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's an overview of your portfolio performance</p>
-            </div>
-            <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-              <span className="text-xs text-gray-500">FINATRADES ID:</span>
-              <span className="text-sm font-semibold text-purple-700">{finatradesId}</span>
-              <button onClick={copyFinatradesId} className="p-1 hover:bg-purple-100 rounded transition-colors" title="Copy ID">
-                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-purple-600" />}
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {userName}
-              </h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's an overview of your portfolio performance</p>
-            </div>
-            <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-              <span className="text-xs text-gray-500">FINATRADES ID:</span>
-              <span className="text-sm font-semibold text-purple-700">{finatradesId}</span>
-              <button onClick={copyFinatradesId} className="p-1 hover:bg-purple-100 rounded transition-colors" title="Copy ID">
-                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-purple-600" />}
-              </button>
-            </div>
-          </div>
-          </div>
         </section>
 
         {/* Quick Actions - Colorful buttons */}
