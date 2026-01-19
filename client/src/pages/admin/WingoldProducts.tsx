@@ -176,20 +176,21 @@ export default function WingoldProducts() {
     }
   };
 
-  const ensureCsrfToken = async (): Promise<string | null> => {
+  const ensureCsrfToken = async (): Promise<string> => {
     const match = document.cookie.match(/csrf_token=([^;]+)/);
-    if (match) return match[1];
-    
+    if (match && match[1]) {
+      return match[1];
+    }
     try {
       const res = await fetch('/api/csrf-token', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        return data.csrfToken;
+        return data.csrfToken || '';
       }
     } catch (e) {
-      console.error('Failed to fetch CSRF token:', e);
+      console.warn('Failed to fetch CSRF token:', e);
     }
-    return null;
+    return '';
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,16 +213,15 @@ export default function WingoldProducts() {
       formData.append('image', file);
 
       const csrfToken = await ensureCsrfToken();
-      const headers: HeadersInit = {};
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
 
       const res = await fetch('/api/wingold/admin/products/upload-image', {
         method: 'POST',
-        body: formData,
         credentials: 'include',
-        headers,
+        headers: {
+          'x-csrf-token': csrfToken || '',
+          'x-requested-with': 'XMLHttpRequest',
+        },
+        body: formData,
       });
 
       if (!res.ok) {
