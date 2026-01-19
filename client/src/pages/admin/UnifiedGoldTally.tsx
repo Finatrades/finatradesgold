@@ -572,18 +572,93 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
     Number(formData?.formData?.physicalGoldAllocatedG) > 0
   );
 
+  // Fetch platform config for fee rates (transform array to key-value object)
+  const { data: platformConfig } = useQuery({
+    queryKey: ['/api/admin/platform-config'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/platform-config');
+      if (!res.ok) return {};
+      const configs = await res.json();
+      // Transform array of {configKey, configValue} to flat object {key: value}
+      if (Array.isArray(configs)) {
+        return configs.reduce((acc: Record<string, string>, c: { configKey: string; configValue: string }) => {
+          acc[c.configKey] = c.configValue;
+          return acc;
+        }, {});
+      }
+      return configs;
+    },
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  // Calculate gateway cost based on payment method and platform config
+  const calculateGatewayCost = React.useCallback((method: DepositMethod, depositAmount: string): string => {
+    const amount = Number(depositAmount) || 0;
+    if (amount <= 0) return '0';
+
+    const config = platformConfig || {};
+    let feePercent = 0;
+    let feeFixed = 0;
+
+    switch (method) {
+      case 'CARD':
+        feePercent = Number(config.card_fee_percent) || 2.9;
+        feeFixed = Number(config.card_fee_fixed) || 0.30;
+        break;
+      case 'CRYPTO':
+        feePercent = Number(config.crypto_fee_percent) || 0.5;
+        feeFixed = 0;
+        break;
+      case 'BANK':
+        feePercent = Number(config.bank_transfer_fee_percent) || 0;
+        feeFixed = Number(config.bank_transfer_fee_fixed) || 0;
+        break;
+      case 'VAULT_GOLD':
+        // Physical gold deposits have no gateway cost
+        return '0';
+    }
+
+    const cost = (amount * feePercent / 100) + feeFixed;
+    return cost.toFixed(2);
+  }, [platformConfig]);
+
+  // Get fee info for display
+  const getPaymentMethodFeeInfo = React.useCallback((method: DepositMethod): string => {
+    const config = platformConfig || {};
+    switch (method) {
+      case 'CARD':
+        return `${config.card_fee_percent || 2.9}% + $${config.card_fee_fixed || 0.30}`;
+      case 'CRYPTO':
+        return `${config.crypto_fee_percent || 0.5}%`;
+      case 'BANK':
+        const bankPercent = config.bank_transfer_fee_percent || 0;
+        const bankFixed = config.bank_transfer_fee_fixed || 0;
+        if (bankPercent === 0 && bankFixed === 0) return 'No fee';
+        return bankPercent > 0 ? `${bankPercent}%` : `$${bankFixed}`;
+      case 'VAULT_GOLD':
+        return 'No gateway fee';
+      default:
+        return 'Unknown';
+    }
+  }, [platformConfig]);
+
   React.useEffect(() => {
     if (transaction) {
+      // Auto-calculate gateway cost if not already set
+      const autoGatewayCost = transaction.gatewayCostUsd && Number(transaction.gatewayCostUsd) > 0
+        ? transaction.gatewayCostUsd
+        : calculateGatewayCost(transaction.depositMethod, transaction.depositAmount);
+
       setCreditForm({
         pricingMode: 'MARKET',
         goldRateValue: transaction.goldRateValue || '',
-        gatewayCostUsd: transaction.gatewayCostUsd || '0',
+        gatewayCostUsd: autoGatewayCost,
         bankCostUsd: transaction.bankCostUsd || '0',
         networkCostUsd: transaction.networkCostUsd || '0',
         opsCostUsd: transaction.opsCostUsd || '0',
       });
     }
-  }, [transaction]);
+  }, [transaction, calculateGatewayCost]);
 
   const handleConfirmPayment = async () => {
     if (!transaction) return;
@@ -1170,19 +1245,42 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   </div>
 
                   <Separator />
-                  <Label className="text-xs font-medium">Operating Costs</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Operating Costs</Label>
+                    <span className="text-xs text-gray-500">
+                      Payment: {DEPOSIT_METHOD_LABELS[transaction.depositMethod]} ({getPaymentMethodFeeInfo(transaction.depositMethod)})
+                    </span>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-xs">Gateway Cost ($)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={creditForm.gatewayCostUsd}
-                        onChange={(e) => setCreditForm(prev => ({ ...prev, gatewayCostUsd: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Label className="text-xs flex items-center gap-1">
+                        Gateway Cost ($)
+                        <span className="text-[10px] text-purple-600 bg-purple-50 px-1 rounded">Auto</span>
+                      </Label>
+                      <div className="flex gap-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={creditForm.gatewayCostUsd}
+                          onChange={(e) => setCreditForm(prev => ({ ...prev, gatewayCostUsd: e.target.value }))}
+                          className="h-8 text-sm flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => setCreditForm(prev => ({
+                            ...prev,
+                            gatewayCostUsd: calculateGatewayCost(transaction.depositMethod, transaction.depositAmount)
+                          }))}
+                          title="Recalculate from platform config"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Bank Cost ($)</Label>
