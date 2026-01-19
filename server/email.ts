@@ -231,13 +231,22 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
   const secondaryColor = '#A78BFA'; // Light purple
   const darkPurple = '#4B0082'; // Dark purple for accents
   
-  // Use logo from branding settings if available, otherwise show text fallback
-  // Email-compatible img attributes: explicit width/height, display:block, border:0
-  const logoSection = branding.logoUrl 
-    ? `<img src="${branding.logoUrl}" alt="${branding.companyName}" width="200" height="50" style="display:block; border:0; max-width:200px; height:auto;" />
-       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 8px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`
-    : `<div style="font-size: 32px; font-weight: 800; color: white; letter-spacing: 2px; text-transform: uppercase;">FINATRADES</div>
-       <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 5px;">GOLD-BACKED DIGITAL FINANCE</div>`;
+  // Styled text logo that works in all email clients (images often blocked by default)
+  // Using purple gradient text simulation with background for professional look
+  const logoSection = `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+      <tr>
+        <td style="padding-right: 12px; vertical-align: middle;">
+          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8A2BE2, #A78BFA); border-radius: 8px; text-align: center; line-height: 40px;">
+            <span style="color: white; font-size: 24px; font-weight: bold;">F</span>
+          </div>
+        </td>
+        <td style="vertical-align: middle;">
+          <div style="font-size: 28px; font-weight: 800; color: #8A2BE2; letter-spacing: 1px; font-family: 'Segoe UI', Arial, sans-serif;">FINATRADES</div>
+        </td>
+      </tr>
+    </table>
+    <div style="font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 3px; margin-top: 12px; text-transform: uppercase;">Gold-Backed Digital Finance</div>`;
 
   // Check if body already has the full wrapper structure - extract inner content
   let innerContent = body;
