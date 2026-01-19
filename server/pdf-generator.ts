@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { Certificate, Invoice, User, Template } from '@shared/schema';
 
-const FINATRADES_ORANGE = '#f97316';
+const FINATRADES_PURPLE = '#8A2BE2';
 const WINGOLD_GOLD = '#D4AF37';
 const BNSL_BLUE = '#3b82f6';
 const TRADE_GREEN = '#10b981';
@@ -133,7 +133,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
       return {
         title: 'DIGITAL OWNERSHIP CERTIFICATE',
         subtitle: 'Gold Ownership Verification',
-        primaryColor: FINATRADES_ORANGE,
+        primaryColor: FINATRADES_PURPLE,
         issuerName: 'Finatrades Finance SA',
         certificationText: 'is the verified digital owner of the following gold holdings:',
         footerText: 'This certificate verifies digital ownership rights to the specified gold holdings on the Finatrades platform.'
@@ -153,7 +153,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
       return {
         title: 'GOLD TRANSFER CERTIFICATE',
         subtitle: 'Digital Ownership Transfer',
-        primaryColor: FINATRADES_ORANGE,
+        primaryColor: FINATRADES_PURPLE,
         issuerName: 'Finatrades Finance SA',
         certificationText: 'has received the following gold transfer:',
         footerText: 'This certificate documents the transfer of digital gold ownership between users on the Finatrades platform.'
@@ -193,7 +193,7 @@ function getCertificateConfig(certificate: Certificate): CertificateConfig {
       return {
         title: 'GOLD CERTIFICATE',
         subtitle: 'Certificate of Holdings',
-        primaryColor: FINATRADES_ORANGE,
+        primaryColor: FINATRADES_PURPLE,
         issuerName: 'Finatrades Finance SA',
         certificationText: 'holds the following gold:',
         footerText: 'This certificate verifies the gold holdings on the Finatrades platform.'
@@ -409,7 +409,7 @@ export function generateInvoicePDF(
 
       const pageWidth = doc.page.width;
       const margin = 50;
-      const rgb = hexToRgb(FINATRADES_ORANGE);
+      const rgb = hexToRgb(FINATRADES_PURPLE);
 
       // Parse CMS template config if available
       let cmsConfig: CMSTemplateConfig = {};
@@ -425,7 +425,7 @@ export function generateInvoicePDF(
       const invoiceTitle = cmsConfig.invoiceTitle || 'INVOICE';
       const invoiceSubtitle = cmsConfig.invoiceSubtitle || 'Gold Purchase Invoice';
       const productDescription = cmsConfig.productDescription || '24K Fine Gold (999.9 Purity)';
-      const primaryColor = cmsConfig.primaryColor || FINATRADES_ORANGE;
+      const primaryColor = cmsConfig.primaryColor || FINATRADES_PURPLE;
 
       doc.rect(0, 0, pageWidth, 100).fill(primaryColor);
 
@@ -679,7 +679,7 @@ export function generateTransactionReceiptPDF(data: TransactionReceiptData): Pro
       const margin = 50;
 
       // Header
-      doc.rect(0, 0, pageWidth, 100).fill(FINATRADES_ORANGE);
+      doc.rect(0, 0, pageWidth, 100).fill(FINATRADES_PURPLE);
 
       doc.fillColor('white')
          .fontSize(22)
@@ -701,7 +701,7 @@ export function generateTransactionReceiptPDF(data: TransactionReceiptData): Pro
       doc.text(`Date: ${formatDate(data.transactionDate)}`, pageWidth - margin - 150, yPos, { width: 150, align: 'right' });
 
       yPos += 15;
-      doc.strokeColor(FINATRADES_ORANGE)
+      doc.strokeColor(FINATRADES_PURPLE)
          .lineWidth(0.5)
          .moveTo(margin, yPos)
          .lineTo(pageWidth - margin, yPos)
@@ -709,7 +709,7 @@ export function generateTransactionReceiptPDF(data: TransactionReceiptData): Pro
 
       // Customer Details
       yPos += 25;
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(FINATRADES_PURPLE)
          .fontSize(10)
          .font('Helvetica-Bold')
          .text('CUSTOMER DETAILS', margin, yPos);
@@ -728,10 +728,10 @@ export function generateTransactionReceiptPDF(data: TransactionReceiptData): Pro
       // Transaction Details Box
       yPos += 40;
       doc.rect(margin, yPos, pageWidth - 2 * margin, 120).fill('#FBF6DC');
-      doc.strokeColor(FINATRADES_ORANGE).lineWidth(1).rect(margin, yPos, pageWidth - 2 * margin, 120).stroke();
+      doc.strokeColor(FINATRADES_PURPLE).lineWidth(1).rect(margin, yPos, pageWidth - 2 * margin, 120).stroke();
 
       yPos += 15;
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(FINATRADES_PURPLE)
          .fontSize(12)
          .font('Helvetica-Bold')
          .text('TRANSACTION SUMMARY', 0, yPos, { align: 'center', width: pageWidth });
@@ -764,9 +764,9 @@ export function generateTransactionReceiptPDF(data: TransactionReceiptData): Pro
       const highlightX = (pageWidth - highlightWidth) / 2;
 
       doc.roundedRect(highlightX, yPos, highlightWidth, 70, 8)
-         .fillAndStroke('#ffffff', FINATRADES_ORANGE);
+         .fillAndStroke('#ffffff', FINATRADES_PURPLE);
 
-      doc.fillColor(FINATRADES_ORANGE)
+      doc.fillColor(FINATRADES_PURPLE)
          .fontSize(24)
          .font('Helvetica-Bold')
          .text(formatCurrency(data.amountUsd), highlightX, yPos + 15, { width: highlightWidth, align: 'center' });
@@ -833,13 +833,13 @@ export function generateUserManualPDF(): Promise<Buffer> {
       // Helper functions
       const addHeader = (title: string, isMainTitle = false) => {
         if (isMainTitle) {
-          doc.fillColor(FINATRADES_ORANGE)
+          doc.fillColor(FINATRADES_PURPLE)
              .fontSize(28)
              .font('Helvetica-Bold')
              .text(title, { align: 'center' });
           doc.moveDown(0.5);
         } else {
-          doc.fillColor(FINATRADES_ORANGE)
+          doc.fillColor(FINATRADES_PURPLE)
              .fontSize(18)
              .font('Helvetica-Bold')
              .text(title);
@@ -893,7 +893,7 @@ export function generateUserManualPDF(): Promise<Buffer> {
       // ============================================
       // COVER PAGE
       // ============================================
-      doc.rect(0, 0, pageWidth, 200).fill(FINATRADES_ORANGE);
+      doc.rect(0, 0, pageWidth, 200).fill(FINATRADES_PURPLE);
       
       doc.fillColor('white')
          .fontSize(36)
@@ -1297,9 +1297,9 @@ export function generateAdminManualPDF(): Promise<Buffer> {
       // Helper functions
       const addHeader = (text: string, isChapterTitle = false) => {
         if (isChapterTitle) {
-          doc.fillColor(FINATRADES_ORANGE).fontSize(22).font('Helvetica-Bold').text(text, { align: 'left' });
+          doc.fillColor(FINATRADES_PURPLE).fontSize(22).font('Helvetica-Bold').text(text, { align: 'left' });
           doc.moveDown(0.3);
-          doc.strokeColor(FINATRADES_ORANGE).lineWidth(2)
+          doc.strokeColor(FINATRADES_PURPLE).lineWidth(2)
              .moveTo(50, doc.y).lineTo(pageWidth + 50, doc.y).stroke();
           doc.moveDown(1);
         } else {
@@ -1320,14 +1320,14 @@ export function generateAdminManualPDF(): Promise<Buffer> {
 
       const addBulletPoint = (text: string, indent = 0) => {
         const x = 60 + indent;
-        doc.fillColor(FINATRADES_ORANGE).fontSize(11).text('•', x - 10, doc.y, { continued: true });
+        doc.fillColor(FINATRADES_PURPLE).fontSize(11).text('•', x - 10, doc.y, { continued: true });
         doc.fillColor('#4b5563').font('Helvetica').text(' ' + text, { width: pageWidth - indent - 20, lineGap: 2 });
         doc.moveDown(0.2);
       };
 
       const addNumberedStep = (number: number, text: string) => {
         const stepY = doc.y;
-        doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
+        doc.fillColor(FINATRADES_PURPLE).fontSize(11).font('Helvetica-Bold')
            .text(`${number}.`, 60, stepY);
         doc.fillColor('#4b5563').font('Helvetica').text(text, 80, stepY, { width: pageWidth - 40, lineGap: 2 });
         doc.moveDown(0.3);
@@ -1372,7 +1372,7 @@ export function generateAdminManualPDF(): Promise<Buffer> {
       
       doc.fillColor('#ffffff').fontSize(40).font('Helvetica-Bold')
          .text('FINATRADES', 50, 180, { align: 'center' });
-      doc.fillColor(FINATRADES_ORANGE).fontSize(28)
+      doc.fillColor(FINATRADES_PURPLE).fontSize(28)
          .text('Administrator Manual', { align: 'center' });
       doc.moveDown(2);
       doc.fillColor('#d1d5db').fontSize(14).font('Helvetica')
@@ -1421,7 +1421,7 @@ export function generateAdminManualPDF(): Promise<Buffer> {
         const dotStartX = startX + numWidth + titleWidth;
         const dotEndX = pageWidth + 20;
         
-        doc.fillColor(FINATRADES_ORANGE).fontSize(11).font('Helvetica-Bold')
+        doc.fillColor(FINATRADES_PURPLE).fontSize(11).font('Helvetica-Bold')
            .text(item.num + '.', startX, currentY);
         doc.fillColor('#374151').font('Helvetica')
            .text(item.title, startX + numWidth, currentY);

@@ -16,7 +16,7 @@ async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: st
     return {
       logoUrl: brandingCache.logoUrl || '',
       companyName: brandingCache.companyName || 'Finatrades',
-      primaryColor: brandingCache.primaryColor || '#f97316'
+      primaryColor: brandingCache.primaryColor || '#8A2BE2'
     };
   }
   
@@ -30,13 +30,13 @@ async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: st
     brandingCacheTime = now;
   } catch (error) {
     console.error('[Email] Failed to get branding:', error);
-    brandingCache = { logoUrl: '', companyName: 'Finatrades', primaryColor: '#f97316' };
+    brandingCache = { logoUrl: '', companyName: 'Finatrades', primaryColor: '#8A2BE2' };
   }
   
   return {
     logoUrl: brandingCache.logoUrl || '',
     companyName: brandingCache.companyName || 'Finatrades',
-    primaryColor: brandingCache.primaryColor || '#f97316'
+    primaryColor: brandingCache.primaryColor || '#8A2BE2'
   };
 }
 
@@ -711,7 +711,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Welcome to Finatrades!',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Welcome to Finatrades</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -748,7 +748,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Verify your Finatrades account',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Email Verification</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -825,7 +825,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <p><strong>Reason:</strong> {{rejection_reason}}</p>
           <p>Please review and resubmit your documents to continue.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{kyc_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Resubmit Documents</a>
+            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Resubmit Documents</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -848,7 +848,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Gold Purchase Confirmed - {{gold_amount}}g',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Purchase Confirmed</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -858,7 +858,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             <table style="width: 100%;">
               <tr><td>Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
               <tr><td>Price per gram:</td><td style="text-align: right;">$\{{price_per_gram}}</td></tr>
-              <tr><td>Total Paid:</td><td style="text-align: right; font-weight: bold; color: #f97316;">$\{{total_amount}}</td></tr>
+              <tr><td>Total Paid:</td><td style="text-align: right; font-weight: bold; color: #8A2BE2;">$\{{total_amount}}</td></tr>
               <tr><td>Reference:</td><td style="text-align: right;">{{reference_id}}</td></tr>
             </table>
           </div>
@@ -1065,14 +1065,14 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Your Gold Certificate - {{certificate_number}}',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Certificate of Ownership</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
           <p>Dear {{user_name}},</p>
           <p>Congratulations on your gold purchase! Your {{certificate_type}} certificate has been generated and is attached to this email.</p>
           
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;">
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8A2BE2;">
             <h3 style="margin: 0 0 15px 0; color: #ea580c;">Certificate Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr><td style="padding: 8px 0;">Certificate No:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
@@ -1085,7 +1085,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <p>This certificate serves as proof of your gold ownership stored at Wingold and Metals DMCC, Dubai.</p>
           
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{vault_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in FinaVault</a>
+            <a href="{{vault_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in FinaVault</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1111,7 +1111,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Invoice {{invoice_number}} - Gold Purchase',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Invoice</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -1123,7 +1123,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
               <tr><td style="padding: 8px 0;">Invoice No:</td><td style="text-align: right; font-weight: bold;">{{invoice_number}}</td></tr>
               <tr><td style="padding: 8px 0;">Date:</td><td style="text-align: right;">{{invoice_date}}</td></tr>
               <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;"><strong>Total Amount:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #f97316;">{{total_amount}}</td></tr>
+              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;"><strong>Total Amount:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #8A2BE2;">{{total_amount}}</td></tr>
             </table>
           </div>
 
@@ -1174,7 +1174,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </ol>
           
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{kyc_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Documents</a>
+            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Documents</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1201,14 +1201,14 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Reset your Finatrades password',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Password Reset</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
           <p>Hello {{user_name}},</p>
           <p>We received a request to reset your password. Click the button below to create a new password:</p>
           <p style="text-align: center; margin: 30px 0;">
-            <a href="{{reset_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Reset Password</a>
+            <a href="{{reset_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Reset Password</a>
           </p>
           <p>This link expires in <strong>1 hour</strong>.</p>
           <p>If you didn't request this, please ignore this email or contact support if you're concerned.</p>
@@ -1242,7 +1242,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             <p style="margin: 0;"><strong>If you didn't make this change</strong>, please reset your password immediately and contact our support team.</p>
           </div>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{security_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Review Security Settings</a>
+            <a href="{{security_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Review Security Settings</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1318,7 +1318,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </div>
           <p>If you believe this was a mistake, please contact our support team.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{support_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
+            <a href="{{support_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1421,7 +1421,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Card Payment Receipt - ${{amount}} | Certificate {{certificate_number}}',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Payment Receipt</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Card Transaction Successful</p>
         </div>
@@ -1465,7 +1465,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </div>
 
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in Dashboard</a>
+            <a href="{{dashboard_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in Dashboard</a>
           </p>
           
           <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
@@ -1565,7 +1565,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Withdrawal request for ${{amount}} received',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Withdrawal Requested</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -1681,7 +1681,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </div>
           <p>Please review and try again, or contact support if the issue persists.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{support_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
+            <a href="{{support_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1719,7 +1719,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </div>
           <p>Consider adding funds to continue trading without interruption.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{deposit_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Add Funds</a>
+            <a href="{{deposit_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Add Funds</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -1744,7 +1744,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'You sent {{gold_amount}}g gold to {{recipient_name}}',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Transfer Sent</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -1901,7 +1901,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             </table>
           </div>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{payment_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Make Payment</a>
+            <a href="{{payment_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Make Payment</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -2166,7 +2166,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </div>
           <p>Please upload the documents as soon as possible to avoid delays.</p>
           <p style="text-align: center; margin-top: 30px;">
-            <a href="{{upload_url}}" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Upload Documents</a>
+            <a href="{{upload_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Upload Documents</a>
           </p>
         </div>
         <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
@@ -2645,7 +2645,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     subject: 'Your {{month}} {{year}} Account Statement',
     body: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0;">Monthly Statement</h1>
         </div>
         <div style="padding: 30px; background: #ffffff;">
@@ -2740,7 +2740,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <p style="font-size: 16px; color: #44403c;">This certifies that</p>
           <p style="font-size: 24px; font-weight: bold; color: #1c1917; margin: 15px 0;">{{owner_name}}</p>
           <p style="font-size: 16px; color: #44403c;">is the rightful owner of</p>
-          <p style="font-size: 36px; font-weight: bold; color: #f97316; margin: 15px 0;">{{gold_amount}} grams</p>
+          <p style="font-size: 36px; font-weight: bold; color: #8A2BE2; margin: 15px 0;">{{gold_amount}} grams</p>
           <p style="font-size: 16px; color: #44403c;">of 999.9 Fine Gold</p>
         </div>
         <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 30px 0;">
@@ -2997,7 +2997,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #ffffff; border: 1px solid #e5e7eb;">
         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px;">
           <div>
-            <h1 style="color: #f97316; font-size: 28px; margin: 0;">INVOICE</h1>
+            <h1 style="color: #8A2BE2; font-size: 28px; margin: 0;">INVOICE</h1>
             <p style="color: #6b7280; margin: 5px 0;">{{invoice_number}}</p>
           </div>
           <div style="text-align: right;">
@@ -3036,7 +3036,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             </tr>
             <tr style="background: #fef3c7;">
               <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px;">Total:</td>
-              <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; color: #f97316;">${'$'}{{total}}</td>
+              <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; color: #8A2BE2;">${'$'}{{total}}</td>
             </tr>
           </tfoot>
         </table>
