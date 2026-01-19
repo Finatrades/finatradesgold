@@ -1732,7 +1732,6 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             )}
 
-            </div>
 
             {/* Minimum Deposit Notice */}
             <p className="text-xs text-center text-muted-foreground pt-2">
