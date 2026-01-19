@@ -239,8 +239,8 @@ export default function QuickActionsTop() {
       />
       
       <Dialog open={depositGoldModalOpen} onOpenChange={setDepositGoldModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-          <PhysicalGoldDeposit />
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[85vh] overflow-y-auto p-6 rounded-2xl">
+          <PhysicalGoldDeposit embedded={true} onSuccess={() => setDepositGoldModalOpen(false)} />
         </DialogContent>
       </Dialog>
       
