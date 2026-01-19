@@ -21435,9 +21435,7 @@ ${message}
       const pin = await storage.getTransactionPin(userId);
       
       if (!pin) {
-
-
-      res.json({ hasPin: false, isLocked: false });
+        return res.json({ hasPin: false, isLocked: false });
       }
       
       const isLocked = pin.lockedUntil ? new Date(pin.lockedUntil) > new Date() : false;
