@@ -486,7 +486,129 @@ const faqCategories = [
         a: 'Yes. We use bank-grade encryption, secure data centers, and comply with international financial regulations. Your data is never shared with third parties.'
       }
     ]
+  },
+  {
+    id: 'fees',
+    title: 'Fees & Pricing',
+    icon: <CreditCard className="w-5 h-5" />,
+    questions: [
+      {
+        q: 'What are the trading fees?',
+        a: 'We charge a small spread on gold buy/sell transactions (typically 0.5-1%). There are no hidden fees. All costs are shown before you confirm any transaction.'
+      },
+      {
+        q: 'Are there deposit fees?',
+        a: 'Bank transfers are free. Card payments have a 2.5% processing fee. Crypto deposits are free, but network fees apply from your wallet.'
+      },
+      {
+        q: 'What are the withdrawal fees?',
+        a: 'Bank withdrawals have a flat fee of $25 for international transfers. Domestic transfers may be lower depending on your location.'
+      },
+      {
+        q: 'Are there storage fees for vault gold?',
+        a: 'Yes, vault storage costs 0.12% annually (0.01% monthly), deducted from your gold balance. This includes insurance and secure storage.'
+      },
+      {
+        q: 'Is there a minimum deposit?',
+        a: 'The minimum deposit is $50 for card payments and $100 for bank transfers. There is no minimum for crypto deposits.'
+      }
+    ]
+  },
+  {
+    id: 'account',
+    title: 'Account Management',
+    icon: <FileText className="w-5 h-5" />,
+    questions: [
+      {
+        q: 'How do I create an account?',
+        a: 'Click "Sign Up" on the homepage, enter your email, create a password, and verify your email. You can start exploring immediately, but full features require KYC verification.'
+      },
+      {
+        q: 'What documents do I need for KYC?',
+        a: 'You need a valid government-issued ID (passport, national ID, or driver\'s license) and a proof of address (utility bill or bank statement dated within 3 months).'
+      },
+      {
+        q: 'How long does KYC verification take?',
+        a: 'Most KYC verifications are completed within 24-48 hours. You\'ll receive an email notification once approved.'
+      },
+      {
+        q: 'Can I have multiple accounts?',
+        a: 'No, each person can only have one personal account. Business accounts require separate registration with business documentation.'
+      },
+      {
+        q: 'How do I close my account?',
+        a: 'Contact support to request account closure. You must first withdraw all funds and gold. Account closure is irreversible.'
+      }
+    ]
+  },
+  {
+    id: 'buygoldbar',
+    title: 'Buy Gold Bar',
+    icon: <Database className="w-5 h-5" />,
+    questions: [
+      {
+        q: 'What is Buy Gold Bar?',
+        a: 'Buy Gold Bar lets you purchase physical gold bars from our partner Wingold. Bars are stored in FinaVault and you receive an ownership certificate.'
+      },
+      {
+        q: 'What sizes are available?',
+        a: 'We offer bars from 1 gram to 1 kilogram, including popular sizes like 5g, 10g, 50g, 100g, and 1kg. All bars are LBMA certified.'
+      },
+      {
+        q: 'How is pricing calculated?',
+        a: 'Pricing includes the live gold price plus making charges (crafting fee), premium, and applicable VAT. All fees are displayed before purchase.'
+      },
+      {
+        q: 'Can I take physical delivery?',
+        a: 'Yes! You can request physical delivery of your bars. Delivery is available worldwide with insured shipping. Minimum delivery is 50 grams.'
+      }
+    ]
+  },
+  {
+    id: 'finacard',
+    title: 'FinaCard',
+    icon: <CreditCard className="w-5 h-5" />,
+    questions: [
+      {
+        q: 'What is FinaCard?',
+        a: 'FinaCard is a gold-backed debit card that allows you to spend your gold holdings anywhere Mastercard is accepted. Coming soon!'
+      },
+      {
+        q: 'How does spending work?',
+        a: 'When you make a purchase, gold is automatically sold at market rate to cover the transaction. You never need to manually convert gold to cash.'
+      },
+      {
+        q: 'Are there card fees?',
+        a: 'Card issuance is free. There\'s a small monthly maintenance fee and foreign transaction fees may apply. Full fee schedule will be available at launch.'
+      },
+      {
+        q: 'When will FinaCard be available?',
+        a: 'FinaCard is currently in development. Sign up for early access notifications on the FinaCard page.'
+      }
+    ]
   }
+];
+
+const glossaryTerms = [
+  { term: 'Gold Grams (g)', definition: 'The unit of measurement for gold on Finatrades. 1 gram = 0.03215 troy ounces.' },
+  { term: 'Spot Price', definition: 'The current market price for immediate delivery of gold, updated in real-time.' },
+  { term: 'LBMA', definition: 'London Bullion Market Association - the international authority for precious metals standards.' },
+  { term: 'Purity (Fineness)', definition: 'Gold purity measured in parts per thousand. 999.9 = 24K pure gold, 916 = 22K.' },
+  { term: 'Allocated Gold', definition: 'Physical gold bars assigned specifically to your account, stored separately from other holdings.' },
+  { term: 'BNSL', definition: 'Buy Now, Sell Later - a savings plan where you lock gold and earn guaranteed returns.' },
+  { term: 'Tenor', definition: 'The duration/length of a BNSL plan in months (e.g., 3, 6, or 12 months).' },
+  { term: 'Margin', definition: 'The guaranteed annual return rate on BNSL plans, paid out monthly.' },
+  { term: 'FinaPay', definition: 'Your digital gold wallet for buying, selling, and transferring gold instantly.' },
+  { term: 'FinaVault', definition: 'Secure physical storage for your gold bars with insurance and certificates.' },
+  { term: 'FinaBridge', definition: 'Trade finance platform for international gold-backed import/export deals.' },
+  { term: 'KYC', definition: 'Know Your Customer - identity verification required to access full platform features.' },
+  { term: 'P2P Transfer', definition: 'Peer-to-peer gold transfer between Finatrades users, instant and free.' },
+  { term: 'Transaction PIN', definition: 'Optional 6-digit security code required for all outgoing transactions.' },
+  { term: '2FA', definition: 'Two-Factor Authentication - adds extra security by requiring a code from your phone.' },
+  { term: 'Making Charges', definition: 'Manufacturing/crafting fee added to gold bar purchases, covers production costs.' },
+  { term: 'Finatrades ID', definition: 'Your unique account identifier (e.g., FT-EF10158D) used for receiving transfers.' },
+  { term: 'LGPW', definition: 'Local Gold Pool Wallet - gold stored with local partners for faster access.' },
+  { term: 'FGPW', definition: 'Finatrades Gold Pool Wallet - gold stored in main Finatrades vaults.' }
 ];
 
 export default function HelpCenter() {
@@ -595,12 +717,15 @@ export default function HelpCenter() {
         </div>
 
         <Tabs defaultValue="manual" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="manual" className="flex items-center gap-2" data-testid="tab-manual">
               <FileText className="w-4 h-4" /> User Manual
             </TabsTrigger>
             <TabsTrigger value="faq" className="flex items-center gap-2" data-testid="tab-faq">
               <Book className="w-4 h-4" /> FAQ
+            </TabsTrigger>
+            <TabsTrigger value="glossary" className="flex items-center gap-2" data-testid="tab-glossary">
+              <HelpCircle className="w-4 h-4" /> Glossary
             </TabsTrigger>
             <TabsTrigger value="contact" className="flex items-center gap-2" data-testid="tab-contact">
               <MessageCircle className="w-4 h-4" /> Contact Support
@@ -758,6 +883,34 @@ export default function HelpCenter() {
                     ))}
                   </Accordion>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="glossary">
+            <Card data-testid="card-glossary">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Book className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <CardTitle>Glossary of Terms</CardTitle>
+                    <CardDescription>Learn the key terms used on Finatrades</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px] pr-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {glossaryTerms.map((item, idx) => (
+                      <div key={idx} className="p-4 border rounded-xl bg-gradient-to-br from-white to-gray-50 hover:border-purple-300 hover:shadow-md transition-all">
+                        <h4 className="font-semibold text-primary mb-2">{item.term}</h4>
+                        <p className="text-sm text-muted-foreground">{item.definition}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
