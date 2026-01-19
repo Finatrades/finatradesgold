@@ -6,8 +6,39 @@ import { getGoldPrice, getGoldPricePerGram } from './gold-price-service';
 import { db } from './db';
 import { wingoldPurchaseOrders, wingoldBarLots, wingoldCertificates, wingoldVaultLocations, wingoldProducts, users } from '@shared/schema';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// Configure multer for product image uploads
+const productImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/products';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const productImageUpload = multer({
+  storage: productImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.'));
+    }
+  }
+});
 
 // Helper function to get user from session
 async function getSessionUser(req: Request): Promise<{ id: string; role: string } | null> {
@@ -930,6 +961,28 @@ router.delete('/admin/products/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Wingold Admin] Failed to delete product:', error);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Upload product image
+router.post('/admin/products/upload-image', productImageUpload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const user = await getSessionUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+
+    const imageUrl = `/uploads/products/${req.file.filename}`;
+    console.log(`[Wingold Admin] Product image uploaded: ${imageUrl}`);
+    
+    res.json({ success: true, imageUrl });
+  } catch (error) {
+    console.error('[Wingold Admin] Failed to upload image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
   }
 });
 
