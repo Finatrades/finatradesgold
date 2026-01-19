@@ -45,11 +45,11 @@ export default function DashboardWalletCards({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* FinaPay Wallet - Compact Style */}
-      <Card className="group relative p-4 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+      <Card className="group relative p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-md">
                 <Wallet className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold text-gray-900">FinaPay Wallet</span>
@@ -84,11 +84,11 @@ export default function DashboardWalletCards({
 
       {/* FinaCard (Personal) or FinaBridge (Business) - Compact Style */}
       {isBusinessUser ? (
-        <Card className="group relative p-4 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+        <Card className="group relative p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-md">
                   <Briefcase className="w-4 h-4 text-white" />
                 </div>
                 <span className="font-semibold text-gray-900">FinaBridge</span>
@@ -121,11 +121,11 @@ export default function DashboardWalletCards({
           </div>
         </Card>
       ) : (
-        <Card className="group relative p-4 bg-white border border-pink-100 shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+        <Card className="group relative p-4 bg-gradient-to-br from-white to-pink-50 border border-pink-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-md">
                   <CreditCard className="w-4 h-4 text-white" />
                 </div>
                 <span className="font-semibold text-gray-900">FinaCard</span>
@@ -158,11 +158,11 @@ export default function DashboardWalletCards({
       )}
 
       {/* BNSL Wallet - Compact Style */}
-      <Card className="group relative p-4 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+      <Card className="group relative p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-md">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold text-gray-900">BNSL Wallet</span>

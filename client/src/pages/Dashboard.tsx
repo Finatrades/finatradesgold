@@ -241,7 +241,7 @@ export default function Dashboard() {
             {/* Desktop: White KPI Cards Row 1 */}
             <div className="hidden md:grid grid-cols-3 gap-4">
               {/* Gold Storage */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Storage</p>
                   <TooltipProvider>
@@ -264,7 +264,7 @@ export default function Dashboard() {
               </Card>
               
               {/* Gold Value USD */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Value (USD)</p>
                   <TooltipProvider>
@@ -287,7 +287,7 @@ export default function Dashboard() {
               </Card>
               
               {/* Gold Value AED */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Gold Value (AED)</p>
                   <TooltipProvider>
@@ -313,7 +313,7 @@ export default function Dashboard() {
             {/* Desktop: White KPI Cards Row 2 */}
             <div className="hidden md:grid grid-cols-3 gap-4">
               {/* Total Portfolio */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Total Portfolio</p>
                   <TooltipProvider>
@@ -336,7 +336,7 @@ export default function Dashboard() {
               </Card>
               
               {/* BNSL Invested */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">BNSL Invested</p>
                   <TooltipProvider>
@@ -359,7 +359,7 @@ export default function Dashboard() {
               </Card>
               
               {/* Total Profit */}
-              <Card className="p-4 bg-gray-50 border-0 rounded-xl shadow-sm">
+              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-500 font-medium">Total Profit</p>
                   <TooltipProvider>

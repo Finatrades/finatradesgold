@@ -75,7 +75,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
   const recentTransactions = transactions.slice(0, 8);
 
   return (
-    <Card className="p-5 bg-white border border-gray-100 shadow-sm rounded-xl">
+    <Card className="p-5 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">Recent Transactions</h3>
         <Link href="/transactions">
