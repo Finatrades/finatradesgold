@@ -140,8 +140,6 @@ async function acquireIdempotencyLock(key: string): Promise<{ acquired: boolean;
       const existingResult = await redis.get(resultKey);
       if (existingResult) {
         return { acquired: false, cachedResult: JSON.parse(existingResult) };
-      }
-      
       // Try to acquire lock atomically with SETNX
       const acquired = await redis.set(lockKey, 'processing', 'EX', LOCK_TTL, 'NX');
       return { acquired: acquired === 'OK' };
@@ -418,8 +416,6 @@ function requirePermission(...requiredPermissions: string[]) {
         return res.status(403).json({ 
           message: "Your account has been deactivated. Please contact a super admin." 
         });
-      }
-      
       // If no employee record, allow access (original admin accounts)
       // Super admins have all permissions
       if (!employee || employee.role === 'super_admin') {
@@ -733,8 +729,6 @@ export async function registerRoutes(
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
-      }
-      
       let fileUrl: string;
       
       // Upload to R2 if configured, otherwise use local disk
@@ -746,8 +740,6 @@ export async function registerRoutes(
       } else {
         // Fallback to local disk storage
         fileUrl = `/uploads/${(req.file as any).filename}`;
-      }
-      
       res.json({ 
         url: fileUrl, 
         filename: req.file.originalname,
@@ -1088,8 +1080,6 @@ export async function registerRoutes(
       
       if (!name || !email || !subject || !message) {
         return res.status(400).json({ message: "Name, email, subject, and message are required" });
-      }
-      
       // Send email notification to support
       await sendEmailDirect({
         to: "support@finatrades.com",
@@ -1143,16 +1133,12 @@ ${message}
         return res.status(403).json({ 
           message: "New registrations are currently disabled. Please try again later." 
         });
-      }
-      
       const { referralCode, ...restBody } = req.body;
       const userData = insertUserSchema.parse(restBody);
       const existingUser = await storage.getUserByEmail(userData.email);
       
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
-      }
-      
       // Hash the password before storing
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
@@ -1300,8 +1286,6 @@ ${message}
       } catch (inviteError) {
         console.error('[Registration] Invitation claiming failed:', inviteError);
         // Don't fail registration if invitation claiming fails
-      }
-      
       // Use sender's referral code from invitation if user didn't provide one
       const effectiveReferralCode = referralCode || inviteSenderReferralCode;
       
@@ -1322,8 +1306,6 @@ ${message}
           console.error('[Registration] Referral linking failed:', refError);
           // Don't fail registration if referral linking fails
         }
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "user",
@@ -1360,8 +1342,6 @@ ${message}
       } catch (emailError) {
         console.error('[Registration] Email send failed:', emailError);
         emailResult = { success: false, error: emailError instanceof Error ? emailError.message : 'Email failed' };
-      }
-      
       // Log platform activity
       logActivity({
         type: 'user_registration',
@@ -1392,12 +1372,8 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (user.isEmailVerified) {
         return res.status(400).json({ message: "Email already verified" });
-      }
-      
       // Generate new verification code
       const verificationCode = generateVerificationCode();
       const codeExpiry = new Date(Date.now() + 10 * 60 * 1000);
@@ -1415,8 +1391,6 @@ ${message}
       
       if (!emailResult.success) {
         return res.status(500).json({ message: "Failed to send verification email. Please try again." });
-      }
-      
       res.json({ message: "Verification code sent to your email" });
     } catch (error) {
       res.status(400).json({ message: "Failed to send verification code" });
@@ -1431,24 +1405,14 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (user.isEmailVerified) {
         return res.status(400).json({ message: "Email already verified" });
-      }
-      
       if (!user.emailVerificationCode || !user.emailVerificationExpiry) {
         return res.status(400).json({ message: "No verification code found. Please request a new one." });
-      }
-      
       if (new Date() > user.emailVerificationExpiry) {
         return res.status(400).json({ message: "Verification code expired. Please request a new one." });
-      }
-      
       if (user.emailVerificationCode !== code) {
         return res.status(400).json({ message: "Invalid verification code" });
-      }
-      
       // Mark email as verified
       const updatedUser = await storage.updateUser(user.id, {
         isEmailVerified: true,
@@ -1580,8 +1544,6 @@ ${message}
             console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
           }
         }
-      }
-      
       if (payoutsProcessed > 0 || plansMatured > 0) {
         console.log(`[BNSL Auto-Process] Marked ${payoutsProcessed} payouts as Processing, ${plansMatured} plans as Maturing`);
       }
@@ -1606,14 +1568,10 @@ ${message}
           message: `Too many login attempts. Please try again in ${Math.ceil((rateCheck.retryAfter || 900) / 60)} minutes.`,
           retryAfter: rateCheck.retryAfter
         });
-      }
-      
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
       // SECURITY: All passwords must be bcrypt hashed
       // Plain text passwords are no longer accepted for security
       let isValidPassword = false;
@@ -1627,8 +1585,6 @@ ${message}
           await storage.updateUser(user.id, { password: hashedPassword });
           isValidPassword = true;
         }
-      }
-      
       if (!isValidPassword) {
         // Log failed login attempt
         logUserActivity(req, user.id, "login_failed", "Failed login attempt - invalid password").catch(err => console.error("[Activity Log] Failed login log failed:", err));
@@ -1650,8 +1606,6 @@ ${message}
           message: "Admin accounts must log in via the Admin Portal. Please use /admin/login",
           redirectTo: "/admin/login"
         });
-      }
-      
       // Check if MFA is enabled
       if (user.mfaEnabled) {
         // Generate a SECURE challenge token for MFA verification
@@ -1671,8 +1625,6 @@ ${message}
           mfaMethod: user.mfaMethod,
           message: "MFA verification required" 
         });
-      }
-      
       // SECURITY: Enforce 2FA when platform setting is enabled
       const systemSettings = await getSystemSettings();
       if (systemSettings.require2fa && !user.mfaEnabled) {
@@ -1693,8 +1645,6 @@ ${message}
           setupToken,
           message: "Two-factor authentication is required. Please set up 2FA to continue."
         });
-      }
-      
       // SECURITY: Regenerate session to prevent session fixation attacks
       await new Promise<void>((resolve, reject) => {
         req.session.regenerate((err) => {
@@ -1742,19 +1692,13 @@ ${message}
           message: `Too many login attempts. Please try again in ${Math.ceil((rateCheck.retryAfter || 900) / 60)} minutes.`,
           retryAfter: rateCheck.retryAfter
         });
-      }
-      
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
       // Verify this is an admin user
       if (user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required. Please use the regular login page." });
-      }
-      
       // SECURITY: All passwords must be bcrypt hashed
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
@@ -1766,14 +1710,10 @@ ${message}
           await storage.updateUser(user.id, { password: hashedPassword });
           isValidPassword = true;
         }
-      }
-      
       if (!isValidPassword) {
         // Log failed login attempt
         logUserActivity(req, user.id, "login_failed", "Failed login attempt - invalid password").catch(err => console.error("[Activity Log] Failed login log failed:", err));
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
       // Check if MFA is enabled
       if (user.mfaEnabled) {
         // Generate a SECURE challenge token for MFA verification
@@ -1793,8 +1733,6 @@ ${message}
           mfaMethod: user.mfaMethod,
           message: "MFA verification required" 
         });
-      }
-      
       // SECURITY: Enforce 2FA for admins when platform setting is enabled
       const adminSystemSettings = await getSystemSettings();
       if (adminSystemSettings.require2fa && !user.mfaEnabled) {
@@ -1814,8 +1752,6 @@ ${message}
           setupToken,
           message: "Two-factor authentication is required for admin accounts. Please set up 2FA to continue."
         });
-      }
-      
       // SECURITY: Regenerate session to prevent session fixation attacks
       await new Promise<void>((resolve, reject) => {
         req.session.regenerate((err) => {
@@ -1961,8 +1897,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Verify password before deletion - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
@@ -1972,8 +1906,6 @@ ${message}
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
-      }
-      
       // Create audit log before deletion
       await storage.createAuditLog({
         entityType: "user",
@@ -1988,8 +1920,6 @@ ${message}
       const deleted = await storage.deleteUser(userId);
       if (!deleted) {
         return res.status(500).json({ message: "Failed to delete account" });
-      }
-      
       // Destroy session after account deletion
       req.session.destroy(() => {});
       
@@ -2009,35 +1939,23 @@ ${message}
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
-      }
-      
       const { reason, additionalComments, password } = req.body;
       const userId = req.session.userId;
       
       // Validate required fields
       if (!reason || reason.trim().length < 10) {
         return res.status(400).json({ message: "Please provide a reason (minimum 10 characters)" });
-      }
-      
       if (!password) {
         return res.status(400).json({ message: "Password is required to confirm deletion request" });
-      }
-      
       // Verify user exists and password is correct
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
         isValidPassword = await bcrypt.compare(password, user.password);
-      }
-      
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
-      }
-      
       // Check for existing pending request
       const existingRequest = await storage.getAccountDeletionRequestByUser(userId);
       if (existingRequest) {
@@ -2045,8 +1963,6 @@ ${message}
           message: "You already have a pending deletion request",
           request: existingRequest
         });
-      }
-      
       // Calculate scheduled deletion date (30 days from now)
       const scheduledDeletionDate = new Date();
       scheduledDeletionDate.setDate(scheduledDeletionDate.getDate() + 30);
@@ -2086,8 +2002,6 @@ ${message}
         );
       } catch (emailError) {
         console.error("Failed to send deletion request email:", emailError);
-      }
-      
       res.status(201).json({ 
         message: "Deletion request submitted successfully",
         request: deletionRequest 
@@ -2103,8 +2017,6 @@ ${message}
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
-      }
-      
       const request = await storage.getAccountDeletionRequestByUser(req.session.userId);
       res.json({ request: request || null });
     } catch (error) {
@@ -2118,17 +2030,11 @@ ${message}
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
-      }
-      
       const request = await storage.getAccountDeletionRequestByUser(req.session.userId);
       if (!request) {
         return res.status(404).json({ message: "No pending deletion request found" });
-      }
-      
       if (request.status !== 'Pending' && request.status !== 'Approved') {
         return res.status(400).json({ message: "This request cannot be cancelled" });
-      }
-      
       // Update request status to Cancelled
       const updated = await storage.updateAccountDeletionRequest(request.id, {
         status: 'Cancelled',
@@ -2196,17 +2102,11 @@ ${message}
       
       if (!['approve', 'reject'].includes(action)) {
         return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
-      }
-      
       const request = await storage.getAccountDeletionRequest(requestId);
       if (!request) {
         return res.status(404).json({ message: "Deletion request not found" });
-      }
-      
       if (request.status !== 'Pending') {
         return res.status(400).json({ message: "This request has already been reviewed" });
-      }
-      
       const newStatus = action === 'approve' ? 'Approved' : 'Rejected';
       
       const updated = await storage.updateAccountDeletionRequest(requestId, {
@@ -2256,8 +2156,6 @@ ${message}
         } catch (emailError) {
           console.error("Failed to send review notification email:", emailError);
         }
-      }
-      
       res.json({ 
         message: `Deletion request ${action}d successfully`, 
         request: updated 
@@ -2277,28 +2175,20 @@ ${message}
       const request = await storage.getAccountDeletionRequest(requestId);
       if (!request) {
         return res.status(404).json({ message: "Deletion request not found" });
-      }
-      
       if (request.status !== 'Approved') {
         return res.status(400).json({ message: "Only approved requests can be executed" });
-      }
-      
       // Check if scheduled date has passed
       if (new Date() < new Date(request.scheduledDeletionDate)) {
         return res.status(400).json({ 
           message: "Cannot execute before scheduled deletion date",
           scheduledDate: request.scheduledDeletionDate
         });
-      }
-      
       const user = await storage.getUser(request.userId);
       
       // Delete the user account
       const deleted = await storage.deleteUser(request.userId);
       if (!deleted) {
         return res.status(500).json({ message: "Failed to delete user account" });
-      }
-      
       // Update request status
       await storage.updateAccountDeletionRequest(requestId, {
         status: 'Completed',
@@ -2330,8 +2220,6 @@ ${message}
       if (err) {
         console.error("Logout error:", err);
         return res.status(500).json({ message: "Logout failed" });
-      }
-      
       // Clear cookie
       res.clearCookie('connect.sid');
       
@@ -2365,15 +2253,11 @@ ${message}
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
-      }
-      
       const user = await storage.getUserByEmail(email);
       
       // Always return success to prevent email enumeration attacks
       if (!user) {
         return res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
-      }
-      
       // Generate a cryptographically secure token (SECURITY FIX: replaced Math.random())
       const token = generateSecureToken(48);
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
@@ -2406,8 +2290,6 @@ ${message}
         );
       } catch (emailError) {
         console.log("Email sending not configured - reset URL:", resetUrl);
-      }
-      
       // Log the audit
       await storage.createAuditLog({
         entityType: "user",
@@ -2432,27 +2314,17 @@ ${message}
       
       if (!token || !password) {
         return res.status(400).json({ message: "Token and password are required" });
-      }
-      
       if (password.length < 8) {
         return res.status(400).json({ message: "Password must be at least 8 characters" });
-      }
-      
       // Find the token
       const resetToken = await storage.getPasswordResetToken(token);
       
       if (!resetToken) {
         return res.status(400).json({ message: "Invalid or expired reset link" });
-      }
-      
       if (resetToken.used) {
         return res.status(400).json({ message: "This reset link has already been used" });
-      }
-      
       if (new Date() > resetToken.expiresAt) {
         return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
-      }
-      
       // Hash the new password
       const hashedPassword = await bcrypt.hash(password, 10);
       
@@ -2488,8 +2360,6 @@ ${message}
           user_name: `${user.firstName} ${user.lastName}`,
           change_time: new Date().toISOString(),
         }).catch(err => console.error('[Email] Password changed notification failed:', err));
-      }
-      
       // Log password change activity
       logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, resetToken.userId, "password_change", "Password was reset via forgot password flow").catch(err => console.error("[Activity Log] Password change log failed:", err));
 
@@ -2512,8 +2382,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Generate a new secret
       const secret = authenticator.generateSecret();
       
@@ -2545,19 +2413,13 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (!user.mfaSecret) {
         return res.status(400).json({ message: "MFA not set up. Please run setup first." });
-      }
-      
       // Verify the token
       const isValid = authenticator.verify({ token, secret: user.mfaSecret });
       
       if (!isValid) {
         return res.status(400).json({ message: "Invalid verification code" });
-      }
-      
       // Generate cryptographically secure backup codes (SECURITY FIX: replaced Math.random())
       const backupCodes = Array.from({ length: 8 }, () => 
         crypto.randomBytes(4).toString('hex').toUpperCase()
@@ -2621,20 +2483,14 @@ ${message}
       const challenge = mfaChallenges.get(setupToken);
       if (!challenge || !challenge.setupRequired) {
         return res.status(401).json({ message: "Invalid or expired setup token. Please login again." });
-      }
-      
       // Check if token is expired
       if (challenge.expiresAt < new Date()) {
         mfaChallenges.delete(setupToken);
         return res.status(401).json({ message: "Setup session expired. Please login again." });
-      }
-      
       const user = await storage.getUser(challenge.userId);
       if (!user) {
         mfaChallenges.delete(setupToken);
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Generate a new TOTP secret
       const secret = authenticator.generateSecret();
       
@@ -2667,30 +2523,20 @@ ${message}
       const challenge = mfaChallenges.get(setupToken);
       if (!challenge || !challenge.setupRequired) {
         return res.status(401).json({ message: "Invalid or expired setup token. Please login again." });
-      }
-      
       // Check if token is expired
       if (challenge.expiresAt < new Date()) {
         mfaChallenges.delete(setupToken);
         return res.status(401).json({ message: "Setup session expired. Please login again." });
-      }
-      
       // Rate limiting: max 5 attempts
       if (challenge.attempts >= 5) {
         mfaChallenges.delete(setupToken);
         return res.status(429).json({ message: "Too many failed attempts. Please login again." });
-      }
-      
       const user = await storage.getUser(challenge.userId);
       if (!user) {
         mfaChallenges.delete(setupToken);
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (!user.mfaSecret) {
         return res.status(400).json({ message: "MFA not set up. Please run setup first." });
-      }
-      
       // Verify the TOTP token
       const isValid = authenticator.verify({ token, secret: user.mfaSecret });
       
@@ -2698,8 +2544,6 @@ ${message}
         challenge.attempts++;
         mfaChallenges.set(setupToken, challenge);
         return res.status(400).json({ message: "Invalid verification code" });
-      }
-      
       // Generate backup codes
       const backupCodes = Array.from({ length: 8 }, () =>
         crypto.randomBytes(4).toString('hex').toUpperCase()
@@ -2775,32 +2619,22 @@ ${message}
       const challenge = mfaChallenges.get(challengeToken);
       if (!challenge) {
         return res.status(401).json({ message: "Invalid or expired challenge. Please login again." });
-      }
-      
       // Check if challenge is expired
       if (challenge.expiresAt < new Date()) {
         mfaChallenges.delete(challengeToken);
         return res.status(401).json({ message: "Challenge expired. Please login again." });
-      }
-      
       // Rate limiting: max 5 attempts per challenge
       if (challenge.attempts >= 5) {
         mfaChallenges.delete(challengeToken);
         return res.status(429).json({ message: "Too many failed attempts. Please login again." });
-      }
-      
       const user = await storage.getUser(challenge.userId);
       
       if (!user) {
         mfaChallenges.delete(challengeToken);
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (!user.mfaEnabled || !user.mfaSecret) {
         mfaChallenges.delete(challengeToken);
         return res.status(400).json({ message: "MFA not enabled for this user" });
-      }
-      
       // First try TOTP verification
       const isValid = authenticator.verify({ token, secret: user.mfaSecret });
       
@@ -2833,8 +2667,6 @@ ${message}
         });
         
         return res.json({ success: true, user: sanitizeUser(user), adminPortal });
-      }
-      
       // Try backup codes
       if (user.mfaBackupCodes) {
         const backupCodes: string[] = JSON.parse(user.mfaBackupCodes);
@@ -2883,8 +2715,6 @@ ${message}
             });
           }
         }
-      }
-      
       // Increment attempt counter on failure
       challenge.attempts += 1;
       
@@ -2903,8 +2733,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Verify password before disabling MFA - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
@@ -2914,8 +2742,6 @@ ${message}
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
-      }
-      
       // Disable MFA
       await storage.updateUser(userId, { 
         mfaEnabled: false, 
@@ -2948,8 +2774,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       res.json({ 
         mfaEnabled: user.mfaEnabled,
         mfaMethod: user.mfaMethod,
@@ -2972,8 +2796,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Verify password before enabling biometric - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
@@ -2983,8 +2805,6 @@ ${message}
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
-      }
-      
       // Enable biometric authentication
       await storage.updateUser(userId, { 
         biometricEnabled: true,
@@ -3020,8 +2840,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Verify password before disabling biometric - SECURITY: bcrypt only
       let isValidPassword = false;
       if (user.password.startsWith('$2')) {
@@ -3031,8 +2849,6 @@ ${message}
       
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid password" });
-      }
-      
       // Disable biometric authentication
       await storage.updateUser(userId, { 
         biometricEnabled: false,
@@ -3067,8 +2883,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       res.json({ 
         biometricEnabled: user.biometricEnabled || false,
         hasDeviceId: !!user.biometricDeviceId
@@ -3085,23 +2899,15 @@ ${message}
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
-      }
-      
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (!user.biometricEnabled) {
         return res.status(403).json({ message: "Biometric authentication not enabled for this account" });
-      }
-      
       // Optional: verify device ID matches if stored
       if (user.biometricDeviceId && deviceId && user.biometricDeviceId !== deviceId) {
         return res.status(403).json({ message: "Device not authorized for biometric login" });
-      }
-      
       // SECURITY: Regenerate session to prevent session fixation attacks
       await new Promise<void>((resolve, reject) => {
         req.session.regenerate((err) => {
@@ -3149,14 +2955,10 @@ ${message}
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
-      }
-      
       const existingUser = await storage.getUserByEmail(email);
       
       if (existingUser) {
         return res.json({ userExists: true, userId: existingUser.id });
-      }
-      
       // User does not exist - send invitation email
       const baseUrl = process.env.REPLIT_DEV_DOMAIN || 'https://finatrades.com';
       const emailResult = await sendEmail(email, EMAIL_TEMPLATES.INVITATION, {
@@ -3223,8 +3025,6 @@ ${message}
         ]);
       } catch (e) {
         console.error('[admin/stats] Core data fetch failed:', e);
-      }
-      
       // Date calculations for period comparisons
       const currentDate = new Date();
       const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -3887,8 +3687,6 @@ ${message}
           lastChecked: new Date().toISOString(),
           details: 'Database connection failed'
         });
-      }
-      
       // Check API Server
       checks.push({
         name: 'API Server',
@@ -3917,8 +3715,6 @@ ${message}
           lastChecked: new Date().toISOString(),
           details: 'Session store check failed'
         });
-      }
-      
       // Check Real-time (Socket.IO)
       checks.push({
         name: 'Real-time',
@@ -4041,8 +3837,6 @@ ${message}
           message: "OTP verification required for database sync. Please verify your identity first.",
           requiresOtp: true
         });
-      }
-      
       // Invalidate the OTP after use (single-use)
       await pool.query(`
         UPDATE admin_action_otps SET verified = false 
@@ -4113,8 +3907,6 @@ ${message}
           u.email?.toLowerCase().includes(search) ||
           u.finatradesId?.toLowerCase().includes(search)
         );
-      }
-      
       const userList = filteredUsers.slice(0, 50).map(u => ({
         id: u.id,
         finatradesId: u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`,
@@ -4136,8 +3928,6 @@ ${message}
       const user = await storage.getUser(req.params.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Get wallet
       const wallet = await storage.getWallet(user.id);
       
@@ -4163,8 +3953,6 @@ ${message}
             livenessCapture: personalKyc.selfieUrl,
           } as any;
         }
-      }
-      
       // If still not found, check finatrades corporate KYC
       if (!kycSubmission) {
         const corporateKyc = await storage.getFinatradesCorporateKyc(user.id);
@@ -4177,8 +3965,6 @@ ${message}
             fullName: corporateKyc.companyName,
           } as any;
         }
-      }
-      
       // Get audit logs for this user
       const auditLogs = await storage.getEntityAuditLogs('user', user.id);
       
@@ -4202,12 +3988,8 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (user.isEmailVerified) {
         return res.status(400).json({ message: "User email is already verified" });
-      }
-      
       const updatedUser = await storage.updateUser(user.id, {
         isEmailVerified: true,
         emailVerificationCode: null,
@@ -4241,8 +4023,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const updatedUser = await storage.updateUser(user.id, {
         kycStatus: 'Rejected' as any,
       });
@@ -4273,8 +4053,6 @@ ${message}
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const updatedUser = await storage.updateUser(user.id, {
         kycStatus: 'Approved' as any,
       });
@@ -4336,8 +4114,6 @@ ${message}
       const employee = await storage.getEmployee(req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
-      }
-      
       const user = employee.userId ? await storage.getUser(employee.userId) : null;
       
       res.json({ 
@@ -4364,8 +4140,6 @@ ${message}
       const employee = await storage.getEmployeeByUserId(req.params.userId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found for this user" });
-      }
-      
       res.json({ employee });
     } catch (error) {
       res.status(400).json({ message: "Failed to get employee" });
@@ -4381,8 +4155,6 @@ ${message}
       // Validate permissions - require at least one permission
       if (!permissions || permissions.length === 0) {
         return res.status(400).json({ message: "At least one permission is required" });
-      }
-      
       // Check if user is already an employee
       if (userId) {
         const existingEmployee = await storage.getEmployeeByUserId(userId);
@@ -4392,8 +4164,6 @@ ${message}
         
         // Update user role to admin
         await storage.updateUser(userId, { role: 'admin' });
-      }
-      
       // Generate employee ID
       const employeeId = await storage.generateEmployeeId();
       
@@ -4435,13 +4205,9 @@ ${message}
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
         return res.status(404).json({ message: "Employee not found" });
-      }
-      
       // Validate permissions if being updated
       if (permissions !== undefined && permissions.length === 0) {
         return res.status(400).json({ message: "At least one permission is required" });
-      }
-      
       const updates: any = {};
       if (role !== undefined) updates.role = role;
       if (department !== undefined) updates.department = department;
@@ -4483,8 +4249,6 @@ ${message}
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
         return res.status(404).json({ message: "Employee not found" });
-      }
-      
       const employee = await storage.updateEmployee(req.params.id, { status: 'inactive' });
       
       // If employee has a user account, update their role back to user and invalidate sessions
@@ -4503,8 +4267,6 @@ ${message}
           console.error('Failed to invalidate sessions:', sessionError);
           // Continue even if session deletion fails - the middleware will block access
         }
-      }
-      
       // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
@@ -4531,15 +4293,11 @@ ${message}
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
         return res.status(404).json({ message: "Employee not found" });
-      }
-      
       const employee = await storage.updateEmployee(req.params.id, { status: 'active' });
       
       // If employee has a user account, update their role to admin
       if (existingEmployee.userId) {
         await storage.updateUser(existingEmployee.userId, { role: 'admin' });
-      }
-      
       // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
@@ -4586,8 +4344,6 @@ ${message}
           permissions,
           updatedBy: adminUser.id
         });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "role_permission",
@@ -4634,20 +4390,14 @@ ${message}
           message: "Two-factor authentication must be enabled to perform backup operations. Please enable 2FA in your security settings.",
           requiresMfa: true
         });
-      }
-      
       if (!otpCode) {
         return res.status(400).json({ 
           message: "OTP verification code is required for backup operations.",
           requiresOtp: true
         });
-      }
-      
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
-      }
-      
       const result = await createBackup(adminUser.id, 'manual');
       
       await logBackupAction(
@@ -4664,8 +4414,6 @@ ${message}
       
       if (!result.success) {
         return res.status(500).json({ message: result.error || "Backup failed" });
-      }
-      
         return res.json({
         message: "Backup created successfully",
         backup: {
@@ -4721,20 +4469,14 @@ ${message}
           message: "Two-factor authentication must be enabled to download backups.",
           requiresMfa: true
         });
-      }
-      
       if (!otpCode) {
         return res.status(400).json({ 
           message: "OTP verification code is required to download backups.",
           requiresOtp: true
         });
-      }
-      
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
-      }
-      
       const fileResult = await getBackupFileStream(req.params.id);
       
       if (!fileResult) {
@@ -4749,8 +4491,6 @@ ${message}
           'Backup file not found or not ready'
         );
         return res.status(404).json({ message: "Backup file not found or not ready" });
-      }
-      
       await logBackupAction(
         'BACKUP_DOWNLOAD',
         req.params.id,
@@ -4784,28 +4524,20 @@ ${message}
           message: "Two-factor authentication must be enabled to perform restore operations. Please enable 2FA in your security settings.",
           requiresMfa: true
         });
-      }
-      
       if (!otpCode) {
         return res.status(400).json({ 
           message: "OTP verification code is required for restore operations.",
           requiresOtp: true
         });
-      }
-      
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
-      }
-      
       // Additional safety: Require confirmation flag
       if (!confirmed) {
         return res.status(400).json({
           message: "Restore operation requires explicit confirmation. Set 'confirmed: true' in request body.",
           warning: "This operation will replace all current data with the backup data. A pre-restore snapshot will be created automatically."
         });
-      }
-      
       const result = await restoreBackup(req.params.id, adminUser.id);
       
       await logBackupAction(
@@ -4829,8 +4561,6 @@ ${message}
           message: result.error || "Restore failed",
           preRestoreBackupId: result.preRestoreBackupId
         });
-      }
-      
         return res.json({
         message: "Database restored successfully",
         preRestoreBackupId: result.preRestoreBackupId,
@@ -4869,8 +4599,6 @@ ${message}
       
       if (!result.success) {
         return res.status(500).json({ message: result.error || "Delete failed" });
-      }
-      
       res.json({ message: "Backup deleted successfully" });
     } catch (error) {
       console.error("Failed to delete backup:", error);
@@ -4939,8 +4667,6 @@ ${message}
           message: `Cannot auto-sync: ${diff.typeMismatches.length} column type mismatches found. These require manual review.`,
           typeMismatches: diff.typeMismatches
         });
-      }
-      
       // Apply missing tables and columns
       const result = await applyMissingSchema(diff);
       
@@ -5028,8 +4754,6 @@ ${message}
       // Convert reviewedAt string to Date if provided
       if (updates.reviewedAt && typeof updates.reviewedAt === 'string') {
         updates.reviewedAt = new Date(updates.reviewedAt);
-      }
-      
       // Try kycAml table first
       let submission: any = await storage.updateKycSubmission(req.params.id, updates);
       let kycType = 'kycAml';
@@ -5038,18 +4762,12 @@ ${message}
       if (!submission) {
         submission = await storage.updateFinatradesPersonalKyc(req.params.id, updates);
         kycType = 'finatrades_personal';
-      }
-      
       // If not found in personal, try Finatrades corporate KYC table
       if (!submission) {
         submission = await storage.updateFinatradesCorporateKyc(req.params.id, updates);
         kycType = 'finatrades_corporate';
-      }
-      
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
-      }
-      
       // Update user KYC status and send notification email
       if (req.body.status) {
         await storage.updateUser(submission.userId, {
@@ -5110,8 +4828,6 @@ ${message}
         
         // Include email status in response for admin visibility
         return res.json({ submission, emailSent, kycType });
-      }
-      
       res.json({ submission, kycType });
     } catch (error) {
       console.error("KYC update error:", error);
@@ -5201,8 +4917,6 @@ ${message}
       
       for (const s of kycAmlArray) {
         if (s) allSubmissions.push({ ...s, kycType: 'kycAml' });
-      }
-      
       for (const s of personalArray) {
         if (s) allSubmissions.push({
           ...s,
@@ -5210,8 +4924,6 @@ ${message}
           kycType: 'finatrades_personal',
           accountType: 'personal',
         });
-      }
-      
       for (const s of corporateArray) {
         if (s) allSubmissions.push({
           ...s,
@@ -5220,8 +4932,6 @@ ${message}
           accountType: 'business',
           fullName: s?.companyName || null,
         });
-      }
-      
       // Sort by creation date
       allSubmissions.sort((a, b) => {
         const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -5325,8 +5035,6 @@ ${message}
       
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
-      }
-      
       // Update user KYC status
       await storage.updateUser(submission.userId, { kycStatus: "Escalated" });
       
@@ -5358,8 +5066,6 @@ ${message}
       
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
-      }
-      
       // Simulate screening check (in production, integrate with Sumsub/Onfido)
       const screeningTypes = screeningType ? [screeningType] : ['sanctions', 'pep', 'adverse_media'];
       const screeningResults: any[] = [];
@@ -5376,8 +5082,6 @@ ${message}
           matchScore: 0,
         });
         screeningResults.push(screeningLog);
-      }
-      
       // Update KYC submission with screening results
       await storage.updateKycSubmission(kycId, {
         screeningStatus: 'Clear',
@@ -5484,8 +5188,6 @@ ${message}
       
       if (!profile) {
         return res.status(404).json({ message: "Risk profile not found" });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "risk_profile",
@@ -5511,8 +5213,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const profile = await updateUserRiskProfile(userId, adminUser.id);
       
       await storage.createAuditLog({
@@ -5539,8 +5239,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const riskScore = await calculateUserRiskScore(userId);
       res.json({ riskScore });
     } catch (error) {
@@ -5556,8 +5254,6 @@ ${message}
       
       if (!userId || amountUsd === undefined) {
         return res.status(400).json({ message: "userId and amountUsd are required" });
-      }
-      
       const result = await checkTransactionAgainstLimits(userId, amountUsd);
       res.json(result);
     } catch (error) {
@@ -5594,8 +5290,6 @@ ${message}
             results.push({ userId: user.id, status: 'error', error: (e as Error).message });
           }
         }
-      }
-      
       res.json({ processed: results.length, results });
     } catch (error) {
       console.error("Batch calculation error:", error);
@@ -5642,8 +5336,6 @@ ${message}
       
       if (!log) {
         return res.status(404).json({ message: "Screening log not found" });
-      }
-      
       res.json({ log });
     } catch (error) {
       res.status(400).json({ message: "Failed to update screening log" });
@@ -5680,8 +5372,6 @@ ${message}
       const amlCase = await storage.getAmlCase(req.params.id);
       if (!amlCase) {
         return res.status(404).json({ message: "AML case not found" });
-      }
-      
       const activities = await storage.getAmlCaseActivities(req.params.id);
       const user = await storage.getUser(amlCase.userId);
       
@@ -5742,8 +5432,6 @@ ${message}
       
       if (!previousCase) {
         return res.status(404).json({ message: "AML case not found" });
-      }
-      
       // Handle assignment
       if (updates.assignedTo && updates.assignedTo !== previousCase.assignedTo) {
         updates.assignedAt = new Date();
@@ -5757,8 +5445,6 @@ ${message}
           performedBy: adminId || 'admin',
           performedAt: new Date(),
         });
-      }
-      
       // Handle status change
       if (updates.status && updates.status !== previousCase.status) {
         await storage.createAmlCaseActivity({
@@ -5776,8 +5462,6 @@ ${message}
           updates.resolvedBy = adminId;
           updates.resolvedAt = new Date();
         }
-      }
-      
       // Handle SAR filing
       if (updates.sarFiledAt && !previousCase.sarFiledAt) {
         await storage.createAmlCaseActivity({
@@ -5787,8 +5471,6 @@ ${message}
           performedBy: adminId || 'admin',
           performedAt: new Date(),
         });
-      }
-      
       const amlCase = await storage.updateAmlCase(req.params.id, updates);
       
       // Create audit log
@@ -5815,8 +5497,6 @@ ${message}
       const amlCase = await storage.getAmlCase(req.params.id);
       if (!amlCase) {
         return res.status(404).json({ message: "AML case not found" });
-      }
-      
       // Append to investigation notes
       const existingNotes = amlCase.investigationNotes || '';
       const timestamp = new Date().toISOString();
@@ -5903,8 +5583,6 @@ ${message}
       
       if (!rule) {
         return res.status(404).json({ message: "AML rule not found" });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "aml_rule",
@@ -5930,8 +5608,6 @@ ${message}
       
       if (!deleted) {
         return res.status(404).json({ message: "AML rule not found" });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "aml_rule",
@@ -5967,13 +5643,9 @@ ${message}
       
       if (!transactionId || !userId) {
         return res.status(400).json({ message: "transactionId and userId are required" });
-      }
-      
       const transaction = await storage.getTransaction(transactionId);
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
-      }
-      
       const result = await evaluateTransaction(transaction, userId);
       res.json(result);
     } catch (error) {
@@ -6104,8 +5776,6 @@ ${message}
             current: limitResult.current
           });
         }
-      }
-      
       // Require PIN verification for Sell transactions
       if (transactionData.type === 'Sell') {
         const pinToken = req.headers['x-pin-token'] as string | undefined;
@@ -6123,8 +5793,6 @@ ${message}
         if (pinValidation.userId !== userId) {
           return res.status(403).json({ message: 'PIN token does not match user' });
         }
-      }
-      
       // Force all transactions to start as Pending (requires admin authorization)
       const transaction = await storage.createTransaction({
         ...transactionData,
@@ -6535,8 +6203,6 @@ ${message}
       if (toDate) {
         const to = new Date(toDate as string);
         unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
-      }
-      
       // Sort by date descending
       unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
@@ -6800,8 +6466,6 @@ ${message}
       if (toDate) {
         const to = new Date(toDate as string);
         unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
-      }
-      
       // Sort by date descending
       unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
@@ -7029,8 +6693,6 @@ ${message}
           console.error('Failed to approve buy gold request:', e);
           return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve buy gold request" });
         }
-      }
-      
       // Handle deposit requests from depositRequests table
       if (sourceTable === 'depositRequests') {
         const depositReq = await storage.getDepositRequest(req.params.id);
@@ -7125,8 +6787,6 @@ ${message}
         }
         
         return res.json({ message: 'Deposit request approved and wallet credited' });
-      }
-      
       // Handle withdrawal requests from withdrawalRequests table
       if (sourceTable === 'withdrawalRequests') {
         try {
@@ -7157,8 +6817,6 @@ ${message}
           console.error('Failed to approve withdrawal request:', e);
           return res.status(400).json({ message: "Failed to approve withdrawal request" });
         }
-      }
-      
       // Handle crypto payment requests
       if (sourceTable === 'cryptoPaymentRequests') {
         try {
@@ -7196,8 +6854,6 @@ ${message}
           console.error('Failed to approve crypto payment:', e);
           return res.status(400).json({ message: "Failed to approve crypto payment" });
         }
-      }
-      
       // Default: Handle regular transactions table
       // Initial validation outside transaction
       const transaction = await storage.getTransaction(req.params.id);
@@ -7206,8 +6862,6 @@ ${message}
       }
       if (transaction.status !== 'Pending') {
         return res.status(400).json({ message: "Only pending transactions can be approved" });
-      }
-      
       const goldAmount = parseFloat(transaction.amountGold || '0');
       const usdAmount = parseFloat(transaction.amountUsd || '0');
       const goldPrice = parseFloat(transaction.goldPriceUsdPerGram || '71.55');
@@ -7216,8 +6870,6 @@ ${message}
       const wallet = await storage.getWallet(transaction.userId);
       if (!wallet) {
         return res.status(404).json({ message: "User wallet not found" });
-      }
-      
       const currentGold = parseFloat(wallet.goldGrams || '0');
       const currentUsd = parseFloat(wallet.usdBalance || '0');
       
@@ -7605,8 +7257,6 @@ ${message}
             console.error(`[Routes] Document processing error for transaction ${transaction.id}:`, err);
           });
         }
-      }
-      
       // Send gold sale email for Sell transactions
       if (transaction.type === 'Sell') {
         const sellUser = await storage.getUser(transaction.userId);
@@ -7621,8 +7271,6 @@ ${message}
             gold_price: goldPricePerGram.toFixed(2),
           }).catch(err => console.error('[Email] Gold sale notification failed:', err));
         }
-      }
-      
       res.json({ 
         transaction: result.updatedTransaction, 
         certificates: result.generatedCertificates,
@@ -7658,8 +7306,6 @@ ${message}
         } catch (e) {
           return res.status(400).json({ message: "Failed to reject buy gold request" });
         }
-      }
-      
       // Handle deposit requests
       if (sourceTable === 'depositRequests') {
         const depositReq = await storage.getDepositRequest(req.params.id);
@@ -7693,8 +7339,6 @@ ${message}
         }
         
         return res.json({ message: 'Deposit request rejected' });
-      }
-      
       // Handle withdrawal requests
       if (sourceTable === 'withdrawalRequests') {
         try {
@@ -7735,8 +7379,6 @@ ${message}
         } catch (e) {
           return res.status(400).json({ message: "Failed to reject withdrawal request" });
         }
-      }
-      
       // Handle crypto payment requests
       if (sourceTable === 'cryptoPaymentRequests') {
         try {
@@ -7777,8 +7419,6 @@ ${message}
         } catch (e) {
           return res.status(400).json({ message: "Failed to reject crypto payment" });
         }
-      }
-      
       // Default: Handle regular transactions table
       const transaction = await storage.getTransaction(req.params.id);
       if (!transaction) {
@@ -7786,8 +7426,6 @@ ${message}
       }
       if (transaction.status !== 'Pending') {
         return res.status(400).json({ message: "Only pending transactions can be rejected" });
-      }
-      
       const updatedTransaction = await storage.updateTransaction(req.params.id, {
         status: 'Cancelled'
       });
@@ -8242,8 +7880,6 @@ ${message}
           message: "Certificate number is required",
           verificationResult: "invalid"
         });
-      }
-      
       // Clean and normalize the certificate number
       const cleanedNumber = certificateNumber.trim().toUpperCase();
       
@@ -8255,8 +7891,6 @@ ${message}
           message: "Certificate not found in our system. This certificate may be counterfeit or the number may be incorrect.",
           certificateNumber: cleanedNumber
         });
-      }
-      
       // Determine if certificate is expired
       const now = new Date();
       const isExpired = certificate.expiresAt ? new Date(certificate.expiresAt) < now : false;
@@ -8387,8 +8021,6 @@ ${message}
             certificateQueue.push(childCert.id);
           }
         }
-      }
-      
       // Add certificate issuance event if we have no ledger entries (shows certificate creation)
       if (ledgerHistory.length === 0) {
         let senderFinatradesId: string | null = null;
@@ -8421,8 +8053,6 @@ ${message}
           action: certificate.type,
           eventHash: safeHash(certificate.id)
         });
-      }
-      
       // If certificate is expired/revoked, add that event at the end
       if (certificate.status === 'Expired' || certificate.status === 'Revoked') {
         const statusHash = safeHash(certificate.id + '_status');
@@ -8441,8 +8071,6 @@ ${message}
             eventHash: statusHash
           });
         }
-      }
-      
       // Sort by timestamp
       ledgerHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       
@@ -9094,8 +8722,6 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (sessionUserId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
-      }
-      
       // Check available gold balance
       const ownership = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
       const availableGold = ownership[0] ? parseFloat(ownership[0].availableGrams) : 0;
@@ -9103,8 +8729,6 @@ ${message}
       
       if (requestedGrams > availableGold) {
         return res.status(400).json({ message: `Insufficient gold. Available: ${availableGold.toFixed(4)}g` });
-      }
-      
       const goldPrice = await getGoldPricePerGram();
       const refNumber = `PDR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
       
@@ -9178,8 +8802,6 @@ ${message}
       const [request] = await db.select().from(physicalDeliveryRequests).where(eq(physicalDeliveryRequests.id, req.params.id));
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
-      }
-      
       const updates: any = { status, updatedAt: new Date() };
       if (trackingNumber) updates.trackingNumber = trackingNumber;
       if (courierName) updates.courierName = courierName;
@@ -9213,12 +8835,8 @@ ${message}
           notes: `Physical delivery ${request.referenceNumber} - ${courierName} ${trackingNumber}`,
           createdBy: adminUser.id,
         });
-      }
-      
       if (status === 'Delivered') {
         updates.deliveredAt = new Date();
-      }
-      
       await db.update(physicalDeliveryRequests).set(updates).where(eq(physicalDeliveryRequests.id, req.params.id));
       
       await storage.createAuditLog({
@@ -9297,8 +8915,6 @@ ${message}
       }
       if (bar.status !== 'Available') {
         return res.status(400).json({ message: "Gold bar is not available for allocation" });
-      }
-      
       await db.update(goldBars).set({
         allocatedToUserId: userId,
         allocatedAt: new Date(),
@@ -9356,8 +8972,6 @@ ${message}
         return res.status(400).json({ 
           message: `Storage fees already generated for ${month}/${year}. Found ${existingFees[0].count} existing records.` 
         });
-      }
-      
       // Get all users with vault holdings
       const ownerships = await db.select().from(vaultOwnershipSummary);
       const goldPrice = await getGoldPricePerGram();
@@ -9386,8 +9000,6 @@ ${message}
           status: 'Pending',
         });
         generated++;
-      }
-      
       res.json({ 
         message: `Generated ${generated} storage fee records for ${month}/${year}`,
         details: { generated, skipped, period: `${periodStart} to ${periodEnd}` }
@@ -9625,8 +9237,6 @@ ${message}
           negativeBalances: latest.negative_balances || 0,
           issues: latest.issues_json || []
         });
-      }
-      
       const overview = await storage.getVaultOverviewData();
       const totalDigital = overview.totalDigitalLiability;
       const totalPhysical = overview.totalPhysicalCustody;
@@ -9635,8 +9245,6 @@ ${message}
       let status = 'success';
       if (Math.abs(discrepancy) > 0.01) {
         status = discrepancy < 0 ? 'error' : 'warning';
-      }
-      
         return res.json({
         runId: 'auto-' + Date.now(),
         runDate: new Date().toISOString(),
@@ -9678,8 +9286,6 @@ ${message}
           affectedEntityId: 'global',
           resolved: false
         });
-      }
-      
       if (overview.unlinkedDeposits > 0) {
         status = status === 'success' ? 'warning' : status;
         issues.push({
@@ -9691,8 +9297,6 @@ ${message}
           affectedEntityId: 'unlinked',
           resolved: false
         });
-      }
-      
       const run = await storage.createVaultReconciliationRun({
         runBy: adminId,
         status,
@@ -9736,8 +9340,6 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (sessionUserId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
-      }
-      
       const refNumber = `VT-${Date.now().toString(36).toUpperCase()}`;
       const transferFee = 25; // Example flat fee
       
@@ -9788,8 +9390,6 @@ ${message}
       const [transfer] = await db.select().from(vaultTransfers).where(eq(vaultTransfers.id, req.params.id));
       if (!transfer) {
         return res.status(404).json({ message: "Transfer not found" });
-      }
-      
       const updates: any = { status };
       if (status === 'Approved') {
         updates.approvedBy = adminUser.id;
@@ -9845,19 +9445,13 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (sessionUserId !== senderUserId) {
         return res.status(403).json({ message: "Unauthorized" });
-      }
-      
       const grams = parseFloat(goldGrams);
       if (isNaN(grams) || grams <= 0) {
         return res.status(400).json({ message: "Invalid gold amount" });
-      }
-      
       // Check sender's balance
       const wallet = await storage.getWallet(senderUserId);
       if (!wallet || parseFloat(wallet.goldGrams) < grams) {
         return res.status(400).json({ message: "Insufficient gold balance" });
-      }
-      
       const goldPrice = await getGoldPricePerGram();
       const refNumber = `GIFT-${Date.now().toString(36).toUpperCase()}`;
       
@@ -9866,8 +9460,6 @@ ${message}
       if (recipientEmail) {
         const recipient = await storage.getUserByEmail(recipientEmail);
         if (recipient) recipientUserId = recipient.id;
-      }
-      
       // Deduct from sender's wallet
       await storage.updateWallet(wallet.id, {
         goldGrams: (parseFloat(wallet.goldGrams) - grams).toFixed(6),
@@ -9953,8 +9545,6 @@ ${message}
           claimedAt: new Date(),
           recipientTransactionId: recipientTx.id,
         }).where(eq(goldGifts.id, gift.id));
-      }
-      
       res.json({ gift, message: "Gold gift sent successfully" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send gift" });
@@ -9979,26 +9569,18 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (sessionUserId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
-      }
-      
       const [gift] = await db.select().from(goldGifts).where(eq(goldGifts.id, req.params.id));
       if (!gift) {
         return res.status(404).json({ message: "Gift not found" });
       }
       if (gift.status !== 'Pending' && gift.status !== 'Sent') {
         return res.status(400).json({ message: "Gift cannot be claimed" });
-      }
-      
       // Check expiration
       if (gift.expiresAt && new Date(gift.expiresAt) < new Date()) {
         return res.status(400).json({ message: "Gift has expired" });
-      }
-      
       const user = await storage.getUser(userId);
       if (gift.recipientEmail && user?.email !== gift.recipientEmail) {
         return res.status(403).json({ message: "This gift is not for you" });
-      }
-      
       const grams = parseFloat(gift.goldGrams);
       const goldPrice = parseFloat(gift.goldPriceUsdPerGram);
       
@@ -10237,8 +9819,6 @@ ${message}
       for (const plan of plans) {
         const payouts = await storage.getBnslPlanPayouts(plan.id);
         allPayouts.push(...payouts.map((p: any) => ({ ...p, planId: plan.id })));
-      }
-      
       // Get wallet transactions (transfers from vault ledger)
       const { vaultLedgerService } = await import('./vault-ledger-service');
       const vaultEntries = await vaultLedgerService.getLedgerHistory(userId, 200);
@@ -10264,8 +9844,6 @@ ${message}
           notes: `${plan.tenorMonths} Month BNSL Plan - ${goldGrams.toFixed(4)}g locked`,
           createdAt: plan.createdAt,
         });
-      }
-      
       // Add margin payouts (credits)
       for (const payout of allPayouts) {
         if (payout.status === 'Paid') {
@@ -10283,8 +9861,6 @@ ${message}
             createdAt: payout.paidAt || payout.createdAt,
           });
         }
-      }
-      
       // Add wallet transfers
       for (const entry of bnslRelatedEntries) {
         const goldGrams = parseFloat(entry.goldGrams);
@@ -10302,8 +9878,6 @@ ${message}
           notes: entry.notes || (entry.action === 'FinaPay_To_BNSL' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
           createdAt: entry.createdAt,
         });
-      }
-      
       // Sort by date ascending first to calculate running balances chronologically
       entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       
@@ -10313,8 +9887,6 @@ ${message}
         const goldChange = parseFloat(entry.goldGrams);
         runningBal += goldChange; // Positive for credits, negative for debits
         entry.balanceAfterGrams = runningBal.toFixed(6);
-      }
-      
       // Now reverse to show newest first
       entries.reverse();
       const sortedEntries = entries.slice(0, limit);
@@ -10336,8 +9908,6 @@ ${message}
       const isAdmin = req.session?.userRole === 'admin';
       if (!isAdmin && sessionUserId !== userId) {
         return res.status(403).json({ message: "Unauthorized: Cannot transfer from another user's wallet" });
-      }
-      
       if (!userId || !goldGrams || parseFloat(goldGrams) <= 0) {
         return res.status(400).json({ message: "Invalid transfer amount" });
       }
@@ -10348,13 +9918,9 @@ ${message}
       const finapayWallet = await storage.getWallet(userId);
       if (!finapayWallet) {
         return res.status(404).json({ message: "FinaPay wallet not found" });
-      }
-      
       const availableGold = parseFloat(finapayWallet.goldGrams);
       if (availableGold < amountGrams) {
         return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
-      }
-      
       // Get current gold price for USD value calculation
       const goldPrice = await getGoldPricePerGram();
       const usdValue = amountGrams * goldPrice;
@@ -10435,8 +10001,6 @@ ${message}
       const isAdmin = req.session?.userRole === 'admin';
       if (!isAdmin && sessionUserId !== userId) {
         return res.status(403).json({ message: "Unauthorized: Cannot withdraw from another user's wallet" });
-      }
-      
       if (!userId || !goldGrams || parseFloat(goldGrams) <= 0) {
         return res.status(400).json({ message: "Invalid withdrawal amount" });
       }
@@ -10449,14 +10013,10 @@ ${message}
       
       if (availableGold < amountGrams) {
         return res.status(400).json({ message: "Insufficient gold balance in BNSL wallet" });
-      }
-      
       // Verify FinaPay wallet exists BEFORE making any changes
       const finapayWallet = await storage.getWallet(userId);
       if (!finapayWallet) {
         return res.status(404).json({ message: "FinaPay wallet not found" });
-      }
-      
       // Get current gold price for USD value calculation
       const goldPrice = await getGoldPricePerGram();
       const usdValue = amountGrams * goldPrice;
@@ -10748,8 +10308,6 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) {
         return res.status(401).json({ message: "Authentication required" });
-      }
-      
       const isAdmin = req.session?.userRole === 'admin';
       
       // Auto-generate contractId if not provided
@@ -10776,14 +10334,10 @@ ${message}
         planData.userId = sessionUserId;
       } else if (!planData.userId) {
         planData.userId = sessionUserId;
-      }
-      
       // Validate BNSL amount limits using PARSED data
       const amountUsd = parseFloat(planData.totalMarginComponentUsd || planData.saleValue || "0");
       if (isNaN(amountUsd) || amountUsd <= 0) {
         return res.status(400).json({ message: "Invalid BNSL amount" });
-      }
-      
       const bnslLimitResult = await platformLimits.validateBNSLAmount(amountUsd);
       if (!bnslLimitResult.valid) {
         return res.status(400).json({ 
@@ -10791,8 +10345,6 @@ ${message}
           limit: bnslLimitResult.limit,
           current: bnslLimitResult.current
         });
-      }
-      
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
       // Get BNSL wallet and verify sufficient funds
@@ -10803,8 +10355,6 @@ ${message}
         return res.status(400).json({ 
           message: `Insufficient BNSL wallet balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
         });
-      }
-      
       // Lock gold: move from available to locked
       const newAvailable = availableGold - goldGrams;
       const newLocked = parseFloat(bnslWallet.lockedGoldGrams) + goldGrams;
@@ -10839,8 +10389,6 @@ ${message}
             }
           }
         }
-      }
-      
       // Create a new certificate for the BNSL-locked gold
       const certNumber = await storage.generateCertificateNumber('Digital Ownership');
       await storage.createCertificate({
@@ -11058,20 +10606,14 @@ ${message}
       
       if (!pdfBase64) {
         return res.status(400).json({ success: false, message: "PDF data is required" });
-      }
-      
       // Get the agreement with plan details
       const agreement = await storage.getBnslAgreement(req.params.id);
       if (!agreement) {
         return res.status(404).json({ success: false, message: "Agreement not found" });
-      }
-      
       // Get user details
       const user = await storage.getUser(agreement.userId);
       if (!user || !user.email) {
         return res.status(400).json({ success: false, message: "User email not found" });
-      }
-      
       // Parse plan details
       const planDetails = agreement.planDetails as any;
       
@@ -11130,16 +10672,12 @@ ${message}
       const agreement = await storage.getBnslAgreement(req.params.id);
       if (!agreement) {
         return res.status(404).json({ message: "Agreement not found" });
-      }
-      
       // Get user and plan details for PDF regeneration
       const user = await storage.getUser(agreement.userId);
       const plan = await storage.getBnslPlan(agreement.planId);
       
       if (!user || !plan) {
         return res.status(404).json({ message: "User or plan not found" });
-      }
-      
       const planDetails = agreement.planDetails as any;
       
       // Generate PDF using PDFKit
@@ -11219,26 +10757,18 @@ ${message}
       
       if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
         return res.status(400).json({ message: "Valid market price is required" });
-      }
-      
       const price = parseFloat(marketPriceUsdPerGram);
       
       // Get the payout
       const payout = await storage.getBnslPayout(req.params.id);
       if (!payout) {
         return res.status(404).json({ message: "Payout not found" });
-      }
-      
       if (payout.status === 'Paid') {
         return res.status(400).json({ message: "Payout has already been processed" });
-      }
-      
       // Get the plan
       const plan = await storage.getBnslPlan(payout.planId);
       if (!plan) {
         return res.status(404).json({ message: "Associated BNSL plan not found" });
-      }
-      
       // Calculate gold grams to credit
       const monetaryAmount = parseFloat(payout.monetaryAmountUsd);
       const gramsCredited = monetaryAmount / price;
@@ -11247,8 +10777,6 @@ ${message}
       const wallet = await storage.getWallet(plan.userId);
       if (!wallet) {
         return res.status(404).json({ message: "User FinaPay wallet not found" });
-      }
-      
       const currentGold = parseFloat(wallet.goldGrams);
       const newGoldBalance = currentGold + gramsCredited;
       
@@ -11343,8 +10871,6 @@ ${message}
           type: 'bnsl',
           link: '/bnsl',
         });
-      }
-      
       res.json({ 
         success: true, 
         payout: updatedPayout,
@@ -11364,24 +10890,16 @@ ${message}
       
       if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
         return res.status(400).json({ message: "Valid market price is required" });
-      }
-      
       const price = parseFloat(marketPriceUsdPerGram);
       
       // Get the plan
       const plan = await storage.getBnslPlan(req.params.id);
       if (!plan) {
         return res.status(404).json({ message: "BNSL plan not found" });
-      }
-      
       if (plan.status === 'Completed') {
         return res.status(400).json({ message: "Plan has already been completed" });
-      }
-      
       if (plan.status !== 'Active' && plan.status !== 'Maturing') {
         return res.status(400).json({ message: `Cannot complete plan with status: ${plan.status}` });
-      }
-      
       // Calculate gold grams to credit (Base Price Component / current price)
       const basePriceComponent = parseFloat(plan.basePriceComponentUsd);
       const goldGramsToCredit = basePriceComponent / price;
@@ -11390,8 +10908,6 @@ ${message}
       const wallet = await storage.getWallet(plan.userId);
       if (!wallet) {
         return res.status(404).json({ message: "User FinaPay wallet not found" });
-      }
-      
       const currentGold = parseFloat(wallet.goldGrams);
       const newGoldBalance = currentGold + goldGramsToCredit;
       
@@ -11482,8 +10998,6 @@ ${message}
           type: 'bnsl',
           link: '/bnsl',
         });
-      }
-      
       res.json({ 
         success: true, 
         plan: updatedPlan,
@@ -11503,26 +11017,18 @@ ${message}
       
       if (!marketPriceUsdPerGram || parseFloat(marketPriceUsdPerGram) <= 0) {
         return res.status(400).json({ message: "Valid market price is required" });
-      }
-      
       const price = parseFloat(marketPriceUsdPerGram);
       
       // Get the plan
       const plan = await storage.getBnslPlan(req.params.planId);
       if (!plan) {
         return res.status(404).json({ message: "BNSL plan not found" });
-      }
-      
       // Get early termination request
       const termination = await storage.getBnslEarlyTermination(req.params.planId);
       if (!termination) {
         return res.status(404).json({ message: "Early termination request not found" });
-      }
-      
       if (termination.status === 'Settled') {
         return res.status(400).json({ message: "Termination has already been settled" });
-      }
-      
       // Calculate settlement per T&C formula
       const goldSold = parseFloat(plan.goldSoldGrams);
       const enrollmentPrice = parseFloat(plan.enrollmentPriceUsdPerGram);
@@ -11554,8 +11060,6 @@ ${message}
       const wallet = await storage.getWallet(plan.userId);
       if (!wallet) {
         return res.status(404).json({ message: "User FinaPay wallet not found" });
-      }
-      
       if (finalGoldGrams > 0) {
         const currentGold = parseFloat(wallet.goldGrams);
         const newGoldBalance = currentGold + finalGoldGrams;
@@ -11563,8 +11067,6 @@ ${message}
         await storage.updateWallet(wallet.id, {
           goldGrams: newGoldBalance.toFixed(6)
         });
-      }
-      
       // Unlock gold from BNSL wallet
       const bnslWallet = await storage.getOrCreateBnslWallet(plan.userId);
       const currentLocked = parseFloat(bnslWallet.lockedGoldGrams);
@@ -11597,8 +11099,6 @@ ${message}
         if (payout.status === 'Scheduled') {
           await storage.updateBnslPayout(payout.id, { status: 'Cancelled' });
         }
-      }
-      
       // Create transaction record
       await storage.createTransaction({
         userId: plan.userId,
@@ -11786,8 +11286,6 @@ ${message}
             console.error('Failed to parse bank_accounts JSON:', e);
           }
         }
-      }
-      
       res.json({ accounts });
     } catch (error) {
       res.status(400).json({ message: "Failed to get bank accounts" });
@@ -11858,8 +11356,6 @@ ${message}
       const depositUser = await storage.getUser(userId);
       if (!depositUser) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const amount = parseFloat(amountUsd);
       const limitResult = await platformLimits.validateFullTransactionLimits(
         amount,
@@ -11873,8 +11369,6 @@ ${message}
           limit: limitResult.limit,
           current: limitResult.current
         });
-      }
-      
       // Generate reference number
       const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const requestData = insertDepositRequestSchema.parse({
@@ -11898,8 +11392,6 @@ ${message}
           amount: parseFloat(req.body.amountUsd).toFixed(2),
           reference_number: referenceNumber,
         }).catch(err => console.error('[Email] Deposit processing notification failed:', err));
-      }
-      
       // Create bell notification for deposit request submission
       await storage.createNotification({
         userId: req.body.userId,
@@ -11930,8 +11422,6 @@ ${message}
       const request = await storage.getDepositRequest(req.params.id);
       if (!request) {
         return res.status(404).json({ message: "Deposit request not found" });
-      }
-      
       const updates = req.body;
       
       // Prevent double-approval
@@ -11939,15 +11429,11 @@ ${message}
         return res.status(400).json({ 
           message: "This deposit has already been confirmed. Please refresh the page to see the updated status." 
         });
-      }
-      
       // Prevent approving rejected deposits
       if (updates.status === 'Confirmed' && request.status === 'Rejected') {
         return res.status(400).json({ 
           message: "Cannot approve a rejected deposit. Please create a new deposit request." 
         });
-      }
-      
       // GOLDEN RULE ENFORCEMENT: Direct wallet credit is disabled
       // All deposit approvals must go through Unified Payment Management
       // to ensure physical gold allocation and storage certificate are provided
@@ -12282,14 +11768,10 @@ ${message}
       // SECURITY: Verify user can only create withdrawal for themselves
       if (req.session?.userId !== userId) {
         return res.status(403).json({ message: "Not authorized to create withdrawal for another user" });
-      }
-      
       // Get user for limit validation
       const withdrawUser = await storage.getUser(userId);
       if (!withdrawUser) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Validate withdrawal limits
       const amount = parseFloat(amountUsd);
       const limitResult = await platformLimits.validateFullTransactionLimits(
@@ -12304,8 +11786,6 @@ ${message}
           limit: limitResult.limit,
           current: limitResult.current
         });
-      }
-      
       // GOLD-ONLY COMPLIANCE: Check user has sufficient gold balance
       // Convert requested USD to gold grams at current price
       
@@ -12313,8 +11793,6 @@ ${message}
       const goldPricePerGram = await getGoldPricePerGram();
       if (!goldPricePerGram || goldPricePerGram <= 0) {
         return res.status(503).json({ message: "Unable to fetch gold price. Please try again." });
-      }
-      
       const withdrawAmountUsd = parseFloat(amountUsd);
       const goldGramsRequired = withdrawAmountUsd / goldPricePerGram;
       
@@ -12331,8 +11809,6 @@ ${message}
           availableUsd,
           requiredGrams: goldGramsRequired
         });
-      }
-      
       // Generate reference number
       const referenceNumber = `WTH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
@@ -12381,8 +11857,6 @@ ${message}
           amount: parseFloat(amountUsd).toFixed(2),
           reference_number: referenceNumber,
         }).catch(err => console.error('[Email] Withdrawal requested notification failed:', err));
-      }
-      
       // Create bell notification for withdrawal request submission
       await storage.createNotification({
         userId,
@@ -12413,8 +11887,6 @@ ${message}
       const request = await storage.getWithdrawalRequest(req.params.id);
       if (!request) {
         return res.status(404).json({ message: "Withdrawal request not found" });
-      }
-      
       const updates = req.body;
       
       // If completing withdrawal, create transaction record
@@ -12476,8 +11948,6 @@ ${message}
           type: 'transaction',
           link: '/dashboard',
         });
-      }
-      
       // If rejecting from Pending or Processing, refund the held amount back to wallet
       if (updates.status === 'Rejected' && (request.status === 'Pending' || request.status === 'Processing')) {
         const wallet = await storage.getWallet(request.userId);
@@ -12512,8 +11982,6 @@ ${message}
           type: 'transaction',
           link: '/dashboard',
         });
-      }
-      
       const updatedRequest = await storage.updateWithdrawalRequest(req.params.id, {
         ...updates,
         processedAt: new Date(),
@@ -12582,8 +12050,6 @@ ${message}
           case_id: tradeCase.id,
           trade_value: caseData.tradeValueUsd,
         }).catch(err => console.error('[Email] Trade case created notification failed:', err));
-      }
-      
       res.json({ tradeCase });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade case" });
@@ -12657,13 +12123,9 @@ ${message}
       const user = await storage.getUser(req.params.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const { role } = req.body;
       if (!role || !['importer', 'exporter', 'both'].includes(role)) {
         return res.status(400).json({ message: "Please select your role: importer, exporter, or both" });
-      }
-      
       const updatedUser = await storage.updateUser(req.params.userId, {
         finabridgeDisclaimerAcceptedAt: new Date(),
         finabridgeRole: role,
@@ -12708,8 +12170,6 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) {
         return res.status(401).json({ message: "Authentication required" });
-      }
-      
       const isAdmin = req.session?.userRole === 'admin';
       
       // Parse and validate schema first
@@ -12725,14 +12185,10 @@ ${message}
       } else if (!requestData.importerId) {
         requestData.importerId = sessionUserId;
         requestData.importerUserId = sessionUserId;
-      }
-      
       // Validate FinaBridge trade case value limits using PARSED data
       const amountUsd = parseFloat(requestData.tradeValueUsd || "0");
       if (isNaN(amountUsd) || amountUsd <= 0) {
         return res.status(400).json({ message: "Invalid trade value" });
-      }
-      
       const tradeCaseLimitResult = await platformLimits.validateTradeCaseValue(amountUsd);
       if (!tradeCaseLimitResult.valid) {
         return res.status(400).json({ 
@@ -12740,8 +12196,6 @@ ${message}
           limit: tradeCaseLimitResult.limit,
           current: tradeCaseLimitResult.current
         });
-      }
-      
       const tradeRequest = await storage.createTradeRequest(requestData);
       
       await storage.createAuditLog({
@@ -12829,20 +12283,14 @@ ${message}
       const proposal = await storage.getTradeProposal(req.params.proposalId);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
-      }
-      
       const request = await storage.getTradeRequest(proposal.tradeRequestId);
       if (!request) {
         return res.status(404).json({ message: "Trade request not found" });
-      }
-      
       // Verify proposal was forwarded
       const forwarded = await storage.getForwardedProposals(proposal.tradeRequestId);
       const isForwarded = forwarded.some(f => f.proposalId === proposal.id);
       if (!isForwarded) {
         return res.status(400).json({ message: "Proposal has not been forwarded to importer" });
-      }
-      
       // Get or create importer's FinaBridge wallet
       const wallet = await storage.getOrCreateFinabridgeWallet(request.importerUserId);
       const availableGold = parseFloat(wallet.availableGoldGrams);
@@ -12852,8 +12300,6 @@ ${message}
         return res.status(400).json({ 
           message: `Insufficient gold balance. Required: ${requiredGold}g, Available: ${availableGold}g` 
         });
-      }
-      
       // Lock the gold in wallet
       await storage.updateFinabridgeWallet(wallet.id, {
         availableGoldGrams: (availableGold - requiredGold).toFixed(6),
@@ -12907,8 +12353,6 @@ ${message}
         if (p.id !== proposal.id && p.status !== 'Rejected') {
           await storage.updateTradeProposal(p.id, { status: 'Declined' });
         }
-      }
-      
       // Create Deal Room for communication between importer, exporter, and admin
       const dealRoom = await storage.createDealRoom({
         tradeRequestId: request.id,
@@ -12930,8 +12374,6 @@ ${message}
       const proposal = await storage.getTradeProposal(req.params.proposalId);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
-      }
-      
       // Update proposal status to Declined
       await storage.updateTradeProposal(proposal.id, { status: 'Declined' });
       
@@ -13036,8 +12478,6 @@ ${message}
             });
           }
         }
-      }
-      
       res.json({ proposals: allForwardedProposals });
     } catch (err) {
       console.error("Error fetching forwarded proposals:", err);
@@ -13057,22 +12497,16 @@ ${message}
       }
       if (request.status !== 'Open' && request.status !== 'Proposal Review') {
         return res.status(400).json({ message: "Trade request is not accepting proposals" });
-      }
-      
       // Check if exporter already submitted a proposal
       const existingProposals = await storage.getExporterProposals(proposalData.exporterUserId);
       const alreadySubmitted = existingProposals.some(p => p.tradeRequestId === proposalData.tradeRequestId);
       if (alreadySubmitted) {
         return res.status(400).json({ message: "You have already submitted a proposal for this request" });
-      }
-      
       const proposal = await storage.createTradeProposal(proposalData);
       
       // Update request status to Proposal Review if first proposal
       if (request.status === 'Open') {
         await storage.updateTradeRequest(request.id, { status: 'Proposal Review' });
-      }
-      
       // Notify all admins of new proposal
       const exporterUser = await storage.getUser(proposalData.exporterUserId);
       notifyAllAdmins({
@@ -13094,13 +12528,9 @@ ${message}
       const proposal = await storage.getTradeProposal(req.params.id);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
-      }
-      
       // Only allow update if status is 'Modification Requested'
       if (proposal.status !== 'Modification Requested') {
         return res.status(400).json({ message: "Proposal cannot be modified at this stage" });
-      }
-      
       const updateData = {
         ...req.body,
         status: 'Submitted' as const, // Reset to Submitted after modification
@@ -13213,8 +12643,6 @@ ${message}
       }
       if (proposal.status !== 'Submitted') {
         return res.status(400).json({ message: "Only submitted proposals can be shortlisted" });
-      }
-      
       const updated = await storage.updateTradeProposal(req.params.id, { status: 'Shortlisted' });
       res.json({ proposal: updated });
     } catch (error) {
@@ -13228,8 +12656,6 @@ ${message}
       const proposal = await storage.getTradeProposal(req.params.id);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
-      }
-      
       const updated = await storage.updateTradeProposal(req.params.id, { status: 'Rejected' });
       res.json({ proposal: updated });
     } catch (error) {
@@ -13243,15 +12669,11 @@ ${message}
       const proposal = await storage.getTradeProposal(req.params.id);
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
-      }
-      
       const { modificationRequest, requestedDocuments, customDocumentNotes } = req.body;
       
       // At least one of: text, documents, or notes must be provided
       if (!modificationRequest && (!requestedDocuments || requestedDocuments.length === 0) && !customDocumentNotes) {
         return res.status(400).json({ message: "Modification request details are required" });
-      }
-      
       const updated = await storage.updateTradeProposal(req.params.id, { 
         status: 'Modification Requested',
         modificationRequest: modificationRequest?.trim() || '',
@@ -13272,21 +12694,15 @@ ${message}
       
       if (!Array.isArray(proposalIds) || proposalIds.length === 0) {
         return res.status(400).json({ message: "No proposals selected" });
-      }
-      
       const request = await storage.getTradeRequest(req.params.requestId);
       if (!request) {
         return res.status(404).json({ message: "Trade request not found" });
-      }
-      
       // Verify all proposals are shortlisted
       for (const proposalId of proposalIds) {
         const proposal = await storage.getTradeProposal(proposalId);
         if (!proposal || proposal.status !== 'Shortlisted') {
           return res.status(400).json({ message: `Proposal ${proposalId} is not shortlisted` });
         }
-      }
-      
       // Create forwarded proposal records and update status
       for (const proposalId of proposalIds) {
         await storage.createForwardedProposal({
@@ -13295,8 +12711,6 @@ ${message}
           forwardedByAdminId: adminId,
         });
         await storage.updateTradeProposal(proposalId, { status: 'Forwarded' });
-      }
-      
       // Update request status
       await storage.updateTradeRequest(req.params.requestId, { status: 'Awaiting Importer' });
       
@@ -13355,8 +12769,6 @@ ${message}
             createdAt: request.createdAt,
           });
         }
-      }
-      
       // Add settlements (credits for completed trades)
       for (const settlement of settlements) {
         if (settlement.status === 'Released') {
@@ -13371,8 +12783,6 @@ ${message}
             createdAt: settlement.updatedAt || settlement.createdAt,
           });
         }
-      }
-      
       // Add wallet transfers
       for (const entry of tradeRelatedEntries) {
         entries.push({
@@ -13384,8 +12794,6 @@ ${message}
           notes: entry.notes || (entry.action === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
           createdAt: entry.createdAt,
         });
-      }
-      
       // Sort by date ascending first to calculate running balances chronologically
       entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       
@@ -13395,8 +12803,6 @@ ${message}
         const goldChange = parseFloat(entry.goldGrams);
         runningBal += goldChange; // Positive for credits, negative for debits
         entry.balanceAfterGrams = runningBal.toFixed(6);
-      }
-      
       // Now reverse to show newest first
       entries.reverse();
       const sortedEntries = entries.slice(0, limit);
@@ -13423,23 +12829,15 @@ ${message}
         } catch (e) {
           console.log('Could not fetch gold price for ledger entry');
         }
-      }
-      
       if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
-      }
-      
       // Get main wallet
       const mainWallet = await storage.getWallet(req.params.userId);
       if (!mainWallet) {
         return res.status(404).json({ message: "Main wallet not found" });
-      }
-      
       const mainGoldBalance = parseFloat(mainWallet.goldGrams || '0');
       if (mainGoldBalance < amount) {
         return res.status(400).json({ message: "Insufficient gold balance in main wallet" });
-      }
-      
       // Deduct from main wallet
       await storage.updateWallet(mainWallet.id, {
         goldGrams: (mainGoldBalance - amount).toFixed(6),
@@ -13500,20 +12898,14 @@ ${message}
         } catch (e) {
           console.log('Could not fetch gold price for ledger entry');
         }
-      }
-      
       if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
-      }
-      
       // Get FinaBridge wallet
       const fbWallet = await storage.getOrCreateFinabridgeWallet(req.params.userId);
       const fbGoldBalance = parseFloat(fbWallet.availableGoldGrams || '0');
       
       if (fbGoldBalance < amount) {
         return res.status(400).json({ message: "Insufficient gold balance in FinaBridge wallet" });
-      }
-      
       // Deduct from FinaBridge wallet
       await storage.updateFinabridgeWallet(fbWallet.id, {
         availableGoldGrams: (fbGoldBalance - amount).toFixed(6),
@@ -13604,8 +12996,6 @@ ${message}
       }
       if (hold.status !== 'Held') {
         return res.status(400).json({ message: "Settlement hold is not active" });
-      }
-      
       const lockedAmount = parseFloat(hold.lockedGoldGrams);
       
       // Transfer gold from importer's locked to exporter's available
@@ -13614,8 +13004,6 @@ ${message}
         await storage.updateFinabridgeWallet(importerWallet.id, {
           lockedGoldGrams: (parseFloat(importerWallet.lockedGoldGrams) - lockedAmount).toFixed(6),
         });
-      }
-      
       const exporterWallet = await storage.getOrCreateFinabridgeWallet(hold.exporterUserId);
       await storage.updateFinabridgeWallet(exporterWallet.id, {
         availableGoldGrams: (parseFloat(exporterWallet.availableGoldGrams) + lockedAmount).toFixed(6),
@@ -13680,8 +13068,6 @@ ${message}
       }
       if (hold.status !== 'Held') {
         return res.status(400).json({ message: "Settlement hold is not active" });
-      }
-      
       const lockedAmount = parseFloat(hold.lockedGoldGrams);
       
       // Return gold to importer's available balance
@@ -13691,16 +13077,12 @@ ${message}
           lockedGoldGrams: Math.max(0, parseFloat(importerWallet.lockedGoldGrams) - lockedAmount).toFixed(6),
           availableGoldGrams: (parseFloat(importerWallet.availableGoldGrams) + lockedAmount).toFixed(6),
         });
-      }
-      
       // Clear exporter's incoming locked gold
       const exporterWallet = await storage.getFinabridgeWallet(hold.exporterUserId);
       if (exporterWallet) {
         await storage.updateFinabridgeWallet(exporterWallet.id, {
           incomingLockedGoldGrams: Math.max(0, parseFloat(exporterWallet.incomingLockedGoldGrams || '0') - lockedAmount).toFixed(6),
         });
-      }
-      
       // Update hold status
       await storage.updateSettlementHold(req.params.id, { status: 'Cancelled' });
       
@@ -13746,16 +13128,12 @@ ${message}
       
       if (!percentage || percentage <= 0 || percentage > 100) {
         return res.status(400).json({ message: "Invalid release percentage (must be 1-100)" });
-      }
-      
       const hold = await storage.getSettlementHold(req.params.id);
       if (!hold) {
         return res.status(404).json({ message: "Settlement hold not found" });
       }
       if (hold.status !== 'Held') {
         return res.status(400).json({ message: "Settlement hold is not active" });
-      }
-      
       // Calculate released amount
       const totalLocked = parseFloat(hold.lockedGoldGrams);
       const releaseGrams = (totalLocked * percentage) / 100;
@@ -13767,16 +13145,12 @@ ${message}
       
       if (releaseGrams > remaining) {
         return res.status(400).json({ message: `Cannot release ${releaseGrams.toFixed(4)}g. Only ${remaining.toFixed(4)}g remaining.` });
-      }
-      
       // Update importer's locked balance
       const importerWallet = await storage.getFinabridgeWallet(hold.importerUserId);
       if (importerWallet) {
         await storage.updateFinabridgeWallet(importerWallet.id, {
           lockedGoldGrams: Math.max(0, parseFloat(importerWallet.lockedGoldGrams) - releaseGrams).toFixed(6),
         });
-      }
-      
       // Credit exporter's available balance
       const exporterWallet = await storage.getOrCreateFinabridgeWallet(hold.exporterUserId);
       await storage.updateFinabridgeWallet(exporterWallet.id, {
@@ -13843,8 +13217,6 @@ ${message}
       if (Math.abs(newTotalReleased - totalLocked) < 0.000001) {
         await storage.updateSettlementHold(hold.id, { status: 'Released' });
         await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
-      }
-      
       res.json({ 
         message: `Released ${releaseGrams.toFixed(4)}g (${percentage}%) to exporter`,
         released: releaseGrams,
@@ -13878,18 +13250,12 @@ ${message}
       
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const user = await storage.getUser(sessionUserId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const tradeRequest = await storage.getTradeRequest(tradeRequestId);
       if (!tradeRequest) {
         return res.status(404).json({ message: "Trade request not found" });
-      }
-      
       // Verify user is party to the trade and determine role
       let userRole = '';
       if (tradeRequest.importerUserId === sessionUserId) {
@@ -13902,8 +13268,6 @@ ${message}
         } else {
           return res.status(403).json({ message: "Not authorized to raise dispute on this trade" });
         }
-      }
-      
       const disputeRefId = `DSP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
       
       const [dispute] = await db.insert(tradeDisputes).values({
@@ -13953,13 +13317,9 @@ ${message}
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
         return res.status(404).json({ message: "Dispute not found" });
-      }
-      
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
       const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
@@ -13979,8 +13339,6 @@ ${message}
         if (!isImporter && !isExporter && !isDisputeRaiser) {
           return res.status(403).json({ message: "Not authorized to view this dispute" });
         }
-      }
-      
       const comments = await db.select().from(tradeDisputeComments).where(eq(tradeDisputeComments.disputeId, dispute.id)).orderBy(tradeDisputeComments.createdAt);
       
       res.json({ dispute, comments });
@@ -13997,13 +13355,9 @@ ${message}
       
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
         return res.status(404).json({ message: "Dispute not found" });
-      }
-      
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
       const isAdmin = sessionUser?.role === 'admin' && sessionUser.permissions?.includes('manage_finabridge');
@@ -14029,8 +13383,6 @@ ${message}
             return res.status(403).json({ message: "Not authorized to comment on this dispute" });
           }
         }
-      }
-      
       const [comment] = await db.insert(tradeDisputeComments).values({
         id: crypto.randomUUID(),
         disputeId: dispute.id,
@@ -14077,8 +13429,6 @@ ${message}
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
         return res.status(404).json({ message: "Dispute not found" });
-      }
-      
       await db.update(tradeDisputes).set({
         status,
         assignedAdminId: assignedAdminId || dispute.assignedAdminId,
@@ -14109,8 +13459,6 @@ ${message}
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
         return res.status(404).json({ message: "Dispute not found" });
-      }
-      
       await db.update(tradeDisputes).set({
         status: 'Resolved',
         resolution,
@@ -14146,8 +13494,6 @@ ${message}
       
       if (!shipment) {
         return res.json({ shipment: null });
-      }
-      
       const milestones = await db.select().from(shipmentMilestones)
         .where(eq(shipmentMilestones.shipmentId, shipment.id))
         .orderBy(shipmentMilestones.createdAt);
@@ -14229,8 +13575,6 @@ ${message}
       const tradeRequest = await storage.getTradeRequest(tradeRequestId);
       if (!tradeRequest) {
         return res.status(404).json({ message: "Trade request not found" });
-      }
-      
       const certNumber = `TC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const [certificate] = await db.insert(tradeCertificates).values({
         id: crypto.randomUUID(), tradeRequestId, certificateNumber: certNumber, type,
@@ -14388,13 +13732,9 @@ ${message}
       
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
       if (!dealRoom) {
         return res.status(404).json({ message: "Deal room not found" });
-      }
-      
       // Verify user is party to the deal room and determine role
       let userRole = '';
       if (dealRoom.importerUserId === sessionUserId) {
@@ -14405,8 +13745,6 @@ ${message}
         userRole = 'admin';
       } else {
         return res.status(403).json({ message: "Not authorized to upload to this deal room" });
-      }
-      
       const [document] = await db.insert(dealRoomDocuments).values({
         id: crypto.randomUUID(),
         dealRoomId: dealRoom.id,
@@ -14435,13 +13773,9 @@ ${message}
       
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
       if (!dealRoom) {
         return res.status(404).json({ message: "Deal room not found" });
-      }
-      
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
       const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
@@ -14449,8 +13783,6 @@ ${message}
       // Verify user is party to the deal room or is admin
       if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
         return res.status(403).json({ message: "Not authorized to view documents in this deal room" });
-      }
-      
       const documents = await db.select().from(dealRoomDocuments).where(eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId)).orderBy(desc(dealRoomDocuments.createdAt));
       res.json({ documents });
     } catch (error) {
@@ -14466,8 +13798,6 @@ ${message}
       
       if (!['Verified', 'Rejected'].includes(status)) {
         return res.status(400).json({ message: "Status must be Verified or Rejected" });
-      }
-      
       await db.update(dealRoomDocuments).set({
         status,
         verifiedBy: adminUser.id,
@@ -14494,8 +13824,6 @@ ${message}
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) {
         return res.status(404).json({ message: "Trade request not found" });
-      }
-      
       await storage.updateTradeRequest(req.params.id, {
         proposalDeadline: proposalDeadline ? new Date(proposalDeadline) : null,
         settlementDeadline: settlementDeadline ? new Date(settlementDeadline) : null,
@@ -14602,8 +13930,6 @@ ${message}
       const room = await storage.getDealRoom(req.params.id);
       if (!room) {
         return res.status(404).json({ message: "Deal room not found" });
-      }
-      
       const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
       const proposal = await storage.getTradeProposal(room.acceptedProposalId);
       const importer = await storage.getUser(room.importerUserId);
@@ -14671,8 +13997,6 @@ ${message}
       const room = await storage.getDealRoom(req.params.id);
       if (!room) {
         return res.status(404).json({ message: "Deal room not found" });
-      }
-      
       if (userId) {
         // Check if user is an admin - admins can always access deal rooms
         const user = await storage.getUser(userId as string);
@@ -14681,8 +14005,6 @@ ${message}
         if (!isParticipant && !isAdmin) {
           return res.status(403).json({ message: "Access denied - not a participant" });
         }
-      }
-      
       const messages = await storage.getDealRoomMessages(req.params.id);
       
       // Get sender info for each message
@@ -14707,26 +14029,18 @@ ${message}
       
       if (!senderUserId || !senderRole) {
         return res.status(400).json({ message: "Missing required fields" });
-      }
-      
       if (!content && !attachmentUrl) {
         return res.status(400).json({ message: "Message must have content or attachment" });
-      }
-      
       // Verify user is a participant or admin
       const room = await storage.getDealRoom(req.params.id);
       if (!room) {
         return res.status(404).json({ message: "Deal room not found" });
-      }
-      
       // Check if user is an admin - admins can always send messages
       const user = await storage.getUser(senderUserId);
       const isAdmin = user?.role === 'admin';
       const isParticipant = [room.importerUserId, room.exporterUserId, room.assignedAdminId].includes(senderUserId);
       if (!isParticipant && !isAdmin) {
         return res.status(403).json({ message: "User is not a participant in this deal room" });
-      }
-      
       const message = await storage.createDealRoomMessage({
         dealRoomId: req.params.id,
         senderUserId,
@@ -14757,8 +14071,6 @@ ${message}
       const { userId } = req.body;
       if (!userId) {
         return res.status(400).json({ message: "Missing userId" });
-      }
-      
       await storage.markDealRoomMessagesAsRead(req.params.id, userId);
       res.json({ message: "Messages marked as read" });
     } catch (error) {
@@ -14796,8 +14108,6 @@ ${message}
       const { adminId } = req.body;
       if (!adminId) {
         return res.status(400).json({ message: "Missing adminId" });
-      }
-      
       const room = await storage.updateDealRoom(req.params.id, { assignedAdminId: adminId });
       res.json({ room });
     } catch (error) {
@@ -14986,8 +14296,6 @@ ${message}
           status: "active",
           lastMessageAt: new Date(),
         });
-      }
-      
       res.json({ session });
     } catch (error) {
       res.status(400).json({ message: "Failed to get chat session" });
@@ -15314,8 +14622,6 @@ ${message}
       const existingAgent = await storage.getChatAgent(agentId);
       if (!existingAgent) {
         return res.status(404).json({ message: "Agent not found" });
-      }
-      
       const { displayName, description, welcomeMessage, status } = req.body;
       const updates: any = {};
       if (displayName !== undefined) updates.displayName = displayName;
@@ -15531,27 +14837,19 @@ ${message}
       // Input validation
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ message: "Message is required" });
-      }
-      
       // Determine which agent to use
       let selectedAgent;
       if (agentId) {
         selectedAgent = await storage.getChatAgent(agentId);
       } else if (agentType) {
         selectedAgent = await storage.getChatAgentByType(agentType);
-      }
-      
       // Default to general agent if no specific agent selected
       if (!selectedAgent) {
         selectedAgent = await storage.getDefaultChatAgent();
-      }
-      
       // Sanitize input - limit length and remove potentially harmful content
       const sanitizedMessage = message.slice(0, 1000).trim();
       if (sanitizedMessage.length === 0) {
         return res.status(400).json({ message: "Message cannot be empty" });
-      }
-      
       // Rate limiting by IP
       const clientId = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
       const { checkRateLimit, processUserMessage, processUserMessageWithAI } = await import('./chatbot-service.js');
@@ -15562,8 +14860,6 @@ ${message}
           reply: "You're sending messages too quickly. Please wait a moment and try again.",
           escalateToHuman: false
         });
-      }
-      
       // Fetch platform config and gold price for dynamic responses
       const { getGoldPrice } = await import('./gold-price-service.js');
       let goldPrice: { pricePerGram: number; pricePerOz: number; currency: string } | undefined;
@@ -15573,8 +14869,6 @@ ${message}
         goldPrice = await getGoldPrice();
       } catch (err) {
         console.error("Error fetching gold price for chatbot:", err);
-      }
-      
       // Build platform config from database
       try {
         const configs = await storage.getAllPlatformConfigs();
@@ -15612,8 +14906,6 @@ ${message}
         };
       } catch (err) {
         console.error("Error fetching platform config for chatbot:", err);
-      }
-      
       // Build user context if authenticated (for personalized responses)
       let userContext: { userId: string; userName: string; goldBalance: number; usdValue: number; vaultGold: number; kycStatus: string } | undefined;
       const sessionUserId = req.session?.userId;
@@ -15643,8 +14935,6 @@ ${message}
           console.error("Error building user context for chatbot:", err);
           // Continue without user context
         }
-      }
-      
       // Route to appropriate agent
       let responseData: any;
       
@@ -15874,8 +15164,6 @@ ${message}
           fromKnowledgeBase: !!knowledgeResponse && !usedAI && response.confidence < 0.6,
           usedAI: usedAI
         };
-      }
-      
       res.json(responseData);
     } catch (error) {
       console.error("Chatbot error:", error);
@@ -15931,8 +15219,6 @@ ${message}
           content[block.section] = {};
         }
         content[block.section][block.key] = block.content || block.defaultContent || null;
-      }
-      
       res.json({ page, content });
     } catch (error) {
       res.status(400).json({ message: "Failed to get page content" });
@@ -15963,8 +15249,6 @@ ${message}
         }
         
         pagesWithContent[page.slug] = { page, content };
-      }
-      
       res.json({ pages: pagesWithContent });
     } catch (error) {
       res.status(400).json({ message: "Failed to get pages" });
@@ -16193,8 +15477,6 @@ ${message}
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const { exportCMSToFile } = await import('../scripts/cms-seed');
       const filePath = await exportCMSToFile();
       
@@ -16214,8 +15496,6 @@ ${message}
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const { exportCMSData } = await import('../scripts/cms-seed');
       const data = await exportCMSData();
       
@@ -16233,8 +15513,6 @@ ${message}
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const { importCMSFromFile } = await import('../scripts/cms-seed');
       const result = await importCMSFromFile();
       
@@ -16254,8 +15532,6 @@ ${message}
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const { seedCMSData } = await import('../scripts/cms-seed');
       const result = await seedCMSData(req.body);
       
@@ -16337,12 +15613,8 @@ ${message}
     try {
       if (!req.session.userId || req.session.userRole !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
-      }
-      
       if (!req.file) {
         return res.status(400).json({ message: 'No logo file uploaded' });
-      }
-      
       let logoUrl: string;
       
       // Upload to R2 if configured, otherwise use local disk
@@ -16354,8 +15626,6 @@ ${message}
       } else {
         // Fallback to local disk storage
         logoUrl = `/uploads/${(req.file as any).filename}`;
-      }
-      
       res.json({ 
         url: logoUrl,
         filename: req.file.originalname,
@@ -16387,8 +15657,6 @@ ${message}
           }
           content[block.section][block.key] = block.content || block.defaultContent || '';
         }
-      }
-      
       res.json({ page: { slug: page.slug, title: page.title }, content });
     } catch (error) {
       res.status(400).json({ message: "Failed to get content" });
@@ -16403,8 +15671,6 @@ ${message}
       
       if (!validTypes.includes(type)) {
         return res.status(400).json({ message: "Invalid terms type" });
-      }
-      
       // Check if terms are enabled for this type
       const enabledKey = `${type}_terms_enabled`;
       const enabledConfig = await storage.getPlatformConfig(enabledKey);
@@ -16420,8 +15686,6 @@ ${message}
           title: config.displayName || `${type.replace('_', ' ')} Terms`,
           enabled: isEnabled
         });
-      }
-      
       // Return default terms based on type
       const defaultTerms: Record<string, { title: string; terms: string }> = {
         deposit: {
@@ -16472,13 +15736,9 @@ ${message}
       const { identifier } = req.query;
       if (!identifier || typeof identifier !== 'string') {
         return res.status(400).json({ message: "Identifier required" });
-      }
-      
       const users = await storage.searchUsersByIdentifier(identifier);
       if (users.length === 0) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Return basic info only (not sensitive data)
       const user = users[0];
       res.json({ 
@@ -16515,22 +15775,16 @@ ${message}
       // Validate gold amount is provided (platform is gold-only)
       if (!amountGold || parseFloat(amountGold) <= 0) {
         return res.status(400).json({ message: "Gold amount is required for transfers" });
-      }
-      
       // Get live gold price from API
       let goldPrice: number;
       try {
         goldPrice = await getGoldPricePerGram();
       } catch {
         goldPrice = 139.44; // Fallback price if API fails
-      }
-      
       // Find sender
       const sender = await storage.getUser(senderId);
       if (!sender) {
         return res.status(404).json({ message: "Sender not found" });
-      }
-      
       // Calculate USD equivalent for limit validation
       const goldAmount = parseFloat(amountGold);
       const usdEquivalentForLimits = goldAmount * goldPrice;
@@ -16548,8 +15802,6 @@ ${message}
           limit: limitResult.limit,
           current: limitResult.current
         });
-      }
-      
       // SECURITY: Check if gold is BNSL-locked before allowing transfer
       const bnslPlans = await storage.getUserBnslPlans(senderId);
       const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
@@ -16600,8 +15852,6 @@ ${message}
             availableGrams: (availableGold - totalLockedGrams).toFixed(4)
           });
         }
-      }
-      
       // Find recipient by email or Finatrades ID
       let recipient;
       if (channel === 'email') {
@@ -16610,14 +15860,10 @@ ${message}
         recipient = await storage.getUserByFinatradesId(recipientIdentifier);
       } else if (channel === 'qr_code') {
         recipient = await storage.getUserByFinatradesId(recipientIdentifier);
-      }
-      
       // Check sender wallet first (needed for both registered and invitation transfers)
       const senderWallet = await storage.getWallet(sender.id);
       if (!senderWallet) {
         return res.status(400).json({ message: "Sender wallet not found" });
-      }
-      
       // Platform is gold-only - calculate USD equivalent
       // For FGPW: use the previewed USD value; For LGPW: use live price
       const usdEquivalent = sourceWalletType === 'FGPW' && fgpwConversionResult
@@ -16629,8 +15875,6 @@ ${message}
       const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
       if (sourceWalletType === 'LGPW' && senderGoldBalance < goldAmount) {
         return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
-      }
-      
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
       // Handle invitation transfer for non-registered email recipients
@@ -16764,22 +16008,14 @@ ${message}
           message: `Invitation sent! ${recipientIdentifier} has 24 hours to register and claim ${goldAmount.toFixed(4)}g gold.`,
           expiresAt: expiresAt.toISOString(),
         });
-      }
-      
       if (!recipient) {
         return res.status(404).json({ message: "Recipient not found. For email transfers to non-registered users, use the email channel." });
-      }
-      
       if (sender.id === recipient.id) {
         return res.status(400).json({ message: "Cannot send money to yourself" });
-      }
-      
       // Get recipient wallet
       const recipientWallet = await storage.getWallet(recipient.id);
       if (!recipientWallet) {
         return res.status(400).json({ message: "Recipient wallet not found" });
-      }
-      
       // Transfer approval is always required for security
       const recipientPreferences = await storage.getUserPreferences(recipient.id);
       const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
@@ -16884,8 +16120,6 @@ ${message}
           memo: memo || '',
           expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
         }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
-      }
-      
         return res.json({
         transfer: pendingTransfer,
         pending: true,
@@ -16939,8 +16173,6 @@ ${message}
       const requester = await storage.getUser(requesterId);
       if (!requester) {
         return res.status(404).json({ message: "Requester not found" });
-      }
-      
       // Validate attachment if provided
       if (attachmentData) {
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -16951,8 +16183,6 @@ ${message}
         if (!allowedMimes.includes(attachmentMime)) {
           return res.status(400).json({ message: "Attachment must be PDF, PNG, or JPG" });
         }
-      }
-      
       // Fetch current gold price and calculate gold grams (Gold-First Principle)
       const goldPrice = await getGoldPricePerGram();
       if (!goldPrice || goldPrice <= 0) {
@@ -16974,8 +16204,6 @@ ${message}
           targetId = targetUsers[0].id;
           targetUser = targetUsers[0];
         }
-      }
-      
       // Set expiry to 7 days
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
@@ -17044,8 +16272,6 @@ ${message}
         } catch (emailError) {
           console.error('[PaymentRequest] Failed to send email notification:', emailError);
         }
-      }
-      
       res.json({ request, qrCodeDataUrl });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create request" });
@@ -17091,8 +16317,6 @@ ${message}
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
-      }
-      
       // Only requester or recipient can download attachment
       const userId = (req.user as any)?.id;
       const userEmail = (req.user as any)?.email;
@@ -17112,12 +16336,8 @@ ${message}
       
       if (!isRequester && !isTargetById && !isTargetByIdentifier) {
         return res.status(403).json({ message: "Not authorized to download this attachment" });
-      }
-      
       if (!request.attachmentUrl) {
         return res.status(404).json({ message: "No attachment found" });
-      }
-      
         return res.json({
         attachmentUrl: request.attachmentUrl,
         attachmentName: request.attachmentName,
@@ -17137,36 +16357,24 @@ ${message}
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
-      }
-      
       if (request.status !== 'Pending') {
         return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
       // Check if expired
       if (request.expiresAt && new Date(request.expiresAt) < new Date()) {
         await storage.updatePeerRequest(request.id, { status: 'Expired' });
         return res.status(400).json({ message: "Request has expired" });
-      }
-      
       // Get payer and requester
       const payer = await storage.getUser(payerId);
       const requester = await storage.getUser(request.requesterId);
       
       if (!payer || !requester) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (payer.id === requester.id) {
         return res.status(400).json({ message: "Cannot pay your own request" });
-      }
-      
       // Check payer balance - use gold balance as the underlying asset
       const payerWallet = await storage.getWallet(payer.id);
       if (!payerWallet) {
         return res.status(400).json({ message: "Wallet not found" });
-      }
-      
       // Get current gold price to convert USD to gold grams
       const pricePerGram = await getGoldPricePerGram();
       const amountUsd = parseFloat(request.amountUsd.toString());
@@ -17175,8 +16383,6 @@ ${message}
       
       if (payerGoldBalance < goldGrams) {
         return res.status(400).json({ message: "Insufficient gold balance" });
-      }
-      
       // Get requester wallet - auto-create if missing (safety net for legacy users)
       let requesterWallet = await storage.getWallet(requester.id);
       if (!requesterWallet) {
@@ -17187,8 +16393,6 @@ ${message}
           usdBalance: "0",
           eurBalance: "0",
         });
-      }
-      
       // Generate reference
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
@@ -17221,8 +16425,6 @@ ${message}
           userId: payer.id,
           mpgwAvailableGrams: '0.000000',
         });
-      }
-      
       // Credit requester's LGPW (create if missing)
       const [requesterVaultSummary] = await db.select().from(vaultOwnershipSummary)
         .where(eq(vaultOwnershipSummary.userId, requester.id));
@@ -17238,8 +16440,6 @@ ${message}
           userId: requester.id,
           mpgwAvailableGrams: goldGrams.toFixed(6),
         });
-      }
-      
       // Create transactions with gold grams
       const senderTx = await storage.createTransaction({
         userId: payer.id,
@@ -17377,8 +16577,6 @@ ${message}
           wingoldStorageRef: wingoldRef,
           goldWalletType: 'LGPW',
         });
-      }
-      
       // 4. Transfer Certificate for requester (gold recipient) - shows Finatrades ID transfer
       await storage.createCertificate({
         certificateNumber: genCertNum('TRC'),
@@ -17448,17 +16646,11 @@ ${message}
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
-      }
-      
       // SECURITY: Only the payee (person being asked) can decline
       if (request.payeeId !== req.session?.userId) {
         return res.status(403).json({ message: "Not authorized to decline this request" });
-      }
-      
       if (request.status !== 'Pending') {
         return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
       await storage.updatePeerRequest(request.id, {
         status: 'Declined',
         respondedAt: new Date(),
@@ -17477,17 +16669,11 @@ ${message}
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
-      }
-      
       // SECURITY: Only the requester can cancel their own request (use session, not body)
       if (request.requesterId !== req.session?.userId) {
         return res.status(403).json({ message: "Not authorized to cancel this request" });
-      }
-      
       if (request.status !== 'Pending') {
         return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
       await storage.updatePeerRequest(request.id, {
         status: 'Cancelled',
         respondedAt: new Date(),
@@ -17505,8 +16691,6 @@ ${message}
       const user = await storage.getUser(req.params.userId);
       if (!user || !user.finatradesId) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const qrPayload = `FTPAY:${user.finatradesId}`;
       const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
       
@@ -17569,17 +16753,11 @@ ${message}
       
       if (!transfer) {
         return res.status(404).json({ message: "Transfer not found" });
-      }
-      
       // SECURITY: Only the recipient can accept
       if (transfer.recipientId !== req.session?.userId) {
         return res.status(403).json({ message: "Not authorized to accept this transfer" });
-      }
-      
       if (transfer.status !== 'Pending') {
         return res.status(400).json({ message: "Transfer is no longer pending" });
-      }
-      
       // Check if transfer has expired
       if (transfer.expiresAt && new Date() > new Date(transfer.expiresAt)) {
         await storage.updatePeerTransfer(transfer.id, {
@@ -17587,29 +16765,21 @@ ${message}
           respondedAt: new Date(),
         });
         return res.status(400).json({ message: "Transfer has expired" });
-      }
-      
       // Get sender and recipient info
       const sender = await storage.getUser(transfer.senderId);
       const recipient = await storage.getUser(transfer.recipientId);
       if (!sender || !recipient) {
         return res.status(404).json({ message: "Users not found" });
-      }
-      
       // Get wallets
       const recipientWallet = await storage.getWallet(recipient.id);
       if (!recipientWallet) {
         return res.status(400).json({ message: "Recipient wallet not found" });
-      }
-      
       // Platform is gold-only - all transfers are gold
       const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       let goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
       
       if (goldAmount <= 0) {
         return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
-      }
-      
       // Get the source wallet type from sender's transaction
       let senderTxInfo: any = null;
       if (transfer.senderTransactionId) {
@@ -17641,8 +16811,6 @@ ${message}
         receiverGoldGrams = fgpwPreview.weightedValueUsd / goldPrice;
         
         console.log(`[P2P-FGPW Accept] Will convert ${goldAmount}g FGPW (USD ${fgpwPreview.weightedValueUsd.toFixed(2)}) -> ${receiverGoldGrams.toFixed(6)}g LGPW at ${goldPrice.toFixed(2)}/g`);
-      }
-      
       // Process gold transfer - Credit recipient
       const result = await storage.withTransaction(async (txStorage) => {
         const generatedCertificates: any[] = [];
@@ -17878,8 +17046,6 @@ ${message}
           </div>
           `
         ).catch(err => console.error('[Email] Failed to send transfer accepted notification:', err));
-      }
-      
       // Create bell notifications for both parties
       await storage.createNotification({
         userId: recipient.id,
@@ -17917,38 +17083,26 @@ ${message}
       
       if (!transfer) {
         return res.status(404).json({ message: "Transfer not found" });
-      }
-      
       // SECURITY: Only the recipient can reject
       if (transfer.recipientId !== req.session?.userId) {
         return res.status(403).json({ message: "Not authorized to reject this transfer" });
-      }
-      
       if (transfer.status !== 'Pending') {
         return res.status(400).json({ message: "Transfer is no longer pending" });
-      }
-      
       // Get sender and recipient info
       const sender = await storage.getUser(transfer.senderId);
       const recipient = await storage.getUser(transfer.recipientId);
       if (!sender) {
         return res.status(404).json({ message: "Sender not found" });
-      }
-      
       // Refund the sender
       const senderWallet = await storage.getWallet(sender.id);
       if (!senderWallet) {
         return res.status(400).json({ message: "Sender wallet not found" });
-      }
-      
       // Platform is gold-only - all transfers are gold
       const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
       
       if (goldAmount <= 0) {
         return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
-      }
-      
       // Refund gold to sender's wallet only (Send deducted from wallet, not vault)
         const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
         await storage.updateWallet(senderWallet.id, {
@@ -18028,8 +17182,6 @@ ${message}
           </div>
           `
         ).catch(err => console.error('[Email] Failed to send transfer rejected notification:', err));
-      }
-      
       // Create bell notification for sender
       await storage.createNotification({
         userId: sender.id,
@@ -18079,8 +17231,6 @@ ${message}
           requireTransferApproval: true, // Always true
           transferApprovalTimeout: transferApprovalTimeout ?? preferences.transferApprovalTimeout,
         });
-      }
-      
       // Log settings change activity
       logUserActivity(req, req.params.userId, "settings_change", "User preferences were updated").catch(err => console.error("[Activity Log] Settings change log failed:", err));
 
@@ -18109,27 +17259,19 @@ ${message}
       const sessionUserId = (req.session as any)?.userId;
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const merchant = await storage.getUser(sessionUserId);
       if (!merchant) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Check if account is frozen
       const [accountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
       if (accountStatus?.isFrozen) {
         return res.status(403).json({ message: "Account is frozen. Cannot create invoices." });
-      }
-      
       // Get current gold price
       let goldPrice: number;
       try {
         goldPrice = await getGoldPricePerGram();
       } catch {
         goldPrice = 139.44;
-      }
-      
       // Generate unique invoice code
       const invoiceCode = `QR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
@@ -18141,8 +17283,6 @@ ${message}
         calculatedGoldGrams = calculatedAmountUsd / goldPrice;
       } else if (calculatedGoldGrams && !calculatedAmountUsd) {
         calculatedAmountUsd = calculatedGoldGrams * goldPrice;
-      }
-      
       // Set expiry to 30 minutes
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       
@@ -18191,14 +17331,10 @@ ${message}
       
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
-      }
-      
       // Check if expired
       if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date() && invoice.status === 'Active') {
         await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
         return res.status(400).json({ message: "Invoice has expired" });
-      }
-      
       // Get merchant info
       const merchant = await storage.getUser(invoice.merchantId);
       
@@ -18227,64 +17363,44 @@ ${message}
       const sessionUserId = (req.session as any)?.userId;
       if (!sessionUserId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const [invoice] = await db.select().from(qrPaymentInvoices).where(eq(qrPaymentInvoices.invoiceCode, req.params.code));
       
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
-      }
-      
       if (invoice.status !== 'Active') {
         return res.status(400).json({ message: `Invoice is ${invoice.status.toLowerCase()}` });
-      }
-      
       if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date()) {
         await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
         return res.status(400).json({ message: "Invoice has expired" });
-      }
-      
       // Check if payer account is frozen
       const [payerAccountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
       if (payerAccountStatus?.isFrozen) {
         return res.status(403).json({ message: "Your account is frozen. Cannot make payments." });
-      }
-      
       const payer = await storage.getUser(sessionUserId);
       const merchant = await storage.getUser(invoice.merchantId);
       
       if (!payer || !merchant) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (payer.id === merchant.id) {
         return res.status(400).json({ message: "Cannot pay your own invoice" });
-      }
-      
       // Check payer wallet
       const payerWallet = await storage.getWallet(payer.id);
       const merchantWallet = await storage.getWallet(merchant.id);
       
       if (!payerWallet || !merchantWallet) {
         return res.status(400).json({ message: "Wallet not found" });
-      }
-      
       // Get current gold price
       let goldPrice: number;
       try {
         goldPrice = await getGoldPricePerGram();
       } catch {
         goldPrice = parseFloat(invoice.goldPriceAtCreation || '139.44');
-      }
-      
       // Calculate gold amount
       const goldGrams = parseFloat(invoice.goldGrams || '0') || (parseFloat(invoice.amountUsd || '0') / goldPrice);
       const payerGoldBalance = parseFloat(payerWallet.goldGrams?.toString() || '0');
       
       if (payerGoldBalance < goldGrams) {
         return res.status(400).json({ message: `Insufficient gold balance. You have ${payerGoldBalance.toFixed(4)}g, need ${goldGrams.toFixed(4)}g` });
-      }
-      
       // Execute transfer
       const referenceNumber = `QRPAY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
@@ -18398,21 +17514,15 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const wallet = await storage.getWallet(userId);
       if (!wallet) {
         return res.status(400).json({ message: "Wallet not found" });
-      }
-      
       // Get gold price
       let goldPrice: number;
       try {
         goldPrice = await getGoldPricePerGram();
       } catch {
         goldPrice = 139.44;
-      }
-      
       const referenceNumber = `ADJ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const adjustGrams = parseFloat(goldGrams || '0');
       const adjustUsd = parseFloat(amountUsd || '0');
@@ -18439,8 +17549,6 @@ ${message}
         // Correction sets the balance directly
         newGoldBalance = adjustGrams;
         newUsdBalance = adjustUsd;
-      }
-      
       // Update wallet
       await storage.updateWallet(wallet.id, {
         goldGrams: newGoldBalance.toFixed(6),
@@ -18490,8 +17598,6 @@ ${message}
           notes: `Admin ${adjustmentType}: ${reason}`,
           createdBy: adminUser.id,
         });
-      }
-      
       // Audit log
       await storage.createAuditLog({
         entityType: "wallet_adjustment",
@@ -18540,8 +17646,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Check if account status exists
       const [existing] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
       
@@ -18562,8 +17666,6 @@ ${message}
           frozenBy: freeze ? adminUser.id : null,
           frozenReason: freeze ? reason : null,
         });
-      }
-      
       await storage.createAuditLog({
         entityType: "user_account",
         entityId: userId,
@@ -18616,8 +17718,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const [existing] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, userId));
       
       if (existing) {
@@ -18633,8 +17733,6 @@ ${message}
           dailyTransferLimitUsd: dailyLimit.toString(),
           monthlyTransferLimitUsd: monthlyLimit.toString(),
         });
-      }
-      
       await storage.createAuditLog({
         entityType: "user_account",
         entityId: userId,
@@ -18982,8 +18080,6 @@ ${message}
       
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized - userId required" });
-      }
-      
       // Validate wallet type
       const walletType = goldWalletType === 'FGPW' ? 'FGPW' : 'LGPW';
 
@@ -19375,8 +18471,6 @@ ${message}
         goldPricePerGram = await getGoldPricePerGram();
       } catch {
         goldPricePerGram = 139.44;
-      }
-      
       const goldGrams = depositAmount / goldPricePerGram;
       const totalGold = parseFloat(wallet?.goldGrams || '0');
       const totalValue = totalGold * goldPricePerGram;
@@ -19742,8 +18836,6 @@ ${message}
           success: false,
           message: "Missing required fields (userId, sessionId, amount)" 
         });
-      }
-      
       // Validate wallet type
       const walletType = goldWalletType === 'FGPW' ? 'FGPW' : 'LGPW';
 
@@ -20173,8 +19265,6 @@ ${message}
       const configMap = new Map<string, string>();
       for (const config of platformConfigs) {
         configMap.set(config.configKey, config.configValue);
-      }
-      
       // Get fee percentages from platform config (no fallbacks - must be configured)
       const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
       const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
@@ -20311,8 +19401,6 @@ ${message}
       const configMap = new Map<string, string>();
       for (const config of platformConfigs) {
         configMap.set(config.configKey, config.configValue);
-      }
-      
       // Get fee percentages from platform config (no fallbacks - must be configured)
       const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
       const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
@@ -20473,8 +19561,6 @@ ${message}
         if (wallet) {
           walletGoldGrams += parseFloat(wallet.goldGrams || '0');
         }
-      }
-      
       // Calculate vault gold - only count physically deposited holdings to avoid double-counting with wallet gold
       const vaultHoldings = await storage.getAllVaultHoldings();
       let vaultGoldGrams = 0;
@@ -20483,8 +19569,6 @@ ${message}
         if (holding.isPhysicallyDeposited) {
           vaultGoldGrams += parseFloat(holding.goldGrams || '0');
         }
-      }
-      
       // Calculate BNSL locked gold
       const bnslPlans = await storage.getAllBnslPlans();
       let bnslLockedGrams = 0;
@@ -20492,8 +19576,6 @@ ${message}
         if (plan.status === 'Active' || plan.status === 'Pending Activation') {
           bnslLockedGrams += parseFloat(plan.goldGrams || '0');
         }
-      }
-      
       // Calculate FinaBridge locked gold (from trade cases if any)
       const tradeCases = await storage.getAllTradeCases();
       let finabridgeLockedGrams = 0;
@@ -20501,8 +19583,6 @@ ${message}
         if (tc.status === 'Active' || tc.status === 'Pending') {
           finabridgeLockedGrams += parseFloat(tc.goldAmountGrams || '0');
         }
-      }
-      
       const totalGoldGrams = walletGoldGrams + vaultGoldGrams;
       const lockedGoldGrams = bnslLockedGrams + finabridgeLockedGrams;
       const freeGoldGrams = totalGoldGrams - lockedGoldGrams;
@@ -20667,15 +19747,11 @@ ${message}
           break;
         default:
           fromDate = null;
-      }
-      
       // Get platform config for fee rates
       const platformConfigs = await storage.getAllPlatformConfigs();
       const configMap = new Map<string, string>();
       for (const config of platformConfigs) {
         configMap.set(config.configKey, config.configValue);
-      }
-      
       const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
       const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
       const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
@@ -20710,8 +19786,6 @@ ${message}
           withdrawalFees += txValue * (withdrawalFeePercent / 100);
           withdrawalCount++;
         }
-      }
-      
       transactionFees = spreadRevenue;
       
       // Calculate storage fees - prorated to the actual overlap with selected period
@@ -20741,8 +19815,6 @@ ${message}
         const holdingPeriodFraction = daysChargeable / 365;
         storageFees += goldGrams * GOLD_PRICE_USD * (storageFeePercent / 100) * holdingPeriodFraction;
         vaultHoldingsCount++;
-      }
-      
       // BNSL Interest - only for interest accrued during the period
       const bnslPlans = await storage.getAllBnslPlans();
       let bnslInterest = 0;
@@ -20765,8 +19837,6 @@ ${message}
           bnslInterest += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsInPeriod;
           activeBnslCount++;
         }
-      }
-      
       const totalFeesCollected = transactionFees + storageFees + bnslInterest + withdrawalFees;
       
       const feeBreakdown = [
@@ -20805,8 +19875,6 @@ ${message}
       
       if (!from || !to) {
         return res.status(400).json({ message: "Date range required (from, to)" });
-      }
-      
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
       toDate.setHours(23, 59, 59, 999);
@@ -20814,8 +19882,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const wallet = await storage.getWallet(userId);
       const allTransactions = await storage.getUserTransactions(userId);
       
@@ -20848,8 +19914,6 @@ ${message}
           // Swaps can be positive or negative
           openingGold += amountGold;
         }
-      }
-      
       // Calculate running gold balance and categorize debits/credits
       let runningGold = openingGold;
       let totalCreditsGold = 0;
@@ -20914,8 +19978,6 @@ ${message}
         currentGoldPrice = await getGoldPricePerGram();
       } catch (e) {
         console.error('[Statement] Failed to fetch gold price, using fallback:', e);
-      }
-      
       // Calculate USD equivalent of gold balances at current price
       const openingGoldUsdValue = openingGold * currentGoldPrice;
       const closingGoldUsdValue = runningGold * currentGoldPrice;
@@ -20961,8 +20023,6 @@ ${message}
       
       if (!from || !to) {
         return res.status(400).json({ message: "Date range required" });
-      }
-      
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
       toDate.setHours(23, 59, 59, 999);
@@ -20970,8 +20030,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const allTransactions = await storage.getUserTransactions(userId);
       
       // Filter and process transactions
@@ -20997,8 +20055,6 @@ ${message}
         } else if (tx.type === 'Swap') {
           openingGold += amountGold;
         }
-      }
-      
       // Fetch current gold price for USD equivalent calculation
       const { getGoldPricePerGram } = await import('./gold-price-service');
       let currentGoldPrice = 139.50; // Default fallback
@@ -21006,8 +20062,6 @@ ${message}
         currentGoldPrice = await getGoldPricePerGram();
       } catch (e) {
         console.error('[PDF Statement] Failed to fetch gold price, using fallback:', e);
-      }
-      
       // Calculate running gold balance
       let runningGold = openingGold;
       let totalCreditsGold = 0;
@@ -21029,8 +20083,6 @@ ${message}
           }
           runningGold += amountGold;
         }
-      }
-      
       // Generate PDF
       const doc = new PDFDocument({ margin: 50 });
       
@@ -21156,12 +20208,8 @@ ${message}
         doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
         
         y += 15;
-      }
-      
       if (periodTransactions.length === 0) {
         doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
-      }
-      
       // Footer
       doc.y = 750;
       doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
@@ -21183,8 +20231,6 @@ ${message}
       
       if (!from || !to) {
         return res.status(400).json({ message: "Date range required" });
-      }
-      
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
       toDate.setHours(23, 59, 59, 999);
@@ -21192,8 +20238,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const allTransactions = await storage.getUserTransactions(userId);
       
       const periodTransactions = allTransactions.filter(tx => {
@@ -21217,8 +20261,6 @@ ${message}
         } else if (tx.type === 'Swap') {
           runningGold += amountGold;
         }
-      }
-      
       let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
       
       for (const tx of periodTransactions) {
@@ -21245,8 +20287,6 @@ ${message}
         const txDate = new Date(tx.createdAt!);
         const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
         csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
-      }
-      
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
       res.send(csv);
@@ -21266,13 +20306,9 @@ ${message}
       const userId = req.session?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
-      }
-      
       const { from, to } = req.query;
       if (!from || !to) {
         return res.status(400).json({ message: "Date range required" });
-      }
-      
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
       toDate.setHours(23, 59, 59, 999);
@@ -21280,8 +20316,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const allTransactions = await storage.getUserTransactions(userId);
       
       const periodTransactions = allTransactions.filter(tx => {
@@ -21305,8 +20339,6 @@ ${message}
         } else if (tx.type === 'Swap') {
           openingGold += amountGold;
         }
-      }
-      
       // Fetch current gold price for USD equivalent calculation
       const { getGoldPricePerGram } = await import('./gold-price-service');
       let currentGoldPrice = 139.50;
@@ -21314,8 +20346,6 @@ ${message}
         currentGoldPrice = await getGoldPricePerGram();
       } catch (e) {
         console.error('[User Statement PDF] Failed to fetch gold price, using fallback:', e);
-      }
-      
       // Calculate running gold balance
       let runningGold = openingGold;
       let totalCreditsGold = 0;
@@ -21337,8 +20367,6 @@ ${message}
           }
           runningGold += amountGold;
         }
-      }
-      
       const doc = new PDFDocument({ margin: 50 });
       
       res.setHeader('Content-Type', 'application/pdf');
@@ -21459,12 +20487,8 @@ ${message}
         doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
         
         y += 15;
-      }
-      
       if (periodTransactions.length === 0) {
         doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
-      }
-      
       doc.y = 750;
       doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
       doc.text('This statement is generated by Finatrades. Gold is the primary asset held in your account.', 50, doc.y, { align: 'center', width: 515 });
@@ -21483,13 +20507,9 @@ ${message}
       const userId = req.session?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
-      }
-      
       const { from, to } = req.query;
       if (!from || !to) {
         return res.status(400).json({ message: "Date range required" });
-      }
-      
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
       toDate.setHours(23, 59, 59, 999);
@@ -21497,8 +20517,6 @@ ${message}
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const allTransactions = await storage.getUserTransactions(userId);
       
       const periodTransactions = allTransactions.filter(tx => {
@@ -21522,8 +20540,6 @@ ${message}
         } else if (tx.type === 'Swap') {
           runningGold += amountGold;
         }
-      }
-      
       let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
       
       for (const tx of periodTransactions) {
@@ -21550,8 +20566,6 @@ ${message}
         const txDate = new Date(tx.createdAt!);
         const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
         csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
-      }
-      
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
       res.send(csv);
@@ -21674,8 +20688,6 @@ ${message}
       
       if (!settings) {
         return res.status(404).json({ message: "Security settings not found" });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "security_settings",
@@ -21705,8 +20717,6 @@ ${message}
       
       if (!pin) {
         return res.json({ hasPin: false, isLocked: false });
-      }
-      
       const isLocked = pin.lockedUntil ? new Date(pin.lockedUntil) > new Date() : false;
 
 
@@ -21729,30 +20739,20 @@ ${message}
       
       if (!userId || !pin || !password) {
         return res.status(400).json({ message: "User ID, PIN, and password are required" });
-      }
-      
       // Validate PIN format (6 digits)
       if (!/^\d{6}$/.test(pin)) {
         return res.status(400).json({ message: "PIN must be exactly 6 digits" });
-      }
-      
       // Verify user's password
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Incorrect password" });
-      }
-      
       // Check if user already has a PIN
       const existingPin = await storage.getTransactionPin(userId);
       if (existingPin) {
         return res.status(400).json({ message: "Transaction PIN already exists. Use reset to change it." });
-      }
-      
       // Hash the PIN
       const hashedPin = await bcrypt.hash(pin, 12);
       
@@ -21789,13 +20789,9 @@ ${message}
       
       if (!userId || !pin || !action) {
         return res.status(400).json({ message: "User ID, PIN, and action are required" });
-      }
-      
       const transactionPin = await storage.getTransactionPin(userId);
       if (!transactionPin) {
         return res.status(404).json({ message: "Transaction PIN not set up" });
-      }
-      
       // Check if locked
       if (transactionPin.lockedUntil && new Date(transactionPin.lockedUntil) > new Date()) {
         const remainingMinutes = Math.ceil((new Date(transactionPin.lockedUntil).getTime() - Date.now()) / 60000);
@@ -21803,8 +20799,6 @@ ${message}
           message: `PIN is locked. Try again in ${remainingMinutes} minutes.`,
           lockedUntil: transactionPin.lockedUntil
         });
-      }
-      
       // Verify PIN
       const isValid = await bcrypt.compare(pin, transactionPin.hashedPin);
       
@@ -21835,8 +20829,6 @@ ${message}
           message: `Incorrect PIN. ${remainingAttempts} attempts remaining.`,
           remainingAttempts
         });
-      }
-      
       // Reset failed attempts on success
       await storage.updateTransactionPin(userId, {
         failedAttempts: 0,
@@ -21876,24 +20868,16 @@ ${message}
       
       if (!userId || !newPin || !password) {
         return res.status(400).json({ message: "User ID, new PIN, and password are required" });
-      }
-      
       // Validate PIN format
       if (!/^\d{6}$/.test(newPin)) {
         return res.status(400).json({ message: "PIN must be exactly 6 digits" });
-      }
-      
       // Verify user's password
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Incorrect password" });
-      }
-      
       // Hash the new PIN
       const hashedPin = await bcrypt.hash(newPin, 12);
       
@@ -21914,8 +20898,6 @@ ${message}
           hashedPin,
           failedAttempts: 0
         });
-      }
-      
       // Create audit log
       await storage.createAuditLog({
         entityType: "transaction_pin",
@@ -21942,28 +20924,20 @@ ${message}
       
       if (!token || !action) {
         return res.status(400).json({ valid: false, message: "Token and action are required" });
-      }
-      
       const pinToken = await storage.getPinVerificationToken(token);
       
       if (!pinToken) {
 
 
       res.json({ valid: false, message: "Invalid or expired token" });
-      }
-      
       if (new Date(pinToken.expiresAt) < new Date()) {
 
 
       res.json({ valid: false, message: "Token has expired" });
-      }
-      
       if (pinToken.action !== action) {
 
 
       res.json({ valid: false, message: "Token action mismatch" });
-      }
-      
 
 
       res.json({ valid: true, userId: pinToken.userId });
@@ -21980,22 +20954,14 @@ ${message}
       
       if (!token || !action) {
         return res.status(400).json({ success: false, message: "Token and action are required" });
-      }
-      
       const pinToken = await storage.getPinVerificationToken(token);
       
       if (!pinToken) {
         return res.status(400).json({ success: false, message: "Invalid or expired token" });
-      }
-      
       if (new Date(pinToken.expiresAt) < new Date()) {
         return res.status(400).json({ success: false, message: "Token has expired" });
-      }
-      
       if (pinToken.action !== action) {
         return res.status(400).json({ success: false, message: "Token action mismatch" });
-      }
-      
       // Mark token as used
       await storage.usePinVerificationToken(token);
       
@@ -22017,8 +20983,6 @@ ${message}
       const pin = await storage.getTransactionPin(userId);
       if (!pin) {
         return res.status(404).json({ message: "User does not have a transaction PIN" });
-      }
-      
       await storage.updateTransactionPin(userId, {
         failedAttempts: 0,
         lockedUntil: null
@@ -22071,8 +21035,6 @@ ${message}
       
       if (!settings) {
         return res.status(404).json({ message: "Compliance settings not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "compliance_settings",
         entityId: settings.id,
@@ -22115,13 +21077,9 @@ ${message}
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
-      }
-      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Flatten the nested objects into individual fields
       const kycData = {
         userId,
@@ -22247,13 +21205,9 @@ ${message}
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
-      }
-      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const kycData = {
         companyName,
         registrationNumber,
@@ -22355,14 +21309,10 @@ ${message}
       
       if (!userId || !action) {
         return res.status(400).json({ message: "userId and action are required" });
-      }
-      
       // Get user
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Get security settings
       const settings = await storage.getOrCreateSecuritySettings();
       
@@ -22371,8 +21321,6 @@ ${message}
 
 
       res.json({ otpRequired: false, message: "Email OTP is not enabled" });
-      }
-      
       // Check if OTP is required for this action
       const otpActionMap: Record<string, keyof typeof settings> = {
         'login': 'otpOnLogin',
@@ -22393,8 +21341,6 @@ ${message}
 
 
       res.json({ otpRequired: false, message: `OTP not required for ${action}` });
-      }
-      
       // Check cooldown - get most recent OTP for this user and action
       const existingOtp = await storage.getPendingOtp(userId, action);
       if (existingOtp) {
@@ -22406,8 +21352,6 @@ ${message}
             message: `Please wait ${remainingSeconds} seconds before requesting a new code` 
           });
         }
-      }
-      
       // Generate OTP code
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + settings.otpExpiryMinutes * 60 * 1000);
@@ -22431,8 +21375,6 @@ ${message}
       
       if (!emailResult.success) {
         return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
-      }
-      
 
 
       res.json({ 
@@ -22454,8 +21396,6 @@ ${message}
       
       if (!code) {
         return res.status(400).json({ message: "Verification code is required" });
-      }
-      
       // Get security settings for max attempts
       const settings = await storage.getOrCreateSecuritySettings();
       
@@ -22465,27 +21405,17 @@ ${message}
         otpVerification = await storage.getOtpVerification(otpId);
       } else if (userId && action) {
         otpVerification = await storage.getPendingOtp(userId, action);
-      }
-      
       if (!otpVerification) {
         return res.status(404).json({ message: "Verification not found. Please request a new code." });
-      }
-      
       // Check if already verified
       if (otpVerification.verified) {
         return res.status(400).json({ message: "Code already used. Please request a new code." });
-      }
-      
       // Check expiry
       if (new Date() > new Date(otpVerification.expiresAt)) {
         return res.status(400).json({ message: "Code expired. Please request a new code." });
-      }
-      
       // Check max attempts
       if (otpVerification.attempts >= settings.otpMaxAttempts) {
         return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
-      }
-      
       // Verify code
       if (otpVerification.code !== code) {
         // Increment attempts
@@ -22497,8 +21427,6 @@ ${message}
         return res.status(400).json({ 
           message: `Invalid code. ${remainingAttempts} attempts remaining.` 
         });
-      }
-      
       // Mark as verified
       await storage.updateOtpVerification(otpVerification.id, {
         verified: true,
@@ -22529,8 +21457,6 @@ ${message}
 
 
       res.json({ otpRequired: false });
-      }
-      
       const otpActionMap: Record<string, keyof typeof settings> = {
         'login': 'otpOnLogin',
         'withdrawal': 'otpOnWithdrawal',
@@ -22651,8 +21577,6 @@ ${message}
       const result = await resendInvoice(req.params.id);
       if (!result.success) {
         return res.status(400).json({ message: result.error || "Failed to resend invoice" });
-      }
-      
       await storage.createAuditLog({
         entityType: "invoice",
         entityId: req.params.id,
@@ -22677,8 +21601,6 @@ ${message}
       const result = await resendCertificate(req.params.id);
       if (!result.success) {
         return res.status(400).json({ message: result.error || "Failed to resend certificate" });
-      }
-      
       await storage.createAuditLog({
         entityType: "certificate",
         entityId: req.params.id,
@@ -22736,8 +21658,6 @@ ${message}
       
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
-      }
-      
       const user = await storage.getUser(transaction.userId);
       const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
       const userEmail = user?.email || 'Unknown';
@@ -22809,8 +21729,6 @@ ${message}
         doc.fontSize(10).fillColor('#666').text('Module:', 50);
         doc.fontSize(12).fillColor('#000').text(transaction.sourceModule, 150, doc.y - 12);
         doc.moveDown(0.5);
-      }
-      
       if (transaction.description) {
         doc.fontSize(10).fillColor('#666').text('Description:', 50);
         doc.fontSize(12).fillColor('#000').text(transaction.description, 150, doc.y - 12);
@@ -22827,8 +21745,6 @@ ${message}
         doc.fontSize(10).fillColor('#666').text('Gold Amount:', 50);
         doc.fontSize(14).fillColor('#000').text(`${parseFloat(transaction.amountGold).toFixed(4)} grams`, 150, doc.y - 14);
         doc.moveDown(0.5);
-      }
-      
       if (transaction.amountUsd) {
         doc.fontSize(10).fillColor('#666').text('USD Value:', 50);
         doc.fontSize(14).fillColor('#000').text(`$${parseFloat(transaction.amountUsd).toLocaleString()}`, 150, doc.y - 14);
@@ -22839,14 +21755,10 @@ ${message}
         doc.fontSize(10).fillColor('#666').text('AED Value:', 50);
         doc.fontSize(14).fillColor('#000').text(`Dh ${aedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 150, doc.y - 14);
         doc.moveDown(0.5);
-      }
-      
       if (transaction.goldPriceAtTransaction) {
         doc.fontSize(10).fillColor('#666').text('Gold Price:', 50);
         doc.fontSize(12).fillColor('#000').text(`$${parseFloat(transaction.goldPriceAtTransaction).toFixed(2)} per gram`, 150, doc.y - 12);
         doc.moveDown(0.5);
-      }
-      
       // Footer
       doc.moveDown(3);
       doc.fontSize(10).fillColor('#666').text('This is an official transaction receipt generated by Finatrades.', { align: 'center' });
@@ -22908,8 +21820,6 @@ ${message}
             });
           });
         }
-      }
-      
       // KYC submission attachments
       const kycSubmissions = await storage.getAllKycSubmissions();
       for (const kyc of kycSubmissions) {
@@ -22966,8 +21876,6 @@ ${message}
             status: kyc.status,
           });
         }
-      }
-      
       // Sort by upload date descending
       allAttachments.sort((a, b) => 
         new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
@@ -22988,8 +21896,6 @@ ${message}
       const invoice = await storage.getInvoice(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
-      }
-      
       const result = await downloadInvoicePDF(req.params.id);
       if (result.error) {
         return res.status(404).json({ message: result.error });
@@ -23008,8 +21914,6 @@ ${message}
       const certificate = await storage.getCertificate(req.params.id);
       if (!certificate) {
         return res.status(404).json({ message: "Certificate not found" });
-      }
-      
       const result = await downloadCertificatePDF(req.params.id);
       if (result.error) {
         return res.status(404).json({ message: result.error });
@@ -23074,8 +21978,6 @@ ${message}
       
       if (!settings || !settings.adminOtpEnabled) {
         return res.json({ required: false });
-      }
-      
       // Map action types to security settings
       const actionToSetting: Record<string, boolean> = {
         'kyc_approval': settings.adminOtpOnKycApproval,
@@ -23201,8 +22103,6 @@ ${message}
           }
           break;
         }
-      }
-      
       // Merge with actionData if provided
       if (actionData) {
         if (actionData.amount) context.amountUsd = `$${parseFloat(actionData.amount).toLocaleString()}`;
@@ -23239,14 +22139,10 @@ ${message}
       
       if (!actionType || !targetId || !targetType) {
         return res.status(400).json({ message: "Missing required fields: actionType, targetId, targetType" });
-      }
-      
       // Check if OTP is required for this action
       const settings = await storage.getSecuritySettings();
       if (!settings || !settings.adminOtpEnabled) {
         return res.json({ required: false, message: "OTP not required" });
-      }
-      
       // Map action types to security settings
       const actionToSetting: Record<string, boolean> = {
         'kyc_approval': settings.adminOtpOnKycApproval,
@@ -23271,9 +22167,8 @@ ${message}
       };
       
       if (!actionToSetting[actionType]) {
-
-
-      res.json({ required: false, message: "OTP not required for this action" });
+        return res.json({ required: false, message: "OTP not required for this action" });
+      }
       }
       
       // Get OTP context for informative messages
@@ -23439,8 +22334,6 @@ ${message}
       
       if (!otpId || !code) {
         return res.status(400).json({ message: "Missing required fields: otpId, code" });
-      }
-      
       const otp = await storage.getAdminActionOtp(otpId);
       
       if (!otp) {
@@ -23453,8 +22346,6 @@ ${message}
           otpId,
         }));
         return res.status(404).json({ message: "Verification request not found" });
-      }
-      
       // Check if OTP belongs to the current admin
       if (otp.adminId !== admin.id) {
         console.log(JSON.stringify({
@@ -23467,13 +22358,9 @@ ${message}
           actorId: admin.id,
         }));
         return res.status(403).json({ message: "This verification code is not for your account" });
-      }
-      
       // Check if already verified
       if (otp.verified) {
         return res.status(400).json({ message: "This verification code has already been used" });
-      }
-      
       // Check expiry
       if (new Date() > otp.expiresAt) {
         console.log(JSON.stringify({
@@ -23486,8 +22373,6 @@ ${message}
           actorId: admin.id,
         }));
         return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
-      }
-      
       // Check attempts (max 5)
       if (otp.attempts >= 5) {
         console.log(JSON.stringify({
@@ -23500,8 +22385,6 @@ ${message}
           actorId: admin.id,
         }));
         return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
-      }
-      
       // Verify code
       if (otp.code !== code) {
         await storage.updateAdminActionOtp(otpId, { attempts: otp.attempts + 1 });
@@ -23516,8 +22399,6 @@ ${message}
           attemptsRemaining: 4 - otp.attempts,
         }));
         return res.status(400).json({ message: "Invalid verification code", attemptsRemaining: 4 - otp.attempts });
-      }
-      
       // Mark as verified
       await storage.updateAdminActionOtp(otpId, { 
         verified: true, 
@@ -23596,8 +22477,6 @@ ${message}
             read: false,
           });
         }
-      }
-      
       // Create audit log with context
       await storage.createAuditLog({
         entityType: "admin_action_otp",
@@ -23638,24 +22517,16 @@ ${message}
       
       if (!otpId) {
         return res.status(400).json({ message: "Missing required field: otpId" });
-      }
-      
       const existingOtp = await storage.getAdminActionOtp(otpId);
       
       if (!existingOtp) {
         return res.status(404).json({ message: "Verification request not found" });
-      }
-      
       // Check if OTP belongs to the current admin
       if (existingOtp.adminId !== admin.id) {
         return res.status(403).json({ message: "This verification code is not for your account" });
-      }
-      
       // Check if already verified
       if (existingOtp.verified) {
         return res.status(400).json({ message: "This verification has already been completed" });
-      }
-      
       // Generate new code and update
       const newCode = Math.floor(100000 + Math.random() * 900000).toString();
       const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -24111,8 +22982,6 @@ ${message}
       const user = await storage.getUser(referrerId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       // Generate unique referral code
       const code = `REF-${user.firstName?.substring(0, 3).toUpperCase() || 'FIN'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
       
@@ -24178,8 +23047,6 @@ ${message}
       const preferences = await storage.updateUserPreferences(userId, updates);
       if (!preferences) {
         return res.status(404).json({ message: "Preferences not found" });
-      }
-      
 
 
       res.json({ preferences, message: "Settings saved successfully" });
@@ -24243,8 +23110,6 @@ ${message}
       const wallet = await storage.getWallet(userId);
       if (!wallet) {
         return res.status(404).json({ message: "Wallet not found for user" });
-      }
-      
       // Get current value (for logging)
       const currentValue = wallet.goldGrams;
       const isCorrupted = currentValue === null || currentValue === undefined || 
@@ -24279,8 +23144,6 @@ ${message}
               break;
           }
         }
-      }
-      
       // Ensure non-negative
       calculatedBalance = Math.max(0, calculatedBalance);
       
@@ -24500,8 +23363,6 @@ ${message}
       const wallet = await storage.updateCryptoWalletConfig(id, updates);
       if (!wallet) {
         return res.status(404).json({ message: "Crypto wallet not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "crypto_wallet_config",
         entityId: wallet.id,
@@ -24529,13 +23390,9 @@ ${message}
       const wallet = await storage.getCryptoWalletConfig(id);
       if (!wallet) {
         return res.status(404).json({ message: "Crypto wallet not found" });
-      }
-      
       const success = await storage.deleteCryptoWalletConfig(id);
       if (!success) {
         return res.status(400).json({ message: "Failed to delete crypto wallet" });
-      }
-      
       await storage.createAuditLog({
         entityType: "crypto_wallet_config",
         entityId: id,
@@ -24579,18 +23436,12 @@ ${message}
       
       if (!userId || !walletConfigId || !amountUsd || !goldGrams || !goldPriceAtTime) {
         return res.status(400).json({ message: "Missing required fields" });
-      }
-      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       const walletConfig = await storage.getCryptoWalletConfig(walletConfigId);
       if (!walletConfig || !walletConfig.isActive) {
         return res.status(400).json({ message: "Invalid or inactive crypto wallet" });
-      }
-      
       // Set expiry to 24 hours from now
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
@@ -24664,12 +23515,8 @@ ${message}
       const paymentRequest = await storage.getCryptoPaymentRequest(id);
       if (!paymentRequest) {
         return res.status(404).json({ message: "Payment request not found" });
-      }
-      
       if (paymentRequest.status !== 'Pending') {
         return res.status(400).json({ message: "Payment request is not pending" });
-      }
-      
       // Update legacy crypto_payment_request
       const updated = await storage.updateCryptoPaymentRequest(id, {
         transactionHash: transactionHash || paymentRequest.transactionHash,
@@ -24693,8 +23540,6 @@ ${message}
           proofOfPayment: proofImageUrl || null,
           status: 'Under Review' as const,
         });
-      }
-      
       await storage.createAuditLog({
         entityType: "crypto_payment_request",
         entityId: id,
@@ -24753,8 +23598,6 @@ ${message}
       const request = await storage.getCryptoPaymentRequest(req.params.id);
       if (!request) {
         return res.status(404).json({ message: "Payment request not found" });
-      }
-      
       // Get wallet config details
       const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
       
@@ -24822,17 +23665,11 @@ ${message}
       const paymentRequest = await storage.getCryptoPaymentRequest(id);
       if (!paymentRequest) {
         return res.status(404).json({ message: "Payment request not found" });
-      }
-      
       if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
         return res.status(400).json({ message: "Payment request cannot be approved in current status" });
-      }
-      
       const wallet = await storage.getWallet(paymentRequest.userId);
       if (!wallet) {
         return res.status(400).json({ message: "User wallet not found" });
-      }
-      
       const usdAmount = parseFloat(paymentRequest.amountUsd || '0');
       let goldPrice: number;
       let goldGrams: number;
@@ -24858,8 +23695,6 @@ ${message}
           console.error('[DEBUG] LIVE price fetch failed:', priceError);
           return res.status(500).json({ message: "Failed to fetch live gold price. Please use manual mode." });
         }
-      }
-      
       console.log('[DEBUG] Final values:', { pricingMode, goldPrice, goldGrams, usdAmount });
       
       // GOLDEN RULE VALIDATION: Ensure valid allocation before proceeding
@@ -24912,8 +23747,6 @@ ${message}
       } catch (certError) {
         console.error('[DEBUG] Certificate creation failed:', certError);
         return res.status(500).json({ message: "Failed to generate Physical Storage Certificate. Allocation aborted." });
-      }
-      
       // GOLDEN RULE: Verify certificate exists before wallet credit
       if (!storageCert || !storageCert.certificateNumber) {
         console.error('[DEBUG] Golden Rule violation: Certificate missing');
@@ -24977,8 +23810,6 @@ ${message}
           mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
           fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
         });
-      }
-      
       // 6. Create Unified Gold Tally entry with COMPLETED status (all data auto-filled)
       const [tallyEntry] = await db.insert(unifiedTallyTransactions).values({
         id: crypto.randomUUID(),
@@ -25236,8 +24067,6 @@ ${message}
           mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
           fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
         });
-      }
-      
       // SPECIFICATION REQUIREMENT: Generate DOC + SSC certificates
       const generatedCertificates: any[] = [];
       
@@ -25259,8 +24088,6 @@ ${message}
         await storage.updateVaultHolding(holding.id, {
           goldGrams: newTotalGrams.toString(),
         });
-      }
-      
       // Digital Ownership Certificate (DOC) from Finatrades
       const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
       const digitalCert = await storage.createCertificate({
@@ -25402,8 +24229,6 @@ ${message}
           htmlBody,
           attachments
         ).catch(err => console.error('[Email] Failed to send crypto confirmation with PDF:', err));
-      }
-      
 
 
       res.json({ paymentRequest: updated, transaction });
@@ -25425,17 +24250,11 @@ ${message}
       
       if (!rejectionReason) {
         return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
       const paymentRequest = await storage.getCryptoPaymentRequest(id);
       if (!paymentRequest) {
         return res.status(404).json({ message: "Payment request not found" });
-      }
-      
       if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
         return res.status(400).json({ message: "Payment request cannot be rejected in current status" });
-      }
-      
       const updated = await storage.updateCryptoPaymentRequest(id, {
         status: 'Rejected',
         reviewerId: adminUser.id,
@@ -25481,26 +24300,18 @@ ${message}
       
       if (!userId || !receiptFileUrl) {
         return res.status(400).json({ message: "User ID and receipt are required" });
-      }
-      
       // Check KYC status
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
       if (user.kycStatus !== 'Approved') {
         return res.status(403).json({ message: "KYC must be approved to submit buy gold requests" });
-      }
-      
       // Check if buy gold mode is enabled (default to MANUAL if not configured)
       const buyGoldModeConfig = await storage.getPlatformConfig('buy_gold_mode');
       const buyGoldMode = buyGoldModeConfig?.configValue || 'MANUAL';
       
       if (buyGoldMode === 'API') {
         return res.status(400).json({ message: "API mode is not yet available. Please wait for the feature update." });
-      }
-      
       // Get current gold price if amount is provided
       let goldGrams = null;
       let goldPriceAtTime = null;
@@ -25509,8 +24320,6 @@ ${message}
         const priceData = await getGoldPrice();
         goldPriceAtTime = priceData.pricePerGram.toString();
         goldGrams = (parseFloat(amountUsd) / priceData.pricePerGram).toFixed(8);
-      }
-      
       const request = await storage.createBuyGoldRequest({
         userId,
         amountUsd: amountUsd || null,
@@ -25543,8 +24352,6 @@ ${message}
           read: false,
           link: "/admin/finapay/buy-gold",
         });
-      }
-      
 
 
       res.json({ 
@@ -25609,25 +24416,17 @@ ${message}
       const request = await storage.getBuyGoldRequest(id);
       if (!request) {
         return res.status(404).json({ message: "Buy gold request not found" });
-      }
-      
       if (!['Pending', 'Under Review'].includes(request.status)) {
         return res.status(400).json({ message: "Request cannot be approved in current status" });
-      }
-      
       // Use provided gold grams (required from admin input)
       const finalGoldGrams = parseFloat(goldGrams || request.goldGrams || '0');
       if (finalGoldGrams <= 0) {
         return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
-      }
-      
       // Get gold price (from admin input or fetch live)
       let goldPrice = parseFloat(goldPriceAtTime || '0');
       if (goldPrice <= 0) {
         const priceData = await getGoldPrice();
         goldPrice = priceData.pricePerGram;
-      }
-      
       // Calculate USD amount
       const finalAmountUsd = parseFloat(amountUsd || '0') || (finalGoldGrams * goldPrice);
       
@@ -25795,8 +24594,6 @@ ${message}
           amount_usd: finalAmountUsd.toFixed(2),
           gold_price: goldPrice.toFixed(2),
         }).catch(err => console.error('[Email] Gold purchase notification failed:', err));
-      }
-      
       // Emit real-time updates
       const io = getIO();
       io.to(`user:${request.userId}`).emit('ledger:balance_update', {
@@ -25829,17 +24626,11 @@ ${message}
       
       if (!rejectionReason) {
         return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
       const request = await storage.getBuyGoldRequest(id);
       if (!request) {
         return res.status(404).json({ message: "Buy gold request not found" });
-      }
-      
       if (!['Pending', 'Under Review'].includes(request.status)) {
         return res.status(400).json({ message: "Request cannot be rejected in current status" });
-      }
-      
       const updated = await storage.updateBuyGoldRequest(id, {
         status: 'Rejected',
         reviewerId: adminUser.id,
@@ -25992,12 +24783,8 @@ ${message}
       
       if (!token || !platform) {
         return res.status(400).json({ message: "Token and platform are required" });
-      }
-      
       if (!['ios', 'android', 'web'].includes(platform)) {
         return res.status(400).json({ message: "Invalid platform. Must be ios, android, or web" });
-      }
-      
       const { registerDeviceToken } = await import('./push-notifications');
       await registerDeviceToken(userId, token, platform, deviceName, deviceId);
       
@@ -26018,8 +24805,6 @@ ${message}
       
       if (!token) {
         return res.status(400).json({ message: "Token is required" });
-      }
-      
       const { unregisterDeviceToken } = await import('./push-notifications');
       await unregisterDeviceToken(userId, token);
       
@@ -26140,8 +24925,6 @@ ${message}
           try { value = JSON.parse(config.configValue); } catch { value = config.configValue; }
         }
         configMap[config.configKey] = value;
-      }
-      
 
 
       res.json({ configs: configMap });
@@ -26165,8 +24948,6 @@ ${message}
       
       if (!updated) {
         return res.status(404).json({ message: "Configuration not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "platform_config",
         entityId: id,
@@ -26180,8 +24961,6 @@ ${message}
       if (updated.category === 'system_settings') {
         const { invalidateSystemSettingsCache } = await import("./index");
         invalidateSystemSettingsCache();
-      }
-      
 
 
       res.json({ config: updated });
@@ -26199,8 +24978,6 @@ ${message}
       
       if (!Array.isArray(updates)) {
         return res.status(400).json({ message: "Updates must be an array" });
-      }
-      
       const results: any[] = [];
       let hasSystemSettingsUpdate = false;
       for (const update of updates) {
@@ -26220,14 +24997,10 @@ ${message}
             details: `Updated ${updated.configKey} to ${update.configValue}`,
           });
         }
-      }
-      
       // Invalidate system settings cache if any system_settings were updated
       if (hasSystemSettingsUpdate) {
         const { invalidateSystemSettingsCache } = await import("./index");
         invalidateSystemSettingsCache();
-      }
-      
 
 
       res.json({ configs: results, updated: results.length });
@@ -26297,8 +25070,6 @@ ${message}
       const success = await storage.deletePlatformConfig(id);
       if (!success) {
         return res.status(404).json({ message: "Configuration not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "platform_config",
         entityId: id,
@@ -26359,8 +25130,6 @@ ${message}
       
       if (!setting) {
         return res.status(404).json({ message: "Notification setting not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "email_notification_setting",
         entityId: setting.id,
@@ -26393,8 +25162,6 @@ ${message}
       
       if (!setting) {
         return res.status(404).json({ message: "Notification setting not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "email_notification_setting",
         entityId: id,
@@ -26480,8 +25247,6 @@ ${message}
       
       if (!log) {
         return res.status(404).json({ message: "Email log not found" });
-      }
-      
 
 
       res.json({ log });
@@ -26540,8 +25305,6 @@ ${message}
       
       if (!settings?.isEnabled) {
       return res.json({ restricted: false });
-      }
-      
       // Get client IP
       const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || 
                        req.headers['x-real-ip']?.toString() || 
@@ -26557,12 +25320,8 @@ ${message}
         }
       } catch (err) {
         console.log('Failed to get geo location for IP:', clientIp);
-      }
-      
       if (!countryCode) {
       return res.json({ restricted: false });
-      }
-      
       // Check if country is restricted
       const [restriction] = await db.select()
         .from(geoRestrictions)
@@ -26584,8 +25343,6 @@ ${message}
           showNotice: settings.showNoticeOnLanding,
           blockAccess: settings.blockAccess,
         });
-      }
-      
 
 
       return res.json({ restricted: false });
@@ -26701,8 +25458,6 @@ ${message}
       
       if (existing) {
         return res.status(400).json({ message: "Country restriction already exists" });
-      }
-      
       const [created] = await db.insert(geoRestrictions)
         .values({
           countryCode: countryCode.toUpperCase(),
@@ -26753,8 +25508,6 @@ ${message}
       
       if (!updated) {
         return res.status(404).json({ message: "Geo restriction not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "geo_restriction",
         entityId: id,
@@ -26785,8 +25538,6 @@ ${message}
       
       if (!deleted) {
         return res.status(404).json({ message: "Geo restriction not found" });
-      }
-      
       await storage.createAuditLog({
         entityType: "geo_restriction",
         entityId: id,
@@ -27053,21 +25804,13 @@ ${message}
       
       if (!approverId) {
         return res.status(401).json({ error: 'Authentication required' });
-      }
-      
       if (!['approve_l1', 'approve_final', 'reject'].includes(action)) {
         return res.status(400).json({ error: 'Invalid action' });
-      }
-      
       const approval = await storage.getApprovalQueueItem(req.params.id);
       if (!approval) {
         return res.status(404).json({ error: 'Approval not found' });
-      }
-      
       if (approval.initiator_id === approverId) {
         return res.status(403).json({ error: 'Cannot approve your own request' });
-      }
-      
       let result;
       switch (action) {
         case 'approve_l1':
@@ -27079,12 +25822,8 @@ ${message}
         case 'reject':
           result = await storage.rejectApproval(req.params.id, approverId, comments || 'Rejected');
           break;
-      }
-      
       if (!result) {
         return res.status(400).json({ error: 'Failed to process approval' });
-      }
-      
       await storage.createApprovalHistory({
         approvalQueueId: req.params.id,
         action,
@@ -27112,8 +25851,6 @@ ${message}
       const taskDef = await storage.getTaskDefinitionBySlug(taskSlug);
       if (!taskDef) {
         return res.status(400).json({ error: 'Invalid task type' });
-      }
-      
       const expiresAt = taskDef.auto_expire_hours 
         ? new Date(Date.now() + taskDef.auto_expire_hours * 60 * 60 * 1000)
         : undefined;
@@ -27210,8 +25947,6 @@ ${message}
         if (!dailyData[dateKey]) dailyData[dateKey] = { revenue: 0, fees: 0, spread: 0 };
         dailyData[dateKey].fees += fee;
         dailyData[dateKey].revenue += fee;
-      }
-      
       const totalRevenue = totalFees + totalSpread;
       const previousPeriodStart = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
       
@@ -27254,18 +25989,12 @@ ${message}
       
       for (const wallet of wallets) {
         totalGoldInWallets += parseFloat(wallet.goldGrams || '0');
-      }
-      
       for (const holding of vaultHoldings) {
         totalGoldInVault += parseFloat(holding.goldGrams || '0');
-      }
-      
       for (const plan of bnslPlans) {
         if (plan.status === 'active') {
           totalGoldInBnsl += parseFloat(plan.goldGrams || '0');
         }
-      }
-      
       // Physical gold in vault is the actual gold in system
       // Wallets + BNSL are claims on that gold (liabilities)
       const totalDigitalClaims = totalGoldInWallets + totalGoldInBnsl;
@@ -27326,8 +26055,6 @@ ${message}
       for (const wallet of wallets) {
         totalGold += parseFloat(wallet.goldGrams || '0');
         totalUsd += parseFloat(wallet.goldGrams || '0') * 143; // Approximate USD value
-      }
-      
       for (const tx of transactions) {
         if (tx.type === 'deposit' || tx.type === 'buy') {
           goldInflow += parseFloat(tx.goldGrams || '0');
@@ -27336,8 +26063,6 @@ ${message}
           goldOutflow += parseFloat(tx.goldGrams || '0');
           withdrawalCount++;
         }
-      }
-      
       const report = await db.insert(reconciliationReports).values({
         reportDate: today,
         totalGoldGrams: totalGold.toString(),
@@ -27376,16 +26101,10 @@ ${message}
       
       for (const wallet of wallets) {
         totalGoldGrams += parseFloat(wallet.goldGrams || '0');
-      }
-      
       for (const plan of bnslPlans) {
         bnslObligations += parseFloat(plan.payoutAmountUsd || '0');
-      }
-      
       for (const req of withdrawalRequests) {
         pendingWithdrawals += parseFloat(req.amountUsd || '0');
-      }
-      
       const goldPrice = 85;
       totalExposure = totalGoldGrams * goldPrice;
       
@@ -27439,8 +26158,6 @@ ${message}
       
       if (status && status !== 'all') {
         reports = reports.filter(r => r.status === status);
-      }
-      
       const reportsWithUsers = await Promise.all(reports.map(async (report) => {
         const user = await storage.getUser(report.userId);
         return {
@@ -27565,8 +26282,6 @@ ${message}
       }
       if (source && source !== 'all') {
         logs = logs.filter(l => l.source === source);
-      }
-      
 
 
       res.json({ logs });
@@ -27612,8 +26327,6 @@ ${message}
       }
       if (type && type !== 'all') {
         filtered = filtered.filter(s => s.type === type);
-      }
-      
       const settlementsWithUsers = await Promise.all(filtered.map(async (s) => {
         const user = await storage.getUser(s.userId);
         return { ...s, user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email } : null };
@@ -27642,24 +26355,16 @@ ${message}
       for (const wallet of wallets) {
         totalGoldGrams += parseFloat(wallet.goldBalance || '0');
         totalCashUsd += parseFloat(wallet.usdBalance || '0');
-      }
-      
       let pendingWithdrawals = 0;
       let pendingDeposits = 0;
       let bnslObligations = 0;
       
       for (const w of withdrawalRequests) {
         pendingWithdrawals += parseFloat(w.amountUsd || '0');
-      }
-      
       for (const d of depositRequests) {
         pendingDeposits += parseFloat(d.amountUsd || '0');
-      }
-      
       for (const plan of bnslPlans) {
         bnslObligations += parseFloat(plan.estimatedPayoutUsd || '0');
-      }
-      
       const goldPrice = 85;
       const totalGoldValue = totalGoldGrams * goldPrice;
       const totalAssets = totalGoldValue + totalCashUsd;
@@ -27706,8 +26411,6 @@ ${message}
       }
       if (status && status !== 'all') {
         reports = reports.filter(r => r.status === status);
-      }
-      
 
 
       res.json({ reports });
@@ -27862,8 +26565,6 @@ ${message}
         if (user.role === 'admin') {
           targetFilters.push('admins');
         }
-      }
-      
       const activeAnnouncements = await db.select()
         .from(announcements)
         .where(
@@ -27924,8 +26625,6 @@ ${message}
       
       if (!details.summary) {
         return res.status(404).json({ error: 'Flow not found' });
-      }
-      
       res.json(details);
     } catch (error: any) {
       console.error('Get workflow audit details error:', error);
@@ -27956,8 +26655,6 @@ ${message}
       
       if (expectedSteps.length === 0) {
         return res.status(404).json({ error: 'Flow type not found' });
-      }
-      
 
 
       res.json({ flowType, expectedSteps });
@@ -27987,8 +26684,6 @@ ${message}
         stats.byFlowType[summary.flowType].total++;
         if (summary.overallResult === 'PASS') stats.byFlowType[summary.flowType].passed++;
         if (summary.overallResult === 'FAIL') stats.byFlowType[summary.flowType].failed++;
-      }
-      
       res.json(stats);
     } catch (error: any) {
       console.error('Get workflow audit stats error:', error);
