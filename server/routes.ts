@@ -1091,22 +1091,8 @@ export async function registerRoutes(
       }
       
       // Send email notification to support
-      await sendEmailDirect({
-        to: "support@finatrades.com",
-        subject: `[Contact Form] ${subject} - from ${name}`,
-        text: `
-New contact form submission:
-
-Name: ${name}
-Email: ${email}
-Phone: ${phone || 'Not provided'}
-Company: ${company || 'Not provided'}
-Subject: ${subject}
-
-Message:
-${message}
-        `,
-        html: `
+      const contactEmailSubject = `[Contact Form] ${subject} - from ${name}`;
+      const contactEmailHtml = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <h2 style="color: #8A2BE2;">New Contact Form Submission</h2>
   <table style="width: 100%; border-collapse: collapse;">
@@ -1119,8 +1105,8 @@ ${message}
   <h3 style="color: #4B0082; margin-top: 20px;">Message:</h3>
   <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${message}</div>
 </div>
-        `
-      });
+        `;
+      await sendEmailDirect("support@finatrades.com", contactEmailSubject, contactEmailHtml);
       
       res.json({ success: true, message: "Message sent successfully" });
     } catch (error) {
@@ -17005,10 +16991,8 @@ ${message}
       if (targetUser && targetUser.email) {
         const requesterName = `${requester.firstName} ${requester.lastName}`;
         try {
-          await sendEmailDirect({
-            to: targetUser.email,
-            subject: `Payment Request from ${requesterName} - $${parseFloat(amountUsd).toFixed(2)}`,
-            html: `
+          const emailSubject = `Payment Request from ${requesterName} - ${parseFloat(amountUsd).toFixed(2)}`;
+          const emailHtml = `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%); padding: 20px; text-align: center;">
                   <h1 style="color: white; margin: 0;">Finatrades</h1>
@@ -17020,7 +17004,7 @@ ${message}
                   </p>
                   <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 10px 0; color: #6b7280;">Amount Requested:</p>
-                    <p style="margin: 0; font-size: 28px; font-weight: bold; color: #8A2BE2;">$${parseFloat(amountUsd).toFixed(2)}</p>
+                    <p style="margin: 0; font-size: 28px; font-weight: bold; color: #8A2BE2;">${parseFloat(amountUsd).toFixed(2)}</p>
                     ${memo ? `<p style="margin: 15px 0 0 0; color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
                   </div>
                   <p style="color: #4b5563;">Reference: <strong>${referenceNumber}</strong></p>
@@ -17039,8 +17023,8 @@ ${message}
                   <p>&copy; ${new Date().getFullYear()} Finatrades. All rights reserved.</p>
                 </div>
               </div>
-            `,
-          });
+            `;
+          await sendEmailDirect(targetUser.email, emailSubject, emailHtml);
         } catch (emailError) {
           console.error('[PaymentRequest] Failed to send email notification:', emailError);
         }
@@ -26514,13 +26498,7 @@ ${message}
         date: new Date().toLocaleDateString()
       };
 
-      await sendEmailDirect({
-        to: email,
-        subject: "Finatrades Email Template Test",
-        templateSlug: templateType || "email_verification",
-        data: testData,
-        notificationType: "system"
-      });
+      await sendEmailDirect(email, "Finatrades Email Template Test", `<p>Test email from Finatrades</p>`);
 
       res.json({ success: true, message: `Test email sent to ${email}` });
     } catch (error) {
