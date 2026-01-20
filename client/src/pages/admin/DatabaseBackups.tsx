@@ -189,6 +189,17 @@ function SchemaSync() {
 -- Run these on AWS RDS Production Database
 -- Run each command separately in order
 -- ============================================
+-- 
+-- IMPORTANT NOTES:
+-- 1. If a column has a foreign key, drop it first before changing type
+-- 2. If the referenced table's column is also wrong type, skip re-adding FK
+-- 3. UUID columns often have FKs - check before running
+-- 
+-- To find foreign keys on a column, run:
+-- SELECT constraint_name FROM information_schema.constraint_column_usage 
+-- WHERE table_name = 'your_table' AND column_name = 'your_column';
+--
+-- ============================================
 
 `;
     
@@ -205,7 +216,11 @@ function SchemaSync() {
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n\n`;
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} SET DEFAULT '{}'::jsonb;\n\n`;
       } else if (m.devType === 'uuid' && (m.prodType === 'character varying' || m.prodType === 'text')) {
-        sql += `-- WARNING: Existing data must be valid UUID format\n`;
+        sql += `-- WARNING: If this column has a foreign key constraint, you must:\n`;
+        sql += `-- 1. First run: ALTER TABLE ${m.table} DROP CONSTRAINT ${m.table}_${m.column}_fk; (adjust constraint name)\n`;
+        sql += `-- 2. Then run the ALTER TYPE below\n`;
+        sql += `-- 3. Skip re-adding FK if the referenced column is also varchar (fix it later)\n`;
+        sql += `-- NOTE: Existing data must be valid UUID format\n`;
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE uuid USING ${m.column}::uuid;\n\n`;
       } else if ((m.devType === 'text' || m.devType === 'character varying') && m.prodType === 'USER-DEFINED') {
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType} USING ${m.column}::text;\n\n`;
