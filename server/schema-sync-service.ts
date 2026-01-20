@@ -1,5 +1,41 @@
 import pg from 'pg';
 
+// Types that are essentially equivalent in PostgreSQL
+const EQUIVALENT_TYPES: [string, string][] = [
+  ['jsonb', 'json'],
+  ['text', 'character varying'],
+  ['character varying', 'text'],
+  ['integer', 'int4'],
+  ['bigint', 'int8'],
+  ['smallint', 'int2'],
+  ['double precision', 'float8'],
+  ['real', 'float4'],
+  ['boolean', 'bool'],
+  ['timestamp with time zone', 'timestamptz'],
+  ['timestamp without time zone', 'timestamp'],
+  ['time with time zone', 'timetz'],
+  ['time without time zone', 'time'],
+];
+
+function areTypesEquivalent(type1: string, type2: string): boolean {
+  if (type1 === type2) return true;
+  
+  // Normalize types for comparison
+  const t1 = type1.toLowerCase().trim();
+  const t2 = type2.toLowerCase().trim();
+  
+  if (t1 === t2) return true;
+  
+  // Check if they're equivalent
+  for (const [a, b] of EQUIVALENT_TYPES) {
+    if ((t1 === a && t2 === b) || (t1 === b && t2 === a)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 interface SchemaDiff {
   missingTables: string[];
   missingColumns: { table: string; column: string; dataType: string }[];
@@ -70,7 +106,8 @@ export async function compareSchemas(): Promise<SchemaDiff> {
             column: devCol.column_name,
             dataType: devCol.data_type
           });
-        } else if (devCol.data_type !== prodCol.data_type) {
+        } else if (!areTypesEquivalent(devCol.data_type, prodCol.data_type)) {
+          // Only report real type mismatches, not equivalent types
           typeMismatches.push({
             table,
             column: devCol.column_name,
