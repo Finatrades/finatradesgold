@@ -1084,6 +1084,7 @@ export async function registerRoutes(
       
       if (!name || !email || !subject || !message) {
         return res.status(400).json({ message: "Name, email, subject, and message are required" });
+      }
       // Send email notification to support
       await sendEmailDirect({
         to: "support@finatrades.com",
@@ -1143,6 +1144,7 @@ ${message}
       
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
+      }
       // Hash the password before storing
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
@@ -1290,6 +1292,7 @@ ${message}
       } catch (inviteError) {
         console.error('[Registration] Invitation claiming failed:', inviteError);
         // Don't fail registration if invitation claiming fails
+      }
       // Use sender's referral code from invitation if user didn't provide one
       const effectiveReferralCode = referralCode || inviteSenderReferralCode;
       
@@ -1310,6 +1313,7 @@ ${message}
           console.error('[Registration] Referral linking failed:', refError);
           // Don't fail registration if referral linking fails
         }
+      }
       // Create audit log
       await storage.createAuditLog({
         entityType: "user",
@@ -1346,6 +1350,7 @@ ${message}
       } catch (emailError) {
         console.error('[Registration] Email send failed:', emailError);
         emailResult = { success: false, error: emailError instanceof Error ? emailError.message : 'Email failed' };
+      }
       // Log platform activity
       logActivity({
         type: 'user_registration',
