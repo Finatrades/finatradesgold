@@ -158,6 +158,29 @@ export default function Security() {
     }
   };
 
+  // Get CSRF token from cookie
+  const getCsrfToken = (): string | null => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Fetch CSRF token if not present
+  const ensureCsrfToken = async (): Promise<string | null> => {
+    let token = getCsrfToken();
+    if (!token) {
+      try {
+        const res = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          token = data.csrfToken;
+        }
+      } catch (e) {
+        console.warn('[Security] Failed to fetch CSRF token:', e);
+      }
+    }
+    return token;
+  };
+
   const handleSetupPin = async () => {
     if (!user || pinValue.length !== 6 || pinValue !== confirmPinValue || !pinPassword) {
       toast.error('Please fill in all fields correctly');
@@ -167,11 +190,14 @@ export default function Security() {
     setIsPinSaving(true);
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/transaction-pin/setup', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId: user.id, pin: pinValue, password: pinPassword }),
       });
@@ -202,11 +228,14 @@ export default function Security() {
     setIsPinSaving(true);
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/transaction-pin/reset', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId: user.id, newPin: pinValue, password: pinPassword }),
       });
