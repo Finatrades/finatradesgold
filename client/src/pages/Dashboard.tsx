@@ -240,10 +240,10 @@ export default function Dashboard() {
 
             {/* Desktop: White KPI Cards Row 1 */}
             <div className="hidden md:grid grid-cols-3 gap-4">
-              {/* Gold Storage */}
+              {/* Gold Balance */}
               <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Gold Storage</p>
+                  <p className="text-xs text-gray-500 font-medium">Gold Balance</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -252,15 +252,15 @@ export default function Dashboard() {
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Total physical gold stored in your FinaVault secure storage facility.</p>
+                        <p>Your total gold holdings across all wallets (LGPW + FGPW).</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `${formatNumber((totals.vaultGoldGrams || 0) / 1000, 4)} kg` : hiddenValue}
+                  {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Deposited in FinaVault</p>
+                <p className="text-xs text-gray-500 mt-1">Total Gold Holdings</p>
               </Card>
               
               {/* Gold Value USD */}
