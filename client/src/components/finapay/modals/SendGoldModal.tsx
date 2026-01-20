@@ -43,6 +43,29 @@ const SOURCE_OF_FUNDS = [
   'Other'
 ];
 
+// Get CSRF token from cookie
+const getCsrfToken = (): string | null => {
+  const match = document.cookie.match(/csrf_token=([^;]+)/);
+  return match ? match[1] : null;
+};
+
+// Fetch CSRF token if not present
+const ensureCsrfToken = async (): Promise<string | null> => {
+  let token = getCsrfToken();
+  if (!token) {
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        token = data.csrfToken;
+      }
+    } catch (e) {
+      console.warn('[SendGoldModal] Failed to fetch CSRF token:', e);
+    }
+  }
+  return token;
+};
+
 interface SendGoldModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -191,6 +214,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     
     try {
       const goldAmountToSend = numericAmount / currentGoldPrice;
+      const csrfToken = await ensureCsrfToken();
       
       const res = await fetch('/api/finapay/send', {
         method: 'POST',
@@ -198,6 +222,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           'x-pin-token': pinToken,
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -262,12 +287,14 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
     
     try {
       const goldAmountToSend = numericAmount / currentGoldPrice;
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/finapay/send', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           'x-pin-token': pinToken,
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
         },
         credentials: 'include',
         body: JSON.stringify({
