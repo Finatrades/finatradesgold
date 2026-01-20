@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase, Copy, Check, Info } from 'lucide-react';
+import { Database, TrendingUp, Coins, CheckCircle2, Wallet, ArrowUpRight, Shield, Clock, ChevronRight, Sparkles, Briefcase, Copy, Check, Info, Package } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import QuickActionsTop from '@/components/dashboard/QuickActionsTop';
 import TransactionsTable from '@/components/dashboard/TransactionsTable';
@@ -73,6 +74,24 @@ export default function Dashboard() {
     staleTime: 300000,
   });
 
+  // Fetch user's pending physical deposit requests
+  const { data: physicalDeposits } = useQuery<Array<{ id: string; status: string; goldType: string; estimatedGrams: string; createdAt: string }>>({
+    queryKey: ['physical-deposits', user?.id],
+    queryFn: async () => {
+      const res = await fetch('/api/physical-deposits/deposits');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.deposits || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60000,
+  });
+
+  // Filter for pending physical deposits (not yet completed/rejected/cancelled)
+  const pendingPhysicalDeposits = physicalDeposits?.filter(
+    d => ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'].includes(d.status)
+  ) || [];
+
   const prefs = prefsData?.preferences;
   const showBalance = prefs?.showBalance !== false;
   const displayCurrency = prefs?.displayCurrency || 'USD';
@@ -120,6 +139,23 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Physical Gold Deposit Notification */}
+        {pendingPhysicalDeposits.length > 0 && (
+          <Alert className="bg-yellow-50 border-yellow-200" data-testid="alert-physical-deposit">
+            <Package className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-yellow-800" data-testid="text-physical-deposit-count">
+                You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
+              </span>
+              <Link href="/finavault">
+                <Button variant="outline" size="sm" className="border-yellow-300 text-yellow-700 hover:bg-yellow-100" data-testid="button-view-physical-status">
+                  View Status
+                </Button>
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Mobile: Hero Balance Card */}
         <section className="md:hidden">

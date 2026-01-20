@@ -421,6 +421,14 @@ export default function AdminDashboard() {
               href="/admin/payment-operations"
             />
             <MetricCard
+              title="Physical Gold"
+              value={pendingCounts?.pendingPhysicalDeposits || 0}
+              icon={<Wallet className="w-5 h-5" />}
+              color="yellow"
+              loading={isLoading}
+              href="/admin/physical-deposits"
+            />
+            <MetricCard
               title="Pending Withdrawals"
               value={stats?.pendingWithdrawals || 0}
               icon={<ArrowUpRight className="w-5 h-5" />}
