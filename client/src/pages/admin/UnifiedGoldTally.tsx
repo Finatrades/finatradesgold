@@ -545,13 +545,19 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
   React.useEffect(() => {
     if (formData?.formData) {
       const fd = formData.formData;
+      // For physical deposits, use inspection creditedGrams if available
+      let physicalGoldAllocated = fd.physicalGoldAllocatedG || '';
+      if (formData.isPhysicalDeposit && formData.inspection?.creditedGrams) {
+        physicalGoldAllocated = String(formData.inspection.creditedGrams);
+      }
+      
       setWingoldForm({
         wingoldOrderId: fd.wingoldOrderId || '',
         wingoldSupplierInvoiceId: fd.wingoldSupplierInvoiceId || '',
         wingoldBuyRate: fd.wingoldBuyRate || '',
         wingoldCostUsd: fd.wingoldCostUsd || '',
         vaultLocation: fd.vaultLocation || '',
-        physicalGoldAllocatedG: fd.physicalGoldAllocatedG || '',
+        physicalGoldAllocatedG: physicalGoldAllocated,
         storageCertificateId: fd.storageCertificateId || '',
         certificateFileUrl: fd.certificateFileUrl || '',
         certificateDate: fd.certificateDate ? fd.certificateDate.split('T')[0] : '',
@@ -1038,19 +1044,25 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Coins className="w-4 h-4 text-yellow-600" />
                     Physical Gold Allocation
+                    {formData?.isPhysicalDeposit && (
+                      <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">From Inspection</span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <Label className="text-xs">Physical Gold Allocated (grams) *</Label>
+                    {formData?.isPhysicalDeposit && formData.inspection?.creditedGrams && (
+                      <p className="text-[10px] text-amber-600">Locked: Value from vault inspection ({Number(formData.inspection.creditedGrams).toFixed(4)}g)</p>
+                    )}
                     <Input
                       type="number"
                       step="0.0001"
                       placeholder="298.4567"
                       value={wingoldForm.physicalGoldAllocatedG}
                       onChange={(e) => setWingoldForm(prev => ({ ...prev, physicalGoldAllocatedG: e.target.value }))}
-                      className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
-                      disabled={isWingoldDataLocked}
+                      className={`h-8 text-sm ${(isWingoldDataLocked || formData?.isPhysicalDeposit) ? 'bg-amber-50 border-amber-200' : ''}`}
+                      disabled={isWingoldDataLocked || formData?.isPhysicalDeposit}
                     />
                   </div>
 

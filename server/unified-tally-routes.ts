@@ -922,9 +922,19 @@ router.get('/:txnId/wingold-form', async (req: Request, res: Response) => {
 
     const bars = await storage.getWingoldBarsByTally(transaction.id);
     
+    // For physical deposits, fetch inspection data
+    let inspection = null;
+    const isPhysicalDeposit = transaction.sourceMethod === 'VAULT_GOLD' || transaction.sourceType === 'PHYSICAL';
+    if (isPhysicalDeposit && transaction.sourceReferenceId) {
+      // Get inspection directly using the physical deposit ID
+      inspection = await storage.getDepositInspection(transaction.sourceReferenceId);
+    }
+    
     res.json({
       transaction,
       bars,
+      inspection,
+      isPhysicalDeposit,
       formData: {
         wingoldOrderId: transaction.wingoldOrderId,
         wingoldSupplierInvoiceId: transaction.wingoldSupplierInvoiceId,
