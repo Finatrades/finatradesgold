@@ -196,7 +196,9 @@ function SchemaSync() {
       
       // Generate appropriate ALTER statement based on type conversion
       if (m.devType === 'jsonb' && m.prodType === 'boolean') {
-        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n\n`;
+        sql += `-- Step 1: Drop default if exists\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} DROP DEFAULT;\n`;
+        sql += `-- Step 2: Change type\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n`;
+        sql += `-- Step 3: Set new default\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} SET DEFAULT '{}'::jsonb;\n\n`;
       } else if (m.devType === 'uuid' && (m.prodType === 'character varying' || m.prodType === 'text')) {
         sql += `-- WARNING: Existing data must be valid UUID format\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE uuid USING ${m.column}::uuid;\n\n`;
       } else if ((m.devType === 'text' || m.devType === 'character varying') && m.prodType === 'USER-DEFINED') {
