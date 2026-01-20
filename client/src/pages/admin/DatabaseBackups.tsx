@@ -179,7 +179,8 @@ function SchemaSync() {
   const handlePreview = async () => {
     setIsPreviewLoading(true);
     try {
-      const response = await apiRequest('/api/admin/schema-sync/preview');
+      const res = await apiRequest('GET', '/api/admin/schema-sync/preview');
+      const response = await res.json();
       setSchemaPreview(response);
       if (response.summary.missingTables === 0 && response.summary.missingColumns === 0) {
         toast.success('Schema is already in sync!');
@@ -195,7 +196,8 @@ function SchemaSync() {
     setShowConfirmDialog(false);
     setIsApplying(true);
     try {
-      const response = await apiRequest('/api/admin/schema-sync/apply', { method: 'POST' });
+      const res = await apiRequest('POST', '/api/admin/schema-sync/apply');
+      const response = await res.json();
       setLastSyncResult(response);
       if (response.success) {
         toast.success(`Schema synced: ${response.tablesCreated} tables, ${response.columnsAdded} columns added`);
