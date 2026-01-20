@@ -4019,18 +4019,44 @@ ${message}
     }
   });
 
-  // Trigger manual database sync (Admin)
+  // Trigger manual database sync (Admin) - Requires OTP verification
   app.post("/api/admin/database-sync/trigger", ensureAdminAsync, async (req, res) => {
     try {
       const { direction = 'aws-to-replit' } = req.body;
+      const adminId = req.session?.userId;
+      
+      // Verify OTP was recently verified for database_sync action
+      const recentOtpResult = await pool.query(`
+        SELECT id, verified_at FROM admin_action_otps 
+        WHERE admin_id = $1 
+        AND action_type = 'database_sync' 
+        AND verified = true 
+        AND verified_at > NOW() - INTERVAL '5 minutes'
+        ORDER BY verified_at DESC 
+        LIMIT 1
+      `, [adminId]);
+      
+      if (!recentOtpResult.rows || recentOtpResult.rows.length === 0) {
+        return res.status(403).json({ 
+          message: "OTP verification required for database sync. Please verify your identity first.",
+          requiresOtp: true
+        });
+      }
+      
+      // Invalidate the OTP after use (single-use)
+      await pool.query(`
+        UPDATE admin_action_otps SET verified = false 
+        WHERE id = $1
+      `, [recentOtpResult.rows[0].id]);
+      
       const { syncAwsToReplit, syncReplitToAws } = await import('./database-sync-scheduler');
       
       if (direction === 'replit-to-aws') {
-        console.log(`[DB Sync] Manual sync triggered by admin: Replit → AWS`);
+        console.log(`[DB Sync] Manual sync triggered by admin (OTP verified): Replit → AWS`);
         const result = await syncReplitToAws();
         res.json({ message: 'Sync completed', result });
       } else {
-        console.log(`[DB Sync] Manual sync triggered by admin: AWS → Replit`);
+        console.log(`[DB Sync] Manual sync triggered by admin (OTP verified): AWS → Replit`);
         const result = await syncAwsToReplit();
         res.json({ message: 'Sync completed', result });
       }
@@ -23282,6 +23308,7 @@ ${message}
         'deposit_approval': 'Deposit Approval',
         'deposit_rejection': 'Deposit Rejection',
         'withdrawal_approval': 'Withdrawal Approval',
+        'database_sync': 'Database Sync',
         'withdrawal_rejection': 'Withdrawal Rejection',
         'bnsl_approval': 'BNSL Plan Approval',
         'bnsl_rejection': 'BNSL Plan Rejection',
@@ -23522,6 +23549,7 @@ ${message}
         'deposit_approval': 'Deposit Approval',
         'deposit_rejection': 'Deposit Rejection',
         'withdrawal_approval': 'Withdrawal Approval',
+        'database_sync': 'Database Sync',
         'withdrawal_rejection': 'Withdrawal Rejection',
         'bnsl_approval': 'BNSL Plan Approval',
         'bnsl_rejection': 'BNSL Plan Rejection',
@@ -23643,6 +23671,7 @@ ${message}
         'deposit_approval': 'Deposit Approval',
         'deposit_rejection': 'Deposit Rejection',
         'withdrawal_approval': 'Withdrawal Approval',
+        'database_sync': 'Database Sync',
         'withdrawal_rejection': 'Withdrawal Rejection',
         'bnsl_approval': 'BNSL Plan Approval',
         'bnsl_rejection': 'BNSL Plan Rejection',

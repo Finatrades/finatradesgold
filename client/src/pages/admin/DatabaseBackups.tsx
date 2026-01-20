@@ -545,6 +545,14 @@ export default function DatabaseBackups() {
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   
+  // Sync OTP states
+  const [showSyncOtpDialog, setShowSyncOtpDialog] = useState(false);
+  const [showSyncPreviewDialog, setShowSyncPreviewDialog] = useState(false);
+  const [syncDirection, setSyncDirection] = useState<string>("");
+  const [syncOtpCode, setSyncOtpCode] = useState("");
+  const [syncOtpSent, setSyncOtpSent] = useState(false);
+  const [syncOtpVerified, setSyncOtpVerified] = useState(false);
+  
   const { data: backupsData, isLoading: loadingBackups, refetch: refetchBackups } = useQuery<{ backups: Backup[] }>({
     queryKey: ["/api/admin/backups"],
   });
@@ -572,6 +580,11 @@ export default function DatabaseBackups() {
         description: data.result?.message || "Sync finished successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/database-sync/status"] });
+      // Reset all sync dialogs
+      setShowSyncPreviewDialog(false);
+      setSyncOtpVerified(false);
+      setSyncOtpCode("");
+      setSyncDirection("");
     },
     onError: (error: Error) => {
       toast.error("Sync failed", {
@@ -579,6 +592,70 @@ export default function DatabaseBackups() {
       });
     },
   });
+  
+  // Send OTP for database sync
+  const sendSyncOtpMutation = useMutation({
+    mutationFn: async (direction: string) => {
+      const res = await apiRequest("POST", "/api/admin/action-otp/send", {
+        actionType: "database_sync",
+        targetType: "system",
+        targetId: direction,
+        actionData: { direction }
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to send OTP");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setSyncOtpSent(true);
+      toast.success("Verification code sent to your email");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to send OTP", { description: error.message });
+    },
+  });
+  
+  // Verify OTP for database sync
+  const verifySyncOtpMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/admin/action-otp/verify", {
+        actionType: "database_sync",
+        otpCode: code
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Invalid verification code");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setSyncOtpVerified(true);
+      setShowSyncOtpDialog(false);
+      setShowSyncPreviewDialog(true);
+      toast.success("Verified! Review the sync details.");
+    },
+    onError: (error: Error) => {
+      toast.error("Verification failed", { description: error.message });
+    },
+  });
+  
+  // Handle sync button click - initiate OTP flow
+  const handleSyncClick = (direction: string) => {
+    setSyncDirection(direction);
+    setSyncOtpCode("");
+    setSyncOtpSent(false);
+    setSyncOtpVerified(false);
+    setShowSyncOtpDialog(true);
+    // Send OTP immediately
+    sendSyncOtpMutation.mutate(direction);
+  };
+  
+  // Execute sync after OTP verified and preview confirmed
+  const handleConfirmSync = () => {
+    triggerSyncMutation.mutate(syncDirection);
+  };
   
   const schedulerControlMutation = useMutation({
     mutationFn: async (action: 'start' | 'stop') => {
@@ -1149,11 +1226,11 @@ export default function DatabaseBackups() {
                 <CardContent>
                   <div className="flex flex-wrap gap-4">
                     <Button
-                      onClick={() => triggerSyncMutation.mutate('aws-to-replit')}
-                      disabled={triggerSyncMutation.isPending}
+                      onClick={() => handleSyncClick('aws-to-replit')}
+                      disabled={triggerSyncMutation.isPending || sendSyncOtpMutation.isPending}
                       data-testid="button-sync-aws-to-replit"
                     >
-                      {triggerSyncMutation.isPending ? (
+                      {triggerSyncMutation.isPending && syncDirection === 'aws-to-replit' ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                           Syncing...
@@ -1168,11 +1245,11 @@ export default function DatabaseBackups() {
                     
                     <Button
                       variant="outline"
-                      onClick={() => triggerSyncMutation.mutate('replit-to-aws')}
-                      disabled={triggerSyncMutation.isPending}
+                      onClick={() => handleSyncClick('replit-to-aws')}
+                      disabled={triggerSyncMutation.isPending || sendSyncOtpMutation.isPending}
                       data-testid="button-sync-replit-to-aws"
                     >
-                      {triggerSyncMutation.isPending ? (
+                      {triggerSyncMutation.isPending && syncDirection === 'replit-to-aws' ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                           Syncing...
@@ -1446,6 +1523,126 @@ export default function DatabaseBackups() {
               data-testid="button-confirm-download"
             >
               Download Backup
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Sync OTP Verification Dialog */}
+      <AlertDialog open={showSyncOtpDialog} onOpenChange={(open) => { setShowSyncOtpDialog(open); if (!open) { setSyncOtpCode(""); setSyncOtpSent(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Verify Database Sync
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  A verification code has been sent to your admin email.
+                  Enter the code to proceed with <strong>{syncDirection === 'aws-to-replit' ? 'AWS → Replit' : 'Replit → AWS'}</strong> sync.
+                </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="sync-otp" className="flex items-center gap-2 text-foreground">
+                    <KeyRound className="w-4 h-4" />
+                    Enter Verification Code
+                  </Label>
+                  <Input
+                    id="sync-otp"
+                    type="text"
+                    placeholder="Enter 6-digit code from email"
+                    value={syncOtpCode}
+                    onChange={(e) => setSyncOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="font-mono text-center text-lg tracking-widest"
+                    data-testid="input-sync-otp"
+                  />
+                </div>
+                
+                {sendSyncOtpMutation.isPending && (
+                  <p className="text-info flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Sending verification code...
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-sync-otp">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => verifySyncOtpMutation.mutate(syncOtpCode)}
+              disabled={syncOtpCode.length !== 6 || verifySyncOtpMutation.isPending}
+              data-testid="button-verify-sync-otp"
+            >
+              {verifySyncOtpMutation.isPending ? "Verifying..." : "Verify"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Sync Preview Dialog (shown after OTP verified) */}
+      <AlertDialog open={showSyncPreviewDialog} onOpenChange={setShowSyncPreviewDialog}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {syncDirection === 'aws-to-replit' ? (
+                <Cloud className="w-5 h-5 text-primary" />
+              ) : (
+                <Server className="w-5 h-5 text-warning" />
+              )}
+              Confirm Database Sync
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <div className={`p-4 rounded-lg ${syncDirection === 'aws-to-replit' ? 'bg-info/10 border border-info/20' : 'bg-warning/10 border border-warning/20'}`}>
+                  <p className="font-medium mb-2">
+                    {syncDirection === 'aws-to-replit' ? 'AWS RDS → Replit Backup' : 'Replit → AWS RDS (CAUTION!)'}
+                  </p>
+                  <ul className="text-sm space-y-1">
+                    <li>• <strong>Source:</strong> {syncDirection === 'aws-to-replit' ? 'AWS RDS (Production)' : 'Replit (Backup)'}</li>
+                    <li>• <strong>Target:</strong> {syncDirection === 'aws-to-replit' ? 'Replit (Backup)' : 'AWS RDS (Production)'}</li>
+                    <li>• <strong>Users:</strong> {syncDirection === 'aws-to-replit' ? syncStatusData?.databases?.aws?.users : syncStatusData?.databases?.replit?.users} records</li>
+                    <li>• <strong>Tables:</strong> {syncDirection === 'aws-to-replit' ? syncStatusData?.databases?.aws?.tables : syncStatusData?.databases?.replit?.tables} tables</li>
+                  </ul>
+                </div>
+                
+                {syncDirection === 'replit-to-aws' && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive font-medium flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        WARNING: This will overwrite your production database with backup data.
+                        Only use this to restore from a known good backup.
+                      </span>
+                    </p>
+                  </div>
+                )}
+                
+                <p className="text-sm text-muted-foreground">
+                  This action will copy all data from the source to the target database.
+                  The target database will be overwritten.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-sync-preview">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSync}
+              disabled={triggerSyncMutation.isPending}
+              className={syncDirection === 'replit-to-aws' ? 'bg-destructive hover:bg-destructive/90' : ''}
+              data-testid="button-confirm-sync"
+            >
+              {triggerSyncMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                `Confirm ${syncDirection === 'aws-to-replit' ? 'AWS → Replit' : 'Replit → AWS'} Sync`
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
