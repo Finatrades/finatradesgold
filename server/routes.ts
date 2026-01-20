@@ -140,6 +140,7 @@ async function acquireIdempotencyLock(key: string): Promise<{ acquired: boolean;
       const existingResult = await redis.get(resultKey);
       if (existingResult) {
         return { acquired: false, cachedResult: JSON.parse(existingResult) };
+      }
       // Try to acquire lock atomically with SETNX
       const acquired = await redis.set(lockKey, 'processing', 'EX', LOCK_TTL, 'NX');
       return { acquired: acquired === 'OK' };
@@ -416,6 +417,7 @@ function requirePermission(...requiredPermissions: string[]) {
         return res.status(403).json({ 
           message: "Your account has been deactivated. Please contact a super admin." 
         });
+      }
       // If no employee record, allow access (original admin accounts)
       // Super admins have all permissions
       if (!employee || employee.role === 'super_admin') {
@@ -729,6 +731,7 @@ export async function registerRoutes(
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
+      }
       let fileUrl: string;
       
       // Upload to R2 if configured, otherwise use local disk
@@ -740,6 +743,7 @@ export async function registerRoutes(
       } else {
         // Fallback to local disk storage
         fileUrl = `/uploads/${(req.file as any).filename}`;
+      }
       res.json({ 
         url: fileUrl, 
         filename: req.file.originalname,
