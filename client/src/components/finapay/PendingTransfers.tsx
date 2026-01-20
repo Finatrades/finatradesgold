@@ -365,26 +365,35 @@ export default function PendingTransfers() {
   }
 
   const formatRequestAmount = (request: GoldRequest) => {
-    const goldGrams = parseFloat(request.goldGrams);
+    const goldGrams = request.goldGrams ? parseFloat(request.goldGrams) : 0;
     const usdValue = request.amountUsd ? parseFloat(request.amountUsd) : 0;
+    
+    // Handle NaN cases
+    const safeGoldGrams = isNaN(goldGrams) ? 0 : goldGrams;
+    const safeUsdValue = isNaN(usdValue) ? 0 : usdValue;
+    
     return {
-      primary: `${goldGrams.toFixed(4)}g Gold`,
-      secondary: usdValue > 0 ? `≈ $${usdValue.toFixed(2)}` : null,
+      primary: safeGoldGrams > 0 ? `${safeGoldGrams.toFixed(4)}g Gold` : `$${safeUsdValue.toFixed(2)}`,
+      secondary: safeGoldGrams > 0 && safeUsdValue > 0 ? `≈ $${safeUsdValue.toFixed(2)}` : null,
     };
   };
 
   const formatAmount = (transfer: PendingTransfer) => {
-    const isGold = transfer.amountGold && parseFloat(transfer.amountGold) > 0;
-    if (isGold) {
-      const goldGrams = parseFloat(transfer.amountGold!);
-      const usdValue = parseFloat(transfer.amountUsd);
+    const goldGrams = transfer.amountGold ? parseFloat(transfer.amountGold) : 0;
+    const usdValue = transfer.amountUsd ? parseFloat(transfer.amountUsd) : 0;
+    
+    // Handle NaN cases
+    const safeGoldGrams = isNaN(goldGrams) ? 0 : goldGrams;
+    const safeUsdValue = isNaN(usdValue) ? 0 : usdValue;
+    
+    if (safeGoldGrams > 0) {
       return {
-        primary: `${goldGrams.toFixed(4)}g Gold`,
-        secondary: `≈ $${usdValue.toFixed(2)}`,
+        primary: `${safeGoldGrams.toFixed(4)}g Gold`,
+        secondary: safeUsdValue > 0 ? `≈ $${safeUsdValue.toFixed(2)}` : null,
       };
     }
     return {
-      primary: `$${parseFloat(transfer.amountUsd).toFixed(2)}`,
+      primary: safeUsdValue > 0 ? `$${safeUsdValue.toFixed(2)}` : '$0.00',
       secondary: null,
     };
   };
