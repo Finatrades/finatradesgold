@@ -17077,16 +17077,46 @@ ${message}
       // Generate reference
       const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
-      // Debit payer gold
+      // Debit payer gold from legacy wallet
       await storage.updateWallet(payerWallet.id, {
         goldGrams: (payerGoldBalance - goldGrams).toFixed(6),
       });
       
-      // Credit requester gold
+      // Credit requester gold to legacy wallet
       const requesterGoldBalance = parseFloat(requesterWallet.goldGrams.toString());
       await storage.updateWallet(requesterWallet.id, {
         goldGrams: (requesterGoldBalance + goldGrams).toFixed(6),
       });
+      
+      // Update dual-wallet LGPW balances (vaultOwnershipSummary)
+      const walletType = (request as any).goldWalletType || 'LGPW';
+      if (walletType === 'LGPW') {
+        // Debit payer's LGPW
+        const [payerVaultSummary] = await db.select().from(vaultOwnershipSummary)
+          .where(eq(vaultOwnershipSummary.userId, payer.id));
+        if (payerVaultSummary) {
+          const payerMpgw = parseFloat(payerVaultSummary.mpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ mpgwAvailableGrams: (payerMpgw - goldGrams).toFixed(6) })
+            .where(eq(vaultOwnershipSummary.userId, payer.id));
+        }
+        
+        // Credit requester's LGPW
+        const [requesterVaultSummary] = await db.select().from(vaultOwnershipSummary)
+          .where(eq(vaultOwnershipSummary.userId, requester.id));
+        if (requesterVaultSummary) {
+          const requesterMpgw = parseFloat(requesterVaultSummary.mpgwAvailableGrams || '0');
+          await db.update(vaultOwnershipSummary)
+            .set({ mpgwAvailableGrams: (requesterMpgw + goldGrams).toFixed(6) })
+            .where(eq(vaultOwnershipSummary.userId, requester.id));
+        } else {
+          // Create vault ownership summary if doesn't exist
+          await db.insert(vaultOwnershipSummary).values({
+            userId: requester.id,
+            mpgwAvailableGrams: goldGrams.toFixed(6),
+          });
+        }
+      }
       
       // Create transactions with gold grams
       const senderTx = await storage.createTransaction({
@@ -17135,7 +17165,7 @@ ${message}
         recipientTransactionId: recipientTx.id,
       });
       // Generate P2P certificates for both parties
-      const walletType = (request as any).goldWalletType || 'LGPW';
+      // walletType already declared above
       const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const wingoldRef = generateWingoldRef();
       
