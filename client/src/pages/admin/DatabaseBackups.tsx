@@ -47,7 +47,9 @@ import {
   Pause,
   Cloud,
   Server,
-  Zap
+  Zap,
+  FileText,
+  Copy
 } from "lucide-react";
 import { apiRequest } from '@/lib/queryClient';
 
@@ -175,6 +177,49 @@ function SchemaSync() {
   const [isApplying, setIsApplying] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<any>(null);
+  const [showSqlDialog, setShowSqlDialog] = useState(false);
+  const [generatedSql, setGeneratedSql] = useState<string>('');
+
+  const generateFixSql = () => {
+    if (!schemaPreview?.diff.typeMismatches.length) return;
+    
+    let sql = `-- ============================================
+-- PRODUCTION DATABASE TYPE FIX COMMANDS
+-- Generated: ${new Date().toISOString()}
+-- Run these on AWS RDS Production Database
+-- ============================================
+
+`;
+    
+    for (const m of schemaPreview.diff.typeMismatches) {
+      sql += `-- Fix ${m.table}.${m.column} (${m.prodType} → ${m.devType})\n`;
+      
+      // Generate appropriate ALTER statement based on type conversion
+      if (m.devType === 'jsonb' && m.prodType === 'boolean') {
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n\n`;
+      } else if (m.devType === 'uuid' && (m.prodType === 'character varying' || m.prodType === 'text')) {
+        sql += `-- WARNING: Existing data must be valid UUID format\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE uuid USING ${m.column}::uuid;\n\n`;
+      } else if ((m.devType === 'text' || m.devType === 'character varying') && m.prodType === 'USER-DEFINED') {
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType} USING ${m.column}::text;\n\n`;
+      } else if (m.devType === 'timestamp with time zone' && m.prodType === 'timestamp without time zone') {
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE timestamp with time zone;\n\n`;
+      } else if (m.devType === 'character varying' && m.prodType === 'numeric') {
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE character varying USING ${m.column}::text;\n\n`;
+      } else if (m.devType === 'numeric' && m.prodType === 'character varying') {
+        sql += `-- WARNING: Existing data must be numeric\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE numeric USING ${m.column}::numeric;\n\n`;
+      } else {
+        sql += `-- Manual review needed: ${m.prodType} → ${m.devType}\n-- ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType};\n\n`;
+      }
+    }
+    
+    setGeneratedSql(sql);
+    setShowSqlDialog(true);
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedSql);
+    toast.success('SQL copied to clipboard!');
+  };
 
   const handlePreview = async () => {
     setIsPreviewLoading(true);
@@ -336,10 +381,21 @@ function SchemaSync() {
 
               {schemaPreview.diff.typeMismatches.length > 0 && (
                 <div className="border border-destructive/50 rounded-lg p-4 bg-destructive/5">
-                  <h4 className="font-medium mb-2 flex items-center gap-2 text-destructive">
-                    <XCircle className="w-4 h-4" />
-                    Type Mismatches ({schemaPreview.diff.typeMismatches.length}) - Requires Manual Fix
-                  </h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium flex items-center gap-2 text-destructive">
+                      <XCircle className="w-4 h-4" />
+                      Type Mismatches ({schemaPreview.diff.typeMismatches.length}) - Requires Manual Fix
+                    </h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={generateFixSql}
+                      data-testid="button-generate-sql"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Generate Fix SQL
+                    </Button>
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -416,6 +472,38 @@ function SchemaSync() {
             <AlertDialogAction onClick={handleApply} data-testid="button-confirm-schema-sync">
               Apply Changes
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showSqlDialog} onOpenChange={setShowSqlDialog}>
+        <AlertDialogContent className="max-w-3xl max-h-[80vh]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Generated SQL Commands
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Copy these SQL commands and run them on your production database to fix the type mismatches.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute top-2 right-2 z-10"
+              onClick={copyToClipboard}
+              data-testid="button-copy-sql"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy
+            </Button>
+            <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-[50vh] text-sm font-mono whitespace-pre-wrap">
+              {generatedSql}
+            </pre>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
