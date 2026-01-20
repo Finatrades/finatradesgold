@@ -187,20 +187,26 @@ function SchemaSync() {
 -- PRODUCTION DATABASE TYPE FIX COMMANDS
 -- Generated: ${new Date().toISOString()}
 -- Run these on AWS RDS Production Database
+-- Run each command separately in order
 -- ============================================
 
 `;
     
     for (const m of schemaPreview.diff.typeMismatches) {
+      sql += `-- ----------------------------------------\n`;
       sql += `-- Fix ${m.table}.${m.column} (${m.prodType} → ${m.devType})\n`;
+      sql += `-- ----------------------------------------\n`;
+      
+      // Always drop default first to avoid casting errors
+      sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} DROP DEFAULT;\n\n`;
       
       // Generate appropriate ALTER statement based on type conversion
       if (m.devType === 'jsonb' && m.prodType === 'boolean') {
-        sql += `-- Step 1: Drop default if exists\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} DROP DEFAULT;\n`;
-        sql += `-- Step 2: Change type\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n`;
-        sql += `-- Step 3: Set new default\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} SET DEFAULT '{}'::jsonb;\n\n`;
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE jsonb USING CASE WHEN ${m.column} = true THEN '{"enabled": true}'::jsonb WHEN ${m.column} = false THEN '{"enabled": false}'::jsonb ELSE '{}'::jsonb END;\n\n`;
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} SET DEFAULT '{}'::jsonb;\n\n`;
       } else if (m.devType === 'uuid' && (m.prodType === 'character varying' || m.prodType === 'text')) {
-        sql += `-- WARNING: Existing data must be valid UUID format\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE uuid USING ${m.column}::uuid;\n\n`;
+        sql += `-- WARNING: Existing data must be valid UUID format\n`;
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE uuid USING ${m.column}::uuid;\n\n`;
       } else if ((m.devType === 'text' || m.devType === 'character varying') && m.prodType === 'USER-DEFINED') {
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType} USING ${m.column}::text;\n\n`;
       } else if (m.devType === 'timestamp with time zone' && m.prodType === 'timestamp without time zone') {
@@ -208,9 +214,11 @@ function SchemaSync() {
       } else if (m.devType === 'character varying' && m.prodType === 'numeric') {
         sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE character varying USING ${m.column}::text;\n\n`;
       } else if (m.devType === 'numeric' && m.prodType === 'character varying') {
-        sql += `-- WARNING: Existing data must be numeric\nALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE numeric USING ${m.column}::numeric;\n\n`;
+        sql += `-- WARNING: Existing data must be numeric\n`;
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE numeric USING ${m.column}::numeric;\n\n`;
       } else {
-        sql += `-- Manual review needed: ${m.prodType} → ${m.devType}\n-- ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType};\n\n`;
+        sql += `-- Manual review needed for this conversion\n`;
+        sql += `ALTER TABLE ${m.table} ALTER COLUMN ${m.column} TYPE ${m.devType} USING ${m.column}::${m.devType};\n\n`;
       }
     }
     
