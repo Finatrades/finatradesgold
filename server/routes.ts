@@ -23096,6 +23096,7 @@ ${message}
         'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
         'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
         'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
+        'database_sync': true, // Always require OTP for database sync
       };
       
       const required = actionToSetting[actionType] ?? false;
@@ -23266,6 +23267,7 @@ ${message}
         'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
         'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
         'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
+        'database_sync': true, // Always require OTP for database sync
       };
       
       if (!actionToSetting[actionType]) {
