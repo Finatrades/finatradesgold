@@ -1175,6 +1175,8 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 {isWingoldDataLocked ? '🔒 Wingold Data Saved' : 'Save Wingold Data'}
               </Button>
 
+              {/* Show approval form only for transactions that need approval */}
+              {transaction.status !== 'CREDITED' && transaction.status !== 'COMPLETED' ? (
               <Card className="border-purple-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -1345,6 +1347,21 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   </Button>
                 </CardContent>
               </Card>
+              ) : (
+              <Card className="border-2 border-green-200 bg-green-50">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-green-800">Already Credited & Completed</p>
+                      <p className="text-sm text-green-600">
+                        Gold credited: {formatGold(transaction.goldCreditedG)} to {transaction.walletType} wallet
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="fees" className="m-0 space-y-4">
