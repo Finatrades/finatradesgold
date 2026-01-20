@@ -4865,6 +4865,95 @@ ${message}
   });
 
   // ============================================================================
+  // SCHEMA SYNC (Production Database)
+  // ============================================================================
+  
+  // Preview schema differences between dev and production
+  app.get("/api/admin/schema-sync/preview", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const { compareSchemas } = await import('./schema-sync-service');
+      const diff = await compareSchemas();
+      
+      res.json({
+        success: true,
+        diff,
+        summary: {
+          missingTables: diff.missingTables.length,
+          missingColumns: diff.missingColumns.length,
+          typeMismatches: diff.typeMismatches.length,
+          devTableCount: diff.devTableCount,
+          prodTableCount: diff.prodTableCount
+        }
+      });
+    } catch (error) {
+      console.error("[Schema Sync] Preview failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "Failed to compare schemas" 
+      });
+    }
+  });
+  
+  // Apply missing schema to production (ADDITIVE ONLY - never deletes)
+  app.post("/api/admin/schema-sync/apply", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const adminId = req.session?.userId;
+      const adminEmail = req.session?.email || 'Unknown';
+      
+      console.log(`[Schema Sync] Apply requested by admin ${adminEmail}`);
+      
+      // First get the diff
+      const { compareSchemas, applyMissingSchema } = await import('./schema-sync-service');
+      const diff = await compareSchemas();
+      
+      // Check if there are type mismatches (we don't auto-fix these)
+      if (diff.typeMismatches.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot auto-sync: ${diff.typeMismatches.length} column type mismatches found. These require manual review.`,
+          typeMismatches: diff.typeMismatches
+        });
+      }
+      
+      // Apply missing tables and columns
+      const result = await applyMissingSchema(diff);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        entityType: 'system',
+        entityId: 'schema-sync',
+        actionType: 'schema_sync',
+        actor: adminId || 'system',
+        actorRole: 'admin',
+        details: JSON.stringify({
+          tablesCreated: result.tablesCreated,
+          columnsAdded: result.columnsAdded,
+          errors: result.errors,
+          success: result.success
+        })
+      });
+      
+      console.log(`[Schema Sync] Completed: ${result.tablesCreated} tables, ${result.columnsAdded} columns added`);
+      
+      res.json({
+        success: result.success,
+        tablesCreated: result.tablesCreated,
+        columnsAdded: result.columnsAdded,
+        errors: result.errors,
+        message: result.success 
+          ? `Successfully synced: ${result.tablesCreated} tables and ${result.columnsAdded} columns added`
+          : `Partial sync with ${result.errors.length} errors`
+      });
+    } catch (error) {
+      console.error("[Schema Sync] Apply failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "Failed to apply schema changes" 
+      });
+    }
+  });
+
+  // ============================================================================
   // KYC MANAGEMENT
   // ============================================================================
   

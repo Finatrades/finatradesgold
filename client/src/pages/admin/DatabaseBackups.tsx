@@ -78,6 +78,26 @@ interface AuditLog {
   createdAt: string;
 }
 
+interface SchemaDiff {
+  missingTables: string[];
+  missingColumns: { table: string; column: string; dataType: string }[];
+  typeMismatches: { table: string; column: string; devType: string; prodType: string }[];
+  devTableCount: number;
+  prodTableCount: number;
+}
+
+interface SchemaPreview {
+  success: boolean;
+  diff: SchemaDiff;
+  summary: {
+    missingTables: number;
+    missingColumns: number;
+    typeMismatches: number;
+    devTableCount: number;
+    prodTableCount: number;
+  };
+}
+
 interface SyncStatus {
   scheduler: {
     isRunning: boolean;
@@ -146,6 +166,259 @@ function getActionBadge(action: string) {
     default:
       return <Badge variant="secondary">{action}</Badge>;
   }
+}
+
+// Schema Sync Component
+function SchemaSync() {
+  const [schemaPreview, setSchemaPreview] = useState<SchemaPreview | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [lastSyncResult, setLastSyncResult] = useState<any>(null);
+
+  const handlePreview = async () => {
+    setIsPreviewLoading(true);
+    try {
+      const response = await apiRequest('/api/admin/schema-sync/preview');
+      setSchemaPreview(response);
+      if (response.summary.missingTables === 0 && response.summary.missingColumns === 0) {
+        toast.success('Schema is already in sync!');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to preview schema');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
+    setShowConfirmDialog(false);
+    setIsApplying(true);
+    try {
+      const response = await apiRequest('/api/admin/schema-sync/apply', { method: 'POST' });
+      setLastSyncResult(response);
+      if (response.success) {
+        toast.success(`Schema synced: ${response.tablesCreated} tables, ${response.columnsAdded} columns added`);
+        setSchemaPreview(null);
+      } else {
+        toast.warning(`Partial sync completed with ${response.errors?.length || 0} errors`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to apply schema changes');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Production Schema Sync
+          </CardTitle>
+          <CardDescription>
+            Compare and sync database schema between Development (Replit) and Production (AWS RDS).
+            This will only ADD missing tables and columns - nothing will be deleted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button 
+              onClick={handlePreview} 
+              disabled={isPreviewLoading}
+              variant="outline"
+              data-testid="button-preview-schema"
+            >
+              {isPreviewLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Comparing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Preview Changes
+                </>
+              )}
+            </Button>
+            
+            {schemaPreview && (schemaPreview.summary.missingTables > 0 || schemaPreview.summary.missingColumns > 0) && (
+              <Button 
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={isApplying || schemaPreview.summary.typeMismatches > 0}
+                data-testid="button-apply-schema"
+              >
+                {isApplying ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Apply Changes
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {schemaPreview && (
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Dev Tables</p>
+                  <p className="text-2xl font-bold">{schemaPreview.summary.devTableCount}</p>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Prod Tables</p>
+                  <p className="text-2xl font-bold">{schemaPreview.summary.prodTableCount}</p>
+                </div>
+                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                  <p className="text-sm text-muted-foreground">Missing Tables</p>
+                  <p className="text-2xl font-bold text-warning">{schemaPreview.summary.missingTables}</p>
+                </div>
+                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                  <p className="text-sm text-muted-foreground">Missing Columns</p>
+                  <p className="text-2xl font-bold text-warning">{schemaPreview.summary.missingColumns}</p>
+                </div>
+              </div>
+
+              {schemaPreview.diff.missingTables.length > 0 && (
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                    Missing Tables ({schemaPreview.diff.missingTables.length})
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground">
+                    {schemaPreview.diff.missingTables.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {schemaPreview.diff.missingColumns.length > 0 && (
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                    Missing Columns ({schemaPreview.diff.missingColumns.length})
+                  </h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Table</TableHead>
+                        <TableHead>Column</TableHead>
+                        <TableHead>Type</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {schemaPreview.diff.missingColumns.slice(0, 20).map((col, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-mono text-sm">{col.table}</TableCell>
+                          <TableCell className="font-mono text-sm">{col.column}</TableCell>
+                          <TableCell className="font-mono text-sm text-muted-foreground">{col.dataType}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {schemaPreview.diff.missingColumns.length > 20 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      ... and {schemaPreview.diff.missingColumns.length - 20} more columns
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {schemaPreview.diff.typeMismatches.length > 0 && (
+                <div className="border border-destructive/50 rounded-lg p-4 bg-destructive/5">
+                  <h4 className="font-medium mb-2 flex items-center gap-2 text-destructive">
+                    <XCircle className="w-4 h-4" />
+                    Type Mismatches ({schemaPreview.diff.typeMismatches.length}) - Requires Manual Fix
+                  </h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Table</TableHead>
+                        <TableHead>Column</TableHead>
+                        <TableHead>Dev Type</TableHead>
+                        <TableHead>Prod Type</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {schemaPreview.diff.typeMismatches.map((m, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-mono text-sm">{m.table}</TableCell>
+                          <TableCell className="font-mono text-sm">{m.column}</TableCell>
+                          <TableCell className="font-mono text-sm text-success">{m.devType}</TableCell>
+                          <TableCell className="font-mono text-sm text-destructive">{m.prodType}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {schemaPreview.summary.missingTables === 0 && schemaPreview.summary.missingColumns === 0 && (
+                <div className="border border-success/50 rounded-lg p-4 bg-success/5 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span className="text-success font-medium">Production schema is fully in sync with development!</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {lastSyncResult && (
+            <div className={`border rounded-lg p-4 mt-4 ${lastSyncResult.success ? 'border-success/50 bg-success/5' : 'border-warning/50 bg-warning/5'}`}>
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                {lastSyncResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-success" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                )}
+                Last Sync Result
+              </h4>
+              <div className="text-sm">
+                <p>Tables Created: {lastSyncResult.tablesCreated}</p>
+                <p>Columns Added: {lastSyncResult.columnsAdded}</p>
+                {lastSyncResult.errors?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-destructive">Errors:</p>
+                    <ul className="list-disc list-inside text-destructive">
+                      {lastSyncResult.errors.map((e: string, i: number) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Schema Sync</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will add {schemaPreview?.summary.missingTables || 0} missing tables and {schemaPreview?.summary.missingColumns || 0} missing columns to the production database.
+              <br /><br />
+              <strong>This action is additive only</strong> - no existing data will be deleted or modified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApply} data-testid="button-confirm-schema-sync">
+              Apply Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
 
 export default function DatabaseBackups() {
@@ -404,6 +677,10 @@ export default function DatabaseBackups() {
             <TabsTrigger value="sync" data-testid="tab-sync">
               <ArrowRightLeft className="w-4 h-4 mr-2" />
               Database Sync
+            </TabsTrigger>
+            <TabsTrigger value="schema" data-testid="tab-schema">
+              <Database className="w-4 h-4 mr-2" />
+              Schema Sync
             </TabsTrigger>
             <TabsTrigger value="audit" data-testid="tab-audit">
               <History className="w-4 h-4 mr-2" />
@@ -808,6 +1085,10 @@ export default function DatabaseBackups() {
             </div>
           </TabsContent>
           
+          <TabsContent value="schema" className="mt-4">
+            <SchemaSync />
+          </TabsContent>
+
           <TabsContent value="audit" className="mt-4">
             <Card>
               <CardHeader>
