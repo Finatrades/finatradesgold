@@ -154,7 +154,6 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
       setReferenceNumber(data.request.referenceNumber);
       setStep('success');
       toast.success("Payment request created!");
-      onConfirm(targetIdentifier || 'Anyone', numericAmount, 'USD');
     } catch (error: any) {
       toast.error(error.message || "Failed to create request");
     } finally {
