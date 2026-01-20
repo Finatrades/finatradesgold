@@ -17434,8 +17434,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Request not found" });
       }
       
-      // SECURITY: Only the payee (person being asked) can decline
-      if (request.payeeId !== req.session?.userId) {
+      // SECURITY: Only the target (person being asked to pay) can decline
+      if (request.targetId !== req.session?.userId) {
         return res.status(403).json({ message: "Not authorized to decline this request" });
       }
       
