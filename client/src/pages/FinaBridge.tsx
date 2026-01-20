@@ -1115,100 +1115,101 @@ export default function FinaBridge() {
 
             <TabsContent value="create">
               <Card className="bg-white border">
-                <CardContent className="p-6">
-                  <form onSubmit={handleCreateRequest} className="space-y-6">
-                    <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+                <CardContent className="p-4">
+                  <form onSubmit={handleCreateRequest} className="space-y-3">
+                    <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border">
                       <input
                         type="checkbox"
                         id="suggestExporter"
                         checked={requestForm.suggestExporter}
                         onChange={(e) => setRequestForm({ ...requestForm, suggestExporter: e.target.checked })}
+                        className="w-3.5 h-3.5"
                         data-testid="checkbox-suggest-exporter"
                       />
-                      <label htmlFor="suggestExporter" className="text-sm font-medium">
+                      <label htmlFor="suggestExporter" className="text-xs font-medium">
                         Suggest matching exporters (allow Finatrades to find exporters for me)
                       </label>
                     </div>
 
                     {!requestForm.suggestExporter && (
-                      <div className="p-4 border rounded-lg bg-purple-50/50 border-purple-200">
-                        <h4 className="font-medium mb-4 flex items-center gap-2 text-purple-800">
+                      <div className="p-3 border rounded-lg bg-purple-50/50 border-purple-200">
+                        <h4 className="font-medium mb-2 flex items-center gap-2 text-purple-800 text-sm">
                           <Send className="w-4 h-4" />
                           My Exporter Details & Proposal
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Exporter Company Name *</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Exporter Company Name *</label>
                             <input
                               type="text"
                               value={requestForm.exporterCompanyName}
                               onChange={(e) => setRequestForm({ ...requestForm, exporterCompanyName: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="e.g., ABC Trading Ltd."
                               data-testid="input-exporter-company"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Contact Person Name</label>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Contact Person Name</label>
                             <input
                               type="text"
                               value={requestForm.exporterContactName}
                               onChange={(e) => setRequestForm({ ...requestForm, exporterContactName: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="e.g., John Smith"
                               data-testid="input-exporter-contact"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Exporter Email *</label>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Exporter Email *</label>
                             <input
                               type="email"
                               value={requestForm.exporterEmail}
                               onChange={(e) => setRequestForm({ ...requestForm, exporterEmail: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="exporter@company.com"
                               data-testid="input-exporter-email"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Exporter Phone</label>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Exporter Phone</label>
                             <input
                               type="tel"
                               value={requestForm.exporterPhone}
                               onChange={(e) => setRequestForm({ ...requestForm, exporterPhone: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="+1 234 567 8900"
                               data-testid="input-exporter-phone"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Quote Price (USD) *</label>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Quote Price (USD) *</label>
                             <input
                               type="number"
                               value={requestForm.proposedQuotePrice}
                               onChange={(e) => setRequestForm({ ...requestForm, proposedQuotePrice: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="0.00"
                               data-testid="input-quote-price"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Timeline (Days) *</label>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Timeline (Days) *</label>
                             <input
                               type="number"
                               value={requestForm.proposedTimelineDays}
                               onChange={(e) => setRequestForm({ ...requestForm, proposedTimelineDays: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               placeholder="30"
                               data-testid="input-timeline-days"
                             />
                           </div>
-                          <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium">Notes / Terms</label>
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="text-xs font-medium">Notes / Terms</label>
                             <textarea
                               value={requestForm.proposalNotes}
                               onChange={(e) => setRequestForm({ ...requestForm, proposalNotes: e.target.value })}
-                              className="w-full p-3 border rounded-lg"
+                              className="w-full p-2 text-sm border rounded-lg"
                               rows={2}
                               placeholder="Additional terms or notes about this proposal..."
                               data-testid="input-proposal-notes"
@@ -1216,21 +1217,21 @@ export default function FinaBridge() {
                           </div>
                         </div>
 
-                        <div className="mt-6 pt-4 border-t">
-                          <h4 className="font-medium mb-3 text-purple-800">Required Exporter Documents</h4>
-                          <p className="text-sm text-muted-foreground mb-4">Exporter should upload all the necessary documents</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="mt-3 pt-2 border-t">
+                          <h4 className="font-medium mb-2 text-purple-800 text-sm">Required Exporter Documents</h4>
+                          <p className="text-xs text-muted-foreground mb-2">Exporter should upload all necessary documents</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             {[
                               { key: 'certificateOfOrigin', label: 'Certificate of Origin' },
-                              { key: 'inspectionCertificate', label: 'Inspection / Quality Certificate' },
+                              { key: 'inspectionCertificate', label: 'Inspection / Quality Cert' },
                               { key: 'billOfLading', label: 'Bill of Lading (B/L)' },
                               { key: 'commercialInvoice', label: 'Commercial Invoice' },
                               { key: 'packingList', label: 'Packing List' },
                               { key: 'insuranceCertificate', label: 'Insurance Certificate' },
-                              { key: 'agreementsCopy', label: 'Agreements / Contract Copy' },
+                              { key: 'agreementsCopy', label: 'Agreements / Contract' },
                               { key: 'other', label: 'Other' },
                             ].map(({ key, label }) => (
-                              <label key={key} className="flex items-center gap-2 cursor-pointer">
+                              <label key={key} className="flex items-center gap-1.5 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={requestForm.requiredDocs[key as keyof typeof requestForm.requiredDocs]}
@@ -1238,21 +1239,21 @@ export default function FinaBridge() {
                                     ...requestForm,
                                     requiredDocs: { ...requestForm.requiredDocs, [key]: e.target.checked }
                                   })}
-                                  className="rounded border-gray-300"
+                                  className="rounded border-gray-300 w-3 h-3"
                                   data-testid={`checkbox-doc-${key}`}
                                 />
-                                <span className="text-sm">{label}</span>
+                                <span className="text-[11px]">{label}</span>
                               </label>
                             ))}
                           </div>
                           
                           {requestForm.requiredDocs.other && (
-                            <div className="mt-3">
-                              <label className="text-sm font-medium">Please specify other document(s)</label>
+                            <div className="mt-2">
+                              <label className="text-xs font-medium">Please specify other document(s)</label>
                               <textarea
                                 value={requestForm.otherDocNote}
                                 onChange={(e) => setRequestForm({ ...requestForm, otherDocNote: e.target.value })}
-                                className="w-full p-3 border rounded-lg mt-1"
+                                className="w-full p-2 text-sm border rounded-lg mt-1"
                                 rows={2}
                                 placeholder="Describe the other document(s) required..."
                                 data-testid="input-other-doc-note"
@@ -1260,9 +1261,9 @@ export default function FinaBridge() {
                             </div>
                           )}
 
-                          <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <div className="mt-3 border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
                             <label className="cursor-pointer">
-                              <span className="text-primary font-medium">Click to upload</span>
+                              <span className="text-primary text-sm font-medium">Click to upload</span>
                               <input
                                 type="file"
                                 multiple
@@ -1276,12 +1277,11 @@ export default function FinaBridge() {
                                 data-testid="input-file-upload"
                               />
                             </label>
-                            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (Max 10MB each)</p>
-                            <p className="text-xs text-muted-foreground">{uploadedFiles.length} file(s) uploaded</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">PDF, JPG, PNG, DOC (Max 10MB) - {uploadedFiles.length} file(s)</p>
                             {uploadedFiles.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2 justify-center">
+                              <div className="mt-1 flex flex-wrap gap-1 justify-center">
                                 {uploadedFiles.map((file, idx) => (
-                                  <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
+                                  <span key={idx} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                                     {file.name}
                                     <button
                                       type="button"
@@ -1299,29 +1299,29 @@ export default function FinaBridge() {
                       </div>
                     )}
 
-                    <div className="p-4 border rounded-lg bg-blue-50/50 border-blue-200">
-                      <h4 className="font-medium mb-4 flex items-center gap-2 text-blue-800">
+                    <div className="p-3 border rounded-lg bg-blue-50/50 border-blue-200">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-800 text-sm">
                         <CreditCard className="w-4 h-4" />
                         Trade Finance Type & Payment
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Finance Type *</label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Finance Type *</label>
                           <select
                             value={requestForm.financeType}
                             onChange={(e) => setRequestForm({ ...requestForm, financeType: e.target.value })}
-                            className="w-full p-3 border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-white"
                             data-testid="select-finance-type"
                           >
                             <option value="FinaBridge Finance">FinaBridge Finance</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Currency</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Currency</label>
                           <select
                             value={requestForm.currency}
                             onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })}
-                            className="w-full p-3 border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-white"
                             data-testid="select-currency"
                           >
                             <option value="USD">USD - US Dollar</option>
@@ -1332,13 +1332,13 @@ export default function FinaBridge() {
                             <option value="JPY">JPY - Japanese Yen</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Payment Terms</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Payment Terms</label>
                           <input
                             type="text"
                             value={requestForm.paymentTerms}
                             onChange={(e) => setRequestForm({ ...requestForm, paymentTerms: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., 30 days from B/L date"
                             data-testid="input-payment-terms"
                           />
@@ -1346,36 +1346,36 @@ export default function FinaBridge() {
                       </div>
                     </div>
 
-                    <div className="p-4 border rounded-lg bg-green-50/50 border-green-200">
-                      <h4 className="font-medium mb-4 flex items-center gap-2 text-green-800">
+                    <div className="p-3 border rounded-lg bg-green-50/50 border-green-200">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-green-800 text-sm">
                         <Package className="w-4 h-4" />
                         Trade Details & Gold Settlement
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Goods Name *</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Goods Name *</label>
                           <input
                             type="text"
                             value={requestForm.goodsName}
                             onChange={(e) => setRequestForm({ ...requestForm, goodsName: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., Electronic Components"
                             data-testid="input-goods-name"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Quantity</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Quantity</label>
                           <input
                             type="text"
                             value={requestForm.quantity}
                             onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., 1000 units"
                             data-testid="input-quantity"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Trade Value (USD) *</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Trade Value (USD) *</label>
                           <input
                             type="number"
                             value={requestForm.tradeValueUsd}
@@ -1395,26 +1395,26 @@ export default function FinaBridge() {
                               });
                               setInsufficientFundsError(null);
                             }}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="0.00"
                             data-testid="input-trade-value"
                           />
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] text-muted-foreground">
                             {requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram ? (
-                              <>Locked price: <span className="text-purple-600 font-medium">${parseFloat(requestForm.goldPriceUsdPerGram).toFixed(2)}/gram</span></>
+                              <>Locked: <span className="text-purple-600 font-medium">${parseFloat(requestForm.goldPriceUsdPerGram).toFixed(2)}/g</span></>
                             ) : (
-                              <>Current gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/gram</>
+                              <>Gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/g</>
                             )}
                           </p>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Settlement Gold (grams) *</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Settlement Gold (grams) *</label>
                           <input
                             type="number"
                             step="0.001"
                             value={requestForm.settlementGoldGrams}
                             readOnly
-                            className={`w-full p-3 border rounded-lg bg-gray-50 cursor-not-allowed ${
+                            className={`w-full p-2 text-sm border rounded-lg bg-gray-50 cursor-not-allowed ${
                               requestForm.settlementGoldGrams && 
                               parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
                                 ? 'border-red-400 bg-red-50/50'
@@ -1423,9 +1423,9 @@ export default function FinaBridge() {
                             placeholder="0.000"
                             data-testid="input-settlement-gold"
                           />
-                          <div className="flex flex-wrap gap-4 text-xs mt-1">
+                          <div className="flex flex-wrap gap-3 text-[10px] mt-0.5">
                             <span className="text-muted-foreground">
-                              FinaBridge Balance: <span className={`font-medium ${
+                              FinaBridge: <span className={`font-medium ${
                                 requestForm.settlementGoldGrams && 
                                 parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
                                   ? 'text-red-600'
@@ -1433,20 +1433,20 @@ export default function FinaBridge() {
                               }`}>{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
                             </span>
                             <span className="text-muted-foreground">
-                              FinaPay Balance: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
+                              FinaPay: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
                             </span>
                           </div>
                           
                           {/* Price Lock Toggle */}
-                          <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
+                          <div className="mt-1.5 p-2 bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
                                 {requestForm.isPriceLocked ? (
-                                  <Lock className="w-4 h-4 text-purple-600" />
+                                  <Lock className="w-3 h-3 text-purple-600" />
                                 ) : (
-                                  <Unlock className="w-4 h-4 text-amber-600" />
+                                  <Unlock className="w-3 h-3 text-amber-600" />
                                 )}
-                                <span className="text-sm font-medium">Lock Gold Price</span>
+                                <span className="text-xs font-medium">Lock Gold Price</span>
                               </div>
                               <Switch
                                 checked={requestForm.isPriceLocked}
@@ -1458,23 +1458,24 @@ export default function FinaBridge() {
                                   });
                                 }}
                                 data-testid="switch-lock-price"
+                                className="scale-75"
                               />
                             </div>
-                            <div className={`text-xs p-2 rounded ${requestForm.isPriceLocked ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <div className={`text-[10px] p-1.5 rounded ${requestForm.isPriceLocked ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
                               {requestForm.isPriceLocked ? (
-                                <div className="flex items-start gap-1.5">
-                                  <Shield className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <div className="flex items-start gap-1">
+                                  <Shield className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                   <div>
-                                    <span className="font-medium">Price Locked at ${currentGoldPriceUsdPerGram.toFixed(2)}/gram</span>
-                                    <p className="mt-0.5 text-purple-600">Your settlement gold is protected from price fluctuations. This price will be used throughout the trade.</p>
+                                    <span className="font-medium">Locked at ${currentGoldPriceUsdPerGram.toFixed(2)}/g</span>
+                                    <p className="text-purple-600">Protected from price fluctuations.</p>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-start gap-1.5">
-                                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <div className="flex items-start gap-1">
+                                  <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                   <div>
                                     <span className="font-medium">Floating Price (Market Rate)</span>
-                                    <p className="mt-0.5 text-amber-600">Gold price will be recalculated at each stage using the live market rate. You may benefit from price drops but risk price increases.</p>
+                                    <p className="text-amber-600">Price recalculated at each stage.</p>
                                   </div>
                                 </div>
                               )}
@@ -1483,17 +1484,17 @@ export default function FinaBridge() {
                           
                           {requestForm.settlementGoldGrams && 
                            parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0') && (
-                            <div className="mt-2 p-3 bg-purple-50 border border-purple-300 rounded-lg">
-                              <div className="flex items-start gap-2">
-                                <Wallet className="w-4 h-4 text-fuchsia-600 mt-0.5 flex-shrink-0" />
+                            <div className="mt-1.5 p-2 bg-purple-50 border border-purple-300 rounded-lg">
+                              <div className="flex items-start gap-1.5">
+                                <Wallet className="w-3 h-3 text-fuchsia-600 mt-0.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <p className="text-fuchsia-800 text-sm font-medium">Insufficient FinaBridge Balance</p>
-                                  <p className="text-fuchsia-700 text-xs mt-1">
-                                    You need <span className="font-bold">{parseFloat(requestForm.settlementGoldGrams).toFixed(3)}g</span> but only have{' '}
-                                    <span className="font-bold">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span> in FinaBridge.
+                                  <p className="text-fuchsia-800 text-xs font-medium">Insufficient Balance</p>
+                                  <p className="text-fuchsia-700 text-[10px]">
+                                    Need <span className="font-bold">{parseFloat(requestForm.settlementGoldGrams).toFixed(3)}g</span>, have{' '}
+                                    <span className="font-bold">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>.
                                     Transfer <span className="font-bold">
                                       {(parseFloat(requestForm.settlementGoldGrams) - parseFloat(wallet?.availableGoldGrams || '0')).toFixed(3)}g
-                                    </span> from FinaPay to continue.
+                                    </span> from FinaPay.
                                   </p>
                                   <button
                                     type="button"
@@ -1503,7 +1504,7 @@ export default function FinaBridge() {
                                       setFundAmount(Math.min(deficit, mainBalance).toFixed(3));
                                       setShowFundDialog(true);
                                     }}
-                                    className="mt-2 px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                    className="mt-1 px-2 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-[10px] font-medium rounded transition-colors"
                                     data-testid="button-transfer-finapay"
                                   >
                                     Transfer from FinaPay
@@ -1516,26 +1517,26 @@ export default function FinaBridge() {
                           {requestForm.settlementGoldGrams && 
                            parseFloat(requestForm.settlementGoldGrams) <= parseFloat(wallet?.availableGoldGrams || '0') &&
                            parseFloat(requestForm.settlementGoldGrams) > 0 && (
-                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                              <p className="text-green-700 text-xs flex items-center gap-1">
-                                <Check className="w-3 h-3" />
-                                Sufficient balance available in FinaBridge wallet
+                            <div className="mt-1 p-1.5 bg-green-50 border border-green-200 rounded">
+                              <p className="text-green-700 text-[10px] flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5" />
+                                Sufficient balance in FinaBridge
                               </p>
                             </div>
                           )}
                           
                           {insufficientFundsError && (
-                            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
                               {insufficientFundsError}
                             </div>
                           )}
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-sm font-medium">Description</label>
+                        <div className="space-y-1 md:col-span-2">
+                          <label className="text-xs font-medium">Description</label>
                           <textarea
                             value={requestForm.description}
                             onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             rows={2}
                             placeholder="Additional details about your trade request..."
                             data-testid="input-description"
@@ -1544,18 +1545,18 @@ export default function FinaBridge() {
                       </div>
                     </div>
 
-                    <div className="p-4 border rounded-lg bg-indigo-50/50 border-indigo-200">
-                      <h4 className="font-medium mb-4 flex items-center gap-2 text-indigo-800">
+                    <div className="p-3 border rounded-lg bg-indigo-50/50 border-indigo-200">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-indigo-800 text-sm">
                         <Truck className="w-4 h-4" />
                         Shipping & Logistics
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Mode of Transport</label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Mode of Transport</label>
                           <select
                             value={requestForm.modeOfTransport}
                             onChange={(e) => setRequestForm({ ...requestForm, modeOfTransport: e.target.value })}
-                            className="w-full p-3 border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-white"
                             data-testid="select-transport-mode"
                           >
                             <option value="Sea">Sea Freight</option>
@@ -1565,12 +1566,12 @@ export default function FinaBridge() {
                             <option value="Multimodal">Multimodal</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Incoterms</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Incoterms</label>
                           <select
                             value={requestForm.incoterms}
                             onChange={(e) => setRequestForm({ ...requestForm, incoterms: e.target.value })}
-                            className="w-full p-3 border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-white"
                             data-testid="select-incoterms"
                           >
                             <option value="FOB">FOB - Free on Board</option>
@@ -1582,86 +1583,86 @@ export default function FinaBridge() {
                             <option value="DAP">DAP - Delivered at Place</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Expected Ship Date</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Expected Ship Date</label>
                           <input
                             type="date"
                             value={requestForm.expectedShipDate}
                             onChange={(e) => setRequestForm({ ...requestForm, expectedShipDate: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             data-testid="input-ship-date"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Port of Loading</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Port of Loading</label>
                           <input
                             type="text"
                             value={requestForm.portOfLoading}
                             onChange={(e) => setRequestForm({ ...requestForm, portOfLoading: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., Shanghai Port, China"
                             data-testid="input-port-loading"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Port of Discharge / Destination</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Port of Discharge / Destination</label>
                           <input
                             type="text"
                             value={requestForm.destination}
                             onChange={(e) => setRequestForm({ ...requestForm, destination: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., Jebel Ali Port, UAE"
                             data-testid="input-destination"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Final Destination (if different)</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Final Destination (if different)</label>
                           <input
                             type="text"
                             value={requestForm.portOfDischarge}
                             onChange={(e) => setRequestForm({ ...requestForm, portOfDischarge: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., Dubai, UAE"
                             data-testid="input-port-discharge"
                           />
                         </div>
-                        <div className="flex items-center gap-6 md:col-span-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-center gap-4 md:col-span-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={requestForm.partialShipment}
                               onChange={(e) => setRequestForm({ ...requestForm, partialShipment: e.target.checked })}
-                              className="rounded border-gray-300"
+                              className="rounded border-gray-300 w-3.5 h-3.5"
                               data-testid="checkbox-partial-shipment"
                             />
-                            <span className="text-sm">Partial Shipment Allowed</span>
+                            <span className="text-xs">Partial Shipment Allowed</span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={requestForm.transshipment}
                               onChange={(e) => setRequestForm({ ...requestForm, transshipment: e.target.checked })}
-                              className="rounded border-gray-300"
+                              className="rounded border-gray-300 w-3.5 h-3.5"
                               data-testid="checkbox-transshipment"
                             />
-                            <span className="text-sm">Transshipment Allowed</span>
+                            <span className="text-xs">Transshipment Allowed</span>
                           </label>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-4 border rounded-lg bg-teal-50/50 border-teal-200">
-                      <h4 className="font-medium mb-4 flex items-center gap-2 text-teal-800">
+                    <div className="p-3 border rounded-lg bg-teal-50/50 border-teal-200">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-teal-800 text-sm">
                         <Shield className="w-4 h-4" />
                         Insurance (Optional)
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Insurance Coverage Type</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Insurance Coverage Type</label>
                           <select
                             value={requestForm.insuranceCoverage}
                             onChange={(e) => setRequestForm({ ...requestForm, insuranceCoverage: e.target.value })}
-                            className="w-full p-3 border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-white"
                             data-testid="select-insurance-coverage"
                           >
                             <option value="">Select coverage type...</option>
@@ -1672,13 +1673,13 @@ export default function FinaBridge() {
                             <option value="Strike Risk">Strike, Riot & Civil Commotion</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Insurance Provider (if known)</label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Insurance Provider (if known)</label>
                           <input
                             type="text"
                             value={requestForm.insuranceProvider}
                             onChange={(e) => setRequestForm({ ...requestForm, insuranceProvider: e.target.value })}
-                            className="w-full p-3 border rounded-lg"
+                            className="w-full p-2 text-sm border rounded-lg"
                             placeholder="e.g., Lloyd's of London, AIG, etc."
                             data-testid="input-insurance-provider"
                           />
