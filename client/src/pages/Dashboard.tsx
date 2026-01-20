@@ -75,22 +75,21 @@ export default function Dashboard() {
   });
 
   // Fetch user's pending physical deposit requests
-  const { data: physicalDeposits } = useQuery<Array<{ id: string; status: string; goldType: string; estimatedGrams: string; createdAt: string }>>({
+  const { data: physicalDepositsData } = useQuery<{ deposits: Array<{ id: string; status: string; goldType: string; estimatedGrams: string; createdAt: string }> }>({
     queryKey: ['physical-deposits', user?.id],
     queryFn: async () => {
       const res = await fetch('/api/physical-deposits/deposits');
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.deposits || [];
+      if (!res.ok) return { deposits: [] };
+      return res.json();
     },
     enabled: !!user?.id,
     staleTime: 60000,
   });
 
   // Filter for pending physical deposits (not yet completed/rejected/cancelled)
-  const pendingPhysicalDeposits = physicalDeposits?.filter(
+  const pendingPhysicalDeposits = (physicalDepositsData?.deposits || []).filter(
     d => ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'].includes(d.status)
-  ) || [];
+  );
 
   const prefs = prefsData?.preferences;
   const showBalance = prefs?.showBalance !== false;
