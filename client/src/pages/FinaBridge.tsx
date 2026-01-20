@@ -397,6 +397,7 @@ export default function FinaBridge() {
     goodsName: '',
     description: '',
     quantity: '',
+    quantityUnit: 'units',
     incoterms: 'FOB',
     destination: '',
     expectedShipDate: '',
@@ -594,6 +595,7 @@ export default function FinaBridge() {
         goodsName: '',
         description: '',
         quantity: '',
+        quantityUnit: 'units',
         incoterms: 'FOB',
         destination: '',
         expectedShipDate: '',
@@ -1365,14 +1367,35 @@ export default function FinaBridge() {
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs font-medium">Quantity</label>
-                          <input
-                            type="text"
-                            value={requestForm.quantity}
-                            onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
-                            className="w-full p-2 text-sm border rounded-lg"
-                            placeholder="e.g., 1000 units"
-                            data-testid="input-quantity"
-                          />
+                          <div className="flex gap-1.5">
+                            <input
+                              type="number"
+                              value={requestForm.quantity}
+                              onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
+                              className="flex-1 p-2 text-sm border rounded-lg"
+                              placeholder="1000"
+                              data-testid="input-quantity"
+                            />
+                            <select
+                              value={requestForm.quantityUnit}
+                              onChange={(e) => setRequestForm({ ...requestForm, quantityUnit: e.target.value })}
+                              className="w-24 p-2 text-sm border rounded-lg bg-white"
+                              data-testid="select-quantity-unit"
+                            >
+                              <option value="units">Units</option>
+                              <option value="pcs">Pieces</option>
+                              <option value="kg">Kg</option>
+                              <option value="ton">Tons</option>
+                              <option value="mt">MT</option>
+                              <option value="lbs">Lbs</option>
+                              <option value="cbm">CBM</option>
+                              <option value="ltrs">Liters</option>
+                              <option value="boxes">Boxes</option>
+                              <option value="cartons">Cartons</option>
+                              <option value="pallets">Pallets</option>
+                              <option value="containers">Containers</option>
+                            </select>
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs font-medium">Trade Value (USD) *</label>
