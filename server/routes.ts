@@ -17062,10 +17062,16 @@ ${message}
         return res.status(400).json({ message: "Insufficient gold balance" });
       }
       
-      // Get requester wallet
-      const requesterWallet = await storage.getWallet(requester.id);
+      // Get requester wallet - auto-create if missing (safety net for legacy users)
+      let requesterWallet = await storage.getWallet(requester.id);
       if (!requesterWallet) {
-        return res.status(400).json({ message: "Requester wallet not found" });
+        console.log(`[FinaPay] Auto-creating wallet for requester ${requester.id} (legacy user without wallet)`);
+        requesterWallet = await storage.createWallet({
+          userId: requester.id,
+          goldGrams: "0",
+          usdBalance: "0",
+          eurBalance: "0",
+        });
       }
       
       // Generate reference
