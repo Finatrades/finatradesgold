@@ -42,7 +42,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false, // Must be readable by JavaScript
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to match session cookies
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
     (req as any).csrfToken = token;
@@ -74,7 +74,7 @@ export function getCsrfTokenHandler(req: Request, res: Response) {
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax', // Changed from 'strict' to match session cookies
     maxAge: 24 * 60 * 60 * 1000,
   });
   res.json({ csrfToken: token });
