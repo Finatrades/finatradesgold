@@ -11889,7 +11889,7 @@ ${message}
               description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
               referenceId: request.referenceNumber,
               sourceModule: 'finapay',
-              goldWalletType: (request as any).goldWalletType || 'LGPW',
+              goldWalletType: 'LGPW', // P2P always uses LGPW
               approvedBy: updates.processedBy,
               approvedAt: new Date(),
               completedAt: new Date(),
@@ -17088,34 +17088,41 @@ ${message}
         goldGrams: (requesterGoldBalance + goldGrams).toFixed(6),
       });
       
-      // Update dual-wallet LGPW balances (vaultOwnershipSummary)
-      const walletType = (request as any).goldWalletType || 'LGPW';
-      if (walletType === 'LGPW') {
-        // Debit payer's LGPW
-        const [payerVaultSummary] = await db.select().from(vaultOwnershipSummary)
+      // Update dual-wallet LGPW balances (vaultOwnershipSummary) - ALWAYS LGPW for P2P
+      const walletType = 'LGPW'; // P2P is always LGPW to LGPW
+      
+      // Debit payer's LGPW (create if missing)
+      const [payerVaultSummary] = await db.select().from(vaultOwnershipSummary)
+        .where(eq(vaultOwnershipSummary.userId, payer.id));
+      if (payerVaultSummary) {
+        const payerMpgw = parseFloat(payerVaultSummary.mpgwAvailableGrams || '0');
+        await db.update(vaultOwnershipSummary)
+          .set({ mpgwAvailableGrams: Math.max(0, payerMpgw - goldGrams).toFixed(6) })
           .where(eq(vaultOwnershipSummary.userId, payer.id));
-        if (payerVaultSummary) {
-          const payerMpgw = parseFloat(payerVaultSummary.mpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ mpgwAvailableGrams: (payerMpgw - goldGrams).toFixed(6) })
-            .where(eq(vaultOwnershipSummary.userId, payer.id));
-        }
-        
-        // Credit requester's LGPW
-        const [requesterVaultSummary] = await db.select().from(vaultOwnershipSummary)
+      } else {
+        // Payer should have vault summary - create with 0 balance (already debited from legacy)
+        console.log(`[FinaPay] Auto-creating vault summary for payer ${payer.id}`);
+        await db.insert(vaultOwnershipSummary).values({
+          userId: payer.id,
+          mpgwAvailableGrams: '0.000000',
+        });
+      }
+      
+      // Credit requester's LGPW (create if missing)
+      const [requesterVaultSummary] = await db.select().from(vaultOwnershipSummary)
+        .where(eq(vaultOwnershipSummary.userId, requester.id));
+      if (requesterVaultSummary) {
+        const requesterMpgw = parseFloat(requesterVaultSummary.mpgwAvailableGrams || '0');
+        await db.update(vaultOwnershipSummary)
+          .set({ mpgwAvailableGrams: (requesterMpgw + goldGrams).toFixed(6) })
           .where(eq(vaultOwnershipSummary.userId, requester.id));
-        if (requesterVaultSummary) {
-          const requesterMpgw = parseFloat(requesterVaultSummary.mpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ mpgwAvailableGrams: (requesterMpgw + goldGrams).toFixed(6) })
-            .where(eq(vaultOwnershipSummary.userId, requester.id));
-        } else {
-          // Create vault ownership summary if doesn't exist
-          await db.insert(vaultOwnershipSummary).values({
-            userId: requester.id,
-            mpgwAvailableGrams: goldGrams.toFixed(6),
-          });
-        }
+      } else {
+        // Create vault ownership summary for requester with credited gold
+        console.log(`[FinaPay] Auto-creating vault summary for requester ${requester.id}`);
+        await db.insert(vaultOwnershipSummary).values({
+          userId: requester.id,
+          mpgwAvailableGrams: goldGrams.toFixed(6),
+        });
       }
       
       // Create transactions with gold grams
@@ -17131,7 +17138,7 @@ ${message}
         description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-        goldWalletType: (request as any).goldWalletType || 'LGPW',
+        goldWalletType: 'LGPW', // P2P always uses LGPW
         completedAt: new Date(),
       });
       
@@ -17146,7 +17153,7 @@ ${message}
         description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
         referenceId: referenceNumber,
         sourceModule: 'finapay',
-        goldWalletType: (request as any).goldWalletType || 'LGPW',
+        goldWalletType: 'LGPW', // P2P always uses LGPW
         completedAt: new Date(),
       });
       
@@ -17204,7 +17211,7 @@ ${message}
         goldWalletType: 'LGPW', // Physical storage always LGPW
       });
       
-      // 3. Transfer Certificate for payer (gold sender)
+      // 3. Transfer Certificate for payer (gold sender) - shows Finatrades ID transfer
       await storage.createCertificate({
         certificateNumber: genCertNum('TRC'),
         userId: payer.id,
@@ -17217,10 +17224,47 @@ ${message}
         issuer: 'Finatrades Finance SA',
         fromUserId: payer.id,
         toUserId: requester.id,
+        fromUserName: `${payer.firstName} ${payer.lastName} (FT-${payer.finatradesId})`,
+        toUserName: `${requester.firstName} ${requester.lastName} (FT-${requester.finatradesId})`,
         goldWalletType: walletType,
       });
       
-      // 4. Transfer Certificate for requester (gold recipient)
+      // 3a. Updated Digital Ownership Certificate for payer (showing reduced balance)
+      const payerNewBalance = payerGoldBalance - goldGrams;
+      if (payerNewBalance > 0) {
+        await storage.createCertificate({
+          certificateNumber: genCertNum('DOC'),
+          userId: payer.id,
+          transactionId: senderTx.id,
+          type: 'Digital Ownership',
+          status: 'Active',
+          goldGrams: payerNewBalance.toFixed(6),
+          goldPriceUsdPerGram: pricePerGram.toFixed(2),
+          totalValueUsd: (payerNewBalance * pricePerGram).toFixed(2),
+          issuer: 'Finatrades Finance SA',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: wingoldRef,
+          goldWalletType: walletType,
+        });
+        
+        // 3b. Updated Physical Storage Certificate for payer
+        await storage.createCertificate({
+          certificateNumber: genCertNum('PSC'),
+          userId: payer.id,
+          transactionId: senderTx.id,
+          type: 'Physical Storage',
+          status: 'Active',
+          goldGrams: payerNewBalance.toFixed(6),
+          goldPriceUsdPerGram: pricePerGram.toFixed(2),
+          totalValueUsd: (payerNewBalance * pricePerGram).toFixed(2),
+          issuer: 'Wingold and Metals DMCC',
+          vaultLocation: 'Dubai - Wingold & Metals DMCC',
+          wingoldStorageRef: wingoldRef,
+          goldWalletType: 'LGPW',
+        });
+      }
+      
+      // 4. Transfer Certificate for requester (gold recipient) - shows Finatrades ID transfer
       await storage.createCertificate({
         certificateNumber: genCertNum('TRC'),
         userId: requester.id,
@@ -17233,6 +17277,8 @@ ${message}
         issuer: 'Finatrades Finance SA',
         fromUserId: payer.id,
         toUserId: requester.id,
+        fromUserName: `${payer.firstName} ${payer.lastName} (FT-${payer.finatradesId})`,
+        toUserName: `${requester.firstName} ${requester.lastName} (FT-${requester.finatradesId})`,
         goldWalletType: walletType,
       });
       
