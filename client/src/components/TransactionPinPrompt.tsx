@@ -44,6 +44,29 @@ export default function TransactionPinPrompt({
     }
   }, [open, userId]);
 
+  // Get CSRF token from cookie
+  const getCsrfToken = (): string | null => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Fetch CSRF token if not present
+  const ensureCsrfToken = async (): Promise<string | null> => {
+    let token = getCsrfToken();
+    if (!token) {
+      try {
+        const res = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          token = data.csrfToken;
+        }
+      } catch (e) {
+        console.warn('[TransactionPinPrompt] Failed to fetch CSRF token:', e);
+      }
+    }
+    return token;
+  };
+
   const checkPinStatus = async () => {
     try {
       const res = await fetch(`/api/transaction-pin/status/${userId}`);
@@ -67,11 +90,14 @@ export default function TransactionPinPrompt({
     setError(null);
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/transaction-pin/verify', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId, pin, action }),
       });
