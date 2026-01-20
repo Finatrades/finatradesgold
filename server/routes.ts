@@ -16838,6 +16838,14 @@ ${message}
         }
       }
       
+      // Fetch current gold price and calculate gold grams (Gold-First Principle)
+      const goldPrice = await getGoldPricePerGram();
+      if (!goldPrice || goldPrice <= 0) {
+        return res.status(400).json({ message: "Unable to fetch current gold price" });
+      }
+      const parsedAmountUsd = parseFloat(amountUsd);
+      const goldGrams = parsedAmountUsd / goldPrice;
+      
       // Generate reference and QR payload
       const referenceNumber = `REQ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const qrPayload = `FTREQ:${referenceNumber}:${amountUsd}:${requester.finatradesId}`;
@@ -16862,7 +16870,8 @@ ${message}
         targetId,
         targetIdentifier,
         channel,
-        amountUsd: parseFloat(amountUsd).toFixed(2),
+        amountUsd: parsedAmountUsd.toFixed(2),
+        amountGold: goldGrams.toFixed(6),
         memo,
         qrPayload,
         status: 'Pending',
@@ -16947,7 +16956,14 @@ ${message}
       const userFinatradesId = targetUser?.finatradesId;
       
       const requests = await storage.getUserReceivedPeerRequests(req.params.userId, userEmail, userFinatradesId);
-      res.json({ requests });
+      
+      // Map amountGold to goldGrams for frontend compatibility
+      const mappedRequests = requests.map(r => ({
+        ...r,
+        goldGrams: r.amountGold,
+      }));
+      
+      res.json({ requests: mappedRequests });
     } catch (error) {
       res.status(400).json({ message: "Failed to get received requests" });
     }
