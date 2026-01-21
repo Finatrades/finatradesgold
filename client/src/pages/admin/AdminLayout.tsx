@@ -211,7 +211,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Transactions', href: '/admin/transactions' },
         { label: 'Account Statements', href: '/admin/account-statements' },
         { label: 'Daily Reconciliation', href: '/admin/daily-reconciliation' },
-  '/admin/treasury': ['view_reports', 'generate_reports'],
         { label: 'Treasury Dashboard', href: '/admin/treasury' },
         { label: 'Interest Calculator', href: '/admin/interest-calculator' },
         { label: 'Payment Gateways', href: '/admin/payment-gateways' },
