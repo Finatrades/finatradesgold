@@ -6129,3 +6129,151 @@ export const userSessions = pgTable("user_sessions", {
   sess: json("sess").notNull().$type<Record<string, unknown>>(),
   expire: timestamp("expire").notNull(),
 });
+
+// ============================================
+// TREASURY MANAGEMENT SYSTEM
+// Cash Vault & Gold Vault for full financial tracking
+// ============================================
+
+// Cash Vault Entry Types
+export const treasuryCashEntryTypeEnum = pgEnum('treasury_cash_entry_type', [
+  'DEPOSIT_CARD',        // User deposit via card
+  'DEPOSIT_BANK',        // User deposit via bank transfer
+  'DEPOSIT_CRYPTO',      // User deposit via crypto
+  'GOLD_PURCHASE',       // Platform buys physical gold (cash out)
+  'GOLD_SALE',           // Platform sells gold (cash in from withdrawal)
+  'WITHDRAWAL_PAYOUT',   // User withdrawal to bank
+  'FEE_COLLECTED',       // Platform fee revenue
+  'EXPENSE',             // Platform operating expense
+  'ADJUSTMENT',          // Manual adjustment by admin
+  'REFUND'               // Refund to user
+]);
+
+// Gold Vault Entry Types  
+export const treasuryGoldEntryTypeEnum = pgEnum('treasury_gold_entry_type', [
+  'PURCHASE',            // Gold purchased from supplier
+  'ALLOCATE_TO_USER',    // Gold credited to user wallet
+  'RETURN_FROM_USER',    // Gold returned from user (withdrawal/sale)
+  'SOLD',                // Physical gold sold
+  'PHYSICAL_DELIVERY',   // Gold delivered to user
+  'ADJUSTMENT',          // Manual adjustment by admin
+  'STORAGE_FEE'          // Gold deducted for storage fees
+]);
+
+// TREASURY CASH VAULT - Tracks all USD in/out
+export const treasuryCashVault = pgTable("treasury_cash_vault", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Entry details
+  entryType: treasuryCashEntryTypeEnum("entry_type").notNull(),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
+  direction: varchar("direction", { length: 10 }).notNull(), // 'in' or 'out'
+  
+  // Running balance after this entry
+  runningBalanceUsd: decimal("running_balance_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Source/reference tracking
+  sourceType: varchar("source_type", { length: 50 }), // 'deposit_request', 'withdrawal_request', 'gold_order', etc.
+  sourceId: varchar("source_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  
+  // Bank/payment details
+  paymentMethod: varchar("payment_method", { length: 50 }), // 'card', 'bank', 'crypto'
+  paymentReference: varchar("payment_reference", { length: 255 }),
+  
+  // Admin tracking
+  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
+  notes: text("notes"),
+  
+  date: date("date").notNull().default(sql`CURRENT_DATE`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTreasuryCashVaultSchema = createInsertSchema(treasuryCashVault).omit({ id: true, createdAt: true });
+export type InsertTreasuryCashVault = z.infer<typeof insertTreasuryCashVaultSchema>;
+export type TreasuryCashVault = typeof treasuryCashVault.$inferSelect;
+
+// TREASURY GOLD VAULT - Tracks all physical gold in/out
+export const treasuryGoldVault = pgTable("treasury_gold_vault", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Entry details
+  entryType: treasuryGoldEntryTypeEnum("entry_type").notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  direction: varchar("direction", { length: 10 }).notNull(), // 'in' or 'out'
+  
+  // Cost/value tracking
+  costPerGramUsd: decimal("cost_per_gram_usd", { precision: 18, scale: 4 }),
+  totalCostUsd: decimal("total_cost_usd", { precision: 18, scale: 2 }),
+  
+  // Running balance after this entry
+  runningBalanceGrams: decimal("running_balance_grams", { precision: 18, scale: 6 }).notNull(),
+  
+  // Source/reference tracking
+  sourceType: varchar("source_type", { length: 50 }), // 'utt', 'withdrawal', 'delivery', etc.
+  sourceId: varchar("source_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  
+  // Supplier/storage tracking
+  supplier: varchar("supplier", { length: 100 }), // 'Wingold', etc.
+  storageLocation: varchar("storage_location", { length: 255 }),
+  wingoldOrderId: varchar("wingold_order_id", { length: 255 }),
+  
+  // Admin tracking
+  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
+  notes: text("notes"),
+  
+  date: date("date").notNull().default(sql`CURRENT_DATE`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTreasuryGoldVaultSchema = createInsertSchema(treasuryGoldVault).omit({ id: true, createdAt: true });
+export type InsertTreasuryGoldVault = z.infer<typeof insertTreasuryGoldVaultSchema>;
+export type TreasuryGoldVault = typeof treasuryGoldVault.$inferSelect;
+
+// DAILY TREASURY RECONCILIATION - Daily snapshot for audit
+export const treasuryDailyReconciliation = pgTable("treasury_daily_reconciliation", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Date of reconciliation
+  date: date("date").notNull().unique(),
+  
+  // Cash position
+  cashVaultBalanceUsd: decimal("cash_vault_balance_usd", { precision: 18, scale: 2 }).notNull(),
+  totalDepositsUsd: decimal("total_deposits_usd", { precision: 18, scale: 2 }).notNull(),
+  totalWithdrawalsUsd: decimal("total_withdrawals_usd", { precision: 18, scale: 2 }).notNull(),
+  totalFeesCollectedUsd: decimal("total_fees_collected_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Gold position
+  goldVaultBalanceGrams: decimal("gold_vault_balance_grams", { precision: 18, scale: 6 }).notNull(),
+  goldVaultValueUsd: decimal("gold_vault_value_usd", { precision: 18, scale: 2 }).notNull(),
+  totalGoldPurchasedGrams: decimal("total_gold_purchased_grams", { precision: 18, scale: 6 }).notNull(),
+  totalGoldPurchaseCostUsd: decimal("total_gold_purchase_cost_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // User digital gold position
+  totalUserDigitalGoldGrams: decimal("total_user_digital_gold_grams", { precision: 18, scale: 6 }).notNull(),
+  totalUserDigitalGoldValueUsd: decimal("total_user_digital_gold_value_usd", { precision: 18, scale: 2 }).notNull(),
+  
+  // Reconciliation check
+  goldVarianceGrams: decimal("gold_variance_grams", { precision: 18, scale: 6 }).notNull(), // Physical - Digital (should be 0)
+  status: varchar("status", { length: 20 }).notNull().default('matched'), // 'matched', 'mismatch', 'pending'
+  
+  // Gold price used for valuation
+  goldPricePerGramUsd: decimal("gold_price_per_gram_usd", { precision: 18, scale: 4 }).notNull(),
+  
+  // Breakdown by deposit method
+  cardDepositsUsd: decimal("card_deposits_usd", { precision: 18, scale: 2 }),
+  bankDepositsUsd: decimal("bank_deposits_usd", { precision: 18, scale: 2 }),
+  cryptoDepositsUsd: decimal("crypto_deposits_usd", { precision: 18, scale: 2 }),
+  
+  // Audit
+  auditedBy: varchar("audited_by", { length: 255 }).references(() => users.id),
+  auditNotes: text("audit_notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTreasuryDailyReconciliationSchema = createInsertSchema(treasuryDailyReconciliation).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTreasuryDailyReconciliation = z.infer<typeof insertTreasuryDailyReconciliationSchema>;
+export type TreasuryDailyReconciliation = typeof treasuryDailyReconciliation.$inferSelect;

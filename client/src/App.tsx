@@ -176,6 +176,7 @@ import AuditTrail from "@/pages/admin/AuditTrail";
 import DailyReconciliation from "@/pages/admin/DailyReconciliation";
 import RiskExposure from "@/pages/admin/RiskExposure";
 import SuspiciousActivityReports from "@/pages/admin/SuspiciousActivityReports";
+import TreasuryDashboard from "@/pages/admin/TreasuryDashboard";
 import ScheduledJobs from "@/pages/admin/ScheduledJobs";
 import ApiLogs from "@/pages/admin/ApiLogs";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
@@ -293,6 +294,7 @@ function Router() {
       <Route path="/admin/daily-reconciliation" component={DailyReconciliation} />
       <Route path="/admin/risk-exposure" component={RiskExposure} />
       <Route path="/admin/sar-reports" component={SuspiciousActivityReports} />
+      <Route path="/admin/treasury" component={TreasuryDashboard} />
       <Route path="/admin/scheduled-jobs" component={ScheduledJobs} />
       <Route path="/admin/api-logs" component={ApiLogs} />
       <Route path="/admin/regulatory-reports" component={RegulatoryReports} />
