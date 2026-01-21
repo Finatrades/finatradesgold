@@ -24339,6 +24339,18 @@ export async function registerRoutes(
     }
   });
 
+  // Get user email logs (user can view their own email history)
+  app.get("/api/users/:userId/email-logs", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const emailLogs = await storage.getEmailLogsByUser(userId);
+      res.json({ emailLogs });
+    } catch (error) {
+      console.error('[Email Logs Error]', error);
+      res.status(500).json({ message: "Failed to get email history" });
+    }
+  });
+
   // Delete notification - with ownership verification
   app.delete("/api/notifications/:notificationId", async (req, res) => {
     try {

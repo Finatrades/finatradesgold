@@ -1199,6 +1199,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             goldWalletType={selectedWalletType}
             onSuccess={handleCardSuccess}
             onError={handleCardError}
+            onCancel={handleBack}
           />
         </div>
       )}
