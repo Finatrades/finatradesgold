@@ -178,6 +178,7 @@ import RiskExposure from "@/pages/admin/RiskExposure";
 import SuspiciousActivityReports from "@/pages/admin/SuspiciousActivityReports";
 import TreasuryDashboard from "@/pages/admin/TreasuryDashboard";
 import ScheduledJobs from "@/pages/admin/ScheduledJobs";
+import PresentationDownload from "@/pages/admin/PresentationDownload";
 import ApiLogs from "@/pages/admin/ApiLogs";
 import RegulatoryReports from "@/pages/admin/RegulatoryReports";
 import Announcements from "@/pages/admin/Announcements";
@@ -296,6 +297,7 @@ function Router() {
       <Route path="/admin/sar-reports" component={SuspiciousActivityReports} />
       <Route path="/admin/treasury" component={TreasuryDashboard} />
       <Route path="/admin/scheduled-jobs" component={ScheduledJobs} />
+      <Route path="/admin/presentation" component={PresentationDownload} />
       <Route path="/admin/api-logs" component={ApiLogs} />
       <Route path="/admin/regulatory-reports" component={RegulatoryReports} />
       

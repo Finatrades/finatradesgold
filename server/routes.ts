@@ -28420,7 +28420,6 @@ export async function registerRoutes(
   });
 
 
-  return httpServer;
 
   // ============================================================================
   // REPORT EXPORT API ENDPOINTS
@@ -28598,6 +28597,22 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Download report error:", error);
       res.status(500).json({ message: error.message || "Failed to download report" });
+    }
+  });
+
+
+  // Finatrades Government Presentation Download
+  app.get("/api/admin/presentation/download", ensureAdminAsync, async (req, res) => {
+    try {
+      const { generateFinatradesPresentation } = await import("./presentation");
+      const buffer = await generateFinatradesPresentation();
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+      res.setHeader('Content-Disposition', 'attachment; filename="Finatrades_Government_Presentation.pptx"');
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("Presentation generation error:", error);
+      res.status(500).json({ message: error.message || "Failed to generate presentation" });
     }
   });
 
