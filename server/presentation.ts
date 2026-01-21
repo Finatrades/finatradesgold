@@ -1,4 +1,6 @@
 import PptxGenJS from 'pptxgenjs';
+// @ts-ignore - pptxgenjs default export compatibility
+const PptxGen = PptxGenJS.default || PptxGenJS;
 
 const PURPLE_PRIMARY = '#8A2BE2';
 const PURPLE_DARK = '#6B21A8';
@@ -7,7 +9,7 @@ const WHITE = '#FFFFFF';
 const DARK_TEXT = '#1F2937';
 
 export async function generateFinatradesPresentation(): Promise<Buffer> {
-  const pptx = new PptxGenJS();
+  const pptx = new PptxGen();
   
   pptx.author = 'Finatrades';
   pptx.title = 'Finatrades - Gold-Backed Digital Financial Platform';
