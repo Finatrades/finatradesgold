@@ -4916,6 +4916,15 @@ export class DatabaseStorage implements IStorage {
 
     // Get all component permissions for user's roles
     const roleIds = roleAssignments.map((ra: any) => ra.role_id);
+    
+    // Handle empty roleIds gracefully
+    if (roleIds.length === 0) {
+      return { permissions: [], components: [], isSuperAdmin: false };
+    }
+    
+    // Build the IN clause properly for PostgreSQL
+    const roleIdList = sql.join(roleIds.map((id: string) => sql`${id}`), sql`, `);
+    
     const result = await db.execute(sql`
       SELECT DISTINCT 
         ac.slug as component_slug,
@@ -4931,7 +4940,7 @@ export class DatabaseStorage implements IStorage {
         rcp.can_delete
       FROM role_component_permissions rcp
       JOIN admin_components ac ON rcp.component_id = ac.id
-      WHERE rcp.role_id = ANY(${roleIds})
+      WHERE rcp.role_id IN (${roleIdList})
     `);
 
     // Map RBAC component permissions to legacy permission strings
