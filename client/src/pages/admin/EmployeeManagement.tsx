@@ -201,7 +201,10 @@ export default function EmployeeManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
-      const res = await apiRequest('PATCH', `/api/admin/employees/${id}`, { ...data, updatedBy: user?.id });
+      // When using RBAC roles, don't send the legacy role field 
+      // (it's a database enum that only accepts 'support', 'manager', 'admin')
+      const { role: _legacyRole, ...updateData } = data;
+      const res = await apiRequest('PATCH', `/api/admin/employees/${id}`, { ...updateData, updatedBy: user?.id });
       if (!res.ok) throw new Error('Failed to update employee');
       return res.json();
     },
@@ -259,11 +262,12 @@ export default function EmployeeManagement() {
 
   const handleRoleChange = (rbacRoleId: string) => {
     const selectedRole = rbacRoles.find(r => r.id === rbacRoleId);
-    const legacyRole = selectedRole?.name.toLowerCase().replace(/\s+/g, '_') || 'support';
-    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[legacyRole] || ROLE_DEFAULT_PERMISSIONS['support'] || [];
+    // Don't change the legacy role field - it's a database enum that only accepts 'support', 'manager', 'admin'
+    // RBAC roles are stored in rbacRoleId field, not the legacy role field
+    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[selectedRole?.name.toLowerCase().replace(/\s+/g, '_') || 'support'] || ROLE_DEFAULT_PERMISSIONS['support'] || [];
     setFormData(prev => ({ 
       ...prev, 
-      role: legacyRole,
+      // Keep existing legacy role unchanged when updating RBAC role
       rbacRoleId,
       department: selectedRole?.department || prev.department,
       permissions: defaultPermissions 
