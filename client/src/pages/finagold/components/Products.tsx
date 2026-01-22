@@ -2,10 +2,10 @@ import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
-const goldBarsImage = '/attached_assets/image_1767361888205.png';
-const finaPayImage = '/attached_assets/image_1767363090551.png';
-const globalTradeImage = '/attached_assets/image_1767363153550.png';
-const bnslImage = '/attached_assets/image_1767363213860.png';
+const goldBarsImage = '/src/assets/images/gold-bars.png';
+const finaPayImage = '/src/assets/images/finapay-transfers.png';
+const globalTradeImage = '/src/assets/images/global-trade.png';
+const bnslImage = '/src/assets/images/gold-savings.png';
 
 const content = {
   personal: {
