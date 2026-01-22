@@ -4299,8 +4299,15 @@ export async function registerRoutes(
       const enrichedEmployees = await Promise.all(
         employees.map(async (emp) => {
           const user = emp.userId ? await storage.getUser(emp.userId) : null;
+          const rbacRole = emp.rbacRoleId ? await storage.getAdminRole(emp.rbacRoleId) : null;
           return {
             ...emp,
+            rbacRole: rbacRole ? {
+              id: rbacRole.id,
+              name: rbacRole.name,
+              risk_level: rbacRole.risk_level,
+              department: rbacRole.department
+            } : null,
             user: user ? {
               id: user.id,
               email: user.email,

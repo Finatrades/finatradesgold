@@ -28,6 +28,12 @@ const EMPLOYEE_ROLES = [
   { value: 'compliance', label: 'Compliance', color: 'bg-red-500' },
 ];
 
+const RISK_LEVEL_COLORS: Record<string, string> = {
+  'High': 'bg-red-500',
+  'Medium': 'bg-yellow-500',
+  'Low': 'bg-green-500',
+};
+
 const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
   super_admin: [
     'manage_users', 'view_users', 'manage_employees', 'manage_kyc', 'view_kyc',
@@ -90,6 +96,7 @@ interface Employee {
   employeeId: string;
   userId: string | null;
   role: string;
+  rbacRoleId: string | null;
   department: string | null;
   jobTitle: string | null;
   status: string;
@@ -104,6 +111,22 @@ interface Employee {
     lastName: string;
     profilePhoto: string | null;
   } | null;
+  rbacRole?: {
+    id: string;
+    name: string;
+    risk_level: string;
+    department: string | null;
+  } | null;
+}
+
+interface RbacRole {
+  id: string;
+  name: string;
+  description: string | null;
+  department: string | null;
+  risk_level: string;
+  is_system: boolean;
+  is_active: boolean;
 }
 
 export default function EmployeeManagement() {
@@ -119,6 +142,7 @@ export default function EmployeeManagement() {
   const [formData, setFormData] = useState({
     userId: '',
     role: 'support',
+    rbacRoleId: '',
     department: '',
     jobTitle: '',
     permissions: ROLE_DEFAULT_PERMISSIONS['support'] || [] as string[],
@@ -141,6 +165,17 @@ export default function EmployeeManagement() {
       return res.json();
     }
   });
+
+  const { data: rbacRolesData } = useQuery({
+    queryKey: ['/api/admin/rbac/roles'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/rbac/roles');
+      if (!res.ok) throw new Error('Failed to fetch RBAC roles');
+      return res.json();
+    }
+  });
+
+  const rbacRoles: RbacRole[] = rbacRolesData?.roles || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -213,17 +248,22 @@ export default function EmployeeManagement() {
     setFormData({
       userId: '',
       role: 'support',
+      rbacRoleId: '',
       department: '',
       jobTitle: '',
       permissions: ROLE_DEFAULT_PERMISSIONS['support'] || [],
     });
   };
 
-  const handleRoleChange = (role: string) => {
-    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[role] || [];
+  const handleRoleChange = (rbacRoleId: string) => {
+    const selectedRole = rbacRoles.find(r => r.id === rbacRoleId);
+    const legacyRole = selectedRole?.name.toLowerCase().replace(/\s+/g, '_') || 'support';
+    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[legacyRole] || ROLE_DEFAULT_PERMISSIONS['support'] || [];
     setFormData(prev => ({ 
       ...prev, 
-      role,
+      role: legacyRole,
+      rbacRoleId,
+      department: selectedRole?.department || prev.department,
       permissions: defaultPermissions 
     }));
   };
@@ -233,6 +273,7 @@ export default function EmployeeManagement() {
     setFormData({
       userId: employee.userId || '',
       role: employee.role,
+      rbacRoleId: employee.rbacRoleId || '',
       department: employee.department || '',
       jobTitle: employee.jobTitle || '',
       permissions: employee.permissions || [],
@@ -285,8 +326,10 @@ export default function EmployeeManagement() {
       emp.employeeId.toLowerCase().includes(searchLower) ||
       (emp.user?.email?.toLowerCase()?.includes(searchLower) ?? false) ||
       (emp.user?.firstName?.toLowerCase()?.includes(searchLower) ?? false) ||
-      (emp.user?.lastName?.toLowerCase()?.includes(searchLower) ?? false);
-    const matchesRole = roleFilter === 'all' || emp.role === roleFilter;
+      (emp.user?.lastName?.toLowerCase()?.includes(searchLower) ?? false) ||
+      (emp.rbacRole?.name?.toLowerCase()?.includes(searchLower) ?? false);
+    const matchesRole = roleFilter === 'all' || 
+      (roleFilter.startsWith('rbac:') ? emp.rbacRoleId === roleFilter.replace('rbac:', '') : emp.role === roleFilter);
     const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -351,19 +394,24 @@ export default function EmployeeManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={handleRoleChange}>
+                    <Label htmlFor="role">RBAC Role</Label>
+                    <Select value={formData.rbacRoleId} onValueChange={handleRoleChange}>
                       <SelectTrigger data-testid="select-role">
-                        <SelectValue placeholder="Select role" />
+                        <SelectValue placeholder="Select RBAC role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {EMPLOYEE_ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
+                        {rbacRoles.filter(r => r.is_active).map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[role.risk_level] || 'bg-gray-400'}`} />
+                              {role.name}
+                              {role.is_system && <Badge variant="outline" className="text-xs ml-1">System</Badge>}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">Roles are managed in Role Management</p>
                   </div>
 
                   <div className="space-y-2">
@@ -445,14 +493,19 @@ export default function EmployeeManagement() {
               </div>
               <div className="flex gap-2">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-40" data-testid="filter-role">
+                  <SelectTrigger className="w-48" data-testid="filter-role">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    {EMPLOYEE_ROLES.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                    {rbacRoles.filter(r => r.is_active).map((role) => (
+                      <SelectItem key={role.id} value={`rbac:${role.id}`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[role.risk_level] || 'bg-gray-400'}`} />
+                          {role.name}
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -523,9 +576,18 @@ export default function EmployeeManagement() {
                           <code className="text-sm bg-gray-100 px-2 py-1 rounded">{employee.employeeId}</code>
                         </td>
                         <td className="py-3 px-4">
-                          <Badge className={`${getRoleBadgeColor(employee.role)} text-white`}>
-                            {EMPLOYEE_ROLES.find(r => r.value === employee.role)?.label || employee.role}
-                          </Badge>
+                          {employee.rbacRole ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[employee.rbacRole.risk_level] || 'bg-gray-400'}`} />
+                              <Badge className={`${getRoleBadgeColor(employee.role)} text-white`}>
+                                {employee.rbacRole.name}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-500">
+                              {EMPLOYEE_ROLES.find(r => r.value === employee.role)?.label || employee.role}
+                            </Badge>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-gray-600">{employee.department || '-'}</td>
                         <td className="py-3 px-4">{getStatusBadge(employee.status)}</td>
@@ -582,15 +644,19 @@ export default function EmployeeManagement() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select value={formData.role} onValueChange={handleRoleChange}>
+                  <Label htmlFor="edit-role">RBAC Role</Label>
+                  <Select value={formData.rbacRoleId} onValueChange={handleRoleChange}>
                     <SelectTrigger data-testid="edit-select-role">
-                      <SelectValue placeholder="Select role" />
+                      <SelectValue placeholder="Select RBAC role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {EMPLOYEE_ROLES.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
+                      {rbacRoles.filter(r => r.is_active).map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[role.risk_level] || 'bg-gray-400'}`} />
+                            {role.name}
+                            {role.is_system && <Badge variant="outline" className="text-xs ml-1">System</Badge>}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
