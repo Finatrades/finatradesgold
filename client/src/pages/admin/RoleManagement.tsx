@@ -13,7 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Plus, Pencil, Trash2, Users, Lock, AlertTriangle, CheckCircle2, Eye, FileEdit, Download, X, CircleCheck, CircleAlert } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, Lock, AlertTriangle, CheckCircle2, Eye, FileEdit, Download, X, CircleCheck, CircleAlert, Calendar, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -56,6 +57,19 @@ interface Permission {
   can_delete: boolean;
 }
 
+interface AssignedUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_photo_url: string | null;
+  assigned_at: string;
+  expires_at: string | null;
+  assigned_by: string | null;
+  assigned_by_first_name: string | null;
+  assigned_by_last_name: string | null;
+}
+
 export default function RoleManagement() {
   const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<AdminRole | null>(null);
@@ -84,6 +98,16 @@ export default function RoleManagement() {
     queryFn: async () => {
       if (!selectedRole) return null;
       const res = await apiRequest("GET", `/api/admin/rbac/roles/${selectedRole.id}`);
+      return res.json();
+    },
+    enabled: !!selectedRole,
+  });
+
+  const { data: roleUsersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["role-users", selectedRole?.id],
+    queryFn: async () => {
+      if (!selectedRole) return null;
+      const res = await apiRequest("GET", `/api/admin/rbac/roles/${selectedRole.id}/users`);
       return res.json();
     },
     enabled: !!selectedRole,
@@ -428,11 +452,59 @@ export default function RoleManagement() {
                     )}
                   </TabsContent>
                   <TabsContent value="users" className="mt-4">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>User assignment management</p>
-                      <p className="text-sm">Assign users to this role from the Employee Management page</p>
-                    </div>
+                    {usersLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+                    ) : (roleUsersData?.users && roleUsersData.users.length > 0) ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-sm text-muted-foreground">
+                            {roleUsersData.users.length} user{roleUsersData.users.length !== 1 ? 's' : ''} assigned to this role
+                          </p>
+                        </div>
+                        {roleUsersData.users.map((user: AssignedUser) => (
+                          <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={user.profile_photo_url || undefined} />
+                                <AvatarFallback>
+                                  {(user.first_name?.[0] || '') + (user.last_name?.[0] || user.email[0].toUpperCase())}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">
+                                  {user.first_name && user.last_name 
+                                    ? `${user.first_name} ${user.last_name}` 
+                                    : user.email}
+                                </p>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right text-sm">
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>Assigned {new Date(user.assigned_at).toLocaleDateString()}</span>
+                              </div>
+                              {user.assigned_by_first_name && (
+                                <p className="text-xs text-muted-foreground">
+                                  by {user.assigned_by_first_name} {user.assigned_by_last_name}
+                                </p>
+                              )}
+                              {user.expires_at && (
+                                <p className="text-xs text-amber-600">
+                                  Expires: {new Date(user.expires_at).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No users assigned to this role</p>
+                        <p className="text-sm">Assign users from the Employee Management page</p>
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>

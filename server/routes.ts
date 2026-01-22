@@ -26965,6 +26965,17 @@ export async function registerRoutes(
     }
   });
 
+  // Get users assigned to a specific role
+  app.get("/api/admin/rbac/roles/:roleId/users", ensureAdminAsync, async (req, res) => {
+    try {
+      const users = await storage.getUsersByRoleId(req.params.roleId);
+      res.json({ users });
+    } catch (error) {
+      console.error("Get role users error:", error);
+      res.status(500).json({ error: "Failed to get users for role" });
+    }
+  });
+
   // Get current user's effective permissions
   app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
     try {

@@ -4901,6 +4901,21 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  async getUsersByRoleId(roleId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.profile_photo_url,
+        ura.assigned_at, ura.expires_at, ura.assigned_by,
+        ab.first_name as assigned_by_first_name, ab.last_name as assigned_by_last_name
+      FROM user_role_assignments ura
+      JOIN users u ON ura.user_id = u.id
+      LEFT JOIN users ab ON ura.assigned_by = ab.id
+      WHERE ura.role_id = ${roleId} AND ura.is_active = true
+        AND (ura.expires_at IS NULL OR ura.expires_at > NOW())
+      ORDER BY ura.assigned_at DESC
+    `);
+    return result.rows;
+  }
+
   async getUserEffectivePermissions(userId: string): Promise<any[]> {
     const result = await db.execute(sql`
       SELECT DISTINCT ac.slug as component_slug, ac.path,
