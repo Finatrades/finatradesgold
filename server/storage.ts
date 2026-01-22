@@ -4884,6 +4884,116 @@ export class DatabaseStorage implements IStorage {
     return result.rows;
   }
 
+  // Get user's effective RBAC permissions (for menu access control)
+  async getUserEffectivePermissions(userId: string): Promise<{ permissions: string[], components: any[], isSuperAdmin: boolean }> {
+    // First get user's role assignments
+    const roleAssignments = await this.getUserRoleAssignments(userId);
+    
+    if (!roleAssignments || roleAssignments.length === 0) {
+      return { permissions: [], components: [], isSuperAdmin: false };
+    }
+
+    // Check if user has Super Admin role (check both name and system flag)
+    // Also query the admin_roles table for is_system flag to ensure robustness
+    const superAdminCheck = await db.execute(sql`
+      SELECT ar.is_system, ar.name 
+      FROM user_role_assignments ura
+      JOIN admin_roles ar ON ura.role_id = ar.id
+      WHERE ura.user_id = ${userId} 
+        AND ura.is_active = true 
+        AND (ar.is_system = true OR ar.name = 'Super Admin')
+      LIMIT 1
+    `);
+    
+    if (superAdminCheck.rows.length > 0) {
+      // Super Admin has all permissions
+      return { 
+        permissions: ['*'], 
+        components: [], 
+        isSuperAdmin: true 
+      };
+    }
+
+    // Get all component permissions for user's roles
+    const roleIds = roleAssignments.map((ra: any) => ra.role_id);
+    const result = await db.execute(sql`
+      SELECT DISTINCT 
+        ac.slug as component_slug,
+        ac.name as component_name,
+        ac.category,
+        rcp.can_view,
+        rcp.can_create,
+        rcp.can_edit,
+        rcp.can_approve_l1,
+        rcp.can_approve_final,
+        rcp.can_reject,
+        rcp.can_export,
+        rcp.can_delete
+      FROM role_component_permissions rcp
+      JOIN admin_components ac ON rcp.component_id = ac.id
+      WHERE rcp.role_id = ANY(${roleIds})
+    `);
+
+    // Map RBAC component permissions to legacy permission strings
+    // This mapping connects RBAC admin_components slugs to the legacy MENU_PERMISSION_MAP strings
+    const legacyPermissions: Set<string> = new Set();
+    const componentPermMap: Record<string, string[]> = {
+      // User Operations
+      'user-management': ['view_users', 'manage_users'],
+      'kyc-reviews': ['view_kyc', 'manage_kyc'],
+      'employees': ['manage_employees'],
+      'role-management': ['manage_employees'],
+      
+      // Compliance
+      'compliance-dashboard': ['view_kyc', 'manage_kyc'],
+      'aml-monitoring': ['view_kyc', 'manage_kyc'],
+      'audit-logs': ['view_reports'],
+      
+      // Vault Operations  
+      'vault-management': ['view_vault', 'manage_vault'],
+      'physical-deposits': ['view_vault', 'manage_vault'],
+      'unified-gold-tally': ['view_vault', 'manage_vault'],
+      
+      // Financial Operations
+      'payment-operations': ['view_transactions', 'manage_transactions', 'manage_deposits', 'manage_withdrawals'],
+      'financial-reports': ['view_reports', 'generate_reports'],
+      'treasury': ['view_reports', 'generate_reports'],
+      'fee-management': ['manage_fees'],
+      
+      // Products
+      'bnsl-management': ['view_bnsl', 'manage_bnsl'],
+      'finabridge-management': ['view_finabridge', 'manage_finabridge'],
+      
+      // System
+      'platform-settings': ['manage_settings'],
+      'security-settings': ['manage_settings'],
+      'branding': ['manage_settings'],
+      'cms-management': ['view_cms', 'manage_cms'],
+      
+      // Support
+      'support': ['view_support', 'manage_support'],
+    };
+
+    for (const row of result.rows as any[]) {
+      const slug = row.component_slug;
+      const mappedPerms = componentPermMap[slug] || [];
+      
+      // Add permissions based on what the user can do
+      if (row.can_view) {
+        mappedPerms.filter(p => p.startsWith('view_')).forEach(p => legacyPermissions.add(p));
+      }
+      if (row.can_create || row.can_edit || row.can_delete || row.can_approve_l1 || row.can_approve_final) {
+        mappedPerms.filter(p => p.startsWith('manage_') || p.startsWith('generate_')).forEach(p => legacyPermissions.add(p));
+      }
+    }
+
+    return {
+      permissions: Array.from(legacyPermissions),
+      components: result.rows as any[],
+      isSuperAdmin: false
+    };
+  }
+
   async assignUserRole(userId: string, roleId: string, assignedBy: string, expiresAt?: Date): Promise<any> {
     const result = await db.execute(sql`
       INSERT INTO user_role_assignments (user_id, role_id, assigned_by, expires_at)

@@ -141,18 +141,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch user's effective RBAC permissions for menu access control
+  const { data: rbacPermissions } = useQuery({
+    queryKey: ['/api/admin/rbac/my-permissions'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/rbac/my-permissions');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Get the user's active RBAC role name
   const userRbacRole = rbacRoleData?.assignments?.[0]?.role_name || 'Admin';
 
+  // Use RBAC permissions for menu access control (fallback to employee permissions for backward compatibility)
+  const rbacPerms: string[] = rbacPermissions?.permissions || [];
+  const isSuperAdminRbac = rbacPermissions?.isSuperAdmin === true;
+  
+  // Legacy fallback: use employee permissions if no RBAC permissions assigned
   const employeePermissions: string[] = employeeData?.employee?.permissions || [];
   const hasNoEmployeeRecord = employeeData === null || employeeData === undefined || (employeeData && !employeeData.employee);
-  const isSuperAdmin = hasNoEmployeeRecord || employeeData?.employee?.role === 'super_admin';
+  const isSuperAdminLegacy = hasNoEmployeeRecord || employeeData?.employee?.role === 'super_admin';
+  
+  // Combined: RBAC takes priority, then legacy
+  const effectivePermissions = rbacPerms.length > 0 ? rbacPerms : employeePermissions;
+  const isSuperAdmin = isSuperAdminRbac || (rbacPerms.length === 0 && isSuperAdminLegacy);
 
   const hasMenuPermission = (menuPath: string): boolean => {
+    // Super Admin has full access
     if (isSuperAdmin) return true;
+    // Wildcard permission means full access
+    if (effectivePermissions.includes('*')) return true;
     const requiredPermissions = MENU_PERMISSION_MAP[menuPath];
     if (!requiredPermissions || requiredPermissions.length === 0) return true;
-    return requiredPermissions.some(perm => employeePermissions.includes(perm));
+    return requiredPermissions.some(perm => effectivePermissions.includes(perm));
   };
 
   const isAdminSession = sessionStorage.getItem('adminPortalSession') === 'true';

@@ -26968,6 +26968,18 @@ export async function registerRoutes(
     }
   });
 
+
+  // Get user's effective RBAC permissions (for menu access control)
+  app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const result = await storage.getUserEffectivePermissions(userId);
+      res.json(result);
+    } catch (error) {
+      console.error('Get user permissions error:', error);
+      res.status(500).json({ error: 'Failed to get user permissions' });
+    }
+  });
   // Assign role to user
   app.post("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
     try {
