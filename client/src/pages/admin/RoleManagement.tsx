@@ -228,6 +228,24 @@ export default function RoleManagement() {
             <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Role Management</h1>
             <p className="text-muted-foreground">Manage admin roles and permissions for the platform</p>
           </div>
+        </div>
+
+        <Card className="bg-gray-50 border-gray-200">
+          <CardContent className="py-3 px-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" /> View</span>
+              <span className="flex items-center gap-1.5"><Plus className="h-4 w-4" /> Create</span>
+              <span className="flex items-center gap-1.5"><FileEdit className="h-4 w-4" /> Edit</span>
+              <span className="flex items-center gap-1.5"><CircleCheck className="h-4 w-4" /> L1 Approve</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Final Approve</span>
+              <span className="flex items-center gap-1.5"><X className="h-4 w-4" /> Reject</span>
+              <span className="flex items-center gap-1.5"><Download className="h-4 w-4" /> Export</span>
+              <span className="flex items-center gap-1.5"><Trash2 className="h-4 w-4" /> Delete</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-end">
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button data-testid="create-role-btn">
@@ -296,9 +314,9 @@ export default function RoleManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
