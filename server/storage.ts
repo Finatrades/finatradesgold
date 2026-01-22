@@ -4903,7 +4903,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersByRoleId(roleId: string): Promise<any[]> {
     const result = await db.execute(sql`
-      SELECT u.id, u.email, u.first_name, u.last_name, u.profile_photo_url,
+      SELECT u.id, u.email, u.first_name, u.last_name, u.profile_photo,
         ura.assigned_at, ura.expires_at, ura.assigned_by,
         ab.first_name as assigned_by_first_name, ab.last_name as assigned_by_last_name
       FROM user_role_assignments ura
