@@ -4091,15 +4091,15 @@ export async function registerRoutes(
           if (roleAssignment && roleAssignment.length > 0) {
             const activeAssignment = roleAssignment.find((ra: any) => ra.is_active);
             if (activeAssignment) {
-              const role = await storage.getAdminRoleById(activeAssignment.role_id);
-              if (role) {
+              // Role data is already in activeAssignment via JOIN
+              if (activeAssignment.role_name) {
                 return {
                   ...sanitized,
                   rbacRole: {
-                    id: role.id,
-                    name: role.name,
-                    risk_level: role.risk_level,
-                    department: role.department
+                    id: activeAssignment.role_id,
+                    name: activeAssignment.role_name,
+                    risk_level: activeAssignment.risk_level,
+                    department: activeAssignment.department
                   }
                 };
               }
