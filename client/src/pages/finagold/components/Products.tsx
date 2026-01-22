@@ -15,10 +15,10 @@ const content = {
       {
         icon: Lock,
         title: 'Deposit / Buy Gold',
-        description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
+        description: 'Securely deposit your gold into the FinaVault or purchase gold directly through our platform.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
-        image: goldBarsImage,
+        image: '/src/assets/images/deposit-gold.png',
       },
       {
         icon: Wallet,
@@ -45,10 +45,10 @@ const content = {
       {
         icon: Lock,
         title: 'Deposit / Buy Gold',
-        description: 'Get instant value and turn into a settlement financial instrument with your choice of hedging or floating strategies as your business grows.',
+        description: 'Securely deposit your gold into the FinaVault or purchase gold directly through our platform.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
-        image: goldBarsImage,
+        image: '/src/assets/images/deposit-gold.png',
       },
       {
         icon: Wallet,
