@@ -19,16 +19,18 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 
-const EMPLOYEE_ROLES = [
-  { value: 'super_admin', label: 'Super Admin', color: 'bg-purple-500' },
-  { value: 'admin', label: 'Admin', color: 'bg-blue-500' },
-  { value: 'manager', label: 'Manager', color: 'bg-green-500' },
-  { value: 'support', label: 'Support', color: 'bg-yellow-500' },
-  { value: 'finance', label: 'Finance', color: 'bg-purple-500' },
-  { value: 'compliance', label: 'Compliance', color: 'bg-red-500' },
-];
+// Legacy roles - kept for backward compatibility display only
+const LEGACY_EMPLOYEE_ROLES: Record<string, { label: string; color: string }> = {
+  'super_admin': { label: 'Super Admin', color: 'bg-purple-500' },
+  'admin': { label: 'Admin', color: 'bg-blue-500' },
+  'manager': { label: 'Manager', color: 'bg-green-500' },
+  'support': { label: 'Support', color: 'bg-yellow-500' },
+  'finance': { label: 'Finance', color: 'bg-purple-500' },
+  'compliance': { label: 'Compliance', color: 'bg-red-500' },
+};
 
 const RISK_LEVEL_COLORS: Record<string, string> = {
+  'Critical': 'bg-red-600',
   'High': 'bg-red-500',
   'Medium': 'bg-yellow-500',
   'Low': 'bg-green-500',
@@ -313,7 +315,7 @@ export default function EmployeeManagement() {
     });
   };
 
-  const isFormValid = formData.permissions.length > 0;
+  const isFormValid = formData.rbacRoleId && formData.permissions.length > 0;
 
   const employees: Employee[] = employeesData?.employees || [];
   const availableUsers = usersData?.users?.filter((u: any) => 
@@ -334,9 +336,13 @@ export default function EmployeeManagement() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const getRoleBadgeColor = (role: string) => {
-    const roleConfig = EMPLOYEE_ROLES.find(r => r.value === role);
-    return roleConfig?.color || 'bg-gray-500';
+  const getRoleBadgeColor = (role: string, rbacRole?: { risk_level: string } | null) => {
+    // Use RBAC risk level color if available
+    if (rbacRole?.risk_level) {
+      return RISK_LEVEL_COLORS[rbacRole.risk_level] || 'bg-gray-500';
+    }
+    // Fallback to legacy role color
+    return LEGACY_EMPLOYEE_ROLES[role]?.color || 'bg-gray-500';
   };
 
   const getStatusBadge = (status: string) => {
@@ -459,7 +465,9 @@ export default function EmployeeManagement() {
               </div>
 
               {!isFormValid && (
-                <p className="text-sm text-destructive">At least one permission is required</p>
+                <p className="text-sm text-destructive">
+                  {!formData.rbacRoleId ? 'RBAC Role is required' : 'At least one permission is required'}
+                </p>
               )}
               
               <DialogFooter>
@@ -579,13 +587,14 @@ export default function EmployeeManagement() {
                           {employee.rbacRole ? (
                             <div className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[employee.rbacRole.risk_level] || 'bg-gray-400'}`} />
-                              <Badge className={`${getRoleBadgeColor(employee.role)} text-white`}>
+                              <Badge className={`${getRoleBadgeColor(employee.role, employee.rbacRole)} text-white`}>
                                 {employee.rbacRole.name}
                               </Badge>
                             </div>
                           ) : (
                             <Badge variant="outline" className="text-gray-500">
-                              {EMPLOYEE_ROLES.find(r => r.value === employee.role)?.label || employee.role}
+                              {LEGACY_EMPLOYEE_ROLES[employee.role]?.label || employee.role}
+                              <span className="ml-1 text-xs">(Legacy)</span>
                             </Badge>
                           )}
                         </td>
@@ -708,7 +717,9 @@ export default function EmployeeManagement() {
             </div>
 
             {!isFormValid && (
-              <p className="text-sm text-destructive">At least one permission is required</p>
+              <p className="text-sm text-destructive">
+                {!formData.rbacRoleId ? 'RBAC Role is required' : 'At least one permission is required'}
+              </p>
             )}
 
             <DialogFooter>
