@@ -400,28 +400,65 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
 }
 
 // Legacy permission to RBAC component mapping
-const LEGACY_TO_RBAC_MAP: Record<string, { component: string; action: 'view' | 'edit' | 'create' | 'delete' }> = {
+// RBAC action type for permission checking
+type RbacAction = 'view' | 'edit' | 'create' | 'delete' | 'approve_l1' | 'approve_final' | 'reject' | 'export';
+
+// Legacy permission to RBAC component mapping
+// Maps legacy string permissions to the new RBAC system (component slug + action)
+const LEGACY_TO_RBAC_MAP: Record<string, { component: string; action: RbacAction }> = {
+  // User management
   'view_users': { component: 'user-management', action: 'view' },
   'manage_users': { component: 'user-management', action: 'edit' },
+  'approve_users': { component: 'user-management', action: 'approve_final' },
+  
+  // KYC/Compliance
   'view_kyc': { component: 'kyc-reviews', action: 'view' },
   'manage_kyc': { component: 'kyc-reviews', action: 'edit' },
+  'approve_kyc': { component: 'kyc-reviews', action: 'approve_final' },
+  'reject_kyc': { component: 'kyc-reviews', action: 'reject' },
+  
+  // Vault management
   'view_vault': { component: 'vault-management', action: 'view' },
   'manage_vault': { component: 'vault-management', action: 'edit' },
+  'approve_vault': { component: 'vault-management', action: 'approve_final' },
+  
+  // Employees
   'manage_employees': { component: 'employees', action: 'edit' },
+  
+  // Platform settings
   'manage_settings': { component: 'platform-settings', action: 'edit' },
+  
+  // Reports
   'view_reports': { component: 'financial-reports', action: 'view' },
   'generate_reports': { component: 'financial-reports', action: 'create' },
+  'export_reports': { component: 'financial-reports', action: 'export' },
+  
+  // Payment operations
   'manage_deposits': { component: 'payment-operations', action: 'edit' },
   'manage_withdrawals': { component: 'payment-operations', action: 'edit' },
   'view_transactions': { component: 'payment-operations', action: 'view' },
   'manage_transactions': { component: 'payment-operations', action: 'edit' },
+  'approve_deposits': { component: 'payment-operations', action: 'approve_final' },
+  'approve_withdrawals': { component: 'payment-operations', action: 'approve_final' },
+  'reject_deposits': { component: 'payment-operations', action: 'reject' },
+  'reject_withdrawals': { component: 'payment-operations', action: 'reject' },
+  
+  // Fee management
   'manage_fees': { component: 'fee-management', action: 'edit' },
+  
+  // FinaBridge
   'view_finabridge': { component: 'finabridge-management', action: 'view' },
   'manage_finabridge': { component: 'finabridge-management', action: 'edit' },
+  
+  // BNSL
   'view_bnsl': { component: 'bnsl-management', action: 'view' },
   'manage_bnsl': { component: 'bnsl-management', action: 'edit' },
+  
+  // CMS
   'view_cms': { component: 'cms-management', action: 'view' },
   'manage_cms': { component: 'cms-management', action: 'edit' },
+  
+  // Support
   'view_support': { component: 'platform-settings', action: 'view' },
   'manage_support': { component: 'platform-settings', action: 'edit' },
 };
@@ -2189,7 +2226,7 @@ export async function registerRoutes(
   });
   
   // Admin: Get all deletion requests
-  app.get("/api/admin/account-deletion-requests", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/account-deletion-requests", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
       const requests = await storage.getAllAccountDeletionRequests();
       
@@ -2224,7 +2261,7 @@ export async function registerRoutes(
   });
   
   // Admin: Review deletion request (approve/reject)
-  app.post("/api/admin/account-deletion-requests/:id/review", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/account-deletion-requests/:id/review", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const { action, reviewNotes } = req.body;
       const requestId = req.params.id;
@@ -2305,7 +2342,7 @@ export async function registerRoutes(
   });
   
   // Admin: Execute approved deletion (only for approved requests past scheduled date)
-  app.post("/api/admin/account-deletion-requests/:id/execute", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/account-deletion-requests/:id/execute", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const requestId = req.params.id;
       const adminId = req.session.userId!;
@@ -3233,7 +3270,7 @@ export async function registerRoutes(
   const ADMIN_STATS_CACHE_TTL = 30000; // 30 seconds
 
   // Admin Dashboard Stats
-  app.get("/api/admin/stats", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/stats", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       // Check cache first
       const now = Date.now();
@@ -3624,7 +3661,7 @@ export async function registerRoutes(
   });
 
   // Admin Pending Counts for Sidebar Badges
-  app.get("/api/admin/pending-counts", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/pending-counts", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       let kycSubmissions: any[] = [];
       let allTransactions: any[] = [];
@@ -3739,7 +3776,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Report (Admin)
-  app.get("/api/admin/gold-backing-report", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing-report", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const report = await storage.getGoldBackingReportEnhanced();
       res.json(report);
@@ -3750,7 +3787,7 @@ export async function registerRoutes(
   });
 
   // Enhanced Gold Backing Report with LGPW/FGPW segmentation (Admin)
-  app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const report = await storage.getGoldBackingReportEnhanced();
       res.json(report);
@@ -3761,7 +3798,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Drill-Down: FinaPay Users with Holdings
-  app.get("/api/admin/gold-backing/finapay-users", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing/finapay-users", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const users = await storage.getUsersWithFinaPayHoldings();
       res.json({ users });
@@ -3772,7 +3809,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Drill-Down: BNSL Users with Holdings
-  app.get("/api/admin/gold-backing/bnsl-users", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing/bnsl-users", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const users = await storage.getUsersWithBnslHoldings();
       res.json({ users });
@@ -3783,7 +3820,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Drill-Down: Vault Holding Details
-  app.get("/api/admin/gold-backing/vault/:holdingId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing/vault/:holdingId", ensureAdminAsync, requirePermission('view_vault'), async (req, res) => {
     try {
       const details = await storage.getVaultHoldingDetails(req.params.holdingId);
       if (!details) {
@@ -3797,7 +3834,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Drill-Down: Users by Vault Location
-  app.get("/api/admin/gold-backing/vault-location/:location", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing/vault-location/:location", ensureAdminAsync, requirePermission('view_vault'), async (req, res) => {
     try {
       const users = await storage.getUsersByVaultLocation(decodeURIComponent(req.params.location));
       res.json({ users });
@@ -3808,7 +3845,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Drill-Down: Full User Financial Profile
-  app.get("/api/admin/gold-backing/user/:userId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing/user/:userId", ensureAdminAsync, requirePermission('view_vault', 'view_users'), async (req, res) => {
     try {
       const profile = await storage.getUserFinancialProfile(req.params.userId);
       if (!profile) {
@@ -3822,7 +3859,7 @@ export async function registerRoutes(
   });
 
   // Gold Backing Report PDF Download
-  app.get("/api/admin/gold-backing-report/pdf", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/gold-backing-report/pdf", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
     try {
       const { generateGoldBackingReportPDF } = await import('./pdf-generator');
       
@@ -3892,7 +3929,7 @@ export async function registerRoutes(
   });
 
   // System Health Check (Admin)
-  app.get("/api/admin/system-health", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/system-health", ensureAdminAsync, requirePermission('view_reports', 'manage_settings'), async (req, res) => {
     const startTime = process.hrtime();
     
     try {
@@ -4038,7 +4075,7 @@ export async function registerRoutes(
   });
 
   // Database sync status (Admin)
-  app.get("/api/admin/database-sync/status", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/database-sync/status", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { getSyncStatus, verifySyncStatus } = await import('./database-sync-scheduler');
       const status = getSyncStatus();
@@ -4056,7 +4093,7 @@ export async function registerRoutes(
   });
 
   // Trigger manual database sync (Admin) - Requires OTP verification
-  app.post("/api/admin/database-sync/trigger", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/database-sync/trigger", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { direction = 'aws-to-replit' } = req.body;
       const adminId = req.session?.userId;
@@ -4103,7 +4140,7 @@ export async function registerRoutes(
   });
 
   // Start/stop database sync scheduler (Admin)
-  app.post("/api/admin/database-sync/scheduler", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/database-sync/scheduler", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { action } = req.body;
       const { startSyncScheduler, stopSyncScheduler, getSyncStatus } = await import('./database-sync-scheduler');
@@ -4164,7 +4201,7 @@ export async function registerRoutes(
 
   // Get user list for account statements dropdown (with server-side search)
   // NOTE: This route MUST be defined before /api/admin/users/:userId to avoid route matching conflict
-  app.get("/api/admin/users/list", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/users/list", ensureAdminAsync, requirePermission('view_users'), async (req, res) => {
     try {
       const search = (req.query.search as string || '').toLowerCase().trim();
       const allUsers = await storage.getAllUsers();
@@ -4431,7 +4468,7 @@ export async function registerRoutes(
   
   // Get employee by user ID (for current admin's permissions)
   // No permission required - admins need to fetch their own permissions
-  app.get("/api/admin/employees/by-user/:userId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/employees/by-user/:userId", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const employee = await storage.getEmployeeByUserId(req.params.userId);
       if (!employee) {
@@ -5577,7 +5614,7 @@ export async function registerRoutes(
   });
 
   // Calculate and update user risk score (Admin)
-  app.post("/api/admin/risk-profile/:userId/calculate", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/risk-profile/:userId/calculate", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { userId } = req.params;
       const adminUser = (req as any).adminUser;
@@ -5606,7 +5643,7 @@ export async function registerRoutes(
   });
 
   // Get risk score preview without saving (Admin)
-  app.get("/api/admin/risk-profile/:userId/preview", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/risk-profile/:userId/preview", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const { userId } = req.params;
       
@@ -5653,7 +5690,7 @@ export async function registerRoutes(
   });
 
   // Batch calculate risk scores for all users (Admin)
-  app.post("/api/admin/risk-profiles/batch-calculate", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/risk-profiles/batch-calculate", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const users = await storage.getAllUsers();
@@ -6023,7 +6060,7 @@ export async function registerRoutes(
   });
 
   // Seed default AML monitoring rules (Admin)
-  app.post("/api/admin/aml-rules/seed-defaults", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/aml-rules/seed-defaults", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await seedDefaultAmlRules();
       const rules = await storage.getAllAmlMonitoringRules();
@@ -6035,7 +6072,7 @@ export async function registerRoutes(
   });
 
   // Evaluate transaction against AML rules (Admin)
-  app.post("/api/admin/aml/evaluate-transaction", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/aml/evaluate-transaction", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { transactionId, userId } = req.body;
       
@@ -6057,7 +6094,7 @@ export async function registerRoutes(
   });
 
   // Seed AML rules (frontend endpoint)
-  app.post("/api/admin/aml/seed-rules", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/aml/seed-rules", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await seedDefaultAmlRules();
       const rules = await storage.getAllAmlMonitoringRules();
@@ -6069,7 +6106,7 @@ export async function registerRoutes(
   });
 
   // Get AML alerts summary (Admin)
-  app.get("/api/admin/aml/alerts", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/aml/alerts", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const alerts = await getAmlAlerts();
       res.json(alerts);
@@ -6080,7 +6117,7 @@ export async function registerRoutes(
   });
 
   // Get default AML rule templates
-  app.get("/api/admin/aml-rules/templates", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/aml-rules/templates", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       res.json({ templates: DEFAULT_AML_RULES });
     } catch (error) {
@@ -6093,7 +6130,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get documents expiring soon (Admin)
-  app.get("/api/admin/document-expiry", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/document-expiry", ensureAdminAsync, requirePermission('view_kyc'), async (req, res) => {
     try {
       const daysAhead = parseInt(req.query.days as string) || 30;
       const expiringDocs = await getExpiringDocuments(daysAhead);
@@ -6105,7 +6142,7 @@ export async function registerRoutes(
   });
 
   // Get document expiry statistics (Admin)
-  app.get("/api/admin/document-expiry/stats", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/document-expiry/stats", ensureAdminAsync, requirePermission('view_kyc'), async (req, res) => {
     try {
       const stats = await getDocumentExpiryStats();
       res.json(stats);
@@ -6116,7 +6153,7 @@ export async function registerRoutes(
   });
 
   // Manually trigger document expiry reminders (Admin)
-  app.post("/api/admin/document-expiry/send-reminders", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/document-expiry/send-reminders", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const result = await sendDocumentExpiryReminders();
       res.json({ 
@@ -11755,7 +11792,7 @@ export async function registerRoutes(
   });
   
   // Get all FinaBridge agreements (admin)
-  app.get("/api/admin/finabridge/agreements", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/finabridge/agreements", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const agreements = await storage.getAllFinabridgeAgreements();
       res.json({ agreements });
@@ -11793,7 +11830,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get all platform bank accounts (Admin)
-  app.get("/api/admin/bank-accounts", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/bank-accounts", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const accounts = await storage.getAllPlatformBankAccounts();
       res.json({ accounts });
@@ -14611,7 +14648,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Admin: Get all deal rooms
-  app.get("/api/admin/deal-rooms", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/deal-rooms", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const rooms = await storage.getAllDealRooms();
       
@@ -14969,7 +15006,7 @@ export async function registerRoutes(
   });
 
   // Admin: Close deal room
-  app.post("/api/admin/deal-rooms/:id/close", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/deal-rooms/:id/close", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const adminId = (req as any).user?.id;
       const { closureNotes } = req.body;
@@ -15012,7 +15049,7 @@ export async function registerRoutes(
   });
 
   // Admin: Update deal room disclaimer
-  app.post("/api/admin/deal-rooms/:id/disclaimer", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/deal-rooms/:id/disclaimer", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const adminId = (req as any).user?.id;
       const { disclaimer } = req.body;
@@ -15069,7 +15106,7 @@ export async function registerRoutes(
   });
   
   // Get all chat sessions (Admin)
-  app.get("/api/admin/chat/sessions", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/chat/sessions", ensureAdminAsync, requirePermission('view_support', 'manage_support'), async (req, res) => {
     try {
       const sessions = await storage.getAllChatSessions();
       
@@ -15381,7 +15418,7 @@ export async function registerRoutes(
   });
 
   // Update chat agent (admin only)
-  app.put("/api/chat-agents/:id", ensureAdminAsync, async (req, res) => {
+  app.put("/api/chat-agents/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const agentId = req.params.id;
       
@@ -15421,7 +15458,7 @@ export async function registerRoutes(
   });
 
   // Create knowledge category (admin only)
-  app.post("/api/knowledge/categories", ensureAdminAsync, async (req, res) => {
+  app.post("/api/knowledge/categories", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { name, description, icon, sortOrder } = req.body;
       if (!name) {
@@ -15436,7 +15473,7 @@ export async function registerRoutes(
   });
 
   // Update knowledge category (admin only)
-  app.put("/api/knowledge/categories/:id", ensureAdminAsync, async (req, res) => {
+  app.put("/api/knowledge/categories/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { name, description, icon, sortOrder } = req.body;
       const updates: any = {};
@@ -15457,7 +15494,7 @@ export async function registerRoutes(
   });
 
   // Delete knowledge category (admin only)
-  app.delete("/api/knowledge/categories/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/knowledge/categories/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteKnowledgeCategory(req.params.id);
       res.json({ success: true });
@@ -15468,7 +15505,7 @@ export async function registerRoutes(
   });
 
   // Get all knowledge articles (admin only - includes drafts)
-  app.get("/api/knowledge/articles", ensureAdminAsync, async (req, res) => {
+  app.get("/api/knowledge/articles", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const articles = await storage.getAllKnowledgeArticles();
       res.json({ articles });
@@ -15520,7 +15557,7 @@ export async function registerRoutes(
   });
 
   // Create knowledge article (admin only)
-  app.post("/api/knowledge/articles", ensureAdminAsync, async (req, res) => {
+  app.post("/api/knowledge/articles", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { categoryId, title, summary, content, keywords, status, agentTypes } = req.body;
       if (!title || !content) {
@@ -15546,7 +15583,7 @@ export async function registerRoutes(
   });
 
   // Update knowledge article (admin only)
-  app.put("/api/knowledge/articles/:id", ensureAdminAsync, async (req, res) => {
+  app.put("/api/knowledge/articles/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { categoryId, title, summary, content, keywords, status, agentTypes } = req.body;
       const adminUser = (req as any).adminUser;
@@ -15572,7 +15609,7 @@ export async function registerRoutes(
   });
 
   // Delete knowledge article (admin only)
-  app.delete("/api/knowledge/articles/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/knowledge/articles/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteKnowledgeArticle(req.params.id);
       res.json({ success: true });
@@ -19007,7 +19044,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all Binance transactions - PROTECTED
-  app.get("/api/admin/binance-pay/transactions", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/binance-pay/transactions", ensureAdminAsync, requirePermission('view_transactions'), async (req, res) => {
     try {
       const transactions = await storage.getAllBinanceTransactions();
       
@@ -20075,7 +20112,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all NGenius transactions - PROTECTED
-  app.get("/api/admin/ngenius/transactions", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/ngenius/transactions", ensureAdminAsync, requirePermission('view_transactions'), async (req, res) => {
     try {
       const transactions = await storage.getAllNgeniusTransactions();
       
@@ -20093,7 +20130,7 @@ export async function registerRoutes(
   });
 
   // Admin: Fix card payment records missing vault holding and Physical Storage certificate
-  app.post("/api/admin/ngenius/fix-card-payment/:transactionId", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/ngenius/fix-card-payment/:transactionId", ensureAdminAsync, requirePermission('manage_transactions'), async (req, res) => {
     try {
       const { transactionId } = req.params;
       const adminUser = (req as any).adminUser;
@@ -20530,7 +20567,7 @@ export async function registerRoutes(
   });
 
   // Gold Holdings Summary - Free vs locked gold breakdown
-  app.get("/api/admin/financial/gold-holdings", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/financial/gold-holdings", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       
@@ -20599,7 +20636,7 @@ export async function registerRoutes(
   });
 
   // Certificates Summary - All certificates across users
-  app.get("/api/admin/financial/certificates", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/financial/certificates", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       const userMap = new Map(allUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`]));
@@ -20660,7 +20697,7 @@ export async function registerRoutes(
   });
 
   // FinaBridge Summary - Trade finance cases
-  app.get("/api/admin/financial/finabridge", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/financial/finabridge", ensureAdminAsync, requirePermission('view_reports', 'view_finabridge'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       const tradeCases = await storage.getAllTradeCases();
@@ -20715,7 +20752,7 @@ export async function registerRoutes(
   });
 
   // Fees Summary - Platform revenue from fees
-  app.get("/api/admin/financial/fees", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/financial/fees", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       const range = (req.query.range as string) || 'all';
@@ -20870,7 +20907,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get account statement data for a user
-  app.get("/api/admin/account-statement/:userId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/account-statement/:userId", ensureAdminAsync, requirePermission('view_users', 'view_reports'), async (req, res) => {
     try {
       const { userId } = req.params;
       const { from, to } = req.query;
@@ -21026,7 +21063,7 @@ export async function registerRoutes(
   });
 
   // Generate PDF account statement
-  app.get("/api/admin/account-statement/:userId/pdf", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/account-statement/:userId/pdf", ensureAdminAsync, requirePermission('view_users', 'generate_reports'), async (req, res) => {
     try {
       const { userId } = req.params;
       const { from, to } = req.query;
@@ -21248,7 +21285,7 @@ export async function registerRoutes(
   });
 
   // Generate CSV account statement - GOLD CENTRIC
-  app.get("/api/admin/account-statement/:userId/csv", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/account-statement/:userId/csv", ensureAdminAsync, requirePermission('view_users', 'generate_reports'), async (req, res) => {
     try {
       const { userId } = req.params;
       const { from, to } = req.query;
@@ -21638,7 +21675,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get payment gateway settings (Admin)
-  app.get("/api/admin/payment-gateways", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/payment-gateways", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
       res.json(settings[0] || null);
@@ -21649,7 +21686,7 @@ export async function registerRoutes(
   });
 
   // Update payment gateway settings (Admin)
-  app.put("/api/admin/payment-gateways", ensureAdminAsync, async (req, res) => {
+  app.put("/api/admin/payment-gateways", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       console.log("[PaymentGateway] Updating settings:", JSON.stringify(req.body, null, 2));
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
@@ -21720,7 +21757,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get security settings (admin only with header-based auth)
-  app.get("/api/admin/security-settings", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/security-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const settings = await storage.getOrCreateSecuritySettings();
       res.json(settings);
@@ -21731,7 +21768,7 @@ export async function registerRoutes(
   });
 
   // Update security settings (admin only with header-based auth)
-  app.patch("/api/admin/security-settings", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/security-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const updates = req.body;
       const adminUser = (req as any).adminUser;
@@ -22081,7 +22118,7 @@ export async function registerRoutes(
   });
 
   // Admin: Unlock a user's transaction PIN
-  app.post("/api/admin/transaction-pin/unlock/:userId", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/transaction-pin/unlock/:userId", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const { userId } = req.params;
       const adminUser = (req as any).adminUser;
@@ -22120,7 +22157,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get compliance settings (admin only)
-  app.get("/api/admin/compliance-settings", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/compliance-settings", ensureAdminAsync, requirePermission('manage_settings', 'manage_kyc'), async (req, res) => {
     try {
       const settings = await storage.getOrCreateComplianceSettings();
       res.json(settings);
@@ -22131,7 +22168,7 @@ export async function registerRoutes(
   });
 
   // Update compliance settings (admin only)
-  app.patch("/api/admin/compliance-settings", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/compliance-settings", ensureAdminAsync, requirePermission('manage_settings', 'manage_kyc'), async (req, res) => {
     try {
       const updates = req.body;
       const adminUser = (req as any).adminUser;
@@ -22634,7 +22671,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get all invoices with user info
-  app.get("/api/admin/documents/invoices", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/invoices", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const invoices = await storage.getAllInvoices();
       const enrichedInvoices = await Promise.all(
@@ -22657,7 +22694,7 @@ export async function registerRoutes(
   });
 
   // Get all certificate deliveries with certificate and user info
-  app.get("/api/admin/documents/certificate-deliveries", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/certificate-deliveries", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const deliveries = await storage.getAllCertificateDeliveries();
       const enrichedDeliveries = await Promise.all(
@@ -22684,7 +22721,7 @@ export async function registerRoutes(
   });
 
   // Download invoice PDF (supports ?inline=1 for in-browser viewing)
-  app.get("/api/admin/documents/invoices/:id/download", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/invoices/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const result = await downloadInvoicePDF(req.params.id);
       if (result.error) {
@@ -22701,7 +22738,7 @@ export async function registerRoutes(
   });
 
   // Download certificate PDF (supports ?inline=1 for in-browser viewing)
-  app.get("/api/admin/documents/certificates/:id/download", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/certificates/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const result = await downloadCertificatePDF(req.params.id);
       if (result.error) {
@@ -22718,7 +22755,7 @@ export async function registerRoutes(
   });
 
   // Resend invoice email
-  app.post("/api/admin/documents/invoices/:id/resend", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/documents/invoices/:id/resend", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const result = await resendInvoice(req.params.id);
       if (!result.success) {
@@ -22744,7 +22781,7 @@ export async function registerRoutes(
   });
 
   // Resend certificate email
-  app.post("/api/admin/documents/certificates/:id/resend", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/documents/certificates/:id/resend", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const result = await resendCertificate(req.params.id);
       if (!result.success) {
@@ -22770,7 +22807,7 @@ export async function registerRoutes(
   });
 
   // Get all transaction receipts for evidence/auditing
-  app.get("/api/admin/documents/transaction-receipts", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/transaction-receipts", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const allTransactions = await storage.getAllTransactions();
       
@@ -22801,7 +22838,7 @@ export async function registerRoutes(
   });
 
   // Download transaction receipt PDF
-  app.get("/api/admin/documents/receipts/:id/download", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/documents/receipts/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const transactionId = req.params.id;
       const transaction = await storage.getTransaction(transactionId);
@@ -22953,7 +22990,7 @@ export async function registerRoutes(
   });
 
   // Get all platform attachments (from vault deposits, KYC, etc.)
-  app.get("/api/admin/attachments", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/attachments", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const allAttachments: any[] = [];
       
@@ -23122,7 +23159,7 @@ export async function registerRoutes(
   });
 
   // Admin Manual PDF download
-  app.get("/api/documents/admin-manual", ensureAdminAsync, async (req, res) => {
+  app.get("/api/documents/admin-manual", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const pdfBuffer = await generateAdminManualPDF();
       res.setHeader('Content-Type', 'application/pdf');
@@ -23139,7 +23176,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Check if OTP is required for a specific action type
-  app.get("/api/admin/action-otp/required/:actionType", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/action-otp/required/:actionType", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { actionType } = req.params;
       const settings = await storage.getSecuritySettings();
@@ -23289,7 +23326,7 @@ export async function registerRoutes(
   }
 
   // Send OTP for admin action
-  app.post("/api/admin/action-otp/send", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/action-otp/send", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { actionType, targetId, targetType, actionData } = req.body;
       const admin = (req as any).adminUser;
@@ -23503,7 +23540,7 @@ export async function registerRoutes(
   });
 
   // Verify OTP for admin action
-  app.post("/api/admin/action-otp/verify", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/action-otp/verify", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { otpId, code } = req.body;
       const admin = (req as any).adminUser;
@@ -23703,7 +23740,7 @@ export async function registerRoutes(
   });
 
   // Resend OTP for admin action
-  app.post("/api/admin/action-otp/resend", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/action-otp/resend", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { otpId } = req.body;
       const admin = (req as any).adminUser;
@@ -24262,7 +24299,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all user preferences (for admin management)
-  app.get("/api/admin/user-preferences", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/user-preferences", ensureAdminAsync, requirePermission('view_users'), async (req, res) => {
     try {
       // Get all users with their preferences
       const allUsers = await storage.getAllUsers();
@@ -24288,7 +24325,7 @@ export async function registerRoutes(
   });
 
   // Admin: Update any user's preferences
-  app.put("/api/admin/users/:userId/preferences", ensureAdminAsync, async (req, res) => {
+  app.put("/api/admin/users/:userId/preferences", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const { userId } = req.params;
       const updates = req.body;
@@ -24467,7 +24504,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all audit logs (Admin) - PROTECTED - with resolved names
-  app.get("/api/admin/audit-logs", ensureAdminAsync, requirePermission('view_transactions', 'manage_settings'), async (req, res) => {
+  app.get("/api/admin/audit-logs", ensureAdminAsync, requirePermission('view_reports'), requirePermission('view_transactions', 'manage_settings'), async (req, res) => {
     try {
       const logs = await storage.getAllAuditLogs();
       
@@ -24527,7 +24564,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all crypto wallet configs (admin)
-  app.get("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/crypto-wallets", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const wallets = await storage.getAllCryptoWalletConfigs();
 
@@ -24540,7 +24577,7 @@ export async function registerRoutes(
   });
 
   // Create crypto wallet config (admin)
-  app.post("/api/admin/crypto-wallets", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/crypto-wallets", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { network, networkLabel, walletAddress, memo, instructions, qrCodeImage, isActive, displayOrder } = req.body;
       const adminUser = (req as any).adminUser;
@@ -24575,7 +24612,7 @@ export async function registerRoutes(
   });
 
   // Update crypto wallet config (admin)
-  app.patch("/api/admin/crypto-wallets/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/crypto-wallets/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -24605,7 +24642,7 @@ export async function registerRoutes(
   });
 
   // Delete crypto wallet config (admin)
-  app.delete("/api/admin/crypto-wallets/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/crypto-wallets/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const adminUser = (req as any).adminUser;
@@ -24852,7 +24889,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all crypto payment requests
-  app.get("/api/admin/crypto-payments", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/crypto-payments", ensureAdminAsync, requirePermission('view_transactions', 'manage_deposits'), async (req, res) => {
     try {
       const { status } = req.query;
       let requests: any[] = [];
@@ -24887,7 +24924,7 @@ export async function registerRoutes(
 
   // Admin: Approve crypto payment
   // STREAMLINED CRYPTO APPROVAL: Single step with pricing mode + vault + auto-certificate + wallet credit
-  app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     console.log('[DEBUG] Streamlined crypto approval - Route entered, id:', req.params.id);
     try {
       const { id } = req.params;
@@ -25232,7 +25269,7 @@ export async function registerRoutes(
 
 
   // LEGACY: Old crypto payment approval code - kept for reference but replaced by GOLDEN RULE workflow above
-  app.patch("/api/admin/crypto-payments/:id/approve-legacy-disabled", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/crypto-payments/:id/approve-legacy-disabled", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     try {
       const { id } = req.params;
       const { reviewNotes, goldPriceAtTime: adminGoldPrice, goldGrams: adminGoldGrams } = req.body;
@@ -25501,7 +25538,7 @@ export async function registerRoutes(
   });
 
   // Admin: Reject crypto payment
-  app.patch("/api/admin/crypto-payments/:id/reject", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/crypto-payments/:id/reject", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     try {
       const { id } = req.params;
       const { rejectionReason } = req.body;
@@ -25655,7 +25692,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all buy gold requests
-  app.get("/api/admin/buy-gold", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/buy-gold", ensureAdminAsync, requirePermission('view_transactions', 'manage_deposits'), async (req, res) => {
     try {
       const requests = await storage.getAllBuyGoldRequests().catch(() => []);
       
@@ -25684,7 +25721,7 @@ export async function registerRoutes(
   });
 
   // Admin: Approve and credit buy gold request
-  app.patch("/api/admin/buy-gold/:id/approve", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/buy-gold/:id/approve", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     try {
       const { id } = req.params;
       const { reviewNotes, amountUsd, goldGrams, goldPriceAtTime, adminNotes } = req.body;
@@ -25905,7 +25942,7 @@ export async function registerRoutes(
   });
 
   // Admin: Reject buy gold request
-  app.patch("/api/admin/buy-gold/:id/reject", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/buy-gold/:id/reject", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
     try {
       const { id } = req.params;
       const { rejectionReason, reviewNotes } = req.body;
@@ -26153,7 +26190,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all platform configs
-  app.get("/api/admin/platform-config", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/platform-config", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const configs = await storage.getAllPlatformConfigs();
 
@@ -26166,7 +26203,7 @@ export async function registerRoutes(
   });
 
   // Get platform configs by category
-  app.get("/api/admin/platform-config/category/:category", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/platform-config/category/:category", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const configs = await storage.getPlatformConfigsByCategory(req.params.category);
 
@@ -26179,7 +26216,7 @@ export async function registerRoutes(
   });
 
   // Get single platform config by key
-  app.get("/api/admin/platform-config/key/:key", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/platform-config/key/:key", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const config = await storage.getPlatformConfig(req.params.key);
       if (!config) {
@@ -26236,7 +26273,7 @@ export async function registerRoutes(
   });
 
   // Update platform config
-  app.patch("/api/admin/platform-config/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/platform-config/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const { configValue } = req.body;
@@ -26276,7 +26313,7 @@ export async function registerRoutes(
   });
 
   // Bulk update platform configs
-  app.post("/api/admin/platform-config/bulk-update", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/platform-config/bulk-update", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { updates } = req.body; // Array of { id, configValue }
       const adminUser = (req as any).adminUser;
@@ -26322,7 +26359,7 @@ export async function registerRoutes(
   });
 
   // Seed default platform configs
-  app.post("/api/admin/platform-config/seed", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/platform-config/seed", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.seedDefaultPlatformConfig();
       const configs = await storage.getAllPlatformConfigs();
@@ -26336,7 +26373,7 @@ export async function registerRoutes(
   });
 
   // Create new platform config (admin use)
-  app.post("/api/admin/platform-config", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/platform-config", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { category, configKey, configValue, configType, displayName, description, displayOrder } = req.body;
       const adminUser = (req as any).adminUser;
@@ -26371,7 +26408,7 @@ export async function registerRoutes(
   });
 
   // Delete platform config
-  app.delete("/api/admin/platform-config/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/platform-config/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const adminUser = (req as any).adminUser;
@@ -26406,7 +26443,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all email notification settings
-  app.get("/api/admin/email-notifications", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-notifications", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const settings = await storage.getAllEmailNotificationSettings();
 
@@ -26419,7 +26456,7 @@ export async function registerRoutes(
   });
 
   // Get email notification settings by category
-  app.get("/api/admin/email-notifications/category/:category", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-notifications/category/:category", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { category } = req.params;
       const settings = await storage.getEmailNotificationSettingsByCategory(category);
@@ -26433,7 +26470,7 @@ export async function registerRoutes(
   });
 
   // Toggle email notification
-  app.patch("/api/admin/email-notifications/:type/toggle", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/email-notifications/:type/toggle", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { type } = req.params;
       const { isEnabled } = req.body;
@@ -26464,7 +26501,7 @@ export async function registerRoutes(
   });
 
   // Update email notification setting
-  app.patch("/api/admin/email-notifications/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/email-notifications/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -26498,7 +26535,7 @@ export async function registerRoutes(
   });
 
   // Seed default email notification settings
-  app.post("/api/admin/email-notifications/seed", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/email-notifications/seed", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.seedDefaultEmailNotificationSettings();
       const settings = await storage.getAllEmailNotificationSettings();
@@ -26516,7 +26553,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all email logs
-  app.get("/api/admin/email-logs", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-logs", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const logs = await storage.getAllEmailLogs();
 
@@ -26529,7 +26566,7 @@ export async function registerRoutes(
   });
 
   // Get email logs by user
-  app.get("/api/admin/email-logs/user/:userId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-logs/user/:userId", ensureAdminAsync, requirePermission('view_reports', 'view_users'), async (req, res) => {
     try {
       const { userId } = req.params;
       const logs = await storage.getEmailLogsByUser(userId);
@@ -26543,7 +26580,7 @@ export async function registerRoutes(
   });
 
   // Get email logs by notification type
-  app.get("/api/admin/email-logs/type/:type", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-logs/type/:type", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { type } = req.params;
       const logs = await storage.getEmailLogsByType(type);
@@ -26557,7 +26594,7 @@ export async function registerRoutes(
   });
 
   // Get single email log
-  app.get("/api/admin/email-logs/:id", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/email-logs/:id", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { id } = req.params;
       const log = await storage.getEmailLog(id);
@@ -26577,7 +26614,7 @@ export async function registerRoutes(
 
 
   // Send test email to verify template design
-  app.post("/api/admin/email-test", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/email-test", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { email, templateType } = req.body;
       
@@ -26676,7 +26713,7 @@ export async function registerRoutes(
   });
 
   // Get all geo restrictions (admin)
-  app.get("/api/admin/geo-restrictions", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/geo-restrictions", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const restrictions = await db.select().from(geoRestrictions).orderBy(geoRestrictions.countryName);
 
@@ -26689,7 +26726,7 @@ export async function registerRoutes(
   });
 
   // Get geo restriction settings (admin)
-  app.get("/api/admin/geo-restriction-settings", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/geo-restriction-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
 
@@ -26702,7 +26739,7 @@ export async function registerRoutes(
   });
 
   // Update or create geo restriction settings (admin)
-  app.post("/api/admin/geo-restriction-settings", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/geo-restriction-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { isEnabled, defaultMessage, showNoticeOnLanding, blockAccess } = req.body;
       const adminUser = (req as any).adminUser;
@@ -26766,7 +26803,7 @@ export async function registerRoutes(
   });
 
   // Add a new geo restriction (admin)
-  app.post("/api/admin/geo-restrictions", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/geo-restrictions", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { countryCode, countryName, isRestricted, restrictionMessage, allowRegistration, allowLogin, allowTransactions, reason } = req.body;
       const adminUser = (req as any).adminUser;
@@ -26814,7 +26851,7 @@ export async function registerRoutes(
   });
 
   // Update geo restriction (admin)
-  app.patch("/api/admin/geo-restrictions/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/geo-restrictions/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -26852,7 +26889,7 @@ export async function registerRoutes(
   });
 
   // Delete geo restriction (admin)
-  app.delete("/api/admin/geo-restrictions/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/geo-restrictions/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
       const adminUser = (req as any).adminUser;
@@ -26888,7 +26925,7 @@ export async function registerRoutes(
   // ============================================
   
   // Get all admin roles
-  app.get("/api/admin/rbac/roles", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/roles", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const roles = await storage.getAllAdminRoles();
 
@@ -26901,7 +26938,7 @@ export async function registerRoutes(
   });
 
   // Get single role with permissions
-  app.get("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/roles/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const role = await storage.getAdminRole(req.params.id);
       if (!role) {
@@ -26918,7 +26955,7 @@ export async function registerRoutes(
   });
 
   // Create admin role
-  app.post("/api/admin/rbac/roles", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/rbac/roles", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { name, description, department, riskLevel } = req.body;
       if (!name) {
@@ -26941,7 +26978,7 @@ export async function registerRoutes(
   });
 
   // Update admin role
-  app.patch("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/rbac/roles/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const role = await storage.updateAdminRole(req.params.id, req.body);
       if (!role) {
@@ -26957,7 +26994,7 @@ export async function registerRoutes(
   });
 
   // Delete admin role
-  app.delete("/api/admin/rbac/roles/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/rbac/roles/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const deleted = await storage.deleteAdminRole(req.params.id);
       if (!deleted) {
@@ -26973,7 +27010,7 @@ export async function registerRoutes(
   });
 
   // Get all admin components
-  app.get("/api/admin/rbac/components", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/components", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const components = await storage.getAllAdminComponents();
 
@@ -26986,7 +27023,7 @@ export async function registerRoutes(
   });
 
   // Update role-component permission
-  app.post("/api/admin/rbac/permissions", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/rbac/permissions", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { roleId, componentId, permissions } = req.body;
       if (!roleId || !componentId) {
@@ -27003,7 +27040,7 @@ export async function registerRoutes(
   });
 
   // Get user role assignments
-  app.get("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const assignments = await storage.getUserRoleAssignments(req.params.userId);
 
@@ -27028,7 +27065,7 @@ export async function registerRoutes(
     }
   });
   // Assign role to user
-  app.post("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/rbac/users/:userId/roles", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { roleId, expiresAt } = req.body;
       if (!roleId) {
@@ -27050,7 +27087,7 @@ export async function registerRoutes(
   });
 
   // Revoke role from user
-  app.delete("/api/admin/rbac/users/:userId/roles/:roleId", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/rbac/users/:userId/roles/:roleId", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const revoked = await storage.revokeUserRole(req.params.userId, req.params.roleId);
 
@@ -27063,7 +27100,7 @@ export async function registerRoutes(
   });
 
   // Get users assigned to a specific role
-  app.get("/api/admin/rbac/roles/:roleId/users", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/roles/:roleId/users", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const users = await storage.getUsersByRoleId(req.params.roleId);
       res.json({ users });
@@ -27074,7 +27111,7 @@ export async function registerRoutes(
   });
 
   // Get task definitions
-  app.get("/api/admin/rbac/tasks", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/tasks", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const tasks = await storage.getAllTaskDefinitions();
 
@@ -27087,7 +27124,7 @@ export async function registerRoutes(
   });
 
   // Get approval queue
-  app.get("/api/admin/rbac/approvals", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/approvals", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { status, initiatorId } = req.query;
       const queue = await storage.getApprovalQueue({
@@ -27104,7 +27141,7 @@ export async function registerRoutes(
   });
 
   // Get pending approvals for current user
-  app.get("/api/admin/rbac/pending-approvals", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/pending-approvals", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const pendingApprovals = await storage.getPendingApprovalsForUser(req.session?.userId || '');
 
@@ -27117,7 +27154,7 @@ export async function registerRoutes(
   });
 
   // Get single approval item with history
-  app.get("/api/admin/rbac/approvals/:id", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/rbac/approvals/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const approval = await storage.getApprovalQueueItem(req.params.id);
       if (!approval) {
@@ -27134,7 +27171,7 @@ export async function registerRoutes(
   });
 
   // Process approval (L1 approve, final approve, or reject)
-  app.post("/api/admin/rbac/approvals/:id/process", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/rbac/approvals/:id/process", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { action, comments } = req.body;
       const approverId = req.session?.userId;
@@ -27193,7 +27230,7 @@ export async function registerRoutes(
   });
 
   // Create approval request
-  app.post("/api/admin/rbac/approvals", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/rbac/approvals", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { taskSlug, entityType, entityId, taskData, reason } = req.body;
       
@@ -27237,7 +27274,7 @@ export async function registerRoutes(
   // ============================================================================
 
   // Audit Trail
-  app.get("/api/admin/audit-logs", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/audit-logs", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { entityType, actionType, limit = 100 } = req.query;
       const logs = await db.select().from(auditLogs)
@@ -27267,7 +27304,7 @@ export async function registerRoutes(
   });
 
   // Revenue Analytics
-  app.get("/api/admin/revenue-analytics", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/revenue-analytics", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { period = '30d' } = req.query;
       const days = period === '7d' ? 7 : period === '90d' ? 90 : period === '365d' ? 365 : 30;
@@ -27330,7 +27367,7 @@ export async function registerRoutes(
   });
 
   // Reconciliation Summary
-  app.get("/api/admin/reconciliation/summary", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/reconciliation/summary", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const wallets = await db.select().from(walletsTable);
       const vaultHoldings = await db.select().from(vaultHoldingsTable);
@@ -27379,7 +27416,7 @@ export async function registerRoutes(
   });
 
   // Reconciliation Reports
-  app.get("/api/admin/reconciliation/reports", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/reconciliation/reports", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const reports = await db.select().from(reconciliationReports)
         .orderBy(desc(reconciliationReports.createdAt))
@@ -27395,7 +27432,7 @@ export async function registerRoutes(
   });
 
   // Generate Reconciliation Report
-  app.post("/api/admin/reconciliation/generate", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/reconciliation/generate", ensureAdminAsync, requirePermission('generate_reports', 'manage_vault'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const today = new Date();
@@ -27451,7 +27488,7 @@ export async function registerRoutes(
   });
 
   // Risk Exposure
-  app.get("/api/admin/risk-exposure", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/risk-exposure", ensureAdminAsync, requirePermission('view_reports', 'manage_kyc'), async (req, res) => {
     try {
       const wallets = await db.select().from(walletsTable);
       const bnslPlans = await db.select().from(bnslPlansTable).where(eq(bnslPlansTable.status, 'active'));
@@ -27518,7 +27555,7 @@ export async function registerRoutes(
   });
 
   // SAR Reports
-  app.get("/api/admin/sar-reports", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/sar-reports", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const { status } = req.query;
       let reports = await db.select().from(sarReports)
@@ -27547,7 +27584,7 @@ export async function registerRoutes(
   });
 
   // Create SAR Report
-  app.post("/api/admin/sar-reports", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/sar-reports", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const { userId, incidentType, incidentDate, description, amountInvolved } = req.body;
@@ -27575,7 +27612,7 @@ export async function registerRoutes(
   });
 
   // Submit SAR Report
-  app.post("/api/admin/sar-reports/:id/submit", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/sar-reports/:id/submit", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const report = await db.update(sarReports)
         .set({ 
@@ -27596,7 +27633,7 @@ export async function registerRoutes(
   });
 
   // Fraud Alerts
-  app.get("/api/admin/fraud-alerts", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/fraud-alerts", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const alerts = await db.select().from(fraudAlerts)
         .orderBy(desc(fraudAlerts.detectedAt))
@@ -27620,7 +27657,7 @@ export async function registerRoutes(
   });
 
   // Scheduled Jobs
-  app.get("/api/admin/scheduled-jobs", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/scheduled-jobs", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const jobs = [
         { id: '1', name: 'Database Backup Sync', description: 'Hourly AWS to Replit sync', cronExpression: '0 * * * *', status: 'active', runCount: 24, failCount: 0, lastRunAt: new Date(Date.now() - 3600000).toISOString(), lastRunDurationMs: 5000, nextRunAt: new Date(Date.now() + 3600000).toISOString() },
@@ -27640,7 +27677,7 @@ export async function registerRoutes(
   });
 
   // System Logs
-  app.get("/api/admin/system-logs", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/system-logs", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { level, source, limit = 100 } = req.query;
       
@@ -27665,7 +27702,7 @@ export async function registerRoutes(
   });
 
   // Settlement Queue
-  app.get("/api/admin/settlements", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/settlements", ensureAdminAsync, requirePermission('view_transactions', 'view_reports'), async (req, res) => {
     try {
       const { status, type } = req.query;
       
@@ -27717,7 +27754,7 @@ export async function registerRoutes(
   });
 
   // Liquidity Dashboard
-  app.get("/api/admin/liquidity", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/liquidity", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
     try {
       const wallets = await db.select().from(walletsTable);
       const bnslPlans = await db.select().from(bnslPlansTable).where(eq(bnslPlansTable.status, 'active'));
@@ -27781,7 +27818,7 @@ export async function registerRoutes(
   });
 
   // Regulatory Reports
-  app.get("/api/admin/regulatory-reports", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/regulatory-reports", ensureAdminAsync, requirePermission('view_reports', 'manage_kyc'), async (req, res) => {
     try {
       const { type, status } = req.query;
       
@@ -27806,7 +27843,7 @@ export async function registerRoutes(
   });
 
   // Generate Regulatory Report
-  app.post("/api/admin/regulatory-reports/generate", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/regulatory-reports/generate", ensureAdminAsync, requirePermission('generate_reports', 'manage_kyc'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const { reportType, reportPeriodStart, reportPeriodEnd, title, description } = req.body;
@@ -27833,7 +27870,7 @@ export async function registerRoutes(
   });
 
   // Submit Regulatory Report
-  app.post("/api/admin/regulatory-reports/:id/submit", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/regulatory-reports/:id/submit", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { submittedTo } = req.body;
       
@@ -27861,7 +27898,7 @@ export async function registerRoutes(
   // ============================================
 
   // Get all announcements (admin)
-  app.get("/api/admin/announcements", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/announcements", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const allAnnouncements = await db.select().from(announcements).orderBy(desc(announcements.createdAt));
       res.json(allAnnouncements);
@@ -27872,7 +27909,7 @@ export async function registerRoutes(
   });
 
   // Create announcement
-  app.post("/api/admin/announcements", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/announcements", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const adminUser = (req as any).adminUser;
       const { title, message, type, target, showBanner, startDate, endDate } = req.body;
@@ -27896,7 +27933,7 @@ export async function registerRoutes(
   });
 
   // Update announcement
-  app.patch("/api/admin/announcements/:id", ensureAdminAsync, async (req, res) => {
+  app.patch("/api/admin/announcements/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { title, message, type, target, isActive, showBanner, startDate, endDate } = req.body;
       
@@ -27923,7 +27960,7 @@ export async function registerRoutes(
   });
 
   // Delete announcement
-  app.delete("/api/admin/announcements/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/announcements/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await db.delete(announcements).where(eq(announcements.id, req.params.id));
 
@@ -27983,7 +28020,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get workflow audit summaries with filtering
-  app.get("/api/admin/workflow-audit/summaries", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/workflow-audit/summaries", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { flowType, result, userId, limit } = req.query;
       
@@ -28004,7 +28041,7 @@ export async function registerRoutes(
   });
   
   // Get workflow audit details for a specific flow instance
-  app.get("/api/admin/workflow-audit/flow/:flowInstanceId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/workflow-audit/flow/:flowInstanceId", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { flowInstanceId } = req.params;
       
@@ -28022,7 +28059,7 @@ export async function registerRoutes(
   });
   
   // Compare a flow against expected steps
-  app.get("/api/admin/workflow-audit/compare/:flowInstanceId", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/workflow-audit/compare/:flowInstanceId", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { flowInstanceId } = req.params;
       
@@ -28036,7 +28073,7 @@ export async function registerRoutes(
   });
   
   // Get expected steps for a flow type (for reference)
-  app.get("/api/admin/workflow-audit/expected-steps/:flowType", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/workflow-audit/expected-steps/:flowType", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const flowType = req.params.flowType as FlowType;
       
@@ -28056,7 +28093,7 @@ export async function registerRoutes(
   });
   
   // Get workflow audit statistics
-  app.get("/api/admin/workflow-audit/stats", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/workflow-audit/stats", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const allSummaries = await workflowAuditService.getFlowSummaries({ limit: 1000 });
       
@@ -28700,7 +28737,7 @@ export async function registerRoutes(
 
 
   // Finatrades Government Presentation Download
-  app.get("/api/admin/presentation/download", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/presentation/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
       const { generateFinatradesPresentation } = await import("./presentation");
       const buffer = await generateFinatradesPresentation();
