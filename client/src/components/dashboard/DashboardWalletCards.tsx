@@ -66,7 +66,6 @@ export default function DashboardWalletCards({
             <p className="text-xl font-bold text-gray-900">
               {finaPayWallet.goldGrams.toFixed(2)} <span className="text-base text-gray-600">g</span>
             </p>
-            <p className="text-xs text-muted-foreground">≈ ${finaPayWallet.usdValue.toFixed(2)} USD</p>
           </div>
           
           <div className="flex justify-between pt-3 mt-3 border-t border-gray-100">
