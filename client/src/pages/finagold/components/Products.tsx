@@ -2,10 +2,10 @@ import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
-const goldBarsImage = '/src/assets/images/gold-bars.png';
+const goldBarsImage = '/src/assets/images/deposit-gold.png';
 const finaPayImage = '/src/assets/images/finapay-transfers.png';
 const globalTradeImage = '/src/assets/images/global-trade.png';
-const bnslImage = '/src/assets/images/gold-savings.png';
+const bnslImage = '/src/assets/images/bnsl-plans.png';
 
 const content = {
   personal: {
@@ -18,7 +18,7 @@ const content = {
         description: 'Securely deposit your gold into the FinaVault or purchase gold directly through our platform.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
-        image: '/src/assets/images/deposit-gold.png',
+        image: goldBarsImage,
       },
       {
         icon: Wallet,
@@ -34,7 +34,7 @@ const content = {
         description: 'Earn substantial margins and guaranteed returns with our secure gold savings plans.',
         cta: 'Explore BNSL',
         href: '/bnsl-landing',
-        image: '/src/assets/images/bnsl-plans.png',
+        image: bnslImage,
       },
     ],
   },
@@ -48,7 +48,7 @@ const content = {
         description: 'Securely deposit your gold into the FinaVault or purchase gold directly through our platform.',
         cta: 'Explore FinaVault',
         href: '/finavault-landing',
-        image: '/src/assets/images/deposit-gold.png',
+        image: goldBarsImage,
       },
       {
         icon: Wallet,
@@ -72,7 +72,7 @@ const content = {
         description: 'Earn substantial margins and guaranteed returns with our secure gold savings plans.',
         cta: 'Explore BNSL',
         href: '/bnsl-landing',
-        image: '/src/assets/images/bnsl-plans.png',
+        image: bnslImage,
       },
     ],
   },
