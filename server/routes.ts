@@ -4371,7 +4371,8 @@ export async function registerRoutes(
   // Create new employee
   app.post("/api/admin/employees", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const { userId, role, department, jobTitle, permissions } = req.body;
+      const { userId: rawUserId, role, rbacRoleId, department, jobTitle, permissions } = req.body;
+      const userId = rawUserId || null; // Convert empty string to null for FK constraint
       const adminUser = (req as any).adminUser;
       
       // Validate permissions - require at least one permission
@@ -4397,6 +4398,7 @@ export async function registerRoutes(
         userId,
         employeeId,
         role: role || 'support',
+        rbacRoleId: rbacRoleId || null,
         department,
         jobTitle,
         permissions: permissions || [],
