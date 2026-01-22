@@ -113,6 +113,7 @@ import physicalDepositRoutes from "./physical-deposit-routes";
 import { WingoldUserSyncService } from "./wingold-user-sync-service";
 import { credentialIssuer } from "./services/credential-issuer";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
+import { geoRestrictionMiddleware } from "./geo-restriction-middleware";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1122,7 +1123,7 @@ export async function registerRoutes(
   // ============================================================================
   
   // Register new user (rate limited)
-  app.post("/api/auth/register", authRateLimiter, async (req, res) => {
+  app.post("/api/auth/register", geoRestrictionMiddleware({ allowRegistrationBypass: true }), authRateLimiter, async (req, res) => {
     try {
       // Check if registrations are enabled
       const { getSystemSettings } = await import("./index");
@@ -1579,7 +1580,7 @@ export async function registerRoutes(
   }, 6 * 60 * 60 * 1000); // Run every 6 hours
 
   // Login with rate limiting
-  app.post("/api/auth/login", authRateLimiter, async (req, res) => {
+  app.post("/api/auth/login", geoRestrictionMiddleware(), authRateLimiter, async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -1715,7 +1716,7 @@ export async function registerRoutes(
   });
 
   // Admin-specific login with rate limiting - grants admin portal access
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", geoRestrictionMiddleware(), async (req, res) => {
     try {
       const { email, password } = req.body;
       
