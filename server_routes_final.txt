@@ -1,0 +1,15 @@
+      if (!hasPermission) {
+        console.log(`[RBAC] Permission denied for user ${userId}. Required: ${requiredPermissions.join(' or ')}`);
+        return res.status(403).json({ 
+          message: "Permission denied",
+          required: requiredPermissions
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('[RBAC] Permission check failed:', error);
+      return res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+}

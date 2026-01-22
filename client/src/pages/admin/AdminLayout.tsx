@@ -172,6 +172,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
+    onError: (error: any) => {
+      if (error.message?.includes('Access Denied')) {
+        toast({
+          title: "Permission Denied",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
   });
 
   // Get the user's active RBAC role name

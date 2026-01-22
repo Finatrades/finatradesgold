@@ -146,15 +146,22 @@ export function requirePermission(...permissions: string[]) {
         }
         
         return res.status(403).json({ 
-          error: 'Permission denied',
-          required: permissions
+          message: "Access Denied: You do not have the required permissions to access this page. Please contact your system administrator.",
+          required: permissions,
+          code: "RBAC_PERMISSION_DENIED"
         });
       }
       
-      return res.status(403).json({ error: 'Admin access required' });
+      return res.status(403).json({ 
+        message: "Admin access required",
+        code: "ADMIN_ACCESS_REQUIRED"
+      });
     } catch (error) {
       console.error('Permission check error:', error);
-      return res.status(500).json({ error: 'Failed to verify permissions' });
+      return res.status(500).json({ 
+        message: "Failed to verify permissions. Please try again later.",
+        code: "PERMISSION_VERIFICATION_FAILED"
+      });
     }
   };
 }

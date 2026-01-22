@@ -34,7 +34,9 @@ async function throwIfResNotOk(res: Response) {
     
     // Convert technical errors to user-friendly messages
     let friendlyMessage = errorData?.message || text;
-    if (res.status === 403 && text.includes('CSRF')) {
+    if (errorData?.code === 'RBAC_PERMISSION_DENIED') {
+      friendlyMessage = "Access Denied: You do not have permission to view this section. Please contact your system administrator.";
+    } else if (res.status === 403 && text.includes('CSRF')) {
       friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
       handleSessionExpired();
     } else if (res.status === 401) {
