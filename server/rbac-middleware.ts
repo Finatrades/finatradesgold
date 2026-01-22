@@ -3,6 +3,24 @@ import { storage } from './storage';
 
 const PERMISSION_CACHE_TTL = 5 * 60 * 1000;
 
+export async function checkIsSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    const assignments = await storage.getUserRoleAssignments(userId);
+    if (!assignments || assignments.length === 0) return false;
+    
+    for (const assignment of assignments) {
+      const role = await storage.getAdminRole(assignment.role_id);
+      if (role && (role.is_system || role.name === 'Super Admin')) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking Super Admin status:', error);
+    return false;
+  }
+}
+
 export async function loadUserPermissions(userId: string): Promise<Record<string, Record<string, boolean>>> {
   const permissions = await storage.getUserEffectivePermissions(userId);
   const permissionMap: Record<string, Record<string, boolean>> = {};
@@ -33,6 +51,15 @@ export function requirePermission(componentSlug: string, action: 'view' | 'creat
       }
       
       if (req.session?.userRole === 'admin') {
+        // Check if user is Super Admin (bypass all permission checks)
+        if (req.session.isSuperAdmin === undefined) {
+          req.session.isSuperAdmin = await checkIsSuperAdmin(userId);
+        }
+        
+        if (req.session.isSuperAdmin) {
+          return next();
+        }
+        
         const cachedAt = req.session.permissionsCachedAt || 0;
         const now = Date.now();
         
@@ -71,6 +98,15 @@ export function requireAnyPermission(componentSlug: string, actions: Array<'view
       }
       
       if (req.session?.userRole === 'admin') {
+        // Check if user is Super Admin (bypass all permission checks)
+        if (req.session.isSuperAdmin === undefined) {
+          req.session.isSuperAdmin = await checkIsSuperAdmin(userId);
+        }
+        
+        if (req.session.isSuperAdmin) {
+          return next();
+        }
+        
         const cachedAt = req.session.permissionsCachedAt || 0;
         const now = Date.now();
         

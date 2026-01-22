@@ -71,6 +71,7 @@ declare module "express-session" {
     adminPortal?: boolean;
     permissions?: Record<string, Record<string, boolean>>;
     permissionsCachedAt?: number;
+    isSuperAdmin?: boolean;
   }
 }
 
