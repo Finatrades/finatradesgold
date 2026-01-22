@@ -47,7 +47,39 @@ export async function loadUserPermissions(userId: string): Promise<Record<string
   return permissionMap;
 }
 
-export function requirePermission(componentSlug: string, action: 'view' | 'create' | 'edit' | 'approve_l1' | 'approve_final' | 'reject' | 'export' | 'delete') {
+// Legacy permission string to RBAC component mapping
+const LEGACY_PERM_TO_COMPONENT: Record<string, { component: string, action: 'view' | 'edit' }> = {
+  'view_users': { component: 'user-management', action: 'view' },
+  'manage_users': { component: 'user-management', action: 'edit' },
+  'view_kyc': { component: 'kyc-reviews', action: 'view' },
+  'manage_kyc': { component: 'kyc-reviews', action: 'edit' },
+  'manage_employees': { component: 'employees', action: 'edit' },
+  'view_reports': { component: 'financial-reports', action: 'view' },
+  'generate_reports': { component: 'financial-reports', action: 'edit' },
+  'view_vault': { component: 'vault-management', action: 'view' },
+  'manage_vault': { component: 'vault-management', action: 'edit' },
+  'view_transactions': { component: 'payment-operations', action: 'view' },
+  'manage_transactions': { component: 'payment-operations', action: 'edit' },
+  'manage_deposits': { component: 'payment-operations', action: 'edit' },
+  'manage_withdrawals': { component: 'payment-operations', action: 'edit' },
+  'manage_fees': { component: 'fee-management', action: 'edit' },
+  'view_bnsl': { component: 'bnsl-management', action: 'view' },
+  'manage_bnsl': { component: 'bnsl-management', action: 'edit' },
+  'view_finabridge': { component: 'finabridge-management', action: 'view' },
+  'manage_finabridge': { component: 'finabridge-management', action: 'edit' },
+  'manage_settings': { component: 'platform-settings', action: 'edit' },
+  'view_cms': { component: 'cms-management', action: 'view' },
+  'manage_cms': { component: 'cms-management', action: 'edit' },
+  'view_support': { component: 'support', action: 'view' },
+  'manage_support': { component: 'support', action: 'edit' },
+};
+
+// Check if a string is a legacy permission format
+function isLegacyPermission(str: string): boolean {
+  return str.startsWith('view_') || str.startsWith('manage_') || str.startsWith('generate_');
+}
+
+export function requirePermission(...permissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.session?.userId;
@@ -76,19 +108,46 @@ export function requirePermission(componentSlug: string, action: 'view' | 'creat
         
         // Check for wildcard permissions (Super Admin)
         const wildcardPerms = req.session.permissions['*'];
-        if (wildcardPerms && wildcardPerms[action]) {
+        if (wildcardPerms) {
           return next();
         }
         
-        const componentPerms = req.session.permissions[componentSlug];
-        
-        if (componentPerms && componentPerms[action]) {
-          return next();
+        // Handle legacy permission strings (e.g., 'view_users', 'manage_users')
+        // User needs ANY of the specified permissions (OR logic)
+        for (const perm of permissions) {
+          if (isLegacyPermission(perm)) {
+            const mapping = LEGACY_PERM_TO_COMPONENT[perm];
+            if (mapping) {
+              const componentPerms = req.session.permissions[mapping.component];
+              if (componentPerms) {
+                // For view_ permissions, check can_view
+                // For manage_/generate_ permissions, check can_edit, can_create, can_delete, or can_approve
+                if (mapping.action === 'view' && componentPerms.view) {
+                  return next();
+                }
+                if (mapping.action === 'edit' && (componentPerms.edit || componentPerms.create || componentPerms.delete || componentPerms.approve_l1 || componentPerms.approve_final)) {
+                  return next();
+                }
+              }
+            }
+          } else {
+            // New format: componentSlug with optional action
+            // Check if second arg is a valid action
+            const validActions = ['view', 'create', 'edit', 'approve_l1', 'approve_final', 'reject', 'export', 'delete'];
+            if (permissions.length === 2 && validActions.includes(permissions[1])) {
+              const componentSlug = permissions[0];
+              const action = permissions[1] as 'view' | 'create' | 'edit' | 'approve_l1' | 'approve_final' | 'reject' | 'export' | 'delete';
+              const componentPerms = req.session.permissions[componentSlug];
+              if (componentPerms && componentPerms[action]) {
+                return next();
+              }
+            }
+          }
         }
         
         return res.status(403).json({ 
           error: 'Permission denied',
-          required: { component: componentSlug, action }
+          required: permissions
         });
       }
       
@@ -100,57 +159,10 @@ export function requirePermission(componentSlug: string, action: 'view' | 'creat
   };
 }
 
-export function requireAnyPermission(componentSlug: string, actions: Array<'view' | 'create' | 'edit' | 'approve_l1' | 'approve_final' | 'reject' | 'export' | 'delete'>) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-      
-      if (req.session?.userRole === 'admin') {
-        // Check if user is Super Admin (bypass all permission checks)
-        if (req.session.isSuperAdmin === undefined) {
-          req.session.isSuperAdmin = await checkIsSuperAdmin(userId);
-        }
-        
-        if (req.session.isSuperAdmin) {
-          return next();
-        }
-        
-        const cachedAt = req.session.permissionsCachedAt || 0;
-        const now = Date.now();
-        
-        if (!req.session.permissions || now - cachedAt > PERMISSION_CACHE_TTL) {
-          req.session.permissions = await loadUserPermissions(userId);
-          req.session.permissionsCachedAt = now;
-        }
-        
-        // Check for wildcard permissions (Super Admin)
-        const wildcardPerms = req.session.permissions['*'];
-        if (wildcardPerms && actions.some(action => wildcardPerms[action])) {
-          return next();
-        }
-        
-        const componentPerms = req.session.permissions[componentSlug];
-        
-        if (componentPerms && actions.some(action => componentPerms[action])) {
-          return next();
-        }
-        
-        return res.status(403).json({ 
-          error: 'Permission denied',
-          required: { component: componentSlug, actions }
-        });
-      }
-      
-      return res.status(403).json({ error: 'Admin access required' });
-    } catch (error) {
-      console.error('Permission check error:', error);
-      return res.status(500).json({ error: 'Failed to verify permissions' });
-    }
-  };
+export function requireAnyPermission(...permissions: string[]) {
+  // This function now supports both legacy permissions and new RBAC format
+  // It checks if user has ANY of the specified permissions (OR logic)
+  return requirePermission(...permissions);
 }
 
 export function requireAdmin() {
