@@ -4582,7 +4582,8 @@ export async function registerRoutes(
       
       res.json({ employee });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update employee" });
+      console.error('[Employee Update Error]', error);
+      res.status(400).json({ message: "Failed to update employee", error: String(error) });
     }
   });
   
