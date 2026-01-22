@@ -22,10 +22,16 @@ export async function checkIsSuperAdmin(userId: string): Promise<boolean> {
 }
 
 export async function loadUserPermissions(userId: string): Promise<Record<string, Record<string, boolean>>> {
-  const permissions = await storage.getUserEffectivePermissions(userId);
+  const result = await storage.getUserEffectivePermissions(userId);
   const permissionMap: Record<string, Record<string, boolean>> = {};
   
-  for (const perm of permissions) {
+  // Handle Super Admin - give full permissions
+  if (result.isSuperAdmin) {
+    return { '*': { view: true, create: true, edit: true, approve_l1: true, approve_final: true, reject: true, export: true, delete: true } };
+  }
+  
+  // Use components array from the result for detailed permission mapping
+  for (const perm of result.components) {
     permissionMap[perm.component_slug] = {
       view: perm.can_view,
       create: perm.can_create,
@@ -66,6 +72,12 @@ export function requirePermission(componentSlug: string, action: 'view' | 'creat
         if (!req.session.permissions || now - cachedAt > PERMISSION_CACHE_TTL) {
           req.session.permissions = await loadUserPermissions(userId);
           req.session.permissionsCachedAt = now;
+        }
+        
+        // Check for wildcard permissions (Super Admin)
+        const wildcardPerms = req.session.permissions['*'];
+        if (wildcardPerms && wildcardPerms[action]) {
+          return next();
         }
         
         const componentPerms = req.session.permissions[componentSlug];
@@ -113,6 +125,12 @@ export function requireAnyPermission(componentSlug: string, actions: Array<'view
         if (!req.session.permissions || now - cachedAt > PERMISSION_CACHE_TTL) {
           req.session.permissions = await loadUserPermissions(userId);
           req.session.permissionsCachedAt = now;
+        }
+        
+        // Check for wildcard permissions (Super Admin)
+        const wildcardPerms = req.session.permissions['*'];
+        if (wildcardPerms && actions.some(action => wildcardPerms[action])) {
+          return next();
         }
         
         const componentPerms = req.session.permissions[componentSlug];

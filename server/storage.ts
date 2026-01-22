@@ -5026,7 +5026,7 @@ export class DatabaseStorage implements IStorage {
     return result.rows;
   }
 
-  async getUserEffectivePermissions(userId: string): Promise<any[]> {
+  async getUserComponentPermissions(userId: string): Promise<any[]> {
     const result = await db.execute(sql`
       SELECT DISTINCT ac.slug as component_slug, ac.path,
         MAX(CASE WHEN rcp.can_view THEN 1 ELSE 0 END)::boolean as can_view,
@@ -5248,7 +5248,7 @@ export class DatabaseStorage implements IStorage {
 
   // User permission check helper
   async checkUserPermission(userId: string, componentSlug: string, action: string): Promise<boolean> {
-    const permissions = await this.getUserEffectivePermissions(userId);
+    const permissions = await this.getUserComponentPermissions(userId);
     const componentPerms = permissions.find(p => p.component_slug === componentSlug);
     if (!componentPerms) return false;
     
