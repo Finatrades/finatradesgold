@@ -100,6 +100,7 @@ import { logActivity, notifyError } from "./system-notifications";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
+import { checkIsSuperAdmin, loadUserPermissions } from "./rbac-middleware";
 import { registerDualWalletRoutes } from "./dual-wallet-routes";
 import { registerSsoRoutes } from "./sso-routes";
 import vcRoutes from "./vc-routes";
@@ -398,50 +399,96 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
   }
 }
 
+// Legacy permission to RBAC component mapping
+const LEGACY_TO_RBAC_MAP: Record<string, { component: string; action: 'view' | 'edit' | 'create' | 'delete' }> = {
+  'view_users': { component: 'user-management', action: 'view' },
+  'manage_users': { component: 'user-management', action: 'edit' },
+  'view_kyc': { component: 'kyc-reviews', action: 'view' },
+  'manage_kyc': { component: 'kyc-reviews', action: 'edit' },
+  'view_vault': { component: 'vault-management', action: 'view' },
+  'manage_vault': { component: 'vault-management', action: 'edit' },
+  'manage_employees': { component: 'employees', action: 'edit' },
+  'manage_settings': { component: 'platform-settings', action: 'edit' },
+  'view_reports': { component: 'financial-reports', action: 'view' },
+  'generate_reports': { component: 'financial-reports', action: 'create' },
+  'manage_deposits': { component: 'payment-operations', action: 'edit' },
+  'manage_withdrawals': { component: 'payment-operations', action: 'edit' },
+  'view_transactions': { component: 'payment-operations', action: 'view' },
+  'manage_transactions': { component: 'payment-operations', action: 'edit' },
+  'manage_fees': { component: 'fee-management', action: 'edit' },
+  'view_finabridge': { component: 'finabridge-management', action: 'view' },
+  'manage_finabridge': { component: 'finabridge-management', action: 'edit' },
+  'view_bnsl': { component: 'bnsl-management', action: 'view' },
+  'manage_bnsl': { component: 'bnsl-management', action: 'edit' },
+  'view_cms': { component: 'cms-management', action: 'view' },
+  'manage_cms': { component: 'cms-management', action: 'edit' },
+  'view_support': { component: 'platform-settings', action: 'view' },
+  'manage_support': { component: 'platform-settings', action: 'edit' },
+};
+
 // Middleware to require specific employee permissions
 // Must be used AFTER ensureAdminAsync as it relies on adminUser and adminEmployee being set
+// NOW INTEGRATED WITH RBAC SYSTEM
 function requirePermission(...requiredPermissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminUser = (req as any).adminUser;
-      const adminEmployee = (req as any).adminEmployee;
+      const userId = req.session?.userId;
       
-      if (!adminUser) {
-        console.error('[Permission Check] No adminUser found on request');
+      if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
-      // Use employee from ensureAdminAsync or fetch if not available
-      const employee = adminEmployee || await storage.getEmployeeByUserId(adminUser.id);
       
-      // Double-check employee is active (in case middleware order changes)
-      if (employee && employee.status !== 'active') {
-        return res.status(403).json({ 
-          message: "Your account has been deactivated. Please contact a super admin." 
-        });
+      if (req.session?.userRole !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Check if user is Super Admin (bypass all permission checks)
+      if (req.session.isSuperAdmin === undefined) {
+        req.session.isSuperAdmin = await checkIsSuperAdmin(userId);
       }
       
-      // If no employee record, allow access (original admin accounts)
-      // Super admins have all permissions
-      if (!employee || employee.role === 'super_admin') {
-        (req as any).employeePermissions = employee?.permissions || [];
+      if (req.session.isSuperAdmin) {
         return next();
       }
 
-      // Check if employee has at least one of the required permissions
-      const employeePermissions = employee.permissions || [];
-      const hasPermission = requiredPermissions.length === 0 || 
-        requiredPermissions.some(perm => employeePermissions.includes(perm));
+      // Load RBAC permissions if not cached
+      const cachedAt = req.session.permissionsCachedAt || 0;
+      const now = Date.now();
+      const CACHE_TTL = 5 * 60 * 1000;
+      
+      if (!req.session.permissions || now - cachedAt > CACHE_TTL) {
+        req.session.permissions = await loadUserPermissions(userId);
+        req.session.permissionsCachedAt = now;
+      }
+
+      // If no permissions required, allow access
+      if (requiredPermissions.length === 0) {
+        return next();
+      }
+
+      // Check if user has at least one of the required permissions via RBAC
+      const hasPermission = requiredPermissions.some(legacyPerm => {
+        const rbacMapping = LEGACY_TO_RBAC_MAP[legacyPerm];
+        if (!rbacMapping) {
+          console.warn(`[RBAC] Unknown legacy permission: ${legacyPerm}`);
+          return false;
+        }
+        
+        const componentPerms = req.session.permissions?.[rbacMapping.component];
+        return componentPerms && componentPerms[rbacMapping.action];
+      });
       
       if (!hasPermission) {
+        console.log(`[RBAC] Permission denied for user ${userId}. Required: ${requiredPermissions.join(' or ')}`);
         return res.status(403).json({ 
-          message: "Permission denied. Required: " + requiredPermissions.join(' or ')
+          message: "Permission denied",
+          required: requiredPermissions
         });
       }
 
-      (req as any).employeePermissions = employeePermissions;
       next();
     } catch (error) {
+      console.error('[RBAC] Permission check failed:', error);
       return res.status(500).json({ message: "Permission check failed" });
     }
   };
