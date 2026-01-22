@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+
+// Standardized image paths
 const goldBarsImage = '/src/assets/images/deposit-gold.png';
 const finaPayImage = '/src/assets/images/finapay-transfers.png';
 const globalTradeImage = '/src/assets/images/global-trade.png';
@@ -63,7 +65,7 @@ const content = {
         title: 'Global Trade Monitoring',
         description: 'Monitor your imports and exports in real time, track gold-backed settlements and streamline every step of your cross-border business operations.',
         cta: 'Explore FinaBridge',
-        href: '/finabridge-landing',
+        href: '/finavbridge-landing',
         image: globalTradeImage,
       },
       {
@@ -149,11 +151,12 @@ export default function Products() {
             >
               <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden">
                 <img 
-                  src={product.image || ''} 
+                  src={product.image} 
                   alt={product.title} 
                   className="max-w-full max-h-full object-contain p-2"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
+                    console.error('Image failed to load:', product.image);
                     target.style.display = 'none';
                   }}
                 />
