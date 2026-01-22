@@ -315,7 +315,7 @@ export default function EmployeeManagement() {
     });
   };
 
-  const isFormValid = formData.rbacRoleId && formData.permissions.length > 0;
+  const isFormValid = !!formData.rbacRoleId;
 
   const employees: Employee[] = employeesData?.employees || [];
   const availableUsers = usersData?.users?.filter((u: any) => 
@@ -445,28 +445,20 @@ export default function EmployeeManagement() {
 
                 <div className="space-y-2">
                   <Label>Permissions</Label>
-                  <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-2">
-                      {AVAILABLE_PERMISSIONS.map((perm) => (
-                        <div key={perm.key} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={perm.key}
-                            checked={formData.permissions.includes(perm.key)}
-                            onCheckedChange={() => togglePermission(perm.key)}
-                          />
-                          <label htmlFor={perm.key} className="text-sm cursor-pointer">
-                            {perm.label}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="border rounded-lg p-4 bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      {formData.rbacRoleId 
+                        ? "Permissions are managed through the selected RBAC Role. Go to Role Management to view or edit role permissions."
+                        : "Select an RBAC Role above to assign permissions to this employee."
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
 
               {!isFormValid && (
                 <p className="text-sm text-destructive">
-                  {!formData.rbacRoleId ? 'RBAC Role is required' : 'At least one permission is required'}
+                  RBAC Role is required
                 </p>
               )}
               
@@ -697,28 +689,20 @@ export default function EmployeeManagement() {
 
               <div className="space-y-2">
                 <Label>Permissions</Label>
-                <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    {AVAILABLE_PERMISSIONS.map((perm) => (
-                      <div key={perm.key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`edit-${perm.key}`}
-                          checked={formData.permissions.includes(perm.key)}
-                          onCheckedChange={() => togglePermission(perm.key)}
-                        />
-                        <label htmlFor={`edit-${perm.key}`} className="text-sm cursor-pointer">
-                          {perm.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <p className="text-sm text-muted-foreground">
+                    {formData.rbacRoleId 
+                      ? "Permissions are managed through the selected RBAC Role. Go to Role Management to view or edit role permissions."
+                      : "Select an RBAC Role above to assign permissions to this employee."
+                    }
+                  </p>
                 </div>
               </div>
             </div>
 
             {!isFormValid && (
               <p className="text-sm text-destructive">
-                {!formData.rbacRoleId ? 'RBAC Role is required' : 'At least one permission is required'}
+                RBAC Role is required
               </p>
             )}
 
