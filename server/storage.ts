@@ -4756,17 +4756,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAdminRole(id: string, updates: Record<string, any>): Promise<any> {
-    const result = await db.execute(sql`
-      UPDATE admin_roles SET
-        name = COALESCE(${updates.name}, name),
-        description = COALESCE(${updates.description}, description),
-        department = COALESCE(${updates.department}, department),
-        risk_level = COALESCE(${updates.riskLevel}, risk_level),
-        is_active = COALESCE(${updates.isActive}, is_active),
-        updated_at = NOW()
-      WHERE id = ${id}
-      RETURNING *
-    `);
+    const setParts: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+    
+    if (updates.name !== undefined) {
+      setParts.push(`name = $${paramIndex++}`);
+      values.push(updates.name);
+    }
+    if (updates.description !== undefined) {
+      setParts.push(`description = $${paramIndex++}`);
+      values.push(updates.description);
+    }
+    if (updates.department !== undefined) {
+      setParts.push(`department = $${paramIndex++}`);
+      values.push(updates.department);
+    }
+    if (updates.riskLevel !== undefined || updates.risk_level !== undefined) {
+      setParts.push(`risk_level = $${paramIndex++}`);
+      values.push(updates.riskLevel || updates.risk_level);
+    }
+    if (updates.isActive !== undefined || updates.is_active !== undefined) {
+      setParts.push(`is_active = $${paramIndex++}`);
+      values.push(updates.isActive ?? updates.is_active);
+    }
+    
+    if (setParts.length === 0) {
+      const existing = await this.getAdminRole(id);
+      return existing;
+    }
+    
+    setParts.push('updated_at = NOW()');
+    values.push(id);
+    
+    const query = `UPDATE admin_roles SET ${setParts.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    const result = await pool.query(query, values);
     return result.rows[0] || null;
   }
 
