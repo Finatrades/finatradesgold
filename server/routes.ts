@@ -4080,7 +4080,36 @@ export async function registerRoutes(
   app.get("/api/admin/users", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      res.json({ users: users.map(sanitizeUser) });
+      
+      // Enrich admin users with their RBAC role info
+      const enrichedUsers = await Promise.all(users.map(async (user) => {
+        const sanitized = sanitizeUser(user);
+        
+        // For admin users, fetch their RBAC role
+        if (user.role === 'admin') {
+          const roleAssignment = await storage.getUserRoleAssignments(user.id);
+          if (roleAssignment && roleAssignment.length > 0) {
+            const activeAssignment = roleAssignment.find((ra: any) => ra.is_active);
+            if (activeAssignment) {
+              const role = await storage.getAdminRoleById(activeAssignment.role_id);
+              if (role) {
+                return {
+                  ...sanitized,
+                  rbacRole: {
+                    id: role.id,
+                    name: role.name,
+                    risk_level: role.risk_level,
+                    department: role.department
+                  }
+                };
+              }
+            }
+          }
+        }
+        return sanitized;
+      }));
+      
+      res.json({ users: enrichedUsers });
     } catch (error) {
       res.status(400).json({ message: "Failed to get users" });
     }

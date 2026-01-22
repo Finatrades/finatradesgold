@@ -20,6 +20,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Risk level colors for RBAC roles
+const RISK_LEVEL_COLORS: Record<string, string> = {
+  'Critical': 'bg-red-600',
+  'High': 'bg-red-500',
+  'Medium': 'bg-yellow-500',
+  'Low': 'bg-green-500'
+};
+
 interface User {
   id: string;
   finatradesId?: string;
@@ -35,6 +43,12 @@ interface User {
   kycStatus: string;
   isEmailVerified: boolean;
   createdAt: string;
+  rbacRole?: {
+    id: string;
+    name: string;
+    risk_level: string;
+    department: string;
+  };
 }
 
 export default function UserManagement() {
@@ -331,14 +345,28 @@ export default function UserManagement() {
                               </Badge>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                            <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
-                              {user.role === 'admin' ? (
-                                <><Shield className="w-3 h-3 mr-1" /> Admin</>
+                          <td className="px-6 py-4" data-testid={`role-cell-${user.id}`}>
+                            {user.role === 'admin' ? (
+                              user.rbacRole ? (
+                                <div className="flex items-center gap-2" data-testid={`rbac-role-${user.id}`}>
+                                  <span 
+                                    className={`w-2 h-2 rounded-full ${RISK_LEVEL_COLORS[user.rbacRole.risk_level] || 'bg-gray-400'}`} 
+                                    data-testid={`risk-indicator-${user.id}`}
+                                    title={`Risk Level: ${user.rbacRole.risk_level}`}
+                                  />
+                                  <Badge className="bg-purple-600 text-white" data-testid={`rbac-badge-${user.id}`}>
+                                    <Shield className="w-3 h-3 mr-1" />
+                                    {user.rbacRole.name}
+                                  </Badge>
+                                </div>
                               ) : (
-                                'User'
-                              )}
-                            </Badge>
+                                <Badge variant="default" data-testid={`admin-badge-${user.id}`}>
+                                  <Shield className="w-3 h-3 mr-1" /> Admin <span className="text-xs ml-1">(No RBAC)</span>
+                                </Badge>
+                              )
+                            ) : (
+                              <Badge variant="outline" data-testid={`user-badge-${user.id}`}>User</Badge>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             <div>
