@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import AdminLayout from './AdminLayout';
+import React, { useEffect, useMemo } from 'react';
+import AdminLayout, { useAdminPermissions, MENU_PERMISSION_MAP } from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, 
@@ -206,6 +206,24 @@ export default function AdminDashboard() {
 
   const totalPending = (pendingCounts?.pendingKyc || 0) + (pendingCounts?.pendingDeposits || 0) + (pendingCounts?.pendingWithdrawals || 0) + (pendingCounts?.pendingPhysicalDeposits || 0) + (pendingCounts?.pendingTradeCases || 0) + (pendingCounts?.pendingBnslRequests || 0) + (pendingCounts?.pendingAccountDeletions || 0) + (pendingCounts?.unreadChats || 0);
 
+  // Get permission checking from context
+  const { hasMenuPermission, isSuperAdmin } = useAdminPermissions();
+
+  // Filter QUICK_ACTIONS based on permissions
+  const filteredQuickActions = useMemo(() => {
+    if (isSuperAdmin) return QUICK_ACTIONS;
+    return QUICK_ACTIONS.filter(action => hasMenuPermission(action.href));
+  }, [isSuperAdmin, hasMenuPermission]);
+
+  // Filter ACTION_SECTIONS based on permissions
+  const filteredActionSections = useMemo(() => {
+    if (isSuperAdmin) return ACTION_SECTIONS;
+    return ACTION_SECTIONS.map(section => ({
+      ...section,
+      items: section.items.filter(item => hasMenuPermission(item.href))
+    })).filter(section => section.items.length > 0);
+  }, [isSuperAdmin, hasMenuPermission]);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -224,7 +242,7 @@ export default function AdminDashboard() {
         {/* Quick Actions Bar */}
         <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
           <div className="flex flex-wrap gap-2">
-            {QUICK_ACTIONS.map((action) => {
+            {filteredQuickActions.map((action) => {
               const Icon = action.icon;
               const colorStyles: Record<string, string> = {
                 purple: 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-500 hover:text-white hover:border-purple-500',
@@ -366,7 +384,7 @@ export default function AdminDashboard() {
 
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {ACTION_SECTIONS.map((section) => {
+          {filteredActionSections.map((section) => {
             const SectionIcon = section.icon;
             const sectionColors: Record<string, { bg: string; border: string; icon: string; text: string }> = {
               purple: { bg: 'bg-purple-50', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-600', text: 'text-purple-700' },

@@ -1,8 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation, Link, Redirect } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+
+interface AdminPermissionContextValue {
+  hasMenuPermission: (menuPath: string) => boolean;
+  effectivePermissions: string[];
+  isSuperAdmin: boolean;
+}
+
+const AdminPermissionContext = createContext<AdminPermissionContextValue>({
+  hasMenuPermission: () => true,
+  effectivePermissions: [],
+  isSuperAdmin: false,
+});
+
+export const useAdminPermissions = () => useContext(AdminPermissionContext);
 import { 
   LayoutDashboard, 
   Users, 
@@ -52,12 +66,19 @@ import NotificationCenter from '@/components/dashboard/NotificationCenter';
 // Light mode only - ThemeToggle removed
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const MENU_PERMISSION_MAP: Record<string, string[]> = {
+export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin': [],
   '/admin/financial-reports': ['view_reports', 'generate_reports'],
   '/admin/users': ['view_users', 'manage_users'],
   '/admin/employees': ['manage_employees'],
+  '/admin/roles': ['manage_employees'],
   '/admin/kyc': ['view_kyc', 'manage_kyc'],
+  '/admin/payment-operations': ['manage_deposits', 'manage_withdrawals'],
+  '/admin/physical-deposits': ['manage_deposits'],
+  '/admin/audit-logs': ['view_reports'],
+  '/admin/system-health': ['view_reports', 'manage_settings'],
+  '/admin/gold-backing': ['view_reports', 'view_vault'],
+  '/admin/wingold-orders': ['view_vault', 'manage_vault'],
   '/admin/compliance': ['view_kyc', 'manage_kyc'],
   '/admin/transactions': ['view_transactions', 'manage_transactions'],
   '/admin/payment-gateways': ['manage_deposits', 'manage_withdrawals'],
@@ -388,8 +409,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 
+  const permissionContextValue: AdminPermissionContextValue = {
+    hasMenuPermission,
+    effectivePermissions,
+    isSuperAdmin,
+  };
+
   return (
-    <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
+    <AdminPermissionContext.Provider value={permissionContextValue}>
+      <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
       <header className="sticky top-0 z-50 bg-background border-b border-border" data-testid="admin-header">
         <div className="px-4 lg:px-6">
           <div className="h-14 flex items-center gap-4">
@@ -577,11 +605,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </>
       )}
 
-      <main className="min-h-[calc(100vh-7rem)] p-4 lg:p-6 bg-muted">
-        <div className="max-w-[1600px] mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+        <main className="min-h-[calc(100vh-7rem)] p-4 lg:p-6 bg-muted">
+          <div className="max-w-[1600px] mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </AdminPermissionContext.Provider>
   );
 }
