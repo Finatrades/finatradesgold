@@ -3,11 +3,11 @@ import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 
-// Standardized image paths
-const goldBarsImage = '/src/assets/images/deposit-gold.png';
-const finaPayImage = '/src/assets/images/finapay-transfers.png';
-const globalTradeImage = '/src/assets/images/global-trade.png';
-const bnslImage = '/src/assets/images/bnsl-plans.png';
+// Public folder paths (served from client/public/images)
+const goldBarsImage = '/images/deposit-gold.png';
+const finaPayImage = '/images/finapay-transfers.png';
+const globalTradeImage = '/images/global-trade.png';
+const bnslImage = '/images/bnsl-plans.png';
 
 const content = {
   personal: {
@@ -157,7 +157,8 @@ export default function Products() {
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     console.error('Image failed to load:', product.image);
-                    target.style.display = 'none';
+                    // Fallback to placeholder if image fails
+                    target.src = 'https://placehold.co/400x300/8A2BE2/FFFFFF/png?text=' + encodeURIComponent(product.title);
                   }}
                 />
               </div>
