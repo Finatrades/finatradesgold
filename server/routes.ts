@@ -27026,19 +27026,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get current user's effective permissions
-  app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
-    try {
-      const permissions = await storage.getUserEffectivePermissions(req.session?.userId || '');
-
-
-      res.json({ permissions });
-    } catch (error) {
-      console.error('Get permissions error:', error);
-      res.status(500).json({ error: 'Failed to get permissions' });
-    }
-  });
-
   // Get task definitions
   app.get("/api/admin/rbac/tasks", ensureAdminAsync, async (req, res) => {
     try {
