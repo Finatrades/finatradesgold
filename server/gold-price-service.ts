@@ -30,8 +30,10 @@ interface ApiUsageStats {
 }
 
 let cachedPrice: CachedPrice | null = null;
+let cachedFreePrice: CachedPrice | null = null; // Separate cache for free API (visitors)
 let lastKnownPrice: GoldPriceData | null = null;
 let cacheDurationMs = 10 * 60 * 1000; // 10 minutes default (matches Copper Pack update frequency)
+const FREE_API_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for free API (rate limited)
 
 // API usage tracking for Copper Pack (2,500 calls/month)
 let apiUsageStats: ApiUsageStats = {
@@ -382,6 +384,56 @@ export async function getGoldPrice(): Promise<GoldPriceData> {
 export async function getGoldPricePerGram(): Promise<number> {
   const priceData = await getGoldPrice();
   return priceData.pricePerGram;
+}
+
+/**
+ * Smart Gold Price API - uses paid API for logged-in users, free API for visitors
+ * This helps conserve Metals-API calls for actual users only
+ */
+export async function getGoldPriceForUser(isAuthenticated: boolean): Promise<GoldPriceData> {
+  const config = await getGoldApiConfig();
+  
+  if (isAuthenticated) {
+    // Logged-in user: use paid Metals-API for accurate, real-time pricing
+    console.log('[GoldPrice] Authenticated user - using premium Metals-API');
+    return getGoldPrice();
+  }
+  
+  // Visitor (not logged in): use free API to conserve paid API calls
+  console.log('[GoldPrice] Visitor - using free gold-api.com');
+  
+  // Check free API cache first
+  if (cachedFreePrice && cachedFreePrice.expiresAt > new Date()) {
+    return cachedFreePrice.data;
+  }
+  
+  try {
+    let priceData = await fetchFromGoldApiCom();
+    priceData = applyMarkup(priceData, config.markupPercent);
+    
+    cachedFreePrice = {
+      data: priceData,
+      expiresAt: new Date(Date.now() + FREE_API_CACHE_DURATION)
+    };
+    
+    console.log(`[GoldPrice] Free API: $${priceData.pricePerGram.toFixed(2)}/gram (cached for 15min)`);
+    return priceData;
+  } catch (error) {
+    console.error('[GoldPrice] Free API failed, falling back:', error);
+    
+    // Try to use cached premium price if available
+    if (cachedPrice && cachedPrice.data) {
+      return cachedPrice.data;
+    }
+    
+    // Use last known price
+    if (lastKnownPrice) {
+      return { ...lastKnownPrice, source: 'fallback-last-known' };
+    }
+    
+    // Ultimate fallback
+    return { ...DEFAULT_FALLBACK_PRICE, timestamp: new Date() };
+  }
 }
 
 export function clearPriceCache(): void {
