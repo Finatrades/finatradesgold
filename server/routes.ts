@@ -4540,7 +4540,7 @@ export async function registerRoutes(
   // Update employee
   app.patch("/api/admin/employees/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const { role, department, jobTitle, status, permissions } = req.body;
+      const { role, rbacRoleId, department, jobTitle, status, permissions } = req.body;
       const adminUser = (req as any).adminUser;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
@@ -4548,13 +4548,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      // Validate permissions if being updated
-      if (permissions !== undefined && permissions.length === 0) {
+      // Validate permissions if being updated (only for legacy permission mode)
+      if (permissions !== undefined && Array.isArray(permissions) && permissions.length === 0 && !rbacRoleId) {
         return res.status(400).json({ message: "At least one permission is required" });
       }
       
       const updates: any = {};
       if (role !== undefined) updates.role = role;
+      if (rbacRoleId !== undefined) updates.rbacRoleId = rbacRoleId || null;
       if (department !== undefined) updates.department = department;
       if (jobTitle !== undefined) updates.jobTitle = jobTitle;
       if (status !== undefined) updates.status = status;
