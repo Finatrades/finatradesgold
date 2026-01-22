@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 export default function AdminLogin() {
   const { adminLogin, verifyMfa, user, loading, adminPortal } = useAuth();
@@ -172,17 +173,19 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <div className="min-h-screen py-12 flex items-center justify-center">
-        <div className="container mx-auto px-6 max-w-md">
-          
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Shield className="w-10 h-10 text-white" />
+    <>
+      <GeoRestrictionNotice />
+      <div className="min-h-screen bg-slate-900">
+        <div className="min-h-screen py-12 flex items-center justify-center">
+          <div className="container mx-auto px-6 max-w-md">
+            
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Shield className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
+              <p className="text-slate-400">Sign in to access the administration dashboard</p>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
-            <p className="text-slate-400">Sign in to access the administration dashboard</p>
-          </div>
 
           <Card className="p-8 bg-slate-800 border-slate-700 shadow-xl">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -245,5 +248,6 @@ export default function AdminLogin() {
         </div>
       </div>
     </div>
+    </>
   );
 }

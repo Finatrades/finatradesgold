@@ -10,6 +10,7 @@ import { Link, useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import BiometricService from '@/lib/biometric-service';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 export default function MobileLogin() {
   const { login, verifyMfa, user, loading, setUser } = useAuth();
@@ -263,20 +264,22 @@ export default function MobileLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex flex-col">
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <img 
-              src={finatradesLogo} 
-              alt="Finatrades" 
-              className="h-16 mx-auto mb-6"
-              style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
-              data-testid="img-logo"
-            />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-500 text-sm">Sign in to access your FinaTrades dashboard</p>
-          </div>
+    <>
+      <GeoRestrictionNotice />
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
+              <img 
+                src={finatradesLogo} 
+                alt="Finatrades" 
+                className="h-16 mx-auto mb-6"
+                style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
+                data-testid="img-logo"
+              />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+              <p className="text-gray-500 text-sm">Sign in to access your FinaTrades dashboard</p>
+            </div>
 
           <div className="bg-white rounded-3xl shadow-xl shadow-purple-100/50 p-6 border border-purple-100/50">
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -390,5 +393,6 @@ export default function MobileLogin() {
         </div>
       </div>
     </div>
+    </>
   );
 }

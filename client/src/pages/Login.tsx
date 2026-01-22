@@ -13,6 +13,7 @@ import BiometricService from '@/lib/biometric-service';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileLogin from '@/components/mobile/MobileLogin';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 export default function Login() {
   const isMobile = useIsMobile();
@@ -296,21 +297,23 @@ function DesktopLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="min-h-screen py-12 bg-background flex items-center justify-center">
-        <div className="container mx-auto px-6 max-w-md">
-          
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <img 
-                src={finatradesLogo} 
-                alt="Finatrades" 
-                className="h-20 w-auto"
-              />
+    <>
+      <GeoRestrictionNotice />
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen py-12 bg-background flex items-center justify-center">
+          <div className="container mx-auto px-6 max-w-md">
+            
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-4">
+                <img 
+                  src={finatradesLogo} 
+                  alt="Finatrades" 
+                  className="h-20 w-auto"
+                />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+              <p className="text-muted-foreground">Sign in to access your FinaTrades dashboard.</p>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to access your FinaTrades dashboard.</p>
-          </div>
 
           <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -423,5 +426,6 @@ function DesktopLogin() {
         </div>
       </div>
     </div>
+    </>
   );
 }

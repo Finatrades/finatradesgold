@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 type AccountType = 'personal' | 'business';
 
@@ -240,22 +241,24 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
-      <div className="px-5 py-6 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6"
-        >
-          <img 
-            src={finatradesLogo} 
-            alt="Finatrades" 
-            className="h-16 mx-auto mb-4"
-            style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
-            data-testid="img-logo"
-          />
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Join Finatrades today</h1>
-          <p className="text-gray-500 text-sm">Create your account to get started</p>
+    <>
+      <GeoRestrictionNotice />
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
+        <div className="px-5 py-6 pb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6"
+          >
+            <img 
+              src={finatradesLogo} 
+              alt="Finatrades" 
+              className="h-16 mx-auto mb-4"
+              style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
+              data-testid="img-logo"
+            />
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Join Finatrades today</h1>
+            <p className="text-gray-500 text-sm">Create your account to get started</p>
         </motion.div>
 
         <div className="bg-white rounded-3xl shadow-xl shadow-purple-100/50 p-5 border border-purple-100/50">
@@ -617,5 +620,6 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
         </div>
       </div>
     </div>
+    </>
   );
 }

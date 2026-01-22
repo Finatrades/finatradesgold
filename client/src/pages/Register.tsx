@@ -12,6 +12,7 @@ import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileRegister from '@/components/mobile/MobileRegister';
+import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 type AccountType = 'personal' | 'business';
 
@@ -256,12 +257,14 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   };
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Account</h1>
-          <p className="text-muted-foreground">Join Finatrades today</p>
-        </div>
+    <>
+      <GeoRestrictionNotice />
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4 max-w-xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Account</h1>
+            <p className="text-muted-foreground">Join Finatrades today</p>
+          </div>
 
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -556,5 +559,6 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
         </Card>
       </div>
     </div>
+    </>
   );
 }
