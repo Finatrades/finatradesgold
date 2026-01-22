@@ -1,0 +1,51 @@
+
+      // If no permissions required, allow access
+      if (requiredPermissions.length === 0) {
+        return next();
+      }
+
+      // Check if user has at least one of the required permissions via RBAC
+      const hasPermission = requiredPermissions.some(legacyPerm => {
+        const rbacMapping = LEGACY_TO_RBAC_MAP[legacyPerm];
+        if (!rbacMapping) {
+          console.warn(`[RBAC] Unknown legacy permission: ${legacyPerm}`);
+          return false;
+        }
+        
+        const componentPerms = req.session.permissions?.[rbacMapping.component];
+        return componentPerms && componentPerms[rbacMapping.action];
+      });
+      
+      if (!hasPermission) {
+        console.log(`[RBAC] Permission denied for user ${userId}. Required: ${requiredPermissions.join(' or ')}`);
+        return res.status(403).json({ 
+          message: "Permission denied",
+          required: requiredPermissions
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('[RBAC] Permission check failed:', error);
+      return res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+}
+
+// Middleware to require KYC approval for financial operations
+// Must be used AFTER ensureAuthenticated
+async function requireKycApproved(req: Request, res: Response, next: NextFunction) {
+  try {
+    const sessionUserId = req.session?.userId;
+    
+    if (!sessionUserId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = await storage.getUser(sessionUserId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    // Admin users bypass KYC requirement
+    if (user.role === 'admin') {
