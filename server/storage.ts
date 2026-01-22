@@ -127,7 +127,11 @@ import {
   verifiableCredentials, credentialRevocations, credentialPresentations,
   type VerifiableCredential, type InsertVerifiableCredential,
   type CredentialRevocation, type InsertCredentialRevocation,
-  type CredentialPresentation, type InsertCredentialPresentation
+  type CredentialPresentation, type InsertCredentialPresentation,
+  workflowAuditSummaries, workflowAuditLogs, workflowExpectedSteps,
+  type WorkflowAuditSummary, type InsertWorkflowAuditSummary,
+  type WorkflowAuditLog, type InsertWorkflowAuditLog,
+  type WorkflowExpectedStep, type InsertWorkflowExpectedStep
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -773,6 +777,17 @@ export interface IStorage {
   getUserCredentialPresentations(userId: string): Promise<CredentialPresentation[]>;
   createCredentialPresentation(presentation: InsertCredentialPresentation): Promise<CredentialPresentation>;
   incrementPresentationCount(credentialId: string): Promise<void>;
+  
+  // Workflow Audit
+  getWorkflowAuditSummaries(): Promise<WorkflowAuditSummary[]>;
+  getWorkflowAuditSummary(flowInstanceId: string): Promise<WorkflowAuditSummary | undefined>;
+  createWorkflowAuditSummary(summary: InsertWorkflowAuditSummary): Promise<WorkflowAuditSummary>;
+  updateWorkflowAuditSummary(id: string, updates: Partial<WorkflowAuditSummary>): Promise<WorkflowAuditSummary | undefined>;
+  getWorkflowAuditLogs(flowInstanceId: string): Promise<WorkflowAuditLog[]>;
+  createWorkflowAuditLog(log: InsertWorkflowAuditLog): Promise<WorkflowAuditLog>;
+  getWorkflowExpectedSteps(flowType: string): Promise<WorkflowExpectedStep[]>;
+  createWorkflowExpectedStep(step: InsertWorkflowExpectedStep): Promise<WorkflowExpectedStep>;
+  getWorkflowAuditStats(): Promise<{ total: number; passed: number; failed: number; pending: number; byFlowType: Record<string, { total: number; passed: number; failed: number }> }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -6134,6 +6149,77 @@ export class DatabaseStorage implements IStorage {
           updated_at = now()
       WHERE credential_id = ${credentialId}
     `);
+  }
+
+  // Workflow Audit
+  async getWorkflowAuditSummaries(): Promise<WorkflowAuditSummary[]> {
+    return await db.select().from(workflowAuditSummaries)
+      .orderBy(desc(workflowAuditSummaries.createdAt))
+      .limit(100);
+  }
+
+  async getWorkflowAuditSummary(flowInstanceId: string): Promise<WorkflowAuditSummary | undefined> {
+    const [summary] = await db.select().from(workflowAuditSummaries)
+      .where(eq(workflowAuditSummaries.flowInstanceId, flowInstanceId));
+    return summary || undefined;
+  }
+
+  async createWorkflowAuditSummary(summary: InsertWorkflowAuditSummary): Promise<WorkflowAuditSummary> {
+    const [result] = await db.insert(workflowAuditSummaries).values(summary).returning();
+    return result;
+  }
+
+  async updateWorkflowAuditSummary(id: string, updates: Partial<WorkflowAuditSummary>): Promise<WorkflowAuditSummary | undefined> {
+    const [result] = await db.update(workflowAuditSummaries)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(workflowAuditSummaries.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async getWorkflowAuditLogs(flowInstanceId: string): Promise<WorkflowAuditLog[]> {
+    return await db.select().from(workflowAuditLogs)
+      .where(eq(workflowAuditLogs.flowInstanceId, flowInstanceId))
+      .orderBy(workflowAuditLogs.stepOrder);
+  }
+
+  async createWorkflowAuditLog(log: InsertWorkflowAuditLog): Promise<WorkflowAuditLog> {
+    const [result] = await db.insert(workflowAuditLogs).values(log).returning();
+    return result;
+  }
+
+  async getWorkflowExpectedSteps(flowType: string): Promise<WorkflowExpectedStep[]> {
+    return await db.select().from(workflowExpectedSteps)
+      .where(eq(workflowExpectedSteps.flowType, flowType as any))
+      .orderBy(workflowExpectedSteps.stepOrder);
+  }
+
+  async createWorkflowExpectedStep(step: InsertWorkflowExpectedStep): Promise<WorkflowExpectedStep> {
+    const [result] = await db.insert(workflowExpectedSteps).values(step).returning();
+    return result;
+  }
+
+  async getWorkflowAuditStats(): Promise<{ total: number; passed: number; failed: number; pending: number; byFlowType: Record<string, { total: number; passed: number; failed: number }> }> {
+    const summaries = await db.select().from(workflowAuditSummaries);
+    
+    const stats = {
+      total: summaries.length,
+      passed: summaries.filter(s => s.overallResult === 'PASS').length,
+      failed: summaries.filter(s => s.overallResult === 'FAIL').length,
+      pending: summaries.filter(s => s.overallResult === 'PENDING').length,
+      byFlowType: {} as Record<string, { total: number; passed: number; failed: number }>
+    };
+
+    for (const summary of summaries) {
+      if (!stats.byFlowType[summary.flowType]) {
+        stats.byFlowType[summary.flowType] = { total: 0, passed: 0, failed: 0 };
+      }
+      stats.byFlowType[summary.flowType].total++;
+      if (summary.overallResult === 'PASS') stats.byFlowType[summary.flowType].passed++;
+      if (summary.overallResult === 'FAIL') stats.byFlowType[summary.flowType].failed++;
+    }
+
+    return stats;
   }
 }
 

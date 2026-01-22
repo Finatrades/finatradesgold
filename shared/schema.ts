@@ -2579,60 +2579,6 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: tru
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 
-// ============================================
-// WORKFLOW AUDIT (compliance tracking)
-// ============================================
-
-export const workflowAuditResultEnum = pgEnum('workflow_audit_result', ['PASS', 'FAIL', 'PENDING', 'SKIPPED']);
-
-export const workflowAuditSummaries = pgTable("workflow_audit_summaries", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  flowInstanceId: varchar("flow_instance_id", { length: 255 }).notNull().unique(),
-  flowType: varchar("flow_type", { length: 100 }).notNull(),
-  userId: varchar("user_id", { length: 255 }).notNull(),
-  transactionId: varchar("transaction_id", { length: 255 }),
-  overallResult: workflowAuditResultEnum("overall_result").notNull().default('PENDING'),
-  totalSteps: integer("total_steps").notNull().default(0),
-  passedSteps: integer("passed_steps").notNull().default(0),
-  failedSteps: integer("failed_steps").notNull().default(0),
-  pendingSteps: integer("pending_steps").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  completedAt: timestamp("completed_at"),
-});
-
-export const workflowAuditSteps = pgTable("workflow_audit_steps", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  flowInstanceId: varchar("flow_instance_id", { length: 255 }).notNull(),
-  stepKey: varchar("step_key", { length: 100 }).notNull(),
-  stepOrder: integer("step_order").notNull(),
-  expected: text("expected"),
-  actual: text("actual"),
-  result: workflowAuditResultEnum("result").notNull().default('PENDING'),
-  mismatchReason: text("mismatch_reason"),
-  payload: text("payload"),
-  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
-});
-
-export const workflowExpectedSteps = pgTable("workflow_expected_steps", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  flowType: varchar("flow_type", { length: 100 }).notNull(),
-  stepKey: varchar("step_key", { length: 100 }).notNull(),
-  stepOrder: integer("step_order").notNull(),
-  description: text("description"),
-  required: boolean("required").notNull().default(true),
-});
-
-export const insertWorkflowAuditSummarySchema = createInsertSchema(workflowAuditSummaries).omit({ id: true });
-export type InsertWorkflowAuditSummary = z.infer<typeof insertWorkflowAuditSummarySchema>;
-export type WorkflowAuditSummary = typeof workflowAuditSummaries.$inferSelect;
-
-export const insertWorkflowAuditStepSchema = createInsertSchema(workflowAuditSteps).omit({ id: true });
-export type InsertWorkflowAuditStep = z.infer<typeof insertWorkflowAuditStepSchema>;
-export type WorkflowAuditStep = typeof workflowAuditSteps.$inferSelect;
-
-export const insertWorkflowExpectedStepSchema = createInsertSchema(workflowExpectedSteps).omit({ id: true });
-export type InsertWorkflowExpectedStep = z.infer<typeof insertWorkflowExpectedStepSchema>;
-export type WorkflowExpectedStep = typeof workflowExpectedSteps.$inferSelect;
 
 // ============================================
 // SYSTEM LOGS (for health monitoring)
@@ -4985,6 +4931,19 @@ export const workflowAuditSummaries = pgTable("workflow_audit_summaries", {
 export const insertWorkflowAuditSummarySchema = createInsertSchema(workflowAuditSummaries).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWorkflowAuditSummary = z.infer<typeof insertWorkflowAuditSummarySchema>;
 export type WorkflowAuditSummary = typeof workflowAuditSummaries.$inferSelect;
+
+export const workflowExpectedSteps = pgTable("workflow_expected_steps", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  flowType: workflowFlowTypeEnum("flow_type").notNull(),
+  stepKey: varchar("step_key", { length: 100 }).notNull(),
+  stepOrder: integer("step_order").notNull(),
+  description: text("description"),
+  required: boolean("required").notNull().default(true),
+});
+
+export const insertWorkflowExpectedStepSchema = createInsertSchema(workflowExpectedSteps).omit({ id: true });
+export type InsertWorkflowExpectedStep = z.infer<typeof insertWorkflowExpectedStepSchema>;
+export type WorkflowExpectedStep = typeof workflowExpectedSteps.$inferSelect;
 
 // ============================================
 // B2B INTEGRATION - Wingold Receiving Orders from Finatrades
