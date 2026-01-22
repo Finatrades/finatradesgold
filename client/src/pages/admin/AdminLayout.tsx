@@ -128,6 +128,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     staleTime: 10000,
   });
 
+  // Fetch user's RBAC role assignments
+  const { data: rbacRoleData } = useQuery({
+    queryKey: ['/api/admin/rbac/users/roles', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const res = await apiRequest('GET', `/api/admin/rbac/users/${user.id}/roles`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Get the user's active RBAC role name
+  const userRbacRole = rbacRoleData?.assignments?.[0]?.role_name || 'Admin';
+
   const employeePermissions: string[] = employeeData?.employee?.permissions || [];
   const hasNoEmployeeRecord = employeeData === null || employeeData === undefined || (employeeData && !employeeData.employee);
   const isSuperAdmin = hasNoEmployeeRecord || employeeData?.employee?.role === 'super_admin';
@@ -418,7 +434,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </Avatar>
                     <div className="hidden md:block text-left">
                       <p className="text-sm font-medium leading-none">{user.firstName}</p>
-                      <p className="text-xs text-primary">Admin</p>
+                      <p className="text-xs text-primary" data-testid="text-user-rbac-role">{userRbacRole}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 hidden md:block text-muted-foreground" />
                   </button>
