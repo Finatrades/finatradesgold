@@ -382,28 +382,28 @@ export default function RoleManagement() {
                                     <TableRow key={comp.id}>
                                       <TableCell className="font-medium">{comp.name}</TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_view || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canView", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_view || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canView", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_create || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canCreate", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_create || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canCreate", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_edit || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canEdit", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_edit || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canEdit", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_approve_l1 || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveL1", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_approve_l1 || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveL1", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_approve_final || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveFinal", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_approve_final || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveFinal", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_reject || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canReject", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_reject || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canReject", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_export || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canExport", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_export || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canExport", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={perm?.can_delete || false} onCheckedChange={(v) => handlePermissionChange(comp.id, "canDelete", !!v)} />
+                                        <Checkbox checked={selectedRole.is_system || perm?.can_delete || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canDelete", !!v)} />
                                       </TableCell>
                                     </TableRow>
                                   );
