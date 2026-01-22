@@ -6,6 +6,7 @@ import { sendEmailDirect } from './email';
 import { requireAdmin } from './rbac-middleware';
 import { emitLedgerEvent, emitAdminNotification } from './socket';
 import { getGoldPricePerGram } from './gold-price-service';
+import { workflowAuditService, type FlowType } from './workflow-audit-service';
 
 // Helper to emit real-time physical deposit status updates
 function emitPhysicalDepositUpdate(userId: string, depositId: string, referenceNumber: string, status: string, data?: any) {
@@ -899,8 +900,21 @@ const approveSchema = z.object({
 });
 
 router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, res: Response) => {
+  let flowInstanceId: string | null = null;
+  const flowType: FlowType = 'ADD_FUNDS';
+  
+  // Helper to safely complete flow on errors (non-blocking)
+  const safeCompleteFlow = async (failed: boolean = false) => {
+    if (flowInstanceId) {
+      try {
+        await workflowAuditService.completeFlow(flowInstanceId);
+      } catch (e) {
+        console.error('[WorkflowAudit] Failed to complete flow:', e);
+      }
+    }
+  };
+  
   try {
-
     const parsed = approveSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
@@ -990,6 +1004,33 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       return res.status(400).json({ error: 'Invalid credited grams' });
     }
 
+    // Start workflow audit tracking after all validation passes (non-blocking)
+    try {
+      flowInstanceId = await workflowAuditService.startFlow(flowType, deposit.userId, {
+        depositId: deposit.id,
+        referenceNumber: deposit.referenceNumber,
+        adminId,
+      });
+      
+      // Record admin approval step
+      await workflowAuditService.recordStep(
+        flowInstanceId, flowType, 'admin_approval_received',
+        'PASS',
+        { adminId, depositId: deposit.id, creditedGrams },
+        { userId: deposit.userId, depositRequestId: deposit.id }
+      );
+
+      // Record gold acquisition confirmed step (physical gold inspection verified)
+      await workflowAuditService.recordStep(
+        flowInstanceId, flowType, 'gold_acquisition_confirmed',
+        'PASS',
+        { inspectedGrams, creditedGrams },
+        { userId: deposit.userId, depositRequestId: deposit.id }
+      );
+    } catch (e) {
+      console.error('[WorkflowAudit] Failed to log initial steps:', e);
+    }
+
     const { goldPriceUsd, vaultLocation, adminNotes } = parsed.data;
 
     const physicalCertNumber = await storage.generateCertificateNumber('Physical Storage');
@@ -1026,6 +1067,28 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
     await storage.updateWallet(wallet.id, {
       goldGrams: newGrams.toFixed(6),
     });
+
+    // Record ledger credit step (non-blocking)
+    if (flowInstanceId) {
+      try {
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'ledger_posted_credit_to_LGPW',
+          'PASS',
+          { creditedGrams, previousBalance: currentGrams, newBalance: newGrams, walletType: 'LGPW' },
+          { userId: deposit.userId, walletCredited: 'LGPW' }
+        );
+
+        // Record balance update step
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'balances_updated_from_ledger',
+          'PASS',
+          { creditedGrams, newBalance: newGrams },
+          { userId: deposit.userId }
+        );
+      } catch (e) {
+        console.error('[WorkflowAudit] Failed to log ledger steps:', e);
+      }
+    }
 
     // NOTE: Transaction creation removed - UTT is the single source of truth
     // User transaction history is derived from unified_tally_transactions
@@ -1092,6 +1155,20 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       adminNotes: adminNotes ? `${deposit.adminNotes || ''}\n${new Date().toISOString()}: ${adminNotes}`.trim() : deposit.adminNotes,
     });
 
+    // Record certificate creation step (non-blocking)
+    if (flowInstanceId) {
+      try {
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'certificate_created',
+          'PASS',
+          { physicalCertId: physicalCert.id, digitalCertId: digitalCert.id },
+          { userId: deposit.userId, certificateId: digitalCert.id }
+        );
+      } catch (e) {
+        console.error('[WorkflowAudit] Failed to log certificate step:', e);
+      }
+    }
+
     await storage.createAuditLog({
       entityType: 'physical_deposit',
       entityId: deposit.id,
@@ -1111,6 +1188,23 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
     // Send approval email notification
     await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'APPROVED', { creditedGrams });
     
+    // Record notification step and complete flow (non-blocking)
+    if (flowInstanceId) {
+      try {
+        await workflowAuditService.recordStep(
+          flowInstanceId, flowType, 'notify_user_success',
+          'PASS',
+          { notificationType: 'email_and_websocket' },
+          { userId: deposit.userId }
+        );
+        
+        // Complete the workflow audit flow
+        await workflowAuditService.completeFlow(flowInstanceId, uttEntry.id);
+      } catch (e) {
+        console.error('[WorkflowAudit] Failed to complete flow:', e);
+      }
+    }
+    
     // Real-time WebSocket notification with balance update
     emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'APPROVED', {
       creditedGrams,
@@ -1129,6 +1223,8 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
     });
   } catch (error) {
     console.error('Error approving deposit:', error);
+    // Clean up workflow audit if flow was started
+    await safeCompleteFlow(true);
     res.status(500).json({ error: 'Failed to approve deposit' });
   }
 });

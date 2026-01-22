@@ -54,6 +54,7 @@ AWS_RDS_RELAXED_SSL = "true"
 FINATRADES_API_KEY = "ft-test-api-key-2025"
 WINGOLD_WEBHOOK_SECRET = "wg-webhook-secret-2025"
 WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,https://wingoldandmetals.com,https://www.wingoldandmetals.com"
+REPLICATION_COMPARE_MODE = "true"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
