@@ -1127,146 +1127,253 @@ export default function FinaVault() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         
-        
-        {/* FinaVault Wallet Card - Only show when user has vault activity */}
-        {hasVaultActivity && (
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        {/* Mobile App Header */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+            <Database className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-primary" data-testid="page-title">Vault</h1>
+            <p className="text-sm text-muted-foreground">Secure gold storage</p>
+          </div>
+        </div>
+
+        {/* Action Buttons - Pill Style */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('vault-activity');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'vault-activity' 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            } disabled:opacity-50`}
+            data-testid="tab-vault-activity"
+          >
+            <History className="w-4 h-4 mr-1.5" />
+            Vault Activity
+          </Button>
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('deposit-gold');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'deposit-gold' 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
+                : 'bg-white border border-green-200 text-green-700 hover:bg-green-50'
+            } disabled:opacity-50`}
+            data-testid="tab-deposit-gold"
+          >
+            <PlusCircle className="w-4 h-4 mr-1.5" />
+            Deposit Gold
+          </Button>
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('my-deposits');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'my-deposits' 
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
+                : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+            } disabled:opacity-50`}
+            data-testid="tab-my-deposits"
+          >
+            <Clock className="w-4 h-4 mr-1.5" />
+            My Deposits
+          </Button>
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('cash-out');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'cash-out' 
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
+                : 'bg-white border border-orange-200 text-orange-700 hover:bg-orange-50'
+            } disabled:opacity-50`}
+          >
+            <Banknote className="w-4 h-4 mr-1.5" />
+            Cash Out
+          </Button>
+        </div>
+
+        {/* Secondary Navigation Pills */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('ownership-ledger');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            variant="ghost"
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              activeTab === 'ownership-ledger' 
+                ? 'bg-gray-200 text-gray-800' 
+                : 'text-gray-500 hover:text-gray-700'
+            } disabled:opacity-50`}
+            data-testid="tab-ownership-ledger"
+          >
+            <Lock className="w-3 h-3 mr-1" />
+            Ownership Ledger
+          </Button>
+          <Button
+            onClick={() => {
+              if (user?.kycStatus !== 'Approved') {
+                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                return;
+              }
+              setActiveTab('certificates');
+            }}
+            disabled={user?.kycStatus !== 'Approved'}
+            variant="ghost"
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              activeTab === 'certificates' 
+                ? 'bg-gray-200 text-gray-800' 
+                : 'text-gray-500 hover:text-gray-700'
+            } disabled:opacity-50`}
+            data-testid="tab-certificates"
+          >
+            <Award className="w-3 h-3 mr-1" />
+            Certificates
+          </Button>
+          <Button
+            onClick={() => setActiveTab('terms')}
+            variant="ghost"
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              activeTab === 'terms' 
+                ? 'bg-gray-200 text-gray-800' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-terms"
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            Terms & Conditions
+          </Button>
+        </div>
+
+        {/* KYC Verification Required Banner */}
+        {user?.kycStatus !== 'Approved' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg shrink-0">
-                <Database className="w-5 h-5 text-fuchsia-600" />
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-amber-600" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">FinaVault Wallet</h2>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-amber-800 text-sm">KYC Required</h3>
+                <p className="text-xs text-amber-700">Verify your identity to access vault features.</p>
+              </div>
+              <Link href="/kyc">
+                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs shrink-0">
+                  Verify
+                </Button>
+              </Link>
             </div>
           </div>
+        )}
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+        {/* FinaVault Wallet Card - Only show when user has vault activity */}
+        {hasVaultActivity && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <Database className="w-4 h-4 text-purple-600" />
+            Vault Balance
+          </h3>
+
+          {/* Stat Cards Grid */}
+          <div className="grid grid-cols-2 gap-3">
             {/* Available Balance */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-available-balance">
-              <div className="absolute right-2 bottom-2 opacity-5">
-                <Database className="w-20 h-20 text-green-500" />
+            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-available-balance">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Database className="w-3 h-3 text-green-600" />
+                </div>
+                <span className="text-xs text-muted-foreground">Available</span>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
-                <p className="text-3xl font-bold text-green-600 mb-1">
-                  ${availableGoldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-green-600/70">
-                  {availableGold.toFixed(4)}g Gold
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Available for withdrawal or transfer.
-                </p>
-              </div>
+              <p className="text-lg font-bold text-green-600">{availableGold.toFixed(4)}g</p>
+              <p className="text-xs text-muted-foreground">≈ ${availableGoldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
             </div>
 
             {/* Locked in BNSL */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-bnsl-locked">
-              <div className="absolute right-2 bottom-2 opacity-5">
-                <Clock className="w-20 h-20 text-purple-500" />
+            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-bnsl-locked">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Clock className="w-3 h-3 text-purple-600" />
+                </div>
+                <span className="text-xs text-muted-foreground">BNSL</span>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in BNSL</p>
-                <p className="text-3xl font-bold text-purple-600 mb-1">
-                  ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-purple-600/70">
-                  {bnslLockedGrams.toFixed(3)} g
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  <Clock className="w-3 h-3 inline mr-1" />
-                  Gold in Buy Now Sell Later plans.
-                </p>
-              </div>
+              <p className="text-lg font-bold text-purple-600">{bnslLockedGrams.toFixed(4)}g</p>
+              <p className="text-xs text-muted-foreground">≈ ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
             </div>
 
             {/* Locked in Trade Finance */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-trade-locked">
-              <div className="absolute right-2 bottom-2 opacity-5">
-                <Briefcase className="w-20 h-20 text-purple-500" />
+            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-trade-locked">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Briefcase className="w-3 h-3 text-blue-600" />
+                </div>
+                <span className="text-xs text-muted-foreground">Trades</span>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked in Trades</p>
-                <p className="text-3xl font-bold text-purple-500 mb-1">
-                  ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-purple-500/70">
-                  {finabridgeLockedGrams.toFixed(3)} g
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  <Briefcase className="w-3 h-3 inline mr-1" />
-                  Gold secured in trade finance.
-                </p>
-              </div>
+              <p className="text-lg font-bold text-blue-600">{finabridgeLockedGrams.toFixed(4)}g</p>
+              <p className="text-xs text-muted-foreground">≈ ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
             </div>
 
             {/* Total Value */}
-            <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden" data-testid="card-total-value">
-              <div className="absolute right-2 bottom-2 opacity-5">
-                <TrendingUp className="w-20 h-20 text-purple-500" />
+            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-total-value">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-gray-600" />
+                </div>
+                <span className="text-xs text-muted-foreground">Total</span>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Vault Value</p>
-                <p className="text-3xl font-bold text-foreground mb-1">
-                  ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {totalVaultGold.toFixed(4)}g Gold
-                </p>
-              </div>
+              <p className="text-lg font-bold">{totalVaultGold.toFixed(4)}g</p>
+              <p className="text-xs text-muted-foreground">≈ ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
             </div>
-
           </div>
 
           {/* Dual-Wallet Breakdown (LGPW/FGPW) */}
           {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Wallet Type Breakdown</h3>
-              <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-                
-                {/* LGPW - Live Gold Price Wallet */}
-                <div className="relative p-3 rounded-lg border border-amber-200 bg-gradient-to-br from-amber-50 to-white overflow-hidden" data-testid="card-mpgw-balance">
-                  <div className="absolute right-1 bottom-1 opacity-10">
-                    <TrendingUp className="w-10 h-10 text-amber-500" />
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-muted-foreground mb-2">Wallet Type</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-amber-50 rounded-lg p-2 border border-amber-100" data-testid="card-mpgw-balance">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                    <span className="text-[10px] font-medium text-amber-700">LGPW</span>
                   </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                      <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">LGPW - Market Price</p>
-                    </div>
-                    <p className="text-lg font-bold text-amber-600">
-                      {mpgwAvailableGrams.toFixed(4)}g
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      ≈ ${(mpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
+                  <p className="text-sm font-bold text-amber-600">{mpgwAvailableGrams.toFixed(4)}g</p>
                 </div>
-
-                {/* FGPW - Fixed Gold Price Wallet */}
-                <div className="relative p-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden" data-testid="card-fpgw-balance">
-                  <div className="absolute right-1 bottom-1 opacity-10">
-                    <Lock className="w-10 h-10 text-blue-500" />
+                <div className="bg-blue-50 rounded-lg p-2 border border-blue-100" data-testid="card-fpgw-balance">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span className="text-[10px] font-medium text-blue-700">FGPW</span>
                   </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                      <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">FGPW - Fixed Price</p>
-                    </div>
-                    <p className="text-lg font-bold text-blue-600">
-                      {fpgwAvailableGrams.toFixed(4)}g
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      ≈ ${(fpgwAvailableGrams * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
+                  <p className="text-sm font-bold text-blue-600">{fpgwAvailableGrams.toFixed(4)}g</p>
                 </div>
-
               </div>
             </div>
           )}
@@ -1295,25 +1402,6 @@ export default function FinaVault() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* KYC Verification Required Banner */}
-              {user?.kycStatus !== 'Approved' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-amber-800">KYC Verification Required</h3>
-                      <p className="text-sm text-amber-700">Complete your identity verification to access FinaVault features.</p>
-                    </div>
-                    <Link href="/kyc">
-                      <Button className="bg-amber-600 hover:bg-amber-700 text-white">
-                        Verify Now
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              )}
 
               <Tabs value={activeTab} onValueChange={(val) => {
                 // Only allow changing to terms tab if KYC not approved
@@ -1327,78 +1415,8 @@ export default function FinaVault() {
                 }
                 setActiveTab(val);
               }} className="w-full">
-                {/* Tabs navigation with proper styling */}
-                <div className="bg-white rounded-2xl border border-border p-3 shadow-sm mb-6 overflow-x-auto">
-                  <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto">
-                    <TabsTrigger 
-                      value="vault-activity"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      data-testid="tab-vault-activity"
-                    >
-                      <History className="w-4 h-4 mr-1.5" />
-                      Vault Activity
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="deposit-gold"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-green-200 bg-green-50 text-green-700 transition-all data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
-                      data-testid="tab-deposit-gold"
-                    >
-                      <PlusCircle className="w-4 h-4 mr-1.5" />
-                      Deposit Gold
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="my-deposits"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 transition-all data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
-                      data-testid="tab-my-deposits"
-                    >
-                      <Clock className="w-4 h-4 mr-1.5" />
-                      My Deposits
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="cash-out"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-orange-200 bg-orange-50 text-orange-700 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:border-orange-500 data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
-                    >
-                      <Banknote className="w-4 h-4 mr-1.5" />
-                      Cash Out
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="ownership-ledger"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      data-testid="tab-ownership-ledger"
-                    >
-                      <Lock className="w-4 h-4 mr-1.5" />
-                      Ownership Ledger
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="certificates"
-                      disabled={user?.kycStatus !== 'Approved'}
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      data-testid="tab-certificates"
-                    >
-                      <Award className="w-4 h-4 mr-1.5" />
-                      Certificates
-                      {user?.kycStatus !== 'Approved' && <Lock className="w-3 h-3 ml-1.5 text-amber-500" />}
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="terms"
-                      className="whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border border-transparent bg-muted/50 text-muted-foreground transition-all data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary data-[state=active]:shadow-md"
-                      data-testid="tab-terms"
-                    >
-                      <FileText className="w-4 h-4 mr-1.5" />
-                      Terms & Conditions
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
+                {/* Hidden TabsList - we use custom buttons above */}
+                <TabsList className="hidden"></TabsList>
 
                 <TabsContent value="vault-activity" className="mt-0">
                   <VaultActivityList />
