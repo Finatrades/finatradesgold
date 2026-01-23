@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import QRScanner from '../QRScanner';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
-import WalletTypeSelector, { type GoldWalletType } from '../WalletTypeSelector';
 import MobileFullScreenPage from '@/components/mobile/MobileFullScreenPage';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -106,8 +105,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
   
-  // LGPW/FGPW wallet type selection
-  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
   
   // Transaction PIN verification
   const { requirePin, TransactionPinPromptComponent } = useTransactionPin();
@@ -144,7 +141,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setIsSendingInvite(false);
       setInviteSent(false);
       setTermsAccepted(false);
-      setSelectedWalletType('LGPW');
       
       // Fetch terms
       fetch('/api/terms/transfer')
@@ -234,7 +230,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           paymentReason,
           sourceOfFunds,
           memo,
-          goldWalletType: selectedWalletType,
+          goldWalletType: 'LGPW',
         }),
       });
       
@@ -306,7 +302,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
           memo: memo || null,
           paymentReason: paymentReason,
           sourceOfFunds: sourceOfFunds,
-          goldWalletType: selectedWalletType,
+          goldWalletType: 'LGPW',
         }),
       });
       
@@ -438,12 +434,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <Mail className="w-4 h-4 text-purple-500" />
             </div>
           </div>
-
-          <WalletTypeSelector
-            value={selectedWalletType}
-            onChange={setSelectedWalletType}
-            className="mb-2"
-          />
 
           <div className="space-y-1">
             <div className="flex justify-between items-center">
@@ -616,12 +606,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
             </div>
           </div>
-
-          <WalletTypeSelector
-            value={selectedWalletType}
-            onChange={setSelectedWalletType}
-            className="mb-2"
-          />
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -1088,13 +1072,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                     </div>
                   </div>
 
-                  {/* Wallet Type Selection - LGPW/FGPW */}
-                  <WalletTypeSelector
-                    value={selectedWalletType}
-                    onChange={setSelectedWalletType}
-                    className="mb-2"
-                  />
-
                   {/* Amount Input with Toggle */}
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
@@ -1348,14 +1325,6 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     </div>
                   </div>
-                  {/* Wallet Type Selection - LGPW/FGPW */}
-                  <WalletTypeSelector
-                    value={selectedWalletType}
-                    onChange={setSelectedWalletType}
-                    className="mb-2"
-                  />
-
-
                   {/* Amount Input with Toggle */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
