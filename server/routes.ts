@@ -28791,5 +28791,47 @@ export async function registerRoutes(
     }
   });
 
+
+  // DPR (Detailed Platform Report) Email Preview
+  app.get("/api/admin/dpr/preview", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
+    try {
+      const { generateDPREmailHTML } = await import("./dpr-email-template");
+      const { subject, html } = generateDPREmailHTML();
+      res.json({ subject, html });
+    } catch (error: any) {
+      console.error("DPR preview error:", error);
+      res.status(500).json({ message: error.message || "Failed to generate DPR preview" });
+    }
+  });
+
+  // DPR (Detailed Platform Report) Email Send
+  app.post("/api/admin/dpr/send", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
+    try {
+      const { generateDPREmailHTML } = await import("./dpr-email-template");
+      const { sendEmailDirect } = await import("./email");
+      
+      const targetEmail = req.body.email || "system@finatrades.com";
+      const { subject, html } = generateDPREmailHTML();
+      
+      const result = await sendEmailDirect(targetEmail, subject, html);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `DPR sent successfully to ${targetEmail}`,
+          messageId: result.messageId 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: `Failed to send DPR: ${result.error}` 
+        });
+      }
+    } catch (error: any) {
+      console.error("DPR send error:", error);
+      res.status(500).json({ message: error.message || "Failed to send DPR" });
+    }
+  });
+
   return httpServer;
 }
