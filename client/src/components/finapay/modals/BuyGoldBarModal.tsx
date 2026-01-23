@@ -366,12 +366,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                       <span data-testid="text-making-fee">AED {cartBreakdown.makingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
-                  {cartBreakdown.premium > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Premium</span>
-                      <span data-testid="text-premium">AED {cartBreakdown.premium.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
+                  {/* Premium hidden from user view - included in Gold Price */}
                   {cartBreakdown.vat > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">VAT</span>
