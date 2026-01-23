@@ -3,8 +3,38 @@ import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
 import type { User, VerifiableCredential, InsertVerifiableCredential } from '@shared/schema';
 
-const SSO_PRIVATE_KEY = process.env.SSO_PRIVATE_KEY;
-const SSO_PUBLIC_KEY = process.env.SSO_PUBLIC_KEY;
+const formatPemKey = (key: string | undefined): string | null => {
+  if (!key) return null;
+  
+  // Handle escaped newlines
+  let formatted = key.replace(/\\n/g, '\n');
+  
+  // If the key is all on one line, we need to format it properly
+  // Check if there are already proper line breaks
+  if (!formatted.includes('\n') || formatted.split('\n').length <= 2) {
+    // Extract the header, body, and footer
+    const headerMatch = formatted.match(/(-----BEGIN [A-Z ]+-----)/);
+    const footerMatch = formatted.match(/(-----END [A-Z ]+-----)/);
+    
+    if (headerMatch && footerMatch) {
+      const header = headerMatch[1];
+      const footer = footerMatch[1];
+      let body = formatted
+        .replace(header, '')
+        .replace(footer, '')
+        .replace(/\s+/g, ''); // Remove all whitespace from body
+      
+      // Split body into 64-character lines (PEM format)
+      const lines = body.match(/.{1,64}/g) || [];
+      formatted = `${header}\n${lines.join('\n')}\n${footer}`;
+    }
+  }
+  
+  return formatted;
+};
+
+const SSO_PRIVATE_KEY = formatPemKey(process.env.SSO_PRIVATE_KEY);
+const SSO_PUBLIC_KEY = formatPemKey(process.env.SSO_PUBLIC_KEY);
 const ISSUER_DID = 'did:web:finatrades.com';
 const ISSUER_NAME = 'Finatrades';
 
