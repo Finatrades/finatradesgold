@@ -269,6 +269,7 @@ export interface IStorage {
   createKycSubmission(submission: InsertKycSubmission): Promise<KycSubmission>;
   updateKycSubmission(id: string, updates: Partial<KycSubmission>): Promise<KycSubmission | undefined>;
   getAllKycSubmissions(): Promise<KycSubmission[]>;
+  deleteKycSubmission(id: string): Promise<boolean>;
   
   // Wallets
   getWallet(userId: string): Promise<Wallet | undefined>;
@@ -843,6 +844,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAllKycSubmissions(): Promise<KycSubmission[]> {
     return await db.select().from(kycSubmissions).orderBy(desc(kycSubmissions.createdAt));
+  }
+
+  async deleteKycSubmission(id: string): Promise<boolean> {
+    const result = await db.delete(kycSubmissions).where(eq(kycSubmissions.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getKycSubmissionsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<KycSubmission>[]; total: number }> {

@@ -5123,6 +5123,44 @@ export async function registerRoutes(
     }
   });
   
+
+  // Reset rejected KYC submission - allows user to resubmit
+  app.post("/api/kyc/reset", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const existingSubmission = await storage.getKycSubmission(userId);
+      if (!existingSubmission) {
+        return res.status(404).json({ message: "No KYC submission found" });
+      }
+
+      if (existingSubmission.status !== 'Rejected') {
+        return res.status(400).json({ message: "Only rejected KYC submissions can be reset" });
+      }
+
+      await storage.deleteKycSubmission(existingSubmission.id);
+      
+      await storage.updateUser(userId, {
+        kycStatus: "Not Started",
+      });
+
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: existingSubmission.id,
+        actionType: "delete",
+        actor: userId,
+        actorRole: "user",
+        details: "User reset rejected KYC submission to resubmit",
+      });
+
+      res.json({ success: true, message: "KYC reset successfully. You can now submit new verification documents." });
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to reset KYC" });
+    }
+  });
   // Get user's KYC submission - PROTECTED: requires matching session
   app.get("/api/kyc/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {

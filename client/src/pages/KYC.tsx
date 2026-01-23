@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, Plus, Trash2, Landmark, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
 interface BeneficialOwner {
@@ -119,6 +119,8 @@ export default function KYC() {
   const { user, refreshUser } = useAuth();
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const [isResettingKyc, setIsResettingKyc] = useState(false);
   
   // Fetch KYC mode from server
   const { data: kycModeData, isLoading: modeLoading } = useQuery({
@@ -732,16 +734,49 @@ export default function KYC() {
                     <span className="font-semibold text-amber-800">What Can You Do?</span>
                   </div>
                   <p className="text-sm text-amber-700">
-                    Please review the rejection reason above and contact our support team for assistance. 
-                    You may need to provide additional or corrected documents.
+                    Please review the rejection reason above. You can resubmit your verification with corrected documents, 
+                    or contact our support team for assistance.
                   </p>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-center gap-4 pt-4">
+              <CardFooter className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
                 <Button variant="outline" onClick={() => setLocation('/dashboard')}>
                   Return to Dashboard
                 </Button>
-                <Button variant="default" onClick={() => setLocation('/help')}>
+                <Button 
+                  variant="default"
+                  disabled={isResettingKyc}
+                  onClick={async () => {
+                    try {
+                      setIsResettingKyc(true);
+                      const response = await apiRequest('POST', '/api/kyc/reset', {});
+                      const data = await response.json();
+                      if (data.success) {
+                        toast.success('KYC reset successful. You can now submit new verification documents.');
+                        queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
+                        refreshUser();
+                      }
+                    } catch (error: any) {
+                      toast.error(error.message || 'Failed to reset KYC. Please try again.');
+                    } finally {
+                      setIsResettingKyc(false);
+                    }
+                  }}
+                  data-testid="button-resubmit-kyc"
+                >
+                  {isResettingKyc ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Resubmit KYC
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => setLocation('/help')}>
                   Contact Support
                 </Button>
               </CardFooter>
