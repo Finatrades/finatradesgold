@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Mail, Phone, MapPin, Shield, History, Edit, Save, Camera, ArrowRight, Download, FileText, Loader2, Calendar, Wallet } from 'lucide-react';
+import { User, Building, Mail, Phone, MapPin, Shield, History, Edit, Save, Camera, ArrowRight, Download, FileText, Loader2, Calendar, Wallet, Fingerprint } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
@@ -223,6 +223,23 @@ export default function Profile() {
                     <Download className="w-4 h-4 mr-1" /> Download
                   </Button>
                 </a>
+              </div>
+            </Card>
+
+            <Card className="p-4 border-border bg-gradient-to-r from-primary/5 to-primary/10" data-testid="card-digital-identity">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary text-white">
+                  <Fingerprint className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Digital Identity</p>
+                  <p className="text-xs text-muted-foreground">View your verified credential</p>
+                </div>
+                <Link href="/digital-identity">
+                  <Button size="sm" className="bg-primary hover:bg-primary/90" data-testid="button-view-identity">
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
             </Card>
           </div>
