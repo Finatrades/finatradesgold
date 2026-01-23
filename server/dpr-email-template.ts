@@ -6,12 +6,8 @@ export function generateDPREmailHTML(): { subject: string; html: string } {
     day: 'numeric'
   });
 
-  const baseUrl = process.env.APP_URL || 
-    (process.env.REPLIT_DOMAINS?.split(',')[0] 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : 'https://finatrades.com');
-  
-  const logoUrl = `${baseUrl}/finatrades-logo-purple.png`;
+  const logoBase64 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgODAiIGZpbGw9Im5vbmUiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJwdXJwbGVHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4QjVDRjY7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzdDM0FFRDtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEwLCAxMCkiPgogICAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiByeD0iMTAiIGZpbGw9InVybCgjcHVycGxlR3JhZGllbnQpIi8+CiAgICA8cGF0aCBkPSJNMTUgMTUgTDM1IDE1IEwzNSAyMCBMMjAgMjAgTDIwIDI1IEwzMiAyNSBMMzIgMzAgTDIwIDMwIEwyMCA0MCBMMTUgNDAgWiIgZmlsbD0id2hpdGUiLz4KICAgIDxjaXJjbGUgY3g9IjQwIiBjeT0iNDAiIHI9IjUiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjYiLz4KICA8L2c+CiAgPHRleHQgeD0iNzUiIHk9IjQ1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyOCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzFGMjkzNyI+CiAgICA8dHNwYW4gZmlsbD0idXJsKCNwdXJwbGVHcmFkaWVudCkiPkZpbmE8L3RzcGFuPjx0c3BhbiBmaWxsPSIjMUYyOTM3Ij50cmFkZXM8L3RzcGFuPgogIDwvdGV4dD4KPC9zdmc+';
+  const logoUrl = logoBase64;
 
   const subject = `Finatrades Platform - Detailed Platform Report (DPR) - ${currentDate}`;
 
