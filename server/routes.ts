@@ -16817,8 +16817,7 @@ export async function registerRoutes(
           description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
           referenceId: referenceNumber,
           sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          goldWalletType: goldWalletType || 'LGPW',
+          goldWalletType: 'LGPW',
         });
         
         // Record ledger entry
