@@ -114,6 +114,7 @@ import Referral from "@/pages/Referral";
 import Notifications from "@/pages/Notifications";
 import HelpCenter from "@/pages/HelpCenter";
 import Settings from "@/pages/Settings";
+import DigitalIdentity from "@/pages/DigitalIdentity";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import KYCReview from "@/pages/admin/KYCReview";
 import UserManagement from "@/pages/admin/UserManagement";
@@ -256,6 +257,7 @@ function Router() {
       <ProtectedRoute path="/notifications" component={Notifications} />
       <ProtectedRoute path="/help" component={HelpCenter} />
       <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/digital-identity" component={DigitalIdentity} />
       <ProtectedRoute path="/price-alerts" component={PriceAlertsPage} />
       <ProtectedRoute path="/auto-buy" component={DCAPage} />
       <ProtectedRoute path="/savings-goals" component={SavingsGoalsPage} />
