@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
@@ -25,6 +25,7 @@ interface UserPreferencesData {
   priceAlerts: boolean;
   securityAlerts: boolean;
   marketingEmails: boolean;
+  monthlySummaryEmails: boolean;
   displayCurrency: string;
   language: string;
   theme: string;
@@ -96,6 +97,7 @@ export default function Settings() {
       priceAlerts: localPrefs.priceAlerts,
       securityAlerts: localPrefs.securityAlerts,
       marketingEmails: localPrefs.marketingEmails,
+      monthlySummaryEmails: localPrefs.monthlySummaryEmails,
       displayCurrency: localPrefs.displayCurrency,
       language: localPrefs.language,
       theme: localPrefs.theme,
@@ -234,6 +236,17 @@ export default function Settings() {
                   checked={localPrefs.marketingEmails}
                   onCheckedChange={(v) => updatePref('marketingEmails', v)}
                   data-testid="switch-marketing-emails"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Monthly Summary</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.monthlySummaryEmails}
+                  onCheckedChange={(v) => updatePref('monthlySummaryEmails', v)}
+                  data-testid="switch-monthly-summary"
                 />
               </div>
             </div>

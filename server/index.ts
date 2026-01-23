@@ -507,6 +507,14 @@ app.use((req, res, next) => {
     console.warn('[DB Sync] Scheduler initialization failed:', error);
   }
   
+  // Start monthly summary email scheduler
+  try {
+    const { startMonthlySummaryScheduler } = await import('./monthly-summary-processor');
+    startMonthlySummaryScheduler();
+  } catch (error) {
+    console.warn('[Monthly Summary] Scheduler initialization failed:', error);
+  }
+  
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   

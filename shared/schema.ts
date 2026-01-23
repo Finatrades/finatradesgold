@@ -3399,6 +3399,7 @@ export const userPreferences = pgTable("user_preferences", {
   priceAlerts: boolean("price_alerts").notNull().default(true),
   securityAlerts: boolean("security_alerts").notNull().default(true),
   marketingEmails: boolean("marketing_emails").notNull().default(false),
+  monthlySummaryEmails: boolean("monthly_summary_emails").notNull().default(true),
   // Display preferences
   displayCurrency: varchar("display_currency", { length: 10 }).notNull().default('USD'),
   language: varchar("language", { length: 10 }).notNull().default('en'),

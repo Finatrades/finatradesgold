@@ -93,6 +93,14 @@ All fees, limits, and system settings are managed via a `platform_config` databa
 **Email Notification Management:**
 Comprehensive system with toggleable `email_notification_settings` and `email_logs` for audit trails. Admin interface for management and history.
 
+**Monthly Summary Emails (January 2026):**
+- Automated monthly account statements sent during first 5 days of each month
+- User preference toggle in Settings (default enabled via `user_preferences.monthlySummaryEmails`)
+- Data sourced from `vault_ledger_entries.balanceAfterGrams` for accurate opening/closing balances
+- External transactions only: Deposit, Withdrawal, Transfer_Send, Transfer_Receive (excludes internal BNSL/FinaBridge transfers)
+- Idempotency via emailLogs with `monthly_summary_{yyyy-MM}` notification type
+- Scheduler: `server/monthly-summary-processor.ts` with hourly check + startup catch-up
+
 **UI/UX Design:**
 - **Theme**: Purple gradient aesthetic (light mode).
 - **Design Tokens**: Centralized in `client/src/index.css` using CSS variables.
