@@ -273,17 +273,17 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            {/* Desktop: White KPI Cards Row 1 */}
+            {/* Desktop: KPI Cards Row 1 - Soft Colors with Outlines */}
             <div className="hidden md:grid grid-cols-3 gap-4">
               {/* Gold Balance */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 border-2 border-purple-200 rounded-xl shadow-sm hover:shadow-md hover:border-purple-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Gold Balance</p>
+                  <p className="text-xs text-gray-600 font-medium">Gold Balance</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-purple-200 flex items-center justify-center cursor-pointer hover:bg-purple-300 transition-colors">
+                          <Info className="w-4 h-4 text-purple-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -299,14 +299,14 @@ export default function Dashboard() {
               </Card>
               
               {/* Gold Value USD */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Gold Value (USD)</p>
+                  <p className="text-xs text-gray-600 font-medium">Gold Value (USD)</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center cursor-pointer hover:bg-blue-300 transition-colors">
+                          <Info className="w-4 h-4 text-blue-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -322,14 +322,14 @@ export default function Dashboard() {
               </Card>
               
               {/* Gold Value AED */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-teal-50 to-teal-100/50 border-2 border-teal-200 rounded-xl shadow-sm hover:shadow-md hover:border-teal-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Gold Value (AED)</p>
+                  <p className="text-xs text-gray-600 font-medium">Gold Value (AED)</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-teal-200 flex items-center justify-center cursor-pointer hover:bg-teal-300 transition-colors">
+                          <Info className="w-4 h-4 text-teal-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -345,17 +345,17 @@ export default function Dashboard() {
               </Card>
             </div>
             
-            {/* Desktop: White KPI Cards Row 2 */}
+            {/* Desktop: KPI Cards Row 2 - Soft Colors with Outlines */}
             <div className="hidden md:grid grid-cols-3 gap-4">
               {/* Total Portfolio */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-2 border-indigo-200 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Total Portfolio</p>
+                  <p className="text-xs text-gray-600 font-medium">Total Portfolio</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-indigo-200 flex items-center justify-center cursor-pointer hover:bg-indigo-300 transition-colors">
+                          <Info className="w-4 h-4 text-indigo-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -371,14 +371,14 @@ export default function Dashboard() {
               </Card>
               
               {/* BNSL Invested */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">BNSL Invested</p>
+                  <p className="text-xs text-gray-600 font-medium">BNSL Invested</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors">
+                          <Info className="w-4 h-4 text-amber-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -394,14 +394,14 @@ export default function Dashboard() {
               </Card>
               
               {/* Total Profit */}
-              <Card className="p-4 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 hover:-translate-y-1 transition-all duration-300">
+              <Card className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">Total Profit</p>
+                  <p className="text-xs text-gray-600 font-medium">Total Profit</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
-                          <Info className="w-4 h-4 text-purple-600" />
+                        <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center cursor-pointer hover:bg-emerald-300 transition-colors">
+                          <Info className="w-4 h-4 text-emerald-700" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -410,7 +410,7 @@ export default function Dashboard() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-emerald-600">
                   {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">ROI from BNSL</p>
