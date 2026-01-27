@@ -1141,7 +1141,7 @@ export default function FinaVault() {
         </div>
 
         {/* Navigation - Centered Container */}
-        <div className="max-w-lg mx-auto space-y-3">
+        <div className="max-w-xl mx-auto space-y-3">
           {/* Action Buttons - Pill Style */}
           <div className="flex flex-wrap gap-2 justify-center">
             <Button
