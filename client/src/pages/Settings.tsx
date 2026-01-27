@@ -11,8 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw
 } from 'lucide-react';
+import { clearQueryCache } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 
@@ -453,6 +454,50 @@ export default function Settings() {
               <p className="text-sm text-info-muted-foreground">
                 <strong>How it works:</strong> When someone sends you gold or money, you'll receive a notification. 
                 You can then accept (receive funds) or reject (return funds to sender) the transfer from your FinaPay page.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-advanced">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Advanced
+            </CardTitle>
+            <CardDescription>Cache and data management options</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <Label className="text-base">Refresh All Data</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Clear cached data and fetch fresh information from the server
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  clearQueryCache();
+                  queryClient.invalidateQueries();
+                  toast.success('All data refreshed successfully');
+                  window.location.reload();
+                }}
+                data-testid="button-refresh-data"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Use this if you notice outdated information on your dashboard or wallet balances. 
+                This will reload all your account data from the server.
               </p>
             </div>
           </CardContent>
