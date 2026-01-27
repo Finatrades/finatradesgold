@@ -86,6 +86,23 @@ export default function Dashboard() {
     staleTime: 60000,
   });
 
+  // Fetch user's pending deposit requests (bank transfers, crypto, etc.)
+  const { data: pendingDepositsData } = useQuery<{ requests: Array<{ id: string; status: string; expectedGoldGrams: number }> }>({
+    queryKey: ['pending-deposit-requests', user?.id],
+    queryFn: async () => {
+      const res = await fetch('/api/deposit-requests/pending');
+      if (!res.ok) return { requests: [] };
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 60000,
+  });
+
+  // Calculate total pending gold from deposit requests
+  const pendingDepositGrams = (pendingDepositsData?.requests || []).reduce(
+    (sum, req) => sum + (req.expectedGoldGrams || 0), 0
+  );
+
   // Filter for pending physical deposits (not yet completed/rejected/cancelled)
   const pendingPhysicalDeposits = (physicalDepositsData?.deposits || []).filter(
     d => ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'].includes(d.status)
@@ -430,7 +447,7 @@ export default function Dashboard() {
             finaPayWallet={{
               goldGrams: totals.mpgwAvailableGrams || 0,
               usdValue: (totals.mpgwAvailableGrams || 0) * goldPrice,
-              pending: totals.mpgwPendingGrams || 0,
+              pending: pendingDepositGrams || totals.mpgwPendingGrams || 0,
               transactions: transactions.length
             }}
             bnslData={{

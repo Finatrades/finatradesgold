@@ -11980,6 +11980,28 @@ export async function registerRoutes(
   });
   
   // Get user deposit requests - PROTECTED: requires matching session
+  // Get current user's pending deposit requests - for dashboard display
+  app.get("/api/deposit-requests/pending", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const allRequests = await storage.getUserDepositRequests(userId);
+      const pendingRequests = allRequests.filter(r => r.status === 'Pending');
+      res.json({ 
+        requests: pendingRequests.map(r => ({
+          id: r.id,
+          status: r.status,
+          expectedGoldGrams: r.expectedGoldGrams || 0
+        }))
+      });
+    } catch (error) {
+      console.error('Failed to get pending deposit requests:', error);
+      res.json({ requests: [] });
+    }
+  });
+
   app.get("/api/deposit-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserDepositRequests(req.params.userId);
