@@ -1140,87 +1140,89 @@ export default function FinaVault() {
           </div>
         </div>
 
-        {/* Action Buttons - Pill Style */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          <Button
-            onClick={() => {
-              if (user?.kycStatus !== 'Approved') {
-                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
-                return;
-              }
-              setActiveTab('vault-activity');
-            }}
-            disabled={user?.kycStatus !== 'Approved'}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === 'vault-activity' 
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-            } disabled:opacity-50`}
-            data-testid="tab-vault-activity"
-          >
-            <History className="w-4 h-4 mr-1.5" />
-            Vault Activity
-          </Button>
-          <Button
-            onClick={() => {
-              if (user?.kycStatus !== 'Approved') {
-                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
-                return;
-              }
-              setActiveTab('deposit-gold');
-            }}
-            disabled={user?.kycStatus !== 'Approved'}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === 'deposit-gold' 
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                : 'bg-white border border-green-200 text-green-700 hover:bg-green-50'
-            } disabled:opacity-50`}
-            data-testid="tab-deposit-gold"
-          >
-            <PlusCircle className="w-4 h-4 mr-1.5" />
-            Deposit Gold
-          </Button>
-          <Button
-            onClick={() => {
-              if (user?.kycStatus !== 'Approved') {
-                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
-                return;
-              }
-              setActiveTab('my-deposits');
-            }}
-            disabled={user?.kycStatus !== 'Approved'}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === 'my-deposits' 
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
-                : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
-            } disabled:opacity-50`}
-            data-testid="tab-my-deposits"
-          >
-            <Clock className="w-4 h-4 mr-1.5" />
-            My Deposits
-          </Button>
-          <Button
-            onClick={() => {
-              if (user?.kycStatus !== 'Approved') {
-                toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
-                return;
-              }
-              setActiveTab('cash-out');
-            }}
-            disabled={user?.kycStatus !== 'Approved'}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === 'cash-out' 
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
-                : 'bg-white border border-orange-200 text-orange-700 hover:bg-orange-50'
-            } disabled:opacity-50`}
-          >
-            <Banknote className="w-4 h-4 mr-1.5" />
-            Cash Out
-          </Button>
-        </div>
+        {/* Navigation - Centered Container */}
+        <div className="max-w-lg mx-auto space-y-3">
+          {/* Action Buttons - Pill Style */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button
+              onClick={() => {
+                if (user?.kycStatus !== 'Approved') {
+                  toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                  return;
+                }
+                setActiveTab('vault-activity');
+              }}
+              disabled={user?.kycStatus !== 'Approved'}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === 'vault-activity' 
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              } disabled:opacity-50`}
+              data-testid="tab-vault-activity"
+            >
+              <History className="w-4 h-4 mr-1.5" />
+              Vault Activity
+            </Button>
+            <Button
+              onClick={() => {
+                if (user?.kycStatus !== 'Approved') {
+                  toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                  return;
+                }
+                setActiveTab('deposit-gold');
+              }}
+              disabled={user?.kycStatus !== 'Approved'}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === 'deposit-gold' 
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
+                  : 'bg-white border border-green-200 text-green-700 hover:bg-green-50'
+              } disabled:opacity-50`}
+              data-testid="tab-deposit-gold"
+            >
+              <PlusCircle className="w-4 h-4 mr-1.5" />
+              Deposit Gold
+            </Button>
+            <Button
+              onClick={() => {
+                if (user?.kycStatus !== 'Approved') {
+                  toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                  return;
+                }
+                setActiveTab('my-deposits');
+              }}
+              disabled={user?.kycStatus !== 'Approved'}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === 'my-deposits' 
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
+                  : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+              } disabled:opacity-50`}
+              data-testid="tab-my-deposits"
+            >
+              <Clock className="w-4 h-4 mr-1.5" />
+              My Deposits
+            </Button>
+            <Button
+              onClick={() => {
+                if (user?.kycStatus !== 'Approved') {
+                  toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
+                  return;
+                }
+                setActiveTab('cash-out');
+              }}
+              disabled={user?.kycStatus !== 'Approved'}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === 'cash-out' 
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
+                  : 'bg-white border border-orange-200 text-orange-700 hover:bg-orange-50'
+              } disabled:opacity-50`}
+            >
+              <Banknote className="w-4 h-4 mr-1.5" />
+              Cash Out
+            </Button>
+          </div>
 
-        {/* Secondary Navigation Pills */}
-        <div className="flex flex-wrap gap-2 justify-center">
+          {/* Secondary Navigation Pills */}
+          <div className="flex flex-wrap gap-2 justify-center">
           <Button
             onClick={() => {
               if (user?.kycStatus !== 'Approved') {
@@ -1274,6 +1276,7 @@ export default function FinaVault() {
             <FileText className="w-3 h-3 mr-1" />
             Terms & Conditions
           </Button>
+          </div>
         </div>
 
         {/* KYC Verification Required Banner */}
