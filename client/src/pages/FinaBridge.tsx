@@ -1128,7 +1128,7 @@ export default function FinaBridge() {
                         className="w-3.5 h-3.5"
                         data-testid="checkbox-suggest-exporter"
                       />
-                      <label htmlFor="suggestExporter" className="text-xs font-medium">
+                      <label htmlFor="suggestExporter" className="text-xs font-medium text-red-600">
                         Suggest matching exporters (allow Finatrades to find exporters for me)
                       </label>
                     </div>
