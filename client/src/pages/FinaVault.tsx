@@ -1127,9 +1127,9 @@ export default function FinaVault() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 py-6 space-y-6">
         
-        {/* Mobile App Header */}
+        {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
             <Database className="w-5 h-5 text-white" />
@@ -1305,7 +1305,7 @@ export default function FinaVault() {
           </h3>
 
           {/* Stat Cards Grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {/* Available Balance */}
             <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-available-balance">
               <div className="flex items-center gap-2 mb-1">
