@@ -604,8 +604,9 @@ export default function PendingTransfers() {
                       </p>
                       <Badge variant="outline" className="mt-2 text-amber-600 border-amber-300">
                         <Clock className="w-3 h-3 mr-1" />
-                        Awaiting admin approval
+                        Awaiting admin approval - usually within 24-48 hours
                       </Badge>
+                      <p className="text-xs text-emerald-600 mt-1">Once approved, gold will be credited to your wallet</p>
                       <p className="text-xs text-muted-foreground mt-2">
                         Submitted {formatDistanceToNow(new Date(deposit.createdAt), { addSuffix: true })}
                       </p>
