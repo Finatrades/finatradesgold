@@ -49,6 +49,11 @@ export const finabridgeRoleEnum = pgEnum('finabridge_role', ['importer', 'export
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   finatradesId: varchar("finatrades_id", { length: 20 }).unique(), // Unique user identifier for transfers
+  customFinatradesId: varchar("custom_finatrades_id", { length: 25 }).unique(), // User-chosen custom ID (e.g., FT-MYNAME)
+  customFinatradesIdChangedAt: timestamp("custom_finatrades_id_changed_at"), // Last time custom ID was changed (30-day rule)
+  finatradesIdOtp: varchar("finatrades_id_otp", { length: 6 }), // OTP for Finatrades ID login
+  finatradesIdOtpExpiry: timestamp("finatrades_id_otp_expiry"), // OTP expiry time
+  finatradesIdOtpAttempts: integer("finatrades_id_otp_attempts").default(0), // Failed OTP attempts
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
@@ -90,6 +95,11 @@ export const insertUserSchema = createInsertSchema(users)
   .extend({
     // Make fields with database defaults optional for API validation
     finatradesId: z.string().nullable().optional(),
+    customFinatradesId: z.string().nullable().optional(),
+    customFinatradesIdChangedAt: z.date().nullable().optional(),
+    finatradesIdOtp: z.string().nullable().optional(),
+    finatradesIdOtpExpiry: z.date().nullable().optional(),
+    finatradesIdOtpAttempts: z.number().optional(),
     accountType: z.enum(['personal', 'business']).optional(),
     role: z.enum(['user', 'admin']).optional(),
     kycStatus: z.enum(['Not Started', 'In Progress', 'Approved', 'Rejected']).optional(),
