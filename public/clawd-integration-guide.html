@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clawd.bot Integration Guide - Finatrades</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    @media print {
+      .page-break { page-break-after: always; }
+      .no-print { display: none; }
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    .flow-arrow {
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 16px solid #8B5CF6;
+    }
+    .connector-line {
+      width: 2px;
+      height: 30px;
+      background: linear-gradient(180deg, #8B5CF6, #EC4899);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-purple-50 min-h-screen">
+  
+  <!-- Cover Page -->
+  <div class="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full opacity-5">
+      <div class="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 right-20 w-96 h-96 bg-pink-500 rounded-full blur-3xl"></div>
+    </div>
+    
+    <div class="relative z-10 text-center">
+      <div class="mb-8">
+        <div class="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-lg border border-purple-100">
+          <svg class="w-10 h-10 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="text-2xl font-bold text-gray-800">FINATRADES</span>
+        </div>
+      </div>
+      
+      <h1 class="text-6xl font-extrabold mb-6">
+        <span class="gradient-text">Clawd.bot</span>
+      </h1>
+      <h2 class="text-3xl font-semibold text-gray-700 mb-4">AI Integration Guide</h2>
+      <p class="text-xl text-gray-500 mb-12 max-w-2xl mx-auto">
+        Complete implementation blueprint for integrating autonomous AI assistant 
+        across all Finatrades admin products
+      </p>
+      
+      <div class="flex gap-4 justify-center mb-16">
+        <div class="bg-purple-100 px-6 py-3 rounded-full">
+          <span class="text-purple-700 font-semibold">24/7 Automation</span>
+        </div>
+        <div class="bg-pink-100 px-6 py-3 rounded-full">
+          <span class="text-pink-700 font-semibold">Multi-Platform</span>
+        </div>
+        <div class="bg-indigo-100 px-6 py-3 rounded-full">
+          <span class="text-indigo-700 font-semibold">Self-Learning</span>
+        </div>
+      </div>
+      
+      <div class="text-gray-400 text-sm">
+        <p>Document Version 1.0 | January 2026</p>
+        <p>Prepared for Finatrades Administration Team</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Table of Contents -->
+  <div class="min-h-screen p-12">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-4xl font-bold text-gray-800 mb-12 pb-4 border-b-4 border-purple-500">
+        📋 Table of Contents
+      </h2>
+      
+      <div class="space-y-4">
+        <a href="#overview" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">1</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">Executive Overview</span>
+          </div>
+          <span class="text-gray-400">Page 3</span>
+        </a>
+        
+        <a href="#architecture" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">2</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">System Architecture</span>
+          </div>
+          <span class="text-gray-400">Page 4</span>
+        </a>
+        
+        <a href="#products" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">3</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">Product Integration Matrix</span>
+          </div>
+          <span class="text-gray-400">Page 5-8</span>
+        </a>
+        
+        <a href="#setup" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">4</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">Setup & Configuration</span>
+          </div>
+          <span class="text-gray-400">Page 9-10</span>
+        </a>
+        
+        <a href="#workflows" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">5</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">Automated Workflows</span>
+          </div>
+          <span class="text-gray-400">Page 11</span>
+        </a>
+        
+        <a href="#security" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">6</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-purple-600">Security & Compliance</span>
+          </div>
+          <span class="text-gray-400">Page 12</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Executive Overview -->
+  <div id="overview" class="min-h-screen p-12">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-8">
+        <span class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">1</span>
+        <h2 class="text-4xl font-bold text-gray-800">Executive Overview</h2>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-8 mb-12">
+        <div class="glass-card rounded-2xl p-8">
+          <h3 class="text-2xl font-bold text-gray-800 mb-4">What is Clawd.bot?</h3>
+          <p class="text-gray-600 leading-relaxed mb-6">
+            Clawd.bot is an open-source autonomous AI assistant powered by Claude AI. 
+            Unlike simple chatbots, it runs 24/7 on dedicated hardware with persistent 
+            memory, capable of executing real tasks and learning new skills.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">Open Source</span>
+            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Self-Hosted</span>
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Claude AI</span>
+          </div>
+        </div>
+        
+        <div class="glass-card rounded-2xl p-8">
+          <h3 class="text-2xl font-bold text-gray-800 mb-4">Why for Finatrades?</h3>
+          <p class="text-gray-600 leading-relaxed mb-6">
+            Finatrades requires round-the-clock monitoring of gold deposits, KYC compliance, 
+            and transaction processing. Clawd.bot provides intelligent automation that reduces 
+            manual workload while maintaining security standards.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">Gold Operations</span>
+            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">Compliance</span>
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">24/7 Support</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Key Benefits Chart -->
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Key Benefits Comparison</h3>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl">
+            <div class="text-4xl font-bold text-red-600 mb-2">-70%</div>
+            <div class="text-gray-600 font-medium">Manual Tasks</div>
+            <div class="text-sm text-gray-500 mt-2">Automated report generation and routine checks</div>
+          </div>
+          <div class="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+            <div class="text-4xl font-bold text-green-600 mb-2">24/7</div>
+            <div class="text-gray-600 font-medium">Availability</div>
+            <div class="text-sm text-gray-500 mt-2">Always-on monitoring and instant responses</div>
+          </div>
+          <div class="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+            <div class="text-4xl font-bold text-purple-600 mb-2">5min</div>
+            <div class="text-gray-600 font-medium">Response Time</div>
+            <div class="text-sm text-gray-500 mt-2">Instant alerts for critical operations</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Comparison Table -->
+      <div class="glass-card rounded-2xl p-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Traditional vs Clawd.bot Approach</h3>
+        <table class="w-full">
+          <thead>
+            <tr class="border-b-2 border-purple-200">
+              <th class="text-left py-4 text-gray-600 font-semibold">Feature</th>
+              <th class="text-center py-4 text-gray-400 font-semibold">Traditional</th>
+              <th class="text-center py-4 text-purple-600 font-semibold">Clawd.bot</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr>
+              <td class="py-4 text-gray-700">Operating Hours</td>
+              <td class="py-4 text-center text-gray-400">Business hours only</td>
+              <td class="py-4 text-center text-green-600 font-medium">✓ 24/7/365</td>
+            </tr>
+            <tr>
+              <td class="py-4 text-gray-700">Memory Persistence</td>
+              <td class="py-4 text-center text-gray-400">Session-based</td>
+              <td class="py-4 text-center text-green-600 font-medium">✓ Permanent</td>
+            </tr>
+            <tr>
+              <td class="py-4 text-gray-700">Task Execution</td>
+              <td class="py-4 text-center text-gray-400">Manual triggers</td>
+              <td class="py-4 text-center text-green-600 font-medium">✓ Autonomous</td>
+            </tr>
+            <tr>
+              <td class="py-4 text-gray-700">Multi-Platform</td>
+              <td class="py-4 text-center text-gray-400">Single interface</td>
+              <td class="py-4 text-center text-green-600 font-medium">✓ Discord, Telegram, WhatsApp</td>
+            </tr>
+            <tr>
+              <td class="py-4 text-gray-700">Self-Improvement</td>
+              <td class="py-4 text-center text-gray-400">Static rules</td>
+              <td class="py-4 text-center text-green-600 font-medium">✓ Learns new skills</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- System Architecture -->
+  <div id="architecture" class="min-h-screen p-12 bg-gradient-to-br from-slate-900 to-purple-900">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-purple-600 font-bold text-xl">2</span>
+        <h2 class="text-4xl font-bold text-white">System Architecture</h2>
+      </div>
+      
+      <!-- Architecture Diagram -->
+      <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+        
+        <!-- Top Layer - Server -->
+        <div class="text-center mb-6">
+          <div class="inline-block bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 shadow-2xl">
+            <div class="text-white font-bold text-xl mb-2">🖥️ YOUR SERVER</div>
+            <div class="text-purple-100 text-sm">Mac Mini / VPS / Cloud Instance</div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-6">
+          <div class="connector-line"></div>
+        </div>
+        
+        <!-- Clawd Core -->
+        <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+          <div class="text-center mb-6">
+            <span class="text-2xl font-bold text-gray-800">🦀 CLAWD.BOT CORE</span>
+          </div>
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-purple-50 rounded-xl p-4 text-center">
+              <div class="text-3xl mb-2">🧠</div>
+              <div class="font-semibold text-purple-700">Claude AI</div>
+              <div class="text-xs text-gray-500">Reasoning Engine</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 text-center">
+              <div class="text-3xl mb-2">💾</div>
+              <div class="font-semibold text-blue-700">Memory</div>
+              <div class="text-xs text-gray-500">Persistent Storage</div>
+            </div>
+            <div class="bg-green-50 rounded-xl p-4 text-center">
+              <div class="text-3xl mb-2">⚡</div>
+              <div class="font-semibold text-green-700">Skills</div>
+              <div class="text-xs text-gray-500">Custom Actions</div>
+            </div>
+            <div class="bg-amber-50 rounded-xl p-4 text-center">
+              <div class="text-3xl mb-2">⏰</div>
+              <div class="font-semibold text-amber-700">Scheduler</div>
+              <div class="text-xs text-gray-500">Cron Jobs</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-6">
+          <div class="connector-line"></div>
+        </div>
+        
+        <!-- Communication Layer -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+          <div class="bg-indigo-500 rounded-xl p-5 text-center shadow-lg transform hover:scale-105 transition">
+            <div class="text-4xl mb-2">💬</div>
+            <div class="text-white font-bold">Discord</div>
+            <div class="text-indigo-200 text-sm">Admin Team Chat</div>
+          </div>
+          <div class="bg-blue-500 rounded-xl p-5 text-center shadow-lg transform hover:scale-105 transition">
+            <div class="text-4xl mb-2">✈️</div>
+            <div class="text-white font-bold">Telegram</div>
+            <div class="text-blue-200 text-sm">Mobile Alerts</div>
+          </div>
+          <div class="bg-green-500 rounded-xl p-5 text-center shadow-lg transform hover:scale-105 transition">
+            <div class="text-4xl mb-2">📱</div>
+            <div class="text-white font-bold">WhatsApp</div>
+            <div class="text-green-200 text-sm">Customer Support</div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-6">
+          <div class="connector-line"></div>
+        </div>
+        
+        <!-- Finatrades Platform -->
+        <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 shadow-xl">
+          <div class="text-center mb-4">
+            <span class="text-2xl font-bold text-white">🏦 FINATRADES PLATFORM</span>
+          </div>
+          <div class="grid grid-cols-5 gap-3">
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-white font-semibold text-sm">FinaVault</div>
+              <div class="text-purple-200 text-xs">Gold Storage</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-white font-semibold text-sm">FinaPay</div>
+              <div class="text-purple-200 text-xs">Payments</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-white font-semibold text-sm">FinaBridge</div>
+              <div class="text-purple-200 text-xs">Trade Finance</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-white font-semibold text-sm">BNSL</div>
+              <div class="text-purple-200 text-xs">Gold Savings</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 text-center">
+              <div class="text-white font-semibold text-sm">KYC/AML</div>
+              <div class="text-purple-200 text-xs">Compliance</div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Data Flow Legend -->
+      <div class="mt-8 flex justify-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-purple-500 rounded"></div>
+          <span class="text-white/70 text-sm">Commands</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-green-500 rounded"></div>
+          <span class="text-white/70 text-sm">Responses</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-amber-500 rounded"></div>
+          <span class="text-white/70 text-sm">Alerts</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-blue-500 rounded"></div>
+          <span class="text-white/70 text-sm">Data Sync</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Product Integration Matrix -->
+  <div id="products" class="min-h-screen p-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">3</span>
+        <h2 class="text-4xl font-bold text-gray-800">Product Integration Matrix</h2>
+      </div>
+      
+      <!-- FinaVault -->
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">🏛️</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">FinaVault</h3>
+            <p class="text-gray-500">Gold Storage & Custody Management</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-sm">⚡</span>
+              Available Skills
+            </h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">📊</span>
+                <div>
+                  <div class="font-medium text-gray-700">Vault Balance Summary</div>
+                  <div class="text-sm text-gray-500">Returns total gold stored across all vaults</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">📋</span>
+                <div>
+                  <div class="font-medium text-gray-700">Pending Deposits List</div>
+                  <div class="text-sm text-gray-500">Shows all deposits awaiting approval</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">✅</span>
+                <div>
+                  <div class="font-medium text-gray-700">Approve/Reject Deposit</div>
+                  <div class="text-sm text-gray-500">Process deposit with one command</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">📈</span>
+                <div>
+                  <div class="font-medium text-gray-700">Daily Vault Report</div>
+                  <div class="text-sm text-gray-500">Auto-generated at 9 AM daily</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-sm">💬</span>
+              Example Commands
+            </h4>
+            <div class="bg-slate-900 rounded-xl p-5 font-mono text-sm">
+              <div class="text-gray-400 mb-3">// Check vault status</div>
+              <div class="text-green-400 mb-4">"Show me the vault balance"</div>
+              
+              <div class="text-gray-400 mb-3">// List pending work</div>
+              <div class="text-green-400 mb-4">"How many deposits are pending?"</div>
+              
+              <div class="text-gray-400 mb-3">// Process approval</div>
+              <div class="text-green-400 mb-4">"Approve deposit #1234"</div>
+              
+              <div class="text-gray-400 mb-3">// Generate report</div>
+              <div class="text-green-400">"Send me today's vault summary"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- FinaPay -->
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">💳</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">FinaPay</h3>
+            <p class="text-gray-500">Gold Payment & Transfer System</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-sm">⚡</span>
+              Available Skills
+            </h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">📊</span>
+                <div>
+                  <div class="font-medium text-gray-700">Transaction Summary</div>
+                  <div class="text-sm text-gray-500">Today's transfer volume and count</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600">🚨</span>
+                <div>
+                  <div class="font-medium text-gray-700">Large Transfer Alert</div>
+                  <div class="text-sm text-gray-500">Real-time notification for transfers > 100g</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">🔍</span>
+                <div>
+                  <div class="font-medium text-gray-700">Transaction Lookup</div>
+                  <div class="text-sm text-gray-500">Search by user ID, amount, or date</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">📈</span>
+                <div>
+                  <div class="font-medium text-gray-700">Weekly Payment Report</div>
+                  <div class="text-sm text-gray-500">Auto-generated every Monday</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-sm">💬</span>
+              Example Commands
+            </h4>
+            <div class="bg-slate-900 rounded-xl p-5 font-mono text-sm">
+              <div class="text-gray-400 mb-3">// Check today's activity</div>
+              <div class="text-green-400 mb-4">"Show today's transfer summary"</div>
+              
+              <div class="text-gray-400 mb-3">// Search transactions</div>
+              <div class="text-green-400 mb-4">"Find transfers over 50g yesterday"</div>
+              
+              <div class="text-gray-400 mb-3">// Flag suspicious activity</div>
+              <div class="text-green-400 mb-4">"Flag transaction TX-7890 for review"</div>
+              
+              <div class="text-gray-400 mb-3">// Alert configuration</div>
+              <div class="text-green-400">"Alert me on transfers > 100g"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- More Products -->
+  <div class="min-h-screen p-12">
+    <div class="max-w-6xl mx-auto">
+      
+      <!-- FinaBridge -->
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">🌉</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">FinaBridge</h3>
+            <p class="text-gray-500">Trade Finance & Deal Management</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-sm">⚡</span>
+              Available Skills
+            </h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">📑</span>
+                <div>
+                  <div class="font-medium text-gray-700">Active Deals Overview</div>
+                  <div class="text-sm text-gray-500">List all ongoing trade finance deals</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">⏳</span>
+                <div>
+                  <div class="font-medium text-gray-700">Expiry Notifications</div>
+                  <div class="text-sm text-gray-500">Alerts 7 days before deal expiry</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">📄</span>
+                <div>
+                  <div class="font-medium text-gray-700">Contract Generator</div>
+                  <div class="text-sm text-gray-500">Create deal documentation PDFs</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">💰</span>
+                <div>
+                  <div class="font-medium text-gray-700">Deal Analytics</div>
+                  <div class="text-sm text-gray-500">Performance metrics and ROI</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-sm">💬</span>
+              Example Commands
+            </h4>
+            <div class="bg-slate-900 rounded-xl p-5 font-mono text-sm">
+              <div class="text-gray-400 mb-3">// Check active deals</div>
+              <div class="text-green-400 mb-4">"List all active FinaBridge deals"</div>
+              
+              <div class="text-gray-400 mb-3">// Deal details</div>
+              <div class="text-green-400 mb-4">"Show details for deal #FB-2026-001"</div>
+              
+              <div class="text-gray-400 mb-3">// Expiry check</div>
+              <div class="text-green-400 mb-4">"Which deals expire this week?"</div>
+              
+              <div class="text-gray-400 mb-3">// Generate document</div>
+              <div class="text-green-400">"Generate contract PDF for deal #123"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BNSL -->
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">📈</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">BNSL</h3>
+            <p class="text-gray-500">Buy Now, Sell Later - Gold Savings Plans</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-sm">⚡</span>
+              Available Skills
+            </h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">📊</span>
+                <div>
+                  <div class="font-medium text-gray-700">Active Plans Summary</div>
+                  <div class="text-sm text-gray-500">Total BNSL plans and gold locked</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">🎯</span>
+                <div>
+                  <div class="font-medium text-gray-700">Maturity Tracker</div>
+                  <div class="text-sm text-gray-500">Plans maturing in next 7 days</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">⚙️</span>
+                <div>
+                  <div class="font-medium text-gray-700">Auto-Settlement</div>
+                  <div class="text-sm text-gray-500">Process matured plans automatically</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">📈</span>
+                <div>
+                  <div class="font-medium text-gray-700">Performance Report</div>
+                  <div class="text-sm text-gray-500">ROI and user engagement metrics</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-sm">💬</span>
+              Example Commands
+            </h4>
+            <div class="bg-slate-900 rounded-xl p-5 font-mono text-sm">
+              <div class="text-gray-400 mb-3">// Check BNSL status</div>
+              <div class="text-green-400 mb-4">"How much gold is in BNSL plans?"</div>
+              
+              <div class="text-gray-400 mb-3">// Maturity check</div>
+              <div class="text-green-400 mb-4">"Which plans mature this week?"</div>
+              
+              <div class="text-gray-400 mb-3">// Process settlements</div>
+              <div class="text-green-400 mb-4">"Process all matured BNSL plans"</div>
+              
+              <div class="text-gray-400 mb-3">// Analytics</div>
+              <div class="text-green-400">"Show BNSL performance this month"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- KYC/AML -->
+      <div class="glass-card rounded-2xl p-8">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-red-400 to-red-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">🛡️</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">KYC/AML Compliance</h3>
+            <p class="text-gray-500">Identity Verification & Regulatory Compliance</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-purple-600 text-sm">⚡</span>
+              Available Skills
+            </h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600">📋</span>
+                <div>
+                  <div class="font-medium text-gray-700">Pending Reviews</div>
+                  <div class="text-sm text-gray-500">KYC submissions awaiting verification</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">📅</span>
+                <div>
+                  <div class="font-medium text-gray-700">Document Expiry Check</div>
+                  <div class="text-sm text-gray-500">IDs/passports expiring soon</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">✉️</span>
+                <div>
+                  <div class="font-medium text-gray-700">Auto-Reminder</div>
+                  <div class="text-sm text-gray-500">Send KYC renewal emails</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">📊</span>
+                <div>
+                  <div class="font-medium text-gray-700">Compliance Audit</div>
+                  <div class="text-sm text-gray-500">Weekly regulatory report</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-amber-600 text-sm">💬</span>
+              Example Commands
+            </h4>
+            <div class="bg-slate-900 rounded-xl p-5 font-mono text-sm">
+              <div class="text-gray-400 mb-3">// Check pending KYC</div>
+              <div class="text-green-400 mb-4">"How many KYC reviews pending?"</div>
+              
+              <div class="text-gray-400 mb-3">// Expiry alerts</div>
+              <div class="text-green-400 mb-4">"List documents expiring in 30 days"</div>
+              
+              <div class="text-gray-400 mb-3">// Send reminders</div>
+              <div class="text-green-400 mb-4">"Send KYC reminder to user #5678"</div>
+              
+              <div class="text-gray-400 mb-3">// Compliance report</div>
+              <div class="text-green-400">"Generate weekly compliance audit"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Setup & Configuration -->
+  <div id="setup" class="min-h-screen p-12 bg-gradient-to-br from-slate-900 to-purple-900">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-purple-600 font-bold text-xl">4</span>
+        <h2 class="text-4xl font-bold text-white">Setup & Configuration</h2>
+      </div>
+      
+      <!-- Timeline -->
+      <div class="relative">
+        <div class="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500"></div>
+        
+        <!-- Step 1 -->
+        <div class="relative flex gap-8 mb-12">
+          <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl z-10 shadow-lg shadow-purple-500/50">1</div>
+          <div class="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+            <h3 class="text-xl font-bold text-white mb-4">Server Provisioning</h3>
+            <p class="text-white/70 mb-4">Set up a dedicated server to run Clawd.bot 24/7</p>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">🖥️</div>
+                <div class="text-white font-medium">Mac Mini</div>
+                <div class="text-white/50 text-sm">M1/M2 recommended</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">☁️</div>
+                <div class="text-white font-medium">VPS</div>
+                <div class="text-white/50 text-sm">4GB RAM minimum</div>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">🍓</div>
+                <div class="text-white font-medium">Raspberry Pi</div>
+                <div class="text-white/50 text-sm">Pi 4/5 with 4GB+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="relative flex gap-8 mb-12">
+          <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl z-10 shadow-lg shadow-purple-500/50">2</div>
+          <div class="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+            <h3 class="text-xl font-bold text-white mb-4">Install Clawd.bot</h3>
+            <p class="text-white/70 mb-4">Clone and configure the open-source repository</p>
+            <div class="bg-slate-800 rounded-xl p-4 font-mono text-sm">
+              <div class="text-gray-400"># Clone repository</div>
+              <div class="text-green-400 mb-3">$ git clone https://github.com/steipete/moltbot</div>
+              <div class="text-gray-400"># Install dependencies</div>
+              <div class="text-green-400 mb-3">$ cd moltbot && npm install</div>
+              <div class="text-gray-400"># Copy environment template</div>
+              <div class="text-green-400">$ cp .env.example .env</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="relative flex gap-8 mb-12">
+          <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl z-10 shadow-lg shadow-purple-500/50">3</div>
+          <div class="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+            <h3 class="text-xl font-bold text-white mb-4">Configure API Keys</h3>
+            <p class="text-white/70 mb-4">Set up required credentials in .env file</p>
+            <div class="bg-slate-800 rounded-xl p-4 font-mono text-sm">
+              <div class="text-purple-400"># AI Provider</div>
+              <div class="text-white mb-3">ANTHROPIC_API_KEY=<span class="text-amber-400">sk-ant-xxx...</span></div>
+              <div class="text-purple-400"># Messaging Platforms</div>
+              <div class="text-white mb-1">DISCORD_BOT_TOKEN=<span class="text-amber-400">xxx...</span></div>
+              <div class="text-white mb-3">TELEGRAM_BOT_TOKEN=<span class="text-amber-400">xxx...</span></div>
+              <div class="text-purple-400"># Finatrades Integration</div>
+              <div class="text-white mb-1">FINATRADES_API_URL=<span class="text-amber-400">https://finatrades.replit.app</span></div>
+              <div class="text-white">FINATRADES_ADMIN_TOKEN=<span class="text-amber-400">xxx...</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 4 -->
+        <div class="relative flex gap-8 mb-12">
+          <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl z-10 shadow-lg shadow-purple-500/50">4</div>
+          <div class="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+            <h3 class="text-xl font-bold text-white mb-4">Create Finatrades Skills</h3>
+            <p class="text-white/70 mb-4">Add custom skills for each product module</p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-white/10 rounded-lg p-3">
+                <div class="text-white/80 text-sm font-mono">skills/finatrades/</div>
+                <div class="text-white/50 text-sm mt-2">
+                  ├── vault-balance.js<br>
+                  ├── pending-deposits.js<br>
+                  ├── approve-deposit.js<br>
+                  └── daily-report.js
+                </div>
+              </div>
+              <div class="bg-white/10 rounded-lg p-3">
+                <div class="text-white/80 text-sm font-mono">skills/finatrades/</div>
+                <div class="text-white/50 text-sm mt-2">
+                  ├── kyc-pending.js<br>
+                  ├── user-lookup.js<br>
+                  ├── send-reminder.js<br>
+                  └── compliance-audit.js
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 5 -->
+        <div class="relative flex gap-8">
+          <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl z-10 shadow-lg shadow-green-500/50">✓</div>
+          <div class="flex-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-lg rounded-2xl p-6 border border-green-400/30">
+            <h3 class="text-xl font-bold text-white mb-4">Launch & Monitor</h3>
+            <p class="text-white/70 mb-4">Start Clawd.bot and verify all connections</p>
+            <div class="bg-slate-800 rounded-xl p-4 font-mono text-sm">
+              <div class="text-green-400">$ npm start</div>
+              <div class="text-white/70 mt-3">
+                ✓ Clawd.bot running 24/7<br>
+                ✓ Connected to Discord<br>
+                ✓ Connected to Telegram<br>
+                ✓ Skills loaded: 15<br>
+                ✓ Finatrades API: Connected<br>
+                ✓ Scheduler active
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Automated Workflows -->
+  <div id="workflows" class="min-h-screen p-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">5</span>
+        <h2 class="text-4xl font-bold text-gray-800">Automated Workflows</h2>
+      </div>
+      
+      <p class="text-xl text-gray-600 mb-8 max-w-3xl">
+        Clawd.bot can run scheduled tasks automatically without any human intervention. 
+        Configure these workflows to maintain continuous operations.
+      </p>
+      
+      <div class="grid grid-cols-2 gap-8">
+        <!-- Daily Workflows -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+              <span class="text-2xl">☀️</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800">Daily Workflows</h3>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-purple-600">9:00 AM</div>
+                <div class="text-xs text-gray-400">Daily</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">Morning Vault Summary</div>
+                <div class="text-sm text-gray-500">Total gold, pending deposits, yesterday's activity</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-purple-600">10:00 AM</div>
+                <div class="text-xs text-gray-400">Daily</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">KYC Expiry Check</div>
+                <div class="text-sm text-gray-500">Documents expiring in next 30 days</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-purple-600">6:00 PM</div>
+                <div class="text-xs text-gray-400">Daily</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">End-of-Day Report</div>
+                <div class="text-sm text-gray-500">Transaction summary, alerts, pending items</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-purple-600">11:00 PM</div>
+                <div class="text-xs text-gray-400">Daily</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">BNSL Maturity Check</div>
+                <div class="text-sm text-gray-500">Process matured plans, send notifications</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Weekly Workflows -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <span class="text-2xl">📅</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800">Weekly Workflows</h3>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-blue-600">Monday</div>
+                <div class="text-xs text-gray-400">9:00 AM</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">Weekly Performance Report</div>
+                <div class="text-sm text-gray-500">All products summary with charts</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-blue-600">Wednesday</div>
+                <div class="text-xs text-gray-400">10:00 AM</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">Compliance Audit</div>
+                <div class="text-sm text-gray-500">KYC status, AML flags, regulatory report</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-blue-600">Friday</div>
+                <div class="text-xs text-gray-400">4:00 PM</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">FinaBridge Deal Review</div>
+                <div class="text-sm text-gray-500">Active deals, expiring soon, performance</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div class="text-center">
+                <div class="text-sm font-bold text-blue-600">Sunday</div>
+                <div class="text-xs text-gray-400">8:00 PM</div>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-700">System Health Check</div>
+                <div class="text-sm text-gray-500">API status, database, integrations</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Real-time Alerts -->
+      <div class="glass-card rounded-2xl p-8 mt-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <span class="text-2xl">🚨</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800">Real-time Alerts</h3>
+        </div>
+        
+        <div class="grid grid-cols-4 gap-4">
+          <div class="p-4 bg-red-50 rounded-xl border-2 border-red-200 text-center">
+            <div class="text-3xl mb-2">💰</div>
+            <div class="font-semibold text-red-700">Large Transfer</div>
+            <div class="text-sm text-red-600">Transfers > 100g gold</div>
+          </div>
+          <div class="p-4 bg-amber-50 rounded-xl border-2 border-amber-200 text-center">
+            <div class="text-3xl mb-2">⏰</div>
+            <div class="font-semibold text-amber-700">Deal Expiring</div>
+            <div class="text-sm text-amber-600">24 hours before expiry</div>
+          </div>
+          <div class="p-4 bg-purple-50 rounded-xl border-2 border-purple-200 text-center">
+            <div class="text-3xl mb-2">📥</div>
+            <div class="font-semibold text-purple-700">New Deposit</div>
+            <div class="text-sm text-purple-600">Physical gold received</div>
+          </div>
+          <div class="p-4 bg-blue-50 rounded-xl border-2 border-blue-200 text-center">
+            <div class="text-3xl mb-2">🔐</div>
+            <div class="font-semibold text-blue-700">Security Event</div>
+            <div class="text-sm text-blue-600">Failed logins, suspicious activity</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Security & Compliance -->
+  <div id="security" class="min-h-screen p-12 bg-gradient-to-br from-slate-50 to-red-50">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">6</span>
+        <h2 class="text-4xl font-bold text-gray-800">Security & Compliance</h2>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-8 mb-8">
+        <!-- Security Features -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg">
+          <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="text-3xl">🔐</span> Security Features
+          </h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-green-600 text-sm">✓</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Self-Hosted Infrastructure</div>
+                <div class="text-sm text-gray-500">All data stays on your own servers</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-green-600 text-sm">✓</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Encrypted Communications</div>
+                <div class="text-sm text-gray-500">TLS/SSL for all API connections</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-green-600 text-sm">✓</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Admin-Only Access</div>
+                <div class="text-sm text-gray-500">Whitelist authorized Discord/Telegram users</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-green-600 text-sm">✓</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Audit Logging</div>
+                <div class="text-sm text-gray-500">Complete trail of all actions and commands</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-green-600 text-sm">✓</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Token-Based Authentication</div>
+                <div class="text-sm text-gray-500">Secure API tokens with rotation support</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Compliance -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg">
+          <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="text-3xl">📜</span> Compliance Considerations
+          </h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-blue-600 text-sm">i</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Data Residency</div>
+                <div class="text-sm text-gray-500">Host in region that meets your regulatory requirements</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-blue-600 text-sm">i</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">GDPR Compliance</div>
+                <div class="text-sm text-gray-500">No data sent to external services without consent</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-blue-600 text-sm">i</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Financial Regulations</div>
+                <div class="text-sm text-gray-500">Configure approval workflows for sensitive operations</div>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <span class="text-blue-600 text-sm">i</span>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-700">Audit Requirements</div>
+                <div class="text-sm text-gray-500">Full logging with timestamp and user attribution</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Permission Matrix -->
+      <div class="bg-white rounded-2xl p-8 shadow-lg">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Permission Matrix</h3>
+        <table class="w-full">
+          <thead>
+            <tr class="border-b-2 border-gray-200">
+              <th class="text-left py-4 text-gray-600">Action</th>
+              <th class="text-center py-4 text-gray-600">View Only</th>
+              <th class="text-center py-4 text-gray-600">Operator</th>
+              <th class="text-center py-4 text-gray-600">Admin</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr>
+              <td class="py-3 text-gray-700">View balances & reports</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-gray-700">View pending deposits</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-gray-700">Approve deposits < 100g</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-gray-700">Approve deposits ≥ 100g</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-gray-700">KYC approval/rejection</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3 text-gray-700">Configure system settings</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-red-400">✗</td>
+              <td class="py-3 text-center text-green-600">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Final Page -->
+  <div class="min-h-screen p-12 flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-900">
+    <div class="text-center">
+      <div class="mb-8">
+        <div class="inline-flex items-center gap-3 bg-white/10 px-8 py-4 rounded-full border border-white/20">
+          <span class="text-4xl">🦀</span>
+          <span class="text-3xl font-bold text-white">CLAWD.BOT</span>
+          <span class="text-3xl text-white/50">×</span>
+          <span class="text-3xl font-bold text-white">FINATRADES</span>
+        </div>
+      </div>
+      
+      <h2 class="text-5xl font-bold text-white mb-6">Ready to Transform<br>Your Operations?</h2>
+      
+      <p class="text-xl text-white/70 mb-12 max-w-2xl mx-auto">
+        Implement 24/7 autonomous AI assistance across all Finatrades products 
+        and unlock unprecedented operational efficiency.
+      </p>
+      
+      <div class="flex gap-6 justify-center mb-16">
+        <div class="bg-white/10 px-8 py-4 rounded-xl border border-white/20">
+          <div class="text-4xl font-bold text-white mb-1">70%</div>
+          <div class="text-white/60">Less Manual Work</div>
+        </div>
+        <div class="bg-white/10 px-8 py-4 rounded-xl border border-white/20">
+          <div class="text-4xl font-bold text-white mb-1">24/7</div>
+          <div class="text-white/60">Availability</div>
+        </div>
+        <div class="bg-white/10 px-8 py-4 rounded-xl border border-white/20">
+          <div class="text-4xl font-bold text-white mb-1">5min</div>
+          <div class="text-white/60">Response Time</div>
+        </div>
+      </div>
+      
+      <div class="text-white/40 text-sm">
+        <p>© 2026 Finatrades. All rights reserved.</p>
+        <p class="mt-2">Document prepared by Finatrades Technology Team</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="fixed bottom-8 right-8 no-print">
+    <button onclick="window.print()" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl shadow-2xl hover:shadow-purple-500/50 transition flex items-center gap-3 font-semibold">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+      </svg>
+      Download as PDF
+    </button>
+  </div>
+
+</body>
+</html>
