@@ -6370,3 +6370,23 @@ export const userCryptoWallets = pgTable("user_crypto_wallets", {
 export const insertUserCryptoWalletSchema = createInsertSchema(userCryptoWallets).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertUserCryptoWallet = z.infer<typeof insertUserCryptoWalletSchema>;
 export type UserCryptoWallet = typeof userCryptoWallets.$inferSelect;
+
+// Organizational Chart Positions
+// ============================================
+
+export const orgPositions = pgTable("org_positions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  department: varchar("department", { length: 100 }).notNull(),
+  parentId: varchar("parent_id", { length: 255 }),
+  photoUrl: text("photo_url"),
+  level: integer("level").notNull().default(0),
+  order: integer("order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertOrgPositionSchema = createInsertSchema(orgPositions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertOrgPosition = z.infer<typeof insertOrgPositionSchema>;
+export type OrgPosition = typeof orgPositions.$inferSelect;

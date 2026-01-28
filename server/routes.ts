@@ -29262,5 +29262,75 @@ export async function registerRoutes(
     }
   });
 
+  // ===========================================================================
+  // Organizational Chart
+  // ===========================================================================
+  
+  app.get("/api/admin/org-chart", ensureAdminAsync, async (req, res) => {
+    try {
+      const positions = await db.select().from(schema.orgPositions).orderBy(schema.orgPositions.level, schema.orgPositions.order);
+      res.json(positions);
+    } catch (error: any) {
+      console.error("Get org chart error:", error);
+      res.status(500).json({ message: "Failed to retrieve org chart" });
+    }
+  });
+
+  app.post("/api/admin/org-chart", ensureAdminAsync, async (req, res) => {
+    try {
+      const [position] = await db.insert(schema.orgPositions).values(req.body).returning();
+      res.status(201).json(position);
+    } catch (error: any) {
+      console.error("Create org position error:", error);
+      res.status(500).json({ message: "Failed to create position" });
+    }
+  });
+
+  app.post("/api/admin/org-chart/seed", ensureAdminAsync, async (req, res) => {
+    try {
+      const defaultPositions = [
+        { name: 'CEO', title: 'Chief Executive Officer', department: 'Executive', level: 0, order: 0 },
+        { name: 'COO', title: 'Chief Operating Officer', department: 'Operations', level: 1, order: 0 },
+        { name: 'CFO', title: 'Chief Financial Officer', department: 'Finance', level: 1, order: 1 },
+        { name: 'CTO', title: 'Chief Technology Officer', department: 'Technology', level: 1, order: 2 },
+        { name: 'CCO', title: 'Chief Compliance Officer', department: 'Compliance', level: 1, order: 3 },
+        { name: 'Head of Support', title: 'Customer Service Manager', department: 'Customer Service', level: 2, order: 0 },
+        { name: 'Lead Developer', title: 'Senior Software Engineer', department: 'Technology', level: 2, order: 1 },
+        { name: 'Finance Manager', title: 'Senior Accountant', department: 'Finance', level: 2, order: 2 },
+      ];
+      const positions = await db.insert(schema.orgPositions).values(defaultPositions).returning();
+      res.status(201).json(positions);
+    } catch (error: any) {
+      console.error("Seed org chart error:", error);
+      res.status(500).json({ message: "Failed to seed org chart" });
+    }
+  });
+
+  app.put("/api/admin/org-chart/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [updated] = await db.update(schema.orgPositions)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(schema.orgPositions.id, id))
+        .returning();
+      if (!updated) return res.status(404).json({ message: "Position not found" });
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update org position error:", error);
+      res.status(500).json({ message: "Failed to update position" });
+    }
+  });
+
+  app.delete("/api/admin/org-chart/:id", ensureAdminAsync, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.delete(schema.orgPositions).where(eq(schema.orgPositions.id, id));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete org position error:", error);
+      res.status(500).json({ message: "Failed to delete position" });
+    }
+  });
+
   return httpServer;
 }

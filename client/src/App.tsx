@@ -116,6 +116,7 @@ import HelpCenter from "@/pages/HelpCenter";
 import Settings from "@/pages/Settings";
 import DigitalIdentity from "@/pages/DigitalIdentity";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import OrganizationalChart from "@/pages/admin/OrganizationalChart";
 import KYCReview from "@/pages/admin/KYCReview";
 import UserManagement from "@/pages/admin/UserManagement";
 import UserDetails from "@/pages/admin/UserDetails";
@@ -281,6 +282,7 @@ function Router() {
       <Route path="/admin/chat" component={AdminChat} />
       <Route path="/admin/cms" component={CMSManagement} />
       <Route path="/admin/employees" component={EmployeeManagement} />
+      <Route path="/admin/org-chart" component={OrganizationalChart} />
       <Route path="/admin/roles" component={RoleManagement} />
       <Route path="/admin/approvals" component={ApprovalQueue} />
       <Route path="/admin/payment-gateways" component={PaymentGatewayManagement} />

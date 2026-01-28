@@ -71,6 +71,7 @@ export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/financial-reports': ['view_reports', 'generate_reports'],
   '/admin/users': ['view_users', 'manage_users'],
   '/admin/employees': ['manage_employees'],
+  '/admin/org-chart': ['manage_employees'],
   '/admin/roles': ['manage_employees'],
   '/admin/kyc': ['view_kyc', 'manage_kyc'],
   '/admin/payment-operations': ['manage_deposits', 'manage_withdrawals'],
@@ -267,6 +268,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { label: 'User Management', href: '/admin/users' },
         { label: 'Employees', href: '/admin/employees' },
+        { label: 'Org Chart', href: '/admin/org-chart' },
         { label: 'Role Management', href: '/admin/roles' },
         { label: 'KYC Reviews', href: '/admin/kyc' },
         { label: 'Compliance', href: '/admin/compliance' },
