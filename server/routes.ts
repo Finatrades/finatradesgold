@@ -29148,6 +29148,119 @@ export async function registerRoutes(
       res.status(500).json({ message: error.message || "Failed to send DPR" });
     }
   });
+  // ===========================================================================
+  // User Bank Accounts (Payment Methods)
+  // ===========================================================================
+  
+  app.get("/api/user/bank-accounts", ensureAuthenticated, async (req, res) => {
+    try {
+      const accounts = await storage.getUserBankAccounts(req.session.userId!);
+      res.json(accounts);
+    } catch (error: any) {
+      console.error("Get bank accounts error:", error);
+      res.status(500).json({ message: "Failed to retrieve bank accounts" });
+    }
+  });
+
+  app.post("/api/user/bank-accounts", ensureAuthenticated, async (req, res) => {
+    try {
+      const account = await storage.createUserBankAccount({
+        ...req.body,
+        userId: req.session.userId!
+      });
+      res.status(201).json(account);
+    } catch (error: any) {
+      console.error("Create bank account error:", error);
+      res.status(500).json({ message: "Failed to create bank account" });
+    }
+  });
+
+  app.put("/api/user/bank-accounts/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await storage.getUserBankAccount(id);
+      if (!existing || existing.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      const updated = await storage.updateUserBankAccount(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update bank account error:", error);
+      res.status(500).json({ message: "Failed to update bank account" });
+    }
+  });
+
+  app.delete("/api/user/bank-accounts/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await storage.getUserBankAccount(id);
+      if (!existing || existing.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      await storage.deleteUserBankAccount(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete bank account error:", error);
+      res.status(500).json({ message: "Failed to delete bank account" });
+    }
+  });
+
+  // ===========================================================================
+  // User Crypto Wallets (Payment Methods)
+  // ===========================================================================
+  
+  app.get("/api/user/crypto-wallets", ensureAuthenticated, async (req, res) => {
+    try {
+      const wallets = await storage.getUserCryptoWallets(req.session.userId!);
+      res.json(wallets);
+    } catch (error: any) {
+      console.error("Get crypto wallets error:", error);
+      res.status(500).json({ message: "Failed to retrieve crypto wallets" });
+    }
+  });
+
+  app.post("/api/user/crypto-wallets", ensureAuthenticated, async (req, res) => {
+    try {
+      const wallet = await storage.createUserCryptoWallet({
+        ...req.body,
+        userId: req.session.userId!
+      });
+      res.status(201).json(wallet);
+    } catch (error: any) {
+      console.error("Create crypto wallet error:", error);
+      res.status(500).json({ message: "Failed to create crypto wallet" });
+    }
+  });
+
+  app.put("/api/user/crypto-wallets/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await storage.getUserCryptoWallet(id);
+      if (!existing || existing.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Crypto wallet not found" });
+      }
+      const updated = await storage.updateUserCryptoWallet(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update crypto wallet error:", error);
+      res.status(500).json({ message: "Failed to update crypto wallet" });
+    }
+  });
+
+  app.delete("/api/user/crypto-wallets/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await storage.getUserCryptoWallet(id);
+      if (!existing || existing.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Crypto wallet not found" });
+      }
+      await storage.deleteUserCryptoWallet(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete crypto wallet error:", error);
+      res.status(500).json({ message: "Failed to delete crypto wallet" });
+    }
+  });
 
   return httpServer;
 }
