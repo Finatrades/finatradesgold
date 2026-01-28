@@ -73,6 +73,15 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 **KYC System:**
 Supports `kycAml` (tiered verification) and `Finatrades` (personal info + documents + liveness) modes, configurable via admin settings.
 
+**Custom Finatrades ID System (January 2026):**
+- Users can set a personalized Finatrades ID (format: FT-YOURNAME, 4-15 alphanumeric characters)
+- Finatrades ID enables passwordless OTP-based login as an alternative to email/password
+- **Database Columns**: `customFinatradesId`, `customFinatradesIdChangedAt`, `finatradesIdOtp`, `finatradesIdOtpExpiry`, `finatradesIdOtpAttempts`
+- **API Endpoints**: `/api/finatrades-id/check-availability`, `/api/finatrades-id/set`, `/api/finatrades-id/info`, `/api/auth/finatrades-id-login`, `/api/auth/finatrades-id-verify`
+- **Security**: 5-minute OTP expiry, 3 attempts before requiring new OTP, 5-attempt 15-minute lockout, reserved word filtering
+- **Change Limit**: Users can only change their ID once every 30 days
+- **Frontend**: Settings page includes ID customization section; Login page has toggle between email/password and Finatrades ID login methods
+
 **Verifiable Credentials System (W3C VC 2.0 - January 2026):**
 - **Standard**: W3C Verifiable Credentials Data Model 2.0 compliant
 - **Signing**: RS256 JWT with `typ: "vc+ld+jwt"` header per VC 2.0 §4.4
