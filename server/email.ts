@@ -668,6 +668,7 @@ export const EMAIL_TEMPLATES = {
   ACCOUNT_LOCKED: 'account_locked',
   SUSPICIOUS_ACTIVITY: 'suspicious_activity',
   MFA_ENABLED: 'mfa_enabled',
+  FINATRADES_ID_LOGIN_OTP: 'finatrades_id_login_otp',
   
   // KYC
   KYC_APPROVED: 'kyc_approved',
@@ -1018,6 +1019,39 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.FINATRADES_ID_LOGIN_OTP,
+    name: 'Finatrades ID Login OTP',
+    type: 'email' as const,
+    module: 'auth',
+    subject: 'Your Finatrades Login Code - {{otp_code}}',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Login Verification</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello,</p>
+          <p>You requested to log in using your Finatrades ID. Use the code below to complete your login:</p>
+          <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0;">
+            <span style="font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">{{otp_code}}</span>
+          </div>
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>This code expires in 5 minutes.</strong></p>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">For security, never share this code with anyone. Finatrades will never ask for your OTP.</p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'otp_code', description: 'One-time login code' },
     ],
     status: 'published' as const,
   },

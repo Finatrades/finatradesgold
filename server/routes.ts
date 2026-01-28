@@ -2573,6 +2573,301 @@ export async function registerRoutes(
     }
   });
   
+
+  // ============================================================================
+  // Custom Finatrades ID System
+  // ============================================================================
+
+  // Check if a custom Finatrades ID is available
+  app.post("/api/finatrades-id/check-availability", ensureAuthenticated, async (req, res) => {
+    try {
+      const { customId } = req.body;
+      
+      if (!customId || typeof customId !== 'string') {
+        return res.status(400).json({ message: "Custom ID is required" });
+      }
+      
+      const normalizedId = customId.toUpperCase().startsWith('FT-') 
+        ? customId.toUpperCase() 
+        : `FT-${customId.toUpperCase()}`;
+      
+      const idPart = normalizedId.replace('FT-', '');
+      if (idPart.length < 4 || idPart.length > 15) {
+        return res.status(400).json({ available: false, message: "ID must be 4-15 characters long" });
+      }
+      
+      if (!/^[A-Z0-9]+$/.test(idPart)) {
+        return res.status(400).json({ available: false, message: "ID can only contain letters and numbers" });
+      }
+      
+      const reservedWords = ['ADMIN', 'FINATRADES', 'SYSTEM', 'SUPPORT', 'HELP', 'TEST', 'NULL', 'UNDEFINED'];
+      if (reservedWords.some(word => idPart.includes(word))) {
+        return res.status(400).json({ available: false, message: "This ID contains reserved words" });
+      }
+      
+      const existingUser = await pool.query(
+        'SELECT id FROM users WHERE UPPER(custom_finatrades_id) = $1 OR UPPER(finatrades_id) = $1',
+        [normalizedId]
+      );
+      
+      if (existingUser.rows.length > 0) {
+        return res.json({ available: false, message: "This ID is already taken" });
+      }
+      
+      res.json({ available: true, normalizedId, message: "This ID is available!" });
+    } catch (error) {
+      console.error("Check Finatrades ID availability error:", error);
+      res.status(500).json({ message: "Failed to check availability" });
+    }
+  });
+
+  // Set or update custom Finatrades ID
+  app.post("/api/finatrades-id/set", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { customId } = req.body;
+      
+      if (!customId || typeof customId !== 'string') {
+        return res.status(400).json({ message: "Custom ID is required" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.customFinatradesIdChangedAt) {
+        const daysSinceChange = Math.floor(
+          (Date.now() - new Date(user.customFinatradesIdChangedAt).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSinceChange < 30) {
+          return res.status(400).json({ message: `You can change your Finatrades ID again in ${30 - daysSinceChange} days` });
+        }
+      }
+      
+      const normalizedId = customId.toUpperCase().startsWith('FT-') 
+        ? customId.toUpperCase() 
+        : `FT-${customId.toUpperCase()}`;
+      
+      const idPart = normalizedId.replace('FT-', '');
+      if (idPart.length < 4 || idPart.length > 15) {
+        return res.status(400).json({ message: "ID must be 4-15 characters long" });
+      }
+      
+      if (!/^[A-Z0-9]+$/.test(idPart)) {
+        return res.status(400).json({ message: "ID can only contain letters and numbers" });
+      }
+      
+      const reservedWords = ['ADMIN', 'FINATRADES', 'SYSTEM', 'SUPPORT', 'HELP', 'TEST', 'NULL', 'UNDEFINED'];
+      if (reservedWords.some(word => idPart.includes(word))) {
+        return res.status(400).json({ message: "This ID contains reserved words" });
+      }
+      
+      const existingUser = await pool.query(
+        'SELECT id FROM users WHERE (UPPER(custom_finatrades_id) = $1 OR UPPER(finatrades_id) = $1) AND id != $2',
+        [normalizedId, userId]
+      );
+      
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ message: "This ID is already taken" });
+      }
+      
+      await pool.query(
+        'UPDATE users SET custom_finatrades_id = $1, custom_finatrades_id_changed_at = NOW(), updated_at = NOW() WHERE id = $2',
+        [normalizedId, userId]
+      );
+      
+      await storage.createAuditLog({
+        entityType: "user",
+        entityId: userId,
+        actionType: "update",
+        actor: userId,
+        actorRole: "user",
+        details: `Custom Finatrades ID set to ${normalizedId}`,
+      });
+      
+      res.json({ success: true, customFinatradesId: normalizedId, message: "Your Finatrades ID has been updated!" });
+    } catch (error) {
+      console.error("Set Finatrades ID error:", error);
+      res.status(500).json({ message: "Failed to set Finatrades ID" });
+    }
+  });
+
+  // Get current user's Finatrades ID info
+  app.get("/api/finatrades-id/info", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      const result = await pool.query(
+        'SELECT finatrades_id, custom_finatrades_id, custom_finatrades_id_changed_at FROM users WHERE id = $1',
+        [userId]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const user = result.rows[0];
+      const displayId = user.custom_finatrades_id || user.finatrades_id;
+      
+      let canChangeIn = 0;
+      if (user.custom_finatrades_id_changed_at) {
+        const daysSinceChange = Math.floor(
+          (Date.now() - new Date(user.custom_finatrades_id_changed_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        canChangeIn = Math.max(0, 30 - daysSinceChange);
+      }
+      
+      res.json({
+        finatradesId: user.finatrades_id,
+        customFinatradesId: user.custom_finatrades_id,
+        displayId,
+        canChange: canChangeIn === 0,
+        canChangeIn,
+      });
+    } catch (error) {
+      console.error("Get Finatrades ID info error:", error);
+      res.status(500).json({ message: "Failed to get Finatrades ID info" });
+    }
+  });
+
+  // Finatrades ID Login - Step 1: Request OTP
+  app.post("/api/auth/finatrades-id-login", otpRateLimiter, async (req, res) => {
+    try {
+      const { finatradesId } = req.body;
+      
+      if (!finatradesId || typeof finatradesId !== 'string') {
+        return res.status(400).json({ message: "Finatrades ID is required" });
+      }
+      
+      const normalizedId = finatradesId.toUpperCase().startsWith('FT-') 
+        ? finatradesId.toUpperCase() 
+        : `FT-${finatradesId.toUpperCase()}`;
+      
+      const result = await pool.query(
+        'SELECT id, email, first_name, is_email_verified, finatrades_id_otp_attempts FROM users WHERE UPPER(custom_finatrades_id) = $1 OR UPPER(finatrades_id) = $1',
+        [normalizedId]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.json({ success: true, message: "If this Finatrades ID exists, an OTP has been sent" });
+      }
+      
+      const user = result.rows[0];
+      
+      if (!user.is_email_verified) {
+        return res.status(403).json({ message: "Email not verified. Please login with email first.", requiresEmailVerification: true });
+      }
+      
+      if (user.finatrades_id_otp_attempts >= 5) {
+        const lockResult = await pool.query('SELECT finatrades_id_otp_expiry FROM users WHERE id = $1', [user.id]);
+        if (lockResult.rows[0]?.finatrades_id_otp_expiry && new Date(lockResult.rows[0].finatrades_id_otp_expiry) > new Date()) {
+          return res.status(429).json({ message: "Too many attempts. Please try again later." });
+        }
+        await pool.query('UPDATE users SET finatrades_id_otp_attempts = 0 WHERE id = $1', [user.id]);
+      }
+      
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 5 * 60 * 1000);
+      
+      await pool.query(
+        'UPDATE users SET finatrades_id_otp = $1, finatrades_id_otp_expiry = $2, finatrades_id_otp_attempts = 0 WHERE id = $3',
+        [otp, expiry, user.id]
+      );
+      
+      const maskedEmail = user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+      
+      sendEmail(user.email, EMAIL_TEMPLATES.FINATRADES_ID_LOGIN_OTP, { otp_code: otp })
+        .catch(err => console.error('[Email] Finatrades ID login OTP failed:', err));
+      
+      res.json({ success: true, maskedEmail, message: `OTP sent to ${maskedEmail}` });
+    } catch (error) {
+      console.error("Finatrades ID login error:", error);
+      res.status(500).json({ message: "Failed to send OTP" });
+    }
+  });
+
+  // Finatrades ID Login - Step 2: Verify OTP
+  app.post("/api/auth/finatrades-id-verify", otpRateLimiter, async (req, res) => {
+    try {
+      const { finatradesId, otp } = req.body;
+      
+      if (!finatradesId || !otp) {
+        return res.status(400).json({ message: "Finatrades ID and OTP are required" });
+      }
+      
+      const normalizedId = finatradesId.toUpperCase().startsWith('FT-') 
+        ? finatradesId.toUpperCase() 
+        : `FT-${finatradesId.toUpperCase()}`;
+      
+      const result = await pool.query(
+        'SELECT id, email, first_name, last_name, role, finatrades_id_otp, finatrades_id_otp_expiry, finatrades_id_otp_attempts FROM users WHERE UPPER(custom_finatrades_id) = $1 OR UPPER(finatrades_id) = $1',
+        [normalizedId]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(401).json({ message: "Invalid Finatrades ID or OTP" });
+      }
+      
+      const user = result.rows[0];
+      
+      if (user.finatrades_id_otp_attempts >= 3) {
+        await pool.query('UPDATE users SET finatrades_id_otp = NULL, finatrades_id_otp_expiry = NULL WHERE id = $1', [user.id]);
+        return res.status(429).json({ message: "Too many attempts. Please request a new OTP." });
+      }
+      
+      if (!user.finatrades_id_otp || !user.finatrades_id_otp_expiry) {
+        return res.status(400).json({ message: "No OTP requested. Please request a new one." });
+      }
+      
+      if (new Date() > new Date(user.finatrades_id_otp_expiry)) {
+        return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      }
+      
+      if (user.finatrades_id_otp !== otp) {
+        await pool.query('UPDATE users SET finatrades_id_otp_attempts = finatrades_id_otp_attempts + 1 WHERE id = $1', [user.id]);
+        const attemptsLeft = 3 - (user.finatrades_id_otp_attempts + 1);
+        return res.status(401).json({ message: `Invalid OTP. ${attemptsLeft} attempts remaining.` });
+      }
+      
+      await pool.query(
+        'UPDATE users SET finatrades_id_otp = NULL, finatrades_id_otp_expiry = NULL, finatrades_id_otp_attempts = 0, last_login_at = NOW() WHERE id = $1',
+        [user.id]
+      );
+      
+      const fullUser = await storage.getUser(user.id);
+      if (!fullUser) {
+        return res.status(500).json({ message: "Failed to create session" });
+      }
+      
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        req.session.userId = user.id;
+        
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Failed to save session" });
+          }
+          
+          logUserActivity(req, user.id, "login", "Logged in via Finatrades ID + OTP")
+            .catch(err => console.error("[Activity Log] Finatrades ID login failed:", err));
+          
+          res.json({ success: true, user: sanitizeUser(fullUser), message: "Login successful!" });
+        });
+      });
+    } catch (error) {
+      console.error("Finatrades ID OTP verify error:", error);
+      res.status(500).json({ message: "Failed to verify OTP" });
+    }
+  });
+
+
+  // ===========================================================================
   // ============================================================================
   // MFA (Multi-Factor Authentication)
   // ============================================================================
