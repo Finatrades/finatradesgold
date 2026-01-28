@@ -29387,5 +29387,171 @@ export async function registerRoutes(
     }
   });
 
+  // Email Clawd Integration Guide as PDF
+  app.post("/api/docs/clawd-guide/email", ensureAdminAsync, async (req, res) => {
+    try {
+      const { recipientEmail, recipientName, customMessage } = req.body;
+      
+      if (!recipientEmail) {
+        return res.status(400).json({ message: "Recipient email is required" });
+      }
+      
+      const puppeteer = await import('puppeteer');
+      const pathModule = await import('path');
+      const fsModule = await import('fs');
+      const { sendEmailWithAttachment } = await import('./email');
+      
+      const htmlPath = pathModule.default.join(process.cwd(), 'public', 'clawd-integration-guide.html');
+      
+      if (!fsModule.default.existsSync(htmlPath)) {
+        return res.status(404).json({ message: "Guide not found" });
+      }
+      
+      // Generate PDF
+      const browser = await puppeteer.default.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      const htmlContent = fsModule.default.readFileSync(htmlPath, 'utf-8');
+      
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+      
+      const htmlWithAbsoluteUrls = htmlContent
+        .replace(/src="\//g, `src="${baseUrl}/`)
+        .replace(/href="\//g, `href="${baseUrl}/`);
+      
+      await page.setContent(htmlWithAbsoluteUrls, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' }
+      });
+      
+      await browser.close();
+      
+      // Create professional email HTML
+      const greeting = recipientName ? `Dear ${recipientName}` : 'Dear Partner';
+      const message = customMessage || 'We are pleased to share our comprehensive AI Integration Guide for your review.';
+      
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; }
+    .header { background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); padding: 40px 30px; text-align: center; }
+    .header img { height: 50px; margin-bottom: 15px; }
+    .header h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+    .header p { color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px; }
+    .content { padding: 40px 30px; }
+    .content h2 { color: #8B5CF6; margin-top: 0; }
+    .highlight-box { background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%); border-left: 4px solid #8B5CF6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0; }
+    .features { margin: 25px 0; }
+    .feature { display: flex; align-items: center; margin: 12px 0; }
+    .feature-icon { width: 24px; height: 24px; background: #8B5CF6; color: white; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 12px; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+    .footer { background: #1a1a2e; color: #888; padding: 30px; text-align: center; font-size: 12px; }
+    .footer a { color: #8B5CF6; }
+    .divider { height: 1px; background: #eee; margin: 25px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>FINATRADES</h1>
+      <p>Gold-Backed Digital Financial Platform</p>
+    </div>
+    
+    <div class="content">
+      <h2>Clawd.bot AI Integration Guide</h2>
+      
+      <p>${greeting},</p>
+      
+      <p>${message}</p>
+      
+      <div class="highlight-box">
+        <strong>📎 Attached Document:</strong><br>
+        <span style="color: #666;">Finatrades-Clawd-Integration-Guide.pdf</span><br>
+        <small style="color: #999;">Comprehensive 12-page technical blueprint</small>
+      </div>
+      
+      <p>This guide covers:</p>
+      
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>System Architecture & Integration Overview</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Product Integration Matrix (FinaVault, FinaPay, FinaBridge, BNSL)</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Step-by-Step Setup & Configuration</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Automated Workflows & Scheduling</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Security & Compliance Considerations</span>
+        </div>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <p>If you have any questions about the integration or would like to schedule a technical discussion, please don't hesitate to reach out.</p>
+      
+      <p>Best regards,<br>
+      <strong>Finatrades Technology Team</strong></p>
+    </div>
+    
+    <div class="footer">
+      <p>© 2026 Finatrades. All rights reserved.</p>
+      <p>This email contains confidential information intended for the recipient only.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+      
+      // Send email with PDF attachment
+      const result = await sendEmailWithAttachment(
+        recipientEmail,
+        'Finatrades AI Integration Guide - Clawd.bot Implementation Blueprint',
+        emailHtml,
+        [{
+          filename: 'Finatrades-Clawd-Integration-Guide.pdf',
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }]
+      );
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `Guide sent successfully to ${recipientEmail}`,
+          messageId: result.messageId 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to send email" });
+      }
+      
+    } catch (error: any) {
+      console.error("Email guide error:", error);
+      res.status(500).json({ message: "Failed to send guide", error: error.message });
+    }
+  });
+
   return httpServer;
 }
