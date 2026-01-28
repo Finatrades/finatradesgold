@@ -17975,7 +17975,8 @@ export async function registerRoutes(
       const qrPayload = `FTPAY:${user.finatradesId}`;
       const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
       
-      res.json({ qrCodeDataUrl, finatradesId: user.finatradesId });
+      const displayId = user.customFinatradesId || user.finatradesId;
+      res.json({ qrCodeDataUrl, finatradesId: displayId });
     } catch (error) {
       res.status(400).json({ message: "Failed to generate QR code" });
     }

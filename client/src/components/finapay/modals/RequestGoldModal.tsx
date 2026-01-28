@@ -428,12 +428,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                     <p className="text-xs text-muted-foreground mb-1">Your Finatrades ID</p>
                     <div className="flex items-center justify-center gap-2">
                       <Hash className="w-4 h-4 text-muted-foreground" />
-                      <code className="font-mono font-bold text-lg text-foreground" data-testid="text-my-finatrades-id">{myFinatradesId || user?.finatradesId}</code>
+                      <code className="font-mono font-bold text-lg text-foreground" data-testid="text-my-finatrades-id">{myFinatradesId || user?.customFinatradesId || user?.finatradesId}</code>
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => copyToClipboard(myFinatradesId || user?.finatradesId || '', 'Finatrades ID')}
+                        onClick={() => copyToClipboard(myFinatradesId || user?.customFinatradesId || user?.finatradesId || '', 'Finatrades ID')}
                         data-testid="button-copy-finatrades-id"
                       >
                         <Copy className="w-4 h-4" />

@@ -56,7 +56,7 @@ export default function Dashboard() {
     sourceModule: tx.module,
   }));
 
-  const finatradesId = user?.finatradesId || `FT-${user?.id?.slice(0, 8).toUpperCase() || "XXXXXXXX"}`;
+  const finatradesId = user?.customFinatradesId || user?.finatradesId || `FT-${user?.id?.slice(0, 8).toUpperCase() || "XXXXXXXX"}`;
   const copyFinatradesId = async () => {
     await navigator.clipboard.writeText(finatradesId);
     setCopiedId(true);

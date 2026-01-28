@@ -12,7 +12,7 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
   const isPersonal = user?.accountType ? user.accountType !== 'business' : domainMode === 'personal';
   const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim().toUpperCase() || 'CARD HOLDER';
   
-  const lastFour = user?.finatradesId?.slice(-4) || '0001';
+  const lastFour = (user?.customFinatradesId || user?.finatradesId)?.slice(-4) || '0001';
 
   return (
     <motion.div
