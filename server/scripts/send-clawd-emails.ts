@@ -265,8 +265,8 @@ async function generatePdfAndSendEmails() {
 </html>`;
 
   const recipients = [
-    { email: 'system@finatrades.com', name: 'Finatrades System' },
-    { email: 'blockchain@finatrades.com', name: 'Finatrades Blockchain Team' }
+    { email: 'chairman@winvestnet.com', name: 'Chairman' },
+    { email: 'legal@finatrades.com', name: 'Legal Team' }
   ];
   
   for (const recipient of recipients) {
