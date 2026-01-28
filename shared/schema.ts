@@ -6304,3 +6304,69 @@ export const treasuryDailyReconciliation = pgTable("treasury_daily_reconciliatio
 export const insertTreasuryDailyReconciliationSchema = createInsertSchema(treasuryDailyReconciliation).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTreasuryDailyReconciliation = z.infer<typeof insertTreasuryDailyReconciliationSchema>;
 export type TreasuryDailyReconciliation = typeof treasuryDailyReconciliation.$inferSelect;
+
+// ============================================
+// USER BANK ACCOUNTS & CRYPTO WALLETS
+// ============================================
+
+// Bank account status enum
+export const userBankAccountStatusEnum = pgEnum('user_bank_account_status', ['Active', 'Inactive', 'Pending Verification']);
+
+// User Bank Accounts - for withdrawal destinations
+export const userBankAccounts = pgTable("user_bank_accounts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Bank details
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
+  accountNumber: varchar("account_number", { length: 100 }).notNull(),
+  iban: varchar("iban", { length: 50 }),
+  swiftCode: varchar("swift_code", { length: 20 }),
+  routingNumber: varchar("routing_number", { length: 20 }),
+  bankAddress: text("bank_address"),
+  bankCountry: varchar("bank_country", { length: 100 }),
+  
+  // Account type
+  accountType: varchar("account_type", { length: 50 }).default('Savings'),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  
+  // User-friendly label
+  label: varchar("label", { length: 100 }),
+  
+  // Status and verification
+  status: userBankAccountStatusEnum("status").notNull().default('Active'),
+  isPrimary: boolean("is_primary").default(false),
+  verifiedAt: timestamp("verified_at"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserBankAccountSchema = createInsertSchema(userBankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserBankAccount = z.infer<typeof insertUserBankAccountSchema>;
+export type UserBankAccount = typeof userBankAccounts.$inferSelect;
+
+// User Crypto Wallets - for crypto withdrawal destinations (uses existing cryptoNetworkEnum)
+export const userCryptoWallets = pgTable("user_crypto_wallets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  
+  // Wallet details
+  network: cryptoNetworkEnum("network").notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }).notNull(),
+  
+  // User-friendly label
+  label: varchar("label", { length: 100 }),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  isPrimary: boolean("is_primary").default(false),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserCryptoWalletSchema = createInsertSchema(userCryptoWallets).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUserCryptoWallet = z.infer<typeof insertUserCryptoWalletSchema>;
+export type UserCryptoWallet = typeof userCryptoWallets.$inferSelect;
