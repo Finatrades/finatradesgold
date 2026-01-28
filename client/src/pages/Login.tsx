@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft, Fingerprint } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Lock, Shield, ArrowLeft, Fingerprint, IdCard } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
@@ -37,6 +37,13 @@ function DesktopLogin() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaChallengeToken, setMfaChallengeToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+// New state variables for Finatrades ID login
+const [loginMethod, setLoginMethod] = useState<'email' | 'finatradesId'>('email');
+const [finatradesIdInput, setFinatradesIdInput] = useState('');
+const [finatradesIdOtp, setFinatradesIdOtp] = useState('');
+const [otpSent, setOtpSent] = useState(false);
+const [maskedEmail, setMaskedEmail] = useState('');
+const [otpLoading, setOtpLoading] = useState(false);
 
   // Biometric state
   const [biometricAvailable, setBiometricAvailable] = useState(false);
@@ -216,6 +223,70 @@ function DesktopLogin() {
     }
   };
 
+
+  const handleFinatradesIdLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!finatradesIdInput) {
+      toast.error("Please enter your Finatrades ID");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/auth/finatrades-id-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ finatradesId: finatradesIdInput }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to send OTP');
+      }
+      
+      setOtpSent(true);
+      setMaskedEmail(data.maskedEmail || '');
+      toast.success("OTP Sent", { description: data.message });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleFinatradesIdVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (finatradesIdOtp.length < 6) {
+      toast.error("Please enter the full 6-digit OTP");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/finatrades-id-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ finatradesId: finatradesIdInput, otp: finatradesIdOtp }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid OTP');
+      }
+      
+      if (data.user) {
+        setUser(data.user);
+        toast.success("Welcome back!", { description: "You have successfully logged in." });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Verification failed');
+      setFinatradesIdOtp('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleBackToLogin = () => {
     setMfaRequired(false);
     setMfaChallengeToken('');
@@ -316,6 +387,104 @@ function DesktopLogin() {
             </div>
 
           <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+            {/* Login Method Toggle */}
+            <div className="flex gap-2 mb-6">
+              <Button
+                type="button"
+                variant={loginMethod === 'email' ? 'default' : 'outline'}
+                onClick={() => { setLoginMethod('email'); setOtpSent(false); }}
+                className="flex-1"
+                data-testid="button-login-email"
+              >
+                Email & Password
+              </Button>
+              <Button
+                type="button"
+                variant={loginMethod === 'finatradesId' ? 'default' : 'outline'}
+                onClick={() => { setLoginMethod('finatradesId'); setOtpSent(false); }}
+                className="flex-1"
+                data-testid="button-login-finatradesid"
+              >
+                <IdCard className="w-4 h-4 mr-2" />
+                Finatrades ID
+              </Button>
+            </div>
+
+            {/* Finatrades ID Login */}
+            {loginMethod === 'finatradesId' && !otpSent && (
+              <form onSubmit={handleFinatradesIdLogin} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="finatradesId">Finatrades ID</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">FT-</span>
+                    <Input 
+                      id="finatradesId"
+                      value={finatradesIdInput}
+                      onChange={e => setFinatradesIdInput(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
+                      className="pl-10 font-mono uppercase bg-background border-input text-foreground" 
+                      placeholder="YOURNAME"
+                      data-testid="input-finatrades-id"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Enter your custom Finatrades ID to receive a one-time password</p>
+                </div>
+                <Button 
+                  type="submit"
+                  disabled={otpLoading || !finatradesIdInput}
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20"
+                  data-testid="button-request-otp"
+                >
+                  {otpLoading ? "Sending OTP..." : "Send OTP to Email"}
+                </Button>
+              </form>
+            )}
+
+            {/* Finatrades ID OTP Verification */}
+            {loginMethod === 'finatradesId' && otpSent && (
+              <form onSubmit={handleFinatradesIdVerify} className="space-y-6">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground">OTP sent to</p>
+                  <p className="font-medium">{maskedEmail}</p>
+                </div>
+                <div className="flex flex-col items-center space-y-4">
+                  <Label>Enter 6-digit OTP</Label>
+                  <InputOTP 
+                    maxLength={6} 
+                    value={finatradesIdOtp}
+                    onChange={setFinatradesIdOtp}
+                    data-testid="input-finatrades-otp"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <Button 
+                  type="submit"
+                  disabled={isLoading || finatradesIdOtp.length < 6}
+                  className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-lg font-bold rounded-xl shadow-lg shadow-purple-500/20"
+                  data-testid="button-verify-otp"
+                >
+                  {isLoading ? "Verifying..." : <>Sign In <ArrowRight className="w-5 h-5 ml-2" /></>}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  onClick={() => { setOtpSent(false); setFinatradesIdOtp(''); }}
+                  className="w-full"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                </Button>
+              </form>
+            )}
+
+            {/* Email/Password Login */}
+            {loginMethod === 'email' && (
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">
@@ -408,6 +577,7 @@ function DesktopLogin() {
                 </>
               )}
             </form>
+            )}
 
             <div className="mt-8 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>

@@ -8,10 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
 import { clearQueryCache } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -35,6 +36,168 @@ interface UserPreferencesData {
   twoFactorReminder: boolean;
   requireTransferApproval: boolean;
   transferApprovalTimeout: number;
+}
+
+
+function FinatradesIdSection() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [customId, setCustomId] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
+  const [availability, setAvailability] = useState<{ available: boolean; message: string; normalizedId?: string } | null>(null);
+
+  const { data: idInfo, isLoading: isLoadingInfo } = useQuery({
+    queryKey: ['finatrades-id-info'],
+    queryFn: async () => {
+      const res = await fetch('/api/finatrades-id/info', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch Finatrades ID info');
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const checkAvailability = async (id: string) => {
+    if (id.length < 4) {
+      setAvailability(null);
+      return;
+    }
+    
+    setIsChecking(true);
+    try {
+      const res = await fetch('/api/finatrades-id/check-availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ customId: id }),
+      });
+      const data = await res.json();
+      setAvailability(data);
+    } catch {
+      setAvailability({ available: false, message: 'Failed to check availability' });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const setIdMutation = useMutation({
+    mutationFn: async (customId: string) => {
+      const res = await fetch('/api/finatrades-id/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ customId }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to set Finatrades ID');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finatrades-id-info'] });
+      toast.success('Your Finatrades ID has been updated!');
+      setCustomId('');
+      setAvailability(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setCustomId(value);
+    if (value.length >= 4) {
+      checkAvailability(value);
+    } else {
+      setAvailability(null);
+    }
+  };
+
+  return (
+    <Card data-testid="card-finatrades-id">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IdCard className="w-5 h-5 text-primary" />
+          Finatrades ID
+        </CardTitle>
+        <CardDescription>Customize your unique identifier for easy login</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Current Finatrades ID</p>
+              <p className="text-lg font-mono font-semibold text-primary" data-testid="text-current-id">
+                {isLoadingInfo ? '...' : (idInfo?.displayId || user?.finatradesId || 'Not set')}
+              </p>
+            </div>
+            {idInfo?.customFinatradesId && (
+              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Custom</span>
+            )}
+          </div>
+        </div>
+
+        {!idInfo?.canChange && idInfo?.canChangeIn > 0 && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              You can change your ID again in {idInfo.canChangeIn} days
+            </p>
+          </div>
+        )}
+
+        {(idInfo?.canChange || !idInfo?.customFinatradesId) && (
+          <div className="space-y-3">
+            <div>
+              <Label>Set Custom Finatrades ID</Label>
+              <p className="text-xs text-muted-foreground mb-2">4-15 letters/numbers. Changes allowed once per 30 days.</p>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">FT-</span>
+                  <Input
+                    placeholder="YOURNAME"
+                    value={customId}
+                    onChange={handleInputChange}
+                    maxLength={15}
+                    className="pl-12 font-mono uppercase"
+                    data-testid="input-custom-id"
+                  />
+                  {isChecking && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {!isChecking && availability && (
+                    availability.available ? (
+                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                    )
+                  )}
+                </div>
+                <Button
+                  onClick={() => setIdMutation.mutate(customId)}
+                  disabled={!availability?.available || setIdMutation.isPending}
+                  data-testid="button-set-id"
+                >
+                  {setIdMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set ID'}
+                </Button>
+              </div>
+              {availability && (
+                <p className={`text-xs mt-1 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
+                  {availability.message}
+                </p>
+              )}
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Your Finatrades ID allows passwordless login. After setting a custom ID, you can login using just your ID and an OTP sent to your email.
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Settings() {
@@ -347,6 +510,9 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+
+        <FinatradesIdSection />
 
         <Card data-testid="card-privacy">
           <CardHeader>
