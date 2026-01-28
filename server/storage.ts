@@ -131,7 +131,10 @@ import {
   workflowAuditSummaries, workflowAuditLogs, workflowExpectedSteps,
   type WorkflowAuditSummary, type InsertWorkflowAuditSummary,
   type WorkflowAuditLog, type InsertWorkflowAuditLog,
-  type WorkflowExpectedStep, type InsertWorkflowExpectedStep
+  type WorkflowExpectedStep, type InsertWorkflowExpectedStep,
+  userBankAccounts, userCryptoWallets,
+  type UserBankAccount, type InsertUserBankAccount,
+  type UserCryptoWallet, type InsertUserCryptoWallet
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -789,6 +792,20 @@ export interface IStorage {
   getWorkflowExpectedSteps(flowType: string): Promise<WorkflowExpectedStep[]>;
   createWorkflowExpectedStep(step: InsertWorkflowExpectedStep): Promise<WorkflowExpectedStep>;
   getWorkflowAuditStats(): Promise<{ total: number; passed: number; failed: number; pending: number; byFlowType: Record<string, { total: number; passed: number; failed: number }> }>;
+
+  // User Bank Accounts
+  getUserBankAccounts(userId: string): Promise<UserBankAccount[]>;
+  getUserBankAccount(id: string): Promise<UserBankAccount | undefined>;
+  createUserBankAccount(account: InsertUserBankAccount): Promise<UserBankAccount>;
+  updateUserBankAccount(id: string, updates: Partial<UserBankAccount>): Promise<UserBankAccount | undefined>;
+  deleteUserBankAccount(id: string): Promise<boolean>;
+
+  // User Crypto Wallets
+  getUserCryptoWallets(userId: string): Promise<UserCryptoWallet[]>;
+  getUserCryptoWallet(id: string): Promise<UserCryptoWallet | undefined>;
+  createUserCryptoWallet(wallet: InsertUserCryptoWallet): Promise<UserCryptoWallet>;
+  updateUserCryptoWallet(id: string, updates: Partial<UserCryptoWallet>): Promise<UserCryptoWallet | undefined>;
+  deleteUserCryptoWallet(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -6360,6 +6377,100 @@ export class DatabaseStorage implements IStorage {
     }
 
     return stats;
+  }
+
+  // User Bank Accounts
+  async getUserBankAccounts(userId: string): Promise<UserBankAccount[]> {
+    return await db.select().from(userBankAccounts)
+      .where(eq(userBankAccounts.userId, userId))
+      .orderBy(desc(userBankAccounts.createdAt));
+  }
+
+  async getUserBankAccount(id: string): Promise<UserBankAccount | undefined> {
+    const [account] = await db.select().from(userBankAccounts).where(eq(userBankAccounts.id, id));
+    return account || undefined;
+  }
+
+  async createUserBankAccount(account: InsertUserBankAccount): Promise<UserBankAccount> {
+    // If this is marked as primary, unset other primary accounts for this user
+    if (account.isPrimary) {
+      await db.update(userBankAccounts)
+        .set({ isPrimary: false })
+        .where(eq(userBankAccounts.userId, account.userId));
+    }
+    const [result] = await db.insert(userBankAccounts).values(account).returning();
+    return result;
+  }
+
+  async updateUserBankAccount(id: string, updates: Partial<UserBankAccount>): Promise<UserBankAccount | undefined> {
+    // If setting as primary, unset other primary accounts
+    if (updates.isPrimary) {
+      const account = await this.getUserBankAccount(id);
+      if (account) {
+        await db.update(userBankAccounts)
+          .set({ isPrimary: false })
+          .where(and(eq(userBankAccounts.userId, account.userId), sql`id != ${id}`));
+      }
+    }
+    const [result] = await db.update(userBankAccounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userBankAccounts.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteUserBankAccount(id: string): Promise<boolean> {
+    const result = await db.delete(userBankAccounts).where(eq(userBankAccounts.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // User Crypto Wallets
+  async getUserCryptoWallets(userId: string): Promise<UserCryptoWallet[]> {
+    return await db.select().from(userCryptoWallets)
+      .where(eq(userCryptoWallets.userId, userId))
+      .orderBy(desc(userCryptoWallets.createdAt));
+  }
+
+  async getUserCryptoWallet(id: string): Promise<UserCryptoWallet | undefined> {
+    const [wallet] = await db.select().from(userCryptoWallets).where(eq(userCryptoWallets.id, id));
+    return wallet || undefined;
+  }
+
+  async createUserCryptoWallet(wallet: InsertUserCryptoWallet): Promise<UserCryptoWallet> {
+    // If this is marked as primary, unset other primary wallets for this user/network
+    if (wallet.isPrimary) {
+      await db.update(userCryptoWallets)
+        .set({ isPrimary: false })
+        .where(and(eq(userCryptoWallets.userId, wallet.userId), eq(userCryptoWallets.network, wallet.network)));
+    }
+    const [result] = await db.insert(userCryptoWallets).values(wallet).returning();
+    return result;
+  }
+
+  async updateUserCryptoWallet(id: string, updates: Partial<UserCryptoWallet>): Promise<UserCryptoWallet | undefined> {
+    // If setting as primary, unset other primary wallets for same network
+    if (updates.isPrimary) {
+      const wallet = await this.getUserCryptoWallet(id);
+      if (wallet) {
+        await db.update(userCryptoWallets)
+          .set({ isPrimary: false })
+          .where(and(
+            eq(userCryptoWallets.userId, wallet.userId),
+            eq(userCryptoWallets.network, wallet.network),
+            sql`id != ${id}`
+          ));
+      }
+    }
+    const [result] = await db.update(userCryptoWallets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userCryptoWallets.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteUserCryptoWallet(id: string): Promise<boolean> {
+    const result = await db.delete(userCryptoWallets).where(eq(userCryptoWallets.id, id)).returning();
+    return result.length > 0;
   }
 }
 
