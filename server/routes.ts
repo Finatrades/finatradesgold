@@ -2624,7 +2624,7 @@ export async function registerRoutes(
   // Set or update custom Finatrades ID
   app.post("/api/finatrades-id/set", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.session.userId!;
       const { customId } = req.body;
       
       if (!customId || typeof customId !== 'string') {
@@ -2696,7 +2696,7 @@ export async function registerRoutes(
   // Get current user's Finatrades ID info
   app.get("/api/finatrades-id/info", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.session.userId!;
       
       const result = await pool.query(
         'SELECT finatrades_id, custom_finatrades_id, custom_finatrades_id_changed_at FROM users WHERE id = $1',

@@ -14,7 +14,7 @@ import {
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
   Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
-import { clearQueryCache } from '@/lib/queryClient';
+import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 
@@ -64,12 +64,7 @@ function FinatradesIdSection() {
     
     setIsChecking(true);
     try {
-      const res = await fetch('/api/finatrades-id/check-availability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ customId: id }),
-      });
+      const res = await apiRequest('POST', '/api/finatrades-id/check-availability', { customId: id });
       const data = await res.json();
       setAvailability(data);
     } catch {
@@ -81,16 +76,7 @@ function FinatradesIdSection() {
 
   const setIdMutation = useMutation({
     mutationFn: async (customId: string) => {
-      const res = await fetch('/api/finatrades-id/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ customId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to set Finatrades ID');
-      }
+      const res = await apiRequest('POST', '/api/finatrades-id/set', { customId });
       return res.json();
     },
     onSuccess: () => {
