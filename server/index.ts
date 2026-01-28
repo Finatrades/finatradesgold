@@ -186,6 +186,9 @@ app.use('/uploads', (req, res, next) => {
 
 // Serve attached_assets for product images (public assets only, no sensitive data)
 app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
+
+// Serve public folder for static documents (PDFs, guides, etc.)
+app.use('/docs', express.static(path.join(process.cwd(), 'public')));
 const httpServer = createServer(app);
 
 declare module "http" {
