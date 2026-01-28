@@ -29333,5 +29333,59 @@ export async function registerRoutes(
     }
   });
 
+
+  // PDF Download endpoint for Clawd Integration Guide
+  app.get("/api/docs/clawd-guide/download", async (req, res) => {
+    try {
+      const puppeteer = await import('puppeteer');
+      const pathModule = await import('path');
+      const fsModule = await import('fs');
+      
+      const htmlPath = pathModule.default.join(process.cwd(), 'public', 'clawd-integration-guide.html');
+      
+      if (!fsModule.default.existsSync(htmlPath)) {
+        return res.status(404).json({ message: "Guide not found" });
+      }
+      
+      const browser = await puppeteer.default.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      
+      const htmlContent = fsModule.default.readFileSync(htmlPath, 'utf-8');
+      
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+      
+      const htmlWithAbsoluteUrls = htmlContent
+        .replace(/src="\//g, `src="${baseUrl}/`)
+        .replace(/href="\//g, `href="${baseUrl}/`);
+      
+      await page.setContent(htmlWithAbsoluteUrls, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' }
+      });
+      
+      await browser.close();
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="Finatrades-Clawd-Integration-Guide.pdf"');
+      res.send(pdfBuffer);
+      
+    } catch (error: any) {
+      console.error("PDF generation error:", error);
+      res.status(500).json({ message: "Failed to generate PDF", error: error.message });
+    }
+  });
+
   return httpServer;
 }
