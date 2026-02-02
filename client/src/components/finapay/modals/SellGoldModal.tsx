@@ -103,11 +103,6 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
   const formContent = (
     <div className="space-y-6">
-      <WalletTypeSelector
-        value={selectedWalletType}
-        onChange={setSelectedWalletType}
-      />
-
       <div className="space-y-4">
         <div className="flex justify-end">
           <span className="text-sm text-purple-600 font-medium cursor-pointer active:opacity-70" onClick={() => handleGramsChange(safeBalance.toString())}>

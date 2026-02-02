@@ -161,9 +161,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         </div>
         
         <div className="pt-4 border-t border-purple-200">
-          <WalletTypeSelector value={selectedWalletType} onChange={setSelectedWalletType} />
-
-          <div className="flex items-center justify-between mb-2 mt-3">
+          <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }}
@@ -287,14 +285,6 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                 </div>
                 
                 <div className="pt-4 border-t border-purple-200">
-                {/* Wallet Type Selection */}
-                <div className="mb-3">
-                  <WalletTypeSelector
-                    value={selectedWalletType}
-                    onChange={setSelectedWalletType}
-                  />
-                </div>
-
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
                     <div className="flex bg-gray-100 rounded-lg p-1">
