@@ -195,72 +195,64 @@ function LockGoldPriceSection() {
   const handleToggle = (checked: boolean) => {
     setIsActive(checked);
     localStorage.setItem('lockGoldBannerActive', String(checked));
-    toast.success(checked ? 'Lock Gold feature enabled on FinaPay' : 'Lock Gold feature hidden from FinaPay');
+    toast.success(checked ? 'Feature enabled! Redirecting to FinaPay...' : 'Feature disabled');
+    
+    // If enabling, redirect to FinaPay after a short delay
+    if (checked) {
+      setTimeout(() => {
+        window.location.href = '/finapay';
+      }, 800);
+    }
   };
 
   return (
-    <Card id="lock-gold-section" data-testid="card-lock-gold" className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-yellow-50/30">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="w-5 h-5 text-amber-600" />
-          Lock Gold Price (FGPW)
-        </CardTitle>
-        <CardDescription>
-          Lock your gold at today's market price to protect against price drops
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Active/Inactive Toggle */}
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <Label className="text-base">Show on FinaPay</Label>
-              <p className="text-sm text-muted-foreground">
-                {isActive ? 'Lock Gold card is visible on FinaPay' : 'Lock Gold card is hidden from FinaPay'}
-              </p>
-            </div>
+    <div 
+      id="lock-gold-section" 
+      data-testid="card-lock-gold" 
+      className={`relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+        isActive 
+          ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' 
+          : 'border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50'
+      }`}
+    >
+      <div className="flex items-center justify-between p-5">
+        {/* Left: Icon + Info */}
+        <div className="flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            isActive 
+              ? 'bg-green-100 shadow-lg shadow-green-200/50' 
+              : 'bg-amber-100'
+          }`}>
+            <Lock className={`w-7 h-7 transition-colors duration-300 ${
+              isActive ? 'text-green-600' : 'text-amber-600'
+            }`} />
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              {isActive ? 'Active' : 'Inactive'}
-            </span>
-            <Switch
-              checked={isActive}
-              onCheckedChange={handleToggle}
-              data-testid="switch-lock-gold-banner"
-            />
+          <div>
+            <h3 className="font-semibold text-lg text-gray-800">Lock Gold Price</h3>
+            <p className="text-sm text-muted-foreground">
+              {isActive ? 'Feature is enabled on FinaPay' : 'Tap to enable price protection'}
+            </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-amber-100/50 border border-amber-200">
-          <div className="flex items-start gap-3">
-            <TrendingUp className="w-5 h-5 text-amber-600 mt-0.5" />
-            <div className="space-y-2 text-sm">
-              <p className="font-medium text-amber-800">What is Fixed Gold Price Wallet (FGPW)?</p>
-              <ul className="space-y-1 text-amber-700">
-                <li>• <strong>LGPW (Live):</strong> Your gold value changes with live market price</li>
-                <li>• <strong>FGPW (Locked):</strong> Your gold value is fixed at the price when you locked it</li>
-                <li>• Lock: Transfer LGPW → FGPW to lock current price</li>
-                <li>• Unlock: Transfer FGPW → LGPW before withdraw/sell/transfer</li>
-                <li>• All transactions happen from Live Gold (LGPW) only</li>
-              </ul>
-            </div>
-          </div>
+        {/* Right: Toggle */}
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-medium px-3 py-1.5 rounded-full transition-all duration-300 ${
+            isActive 
+              ? 'bg-green-100 text-green-700' 
+              : 'bg-gray-100 text-gray-500'
+          }`}>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+          <Switch
+            checked={isActive}
+            onCheckedChange={handleToggle}
+            data-testid="switch-lock-gold-banner"
+            className="data-[state=checked]:bg-green-500"
+          />
         </div>
-
-        <Button
-          className="w-full bg-amber-600 hover:bg-amber-700"
-          onClick={() => window.location.href = '/finapay'}
-          data-testid="button-go-to-finapay"
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          Go to FinaPay to Lock Gold
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
