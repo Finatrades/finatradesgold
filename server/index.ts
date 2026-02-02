@@ -357,6 +357,10 @@ app.use((req, res, next) => {
     '/api/auth/reset-password',
     '/api/auth/send-verification',
     '/api/auth/verify-email',
+    '/api/auth/request-otp',
+    '/api/auth/verify-email-otp',
+    '/api/auth/finatrades-id-login',
+    '/api/auth/finatrades-id-verify',
     '/api/admin/login',
     // MFA verification (stateless with challenge token)
     '/api/mfa/verify',
