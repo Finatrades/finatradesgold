@@ -80,8 +80,8 @@ function LockGoldPriceCard({ userId }: { userId?: string }) {
   const lockValueUsd = lockAmountNum * currentPrice;
 
   const handleInactiveClick = () => {
-    // Redirect to Settings page to activate
-    setLocation('/settings');
+    // Redirect to Settings page Lock Gold section to activate
+    window.location.href = '/settings#lock-gold-section';
   };
 
   const handleLockGold = async () => {

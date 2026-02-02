@@ -199,7 +199,7 @@ function LockGoldPriceSection() {
   };
 
   return (
-    <Card data-testid="card-lock-gold" className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-yellow-50/30">
+    <Card id="lock-gold-section" data-testid="card-lock-gold" className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-yellow-50/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lock className="w-5 h-5 text-amber-600" />
@@ -289,6 +289,22 @@ export default function Settings() {
       }
     }
   }, [data]);
+
+  // Scroll to section if hash is present (e.g., /settings#lock-gold-section)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const element = document.getElementById(hash.substring(1));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight effect
+          element.classList.add('ring-2', 'ring-amber-400');
+          setTimeout(() => element.classList.remove('ring-2', 'ring-amber-400'), 2000);
+        }, 300);
+      }
+    }
+  }, []);
 
   const saveMutation = useMutation({
     mutationFn: async (updates: Partial<UserPreferencesData>) => {
