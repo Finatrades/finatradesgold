@@ -418,14 +418,41 @@ function FloatingAgentChatContent() {
               }
             }}
             onClick={openChat}
-            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'bottom-24 right-4 w-14 h-14' : 'bottom-6 right-6 w-20 h-20'}`}
+            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'bottom-24 right-4' : 'bottom-6 right-6'}`}
           >
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
-              alt="Chat"
-              className={`object-contain drop-shadow-2xl ${isMobile ? 'w-14 h-14' : 'w-20 h-20'}`}
-            />
-            <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+            {/* Speech bubble - "Hey, I'm here!" */}
+            <motion.div 
+              className={`absolute ${isMobile ? '-left-28 -top-2' : '-left-36 -top-3'} bg-white rounded-2xl shadow-lg border border-purple-200 px-3 py-2`}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-purple-700 whitespace-nowrap`}>
+                👋 Hey, I'm here!
+              </p>
+              {/* Speech bubble arrow */}
+              <div className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
+              <div className="absolute top-1/2 -right-[9px] transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-purple-200" style={{ zIndex: -1 }} />
+            </motion.div>
+            
+            {/* Round avatar with gradient border */}
+            <div className={`relative ${isMobile ? 'w-14 h-14' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500 p-[3px] shadow-xl`}>
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                <img
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
+                  alt="Chat"
+                  className={`object-contain ${isMobile ? 'w-12 h-12' : 'w-16 h-16'}`}
+                />
+              </div>
+              {/* Online indicator */}
+              <div className={`absolute ${isMobile ? 'bottom-0 right-0 w-4 h-4' : 'bottom-1 right-1 w-5 h-5'} bg-green-500 rounded-full border-2 border-white`}>
+                <motion.div 
+                  className="w-full h-full bg-green-400 rounded-full"
+                  animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              </div>
+            </div>
           </motion.button>
         )}
       </AnimatePresence>
