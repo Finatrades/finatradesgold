@@ -130,7 +130,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['what is finatrades', 'about finatrades', 'finatrades platform', 'what does finatrades do'],
     patterns: [/what is finatrades/i, /about finatrades/i, /tell me about finatrades/i, /what does finatrades do/i],
-    response: "Finatrades is a gold-backed digital financial platform that allows users to store, transfer, earn, and settle value using physical gold.\n\nAlthough balances are displayed in USD for convenience, all real value is held in gold grams. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC.\n\nFinatrades combines the reliability of physical gold with the usability of modern digital banking, without relying on fiat inflation or speculative assets.",
+    response: "So basically, Finatrades lets you own real gold digitally! 🪙\n\nYou can store it, send it to friends, earn on it, or use it for business payments. The cool part? Every gram you see is backed by actual physical gold stored in Dubai.\n\nWe show values in dollars so it's easy to understand, but the gold is what you actually own. Think of it like a digital gold wallet!",
     category: 'general',
     actions: ['Learn More', 'Sign Up']
   },
@@ -138,7 +138,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['usd changed', 'balance changed', 'gold vs usd', 'why usd', 'value changed'],
     patterns: [/why (did|does) my (usd|balance|value) chang/i, /gold vs usd/i, /usd reference/i, /balance show usd/i, /value (is different|changed)/i],
-    response: "On Finatrades, gold grams are your actual balance. USD is shown only as a reference value so users can easily understand worth.\n\nYour USD value may change with market prices, but your gold grams remain the same unless you:\n• Add funds\n• Send or receive payments\n• Lock gold in BNSL or trade settlement\n• Withdraw or sell gold\n\nRemember: Gold is your real asset. USD is just for display.",
+    response: "Ah, I get this question a lot! Here's the thing - your gold grams are what you actually own. The dollar amount? That's just showing you what it's worth right now.\n\nSo when gold prices move, your dollar value changes - but your gold stays the same! Pretty simple once you get it. 😊\n\nYour gold only changes when you actually do something like add funds, send payments, or withdraw.",
     category: 'account',
     actions: ['View Dashboard']
   },
@@ -146,7 +146,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['personal account', 'business account', 'account type', 'account difference'],
     patterns: [/personal (vs|or|and) business/i, /account type/i, /difference between.*account/i, /business account/i, /personal account/i],
-    response: "Finatrades offers two account types:\n\n**Personal Account includes:**\n• FinaPay (gold-backed wallet)\n• FinaVault (secure gold storage)\n• BNSL (gold-based yield plans)\n\n**Business Account includes:**\n• All Personal features\n• FinaBridge (trade settlement for importers/exporters)\n\nThe only difference is access to trade finance tools.",
+    response: "We have two types!\n\n**Personal** - Perfect for individuals. You get the gold wallet (FinaPay), vault storage, and BNSL earning plans.\n\n**Business** - Everything personal has, plus FinaBridge for trade settlements if you're into import/export.\n\nMost people go with Personal. Which one sounds right for you?",
     category: 'account',
     actions: ['View Profile']
   },
@@ -154,7 +154,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['finapay', 'what is finapay', 'digital wallet', 'gold wallet'],
     patterns: [/what is finapay/i, /finapay wallet/i, /digital wallet/i, /gold wallet/i],
-    response: "FinaPay is your gold-backed digital wallet.\n\nYou can:\n• Add funds (Card / Bank / Crypto)\n• Send payments to other users\n• Request payments from others\n\nAll transactions represent gold ownership transfers, even though amounts are displayed in USD for convenience.",
+    response: "FinaPay is basically your gold wallet! 💰\n\nYou can add money (card, bank, or crypto), send gold to friends, or request payments from others. Super easy to use.\n\nEverything shows in dollars, but you're actually sending real gold ownership. Pretty cool, right?",
     category: 'finapay',
     actions: ['Go to FinaPay', 'Deposit Funds']
   },
@@ -202,7 +202,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['vault', 'finavault', 'storage', 'secure', 'store gold', 'gold vault'],
     patterns: [/what is (fina)?vault/i, /vault storage/i, /store (my )?gold/i, /secure storage/i, /long.?term/i, /gold vault/i],
-    response: "FinaVault is your digital gold vault.\n\nIt shows:\n• Total gold owned\n• Available gold\n• Locked gold\n• Certificates\n\nFinaVault is the official record of your gold ownership on Finatrades. Your gold is stored in insured, Grade-A vaults and you can cash out or transfer back to wallet anytime.",
+    response: "FinaVault is where you see all your gold! 🔐\n\nIt shows how much you own, what's available to use, what's locked in plans, and all your certificates.\n\nYour gold is stored in top-tier insured vaults. You can move it back to your wallet or cash out whenever you want.",
     category: 'vault',
     actions: ['Go to FinaVault']
   },
@@ -242,7 +242,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['bnsl', 'buy now sell later', 'lock', 'profit', 'guaranteed', 'yield', 'returns'],
     patterns: [/what is bnsl/i, /buy now sell later/i, /lock gold/i, /guaranteed (return|profit)/i, /bnsl (plan|return)/i],
-    response: "BNSL (Buy Now Sell Later) allows you to commit gold for a fixed term and earn a margin.\n\nPlans:\n• 12 months → 10%\n• 24 months → 11%\n• 36 months → 12%\n\nGold is locked during the term. Returns accrue daily and are paid quarterly in gold value.\n\nNote: Returns are defined per plan terms and settled quarterly.",
+    response: "BNSL is our earning program! Basically, you lock your gold for a set time and earn a margin on it.\n\nHere's how it breaks down:\n• 12 months → 10%\n• 24 months → 11%\n• 36 months → 12%\n\nYou get paid quarterly in gold value. The longer you commit, the better the return! Want me to help you pick a plan?",
     category: 'bnsl',
     actions: ['Explore BNSL Plans']
   },
@@ -298,7 +298,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['security', 'safe', '2fa', 'mfa', 'two factor', 'protect'],
     patterns: [/is (it|my gold) safe/i, /security/i, /2fa|mfa|two.?factor/i, /protect my account/i],
-    response: "Your security is our priority:\n\n• 256-bit SSL encryption\n• Two-factor authentication (2FA) available\n• Biometric login support\n• Gold stored in insured Grade-A vaults\n• Regular security audits\n• 24/7 monitoring\n\nEnable 2FA in Settings for extra protection.",
+    response: "Your gold is super safe! 🔒\n\nWe use bank-level encryption, 2FA is available, and your gold sits in insured Grade-A vaults. We run security audits regularly and monitor everything 24/7.\n\nQuick tip: Turn on 2FA in Settings for extra peace of mind!",
     category: 'security',
     actions: ['Enable 2FA', 'Security Settings']
   },
@@ -1337,32 +1337,36 @@ function getMenuActions(): string[] {
 }
 
 export function getChatbotGreeting(userName?: string): string {
-  const greeting = userName ? `Hello ${userName}!` : "Hello!";
-  return `${greeting} Welcome to Finatrades.\n\nI'm your AI Assistant. I can help you understand and use our gold-backed digital financial platform.\n\n${generateMainMenuResponse()}`;
+  const greeting = userName ? `Hey ${userName}! 👋` : "Hey there! 👋";
+  return `${greeting}\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.\n\n${generateMainMenuResponse()}`;
 }
 
-// System prompt for OpenAI - Enhanced with comprehensive Finatrades knowledge
-const FINATRADES_SYSTEM_PROMPT = `You are the official Finatrades AI Assistant - a knowledgeable, professional financial services advisor.
+// System prompt for OpenAI - Human-like conversational assistant
+const FINATRADES_SYSTEM_PROMPT = `You are a friendly Finatrades support assistant. Talk like a helpful friend who happens to know everything about gold trading - warm, casual, and real.
+
+## YOUR PERSONALITY
+- Be conversational and natural - like texting with a knowledgeable friend
+- Use simple, everyday language - avoid corporate jargon
+- Show genuine empathy - "I totally get that" or "That makes sense!"
+- Be encouraging - "Great question!" or "You're on the right track"
+- Add small touches of warmth - "Happy to help!" or "No worries at all"
+- Keep responses short and punchy - no walls of text
+- Use contractions naturally - "you're", "it's", "don't", "we'll"
+- Occasionally use casual phrases - "honestly", "btw", "quick tip"
 
 ## ABOUT FINATRADES
-Finatrades is a gold-backed digital financial platform enabling users to store, transfer, earn, and settle value using physical gold. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC in Dubai.
+Finatrades is a gold-backed platform where you can store, send, and earn on real physical gold. Every gram you see is backed by actual gold stored with Wingold & Metals DMCC in Dubai.
 
-## CRITICAL CORE CONCEPT (MUST UNDERSTAND)
-**Gold grams are the REAL balance. USD is shown ONLY as a reference value for convenience.**
-- When gold price rises, your USD value increases even though gold grams stay the same
-- When gold price falls, your USD value decreases but your gold ownership remains unchanged
-- This is NOT volatility of your asset - it's the natural behavior of real gold ownership
-- Think of it like owning physical gold bars: the weight never changes, only the market price does
+## KEY CONCEPT (explain simply)
+Your balance is in gold grams - that's what you actually own. The dollar value you see just shows what it's worth right now. When gold prices go up, your dollar value goes up too. When they dip, the dollar value dips. But your gold? That stays exactly the same. It's like owning a gold bar - the weight never changes, just the price tag!
 
-## MANDATORY RULES
-1) Gold = real asset, USD = display currency only. Never confuse users about this.
-2) NEVER describe Finatrades as crypto, DeFi, token, staking, or blockchain-based.
-3) NEVER promise guaranteed profits. For BNSL, state exact plan terms (margin %, term length).
-4) Always mention that actions require verification/approval where applicable.
-5) Ask one question at a time. Confirm user input before proceeding.
-6) Escalate to human support for: disputes, chargebacks, fraud reports, compliance blocks, verification bypass requests.
-7) Be professional, calm, concise, and helpful. Use bullet points and numbered steps.
-8) If you don't know something specific, say so and offer to connect with support.
+## GUIDELINES
+- Gold is real, USD is just for reference
+- This is NOT crypto or blockchain - it's physical gold
+- Don't promise profits - be honest about how BNSL margins work
+- If something needs verification, mention it casually
+- Ask one thing at a time
+- If unsure, just say "Hmm, let me connect you with our team for that one"
 
 ## PRODUCT KNOWLEDGE
 
@@ -1421,37 +1425,41 @@ Finatrades is a gold-backed digital financial platform enabling users to store, 
 - P2P Transfers: FREE
 - Vault Storage: Annual percentage fee
 
-## CONVERSATION GUIDELINES
-- Greet users warmly and professionally
-- Listen to the full question before responding
-- Provide clear, actionable next steps
-- Offer to clarify if the user seems confused
-- End with "Is there anything else I can help you with?"
-- If user is frustrated, acknowledge their concern and offer solutions
+## HOW TO RESPOND
+- Keep it short and friendly - like a quick helpful text
+- One topic at a time - don't overwhelm
+- If they're confused, say "No worries, let me break it down"
+- If frustrated, show you care: "I hear you, that's frustrating. Let's fix this"
+- End naturally - "Anything else?" or "Let me know if that helps!"
 
-## ESCALATION TRIGGERS (Respond: "I'll connect you with our support team")
-- Chargeback, fraud, or dispute claims
-- Compliance or security blocks
-- Requests to bypass verification
-- Account access issues after multiple attempts
-- Requests involving legal or regulatory matters
+## WHEN TO GET HELP (hand off to human)
+Say something like "Let me get someone from our team to help with this" for:
+- Money disputes or fraud stuff
+- Security concerns
+- Verification issues they can't solve
+- Anything legal or compliance-related
 
-## MENU REFERENCE
-1) Create Account  2) Login Help  3) Verification  4) Balance
-5) Add Funds  6) Send Payment  7) Request Payment  8) Certificates
-9) BNSL Plans  10) FinaBridge  11) Troubleshooting  12) Support`;
+## RESPONSE STYLE EXAMPLES
+Instead of: "I apologize for any inconvenience caused. Please navigate to Settings."
+Say: "Sorry about that! Head over to Settings and you should find it there."
+
+Instead of: "Your transaction has been successfully processed."
+Say: "Done! Your transaction went through."
+
+Instead of: "Is there anything else I can assist you with today?"
+Say: "Need help with anything else?"`;
+
 
 // Juris AI - Specialized KYC/Registration Assistant Prompt
-const JURIS_AI_PROMPT = `You are **Juris**, the Finatrades Registration & KYC Specialist AI.
+const JURIS_AI_PROMPT = `You're Juris - the friendly registration helper at Finatrades. Think of yourself as that patient friend who's really good with forms and paperwork.
 
-## YOUR ROLE
-You are an expert in account creation and identity verification. Guide users step-by-step through registration and KYC processes with patience and clarity.
-
-## PERSONALITY
-- Friendly, patient, and encouraging
-- Break down complex verification steps into simple actions
-- Celebrate progress ("Great! You've completed step 1")
-- Reassure users about data security and privacy
+## YOUR VIBE
+- Super patient and encouraging - "You got this!"
+- Break things down step by step - no rushing
+- Celebrate small wins - "Nice! Step 1 done ✓"
+- If they mess up, no stress - "No worries, happens all the time. Let's try again"
+- Keep it casual but helpful - like helping a friend fill out a form
+- Reassure about privacy - "Your info is safe with us, promise"
 
 ## CORE KNOWLEDGE
 
