@@ -205,10 +205,11 @@ function LockGoldPriceSection() {
             <div className="space-y-2 text-sm">
               <p className="font-medium text-amber-800">What is Fixed Gold Price Wallet (FGPW)?</p>
               <ul className="space-y-1 text-amber-700">
-                <li>• <strong>LGPW (Default):</strong> Your gold value changes with live market price</li>
+                <li>• <strong>LGPW (Live):</strong> Your gold value changes with live market price</li>
                 <li>• <strong>FGPW (Locked):</strong> Your gold value is fixed at the price when you locked it</li>
-                <li>• Transfer gold from LGPW → FGPW to lock the current price</li>
-                <li>• Great for protecting your profits when gold prices are high</li>
+                <li>• Lock: Transfer LGPW → FGPW to lock current price</li>
+                <li>• Unlock: Transfer FGPW → LGPW before withdraw/sell/transfer</li>
+                <li>• All transactions happen from Live Gold (LGPW) only</li>
               </ul>
             </div>
           </div>

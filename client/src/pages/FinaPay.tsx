@@ -198,7 +198,7 @@ function LockGoldPriceCard({ userId }: { userId?: string }) {
 
           {/* Note */}
           <p className="text-xs text-amber-700 p-2 bg-blue-50 rounded border border-blue-200">
-            <strong>Note:</strong> Once locked, your gold value is protected from market drops. You can still withdraw, sell, or transfer locked gold.
+            <strong>Note:</strong> Locked gold is protected from market drops. To withdraw, sell, or transfer, you must first UNLOCK your gold (transfer FGPW → LGPW). All transactions happen from Live Gold (LGPW) only.
           </p>
         </div>
       )}
