@@ -224,6 +224,25 @@ const [otpLoading, setOtpLoading] = useState(false);
   };
 
 
+  // CSRF token helpers
+  const getCsrfToken = (): string | null => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : null;
+  };
+
+  const ensureCsrfToken = async (): Promise<string | null> => {
+    let token = getCsrfToken();
+    if (!token) {
+      try {
+        await fetch('/api/csrf-token', { credentials: 'include' });
+        token = getCsrfToken();
+      } catch (e) {
+        console.error('Failed to fetch CSRF token:', e);
+      }
+    }
+    return token;
+  };
+
   const handleFinatradesIdLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!finatradesIdInput) {
@@ -233,9 +252,13 @@ const [otpLoading, setOtpLoading] = useState(false);
 
     setOtpLoading(true);
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/auth/finatrades-id-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify({ finatradesId: finatradesIdInput }),
       });
@@ -264,9 +287,13 @@ const [otpLoading, setOtpLoading] = useState(false);
 
     setIsLoading(true);
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/auth/finatrades-id-verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify({ finatradesId: finatradesIdInput, otp: finatradesIdOtp }),
       });
@@ -276,7 +303,7 @@ const [otpLoading, setOtpLoading] = useState(false);
         throw new Error(data.message || 'Invalid OTP');
       }
       
-      if (data.user) {
+      if (data.user && setUser) {
         setUser(data.user);
         toast.success("Welcome back!", { description: "You have successfully logged in." });
       }
