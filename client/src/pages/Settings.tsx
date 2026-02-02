@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle, LogOut
 } from 'lucide-react';
 import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -187,7 +187,7 @@ function FinatradesIdSection() {
 }
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -651,6 +651,40 @@ export default function Settings() {
                 Use this if you notice outdated information on your dashboard or wallet balances. 
                 This will reload all your account data from the server.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sign Out */}
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </CardTitle>
+            <CardDescription>Sign out of your Finatrades account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 rounded-lg border border-red-200 bg-red-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <LogOut className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <Label className="text-base">Sign Out</Label>
+                  <p className="text-sm text-muted-foreground">
+                    This will end your session and return you to the login page
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="destructive"
+                onClick={logout}
+                data-testid="button-signout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </CardContent>
         </Card>
