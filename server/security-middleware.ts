@@ -10,7 +10,7 @@ const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf_token';
 
-// Routes exempt from CSRF protection (webhooks only - external services need to POST without our tokens)
+// Routes exempt from CSRF protection (webhooks and public auth endpoints)
 const CSRF_EXEMPT_ROUTES = [
   '/api/webhooks/',
   '/api/binance-pay/webhook',
@@ -24,6 +24,15 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/admin/branding/logo', // Admin-authenticated file upload
   '/api/documents/upload', // Authenticated file upload
   '/api/admin/email-test', // Admin-authenticated test email
+  // Public auth endpoints - protected by rate limiting and OTP verification
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/finatrades-id-login',
+  '/api/auth/finatrades-id-verify',
+  '/api/auth/request-otp',
+  '/api/auth/verify-email-otp',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
 ];
 
 // Generate secure CSRF token
