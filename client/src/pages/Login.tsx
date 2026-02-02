@@ -234,8 +234,9 @@ const [otpLoading, setOtpLoading] = useState(false);
     let token = getCsrfToken();
     if (!token) {
       try {
-        await fetch('/api/csrf-token', { credentials: 'include' });
-        token = getCsrfToken();
+        const res = await fetch('/api/csrf-token', { credentials: 'include' });
+        const data = await res.json();
+        token = data.csrfToken || getCsrfToken();
       } catch (e) {
         console.error('Failed to fetch CSRF token:', e);
       }

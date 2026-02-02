@@ -36,8 +36,8 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   // Check if route is exempt
   const isExempt = CSRF_EXEMPT_ROUTES.some(route => req.path.startsWith(route));
   
-  // Generate token for GET requests or if not present
-  if (req.method === 'GET' || !req.cookies?.[CSRF_COOKIE]) {
+  // Only generate token if not already present (not on every GET)
+  if (!req.cookies?.[CSRF_COOKIE]) {
     const token = generateCsrfToken();
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false, // Must be readable by JavaScript
