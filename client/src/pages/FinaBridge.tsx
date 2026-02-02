@@ -388,6 +388,9 @@ export default function FinaBridge() {
   const [submitting, setSubmitting] = useState(false);
   const [showFundDialog, setShowFundDialog] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
   const [insufficientFundsError, setInsufficientFundsError] = useState<string | null>(null);
   
   const [requestForm, setRequestForm] = useState({
@@ -818,6 +821,43 @@ export default function FinaBridge() {
     }
   };
 
+  const handleWithdrawToFinaPay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !withdrawAmount) return;
+    
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid positive amount', variant: 'destructive' });
+      return;
+    }
+    
+    const availableBalance = parseFloat(wallet?.availableGoldGrams || '0');
+    if (amount > availableBalance) {
+      toast({ title: 'Insufficient Balance', description: `You only have ${availableBalance.toFixed(3)}g available in your FinaBridge wallet`, variant: 'destructive' });
+      return;
+    }
+    
+    setWithdrawing(true);
+    try {
+      await apiRequest('POST', `/api/finabridge/wallet/${user.id}/withdraw`, { 
+        amountGrams: withdrawAmount,
+        goldPricePerGram: currentGoldPriceUsdPerGram || 0
+      });
+      toast({ title: 'Success', description: `${withdrawAmount}g transferred back to FinaPay wallet` });
+      setShowWithdrawDialog(false);
+      setWithdrawAmount('');
+      if (role === 'importer') {
+        fetchImporterData();
+      } else {
+        fetchExporterData();
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to withdraw from FinaBridge wallet', variant: 'destructive' });
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-gray-100 text-gray-700';
@@ -932,10 +972,18 @@ export default function FinaBridge() {
               </div>
               <h2 className="text-lg font-bold text-foreground">FinaBridge Wallet</h2>
             </div>
-            <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
-              Transfer from FinaPay
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
+                <ArrowLeftRight className="w-4 h-4 mr-2" />
+                Transfer from FinaPay
+              </Button>
+              {parseFloat(wallet?.availableGoldGrams || '0') > 0 && (
+                <Button size="sm" variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50" onClick={() => setShowWithdrawDialog(true)} data-testid="button-withdraw-wallet">
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Transfer to FinaPay
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Cards Grid */}
@@ -2643,6 +2691,65 @@ export default function FinaBridge() {
                 >
                   {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Transfer Gold
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Transfer to FinaPay</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleWithdrawToFinaPay} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Transfer gold from your FinaBridge wallet back to your main FinaPay wallet.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">FinaBridge Available</p>
+                  <p className="font-semibold text-purple-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">FinaPay Balance</p>
+                  <p className="font-semibold text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount to Transfer (grams) *</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  max={parseFloat(wallet?.availableGoldGrams || '0')}
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className={`w-full p-3 border rounded-lg ${parseFloat(withdrawAmount || '0') > parseFloat(wallet?.availableGoldGrams || '0') ? 'border-red-500 bg-red-50' : ''}`}
+                  placeholder="0.000"
+                  required
+                  data-testid="input-withdraw-amount"
+                />
+                {parseFloat(withdrawAmount || '0') > parseFloat(wallet?.availableGoldGrams || '0') ? (
+                  <p className="text-xs text-red-600 font-medium">
+                    Insufficient balance. You only have {parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g available in your FinaBridge wallet.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Maximum: {parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g (locked gold cannot be withdrawn)</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-4">
+                <Button type="button" variant="outline" onClick={() => setShowWithdrawDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={withdrawing || parseFloat(withdrawAmount || '0') > parseFloat(wallet?.availableGoldGrams || '0') || parseFloat(withdrawAmount || '0') <= 0} 
+                  data-testid="button-confirm-withdraw"
+                >
+                  {withdrawing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Transfer to FinaPay
                 </Button>
               </div>
             </form>
