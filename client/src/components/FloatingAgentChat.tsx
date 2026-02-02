@@ -582,7 +582,7 @@ function FloatingAgentChatContent() {
                     </div>
                   ))}
                 </motion.div>
-              ) : showGuestForm ? (
+              ) : showGuestForm && !user ? (
                 <motion.div
                   key="guest-form"
                   initial={{ opacity: 0 }}
