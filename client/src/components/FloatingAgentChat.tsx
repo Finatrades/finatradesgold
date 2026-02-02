@@ -134,19 +134,48 @@ function FloatingAgentChatContent() {
     setIsOpen(true);
     setShowNotification(false);
     
-    // For guests (not logged in), always ask for name and email first
-    if (!user && !guestInfo) {
+    // If user is logged in, skip guest form entirely
+    if (user) {
+      setShowGuestForm(false);
+      // Show greeting if no messages yet
+      if (chatbotMessages.length === 0 && !useHumanAgent) {
+        const greeting: ChatbotMessage = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          content: `Hey ${user.firstName}! 👋\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.`,
+          timestamp: new Date(),
+          suggestedActions: [
+            '1. Create Account',
+            '2. Login Help',
+            '3. Complete Verification',
+            '4. Understand My Balance',
+            '5. Add Funds',
+            '6. Send Payment',
+            '7. Request Payment',
+            '8. View Certificates',
+            '9. BNSL Plans',
+            '10. FinaBridge',
+            '11. Troubleshooting',
+            '12. Contact Support'
+          ]
+        };
+        setChatbotMessages([greeting]);
+      }
+      return;
+    }
+    
+    // For guests (not logged in), ask for name and email first
+    if (!guestInfo) {
       setShowGuestForm(true);
       return;
     }
     
-    // Show greeting if no messages yet - Main Menu
+    // Show greeting if no messages yet - Main Menu (for guests with info)
     if (chatbotMessages.length === 0 && !useHumanAgent) {
-      const userName = user ? user.firstName : guestInfo?.name;
       const greeting: ChatbotMessage = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        content: `Hello ${userName}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select an option from the menu below:`,
+        content: `Hey ${guestInfo.name}! 👋\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.`,
         timestamp: new Date(),
         suggestedActions: [
           '1. Create Account',
@@ -165,9 +194,11 @@ function FloatingAgentChatContent() {
       };
       setChatbotMessages([greeting]);
     }
-    
-    // For human agent mode, set up session
-    if (useHumanAgent) {
+  };
+  
+  // Set up human agent session when switching to human mode
+  useEffect(() => {
+    if (useHumanAgent && isOpen) {
       if (user) {
         const existingSession = sessions.find(s => s.userId === user.id);
         if (existingSession) {
@@ -184,7 +215,7 @@ function FloatingAgentChatContent() {
         }
       }
     }
-  };
+  }, [useHumanAgent, isOpen, user, guestInfo]);
 
   const handleGuestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
