@@ -389,6 +389,8 @@ app.use((req, res, next) => {
     '/api/admin/branding/logo',
     '/api/admin/email-test',
     '/api/documents/upload',
+    // Chatbot (public instant support)
+    '/api/chatbot',
   ];
   
   const isExempt = csrfExemptPaths.some(path => req.path.startsWith(path));

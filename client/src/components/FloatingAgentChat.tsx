@@ -34,12 +34,16 @@ interface ChatAgent {
   status: string;
 }
 
-async function getChatbotResponse(message: string, agentType?: string): Promise<{
+async function getChatbotResponse(message: string, agentType?: string, conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<{
   reply: string;
   suggestedActions?: string[];
   escalateToHuman?: boolean;
   collectData?: ChatbotMessage['collectData'];
   agent?: { id: string; name: string; type: string };
+  priority?: 'normal' | 'high' | 'urgent';
+  sentiment?: string;
+  escalationReason?: string;
+  contextForAgent?: any;
 }> {
   try {
     const response = await fetch('/api/chatbot/message', {
@@ -49,7 +53,7 @@ async function getChatbotResponse(message: string, agentType?: string): Promise<
         'X-Requested-With': 'XMLHttpRequest'
       },
       credentials: 'include',
-      body: JSON.stringify({ message, agentType }),
+      body: JSON.stringify({ message, agentType, conversationHistory }),
     });
     if (!response.ok) throw new Error('Failed to get response');
     return await response.json();
@@ -295,8 +299,17 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
-    // Get chatbot response - pass current agent type for routing
-    const response = await getChatbotResponse(userMessage, currentAgent.type);
+    // Build conversation history for context (include current user message)
+    const conversationHistory = [
+      ...chatbotMessages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.content
+      })),
+      { role: 'user' as const, content: userMessage }
+    ];
+    
+    // Get chatbot response - pass current agent type and conversation history
+    const response = await getChatbotResponse(userMessage, currentAgent.type, conversationHistory);
     
     // Add bot response
     const botMsg: ChatbotMessage = {
@@ -309,14 +322,20 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, botMsg]);
     setIsLoading(false);
     
-    // Handle escalation
+    // Handle escalation with priority indicator
     if (response.escalateToHuman) {
+      // Show priority indicator if urgent/high
+      if (response.priority === 'urgent') {
+        console.log('[Chat] URGENT escalation triggered:', response.escalationReason);
+      } else if (response.priority === 'high') {
+        console.log('[Chat] HIGH priority escalation:', response.escalationReason);
+      }
       setTimeout(() => escalateToHuman(), 1500);
     }
-  }, [message, useHumanAgent, sendMessage, escalateToHuman]);
+  }, [message, useHumanAgent, sendMessage, escalateToHuman, chatbotMessages]);
   
   const handleQuickAction = useCallback(async (action: string) => {
-    if (action === 'Speak to Agent') {
+    if (action === 'Speak to Agent' || action === 'Talk to Human') {
       escalateToHuman();
       return;
     }
@@ -331,8 +350,17 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
-    // Get chatbot response - pass current agent type for routing
-    const response = await getChatbotResponse(action, currentAgent.type);
+    // Build conversation history for context (include current action)
+    const conversationHistory = [
+      ...chatbotMessages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.content
+      })),
+      { role: 'user' as const, content: action }
+    ];
+    
+    // Get chatbot response - pass current agent type and conversation history
+    const response = await getChatbotResponse(action, currentAgent.type, conversationHistory);
     
     const botMsg: ChatbotMessage = {
       id: `bot-${Date.now()}`,
@@ -343,7 +371,12 @@ function FloatingAgentChatContent() {
     };
     setChatbotMessages(prev => [...prev, botMsg]);
     setIsLoading(false);
-  }, [escalateToHuman]);
+    
+    // Handle escalation
+    if (response.escalateToHuman) {
+      setTimeout(() => escalateToHuman(), 1500);
+    }
+  }, [escalateToHuman, chatbotMessages]);
 
   const displayMessages = useHumanAgent 
     ? (currentSession?.messages || [])

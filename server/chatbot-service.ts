@@ -10,6 +10,26 @@ interface ChatbotResponse {
   confidence: number;
   suggestedActions?: string[];
   escalateToHuman?: boolean;
+  escalationReason?: string;
+  priority?: 'normal' | 'high' | 'urgent';
+  sentiment?: 'positive' | 'neutral' | 'negative' | 'frustrated';
+  contextForAgent?: AgentHandoffContext;
+}
+
+// Context to pass to human agent during handoff
+export interface AgentHandoffContext {
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  goldBalance?: number;
+  vaultGold?: number;
+  kycStatus?: string;
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: Date }>;
+  escalationReason: string;
+  priority: 'normal' | 'high' | 'urgent';
+  sentiment: string;
+  securityConcern: boolean;
+  detectedIssues: string[];
 }
 
 // User context for personalized responses (only for authenticated users)
@@ -881,10 +901,107 @@ const FAQ_DATABASE: FAQEntry[] = [
   }
 ];
 
+// Standard escalation keywords (normal priority)
 const ESCALATION_KEYWORDS = [
   'speak to human', 'real person', 'agent', 'representative', 'manager',
   'escalate', 'not helpful', 'talk to someone', 'human support'
 ];
+
+// Security/fraud keywords (URGENT priority - instant escalation)
+const SECURITY_KEYWORDS = [
+  'fraud', 'hacked', 'stolen', 'unauthorized', 'phishing', 'scam', 'scammed',
+  'account compromised', 'money stolen', 'gold stolen', 'suspicious transaction',
+  'didnt authorize', "didn't authorize", 'not me', 'someone else', 'identity theft',
+  'locked out', 'cant access', "can't access", 'password stolen', 'hacker',
+  'suspicious activity', 'unknown transaction', 'not my transaction'
+];
+
+// Frustrated user keywords (HIGH priority)
+const FRUSTRATION_KEYWORDS = [
+  'useless', 'terrible', 'worst', 'horrible', 'angry', 'frustrated', 'annoyed',
+  'stupid', 'ridiculous', 'unacceptable', 'waste of time', 'incompetent',
+  'not working', 'broken', 'fix this', 'very upset', 'extremely disappointed',
+  'this is wrong', 'tired of', 'sick of', 'fed up', 'hours waiting', 'days waiting',
+  'still waiting', 'no response', 'ignored', 'nobody helps', 'failed again'
+];
+
+// Detect sentiment from message
+function detectSentiment(message: string): { sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated'; score: number } {
+  const normalizedMsg = message.toLowerCase();
+  
+  // Check for frustration first (highest priority)
+  const frustrationCount = FRUSTRATION_KEYWORDS.filter(kw => normalizedMsg.includes(kw)).length;
+  if (frustrationCount >= 2 || normalizedMsg.includes('!!!') || (normalizedMsg.match(/!/g) || []).length >= 3) {
+    return { sentiment: 'frustrated', score: 0.9 };
+  }
+  if (frustrationCount === 1) {
+    return { sentiment: 'negative', score: 0.7 };
+  }
+  
+  // Check for positive indicators
+  const positiveKeywords = ['thank', 'great', 'excellent', 'helpful', 'appreciate', 'love', 'awesome', 'perfect'];
+  const positiveCount = positiveKeywords.filter(kw => normalizedMsg.includes(kw)).length;
+  if (positiveCount > 0) {
+    return { sentiment: 'positive', score: 0.8 };
+  }
+  
+  return { sentiment: 'neutral', score: 0.5 };
+}
+
+// Check for security concerns
+function detectSecurityConcern(message: string): { isSecurityConcern: boolean; keywords: string[] } {
+  const normalizedMsg = message.toLowerCase();
+  const detectedKeywords = SECURITY_KEYWORDS.filter(kw => normalizedMsg.includes(kw));
+  return {
+    isSecurityConcern: detectedKeywords.length > 0,
+    keywords: detectedKeywords
+  };
+}
+
+// Determine escalation priority
+function determineEscalationPriority(message: string, sentiment: string): 'normal' | 'high' | 'urgent' {
+  const securityCheck = detectSecurityConcern(message);
+  
+  if (securityCheck.isSecurityConcern) {
+    return 'urgent';
+  }
+  
+  if (sentiment === 'frustrated') {
+    return 'high';
+  }
+  
+  if (sentiment === 'negative') {
+    return 'high';
+  }
+  
+  return 'normal';
+}
+
+// Build handoff context for human agent
+export function buildAgentHandoffContext(
+  userContext: UserContext | undefined,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  escalationReason: string,
+  message: string
+): AgentHandoffContext {
+  const sentimentResult = detectSentiment(message);
+  const securityCheck = detectSecurityConcern(message);
+  const priority = determineEscalationPriority(message, sentimentResult.sentiment);
+  
+  return {
+    userId: userContext?.userId,
+    userName: userContext?.userName,
+    goldBalance: userContext?.goldBalance,
+    vaultGold: userContext?.vaultGold,
+    kycStatus: userContext?.kycStatus,
+    chatHistory: chatHistory.map(msg => ({ ...msg, timestamp: new Date() })),
+    escalationReason,
+    priority,
+    sentiment: sentimentResult.sentiment,
+    securityConcern: securityCheck.isSecurityConcern,
+    detectedIssues: securityCheck.keywords
+  };
+}
 
 function normalizeText(text: string): string {
   return text.toLowerCase().trim().replace(/[^\w\s]/g, '');
@@ -916,6 +1033,22 @@ function shouldEscalate(message: string): boolean {
   return ESCALATION_KEYWORDS.some(keyword => 
     normalizedMessage.includes(keyword.toLowerCase())
   );
+}
+
+// Check for security-related escalation (URGENT)
+function shouldSecurityEscalate(message: string): boolean {
+  const normalizedMessage = message.toLowerCase();
+  return SECURITY_KEYWORDS.some(keyword => 
+    normalizedMessage.includes(keyword.toLowerCase())
+  );
+}
+
+// Check for frustrated user escalation (HIGH priority)
+function shouldFrustrationEscalate(message: string): boolean {
+  const normalizedMessage = message.toLowerCase();
+  const frustrationCount = FRUSTRATION_KEYWORDS.filter(kw => normalizedMessage.includes(kw)).length;
+  // Escalate if ANY frustration keyword or 3+ exclamation marks
+  return frustrationCount >= 1 || (normalizedMessage.match(/!/g) || []).length >= 3;
 }
 
 // Helper to format currency
@@ -1043,14 +1176,53 @@ export interface ChatbotContext {
   goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string };
 }
 
-export function processUserMessage(message: string, userContext?: UserContext, platformConfig?: PlatformConfig, goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }): ChatbotResponse {
-  // Check for escalation request
-  if (shouldEscalate(message)) {
+export function processUserMessage(message: string, userContext?: UserContext, platformConfig?: PlatformConfig, goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }, chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>): ChatbotResponse {
+  // Detect sentiment first
+  const sentimentResult = detectSentiment(message);
+  const securityCheck = detectSecurityConcern(message);
+  
+  // URGENT: Security escalation (fraud, hacked, stolen, etc.)
+  if (shouldSecurityEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'Security concern detected', message);
     return {
-      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team. An agent will be with you shortly.",
+      message: "🚨 **Security Alert Detected**\n\nI'm immediately connecting you with our Security Team. This is being treated as a priority case.\n\n**While you wait:**\n• Do NOT share any passwords or OTPs with anyone\n• If you suspect unauthorized access, change your password immediately\n• Note down any suspicious transaction IDs\n\nA security specialist will be with you within moments.",
+      category: 'security_escalation',
+      confidence: 1.0,
+      escalateToHuman: true,
+      escalationReason: `Security keywords detected: ${securityCheck.keywords.join(', ')}`,
+      priority: 'urgent',
+      sentiment: sentimentResult.sentiment,
+      contextForAgent: handoffContext
+    };
+  }
+  
+  // HIGH: Frustrated user escalation
+  if (shouldFrustrationEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'User frustration detected', message);
+    return {
+      message: "I can see you're frustrated, and I completely understand. Let me connect you with a senior support specialist who can personally assist you right away.\n\n**Your case is being prioritized.**\n\nPlease share any reference numbers or transaction IDs while you wait - this will help our agent resolve your issue faster.",
+      category: 'frustration_escalation',
+      confidence: 1.0,
+      escalateToHuman: true,
+      escalationReason: 'User frustration detected - high priority handoff',
+      priority: 'high',
+      sentiment: 'frustrated',
+      contextForAgent: handoffContext
+    };
+  }
+  
+  // Standard escalation request
+  if (shouldEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'User requested human agent', message);
+    return {
+      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team.\n\n**Preparing your case...**\n\nI've gathered your conversation history and account details to save you from repeating yourself. An agent will be with you shortly.",
       category: 'escalation',
       confidence: 1.0,
-      escalateToHuman: true
+      escalateToHuman: true,
+      escalationReason: 'User requested human agent',
+      priority: 'normal',
+      sentiment: sentimentResult.sentiment,
+      contextForAgent: handoffContext
     };
   }
   
@@ -1106,7 +1278,9 @@ export function processUserMessage(message: string, userContext?: UserContext, p
       category: best.entry.category,
       confidence,
       suggestedActions: responseActions,
-      escalateToHuman: false
+      escalateToHuman: false,
+      sentiment: sentimentResult.sentiment,
+      priority: 'normal'
     };
   }
   
@@ -1116,7 +1290,9 @@ export function processUserMessage(message: string, userContext?: UserContext, p
     category: 'unknown',
     confidence: 0,
     suggestedActions: getMenuActions(),
-    escalateToHuman: false
+    escalateToHuman: false,
+    sentiment: sentimentResult.sentiment,
+    priority: 'normal'
   };
 }
 
@@ -1404,13 +1580,52 @@ export async function processUserMessageWithAI(
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
   agentType?: string
 ): Promise<ChatbotResponse> {
-  // Check for escalation keywords first
-  if (shouldEscalate(message)) {
+  // Detect sentiment first
+  const sentimentResult = detectSentiment(message);
+  const securityCheck = detectSecurityConcern(message);
+  
+  // URGENT: Security escalation (fraud, hacked, stolen, etc.)
+  if (shouldSecurityEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'Security concern detected', message);
     return {
-      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team. Please share your registered email and transaction/reference ID (if any).",
+      message: "🚨 **Security Alert Detected**\n\nI'm immediately connecting you with our Security Team. This is being treated as a priority case.\n\n**While you wait:**\n• Do NOT share any passwords or OTPs with anyone\n• If you suspect unauthorized access, change your password immediately\n• Note down any suspicious transaction IDs\n\nA security specialist will be with you within moments.",
+      category: 'security_escalation',
+      confidence: 1.0,
+      escalateToHuman: true,
+      escalationReason: `Security keywords detected: ${securityCheck.keywords.join(', ')}`,
+      priority: 'urgent',
+      sentiment: sentimentResult.sentiment,
+      contextForAgent: handoffContext
+    };
+  }
+  
+  // HIGH: Frustrated user escalation
+  if (shouldFrustrationEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'User frustration detected', message);
+    return {
+      message: "I can see you're frustrated, and I completely understand. Let me connect you with a senior support specialist who can personally assist you right away.\n\n**Your case is being prioritized.**\n\nPlease share any reference numbers or transaction IDs while you wait - this will help our agent resolve your issue faster.",
+      category: 'frustration_escalation',
+      confidence: 1.0,
+      escalateToHuman: true,
+      escalationReason: 'User frustration detected - high priority handoff',
+      priority: 'high',
+      sentiment: 'frustrated',
+      contextForAgent: handoffContext
+    };
+  }
+  
+  // Standard escalation request
+  if (shouldEscalate(message)) {
+    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'User requested human agent', message);
+    return {
+      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team.\n\n**Preparing your case...**\n\nI've gathered your conversation history and account details to save you from repeating yourself. An agent will be with you shortly.",
       category: 'escalation',
       confidence: 1.0,
-      escalateToHuman: true
+      escalateToHuman: true,
+      escalationReason: 'User requested human agent',
+      priority: 'normal',
+      sentiment: sentimentResult.sentiment,
+      contextForAgent: handoffContext
     };
   }
 
@@ -1423,7 +1638,9 @@ export async function processUserMessageWithAI(
         category: 'menu',
         confidence: 1.0,
         suggestedActions: getMenuActions(),
-        escalateToHuman: false
+        escalateToHuman: false,
+        sentiment: sentimentResult.sentiment,
+        priority: 'normal'
       };
     }
   }
@@ -1519,17 +1736,26 @@ export async function processUserMessageWithAI(
                                     lowerResponse.includes('human agent') ||
                                     lowerResponse.includes('verification team');
 
+    // Build handoff context if escalating
+    let contextForAgent: AgentHandoffContext | undefined;
+    if (shouldEscalateResponse) {
+      contextForAgent = buildAgentHandoffContext(userContext, conversationHistory || [], 'AI suggested escalation', message);
+    }
+
     return {
       message: aiResponse,
       category: agentType === 'juris' ? 'kyc_assistance' : 'ai_response',
       confidence: 0.95,
       suggestedActions,
-      escalateToHuman: shouldEscalateResponse
+      escalateToHuman: shouldEscalateResponse,
+      sentiment: sentimentResult.sentiment,
+      priority: shouldEscalateResponse ? 'normal' : 'normal',
+      contextForAgent
     };
 
   } catch (error) {
     console.error('OpenAI API error:', error);
     // Fall back to FAQ-based response
-    return processUserMessage(message, userContext, platformConfig, goldPrice);
+    return processUserMessage(message, userContext, platformConfig, goldPrice, conversationHistory);
   }
 }

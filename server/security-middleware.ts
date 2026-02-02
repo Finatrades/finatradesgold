@@ -33,6 +33,7 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/auth/verify-email-otp',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
+  '/api/chatbot/message', // Public instant support chatbot
 ];
 
 // Generate secure CSRF token
