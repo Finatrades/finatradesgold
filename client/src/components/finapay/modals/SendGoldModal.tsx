@@ -1538,6 +1538,51 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       onChange={(e) => setMemo(e.target.value)}
                     />
                   </div>
+
+                  {/* Invoice Attachment */}
+                  <div className="space-y-2">
+                    <Label>Attach Invoice (Optional)</Label>
+                    <div className="relative">
+                      {!invoiceFile ? (
+                        <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
+                          <Paperclip className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-500">Attach PDF or Image</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={handleInvoiceChange}
+                            className="hidden"
+                            data-testid="input-desktop-invoice-file"
+                          />
+                        </label>
+                      ) : (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg">
+                          {invoicePreview ? (
+                            <img src={invoicePreview} alt="Invoice preview" className="w-10 h-10 object-cover rounded" />
+                          ) : (
+                            <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
+                              <FileText className="w-5 h-5 text-purple-600" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{invoiceFile.name}</p>
+                            <p className="text-xs text-muted-foreground">{(invoiceFile.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={removeInvoice}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-500"
+                            data-testid="button-desktop-remove-invoice"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Max 5MB. Accepted: PDF, PNG, JPG</p>
+                  </div>
                 </div>
 
                 {/* Right Panel - Send Summary */}
