@@ -187,6 +187,17 @@ function FinatradesIdSection() {
 }
 
 function LockGoldPriceSection() {
+  const [isActive, setIsActive] = useState(() => {
+    const saved = localStorage.getItem('lockGoldBannerActive');
+    return saved !== 'false';
+  });
+
+  const handleToggle = (checked: boolean) => {
+    setIsActive(checked);
+    localStorage.setItem('lockGoldBannerActive', String(checked));
+    toast.success(checked ? 'Lock Gold feature enabled on FinaPay' : 'Lock Gold feature hidden from FinaPay');
+  };
+
   return (
     <Card data-testid="card-lock-gold" className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-yellow-50/30">
       <CardHeader>
@@ -199,6 +210,31 @@ function LockGoldPriceSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Active/Inactive Toggle */}
+        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <Label className="text-base">Show on FinaPay</Label>
+              <p className="text-sm text-muted-foreground">
+                {isActive ? 'Lock Gold card is visible on FinaPay' : 'Lock Gold card is hidden from FinaPay'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+            <Switch
+              checked={isActive}
+              onCheckedChange={handleToggle}
+              data-testid="switch-lock-gold-banner"
+            />
+          </div>
+        </div>
+
         <div className="p-4 rounded-lg bg-amber-100/50 border border-amber-200">
           <div className="flex items-start gap-3">
             <TrendingUp className="w-5 h-5 text-amber-600 mt-0.5" />
@@ -213,13 +249,6 @@ function LockGoldPriceSection() {
               </ul>
             </div>
           </div>
-        </div>
-
-        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700">
-            <strong>To lock your gold:</strong> Go to FinaPay page and use the Lock Gold Price card at the top.
-            Click Active/Inactive to show or hide the feature.
-          </p>
         </div>
 
         <Button
