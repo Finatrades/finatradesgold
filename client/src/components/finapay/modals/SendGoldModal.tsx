@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink, ArrowRight, FileText } from 'lucide-react';
+import { Loader2, Send, QrCode, Scan, User, Search, CheckCircle2, AlertCircle, Mail, Hash, UserPlus, ExternalLink, ArrowRight, FileText, Paperclip, X, Upload } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -101,6 +101,11 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   
+  // Invoice attachment
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+  const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
+  
   // Terms and conditions
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
@@ -141,6 +146,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       setIsSendingInvite(false);
       setInviteSent(false);
       setTermsAccepted(false);
+      setInvoiceFile(null);
+      setInvoicePreview(null);
+      setIsUploadingInvoice(false);
       
       // Fetch terms
       fetch('/api/terms/transfer')
@@ -153,6 +161,38 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const numericInput = parseFloat(inputValue) || 0;
   const numericAmount = inputMode === 'usd' ? numericInput : numericInput * currentGoldPrice;
   const gramsAmount = inputMode === 'grams' ? numericInput : (currentGoldPrice > 0 ? numericInput / currentGoldPrice : 0);
+
+  const handleInvoiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a PDF, PNG, or JPG file');
+      return;
+    }
+    
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+    
+    setInvoiceFile(file);
+    
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setInvoicePreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setInvoicePreview(null);
+    }
+  };
+
+  const removeInvoice = () => {
+    setInvoiceFile(null);
+    setInvoicePreview(null);
+  };
 
   const handleSearch = async (searchIdentifier?: string) => {
     const searchValue = searchIdentifier || identifier;
@@ -517,6 +557,49 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             />
           </div>
 
+          <div className="space-y-1">
+            <Label className="text-xs">Attach Invoice (Optional)</Label>
+            <div className="relative">
+              {!invoiceFile ? (
+                <label className={`flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-colors ${isMobile ? 'rounded-xl' : ''}`}>
+                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">Attach PDF or Image</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={handleInvoiceChange}
+                    className="hidden"
+                    data-testid="input-invite-invoice-file"
+                  />
+                </label>
+              ) : (
+                <div className={`flex items-center gap-3 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg ${isMobile ? 'rounded-xl' : ''}`}>
+                  {invoicePreview ? (
+                    <img src={invoicePreview} alt="Invoice preview" className="w-10 h-10 object-cover rounded" />
+                  ) : (
+                    <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{invoiceFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{(invoiceFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeInvoice}
+                    className="h-8 w-8 p-0 text-gray-500 hover:text-red-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Max 5MB. Accepted: PDF, PNG, JPG</p>
+          </div>
+
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
             <h4 className="font-semibold text-purple-700 text-sm mb-3">Transfer Summary</h4>
             <div className="space-y-2 text-sm">
@@ -688,6 +771,50 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Attach Invoice (Optional)</Label>
+            <div className="relative">
+              {!invoiceFile ? (
+                <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
+                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">Attach PDF or Image</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={handleInvoiceChange}
+                    className="hidden"
+                    data-testid="input-invoice-file"
+                  />
+                </label>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  {invoicePreview ? (
+                    <img src={invoicePreview} alt="Invoice preview" className="w-10 h-10 object-cover rounded" />
+                  ) : (
+                    <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{invoiceFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{(invoiceFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeInvoice}
+                    className="h-8 w-8 p-0 text-gray-500 hover:text-red-500"
+                    data-testid="button-remove-invoice"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Max 5MB. Accepted: PDF, PNG, JPG</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
