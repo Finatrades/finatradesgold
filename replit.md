@@ -110,6 +110,15 @@ Comprehensive system with toggleable `email_notification_settings` and `email_lo
 - Idempotency via emailLogs with `monthly_summary_{yyyy-MM}` notification type
 - Scheduler: `server/monthly-summary-processor.ts` with hourly check + startup catch-up
 
+**Live Chat Support System (February 2026):**
+- **Three-Tier Priority System**: normal, high (frustration detected), urgent (security concerns)
+- **Security Escalation**: Auto-detects keywords (fraud, hacked, stolen, unauthorized, phishing, scam, compromised, suspicious transaction) → URGENT priority with instant agent handoff
+- **Sentiment Detection**: Single frustration keyword (useless, terrible, worst, horrible, angry, frustrated, ridiculous, unacceptable, waste of time) → HIGH priority escalation
+- **Context Transfer**: Full handoff context passed to human agents includes userId, userName, goldBalance, vaultGold, kycStatus, chatHistory, escalationReason, priority, sentiment, securityConcern, detectedIssues
+- **Human Handoff**: Visible "Speak to Agent" button, escalation workflow in FloatingAgentChat.tsx
+- **CSRF Exempt**: Public chatbot endpoints (`/api/chatbot/message`, `/api/chatbot/feedback`) exempt from CSRF protection for widget access
+- **Files**: `server/chatbot-service.ts` (FAQ + AI logic), `client/src/components/FloatingAgentChat.tsx` (UI), `client/src/pages/admin/AdminChat.tsx` (admin panel)
+
 **UI/UX Design:**
 - **Theme**: Purple gradient aesthetic (light mode).
 - **Design Tokens**: Centralized in `client/src/index.css` using CSS variables.
