@@ -191,6 +191,16 @@ function LockGoldPriceSection() {
   const queryClient = useQueryClient();
   const [lockAmount, setLockAmount] = useState('');
   const [isLocking, setIsLocking] = useState(false);
+  const [showBanner, setShowBanner] = useState(() => {
+    const saved = localStorage.getItem('lockGoldBannerActive');
+    return saved !== 'false'; // Default to true (show banner)
+  });
+
+  const handleBannerToggle = (checked: boolean) => {
+    setShowBanner(checked);
+    localStorage.setItem('lockGoldBannerActive', String(checked));
+    toast.success(checked ? 'Lock Gold banner enabled on FinaPay' : 'Lock Gold banner hidden from FinaPay');
+  };
   
   const { data: walletData } = useQuery<{
     mpgw: { availableGrams: number };
@@ -254,6 +264,26 @@ function LockGoldPriceSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Banner Toggle */}
+        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <Label className="text-base">Show on FinaPay</Label>
+              <p className="text-sm text-muted-foreground">
+                {showBanner ? 'Banner is visible on FinaPay page' : 'Banner is hidden from FinaPay page'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={showBanner}
+            onCheckedChange={handleBannerToggle}
+            data-testid="switch-lock-gold-banner"
+          />
+        </div>
+
         <div className="p-4 rounded-lg bg-amber-100/50 border border-amber-200">
           <div className="flex items-start gap-3">
             <TrendingUp className="w-5 h-5 text-amber-600 mt-0.5" />

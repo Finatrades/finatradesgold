@@ -313,31 +313,33 @@ export default function FinaPay() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
 
-        {/* Lock Gold Price Feature Banner */}
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <Lock className="w-5 h-5 text-amber-600" />
+        {/* Lock Gold Price Feature Banner - Conditionally shown based on Settings toggle */}
+        {localStorage.getItem('lockGoldBannerActive') !== 'false' && (
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-amber-800">Protect Your Gold Value</h3>
+                  <p className="text-sm text-amber-700">
+                    Lock your gold at today's price to protect against market drops. 
+                    Use Fixed Gold Price Wallet (FGPW) to secure your gains.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-amber-800">Protect Your Gold Value</h3>
-                <p className="text-sm text-amber-700">
-                  Lock your gold at today's price to protect against market drops. 
-                  Use Fixed Gold Price Wallet (FGPW) to secure your gains.
-                </p>
-              </div>
+              <button
+                onClick={() => setLocation('/settings')}
+                className="whitespace-nowrap px-4 py-2 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
+                data-testid="button-lock-gold-banner"
+              >
+                <Lock className="w-4 h-4" />
+                Lock Gold Price
+              </button>
             </div>
-            <button
-              onClick={() => setLocation('/settings')}
-              className="whitespace-nowrap px-4 py-2 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
-              data-testid="button-lock-gold-banner"
-            >
-              <Lock className="w-4 h-4" />
-              Lock Gold Price
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Quick Actions - Horizontal Pill Tabs - TOP */}
         <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
