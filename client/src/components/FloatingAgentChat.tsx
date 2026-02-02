@@ -800,6 +800,13 @@ function FloatingAgentChatContent() {
 }
 
 export default function FloatingAgentChat() {
+  const isMobile = useIsMobile();
+  
+  // Hide floating chat on mobile to avoid conflicts with bottom navigation
+  if (isMobile) {
+    return null;
+  }
+  
   return (
     <ChatProvider>
       <FloatingAgentChatContent />
