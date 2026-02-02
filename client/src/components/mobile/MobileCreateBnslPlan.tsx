@@ -65,6 +65,7 @@ export default function MobileCreateBnslPlan({
   const [signatureName, setSignatureName] = useState('');
   const [hasDownloadedDraft, setHasDownloadedDraft] = useState(false);
   const [showFullTerms, setShowFullTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -150,21 +151,28 @@ export default function MobileCreateBnslPlan({
     toast({ title: "Draft Downloaded", description: "Review the agreement before signing." });
   };
 
-  const handleSubmit = () => {
-    if (!canProceedStep3) return;
+  const handleSubmit = async () => {
+    if (!canProceedStep3 || isSubmitting) return;
 
-    const signedAt = new Date().toISOString();
-    const planData: Partial<BnslPlan> = {
-      tenorMonths: selectedTenor as BnslTenor,
-      agreedMarginAnnualPercent: annualRatePercent,
-      goldSoldGrams: goldAmount,
-      enrollmentPriceUsdPerGram: currentGoldPrice,
-      basePriceComponentUsd: basePriceUsd,
-      totalMarginComponentUsd: totalMarginUsd,
-      quarterlyMarginUsd: quarterlyMarginUsd,
-    };
+    setIsSubmitting(true);
+    
+    try {
+      const signedAt = new Date().toISOString();
+      const planData: Partial<BnslPlan> = {
+        tenorMonths: selectedTenor as BnslTenor,
+        agreedMarginAnnualPercent: annualRatePercent,
+        goldSoldGrams: goldAmount,
+        enrollmentPriceUsdPerGram: currentGoldPrice,
+        basePriceComponentUsd: basePriceUsd,
+        totalMarginComponentUsd: totalMarginUsd,
+        quarterlyMarginUsd: quarterlyMarginUsd,
+      };
 
-    onSuccess(planData, { signatureName: signatureName.trim(), signedAt });
+      await onSuccess(planData, { signatureName: signatureName.trim(), signedAt });
+    } catch (error) {
+      console.error('Failed to create plan:', error);
+      setIsSubmitting(false);
+    }
   };
 
   const handleScrollTerms = (e: React.UIEvent<HTMLDivElement>) => {
@@ -642,18 +650,25 @@ export default function MobileCreateBnslPlan({
       <div className="bg-white border-t border-gray-200 p-4 pb-6 mt-auto">
         <Button 
           onClick={handleNext}
-          disabled={!canProceed}
+          disabled={!canProceed || (currentStep === 3 && isSubmitting)}
           className={`w-full h-14 rounded-xl text-lg font-semibold transition-all ${
-            canProceed 
+            canProceed && !(currentStep === 3 && isSubmitting)
               ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-300' 
               : 'bg-gray-200 text-gray-500'
           }`}
         >
           {currentStep === 3 ? (
-            <>
-              <CheckCircle2 className="w-5 h-5 mr-2" />
-              Create Plan
-            </>
+            isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Creating Plan...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-5 h-5 mr-2" />
+                Create Plan
+              </>
+            )
           ) : (
             <>
               Continue
