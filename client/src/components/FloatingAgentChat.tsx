@@ -367,38 +367,6 @@ function FloatingAgentChatContent() {
         isVisible={!!activeCall} 
       />
 
-      {/* Notification Bubble */}
-      <AnimatePresence>
-        {showNotification && !isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 20, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.8 }}
-            className={`fixed z-50 bg-popover border border-border rounded-2xl shadow-xl p-4 min-w-[220px] ${isMobile ? 'bottom-40 right-4' : 'bottom-24 right-6'}`}
-          >
-            <button
-              onClick={() => setShowNotification(false)}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border border-border"
-            >
-              <X className="w-3 h-3" />
-            </button>
-            <div className="flex items-center gap-3">
-              <img
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
-                alt="Finatrades AI"
-                className="w-12 h-12 object-contain"
-              />
-              <div>
-                <p className="text-sm font-medium text-foreground">Hey, I'm here! 👋</p>
-                <p className="text-xs text-muted-foreground">Need any help?</p>
-              </div>
-            </div>
-            {/* Arrow pointer */}
-            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-popover border-r border-b border-border transform rotate-45" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Floating Button */}
       <AnimatePresence>
         {!isOpen && (
