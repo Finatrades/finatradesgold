@@ -599,32 +599,32 @@ function FloatingAgentChatContent() {
                   </div>
                   <form onSubmit={handleGuestSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="guest-name" className="text-foreground">Your Name</Label>
+                      <Label htmlFor="guest-name" className="text-gray-800 font-medium">Your Name</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <Input
                           id="guest-name"
                           type="text"
                           placeholder="Enter your name"
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
-                          className="pl-10"
+                          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                           required
                           data-testid="input-guest-name"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="guest-email" className="text-foreground">Email Address</Label>
+                      <Label htmlFor="guest-email" className="text-gray-800 font-medium">Email Address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <Input
                           id="guest-email"
                           type="email"
                           placeholder="Enter your email"
                           value={guestEmail}
                           onChange={(e) => setGuestEmail(e.target.value)}
-                          className="pl-10"
+                          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                           required
                           data-testid="input-guest-email"
                         />
