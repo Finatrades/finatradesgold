@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { 
-  Settings as SettingsIcon, Bell, Globe, Moon, Sun,
-  Smartphone, Mail, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Save, Loader2, Check, Clock, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle, LogOut, Lock, ChevronRight, Wallet, User, CreditCard
+  Settings as SettingsIcon, Bell, Moon, Sun,
+  Smartphone, Mail, TrendingUp, Shield,
+  Eye, EyeOff, Loader2, Check, Clock, RefreshCw, IdCard, CheckCircle, XCircle, LogOut, Lock, Wallet
 } from 'lucide-react';
 import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -409,18 +409,7 @@ export default function Settings() {
               ))}
             </div>
           </div>
-          <SettingRow icon={Globe} iconColor="text-blue-500" iconBg="bg-blue-500/10" label="Language">
-            <Select value={localPrefs.language} onValueChange={(v) => updatePref('language', v)}>
-              <SelectTrigger className="w-28 h-8" data-testid="select-language">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="ar">العربية</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-          <SettingRow icon={Wallet} iconColor="text-green-500" iconBg="bg-green-500/10" label="Currency">
+                    <SettingRow icon={Wallet} iconColor="text-green-500" iconBg="bg-green-500/10" label="Currency">
             <Select value={localPrefs.displayCurrency} onValueChange={(v) => updatePref('displayCurrency', v)}>
               <SelectTrigger className="w-24 h-8" data-testid="select-currency">
                 <SelectValue />
