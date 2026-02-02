@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { 
   Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
   Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle, LogOut
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle, LogOut, Lock
 } from 'lucide-react';
 import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -181,6 +181,156 @@ function FinatradesIdSection() {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LockGoldPriceSection() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [lockAmount, setLockAmount] = useState('');
+  const [isLocking, setIsLocking] = useState(false);
+  
+  const { data: walletData } = useQuery<{
+    mpgw: { availableGrams: number };
+    goldPricePerGram: number;
+  }>({
+    queryKey: ['dual-wallet', 'balance', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/dual-wallet/${user?.id}/balance`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch wallet');
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const availableGrams = walletData?.mpgw?.availableGrams || 0;
+  const currentPrice = walletData?.goldPricePerGram || 0;
+  const lockAmountNum = parseFloat(lockAmount) || 0;
+  const lockValueUsd = lockAmountNum * currentPrice;
+
+  const handleLockGold = async () => {
+    if (!user?.id || lockAmountNum <= 0 || lockAmountNum > availableGrams) {
+      toast.error('Invalid amount');
+      return;
+    }
+    
+    setIsLocking(true);
+    try {
+      const res = await apiRequest('POST', '/api/dual-wallet/transfer', {
+        userId: user.id,
+        goldGrams: lockAmountNum,
+        fromWalletType: 'LGPW',
+        toWalletType: 'FGPW',
+        notes: `Locked at $${currentPrice.toFixed(2)}/gram`
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Transfer failed');
+      }
+      
+      toast.success(`Successfully locked ${lockAmountNum.toFixed(4)}g at $${currentPrice.toFixed(2)}/gram!`);
+      setLockAmount('');
+      queryClient.invalidateQueries({ queryKey: ['dual-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to lock gold');
+    } finally {
+      setIsLocking(false);
+    }
+  };
+
+  return (
+    <Card data-testid="card-lock-gold" className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-yellow-50/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lock className="w-5 h-5 text-amber-600" />
+          Lock Gold Price (FGPW)
+        </CardTitle>
+        <CardDescription>
+          Lock your gold at today's market price to protect against price drops
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 rounded-lg bg-amber-100/50 border border-amber-200">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div className="space-y-2 text-sm">
+              <p className="font-medium text-amber-800">What is Fixed Gold Price Wallet (FGPW)?</p>
+              <ul className="space-y-1 text-amber-700">
+                <li>• <strong>LGPW (Default):</strong> Your gold value changes with live market price</li>
+                <li>• <strong>FGPW (Locked):</strong> Your gold value is fixed at the price when you locked it</li>
+                <li>• Transfer gold from LGPW → FGPW to lock the current price</li>
+                <li>• Great for protecting your profits when gold prices are high</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 p-4 rounded-lg border">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Available in LGPW:</span>
+            <span className="font-medium">{availableGrams.toFixed(4)}g</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Current Gold Price:</span>
+            <span className="font-medium text-green-600">${currentPrice.toFixed(2)}/gram</span>
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-2">
+            <Label>Amount to Lock (grams)</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.0001"
+                min="0"
+                max={availableGrams}
+                placeholder="Enter grams to lock"
+                value={lockAmount}
+                onChange={(e) => setLockAmount(e.target.value)}
+                data-testid="input-lock-amount"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLockAmount(availableGrams.toFixed(4))}
+                data-testid="button-lock-max"
+              >
+                Max
+              </Button>
+            </div>
+            {lockAmountNum > 0 && (
+              <p className="text-sm text-muted-foreground">
+                ≈ ${lockValueUsd.toFixed(2)} USD will be locked at ${currentPrice.toFixed(2)}/gram
+              </p>
+            )}
+          </div>
+          
+          <Button
+            className="w-full bg-amber-600 hover:bg-amber-700"
+            disabled={isLocking || lockAmountNum <= 0 || lockAmountNum > availableGrams}
+            onClick={handleLockGold}
+            data-testid="button-lock-gold"
+          >
+            {isLocking ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Locking...</>
+            ) : (
+              <><Lock className="w-4 h-4 mr-2" /> Lock Gold at Current Price</>
+            )}
+          </Button>
+        </div>
+
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs text-blue-700">
+            <strong>Note:</strong> Once locked, your gold value is protected from market fluctuations. 
+            You can still withdraw, sell, or transfer your locked gold - it will be valued at the locked price.
+            This is an advanced feature for users who want to secure their gains.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
@@ -610,6 +760,8 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        <LockGoldPriceSection />
 
         <Card data-testid="card-advanced">
           <CardHeader>
