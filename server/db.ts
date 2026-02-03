@@ -76,11 +76,11 @@ function getAwsSslConfig(): pg.PoolConfig['ssl'] {
     return false;
   }
   
-  // Check if relaxed SSL mode is explicitly requested (development only)
-  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true' && process.env.NODE_ENV !== 'production';
+  // Check if relaxed SSL mode is explicitly requested
+  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true';
   
   if (relaxedSsl) {
-    console.log('[Database] Using SSL with relaxed certificate verification (development mode)');
+    console.log('[Database] Using SSL with relaxed certificate verification');
     return { rejectUnauthorized: false };
   }
   
