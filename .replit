@@ -60,6 +60,7 @@ REPLICATION_COMPARE_MODE = "true"
 PRODUCTION_IP = "13.229.145.249"
 PRODUCTION_DOMAIN = "finatrades.com"
 WINGOLD_URL = "https://wingoldandmetals.com"
+NODE_ENV = "production"
 
 [userenv.development]
 WINGOLD_URL = "https://wingoldandmetals--imcharanpratap.replit.app"
