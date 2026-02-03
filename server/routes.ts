@@ -23804,6 +23804,8 @@ export async function registerRoutes(
         verified: false,
         actionData: enrichedActionData,
       });
+      // DEBUG: Log OTP for development
+      console.log(`[Admin OTP] Action: ${actionType}, Target: ${targetType}/${targetId}, Code: ${code}, Expires: ${expiresAt.toISOString()}`);
       
       // Send email with OTP - informative version with context
       const actionLabels: Record<string, string> = {
