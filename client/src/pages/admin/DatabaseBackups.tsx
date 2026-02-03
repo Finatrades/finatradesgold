@@ -552,6 +552,7 @@ export default function DatabaseBackups() {
   const [syncOtpCode, setSyncOtpCode] = useState("");
   const [syncOtpSent, setSyncOtpSent] = useState(false);
   const [syncOtpVerified, setSyncOtpVerified] = useState(false);
+  const [syncOtpId, setSyncOtpId] = useState<string>("");
   
   const { data: backupsData, isLoading: loadingBackups, refetch: refetchBackups } = useQuery<{ backups: Backup[] }>({
     queryKey: ["/api/admin/backups"],
@@ -585,6 +586,7 @@ export default function DatabaseBackups() {
       setSyncOtpVerified(false);
       setSyncOtpCode("");
       setSyncDirection("");
+      setSyncOtpId("");
     },
     onError: (error: Error) => {
       toast.error("Sync failed", {
@@ -608,8 +610,9 @@ export default function DatabaseBackups() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSyncOtpSent(true);
+      setSyncOtpId(data.otpId);
       toast.success("Verification code sent to your email");
     },
     onError: (error: Error) => {
@@ -621,8 +624,8 @@ export default function DatabaseBackups() {
   const verifySyncOtpMutation = useMutation({
     mutationFn: async (code: string) => {
       const res = await apiRequest("POST", "/api/admin/action-otp/verify", {
-        actionType: "database_sync",
-        otpCode: code
+        otpId: syncOtpId,
+        code: code
       });
       if (!res.ok) {
         const error = await res.json();
