@@ -236,6 +236,12 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                     )}
                   </div>
 
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                    className="mb-2"
+                  />
+
                   <div className="space-y-2">
                     <Label>Note (Optional)</Label>
                     <Textarea 

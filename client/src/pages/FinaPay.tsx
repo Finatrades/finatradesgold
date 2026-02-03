@@ -6,16 +6,12 @@ import { useNotifications } from '@/context/NotificationContext';
 import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { apiRequest } from '@/lib/queryClient';
-import { toast as sonnerToast } from 'sonner';
 
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import PendingTransfers from '@/components/finapay/PendingTransfers';
@@ -31,203 +27,6 @@ import { useLocation, useSearch } from 'wouter';
 import { ShieldAlert } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileFinaPay from '@/components/mobile/MobileFinaPay';
-
-function LockGoldPriceCard({ userId }: { userId?: string }) {
-  const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-  const [isActive, setIsActive] = useState(() => {
-    const saved = localStorage.getItem('lockGoldBannerActive');
-    return saved !== 'false';
-  });
-  const [lockAmount, setLockAmount] = useState('');
-  const [isLocking, setIsLocking] = useState(false);
-
-  // Listen for localStorage changes (when Settings page updates the state)
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('lockGoldBannerActive');
-      setIsActive(saved !== 'false');
-    };
-    window.addEventListener('storage', handleStorageChange);
-    // Also check on focus (for same-tab updates)
-    const handleFocus = () => {
-      const saved = localStorage.getItem('lockGoldBannerActive');
-      setIsActive(saved !== 'false');
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
-
-  const { data: walletData } = useQuery<{
-    mpgw: { availableGrams: number };
-    goldPricePerGram: number;
-  }>({
-    queryKey: ['dual-wallet', 'balance', userId],
-    queryFn: async () => {
-      const res = await fetch(`/api/dual-wallet/${userId}/balance`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch wallet');
-      return res.json();
-    },
-    enabled: !!userId,
-  });
-
-  const availableGrams = walletData?.mpgw?.availableGrams || 0;
-  const currentPrice = walletData?.goldPricePerGram || 0;
-  const lockAmountNum = parseFloat(lockAmount) || 0;
-  const lockValueUsd = lockAmountNum * currentPrice;
-
-  const handleInactiveClick = () => {
-    // Redirect to Settings page Lock Gold section to activate
-    window.location.href = '/settings#lock-gold-section';
-  };
-
-  const handleLockGold = async () => {
-    if (!userId || lockAmountNum <= 0 || lockAmountNum > availableGrams) {
-      sonnerToast.error('Invalid amount');
-      return;
-    }
-    
-    setIsLocking(true);
-    try {
-      const res = await apiRequest('POST', '/api/dual-wallet/transfer', {
-        userId,
-        goldGrams: lockAmountNum,
-        fromWalletType: 'LGPW',
-        toWalletType: 'FGPW',
-        notes: `Locked at $${currentPrice.toFixed(2)}/gram`
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Transfer failed');
-      }
-      
-      sonnerToast.success(`Locked ${lockAmountNum.toFixed(4)}g at $${currentPrice.toFixed(2)}/gram!`);
-      setLockAmount('');
-      queryClient.invalidateQueries({ queryKey: ['dual-wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-    } catch (err: any) {
-      sonnerToast.error(err.message || 'Failed to lock gold');
-    } finally {
-      setIsLocking(false);
-    }
-  };
-
-  // INACTIVE STATE: Show only header, click redirects to Settings
-  if (!isActive) {
-    return (
-      <div 
-        className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl shadow-sm cursor-pointer hover:bg-amber-100/30 transition-colors"
-        onClick={handleInactiveClick}
-        data-testid="lock-gold-inactive"
-      >
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-amber-800">Lock Gold Price (FGPW)</h3>
-              <p className="text-sm text-amber-600">Protect your gold from market drops</p>
-            </div>
-          </div>
-          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-gray-100 text-gray-500">
-            Inactive
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // ACTIVE STATE: Show full card content
-  return (
-    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-amber-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-            <Lock className="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-amber-800">Lock Gold Price (FGPW)</h3>
-            <p className="text-sm text-amber-600">Protect your gold from market drops</p>
-          </div>
-        </div>
-        <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-green-100 text-green-700">
-          Active
-        </span>
-      </div>
-
-      {/* Full Content */}
-      <div className="p-4 space-y-4">
-        {/* Balance & Price */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="p-3 rounded-lg bg-white border">
-            <span className="text-muted-foreground text-xs">Available (LGPW)</span>
-            <p className="font-semibold">{availableGrams.toFixed(4)}g</p>
-          </div>
-          <div className="p-3 rounded-lg bg-white border">
-            <span className="text-muted-foreground text-xs">Current Price</span>
-            <p className="font-semibold text-green-600">${currentPrice.toFixed(2)}/g</p>
-          </div>
-        </div>
-
-        {/* Lock Input */}
-        <div className="space-y-2">
-          <Label className="text-sm">Amount to Lock (grams)</Label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              step="0.0001"
-              min="0"
-              max={availableGrams}
-              placeholder="Enter grams"
-              value={lockAmount}
-              onChange={(e) => setLockAmount(e.target.value)}
-              className="bg-white"
-              data-testid="input-lock-amount"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLockAmount(availableGrams.toFixed(4))}
-              data-testid="button-lock-max"
-            >
-              Max
-            </Button>
-          </div>
-          {lockAmountNum > 0 && (
-            <p className="text-xs text-muted-foreground">
-              ≈ ${lockValueUsd.toFixed(2)} USD locked at ${currentPrice.toFixed(2)}/gram
-            </p>
-          )}
-        </div>
-
-        {/* Lock Button */}
-        <Button
-          className="w-full bg-amber-600 hover:bg-amber-700"
-          disabled={isLocking || lockAmountNum <= 0 || lockAmountNum > availableGrams}
-          onClick={handleLockGold}
-          data-testid="button-lock-gold"
-        >
-          {isLocking ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Locking...</>
-          ) : (
-            <><Lock className="w-4 h-4 mr-2" /> Lock Gold at Current Price</>
-          )}
-        </Button>
-
-        {/* Note */}
-        <p className="text-xs text-amber-700 p-2 bg-blue-50 rounded border border-blue-200">
-          <strong>Note:</strong> Locked gold is protected from market drops. To withdraw, sell, or transfer, you must first UNLOCK your gold (transfer FGPW → LGPW). All transactions happen from Live Gold (LGPW) only.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export default function FinaPay() {
   const { user } = useAuth();
@@ -513,9 +312,6 @@ export default function FinaPay() {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
-
-        {/* Lock Gold Price Feature Card */}
-        <LockGoldPriceCard userId={user?.id} />
 
         {/* Quick Actions - Horizontal Pill Tabs - TOP */}
         <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">

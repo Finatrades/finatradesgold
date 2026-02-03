@@ -15994,19 +15994,7 @@ export async function registerRoutes(
   // Process chatbot message with agent routing (public - works for guests and authenticated users)
   app.post("/api/chatbot/message", async (req, res) => {
     try {
-      const { message, agentId, agentType, conversationHistory } = req.body;
-      
-      // Validate conversation history if provided
-      let validatedHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-      if (Array.isArray(conversationHistory)) {
-        validatedHistory = conversationHistory
-          .filter((h: any) => h && h.role && h.content && typeof h.content === 'string')
-          .slice(-10) // Limit to last 10 messages for context
-          .map((h: any) => ({
-            role: h.role === 'user' ? 'user' as const : 'assistant' as const,
-            content: String(h.content).slice(0, 500) // Limit each message length
-          }));
-      }
+      const { message, agentId, agentType } = req.body;
       
       // Input validation
       if (!message || typeof message !== 'string') {
@@ -16138,10 +16126,6 @@ export async function registerRoutes(
         let suggestedActions: string[] = ['Start Registration', 'KYC Help', 'Check Status'];
         let usedAI = false;
         let finalEscalate = false;
-        let finalPriority: 'normal' | 'high' | 'urgent' = 'normal';
-        let finalSentiment: string = 'neutral';
-        let escalationReason: string | undefined;
-        let contextForAgent: any = undefined;
         let workflowUpdate: any = undefined;
         let collectData: any = undefined;
         
@@ -16215,7 +16199,7 @@ export async function registerRoutes(
               jurisContext,
               platformConfig,
               goldPrice,
-              validatedHistory,
+              undefined,
               'juris'
             );
             
@@ -16235,10 +16219,6 @@ export async function registerRoutes(
               }
             }
             finalEscalate = aiResponse.escalateToHuman || false;
-              finalPriority = aiResponse.priority || finalPriority;
-              finalSentiment = aiResponse.sentiment || finalSentiment;
-              finalEscalationReason = aiResponse.escalationReason || finalEscalationReason;
-              finalContextForAgent = aiResponse.contextForAgent || finalContextForAgent;
             usedAI = true;
             console.log("[Juris AI] Response generated");
           } catch (aiError) {
@@ -16258,10 +16238,6 @@ export async function registerRoutes(
           confidence: usedAI ? 0.95 : 0.9,
           suggestedActions,
           escalateToHuman: finalEscalate,
-          priority: finalPriority,
-          sentiment: finalSentiment,
-          escalationReason,
-          contextForAgent,
           collectData,
           workflowUpdate,
           usedAI,
@@ -16285,17 +16261,13 @@ export async function registerRoutes(
         }
         
         // Try FAQ-based response first (cost-efficient)
-        const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice, validatedHistory);
+        const response = processUserMessage(sanitizedMessage, userContext, platformConfig, goldPrice);
         
         let finalReply = response.message;
         let finalConfidence = response.confidence;
         let finalCategory = response.category;
         let finalActions = response.suggestedActions;
         let finalEscalate = response.escalateToHuman;
-        let finalPriority = response.priority || 'normal';
-        let finalSentiment = response.sentiment || 'neutral';
-        let finalEscalationReason = response.escalationReason;
-        let finalContextForAgent = response.contextForAgent;
         let usedAI = false;
         
         // Use AI for better responses when FAQ doesn't have a strong match
@@ -16308,7 +16280,7 @@ export async function registerRoutes(
               userContext,
               platformConfig,
               goldPrice,
-              validatedHistory,
+              undefined,
               selectedAgent?.type || 'general'
             );
             
@@ -16317,10 +16289,6 @@ export async function registerRoutes(
               finalConfidence = aiResponse.confidence;
               finalCategory = aiResponse.category || 'ai_response';
               finalEscalate = aiResponse.escalateToHuman || false;
-              finalPriority = aiResponse.priority || finalPriority;
-              finalSentiment = aiResponse.sentiment || finalSentiment;
-              finalEscalationReason = aiResponse.escalationReason || finalEscalationReason;
-              finalContextForAgent = aiResponse.contextForAgent || finalContextForAgent;
               usedAI = true;
               
               // Use AI-provided actions or derive from response content
@@ -16366,10 +16334,6 @@ export async function registerRoutes(
           confidence: finalConfidence,
           suggestedActions: finalActions,
           escalateToHuman: finalEscalate,
-          priority: finalPriority,
-          sentiment: finalSentiment,
-          escalationReason: finalEscalationReason,
-          contextForAgent: finalContextForAgent,
           agent: selectedAgent ? {
             id: selectedAgent.id,
             name: selectedAgent.displayName,
@@ -23804,8 +23768,6 @@ export async function registerRoutes(
         verified: false,
         actionData: enrichedActionData,
       });
-      // DEBUG: Log OTP for development
-      console.log(`[Admin OTP] Action: ${actionType}, Target: ${targetType}/${targetId}, Code: ${code}, Expires: ${expiresAt.toISOString()}`);
       
       // Send email with OTP - informative version with context
       const actionLabels: Record<string, string> = {

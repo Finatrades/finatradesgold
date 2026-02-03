@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { 
-  Settings as SettingsIcon, Bell, Moon, Sun,
-  Smartphone, Mail, TrendingUp, Shield,
-  Eye, EyeOff, Loader2, Check, Clock, RefreshCw, IdCard, CheckCircle, XCircle, LogOut, Lock, Wallet
+  Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
+  Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
+  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
 import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -37,54 +38,6 @@ interface UserPreferencesData {
   transferApprovalTimeout: number;
 }
 
-function SettingRow({ 
-  icon: Icon, 
-  iconColor = 'text-primary',
-  iconBg = 'bg-primary/10',
-  label, 
-  description,
-  children,
-  onClick
-}: { 
-  icon: React.ElementType;
-  iconColor?: string;
-  iconBg?: string;
-  label: string;
-  description?: string;
-  children?: React.ReactNode;
-  onClick?: () => void;
-}) {
-  return (
-    <div 
-      className={`flex items-center justify-between py-4 ${onClick ? 'cursor-pointer hover:bg-muted/50 -mx-4 px-4 rounded-lg transition-colors' : ''}`}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center`}>
-          <Icon className={`w-4 h-4 ${iconColor}`} />
-        </div>
-        <div>
-          <p className="font-medium text-sm">{label}</p>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function SettingSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-      <div className="px-4 py-3 bg-muted/30 border-b">
-        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{title}</h3>
-      </div>
-      <div className="px-4 divide-y">
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function FinatradesIdSection() {
   const { user } = useAuth();
@@ -97,9 +50,10 @@ function FinatradesIdSection() {
     queryKey: ['finatrades-id-info'],
     queryFn: async () => {
       const res = await fetch('/api/finatrades-id/info', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch ID info');
+      if (!res.ok) throw new Error('Failed to fetch Finatrades ID info');
       return res.json();
     },
+    enabled: !!user?.id,
   });
 
   const checkAvailability = async (id: string) => {
@@ -107,164 +61,133 @@ function FinatradesIdSection() {
       setAvailability(null);
       return;
     }
+    
     setIsChecking(true);
     try {
-      const res = await fetch(`/api/finatrades-id/check-availability?id=${encodeURIComponent(id)}`, {
-        credentials: 'include'
-      });
+      const res = await apiRequest('POST', '/api/finatrades-id/check-availability', { customId: id });
       const data = await res.json();
       setAvailability(data);
-    } catch (err) {
-      setAvailability({ available: false, message: 'Error checking availability' });
+    } catch {
+      setAvailability({ available: false, message: 'Failed to check availability' });
     } finally {
       setIsChecking(false);
     }
   };
 
   const setIdMutation = useMutation({
-    mutationFn: async (newId: string) => {
-      const res = await apiRequest('POST', '/api/finatrades-id/set', { customId: newId });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to set ID');
-      }
+    mutationFn: async (customId: string) => {
+      const res = await apiRequest('POST', '/api/finatrades-id/set', { customId });
       return res.json();
     },
     onSuccess: () => {
-      toast.success('Finatrades ID updated!');
       queryClient.invalidateQueries({ queryKey: ['finatrades-id-info'] });
+      toast.success('Your Finatrades ID has been updated!');
       setCustomId('');
       setAvailability(null);
     },
     onError: (err: Error) => {
       toast.error(err.message);
-    }
+    },
   });
 
-  const canChangeId = !idInfo?.customFinatradesId || idInfo?.canChange;
-
-  return (
-    <SettingSection title="Finatrades ID">
-      <div className="py-4 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <IdCard className="w-4 h-4 text-purple-500" />
-          </div>
-          <div className="flex-1">
-            <p className="font-medium text-sm">Your Finatrades ID</p>
-            {idInfo?.customFinatradesId ? (
-              <p className="text-primary font-mono font-semibold">{idInfo.customFinatradesId}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Not set yet</p>
-            )}
-          </div>
-          {idInfo?.customFinatradesId && (
-            <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Active</span>
-          )}
-        </div>
-
-        {canChangeId && (
-          <div className="space-y-3 pt-2">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">FT-</span>
-                <Input
-                  value={customId}
-                  onChange={(e) => {
-                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    setCustomId(val);
-                    checkAvailability(val);
-                  }}
-                  placeholder="YOURNAME"
-                  className="pl-10 font-mono uppercase"
-                  maxLength={15}
-                  data-testid="input-custom-id"
-                />
-              </div>
-              <Button
-                onClick={() => setIdMutation.mutate(customId)}
-                disabled={!availability?.available || setIdMutation.isPending}
-                data-testid="button-set-id"
-              >
-                {setIdMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set'}
-              </Button>
-            </div>
-            {availability && (
-              <p className={`text-xs flex items-center gap-1 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
-                {availability.available ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                {availability.message}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </SettingSection>
-  );
-}
-
-function LockGoldPriceSection() {
-  const [isActive, setIsActive] = useState(() => {
-    const saved = localStorage.getItem('lockGoldBannerActive');
-    return saved !== 'false';
-  });
-
-  const handleToggle = (checked: boolean) => {
-    setIsActive(checked);
-    localStorage.setItem('lockGoldBannerActive', String(checked));
-    toast.success(checked ? 'Feature enabled! Redirecting...' : 'Feature disabled');
-    
-    if (checked) {
-      setTimeout(() => {
-        window.location.href = '/finapay';
-      }, 800);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setCustomId(value);
+    if (value.length >= 4) {
+      checkAvailability(value);
+    } else {
+      setAvailability(null);
     }
   };
 
   return (
-    <div 
-      id="lock-gold-section" 
-      data-testid="card-lock-gold" 
-      className={`relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
-        isActive 
-          ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' 
-          : 'border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50'
-      }`}
-    >
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            isActive ? 'bg-green-100 shadow-lg shadow-green-200/50' : 'bg-amber-100'
-          }`}>
-            <Lock className={`w-5 h-5 transition-colors duration-300 ${
-              isActive ? 'text-green-600' : 'text-amber-600'
-            }`} />
+    <Card data-testid="card-finatrades-id">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IdCard className="w-5 h-5 text-primary" />
+          Finatrades ID
+        </CardTitle>
+        <CardDescription>Customize your unique identifier for easy login</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Current Finatrades ID</p>
+              <p className="text-lg font-mono font-semibold text-primary" data-testid="text-current-id">
+                {isLoadingInfo ? '...' : (idInfo?.displayId || user?.finatradesId || 'Not set')}
+              </p>
+            </div>
+            {idInfo?.customFinatradesId && (
+              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Custom</span>
+            )}
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-800">Lock Gold Price</h3>
-            <p className="text-xs text-muted-foreground">
-              {isActive ? 'Enabled on FinaPay' : 'Enable price protection'}
+        </div>
+
+        {!idInfo?.canChange && idInfo?.canChangeIn > 0 && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              You can change your ID again in {idInfo.canChangeIn} days
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all ${
-            isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            {isActive ? 'Active' : 'Inactive'}
-          </span>
-          <Switch
-            checked={isActive}
-            onCheckedChange={handleToggle}
-            data-testid="switch-lock-gold-banner"
-          />
-        </div>
-      </div>
-    </div>
+        )}
+
+        {(idInfo?.canChange || !idInfo?.customFinatradesId) && (
+          <div className="space-y-3">
+            <div>
+              <Label>Set Custom Finatrades ID</Label>
+              <p className="text-xs text-muted-foreground mb-2">4-15 letters/numbers. Changes allowed once per 30 days.</p>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">FT-</span>
+                  <Input
+                    placeholder="YOURNAME"
+                    value={customId}
+                    onChange={handleInputChange}
+                    maxLength={15}
+                    className="pl-12 font-mono uppercase"
+                    data-testid="input-custom-id"
+                  />
+                  {isChecking && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {!isChecking && availability && (
+                    availability.available ? (
+                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                    )
+                  )}
+                </div>
+                <Button
+                  onClick={() => setIdMutation.mutate(customId)}
+                  disabled={!availability?.available || setIdMutation.isPending}
+                  data-testid="button-set-id"
+                >
+                  {setIdMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set ID'}
+                </Button>
+              </div>
+              {availability && (
+                <p className={`text-xs mt-1 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
+                  {availability.message}
+                </p>
+              )}
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Your Finatrades ID allows passwordless login. After setting a custom ID, you can login using just your ID and an OTP sent to your email.
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -289,25 +212,14 @@ export default function Settings() {
     }
   }, [data]);
 
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash) {
-      const element = document.getElementById(hash.substring(1));
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-2', 'ring-amber-400');
-          setTimeout(() => element.classList.remove('ring-2', 'ring-amber-400'), 2000);
-        }, 300);
-      }
-    }
-  }, []);
-
   const saveMutation = useMutation({
     mutationFn: async (updates: Partial<UserPreferencesData>) => {
       const res = await fetch(`/api/users/${user?.id}/preferences`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         credentials: 'include',
         body: JSON.stringify(updates),
       });
@@ -316,20 +228,39 @@ export default function Settings() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['preferences'] });
-      toast.success('Settings saved');
-      if (result.preferences?.theme) setTheme(result.preferences.theme);
+      toast.success('Settings saved successfully');
+      if (result.preferences?.theme) {
+        setTheme(result.preferences.theme);
+      }
     },
-    onError: () => toast.error('Failed to save settings'),
+    onError: () => {
+      toast.error('Failed to save settings');
+    },
   });
-
-  const updatePref = <K extends keyof UserPreferencesData>(key: K, value: UserPreferencesData[K]) => {
-    if (!localPrefs) return;
-    setLocalPrefs({ ...localPrefs, [key]: value });
-  };
 
   const handleSave = () => {
     if (!localPrefs) return;
-    saveMutation.mutate(localPrefs);
+    saveMutation.mutate({
+      emailNotifications: localPrefs.emailNotifications,
+      pushNotifications: localPrefs.pushNotifications,
+      transactionAlerts: localPrefs.transactionAlerts,
+      priceAlerts: localPrefs.priceAlerts,
+      securityAlerts: localPrefs.securityAlerts,
+      marketingEmails: localPrefs.marketingEmails,
+      monthlySummaryEmails: localPrefs.monthlySummaryEmails,
+      displayCurrency: localPrefs.displayCurrency,
+      language: localPrefs.language,
+      theme: localPrefs.theme,
+      compactMode: localPrefs.compactMode,
+      showBalance: localPrefs.showBalance,
+      twoFactorReminder: localPrefs.twoFactorReminder,
+      requireTransferApproval: localPrefs.requireTransferApproval,
+      transferApprovalTimeout: localPrefs.transferApprovalTimeout,
+    });
+  };
+
+  const updatePref = <K extends keyof UserPreferencesData>(key: K, value: UserPreferencesData[K]) => {
+    setLocalPrefs(prev => prev ? { ...prev, [key]: value } : null);
   };
 
   if (!user) return null;
@@ -346,148 +277,383 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-4 pb-12">
+      <div className="max-w-3xl mx-auto space-y-6 pb-12">
         
-        {/* Header */}
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
-              <SettingsIcon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-sm text-muted-foreground">Customize your experience</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <SettingsIcon className="w-5 h-5 text-white" />
+              </div>
+              Settings
+            </h1>
+            <p className="text-muted-foreground mt-1">Customize your Finatrades experience</p>
           </div>
-          <Button onClick={handleSave} disabled={saveMutation.isPending} size="sm" data-testid="button-save-settings">
-            {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Save</>}
+          <Button onClick={handleSave} disabled={saveMutation.isPending} data-testid="button-save-settings">
+            {saveMutation.isPending ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+            ) : (
+              <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+            )}
           </Button>
         </div>
 
-        {/* Lock Gold - Featured */}
-        <LockGoldPriceSection />
-
-        {/* Notifications */}
-        <SettingSection title="Notifications">
-          <SettingRow icon={Mail} iconColor="text-blue-500" iconBg="bg-blue-500/10" label="Email Notifications" description="Receive updates via email">
-            <Switch checked={localPrefs.emailNotifications} onCheckedChange={(v) => updatePref('emailNotifications', v)} data-testid="switch-email-notifications" />
-          </SettingRow>
-          <SettingRow icon={Smartphone} iconColor="text-green-500" iconBg="bg-green-500/10" label="Push Notifications" description="Browser & mobile alerts">
-            <Switch checked={localPrefs.pushNotifications} onCheckedChange={(v) => updatePref('pushNotifications', v)} data-testid="switch-push-notifications" />
-          </SettingRow>
-          <SettingRow icon={TrendingUp} iconColor="text-orange-500" iconBg="bg-orange-500/10" label="Price Alerts" description="Gold price changes">
-            <Switch checked={localPrefs.priceAlerts} onCheckedChange={(v) => updatePref('priceAlerts', v)} data-testid="switch-price-alerts" />
-          </SettingRow>
-          <SettingRow icon={Shield} iconColor="text-red-500" iconBg="bg-red-500/10" label="Security Alerts" description="Login & security updates">
-            <Switch checked={localPrefs.securityAlerts} onCheckedChange={(v) => updatePref('securityAlerts', v)} data-testid="switch-security-alerts" />
-          </SettingRow>
-        </SettingSection>
-
-        {/* Appearance */}
-        <SettingSection title="Appearance">
-          <div className="py-4">
-            <p className="text-sm font-medium mb-3">Theme</p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'light', icon: Sun, label: 'Light' },
-                { value: 'dark', icon: Moon, label: 'Dark' },
-                { value: 'system', icon: SettingsIcon, label: 'Auto' },
-              ].map(({ value, icon: ThemeIcon, label }) => (
-                <button
-                  key={value}
-                  onClick={() => updatePref('theme', value)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                    localPrefs.theme === value 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-transparent bg-muted/50 hover:bg-muted'
-                  }`}
-                  data-testid={`button-theme-${value}`}
-                >
-                  <ThemeIcon className={`w-5 h-5 ${localPrefs.theme === value ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <span className={`text-xs font-medium ${localPrefs.theme === value ? 'text-primary' : 'text-muted-foreground'}`}>{label}</span>
-                </button>
-              ))}
+        <Card data-testid="card-notifications">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              Notification Preferences
+            </CardTitle>
+            <CardDescription>Choose how you want to receive updates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <Label className="text-base">Email Notifications</Label>
+                  <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                </div>
+              </div>
+              <Switch 
+                checked={localPrefs.emailNotifications}
+                onCheckedChange={(v) => updatePref('emailNotifications', v)}
+                data-testid="switch-email-notifications"
+              />
             </div>
-          </div>
-                    <SettingRow icon={Wallet} iconColor="text-green-500" iconBg="bg-green-500/10" label="Currency">
-            <Select value={localPrefs.displayCurrency} onValueChange={(v) => updatePref('displayCurrency', v)}>
-              <SelectTrigger className="w-24 h-8" data-testid="select-currency">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="AED">AED</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-        </SettingSection>
 
-        {/* Privacy & Security */}
-        <SettingSection title="Privacy & Security">
-          <SettingRow 
-            icon={localPrefs.showBalance ? Eye : EyeOff} 
-            iconColor={localPrefs.showBalance ? 'text-primary' : 'text-muted-foreground'} 
-            iconBg="bg-primary/10" 
-            label="Show Balance" 
-            description="Display on dashboard"
-          >
-            <Switch checked={localPrefs.showBalance} onCheckedChange={(v) => updatePref('showBalance', v)} data-testid="switch-show-balance" />
-          </SettingRow>
-          <SettingRow icon={Shield} iconColor="text-yellow-600" iconBg="bg-yellow-500/10" label="2FA Reminder" description="Show if not enabled">
-            <Switch checked={localPrefs.twoFactorReminder} onCheckedChange={(v) => updatePref('twoFactorReminder', v)} data-testid="switch-2fa-reminder" />
-          </SettingRow>
-        </SettingSection>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
+                  <Label className="text-base">Push Notifications</Label>
+                  <p className="text-sm text-muted-foreground">Browser and mobile notifications</p>
+                </div>
+              </div>
+              <Switch 
+                checked={localPrefs.pushNotifications}
+                onCheckedChange={(v) => updatePref('pushNotifications', v)}
+                data-testid="switch-push-notifications"
+              />
+            </div>
 
-        {/* Transfers */}
-        <SettingSection title="Transfers">
-          <SettingRow icon={Clock} iconColor="text-blue-500" iconBg="bg-blue-500/10" label="Auto-Expire Timeout" description="Pending transfer expiry">
-            <Select value={String(localPrefs.transferApprovalTimeout)} onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}>
-              <SelectTrigger className="w-24 h-8" data-testid="select-transfer-timeout">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="12">12h</SelectItem>
-                <SelectItem value="24">24h</SelectItem>
-                <SelectItem value="48">48h</SelectItem>
-                <SelectItem value="72">72h</SelectItem>
-                <SelectItem value="0">Never</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-        </SettingSection>
+            <Separator />
 
-        {/* Finatrades ID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Transaction Alerts</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.transactionAlerts}
+                  onCheckedChange={(v) => updatePref('transactionAlerts', v)}
+                  data-testid="switch-transaction-alerts"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Price Alerts</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.priceAlerts}
+                  onCheckedChange={(v) => updatePref('priceAlerts', v)}
+                  data-testid="switch-price-alerts"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Security Alerts</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.securityAlerts}
+                  onCheckedChange={(v) => updatePref('securityAlerts', v)}
+                  data-testid="switch-security-alerts"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Marketing & News</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.marketingEmails}
+                  onCheckedChange={(v) => updatePref('marketingEmails', v)}
+                  data-testid="switch-marketing-emails"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Monthly Summary</span>
+                </div>
+                <Switch 
+                  checked={localPrefs.monthlySummaryEmails}
+                  onCheckedChange={(v) => updatePref('monthlySummaryEmails', v)}
+                  data-testid="switch-monthly-summary"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-display">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="w-5 h-5 text-primary" />
+              Display Settings
+            </CardTitle>
+            <CardDescription>Customize how information is displayed</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Display Currency</Label>
+                <Select 
+                  value={localPrefs.displayCurrency}
+                  onValueChange={(v) => updatePref('displayCurrency', v)}
+                >
+                  <SelectTrigger data-testid="select-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="AED">AED (Dh)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Gold is always stored in grams</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <Select 
+                  value={localPrefs.language}
+                  onValueChange={(v) => updatePref('language', v)}
+                >
+                  <SelectTrigger data-testid="select-language">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <Label className="text-base">Theme</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Button
+                  variant={localPrefs.theme === 'light' ? 'default' : 'outline'}
+                  className="h-auto py-4 flex-col gap-2"
+                  onClick={() => updatePref('theme', 'light')}
+                  data-testid="button-theme-light"
+                >
+                  <Sun className="w-5 h-5" />
+                  <span>Light</span>
+                </Button>
+                <Button
+                  variant={localPrefs.theme === 'dark' ? 'default' : 'outline'}
+                  className="h-auto py-4 flex-col gap-2"
+                  onClick={() => updatePref('theme', 'dark')}
+                  data-testid="button-theme-dark"
+                >
+                  <Moon className="w-5 h-5" />
+                  <span>Dark</span>
+                </Button>
+                <Button
+                  variant={localPrefs.theme === 'system' ? 'default' : 'outline'}
+                  className="h-auto py-4 flex-col gap-2"
+                  onClick={() => updatePref('theme', 'system')}
+                  data-testid="button-theme-system"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                  <span>System</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div>
+                <Label className="text-base">Compact Mode</Label>
+                <p className="text-sm text-muted-foreground">Show more information in less space</p>
+              </div>
+              <Switch 
+                checked={localPrefs.compactMode}
+                onCheckedChange={(v) => updatePref('compactMode', v)}
+                data-testid="switch-compact-mode"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+
         <FinatradesIdSection />
 
-        {/* Advanced */}
-        <SettingSection title="Advanced">
-          <SettingRow icon={RefreshCw} iconColor="text-blue-500" iconBg="bg-blue-500/10" label="Refresh Data" description="Clear cache & reload">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                clearQueryCache();
-                queryClient.invalidateQueries();
-                toast.success('Data refreshed');
-                window.location.reload();
-              }}
-              data-testid="button-refresh-data"
-            >
-              Refresh
-            </Button>
-          </SettingRow>
-        </SettingSection>
+        <Card data-testid="card-privacy">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Privacy Settings
+            </CardTitle>
+            <CardDescription>Control your privacy preferences</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  {localPrefs.showBalance ? (
+                    <Eye className="w-5 h-5 text-primary" />
+                  ) : (
+                    <EyeOff className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <Label className="text-base">Show Balance</Label>
+                  <p className="text-sm text-muted-foreground">Display balance on dashboard</p>
+                </div>
+              </div>
+              <Switch 
+                checked={localPrefs.showBalance}
+                onCheckedChange={(v) => updatePref('showBalance', v)}
+                data-testid="switch-show-balance"
+              />
+            </div>
 
-        {/* Sign Out */}
-        <div className="bg-red-50 rounded-xl border border-red-200 overflow-hidden">
-          <SettingRow icon={LogOut} iconColor="text-red-500" iconBg="bg-red-500/10" label="Sign Out" description="End your session">
-            <Button variant="destructive" size="sm" onClick={logout} data-testid="button-signout">
-              Sign Out
-            </Button>
-          </SettingRow>
-        </div>
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <Label className="text-base">2FA Reminder</Label>
+                  <p className="text-sm text-muted-foreground">Show reminder if 2FA is not enabled</p>
+                </div>
+              </div>
+              <Switch 
+                checked={localPrefs.twoFactorReminder}
+                onCheckedChange={(v) => updatePref('twoFactorReminder', v)}
+                data-testid="switch-2fa-reminder"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
+        <Card data-testid="card-payment">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowDownLeft className="w-5 h-5 text-primary" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Control how you receive payments and transfers</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-green-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base">Transfer Approval</Label>
+                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                      Always Enabled
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    For your security, you must accept or reject incoming transfers before they are added to your wallet
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Clock className="w-5 h-5 text-muted-foreground" />
+                <Label className="text-base">Auto-Expire Timeout</Label>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Pending transfers will automatically be rejected after this time if not accepted
+              </p>
+              <Select 
+                value={String(localPrefs.transferApprovalTimeout)}
+                onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}
+              >
+                <SelectTrigger data-testid="select-transfer-timeout" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12">12 hours</SelectItem>
+                  <SelectItem value="24">24 hours</SelectItem>
+                  <SelectItem value="48">48 hours</SelectItem>
+                  <SelectItem value="72">72 hours</SelectItem>
+                  <SelectItem value="0">Never (manual only)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="p-3 bg-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
+                <strong>How it works:</strong> When someone sends you gold or money, you'll receive a notification. 
+                You can then accept (receive funds) or reject (return funds to sender) the transfer from your FinaPay page.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-advanced">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Advanced
+            </CardTitle>
+            <CardDescription>Cache and data management options</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <Label className="text-base">Refresh All Data</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Clear cached data and fetch fresh information from the server
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  clearQueryCache();
+                  queryClient.invalidateQueries();
+                  toast.success('All data refreshed successfully');
+                  window.location.reload();
+                }}
+                data-testid="button-refresh-data"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Use this if you notice outdated information on your dashboard or wallet balances. 
+                This will reload all your account data from the server.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

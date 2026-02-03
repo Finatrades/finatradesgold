@@ -34,16 +34,12 @@ interface ChatAgent {
   status: string;
 }
 
-async function getChatbotResponse(message: string, agentType?: string, conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<{
+async function getChatbotResponse(message: string, agentType?: string): Promise<{
   reply: string;
   suggestedActions?: string[];
   escalateToHuman?: boolean;
   collectData?: ChatbotMessage['collectData'];
   agent?: { id: string; name: string; type: string };
-  priority?: 'normal' | 'high' | 'urgent';
-  sentiment?: string;
-  escalationReason?: string;
-  contextForAgent?: any;
 }> {
   try {
     const response = await fetch('/api/chatbot/message', {
@@ -53,7 +49,7 @@ async function getChatbotResponse(message: string, agentType?: string, conversat
         'X-Requested-With': 'XMLHttpRequest'
       },
       credentials: 'include',
-      body: JSON.stringify({ message, agentType, conversationHistory }),
+      body: JSON.stringify({ message, agentType }),
     });
     if (!response.ok) throw new Error('Failed to get response');
     return await response.json();
@@ -134,48 +130,19 @@ function FloatingAgentChatContent() {
     setIsOpen(true);
     setShowNotification(false);
     
-    // If user is logged in, skip guest form entirely
-    if (user) {
-      setShowGuestForm(false);
-      // Show greeting if no messages yet
-      if (chatbotMessages.length === 0 && !useHumanAgent) {
-        const greeting: ChatbotMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          content: `Hey ${user.firstName}! 👋\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.`,
-          timestamp: new Date(),
-          suggestedActions: [
-            '1. Create Account',
-            '2. Login Help',
-            '3. Complete Verification',
-            '4. Understand My Balance',
-            '5. Add Funds',
-            '6. Send Payment',
-            '7. Request Payment',
-            '8. View Certificates',
-            '9. BNSL Plans',
-            '10. FinaBridge',
-            '11. Troubleshooting',
-            '12. Contact Support'
-          ]
-        };
-        setChatbotMessages([greeting]);
-      }
-      return;
-    }
-    
-    // For guests (not logged in), ask for name and email first
-    if (!guestInfo) {
+    // For guests (not logged in), always ask for name and email first
+    if (!user && !guestInfo) {
       setShowGuestForm(true);
       return;
     }
     
-    // Show greeting if no messages yet - Main Menu (for guests with info)
+    // Show greeting if no messages yet - Main Menu
     if (chatbotMessages.length === 0 && !useHumanAgent) {
+      const userName = user ? user.firstName : guestInfo?.name;
       const greeting: ChatbotMessage = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        content: `Hey ${guestInfo.name}! 👋\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.`,
+        content: `Hello ${userName}! Welcome to Finatrades.\n\nI'm your AI assistant. Please select an option from the menu below:`,
         timestamp: new Date(),
         suggestedActions: [
           '1. Create Account',
@@ -194,11 +161,9 @@ function FloatingAgentChatContent() {
       };
       setChatbotMessages([greeting]);
     }
-  };
-  
-  // Set up human agent session when switching to human mode
-  useEffect(() => {
-    if (useHumanAgent && isOpen) {
+    
+    // For human agent mode, set up session
+    if (useHumanAgent) {
       if (user) {
         const existingSession = sessions.find(s => s.userId === user.id);
         if (existingSession) {
@@ -215,7 +180,7 @@ function FloatingAgentChatContent() {
         }
       }
     }
-  }, [useHumanAgent, isOpen, user, guestInfo]);
+  };
 
   const handleGuestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,69 +295,10 @@ function FloatingAgentChatContent() {
     setChatbotMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     
-    // Build conversation history for context (include current user message)
-    const conversationHistory = [
-      ...chatbotMessages.map(msg => ({
-        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
-        content: msg.content
-      })),
-      { role: 'user' as const, content: userMessage }
-    ];
-    
-    // Get chatbot response - pass current agent type and conversation history
-    const response = await getChatbotResponse(userMessage, currentAgent.type, conversationHistory);
+    // Get chatbot response - pass current agent type for routing
+    const response = await getChatbotResponse(userMessage, currentAgent.type);
     
     // Add bot response
-    const botMsg: ChatbotMessage = {
-      id: `bot-${Date.now()}`,
-      sender: 'bot',
-      content: response.reply,
-      timestamp: new Date(),
-      suggestedActions: response.suggestedActions
-    };
-    setChatbotMessages(prev => [...prev, botMsg]);
-    setIsLoading(false);
-    
-    // Handle escalation with priority indicator
-    if (response.escalateToHuman) {
-      // Show priority indicator if urgent/high
-      if (response.priority === 'urgent') {
-        console.log('[Chat] URGENT escalation triggered:', response.escalationReason);
-      } else if (response.priority === 'high') {
-        console.log('[Chat] HIGH priority escalation:', response.escalationReason);
-      }
-      setTimeout(() => escalateToHuman(), 1500);
-    }
-  }, [message, useHumanAgent, sendMessage, escalateToHuman, chatbotMessages]);
-  
-  const handleQuickAction = useCallback(async (action: string) => {
-    if (action === 'Speak to Agent' || action === 'Talk to Human') {
-      escalateToHuman();
-      return;
-    }
-    
-    // Add user message
-    const userMsg: ChatbotMessage = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      content: action,
-      timestamp: new Date()
-    };
-    setChatbotMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
-    
-    // Build conversation history for context (include current action)
-    const conversationHistory = [
-      ...chatbotMessages.map(msg => ({
-        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
-        content: msg.content
-      })),
-      { role: 'user' as const, content: action }
-    ];
-    
-    // Get chatbot response - pass current agent type and conversation history
-    const response = await getChatbotResponse(action, currentAgent.type, conversationHistory);
-    
     const botMsg: ChatbotMessage = {
       id: `bot-${Date.now()}`,
       sender: 'bot',
@@ -407,7 +313,37 @@ function FloatingAgentChatContent() {
     if (response.escalateToHuman) {
       setTimeout(() => escalateToHuman(), 1500);
     }
-  }, [escalateToHuman, chatbotMessages]);
+  }, [message, useHumanAgent, sendMessage, escalateToHuman]);
+  
+  const handleQuickAction = useCallback(async (action: string) => {
+    if (action === 'Speak to Agent') {
+      escalateToHuman();
+      return;
+    }
+    
+    // Add user message
+    const userMsg: ChatbotMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      content: action,
+      timestamp: new Date()
+    };
+    setChatbotMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+    
+    // Get chatbot response - pass current agent type for routing
+    const response = await getChatbotResponse(action, currentAgent.type);
+    
+    const botMsg: ChatbotMessage = {
+      id: `bot-${Date.now()}`,
+      sender: 'bot',
+      content: response.reply,
+      timestamp: new Date(),
+      suggestedActions: response.suggestedActions
+    };
+    setChatbotMessages(prev => [...prev, botMsg]);
+    setIsLoading(false);
+  }, [escalateToHuman]);
 
   const displayMessages = useHumanAgent 
     ? (currentSession?.messages || [])
@@ -431,6 +367,38 @@ function FloatingAgentChatContent() {
         isVisible={!!activeCall} 
       />
 
+      {/* Notification Bubble */}
+      <AnimatePresence>
+        {showNotification && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 20, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.8 }}
+            className={`fixed z-50 bg-popover border border-border rounded-2xl shadow-xl p-4 min-w-[220px] ${isMobile ? 'top-16 right-2' : 'bottom-24 right-6'}`}
+          >
+            <button
+              onClick={() => setShowNotification(false)}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors border border-border"
+            >
+              <X className="w-3 h-3" />
+            </button>
+            <div className="flex items-center gap-3">
+              <img
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
+                alt="Finatrades AI"
+                className="w-12 h-12 object-contain"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">Hey, I'm here! 👋</p>
+                <p className="text-xs text-muted-foreground">Need any help?</p>
+              </div>
+            </div>
+            {/* Arrow pointer */}
+            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-popover border-r border-b border-border transform rotate-45" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Button */}
       <AnimatePresence>
         {!isOpen && (
@@ -450,41 +418,14 @@ function FloatingAgentChatContent() {
               }
             }}
             onClick={openChat}
-            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'bottom-24 right-4' : 'bottom-6 right-6'}`}
+            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'top-2 right-2 w-12 h-12' : 'bottom-6 right-6 w-20 h-20'}`}
           >
-            {/* Speech bubble - "Hey, I'm here!" */}
-            <motion.div 
-              className={`absolute ${isMobile ? '-left-28 -top-2' : '-left-36 -top-3'} bg-white rounded-2xl shadow-lg border border-purple-200 px-3 py-2`}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-purple-700 whitespace-nowrap`}>
-                👋 Hey, I'm here!
-              </p>
-              {/* Speech bubble arrow */}
-              <div className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
-              <div className="absolute top-1/2 -right-[9px] transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-purple-200" style={{ zIndex: -1 }} />
-            </motion.div>
-            
-            {/* Round avatar with gradient border */}
-            <div className={`relative ${isMobile ? 'w-14 h-14' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500 p-[3px] shadow-xl`}>
-              <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                <img
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
-                  alt="Chat"
-                  className={`object-contain ${isMobile ? 'w-12 h-12' : 'w-16 h-16'}`}
-                />
-              </div>
-              {/* Online indicator */}
-              <div className={`absolute ${isMobile ? 'bottom-0 right-0 w-4 h-4' : 'bottom-1 right-1 w-5 h-5'} bg-green-500 rounded-full border-2 border-white`}>
-                <motion.div 
-                  className="w-full h-full bg-green-400 rounded-full"
-                  animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-              </div>
-            </div>
+            <img
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
+              alt="Chat"
+              className={`object-contain drop-shadow-2xl ${isMobile ? 'w-12 h-12' : 'w-20 h-20'}`}
+            />
+            <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -496,7 +437,7 @@ function FloatingAgentChatContent() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className={`fixed z-50 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'bottom-24 right-2 left-2 w-auto max-w-none max-h-[70vh]' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
+            className={`fixed z-50 bg-background border border-border rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'top-14 right-2 left-2 w-auto max-w-none' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary to-[#FF2FBF] p-4 flex items-center gap-3">
@@ -549,7 +490,7 @@ function FloatingAgentChatContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-96 overflow-y-auto p-3 space-y-2 bg-white"
+                  className="h-96 overflow-y-auto p-3 space-y-2 bg-background"
                 >
                   {agents.map((agent, idx) => (
                     <div
@@ -557,8 +498,8 @@ function FloatingAgentChatContent() {
                       onClick={() => agent.active ? switchAgent(agent) : setComingSoonAgent(agent)}
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                         currentAgent.name === agent.name
-                          ? 'bg-purple-50 border border-primary/50'
-                          : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
+                          ? 'bg-primary/10 border border-primary/50'
+                          : 'bg-muted hover:bg-muted/80 border border-transparent'
                       }`}
                     >
                       <div className={`w-12 h-12 rounded-full overflow-hidden bg-white/10 flex-shrink-0 relative ${!agent.active ? 'grayscale' : ''}`}>
@@ -570,61 +511,61 @@ function FloatingAgentChatContent() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-gray-900 font-medium text-sm">{agent.name}</h4>
+                          <h4 className="text-foreground font-medium text-sm">{agent.name}</h4>
                           {!agent.active && (
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-gray-100 border border-gray-200 text-gray-500 rounded-full">
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-muted border border-border text-muted-foreground rounded-full">
                               Coming Soon
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-500 text-xs">{agent.role}</p>
+                        <p className="text-muted-foreground text-xs">{agent.role}</p>
                       </div>
                     </div>
                   ))}
                 </motion.div>
-              ) : showGuestForm && !user ? (
+              ) : showGuestForm ? (
                 <motion.div
                   key="guest-form"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="bg-white p-6"
+                  className="bg-background p-6"
                 >
                   <div className="text-center mb-6">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-primary to-[#FF2FBF] flex items-center justify-center">
                       <User className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Start a Conversation</h3>
-                    <p className="text-sm text-gray-500 mt-1">Please enter your details to begin chatting</p>
+                    <h3 className="text-lg font-semibold text-foreground">Start a Conversation</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Please enter your details to begin chatting</p>
                   </div>
                   <form onSubmit={handleGuestSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="guest-name" className="text-gray-800 font-medium">Your Name</Label>
+                      <Label htmlFor="guest-name" className="text-foreground">Your Name</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="guest-name"
                           type="text"
                           placeholder="Enter your name"
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
-                          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                          className="pl-10"
                           required
                           data-testid="input-guest-name"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="guest-email" className="text-gray-800 font-medium">Email Address</Label>
+                      <Label htmlFor="guest-email" className="text-foreground">Email Address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="guest-email"
                           type="email"
                           placeholder="Enter your email"
                           value={guestEmail}
                           onChange={(e) => setGuestEmail(e.target.value)}
-                          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                          className="pl-10"
                           required
                           data-testid="input-guest-email"
                         />
@@ -646,7 +587,7 @@ function FloatingAgentChatContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="bg-white"
+                  className="bg-background"
                 >
                   {/* Chat Messages */}
                   <div className="h-72 overflow-y-auto p-4 space-y-3">
@@ -667,13 +608,13 @@ function FloatingAgentChatContent() {
                               className={`rounded-2xl px-4 py-2.5 ${
                                 isUser
                                   ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
-                                  : 'bg-gray-100 text-gray-900 border border-gray-200'
+                                  : 'bg-muted text-foreground border border-border'
                               }`}
                             >
                               {!isUser && (
                                 <div className="flex items-center gap-1.5 mb-1">
-                                  <Bot className="w-3.5 h-3.5 text-purple-600" />
-                                  <span className="text-xs font-medium text-purple-600">Assistant</span>
+                                  <Bot className="w-3.5 h-3.5 text-primary" />
+                                  <span className="text-xs font-medium text-primary">Assistant</span>
                                 </div>
                               )}
                               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -685,7 +626,7 @@ function FloatingAgentChatContent() {
                                   <button
                                     key={actionIdx}
                                     onClick={() => handleQuickAction(action)}
-                                    className="text-xs px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors border border-purple-200"
+                                    className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
                                     data-testid={`quick-action-${actionIdx}`}
                                   >
                                     {action}
@@ -704,9 +645,9 @@ function FloatingAgentChatContent() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex justify-start"
                       >
-                        <div className="bg-gray-100 text-gray-900 border border-gray-200 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                          <span className="text-sm text-gray-500">Thinking...</span>
+                        <div className="bg-muted text-foreground border border-border rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Thinking...</span>
                         </div>
                       </motion.div>
                     )}
@@ -715,11 +656,11 @@ function FloatingAgentChatContent() {
 
                   {/* Quick Actions Bar - only show for chatbot */}
                   {!useHumanAgent && (
-                    <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+                    <div className="px-4 py-2 border-t border-border bg-muted/20">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => escalateToHuman()}
-                          className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors border border-orange-200"
+                          className="text-xs px-3 py-1.5 rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors border border-secondary/20"
                           data-testid="speak-to-agent"
                         >
                           Speak to Agent
@@ -729,13 +670,13 @@ function FloatingAgentChatContent() {
                   )}
 
                   {/* Input */}
-                  <div className="p-4 border-t border-gray-200 flex gap-2 bg-white">
+                  <div className="p-4 border-t border-border flex gap-2 bg-background">
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
                       placeholder={useHumanAgent ? "Message support..." : "Ask me anything..."}
-                      className="flex-1 bg-gray-100 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-purple-500"
+                      className="flex-1 bg-muted border-input text-foreground placeholder:text-muted-foreground focus:border-primary"
                       disabled={isLoading}
                       data-testid="input-chat-message"
                     />
@@ -769,7 +710,7 @@ function FloatingAgentChatContent() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+              className="bg-background border border-border rounded-2xl p-6 max-w-sm w-full shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Agent Image */}
@@ -785,59 +726,59 @@ function FloatingAgentChatContent() {
 
               {/* Content */}
               <div className="text-center">
-                <span className="inline-block px-3 py-1 text-xs font-medium bg-gray-100 border border-gray-200 text-gray-600 rounded-full mb-3">
+                <span className="inline-block px-3 py-1 text-xs font-medium bg-muted border border-border text-muted-foreground rounded-full mb-3">
                   Coming Soon
                 </span>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{comingSoonAgent.name}</h3>
-                <p className="text-purple-600 text-sm mb-3">{comingSoonAgent.role}</p>
-                <p className="text-gray-600 text-sm mb-6">
+                <h3 className="text-xl font-bold text-foreground mb-1">{comingSoonAgent.name}</h3>
+                <p className="text-secondary text-sm mb-3">{comingSoonAgent.role}</p>
+                <p className="text-muted-foreground text-sm mb-6">
                   {comingSoonAgent.name} is currently under development and will be available soon with advanced capabilities for {comingSoonAgent.role.toLowerCase()}.
                 </p>
 
                 {/* Features Preview */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left border border-gray-200">
-                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
+                <div className="bg-muted/30 rounded-xl p-4 mb-6 text-left border border-border">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
                   <ul className="space-y-2">
                     {comingSoonAgent.name === "Vaultis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Gold storage management</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Vault allocation tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Certificate verification</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Gold storage management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Vault allocation tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Certificate verification</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Payis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Payment initiation</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Transaction tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Wallet management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Payment initiation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Transaction tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Wallet management</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Tradis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Trade document generation</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Deal structuring assistance</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Settlement coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trade document generation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Deal structuring assistance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Settlement coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Juris" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Compliance checks</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Regulatory guidance</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Legal document review</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Compliance checks</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Regulatory guidance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Legal document review</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Logis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Shipment tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Documentation handling</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Delivery coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Shipment tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Documentation handling</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Delivery coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Markis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Market analysis</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Price predictions</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Trend insights</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Market analysis</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Price predictions</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trend insights</li>
                       </>
                     )}
                   </ul>

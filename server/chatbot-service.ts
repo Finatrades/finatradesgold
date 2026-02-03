@@ -10,26 +10,6 @@ interface ChatbotResponse {
   confidence: number;
   suggestedActions?: string[];
   escalateToHuman?: boolean;
-  escalationReason?: string;
-  priority?: 'normal' | 'high' | 'urgent';
-  sentiment?: 'positive' | 'neutral' | 'negative' | 'frustrated';
-  contextForAgent?: AgentHandoffContext;
-}
-
-// Context to pass to human agent during handoff
-export interface AgentHandoffContext {
-  userId?: string;
-  userName?: string;
-  userEmail?: string;
-  goldBalance?: number;
-  vaultGold?: number;
-  kycStatus?: string;
-  chatHistory: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: Date }>;
-  escalationReason: string;
-  priority: 'normal' | 'high' | 'urgent';
-  sentiment: string;
-  securityConcern: boolean;
-  detectedIssues: string[];
 }
 
 // User context for personalized responses (only for authenticated users)
@@ -130,7 +110,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['what is finatrades', 'about finatrades', 'finatrades platform', 'what does finatrades do'],
     patterns: [/what is finatrades/i, /about finatrades/i, /tell me about finatrades/i, /what does finatrades do/i],
-    response: "So basically, Finatrades lets you own real gold digitally! 🪙\n\nYou can store it, send it to friends, earn on it, or use it for business payments. The cool part? Every gram you see is backed by actual physical gold stored in Dubai.\n\nWe show values in dollars so it's easy to understand, but the gold is what you actually own. Think of it like a digital gold wallet!",
+    response: "Finatrades is a gold-backed digital financial platform that allows users to store, transfer, earn, and settle value using physical gold.\n\nAlthough balances are displayed in USD for convenience, all real value is held in gold grams. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC.\n\nFinatrades combines the reliability of physical gold with the usability of modern digital banking, without relying on fiat inflation or speculative assets.",
     category: 'general',
     actions: ['Learn More', 'Sign Up']
   },
@@ -138,7 +118,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['usd changed', 'balance changed', 'gold vs usd', 'why usd', 'value changed'],
     patterns: [/why (did|does) my (usd|balance|value) chang/i, /gold vs usd/i, /usd reference/i, /balance show usd/i, /value (is different|changed)/i],
-    response: "Ah, I get this question a lot! Here's the thing - your gold grams are what you actually own. The dollar amount? That's just showing you what it's worth right now.\n\nSo when gold prices move, your dollar value changes - but your gold stays the same! Pretty simple once you get it. 😊\n\nYour gold only changes when you actually do something like add funds, send payments, or withdraw.",
+    response: "On Finatrades, gold grams are your actual balance. USD is shown only as a reference value so users can easily understand worth.\n\nYour USD value may change with market prices, but your gold grams remain the same unless you:\n• Add funds\n• Send or receive payments\n• Lock gold in BNSL or trade settlement\n• Withdraw or sell gold\n\nRemember: Gold is your real asset. USD is just for display.",
     category: 'account',
     actions: ['View Dashboard']
   },
@@ -146,7 +126,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['personal account', 'business account', 'account type', 'account difference'],
     patterns: [/personal (vs|or|and) business/i, /account type/i, /difference between.*account/i, /business account/i, /personal account/i],
-    response: "We have two types!\n\n**Personal** - Perfect for individuals. You get the gold wallet (FinaPay), vault storage, and BNSL earning plans.\n\n**Business** - Everything personal has, plus FinaBridge for trade settlements if you're into import/export.\n\nMost people go with Personal. Which one sounds right for you?",
+    response: "Finatrades offers two account types:\n\n**Personal Account includes:**\n• FinaPay (gold-backed wallet)\n• FinaVault (secure gold storage)\n• BNSL (gold-based yield plans)\n\n**Business Account includes:**\n• All Personal features\n• FinaBridge (trade settlement for importers/exporters)\n\nThe only difference is access to trade finance tools.",
     category: 'account',
     actions: ['View Profile']
   },
@@ -154,7 +134,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['finapay', 'what is finapay', 'digital wallet', 'gold wallet'],
     patterns: [/what is finapay/i, /finapay wallet/i, /digital wallet/i, /gold wallet/i],
-    response: "FinaPay is basically your gold wallet! 💰\n\nYou can add money (card, bank, or crypto), send gold to friends, or request payments from others. Super easy to use.\n\nEverything shows in dollars, but you're actually sending real gold ownership. Pretty cool, right?",
+    response: "FinaPay is your gold-backed digital wallet.\n\nYou can:\n• Add funds (Card / Bank / Crypto)\n• Send payments to other users\n• Request payments from others\n\nAll transactions represent gold ownership transfers, even though amounts are displayed in USD for convenience.",
     category: 'finapay',
     actions: ['Go to FinaPay', 'Deposit Funds']
   },
@@ -202,7 +182,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['vault', 'finavault', 'storage', 'secure', 'store gold', 'gold vault'],
     patterns: [/what is (fina)?vault/i, /vault storage/i, /store (my )?gold/i, /secure storage/i, /long.?term/i, /gold vault/i],
-    response: "FinaVault is where you see all your gold! 🔐\n\nIt shows how much you own, what's available to use, what's locked in plans, and all your certificates.\n\nYour gold is stored in top-tier insured vaults. You can move it back to your wallet or cash out whenever you want.",
+    response: "FinaVault is your digital gold vault.\n\nIt shows:\n• Total gold owned\n• Available gold\n• Locked gold\n• Certificates\n\nFinaVault is the official record of your gold ownership on Finatrades. Your gold is stored in insured, Grade-A vaults and you can cash out or transfer back to wallet anytime.",
     category: 'vault',
     actions: ['Go to FinaVault']
   },
@@ -242,7 +222,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['bnsl', 'buy now sell later', 'lock', 'profit', 'guaranteed', 'yield', 'returns'],
     patterns: [/what is bnsl/i, /buy now sell later/i, /lock gold/i, /guaranteed (return|profit)/i, /bnsl (plan|return)/i],
-    response: "BNSL is our earning program! Basically, you lock your gold for a set time and earn a margin on it.\n\nHere's how it breaks down:\n• 12 months → 10%\n• 24 months → 11%\n• 36 months → 12%\n\nYou get paid quarterly in gold value. The longer you commit, the better the return! Want me to help you pick a plan?",
+    response: "BNSL (Buy Now Sell Later) allows you to commit gold for a fixed term and earn a margin.\n\nPlans:\n• 12 months → 10%\n• 24 months → 11%\n• 36 months → 12%\n\nGold is locked during the term. Returns accrue daily and are paid quarterly in gold value.\n\nNote: Returns are defined per plan terms and settled quarterly.",
     category: 'bnsl',
     actions: ['Explore BNSL Plans']
   },
@@ -298,7 +278,7 @@ const FAQ_DATABASE: FAQEntry[] = [
   {
     keywords: ['security', 'safe', '2fa', 'mfa', 'two factor', 'protect'],
     patterns: [/is (it|my gold) safe/i, /security/i, /2fa|mfa|two.?factor/i, /protect my account/i],
-    response: "Your gold is super safe! 🔒\n\nWe use bank-level encryption, 2FA is available, and your gold sits in insured Grade-A vaults. We run security audits regularly and monitor everything 24/7.\n\nQuick tip: Turn on 2FA in Settings for extra peace of mind!",
+    response: "Your security is our priority:\n\n• 256-bit SSL encryption\n• Two-factor authentication (2FA) available\n• Biometric login support\n• Gold stored in insured Grade-A vaults\n• Regular security audits\n• 24/7 monitoring\n\nEnable 2FA in Settings for extra protection.",
     category: 'security',
     actions: ['Enable 2FA', 'Security Settings']
   },
@@ -901,107 +881,10 @@ const FAQ_DATABASE: FAQEntry[] = [
   }
 ];
 
-// Standard escalation keywords (normal priority)
 const ESCALATION_KEYWORDS = [
   'speak to human', 'real person', 'agent', 'representative', 'manager',
   'escalate', 'not helpful', 'talk to someone', 'human support'
 ];
-
-// Security/fraud keywords (URGENT priority - instant escalation)
-const SECURITY_KEYWORDS = [
-  'fraud', 'hacked', 'stolen', 'unauthorized', 'phishing', 'scam', 'scammed',
-  'account compromised', 'money stolen', 'gold stolen', 'suspicious transaction',
-  'didnt authorize', "didn't authorize", 'not me', 'someone else', 'identity theft',
-  'locked out', 'cant access', "can't access", 'password stolen', 'hacker',
-  'suspicious activity', 'unknown transaction', 'not my transaction'
-];
-
-// Frustrated user keywords (HIGH priority)
-const FRUSTRATION_KEYWORDS = [
-  'useless', 'terrible', 'worst', 'horrible', 'angry', 'frustrated', 'annoyed',
-  'stupid', 'ridiculous', 'unacceptable', 'waste of time', 'incompetent',
-  'not working', 'broken', 'fix this', 'very upset', 'extremely disappointed',
-  'this is wrong', 'tired of', 'sick of', 'fed up', 'hours waiting', 'days waiting',
-  'still waiting', 'no response', 'ignored', 'nobody helps', 'failed again'
-];
-
-// Detect sentiment from message
-function detectSentiment(message: string): { sentiment: 'positive' | 'neutral' | 'negative' | 'frustrated'; score: number } {
-  const normalizedMsg = message.toLowerCase();
-  
-  // Check for frustration first (highest priority)
-  const frustrationCount = FRUSTRATION_KEYWORDS.filter(kw => normalizedMsg.includes(kw)).length;
-  if (frustrationCount >= 2 || normalizedMsg.includes('!!!') || (normalizedMsg.match(/!/g) || []).length >= 3) {
-    return { sentiment: 'frustrated', score: 0.9 };
-  }
-  if (frustrationCount === 1) {
-    return { sentiment: 'negative', score: 0.7 };
-  }
-  
-  // Check for positive indicators
-  const positiveKeywords = ['thank', 'great', 'excellent', 'helpful', 'appreciate', 'love', 'awesome', 'perfect'];
-  const positiveCount = positiveKeywords.filter(kw => normalizedMsg.includes(kw)).length;
-  if (positiveCount > 0) {
-    return { sentiment: 'positive', score: 0.8 };
-  }
-  
-  return { sentiment: 'neutral', score: 0.5 };
-}
-
-// Check for security concerns
-function detectSecurityConcern(message: string): { isSecurityConcern: boolean; keywords: string[] } {
-  const normalizedMsg = message.toLowerCase();
-  const detectedKeywords = SECURITY_KEYWORDS.filter(kw => normalizedMsg.includes(kw));
-  return {
-    isSecurityConcern: detectedKeywords.length > 0,
-    keywords: detectedKeywords
-  };
-}
-
-// Determine escalation priority
-function determineEscalationPriority(message: string, sentiment: string): 'normal' | 'high' | 'urgent' {
-  const securityCheck = detectSecurityConcern(message);
-  
-  if (securityCheck.isSecurityConcern) {
-    return 'urgent';
-  }
-  
-  if (sentiment === 'frustrated') {
-    return 'high';
-  }
-  
-  if (sentiment === 'negative') {
-    return 'high';
-  }
-  
-  return 'normal';
-}
-
-// Build handoff context for human agent
-export function buildAgentHandoffContext(
-  userContext: UserContext | undefined,
-  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  escalationReason: string,
-  message: string
-): AgentHandoffContext {
-  const sentimentResult = detectSentiment(message);
-  const securityCheck = detectSecurityConcern(message);
-  const priority = determineEscalationPriority(message, sentimentResult.sentiment);
-  
-  return {
-    userId: userContext?.userId,
-    userName: userContext?.userName,
-    goldBalance: userContext?.goldBalance,
-    vaultGold: userContext?.vaultGold,
-    kycStatus: userContext?.kycStatus,
-    chatHistory: chatHistory.map(msg => ({ ...msg, timestamp: new Date() })),
-    escalationReason,
-    priority,
-    sentiment: sentimentResult.sentiment,
-    securityConcern: securityCheck.isSecurityConcern,
-    detectedIssues: securityCheck.keywords
-  };
-}
 
 function normalizeText(text: string): string {
   return text.toLowerCase().trim().replace(/[^\w\s]/g, '');
@@ -1033,22 +916,6 @@ function shouldEscalate(message: string): boolean {
   return ESCALATION_KEYWORDS.some(keyword => 
     normalizedMessage.includes(keyword.toLowerCase())
   );
-}
-
-// Check for security-related escalation (URGENT)
-function shouldSecurityEscalate(message: string): boolean {
-  const normalizedMessage = message.toLowerCase();
-  return SECURITY_KEYWORDS.some(keyword => 
-    normalizedMessage.includes(keyword.toLowerCase())
-  );
-}
-
-// Check for frustrated user escalation (HIGH priority)
-function shouldFrustrationEscalate(message: string): boolean {
-  const normalizedMessage = message.toLowerCase();
-  const frustrationCount = FRUSTRATION_KEYWORDS.filter(kw => normalizedMessage.includes(kw)).length;
-  // Escalate if ANY frustration keyword or 3+ exclamation marks
-  return frustrationCount >= 1 || (normalizedMessage.match(/!/g) || []).length >= 3;
 }
 
 // Helper to format currency
@@ -1176,53 +1043,14 @@ export interface ChatbotContext {
   goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string };
 }
 
-export function processUserMessage(message: string, userContext?: UserContext, platformConfig?: PlatformConfig, goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }, chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>): ChatbotResponse {
-  // Detect sentiment first
-  const sentimentResult = detectSentiment(message);
-  const securityCheck = detectSecurityConcern(message);
-  
-  // URGENT: Security escalation (fraud, hacked, stolen, etc.)
-  if (shouldSecurityEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'Security concern detected', message);
-    return {
-      message: "🚨 **Security Alert Detected**\n\nI'm immediately connecting you with our Security Team. This is being treated as a priority case.\n\n**While you wait:**\n• Do NOT share any passwords or OTPs with anyone\n• If you suspect unauthorized access, change your password immediately\n• Note down any suspicious transaction IDs\n\nA security specialist will be with you within moments.",
-      category: 'security_escalation',
-      confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: `Security keywords detected: ${securityCheck.keywords.join(', ')}`,
-      priority: 'urgent',
-      sentiment: sentimentResult.sentiment,
-      contextForAgent: handoffContext
-    };
-  }
-  
-  // HIGH: Frustrated user escalation
-  if (shouldFrustrationEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'User frustration detected', message);
-    return {
-      message: "I can see you're frustrated, and I completely understand. Let me connect you with a senior support specialist who can personally assist you right away.\n\n**Your case is being prioritized.**\n\nPlease share any reference numbers or transaction IDs while you wait - this will help our agent resolve your issue faster.",
-      category: 'frustration_escalation',
-      confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: 'User frustration detected - high priority handoff',
-      priority: 'high',
-      sentiment: 'frustrated',
-      contextForAgent: handoffContext
-    };
-  }
-  
-  // Standard escalation request
+export function processUserMessage(message: string, userContext?: UserContext, platformConfig?: PlatformConfig, goldPrice?: { pricePerGram: number; pricePerOz: number; currency: string }): ChatbotResponse {
+  // Check for escalation request
   if (shouldEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, chatHistory || [], 'User requested human agent', message);
     return {
-      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team.\n\n**Preparing your case...**\n\nI've gathered your conversation history and account details to save you from repeating yourself. An agent will be with you shortly.",
+      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team. An agent will be with you shortly.",
       category: 'escalation',
       confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: 'User requested human agent',
-      priority: 'normal',
-      sentiment: sentimentResult.sentiment,
-      contextForAgent: handoffContext
+      escalateToHuman: true
     };
   }
   
@@ -1278,9 +1106,7 @@ export function processUserMessage(message: string, userContext?: UserContext, p
       category: best.entry.category,
       confidence,
       suggestedActions: responseActions,
-      escalateToHuman: false,
-      sentiment: sentimentResult.sentiment,
-      priority: 'normal'
+      escalateToHuman: false
     };
   }
   
@@ -1290,9 +1116,7 @@ export function processUserMessage(message: string, userContext?: UserContext, p
     category: 'unknown',
     confidence: 0,
     suggestedActions: getMenuActions(),
-    escalateToHuman: false,
-    sentiment: sentimentResult.sentiment,
-    priority: 'normal'
+    escalateToHuman: false
   };
 }
 
@@ -1337,36 +1161,32 @@ function getMenuActions(): string[] {
 }
 
 export function getChatbotGreeting(userName?: string): string {
-  const greeting = userName ? `Hey ${userName}! 👋` : "Hey there! 👋";
-  return `${greeting}\n\nI'm here to help with anything gold-related - buying, sending, storing, you name it! Just ask away, or pick something from the menu below.\n\n${generateMainMenuResponse()}`;
+  const greeting = userName ? `Hello ${userName}!` : "Hello!";
+  return `${greeting} Welcome to Finatrades.\n\nI'm your AI Assistant. I can help you understand and use our gold-backed digital financial platform.\n\n${generateMainMenuResponse()}`;
 }
 
-// System prompt for OpenAI - Human-like conversational assistant
-const FINATRADES_SYSTEM_PROMPT = `You are a friendly Finatrades support assistant. Talk like a helpful friend who happens to know everything about gold trading - warm, casual, and real.
-
-## YOUR PERSONALITY
-- Be conversational and natural - like texting with a knowledgeable friend
-- Use simple, everyday language - avoid corporate jargon
-- Show genuine empathy - "I totally get that" or "That makes sense!"
-- Be encouraging - "Great question!" or "You're on the right track"
-- Add small touches of warmth - "Happy to help!" or "No worries at all"
-- Keep responses short and punchy - no walls of text
-- Use contractions naturally - "you're", "it's", "don't", "we'll"
-- Occasionally use casual phrases - "honestly", "btw", "quick tip"
+// System prompt for OpenAI - Enhanced with comprehensive Finatrades knowledge
+const FINATRADES_SYSTEM_PROMPT = `You are the official Finatrades AI Assistant - a knowledgeable, professional financial services advisor.
 
 ## ABOUT FINATRADES
-Finatrades is a gold-backed platform where you can store, send, and earn on real physical gold. Every gram you see is backed by actual gold stored with Wingold & Metals DMCC in Dubai.
+Finatrades is a gold-backed digital financial platform enabling users to store, transfer, earn, and settle value using physical gold. Every gram shown on the platform is backed by physical gold stored securely with our vault partner, Wingold & Metals DMCC in Dubai.
 
-## KEY CONCEPT (explain simply)
-Your balance is in gold grams - that's what you actually own. The dollar value you see just shows what it's worth right now. When gold prices go up, your dollar value goes up too. When they dip, the dollar value dips. But your gold? That stays exactly the same. It's like owning a gold bar - the weight never changes, just the price tag!
+## CRITICAL CORE CONCEPT (MUST UNDERSTAND)
+**Gold grams are the REAL balance. USD is shown ONLY as a reference value for convenience.**
+- When gold price rises, your USD value increases even though gold grams stay the same
+- When gold price falls, your USD value decreases but your gold ownership remains unchanged
+- This is NOT volatility of your asset - it's the natural behavior of real gold ownership
+- Think of it like owning physical gold bars: the weight never changes, only the market price does
 
-## GUIDELINES
-- Gold is real, USD is just for reference
-- This is NOT crypto or blockchain - it's physical gold
-- Don't promise profits - be honest about how BNSL margins work
-- If something needs verification, mention it casually
-- Ask one thing at a time
-- If unsure, just say "Hmm, let me connect you with our team for that one"
+## MANDATORY RULES
+1) Gold = real asset, USD = display currency only. Never confuse users about this.
+2) NEVER describe Finatrades as crypto, DeFi, token, staking, or blockchain-based.
+3) NEVER promise guaranteed profits. For BNSL, state exact plan terms (margin %, term length).
+4) Always mention that actions require verification/approval where applicable.
+5) Ask one question at a time. Confirm user input before proceeding.
+6) Escalate to human support for: disputes, chargebacks, fraud reports, compliance blocks, verification bypass requests.
+7) Be professional, calm, concise, and helpful. Use bullet points and numbered steps.
+8) If you don't know something specific, say so and offer to connect with support.
 
 ## PRODUCT KNOWLEDGE
 
@@ -1425,41 +1245,37 @@ Your balance is in gold grams - that's what you actually own. The dollar value y
 - P2P Transfers: FREE
 - Vault Storage: Annual percentage fee
 
-## HOW TO RESPOND
-- Keep it short and friendly - like a quick helpful text
-- One topic at a time - don't overwhelm
-- If they're confused, say "No worries, let me break it down"
-- If frustrated, show you care: "I hear you, that's frustrating. Let's fix this"
-- End naturally - "Anything else?" or "Let me know if that helps!"
+## CONVERSATION GUIDELINES
+- Greet users warmly and professionally
+- Listen to the full question before responding
+- Provide clear, actionable next steps
+- Offer to clarify if the user seems confused
+- End with "Is there anything else I can help you with?"
+- If user is frustrated, acknowledge their concern and offer solutions
 
-## WHEN TO GET HELP (hand off to human)
-Say something like "Let me get someone from our team to help with this" for:
-- Money disputes or fraud stuff
-- Security concerns
-- Verification issues they can't solve
-- Anything legal or compliance-related
+## ESCALATION TRIGGERS (Respond: "I'll connect you with our support team")
+- Chargeback, fraud, or dispute claims
+- Compliance or security blocks
+- Requests to bypass verification
+- Account access issues after multiple attempts
+- Requests involving legal or regulatory matters
 
-## RESPONSE STYLE EXAMPLES
-Instead of: "I apologize for any inconvenience caused. Please navigate to Settings."
-Say: "Sorry about that! Head over to Settings and you should find it there."
-
-Instead of: "Your transaction has been successfully processed."
-Say: "Done! Your transaction went through."
-
-Instead of: "Is there anything else I can assist you with today?"
-Say: "Need help with anything else?"`;
-
+## MENU REFERENCE
+1) Create Account  2) Login Help  3) Verification  4) Balance
+5) Add Funds  6) Send Payment  7) Request Payment  8) Certificates
+9) BNSL Plans  10) FinaBridge  11) Troubleshooting  12) Support`;
 
 // Juris AI - Specialized KYC/Registration Assistant Prompt
-const JURIS_AI_PROMPT = `You're Juris - the friendly registration helper at Finatrades. Think of yourself as that patient friend who's really good with forms and paperwork.
+const JURIS_AI_PROMPT = `You are **Juris**, the Finatrades Registration & KYC Specialist AI.
 
-## YOUR VIBE
-- Super patient and encouraging - "You got this!"
-- Break things down step by step - no rushing
-- Celebrate small wins - "Nice! Step 1 done ✓"
-- If they mess up, no stress - "No worries, happens all the time. Let's try again"
-- Keep it casual but helpful - like helping a friend fill out a form
-- Reassure about privacy - "Your info is safe with us, promise"
+## YOUR ROLE
+You are an expert in account creation and identity verification. Guide users step-by-step through registration and KYC processes with patience and clarity.
+
+## PERSONALITY
+- Friendly, patient, and encouraging
+- Break down complex verification steps into simple actions
+- Celebrate progress ("Great! You've completed step 1")
+- Reassure users about data security and privacy
 
 ## CORE KNOWLEDGE
 
@@ -1588,52 +1404,13 @@ export async function processUserMessageWithAI(
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
   agentType?: string
 ): Promise<ChatbotResponse> {
-  // Detect sentiment first
-  const sentimentResult = detectSentiment(message);
-  const securityCheck = detectSecurityConcern(message);
-  
-  // URGENT: Security escalation (fraud, hacked, stolen, etc.)
-  if (shouldSecurityEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'Security concern detected', message);
-    return {
-      message: "🚨 **Security Alert Detected**\n\nI'm immediately connecting you with our Security Team. This is being treated as a priority case.\n\n**While you wait:**\n• Do NOT share any passwords or OTPs with anyone\n• If you suspect unauthorized access, change your password immediately\n• Note down any suspicious transaction IDs\n\nA security specialist will be with you within moments.",
-      category: 'security_escalation',
-      confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: `Security keywords detected: ${securityCheck.keywords.join(', ')}`,
-      priority: 'urgent',
-      sentiment: sentimentResult.sentiment,
-      contextForAgent: handoffContext
-    };
-  }
-  
-  // HIGH: Frustrated user escalation
-  if (shouldFrustrationEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'User frustration detected', message);
-    return {
-      message: "I can see you're frustrated, and I completely understand. Let me connect you with a senior support specialist who can personally assist you right away.\n\n**Your case is being prioritized.**\n\nPlease share any reference numbers or transaction IDs while you wait - this will help our agent resolve your issue faster.",
-      category: 'frustration_escalation',
-      confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: 'User frustration detected - high priority handoff',
-      priority: 'high',
-      sentiment: 'frustrated',
-      contextForAgent: handoffContext
-    };
-  }
-  
-  // Standard escalation request
+  // Check for escalation keywords first
   if (shouldEscalate(message)) {
-    const handoffContext = buildAgentHandoffContext(userContext, conversationHistory || [], 'User requested human agent', message);
     return {
-      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team.\n\n**Preparing your case...**\n\nI've gathered your conversation history and account details to save you from repeating yourself. An agent will be with you shortly.",
+      message: "I understand you'd like to speak with a human agent. Let me connect you with our support team. Please share your registered email and transaction/reference ID (if any).",
       category: 'escalation',
       confidence: 1.0,
-      escalateToHuman: true,
-      escalationReason: 'User requested human agent',
-      priority: 'normal',
-      sentiment: sentimentResult.sentiment,
-      contextForAgent: handoffContext
+      escalateToHuman: true
     };
   }
 
@@ -1646,9 +1423,7 @@ export async function processUserMessageWithAI(
         category: 'menu',
         confidence: 1.0,
         suggestedActions: getMenuActions(),
-        escalateToHuman: false,
-        sentiment: sentimentResult.sentiment,
-        priority: 'normal'
+        escalateToHuman: false
       };
     }
   }
@@ -1744,26 +1519,17 @@ export async function processUserMessageWithAI(
                                     lowerResponse.includes('human agent') ||
                                     lowerResponse.includes('verification team');
 
-    // Build handoff context if escalating
-    let contextForAgent: AgentHandoffContext | undefined;
-    if (shouldEscalateResponse) {
-      contextForAgent = buildAgentHandoffContext(userContext, conversationHistory || [], 'AI suggested escalation', message);
-    }
-
     return {
       message: aiResponse,
       category: agentType === 'juris' ? 'kyc_assistance' : 'ai_response',
       confidence: 0.95,
       suggestedActions,
-      escalateToHuman: shouldEscalateResponse,
-      sentiment: sentimentResult.sentiment,
-      priority: shouldEscalateResponse ? 'normal' : 'normal',
-      contextForAgent
+      escalateToHuman: shouldEscalateResponse
     };
 
   } catch (error) {
     console.error('OpenAI API error:', error);
     // Fall back to FAQ-based response
-    return processUserMessage(message, userContext, platformConfig, goldPrice, conversationHistory);
+    return processUserMessage(message, userContext, platformConfig, goldPrice);
   }
 }

@@ -152,8 +152,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900">{availableGrams.toFixed(4)}g</p>
-            <p className="text-sm text-gray-500">≈ ${walletBalance.toFixed(2)} USD</p>
+            <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
           </div>
           <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-purple-600" />
@@ -161,7 +160,9 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         </div>
         
         <div className="pt-4 border-t border-purple-200">
-          <div className="flex items-center justify-between mb-2">
+          <WalletTypeSelector value={selectedWalletType} onChange={setSelectedWalletType} />
+
+          <div className="flex items-center justify-between mb-2 mt-3">
             <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }}
@@ -276,8 +277,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">{availableGrams.toFixed(4)}g</p>
-                    <p className="text-sm text-gray-500">≈ ${walletBalance.toFixed(2)} USD</p>
+                    <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                     <Building2 className="w-6 h-6 text-purple-600" />
@@ -285,6 +285,14 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                 </div>
                 
                 <div className="pt-4 border-t border-purple-200">
+                {/* Wallet Type Selection */}
+                <div className="mb-3">
+                  <WalletTypeSelector
+                    value={selectedWalletType}
+                    onChange={setSelectedWalletType}
+                  />
+                </div>
+
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
                     <div className="flex bg-gray-100 rounded-lg p-1">

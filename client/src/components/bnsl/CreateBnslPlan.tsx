@@ -229,7 +229,6 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   const [hasDownloadedDraft, setHasDownloadedDraft] = useState(false);
   const [signatureName, setSignatureName] = useState('');
   const [hasScrolledTerms, setHasScrolledTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [templates, setTemplates] = useState<PlanTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -310,10 +309,9 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
   };
 
   const isValidSignature = signatureName.trim().length >= 3;
-  const canSubmit = agreedToTerms && amount > 0 && amount <= bnslWalletBalance && hasDownloadedDraft && isValidSignature && hasScrolledTerms && !isSubmitting;
+  const canSubmit = agreedToTerms && amount > 0 && amount <= bnslWalletBalance && hasDownloadedDraft && isValidSignature && hasScrolledTerms;
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
+  const handleSubmit = () => {
     if (amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid gold amount.", variant: "destructive" });
       return;
@@ -339,28 +337,21 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      const signedAt = new Date().toISOString();
-      const planData: Partial<BnslPlan> = {
-        tenorMonths: selectedTenor as BnslTenor,
-        agreedMarginAnnualPercent: annualRatePercent,
-        goldSoldGrams: amount,
-        enrollmentPriceUsdPerGram: enrollmentPrice,
-        basePriceComponentUsd: basePriceComponent,
-        totalMarginComponentUsd: totalMarginComponent,
-        quarterlyMarginUsd: quarterlyMargin,
-        startDate: new Date().toISOString(),
-        earlyTerminationFeePercent: currentTemplate ? parseFloat(currentTemplate.earlyTerminationFeePercent) : 2.00,
-        adminFeePercent: currentTemplate ? parseFloat(currentTemplate.adminFeePercent) : 0.50,
-      };
+    const signedAt = new Date().toISOString();
+    const planData: Partial<BnslPlan> = {
+      tenorMonths: selectedTenor as BnslTenor,
+      agreedMarginAnnualPercent: annualRatePercent,
+      goldSoldGrams: amount,
+      enrollmentPriceUsdPerGram: enrollmentPrice,
+      basePriceComponentUsd: basePriceComponent,
+      totalMarginComponentUsd: totalMarginComponent,
+      quarterlyMarginUsd: quarterlyMargin,
+      startDate: new Date().toISOString(),
+      earlyTerminationFeePercent: currentTemplate ? parseFloat(currentTemplate.earlyTerminationFeePercent) : 2.00,
+      adminFeePercent: currentTemplate ? parseFloat(currentTemplate.adminFeePercent) : 0.50,
+    };
 
-      await onSuccess(planData, { signatureName: signatureName.trim(), signedAt });
-    } catch (error) {
-      console.error('Failed to create plan:', error);
-      setIsSubmitting(false);
-    }
+    onSuccess(planData, { signatureName: signatureName.trim(), signedAt });
   };
 
   const getTenorDescription = (months: number) => {
@@ -739,17 +730,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           disabled={!canSubmit}
           data-testid="button-confirm-plan"
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Creating Plan...
-            </>
-          ) : (
-            <>
-              <ShieldCheck className="w-5 h-5 mr-2" />
-              Confirm & Sign Agreement
-            </>
-          )}
+          <ShieldCheck className="w-5 h-5 mr-2" />
+          Confirm & Sign Agreement
         </Button>
       </div>
 
