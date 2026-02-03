@@ -515,7 +515,7 @@ CREATE INDEX IF NOT EXISTS idx_approval_queue_initiator ON approval_queue(initia
 CREATE INDEX IF NOT EXISTS idx_user_bank_accounts_user_id ON user_bank_accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_crypto_wallets_user_id ON user_crypto_wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_org_positions_parent_id ON org_positions(parent_id);
-CREATE INDEX IF NOT EXISTS idx_workflow_audit_logs_flow_instance ON workflow_audit_logs(flow_instance_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_audit_logs_flow_id ON workflow_audit_logs(flow_id);
 CREATE INDEX IF NOT EXISTS idx_workflow_audit_logs_user ON workflow_audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_treasury_cash_vault_date ON treasury_cash_vault(date);
 CREATE INDEX IF NOT EXISTS idx_treasury_gold_vault_date ON treasury_gold_vault(date);
