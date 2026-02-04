@@ -56,6 +56,7 @@ WINGOLD_WEBHOOK_SECRET = "wg-webhook-secret-2025"
 WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,https://wingoldandmetals.com,https://www.wingoldandmetals.com"
 REPLICATION_COMPARE_MODE = "true"
 APP_URL = "https://finatrades.com"
+SMTP_FROM = "noreply@finatrades.xyz"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
