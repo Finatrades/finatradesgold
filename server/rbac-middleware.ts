@@ -89,17 +89,19 @@ export function requirePermission(...permissions: string[]) {
       }
       
       if (req.session?.userRole === 'admin') {
+        const cachedAt = req.session.permissionsCachedAt || 0;
+        const now = Date.now();
+        
         // Check if user is Super Admin (bypass all permission checks)
-        if (req.session.isSuperAdmin === undefined) {
+        // Re-check periodically to pick up role assignment changes
+        if (req.session.isSuperAdmin === undefined || now - cachedAt > PERMISSION_CACHE_TTL) {
           req.session.isSuperAdmin = await checkIsSuperAdmin(userId);
+          req.session.permissionsCachedAt = now;
         }
         
         if (req.session.isSuperAdmin) {
           return next();
         }
-        
-        const cachedAt = req.session.permissionsCachedAt || 0;
-        const now = Date.now();
         
         if (!req.session.permissions || now - cachedAt > PERMISSION_CACHE_TTL) {
           req.session.permissions = await loadUserPermissions(userId);
