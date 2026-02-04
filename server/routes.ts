@@ -2460,7 +2460,8 @@ export async function registerRoutes(
       });
       
       // Send reset email
-      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`;
+      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
       
       try {
         await sendEmailDirect(
