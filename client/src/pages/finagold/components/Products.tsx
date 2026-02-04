@@ -65,7 +65,7 @@ const content = {
         title: 'Global Trade Monitoring',
         description: 'Monitor your imports and exports in real time, track gold-backed settlements and streamline every step of your cross-border business operations.',
         cta: 'Explore FinaBridge',
-        href: '/finavbridge-landing',
+        href: '/finabridge-landing',
         image: globalTradeImage,
       },
       {
