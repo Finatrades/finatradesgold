@@ -84,7 +84,7 @@ export default function WhoItsFor() {
             className="relative"
           >
             <div className={`p-10 rounded-3xl bg-white border-2 border-[#8A2BE2]/20 shadow-xl shadow-[#8A2BE2]/10 relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent opacity-50" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent opacity-50 pointer-events-none" />
               
               <div className="relative space-y-6">
                 <div className="flex items-center gap-4">

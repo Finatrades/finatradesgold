@@ -179,10 +179,10 @@ export default function Hero() {
       </AnimatePresence>
     <section id="home" className="relative min-h-[auto] lg:min-h-screen pt-20 lg:pt-28 pb-12 lg:pb-20 overflow-x-hidden" data-testid="hero-section">
       {/* Light gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] pointer-events-none" />
       
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-30">
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute inset-0" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(138, 43, 226, 0.1) 1px, transparent 0)`,
           backgroundSize: '40px 40px'
@@ -190,8 +190,8 @@ export default function Hero() {
       </div>
 
       {/* Purple glow effects */}
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/5 rounded-full blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center lg:min-h-[calc(100vh-200px)]">

@@ -46,10 +46,10 @@ export default function ContactForm() {
 
   return (
     <section id="contact" className="py-12 lg:py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#EDE9FE] via-[#F4F6FC] to-[#FAFBFF]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#EDE9FE] via-[#F4F6FC] to-[#FAFBFF] pointer-events-none" />
       
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[#8A2BE2]/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-[#FF2FBF]/5 rounded-full blur-[100px]" />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[#8A2BE2]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-[#FF2FBF]/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
