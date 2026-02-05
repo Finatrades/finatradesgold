@@ -57,6 +57,7 @@ WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,h
 REPLICATION_COMPARE_MODE = "true"
 APP_URL = "https://finatrades.com"
 SMTP_FROM = "noreply@finatrades.xyz"
+SMTP_USER = "928966001@smtp-brevo.com"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
