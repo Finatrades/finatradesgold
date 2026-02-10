@@ -380,83 +380,51 @@ function RaminvestSection() {
             <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
           </motion.div>
 
-          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-12">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
-              <p className="text-gray-600 text-base leading-relaxed mb-4">
-                Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
-                delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
-                each focused on solving real-world trade and financial challenges.
-              </p>
-              <p className="text-gray-500 text-base leading-relaxed">
-                From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
-                Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
-              </p>
+          <motion.div variants={fadeIn} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16">
+            <div>
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
+                <p className="text-gray-600 text-base leading-relaxed mb-4">
+                  Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
+                  delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
+                  each focused on solving real-world trade and financial challenges.
+                </p>
+                <p className="text-gray-500 text-base leading-relaxed">
+                  From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
+                  Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
+                </p>
+              </div>
             </div>
-          </motion.div>
 
-          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-16">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#4A0E2B]" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(135deg, #3D0A3E 0%, #5C1148 30%, #6B1650 50%, #5C1148 70%, #3D0A3E 100%)' }}>
-              <div className="px-6 py-10 md:px-16 md:py-14">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#4A0E2B]" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(135deg, #3D0A3E 0%, #5C1148 30%, #6B1650 50%, #5C1148 70%, #3D0A3E 100%)' }}>
+              <div className="px-6 py-8 md:px-10 md:py-10">
+                <div className="relative w-full flex justify-center" style={{ height: '340px' }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 340" fill="none" preserveAspectRatio="xMidYMid meet">
+                    <ellipse cx="200" cy="185" rx="95" ry="95" stroke="white" strokeWidth="1.5" fill="none" opacity="0.45" />
+                    <path d="M200 90 Q200 55 200 30" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
+                    <path d="M105 185 Q70 185 35 185" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
+                    <path d="M295 185 Q330 185 365 185" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
+                    <path d="M200 280 Q200 305 200 325" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
+                  </svg>
 
-                <div className="flex flex-col items-center mb-8 md:mb-0 md:relative" style={{ minHeight: 'auto' }}>
-
-                  <div className="relative w-full hidden md:flex justify-center" style={{ height: '420px' }}>
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 700 420" fill="none" preserveAspectRatio="xMidYMid meet">
-                      <ellipse cx="350" cy="235" rx="130" ry="130" stroke="white" strokeWidth="2" fill="none" opacity="0.5" />
-                      <path d="M350 105 Q350 60 350 40" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
-                      <path d="M220 235 Q180 235 140 235" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
-                      <path d="M480 235 Q520 235 560 235" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
-                      <path d="M350 365 Q350 385 350 400" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
-                    </svg>
-
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center">
-                      <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-14 w-auto" />
-                    </div>
-
-                    <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-10 w-auto brightness-0 invert" />
-                    </div>
-
-                    <div className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <img src={wincommoditiesLogo} alt="WinCommodities Technology" className="h-8 lg:h-10 w-auto brightness-0 invert" />
-                    </div>
-
-                    <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <img src={wingoldLogo} alt="WinGold & Metals" className="h-8 lg:h-10 w-auto brightness-0 invert" />
-                    </div>
-
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2">
-                      <img src={winlogisticsLogo} alt="WinLogistics" className="h-8 lg:h-10 w-auto brightness-0 invert" />
-                    </div>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-0">
+                    <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-8 md:h-10 w-auto" />
                   </div>
 
-                  <div className="md:hidden flex flex-col items-center w-full">
-                    <div className="flex flex-col items-center mb-6">
-                      <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-12 w-auto" />
-                    </div>
-
-                    <div className="relative w-48 h-48 mb-6">
-                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
-                        <circle cx="100" cy="100" r="80" stroke="white" strokeWidth="1.5" fill="none" opacity="0.5" />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-5 w-full max-w-xs">
-                      <div className="flex justify-center">
-                        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-7 w-auto brightness-0 invert" />
-                      </div>
-                      <div className="flex justify-center">
-                        <img src={wingoldLogo} alt="WinGold & Metals" className="h-7 w-auto brightness-0 invert" />
-                      </div>
-                      <div className="col-span-2 flex justify-center">
-                        <img src={winlogisticsLogo} alt="WinLogistics" className="h-7 w-auto brightness-0 invert" />
-                      </div>
-                    </div>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-[45%]">
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-7 md:h-8 w-auto brightness-0 invert" />
                   </div>
 
+                  <div className="absolute left-1 top-1/2 -translate-y-1/2">
+                    <img src={wincommoditiesLogo} alt="WinCommodities" className="h-6 md:h-8 w-auto brightness-0 invert" />
+                  </div>
+
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                    <img src={wingoldLogo} alt="WinGold & Metals" className="h-6 md:h-8 w-auto brightness-0 invert" />
+                  </div>
+
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
+                    <img src={winlogisticsLogo} alt="WinLogistics" className="h-6 md:h-8 w-auto brightness-0 invert" />
+                  </div>
                 </div>
               </div>
             </div>
