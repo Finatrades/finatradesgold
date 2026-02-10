@@ -440,23 +440,23 @@ function FloatingAgentChatContent() {
             className={`fixed z-50 bg-background border border-border rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'bottom-2 right-2 left-2 w-auto max-w-none max-h-[80vh]' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-[#FF2FBF] p-4 flex items-center gap-3">
+            <div className="bg-white border-b border-purple-100 p-4 flex items-center gap-3">
               {showAgentList ? (
                 <>
                   <button
                     onClick={() => setShowAgentList(false)}
-                    className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+                    className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center hover:bg-purple-100 transition-colors"
                   >
-                    <ChevronLeft className="w-5 h-5 text-white" />
+                    <ChevronLeft className="w-5 h-5 text-purple-600" />
                   </button>
                   <div className="flex-1">
-                    <h3 className="text-white font-semibold">Select Agent</h3>
+                    <h3 className="text-gray-900 font-semibold">Select Agent</h3>
                   </div>
                 </>
               ) : (
                 <>
                   <div
-                    className="w-12 h-12 rounded-full bg-white/20 overflow-hidden cursor-pointer hover:ring-2 ring-white/50 transition-all"
+                    className="w-12 h-12 rounded-full bg-purple-50 overflow-hidden cursor-pointer hover:ring-2 ring-purple-200 transition-all border border-purple-100"
                     onClick={() => setShowAgentList(true)}
                   >
                     <img
@@ -469,16 +469,16 @@ function FloatingAgentChatContent() {
                     className="flex-1 cursor-pointer"
                     onClick={() => setShowAgentList(true)}
                   >
-                    <h3 className="text-white font-semibold">{currentAgent.name}</h3>
-                    <p className="text-white/80 text-xs">{currentAgent.role} • Click to switch</p>
+                    <h3 className="text-gray-900 font-semibold">{currentAgent.name}</h3>
+                    <p className="text-gray-500 text-xs">{currentAgent.role} • Click to switch</p>
                   </div>
                 </>
               )}
               <button
                 onClick={closeChat}
-                className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
               >
-                <X className="w-5 h-5 text-white" />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
@@ -532,11 +532,11 @@ function FloatingAgentChatContent() {
                   className="bg-background p-6"
                 >
                   <div className="text-center mb-6">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-primary to-[#FF2FBF] flex items-center justify-center">
-                      <User className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center">
+                      <User className="w-8 h-8 text-purple-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground">Start a Conversation</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Please enter your details to begin chatting</p>
+                    <h3 className="text-lg font-semibold text-gray-900">Start a Conversation</h3>
+                    <p className="text-sm text-gray-500 mt-1">Please enter your details to begin chatting</p>
                   </div>
                   <form onSubmit={handleGuestSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -573,7 +573,7 @@ function FloatingAgentChatContent() {
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                       disabled={!guestName.trim() || !guestEmail.trim()}
                       data-testid="button-start-chat"
                     >
@@ -607,8 +607,8 @@ function FloatingAgentChatContent() {
                             <div
                               className={`rounded-2xl px-4 py-2.5 ${
                                 isUser
-                                  ? 'bg-gradient-to-r from-primary to-[#FF2FBF] text-white'
-                                  : 'bg-muted text-foreground border border-border'
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-gray-50 text-gray-900 border border-gray-200'
                               }`}
                             >
                               {!isUser && (
@@ -682,7 +682,7 @@ function FloatingAgentChatContent() {
                     />
                     <Button
                       onClick={handleSendMessage}
-                      className="bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
                       disabled={isLoading || !message.trim()}
                       data-testid="button-send-message"
                     >
@@ -786,7 +786,7 @@ function FloatingAgentChatContent() {
 
                 <Button
                   onClick={() => setComingSoonAgent(null)}
-                  className="w-full bg-gradient-to-r from-primary to-[#FF2FBF] hover:opacity-90 text-white"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   Got it, thanks!
                 </Button>
