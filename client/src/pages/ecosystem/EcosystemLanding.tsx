@@ -408,7 +408,7 @@ function RaminvestSection() {
                   </svg>
 
                   <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-5 w-auto brightness-0 invert opacity-80" />
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
                   </div>
                 </div>
 
