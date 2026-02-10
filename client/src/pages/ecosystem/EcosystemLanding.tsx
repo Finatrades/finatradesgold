@@ -264,7 +264,7 @@ function EcosystemDiagram({ testId }: { testId: string }) {
         </div>
 
         <div className="absolute flex items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-          <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 sm:h-12 w-auto brightness-0 invert" />
+          <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-12 sm:h-20 w-auto brightness-0 invert" />
         </div>
 
         <div className="absolute flex items-center justify-center" style={{ left: '4%', top: '48%', transform: 'translateY(-50%)' }}>
