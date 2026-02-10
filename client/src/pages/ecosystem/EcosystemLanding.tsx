@@ -530,7 +530,7 @@ function WingoldSection() {
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#B8860B] hover:to-[#8B6914] active:scale-[0.98] transition-all shadow-lg shadow-[#D4AF37]/20 mb-4"
                 data-testid="btn-visit-wingold"
               >
-                Visit wingoldandmetals.com
+                Visit Website
                 <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/5 border border-[#D4AF37]/20">
@@ -589,7 +589,7 @@ function WinCommoditiesSection() {
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#16A34A] hover:to-[#15803D] active:scale-[0.98] transition-all shadow-lg shadow-[#22C55E]/20"
                 data-testid="btn-visit-wincommodities"
               >
-                Visit wincommodities.finatrades.com
+                Access Here
                 <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
             </motion.div>
@@ -677,7 +677,7 @@ function WinLogisticsSection() {
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] active:scale-[0.98] transition-all shadow-lg shadow-[#3B82F6]/20 mb-4"
                 data-testid="btn-visit-winlogistics"
               >
-                Visit winlogistics.finatrades.com
+                Access Here
                 <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3B82F6]/5 border border-[#3B82F6]/20">
