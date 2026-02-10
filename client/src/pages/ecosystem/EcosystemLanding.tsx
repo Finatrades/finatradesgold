@@ -259,24 +259,24 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <path d="M 50 200 C 55 150, 130 70, 250 60" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
         </svg>
 
-        <div className="absolute flex items-center justify-center" style={{ left: '50%', top: '7%', transform: 'translateX(-50%)' }}>
-          <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-10 sm:h-14 w-auto brightness-0 invert" />
+        <div className="absolute" style={{ left: '50%', top: '5%', transform: 'translateX(-50%)' }}>
+          <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="brightness-0 invert" style={{ width: '100px', height: 'auto' }} />
         </div>
 
-        <div className="absolute flex items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-          <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-12 sm:h-20 w-auto brightness-0 invert" />
+        <div className="absolute" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <img src={finatradesLogoEcosystem} alt="Finatrades" className="brightness-0 invert" style={{ width: '160px', height: 'auto' }} />
         </div>
 
-        <div className="absolute flex items-center justify-center" style={{ left: '4%', top: '48%', transform: 'translateY(-50%)' }}>
-          <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute" style={{ left: '3%', top: '48%', transform: 'translateY(-50%)', maxWidth: '22%' }}>
+          <img src={wincommoditiesLogo} alt="WinCommodities" className="brightness-0 invert w-full h-auto" />
         </div>
 
-        <div className="absolute flex items-center justify-center" style={{ right: '4%', top: '48%', transform: 'translateY(-50%)' }}>
-          <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="h-5 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute" style={{ right: '3%', top: '48%', transform: 'translateY(-50%)', maxWidth: '22%' }}>
+          <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="brightness-0 invert w-full h-auto" />
         </div>
 
-        <div className="absolute flex items-center justify-center" style={{ left: '50%', bottom: '5%', transform: 'translateX(-50%)' }}>
-          <img src={winlogisticsLogo} alt="WinLogis" className="h-5 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute" style={{ left: '50%', bottom: '4%', transform: 'translateX(-50%)', maxWidth: '20%' }}>
+          <img src={winlogisticsLogo} alt="WinLogis" className="brightness-0 invert w-full h-auto" />
         </div>
       </div>
     </div>
