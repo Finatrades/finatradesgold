@@ -395,12 +395,70 @@ function RaminvestSection() {
           </motion.div>
 
           <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-16">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-purple-200/50" data-testid="ecosystem-structure-diagram">
-              <img 
-                src={ecosystemStructure} 
-                alt="Raminvest Holding ecosystem structure showing Finatrades at the center, connected to WinCommodities, WinGold & Metals, and WinLogistics subsidiaries" 
-                className="w-full h-auto object-cover"
-              />
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#4A0E2B]" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(135deg, #3D0A3E 0%, #5C1148 30%, #6B1650 50%, #5C1148 70%, #3D0A3E 100%)' }}>
+              <div className="px-6 py-10 md:px-16 md:py-14">
+
+                <div className="flex flex-col items-center mb-8 md:mb-0 md:relative" style={{ minHeight: 'auto' }}>
+
+                  <div className="relative w-full hidden md:flex justify-center" style={{ height: '420px' }}>
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 700 420" fill="none" preserveAspectRatio="xMidYMid meet">
+                      <ellipse cx="350" cy="235" rx="130" ry="130" stroke="white" strokeWidth="2" fill="none" opacity="0.5" />
+                      <path d="M350 105 Q350 60 350 40" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
+                      <path d="M220 235 Q180 235 140 235" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
+                      <path d="M480 235 Q520 235 560 235" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
+                      <path d="M350 365 Q350 385 350 400" stroke="white" strokeWidth="1.5" fill="none" opacity="0.4" />
+                    </svg>
+
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center">
+                      <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-14 w-auto" />
+                    </div>
+
+                    <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-10 w-auto brightness-0 invert" />
+                    </div>
+
+                    <div className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <img src={wincommoditiesLogo} alt="WinCommodities Technology" className="h-8 lg:h-10 w-auto brightness-0 invert" />
+                    </div>
+
+                    <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <img src={wingoldLogo} alt="WinGold & Metals" className="h-8 lg:h-10 w-auto brightness-0 invert" />
+                    </div>
+
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2">
+                      <img src={winlogisticsLogo} alt="WinLogistics" className="h-8 lg:h-10 w-auto brightness-0 invert" />
+                    </div>
+                  </div>
+
+                  <div className="md:hidden flex flex-col items-center w-full">
+                    <div className="flex flex-col items-center mb-6">
+                      <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-12 w-auto" />
+                    </div>
+
+                    <div className="relative w-48 h-48 mb-6">
+                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
+                        <circle cx="100" cy="100" r="80" stroke="white" strokeWidth="1.5" fill="none" opacity="0.5" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-5 w-full max-w-xs">
+                      <div className="flex justify-center">
+                        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <div className="flex justify-center">
+                        <img src={wingoldLogo} alt="WinGold & Metals" className="h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <img src={winlogisticsLogo} alt="WinLogistics" className="h-7 w-auto brightness-0 invert" />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </div>
           </motion.div>
 
