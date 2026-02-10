@@ -582,14 +582,14 @@ function WinCommoditiesSection() {
               <div className="mb-5">
                 <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
               </div>
-              <p className="text-green-600 font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
+              <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-6">
                 As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
                 economies of scale on the sourcing, logistics and financial optimization. We focus on global transactions related to:
               </p>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {['Oil & Fuels', 'Metals', 'Green Energy', 'Soft Commodities'].map((item) => (
-                  <div key={item} className="px-4 py-3 rounded-xl bg-white border border-green-100 text-gray-700 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div key={item} className="px-4 py-3 rounded-xl bg-white border border-red-100 text-gray-700 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
                   </div>
                 ))}
@@ -620,9 +620,9 @@ function WinCommoditiesSection() {
                 { icon: TrendingUp, label: 'Scale Advantages', desc: 'Economies of scale in sourcing and logistics' },
                 { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-green-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-green-600" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
                   <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
