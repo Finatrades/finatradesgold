@@ -274,7 +274,7 @@ function EcosystemOverview() {
               logo: finatradesLogoEcosystem,
               logoBg: null,
               logoClass: 'h-8 md:h-9 w-auto',
-              color: 'from-purple-500 to-pink-500',
+              subtitleColor: 'text-[#8A2BE2]',
               title: 'FINATRADES',
               subtitle: 'Trade & Finance Platform',
               desc: 'Swiss-regulated digital platform for trade finance and gold-backed payments',
@@ -284,7 +284,7 @@ function EcosystemOverview() {
               logo: wingoldLogo,
               logoBg: 'from-[#1A1A2E] to-[#16213E]',
               logoClass: 'h-7 md:h-8 w-auto',
-              color: 'from-amber-500 to-yellow-600',
+              subtitleColor: 'text-[#D4AF37]',
               title: 'WINGOLD & METALS',
               subtitle: 'Precious Metals Trading',
               desc: 'Strategic precious metals trading, storage and collateralization solutions',
@@ -294,7 +294,7 @@ function EcosystemOverview() {
               logo: wincommoditiesLogo,
               logoBg: null,
               logoClass: 'h-7 md:h-8 w-auto',
-              color: 'from-green-500 to-emerald-600',
+              subtitleColor: 'text-[#DC2626]',
               title: 'WINCOMMODITIES',
               subtitle: 'Commodity Sourcing',
               desc: 'Physical commodities platform with innovative barter trade solutions',
@@ -304,7 +304,7 @@ function EcosystemOverview() {
               logo: winlogisticsLogo,
               logoBg: null,
               logoClass: 'h-7 md:h-8 w-auto',
-              color: 'from-blue-500 to-indigo-600',
+              subtitleColor: 'text-[#DC2626]',
               title: 'WIN LOGISTICS',
               subtitle: 'Global Logistics',
               desc: 'End-to-end air, sea, road logistics and warehousing solutions',
@@ -328,7 +328,7 @@ function EcosystemOverview() {
                   <img src={item.logo} alt={item.title} className={item.logoClass} />
                 )}
               </div>
-              <p className={`text-sm font-medium bg-gradient-to-r ${item.color} bg-clip-text text-transparent mb-3`}>{item.subtitle}</p>
+              <p className={`text-sm font-medium ${item.subtitleColor} mb-3`}>{item.subtitle}</p>
               <p className="text-gray-500 text-sm leading-relaxed flex-grow">{item.desc}</p>
               <div className="mt-4 flex items-center gap-1 text-sm font-medium text-[#8A2BE2] opacity-0 group-hover:opacity-100 transition-opacity">
                 Learn more <ArrowRight className="w-3.5 h-3.5" />
