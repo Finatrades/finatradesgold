@@ -196,7 +196,7 @@ function HeroSection() {
 
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12">
             <a 
-              href="#ecosystem"
+              href="#raminvest"
               className="group flex items-center justify-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto"
               data-testid="btn-discover"
             >
