@@ -213,21 +213,8 @@ function HeroSection() {
             </Link>
           </motion.div>
 
-          <motion.div variants={fadeIn} className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {[
-              { icon: Shield, label: 'Swiss Regulated', sub: 'FINMA / SO-FIT' },
-              { icon: Gem, label: 'Gold Backed', sub: 'Physical Collateral' },
-              { icon: Globe, label: 'Global Reach', sub: 'Dubai & Geneva' },
-              { icon: Building2, label: 'Institutional', sub: 'DIFC Governed' },
-            ].map((item) => (
-              <div key={item.label} className="text-center" data-testid={`stat-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 border border-purple-100/50 flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-[#8A2BE2]" />
-                </div>
-                <p className="text-[#0D0D0D] font-semibold text-sm">{item.label}</p>
-                <p className="text-gray-400 text-xs mt-0.5">{item.sub}</p>
-              </div>
-            ))}
+          <motion.div variants={fadeIn} className="max-w-3xl mx-auto">
+            <EcosystemDiagram testId="hero-ecosystem-diagram" />
           </motion.div>
         </motion.div>
       </div>
@@ -256,19 +243,13 @@ function EcosystemDiagram({ testId }: { testId: string }) {
   const arcD = (x1: number, y1: number, x2: number, y2: number) =>
     `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
 
-  const imgStyle = (h?: string): React.CSSProperties => ({
-    filter: 'brightness(0) invert(1)',
-    ...(h ? { height: h, width: 'auto' } : { width: '100%', height: 'auto' }),
-  });
-  const centerFlex: React.CSSProperties = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' };
-
   return (
     <div
       className="relative rounded-2xl overflow-hidden shadow-2xl"
       data-testid={testId}
-      style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}
+      style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)', aspectRatio: '800 / 560' }}
     >
-      <svg className="w-full h-auto block" viewBox="0 0 800 560" fill="none">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 560" fill="none" preserveAspectRatio="xMidYMid meet">
         <circle cx={cx} cy={cy} r="68" stroke="white" strokeWidth="1" fill="none" opacity="0.18" />
         <circle cx={cx} cy={cy} r="45" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
@@ -276,37 +257,27 @@ function EcosystemDiagram({ testId }: { testId: string }) {
         <path d={arcD(rightBx, rightBy, botRx, botRy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
         <path d={arcD(botLx, botLy, leftBx, leftBy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
         <path d={arcD(leftTx, leftTy, topLx, topLy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-
-        <foreignObject x="300" y="15" width="200" height="65">
-          <div style={centerFlex}>
-            <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={imgStyle('58px')} />
-          </div>
-        </foreignObject>
-
-        <foreignObject x="300" y="252" width="200" height="56">
-          <div style={centerFlex}>
-            <img src={finatradesLogoEcosystem} alt="Finatrades" style={imgStyle('42px')} />
-          </div>
-        </foreignObject>
-
-        <foreignObject x="20" y="252" width="150" height="56">
-          <div style={centerFlex}>
-            <img src={wincommoditiesLogo} alt="WinCommodities" style={imgStyle()} />
-          </div>
-        </foreignObject>
-
-        <foreignObject x="630" y="252" width="150" height="56">
-          <div style={centerFlex}>
-            <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={imgStyle()} />
-          </div>
-        </foreignObject>
-
-        <foreignObject x="300" y="478" width="200" height="50">
-          <div style={centerFlex}>
-            <img src={winlogisticsLogo} alt="WinLogistics" style={{ ...imgStyle(), maxWidth: '80%' }} />
-          </div>
-        </foreignObject>
       </svg>
+
+      <div className="absolute inset-0 flex items-start justify-center" style={{ top: '3%' }}>
+        <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-[10%] w-auto brightness-0 invert" />
+      </div>
+
+      <div className="absolute inset-0 flex items-center justify-center">
+        <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-[8%] w-auto brightness-0 invert" />
+      </div>
+
+      <div className="absolute inset-0 flex items-center" style={{ left: '2%', right: 'auto' }}>
+        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-auto brightness-0 invert" style={{ width: '18%' }} />
+      </div>
+
+      <div className="absolute inset-0 flex items-center justify-end" style={{ right: '2%', left: 'auto' }}>
+        <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="h-auto brightness-0 invert" style={{ width: '18%' }} />
+      </div>
+
+      <div className="absolute inset-0 flex items-end justify-center" style={{ bottom: '3%' }}>
+        <img src={winlogisticsLogo} alt="WinLogistics" className="h-auto brightness-0 invert" style={{ width: '16%' }} />
+      </div>
     </div>
   );
 }
@@ -399,44 +370,9 @@ function RaminvestSection() {
                 delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
                 each focused on solving real-world trade and financial challenges.
               </p>
-              <p className="text-gray-500 text-base leading-relaxed">
-                From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
-                Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
-              </p>
             </div>
           </motion.div>
 
-          <motion.div variants={fadeIn} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Users,
-                title: 'Diversified Ecosystem',
-                desc: 'Seamlessly connects finance, trade, and commodities through a strategic portfolio of specialized companies.',
-              },
-              {
-                icon: Globe,
-                title: 'Trusted Global Presence',
-                desc: 'Operating from Dubai and Geneva with deep ties across African markets and emerging economies.',
-              },
-              {
-                icon: TrendingUp,
-                title: 'Innovative Financial Solutions',
-                desc: 'Pioneers of digital platforms and alternative trade and finance mechanisms tailored for emerging economies.',
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
-                data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <item.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
-                </div>
-                <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -469,11 +405,7 @@ function FinatradesSection() {
                 A next-generation digital platform designed to streamline international trade, payments, and financial operations 
                 with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
               </p>
-              <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                By leveraging gold-backed solutions and a regulated barter transaction framework, Finatrades helps mitigate currency risk 
-                and simplifies complex cross-border transactions. This enables businesses and governments to trade more efficiently, 
-                optimize financing structures, and access global markets with enhanced security, transparency, and confidence.
-              </p>
+              <div className="mb-8" />
               <Link 
                 href="/finagold"
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
@@ -555,11 +487,7 @@ function WingoldSection() {
                 for governments, institutions, and corporate clients. Through proprietary financial instruments and innovative structured solutions, 
                 we unlock liquidity and optimize asset value.
               </p>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                Our expertise covers secure storage, collateralization, and market access, ensuring that every metal-backed transaction 
-                delivers both financial security and profitability. With a global network and deep market insight, we help clients maximize 
-                the value of their precious metal assets.
-              </p>
+              <div className="mb-6" />
               <a 
                 href="https://wingoldandmetals.com" 
                 target="_blank" 
@@ -607,11 +535,7 @@ function WinCommoditiesSection() {
                   </div>
                 ))}
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                WinCommodities offers an innovative platform enabling governments and businesses to trade essential goods through 
-                a secure and fully compliant barter system. By providing real-time transaction transparency, our platform reduces 
-                reliance on foreign currencies and mitigates exchange rate risks.
-              </p>
+              <div className="mb-6" />
               <a 
                 href="https://wincommodities.finatrades.com" 
                 target="_blank" 
@@ -693,11 +617,7 @@ function WinLogisticsSection() {
                 and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
                 processes and expert professional handling at every stage of the supply chain.
               </p>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                We provide practical logistics execution across air, sea, and road, supported by professional warehousing partnerships 
-                in key trade zones. By combining structured documentation handling with technology-enabled visibility and tracking, 
-                we ensure every shipment is managed with precision, security, and real-time transparency.
-              </p>
+              <div className="mb-6" />
               <a 
                 href="https://winlogistics.finatrades.com" 
                 target="_blank" 
