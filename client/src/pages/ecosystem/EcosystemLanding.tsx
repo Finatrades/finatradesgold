@@ -888,8 +888,8 @@ export default function EcosystemLanding() {
       <EcosystemNavbar />
       <main>
         <HeroSection />
-        <EcosystemOverview />
         <RaminvestSection />
+        <EcosystemOverview />
         <FinatradesSection />
         <WingoldSection />
         <WinCommoditiesSection />
