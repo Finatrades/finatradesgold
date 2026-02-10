@@ -243,47 +243,47 @@ function EcosystemDiagram({ testId }: { testId: string }) {
       data-testid={testId}
       style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}
     >
-      <div className="relative" style={{ paddingBottom: '90%' }}>
+      <div className="relative w-full" style={{ aspectRatio: '4 / 3' }}>
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox="0 0 500 450"
+          viewBox="0 0 600 450"
           fill="none"
           preserveAspectRatio="xMidYMid meet"
         >
-          <circle cx="250" cy="225" r="100" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
-          <circle cx="250" cy="225" r="68" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
-          <path d="M 250 80 C 370 70, 440 200, 400 300" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d="M 400 300 C 360 400, 200 420, 130 370" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d="M 130 370 C 60 320, 50 150, 140 85" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <circle cx="300" cy="230" r="90" stroke="white" strokeWidth="1.2" fill="none" opacity="0.18" />
+          <circle cx="300" cy="230" r="60" stroke="white" strokeWidth="0.6" fill="none" opacity="0.08" />
+          <path d="M 300 95 C 430 85, 500 200, 470 310" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
+          <path d="M 470 310 C 430 400, 280 420, 170 370" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
+          <path d="M 170 370 C 80 320, 80 150, 180 95" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
         </svg>
 
-        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: '6%' }}>
-          <img src={raminvestLogo} alt="Raminvest" className="h-8 sm:h-10 w-auto brightness-0 invert mb-1" />
-          <span className="text-white font-bold text-[10px] sm:text-xs tracking-[0.15em]">RAMINVEST</span>
-          <span className="text-white/50 text-[7px] sm:text-[8px] tracking-[0.12em]">HOLDING DIFC</span>
+        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: '5%' }}>
+          <img src={raminvestLogo} alt="Raminvest" className="h-7 sm:h-9 w-auto brightness-0 invert mb-0.5" />
+          <span className="text-white font-bold text-[9px] sm:text-[11px] tracking-[0.15em]">RAMINVEST</span>
+          <span className="text-white/50 text-[7px] sm:text-[8px] tracking-[0.1em]">HOLDING DIFC</span>
         </div>
 
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-          <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-7 sm:h-10 w-auto brightness-0 invert" />
-          <span className="text-white/90 font-semibold text-[9px] sm:text-[11px] tracking-[0.15em]">FINATRADES</span>
+        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5" style={{ top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-6 sm:h-8 w-auto brightness-0 invert" />
+          <span className="text-white/80 font-semibold text-[8px] sm:text-[10px] tracking-[0.15em]">FINATRADES</span>
         </div>
 
-        <div className="absolute flex items-center gap-2" style={{ left: '3%', top: '46%', transform: 'translateY(-50%)' }}>
-          <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-7 w-auto brightness-0 invert" />
-          <span className="text-white font-bold text-[9px] sm:text-[11px] tracking-wide leading-tight">WINCOMMODITIES</span>
+        <div className="absolute flex items-center gap-1.5" style={{ left: '2%', top: '50%', transform: 'translateY(-50%)' }}>
+          <img src={wincommoditiesLogo} alt="WinCommodities" className="h-4 sm:h-6 w-auto brightness-0 invert flex-shrink-0" />
+          <span className="text-white font-bold text-[8px] sm:text-[10px] tracking-wide">WINCOMMODITIES</span>
         </div>
 
-        <div className="absolute flex items-center gap-2" style={{ right: '3%', top: '46%', transform: 'translateY(-50%)' }}>
-          <img src={wingoldLogo} alt="WinGold" className="h-5 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute flex items-center gap-1.5" style={{ right: '2%', top: '50%', transform: 'translateY(-50%)' }}>
+          <img src={wingoldLogo} alt="WinGold" className="h-4 sm:h-6 w-auto brightness-0 invert flex-shrink-0" />
           <div className="flex flex-col">
-            <span className="text-white font-bold text-[9px] sm:text-[11px] tracking-wide leading-tight">WINGOLD</span>
-            <span className="text-white/60 text-[6px] sm:text-[8px] tracking-wide leading-tight">& Metals — DMCC</span>
+            <span className="text-white font-bold text-[8px] sm:text-[10px] tracking-wide leading-tight">WINGOLD</span>
+            <span className="text-white/50 text-[6px] sm:text-[7px] tracking-wide leading-tight">& Metals — DMCC</span>
           </div>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2" style={{ bottom: '8%' }}>
-          <img src={winlogisticsLogo} alt="WinLogis" className="h-5 sm:h-7 w-auto brightness-0 invert" />
-          <span className="text-white font-bold text-[9px] sm:text-[11px] tracking-wide">WINLOGIS</span>
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5" style={{ bottom: '6%' }}>
+          <img src={winlogisticsLogo} alt="WinLogis" className="h-4 sm:h-6 w-auto brightness-0 invert flex-shrink-0" />
+          <span className="text-white font-bold text-[8px] sm:text-[10px] tracking-wide">WINLOGIS</span>
         </div>
       </div>
     </div>
@@ -324,7 +324,7 @@ function EcosystemOverview() {
           variants={fadeIn}
           className="mb-12"
         >
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-3xl mx-auto">
             <EcosystemDiagram testId="ecosystem-overview-diagram" />
           </div>
         </motion.div>
