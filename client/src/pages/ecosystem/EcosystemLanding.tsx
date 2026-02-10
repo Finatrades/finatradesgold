@@ -660,9 +660,9 @@ function WinLogisticsSection() {
                 { icon: Users, label: 'Strategic Partners', desc: 'Network of trusted global logistics providers' },
                 { icon: Award, label: 'Operational Integrity', desc: 'Precision, security, and transparency at every stage' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-blue-600" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
                   <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
@@ -674,7 +674,7 @@ function WinLogisticsSection() {
               <div className="mb-5">
                 <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" data-testid="logo-winlogistics" />
               </div>
-              <p className="text-blue-600 font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
+              <p className="text-[#DC2626] font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
               <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
                 and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
