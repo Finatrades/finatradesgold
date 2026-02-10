@@ -393,6 +393,99 @@ function RaminvestSection() {
             </div>
           </motion.div>
 
+          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-16">
+            <div className="relative bg-gradient-to-br from-[#2A0044] via-[#3D0066] to-[#1A002F] rounded-3xl p-8 md:p-12 shadow-2xl border border-purple-500/20 overflow-hidden" data-testid="ecosystem-structure-diagram">
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(138,43,226,0.3) 0%, transparent 70%)' }} />
+              </div>
+
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-6 md:mb-8">
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 mb-2">
+                    <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-10 md:h-14 w-auto" />
+                  </div>
+                  <span className="text-white/60 text-[10px] md:text-xs tracking-wider font-medium">PARENT COMPANY</span>
+                </div>
+
+                <div className="relative w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[380px] md:h-[380px]">
+                  <div className="absolute inset-4 sm:inset-6 md:inset-8 rounded-full border-2 border-dashed border-purple-400/30" />
+                  <div className="absolute inset-8 sm:inset-12 md:inset-16 rounded-full border border-purple-300/20" />
+
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 380 380" fill="none">
+                    <path d="M190 50 A140 140 0 0 1 330 190" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <path d="M330 190 A140 140 0 0 1 190 330" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <path d="M190 330 A140 140 0 0 1 50 190" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <path d="M50 190 A140 140 0 0 1 190 50" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <defs>
+                      <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#8A2BE2" />
+                        <stop offset="100%" stopColor="#FF2FBF" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  <motion.div 
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className="p-3 md:p-4 rounded-2xl bg-gradient-to-br from-purple-600/40 to-pink-600/30 backdrop-blur-md border border-white/20 shadow-lg shadow-purple-500/20">
+                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 md:h-12 w-auto brightness-0 invert" />
+                    </div>
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute left-1/2 -translate-x-1/2 -top-1 md:top-0"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
+                        <img src={wingoldLogo} alt="WinGold & Metals" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <span className="text-[9px] md:text-[10px] text-amber-300/80 font-medium">Precious Metals</span>
+                    </div>
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute top-1/2 -translate-y-1/2 -right-2 md:right-0"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
+                        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <span className="text-[9px] md:text-[10px] text-red-300/80 font-medium">Commodities</span>
+                    </div>
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute left-1/2 -translate-x-1/2 -bottom-1 md:bottom-0"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
+                        <img src={winlogisticsLogo} alt="Win Logistics" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <span className="text-[9px] md:text-[10px] text-red-300/80 font-medium">Logistics</span>
+                    </div>
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute top-1/2 -translate-y-1/2 -left-2 md:left-0"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
+                        <img src={finatradesLogoEcosystem} alt="Finatrades Platform" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                      </div>
+                      <span className="text-[9px] md:text-[10px] text-purple-300/80 font-medium">Trade Finance</span>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div variants={fadeIn} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
