@@ -253,30 +253,30 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d="M 340 65 C 440 75, 510 140, 530 195" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d="M 530 240 C 520 320, 430 390, 340 400" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d="M 260 400 C 180 390, 90 320, 70 240" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d="M 70 195 C 90 130, 170 70, 260 65" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 350 60 C 470 70, 545 150, 550 200" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 550 240 C 545 330, 440 405, 350 415" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 250 415 C 160 405, 55 330, 50 240" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 50 200 C 55 150, 130 70, 250 60" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
         </svg>
 
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '4%' }}>
+        <div className="absolute flex items-center justify-center" style={{ left: '50%', top: '7%', transform: 'translateX(-50%)' }}>
           <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-10 sm:h-14 w-auto brightness-0 invert" />
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '50%', transform: 'translate(-50%, -50%)' }}>
+        <div className="absolute flex items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 sm:h-12 w-auto brightness-0 invert" />
         </div>
 
-        <div className="absolute" style={{ left: '2%', top: '48%', transform: 'translateY(-50%)' }}>
-          <img src={wincommoditiesLogo} alt="WinCommodities" className="h-4 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute flex items-center justify-center" style={{ left: '4%', top: '48%', transform: 'translateY(-50%)' }}>
+          <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-7 w-auto brightness-0 invert" />
         </div>
 
-        <div className="absolute" style={{ right: '2%', top: '48%', transform: 'translateY(-50%)' }}>
-          <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="h-4 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute flex items-center justify-center" style={{ right: '4%', top: '48%', transform: 'translateY(-50%)' }}>
+          <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="h-5 sm:h-7 w-auto brightness-0 invert" />
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '5%' }}>
-          <img src={winlogisticsLogo} alt="WinLogis" className="h-4 sm:h-7 w-auto brightness-0 invert" />
+        <div className="absolute flex items-center justify-center" style={{ left: '50%', bottom: '5%', transform: 'translateX(-50%)' }}>
+          <img src={winlogisticsLogo} alt="WinLogis" className="h-5 sm:h-7 w-auto brightness-0 invert" />
         </div>
       </div>
     </div>
