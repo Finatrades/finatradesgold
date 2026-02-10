@@ -236,6 +236,26 @@ function HeroSection() {
 }
 
 function EcosystemDiagram({ testId }: { testId: string }) {
+  const cx = 400, cy = 260;
+  const rx = 290, ry = 175;
+  const gap = 0.22;
+  const pt = (a: number) => ({
+    x: cx + rx * Math.cos(a),
+    y: cy + ry * Math.sin(a),
+  });
+
+  const topR = pt(-Math.PI / 2 + gap);
+  const rightT = pt(-gap);
+  const rightB = pt(gap);
+  const botR = pt(Math.PI / 2 - gap);
+  const botL = pt(Math.PI / 2 + gap);
+  const leftB = pt(Math.PI - gap);
+  const leftT = pt(Math.PI + gap);
+  const topL = pt(-Math.PI / 2 - gap);
+
+  const arc = (from: { x: number; y: number }, to: { x: number; y: number }) =>
+    `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} A ${rx} ${ry} 0 0 1 ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
+
   return (
     <div
       className="relative rounded-2xl overflow-hidden shadow-2xl"
@@ -245,44 +265,44 @@ function EcosystemDiagram({ testId }: { testId: string }) {
       <div className="relative w-full">
         <svg
           className="w-full h-auto"
-          viewBox="0 0 600 450"
+          viewBox="0 0 800 520"
           fill="none"
         >
-          <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
-          <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
+          <circle cx={cx} cy={cy} r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
+          <circle cx={cx} cy={cy} r="48" stroke="white" strokeWidth="0.8" fill="none" opacity="0.12" />
 
-          <path d="M 350 78 C 440 90, 510 150, 530 200" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 530 250 C 510 330, 420 375, 350 385" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 250 385 C 180 375, 90 330, 70 250" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 70 200 C 90 150, 160 90, 250 78" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d={arc(topR, rightT)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d={arc(rightB, botR)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d={arc(botL, leftB)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d={arc(leftT, topL)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
 
-          <foreignObject x="200" y="10" width="200" height="70">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center' }}>
-              <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={{ height: '55px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
-
-          <foreignObject x="190" y="195" width="220" height="60">
+          <foreignObject x="280" y="18" width="240" height="72">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <img src={finatradesLogoEcosystem} alt="Finatrades" style={{ height: '50px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
+              <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={{ height: '62px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
             </div>
           </foreignObject>
 
-          <foreignObject x="0" y="200" width="130" height="50">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-              <img src={wincommoditiesLogo} alt="WinCommodities" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
-
-          <foreignObject x="470" y="200" width="130" height="50">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-              <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
-
-          <foreignObject x="215" y="380" width="170" height="50">
+          <foreignObject x="290" y="230" width="220" height="60">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <img src={winlogisticsLogo} alt="WinLogistics" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+              <img src={finatradesLogoEcosystem} alt="Finatrades" style={{ height: '45px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="15" y="228" width="160" height="60">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <img src={wincommoditiesLogo} alt="WinCommodities" style={{ width: '95%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="625" y="228" width="160" height="60">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={{ width: '95%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="290" y="430" width="220" height="55">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <img src={winlogisticsLogo} alt="WinLogistics" style={{ width: '80%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
             </div>
           </foreignObject>
         </svg>
