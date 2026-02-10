@@ -236,25 +236,31 @@ function HeroSection() {
 }
 
 function EcosystemDiagram({ testId }: { testId: string }) {
-  const cx = 400, cy = 260;
-  const rx = 290, ry = 175;
-  const gap = 0.22;
-  const pt = (a: number) => ({
-    x: cx + rx * Math.cos(a),
-    y: cy + ry * Math.sin(a),
+  const cx = 400, cy = 280;
+  const rx = 310, ry = 210;
+  const gap = 0.18;
+  const pt = (a: number) => [
+    Math.round(cx + rx * Math.cos(a)),
+    Math.round(cy + ry * Math.sin(a)),
+  ] as const;
+
+  const [topRx, topRy] = pt(-Math.PI / 2 + gap);
+  const [topLx, topLy] = pt(-Math.PI / 2 - gap);
+  const [rightTx, rightTy] = pt(-gap);
+  const [rightBx, rightBy] = pt(gap);
+  const [botRx, botRy] = pt(Math.PI / 2 - gap);
+  const [botLx, botLy] = pt(Math.PI / 2 + gap);
+  const [leftBx, leftBy] = pt(Math.PI - gap);
+  const [leftTx, leftTy] = pt(Math.PI + gap);
+
+  const arcD = (x1: number, y1: number, x2: number, y2: number) =>
+    `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
+
+  const imgStyle = (h?: string): React.CSSProperties => ({
+    filter: 'brightness(0) invert(1)',
+    ...(h ? { height: h, width: 'auto' } : { width: '100%', height: 'auto' }),
   });
-
-  const topR = pt(-Math.PI / 2 + gap);
-  const rightT = pt(-gap);
-  const rightB = pt(gap);
-  const botR = pt(Math.PI / 2 - gap);
-  const botL = pt(Math.PI / 2 + gap);
-  const leftB = pt(Math.PI - gap);
-  const leftT = pt(Math.PI + gap);
-  const topL = pt(-Math.PI / 2 - gap);
-
-  const arc = (from: { x: number; y: number }, to: { x: number; y: number }) =>
-    `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} A ${rx} ${ry} 0 0 1 ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
+  const centerFlex: React.CSSProperties = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' };
 
   return (
     <div
@@ -262,51 +268,45 @@ function EcosystemDiagram({ testId }: { testId: string }) {
       data-testid={testId}
       style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}
     >
-      <div className="relative w-full">
-        <svg
-          className="w-full h-auto"
-          viewBox="0 0 800 520"
-          fill="none"
-        >
-          <circle cx={cx} cy={cy} r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
-          <circle cx={cx} cy={cy} r="48" stroke="white" strokeWidth="0.8" fill="none" opacity="0.12" />
+      <svg className="w-full h-auto block" viewBox="0 0 800 560" fill="none">
+        <circle cx={cx} cy={cy} r="68" stroke="white" strokeWidth="1" fill="none" opacity="0.18" />
+        <circle cx={cx} cy={cy} r="45" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d={arc(topR, rightT)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d={arc(rightB, botR)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d={arc(botL, leftB)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
-          <path d={arc(leftT, topL)} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+        <path d={arcD(topRx, topRy, rightTx, rightTy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+        <path d={arcD(rightBx, rightBy, botRx, botRy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+        <path d={arcD(botLx, botLy, leftBx, leftBy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+        <path d={arcD(leftTx, leftTy, topLx, topLy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
 
-          <foreignObject x="280" y="18" width="240" height="72">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={{ height: '62px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
+        <foreignObject x="300" y="15" width="200" height="65">
+          <div style={centerFlex}>
+            <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={imgStyle('58px')} />
+          </div>
+        </foreignObject>
 
-          <foreignObject x="290" y="230" width="220" height="60">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <img src={finatradesLogoEcosystem} alt="Finatrades" style={{ height: '45px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
+        <foreignObject x="300" y="252" width="200" height="56">
+          <div style={centerFlex}>
+            <img src={finatradesLogoEcosystem} alt="Finatrades" style={imgStyle('42px')} />
+          </div>
+        </foreignObject>
 
-          <foreignObject x="15" y="228" width="160" height="60">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <img src={wincommoditiesLogo} alt="WinCommodities" style={{ width: '95%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
+        <foreignObject x="20" y="252" width="150" height="56">
+          <div style={centerFlex}>
+            <img src={wincommoditiesLogo} alt="WinCommodities" style={imgStyle()} />
+          </div>
+        </foreignObject>
 
-          <foreignObject x="625" y="228" width="160" height="60">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={{ width: '95%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
+        <foreignObject x="630" y="252" width="150" height="56">
+          <div style={centerFlex}>
+            <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={imgStyle()} />
+          </div>
+        </foreignObject>
 
-          <foreignObject x="290" y="430" width="220" height="55">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <img src={winlogisticsLogo} alt="WinLogistics" style={{ width: '80%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
-            </div>
-          </foreignObject>
-        </svg>
-      </div>
+        <foreignObject x="300" y="478" width="200" height="50">
+          <div style={centerFlex}>
+            <img src={winlogisticsLogo} alt="WinLogistics" style={{ ...imgStyle(), maxWidth: '80%' }} />
+          </div>
+        </foreignObject>
+      </svg>
     </div>
   );
 }
