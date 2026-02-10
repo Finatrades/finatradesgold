@@ -251,10 +251,10 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d="M 345 50 C 460 55, 540 140, 555 210" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 555 240 C 540 330, 420 395, 345 405" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 255 405 C 180 395, 60 330, 45 240" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 45 210 C 60 140, 140 55, 255 50" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 350 78 C 440 90, 510 150, 530 200" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 530 250 C 510 330, 420 375, 350 385" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 250 385 C 180 375, 90 330, 70 250" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 70 200 C 90 150, 160 90, 250 78" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
 
           <foreignObject x="200" y="10" width="200" height="70">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -268,19 +268,19 @@ function EcosystemDiagram({ testId }: { testId: string }) {
             </div>
           </foreignObject>
 
-          <foreignObject x="5" y="200" width="140" height="50">
+          <foreignObject x="0" y="200" width="130" height="50">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
               <img src={wincommoditiesLogo} alt="WinCommodities" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
             </div>
           </foreignObject>
 
-          <foreignObject x="455" y="200" width="140" height="50">
+          <foreignObject x="470" y="200" width="130" height="50">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
               <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
             </div>
           </foreignObject>
 
-          <foreignObject x="215" y="385" width="170" height="45">
+          <foreignObject x="215" y="380" width="170" height="50">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               <img src={winlogisticsLogo} alt="WinLogistics" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
             </div>
