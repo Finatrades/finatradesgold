@@ -270,13 +270,40 @@ function EcosystemOverview() {
           variants={fadeIn}
           className="mb-12"
         >
-          <div className="max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-lg border border-purple-100/50">
-            <img 
-              src={ecosystemStructure} 
-              alt="Raminvest Holding ecosystem — Finatrades at the center, connected to WinCommodities, WinGold & Metals, and WinLogistics" 
-              className="w-full h-auto"
-              data-testid="ecosystem-overview-image"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-center">
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-purple-100/50">
+              <img 
+                src={ecosystemStructure} 
+                alt="Raminvest Holding ecosystem — Finatrades at the center, connected to WinCommodities, WinGold & Metals, and WinLogistics" 
+                className="w-full h-auto"
+                data-testid="ecosystem-overview-image"
+              />
+            </div>
+
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl" data-testid="ecosystem-overview-diagram" style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}>
+              <div className="relative px-4 py-6 sm:px-6 sm:py-8">
+                <div className="flex flex-col items-center mb-3">
+                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-8 sm:h-9 w-auto" />
+                </div>
+                <div className="relative mx-auto" style={{ width: '200px', height: '200px' }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
+                    <circle cx="100" cy="100" r="75" stroke="white" strokeWidth="1.5" fill="none" opacity="0.3" />
+                  </svg>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
+                  </div>
+                </div>
+                <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-[5%]">
+                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                </div>
+                <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-[5%]">
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                </div>
+                <div className="flex justify-center -mt-2">
+                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
