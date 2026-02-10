@@ -13,7 +13,7 @@ type NavLink = {
 };
 
 const universalLinks: NavLink[] = [
-  { label: 'Home', href: '/ecosystem' },
+  { label: 'Home', href: '/finagold' },
   { label: 'Ecosystem', href: '/ecosystem' },
   { label: 'Products', href: '#products', isAnchor: true },
   { label: 'How It Works', href: '#how-it-works', isAnchor: true },
@@ -22,7 +22,7 @@ const universalLinks: NavLink[] = [
 ];
 
 const productLinks: NavLink[] = [
-  { label: 'Home', href: '/ecosystem' },
+  { label: 'Home', href: '/finagold' },
   { label: 'Ecosystem', href: '/ecosystem' },
   { label: 'FinaVault', href: '/finagold/finavault' },
   { label: 'FinaPay', href: '/finagold/finapay' },
