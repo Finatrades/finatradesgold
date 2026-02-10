@@ -97,7 +97,7 @@ function HomeRedirect() {
   }
   
   if (!user) {
-    return <Redirect to="/ecosystem" />;
+    return <Redirect to={domainMode === 'business' ? "/finatrades" : "/finagold"} />;
   }
   
   // Redirect admins to admin dashboard, regular users to user dashboard
