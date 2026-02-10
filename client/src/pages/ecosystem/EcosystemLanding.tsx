@@ -8,6 +8,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import finatradesLogoEcosystem from '@/assets/finatrades-logo-ecosystem.png';
+import raminvestLogo from '@/assets/raminvest-logo.webp';
+import wingoldLogo from '@/assets/wingold-logo.png';
+import wincommoditiesLogo from '@/assets/wincommodities-logo.png';
+import winlogisticsLogo from '@/assets/winlogistics-logo.png';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -360,6 +365,11 @@ function RaminvestSection() {
           variants={stagger}
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
+            <div className="inline-flex items-center justify-center mb-6">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1A002F] to-[#2A0055] shadow-lg">
+                <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" />
+              </div>
+            </div>
             <span className="inline-block text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] mb-4">HOLDING COMPANY</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-4">
               RAMINVEST HOLDING
@@ -432,6 +442,9 @@ function FinatradesSection() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
+              <div className="mb-6">
+                <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" />
+              </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
                 <span className="text-white text-sm font-bold">+</span>
                 <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
@@ -520,7 +533,12 @@ function WingoldSection() {
             </motion.div>
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2">
-              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-amber-600 mb-4">PRECIOUS METALS — DMCC</span>
+              <div className="mb-5 inline-flex items-center justify-start">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A1A2E] to-[#16213E] shadow-lg">
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" />
+                </div>
+              </div>
+              <span className="block text-sm font-semibold tracking-[0.2em] text-amber-600 mb-4">PRECIOUS METALS — DMCC</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WINGOLD & METALS
               </h2>
@@ -567,6 +585,9 @@ function WinCommoditiesSection() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
+              <div className="mb-5">
+                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
+              </div>
               <span className="inline-block text-sm font-semibold tracking-[0.2em] text-green-600 mb-4">COMMODITIES — DMCC</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WINCOMMODITIES
@@ -660,6 +681,9 @@ function WinLogisticsSection() {
             </motion.div>
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2">
+              <div className="mb-5">
+                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" data-testid="logo-winlogistics" />
+              </div>
               <span className="inline-block text-sm font-semibold tracking-[0.2em] text-blue-600 mb-4">LOGISTICS — DMCC</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WIN LOGISTICS
