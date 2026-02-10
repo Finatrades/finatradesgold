@@ -253,8 +253,8 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
           <path d="M 350 55 C 460 65, 530 130, 545 195" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 545 245 C 530 330, 420 395, 340 410" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 260 410 C 180 395, 70 330, 55 245" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 545 245 C 530 320, 410 380, 340 390" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 260 390 C 190 380, 70 320, 55 245" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
           <path d="M 55 195 C 70 130, 140 65, 250 55" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
         </svg>
 
@@ -274,7 +274,7 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="brightness-0 invert w-full h-auto" />
         </div>
 
-        <div className="absolute" style={{ left: '50%', bottom: '4%', transform: 'translateX(-50%)', maxWidth: '20%' }}>
+        <div className="absolute" style={{ left: '50%', bottom: '8%', transform: 'translateX(-50%)', maxWidth: '20%' }}>
           <img src={winlogisticsLogo} alt="WinLogis" className="brightness-0 invert w-full h-auto" />
         </div>
       </div>
