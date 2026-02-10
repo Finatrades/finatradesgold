@@ -14,7 +14,6 @@ import raminvestLogo from '@/assets/raminvest-logo.webp';
 import wingoldLogo from '@/assets/wingold-logo.png';
 import wincommoditiesLogo from '@/assets/wincommodities-logo.png';
 import winlogisticsLogo from '@/assets/winlogistics-logo.png';
-import ecosystemStructure from '@/assets/ecosystem-structure.jpg';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -364,22 +363,18 @@ function RaminvestSection() {
             <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
           </motion.div>
 
-          <motion.div variants={fadeIn} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16">
-            <div>
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
-                <p className="text-gray-600 text-base leading-relaxed mb-4">
-                  Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
-                  delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
-                  each focused on solving real-world trade and financial challenges.
-                </p>
-                <p className="text-gray-500 text-base leading-relaxed">
-                  From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
-                  Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
-                </p>
-              </div>
+          <motion.div variants={fadeIn} className="max-w-3xl mx-auto mb-16">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
+                Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
+                delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
+                each focused on solving real-world trade and financial challenges.
+              </p>
+              <p className="text-gray-500 text-base leading-relaxed">
+                From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
+                Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
+              </p>
             </div>
-
-            <EcosystemDiagram testId="ecosystem-structure-diagram" />
           </motion.div>
 
           <motion.div variants={fadeIn} className="grid grid-cols-1 md:grid-cols-3 gap-6">
