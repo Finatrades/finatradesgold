@@ -271,40 +271,40 @@ function EcosystemOverview() {
         >
           {[
             {
-              icon: Banknote,
+              logo: finatradesLogoEcosystem,
+              logoBg: null,
+              logoClass: 'h-8 md:h-9 w-auto',
               color: 'from-purple-500 to-pink-500',
-              iconBg: 'from-purple-100 to-pink-50',
-              iconColor: 'text-purple-600',
               title: 'FINATRADES',
               subtitle: 'Trade & Finance Platform',
               desc: 'Swiss-regulated digital platform for trade finance and gold-backed payments',
               href: '#finatrades',
             },
             {
-              icon: Gem,
+              logo: wingoldLogo,
+              logoBg: 'from-[#1A1A2E] to-[#16213E]',
+              logoClass: 'h-7 md:h-8 w-auto',
               color: 'from-amber-500 to-yellow-600',
-              iconBg: 'from-amber-100 to-yellow-50',
-              iconColor: 'text-amber-600',
               title: 'WINGOLD & METALS',
               subtitle: 'Precious Metals Trading',
               desc: 'Strategic precious metals trading, storage and collateralization solutions',
               href: '#wingold',
             },
             {
-              icon: Factory,
+              logo: wincommoditiesLogo,
+              logoBg: null,
+              logoClass: 'h-7 md:h-8 w-auto',
               color: 'from-green-500 to-emerald-600',
-              iconBg: 'from-green-100 to-emerald-50',
-              iconColor: 'text-green-600',
               title: 'WINCOMMODITIES',
               subtitle: 'Commodity Sourcing',
               desc: 'Physical commodities platform with innovative barter trade solutions',
               href: '#wincommodities',
             },
             {
-              icon: Truck,
+              logo: winlogisticsLogo,
+              logoBg: null,
+              logoClass: 'h-7 md:h-8 w-auto',
               color: 'from-blue-500 to-indigo-600',
-              iconBg: 'from-blue-100 to-indigo-50',
-              iconColor: 'text-blue-600',
               title: 'WIN LOGISTICS',
               subtitle: 'Global Logistics',
               desc: 'End-to-end air, sea, road logistics and warehousing solutions',
@@ -319,10 +319,15 @@ function EcosystemOverview() {
               className="group flex flex-col p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300 cursor-pointer"
               data-testid={`card-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+              <div className={`mb-5 h-12 flex items-center ${item.logoBg ? '' : ''}`}>
+                {item.logoBg ? (
+                  <div className={`inline-flex p-2 rounded-lg bg-gradient-to-br ${item.logoBg}`}>
+                    <img src={item.logo} alt={item.title} className={item.logoClass} />
+                  </div>
+                ) : (
+                  <img src={item.logo} alt={item.title} className={item.logoClass} />
+                )}
               </div>
-              <h3 className="text-[#0D0D0D] font-bold text-lg mb-1">{item.title}</h3>
               <p className={`text-sm font-medium bg-gradient-to-r ${item.color} bg-clip-text text-transparent mb-3`}>{item.subtitle}</p>
               <p className="text-gray-500 text-sm leading-relaxed flex-grow">{item.desc}</p>
               <div className="mt-4 flex items-center gap-1 text-sm font-medium text-[#8A2BE2] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -370,10 +375,6 @@ function RaminvestSection() {
                 <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" />
               </div>
             </div>
-            <span className="inline-block text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] mb-4">HOLDING COMPANY</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-4">
-              RAMINVEST HOLDING
-            </h2>
             <p className="text-gray-400 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
             <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
           </motion.div>
@@ -450,9 +451,6 @@ function FinatradesSection() {
                 <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
                 <span className="text-white/70 text-xs">○</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">
-                <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
-              </h2>
               <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
               <p className="text-gray-600 text-base leading-relaxed mb-4">
                 A next-generation digital platform designed to streamline international trade, payments, and financial operations 
@@ -538,10 +536,6 @@ function WingoldSection() {
                   <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" />
                 </div>
               </div>
-              <span className="block text-sm font-semibold tracking-[0.2em] text-amber-600 mb-4">PRECIOUS METALS — DMCC</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
-                WINGOLD & METALS
-              </h2>
               <p className="text-amber-600 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Wingold & Metals specializes in the trading and management of precious metals, providing strategic financial solutions 
@@ -588,10 +582,6 @@ function WinCommoditiesSection() {
               <div className="mb-5">
                 <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
               </div>
-              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-green-600 mb-4">COMMODITIES — DMCC</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
-                WINCOMMODITIES
-              </h2>
               <p className="text-green-600 font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-6">
                 As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
@@ -684,10 +674,6 @@ function WinLogisticsSection() {
               <div className="mb-5">
                 <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" data-testid="logo-winlogistics" />
               </div>
-              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-blue-600 mb-4">LOGISTICS — DMCC</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
-                WIN LOGISTICS
-              </h2>
               <p className="text-blue-600 font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
               <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
