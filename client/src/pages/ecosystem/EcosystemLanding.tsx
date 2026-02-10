@@ -267,75 +267,17 @@ function EcosystemOverview() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+          variants={fadeIn}
+          className="mb-12"
         >
-          {[
-            {
-              logo: finatradesLogoEcosystem,
-              logoBg: null,
-              logoClass: 'h-8 md:h-9 w-auto',
-              subtitleColor: 'text-[#8A2BE2]',
-              title: 'FINATRADES',
-              subtitle: 'Trade & Finance Platform',
-              desc: 'Swiss-regulated digital platform for trade finance and gold-backed payments',
-              href: '#finatrades',
-            },
-            {
-              logo: wingoldLogo,
-              logoBg: 'from-[#1A1A2E] to-[#16213E]',
-              logoClass: 'h-7 md:h-8 w-auto',
-              subtitleColor: 'text-[#D4AF37]',
-              title: 'WINGOLD & METALS',
-              subtitle: 'Precious Metals Trading',
-              desc: 'Strategic precious metals trading, storage and collateralization solutions',
-              href: '#wingold',
-            },
-            {
-              logo: wincommoditiesLogo,
-              logoBg: null,
-              logoClass: 'h-7 md:h-8 w-auto',
-              subtitleColor: 'text-[#DC2626]',
-              title: 'WINCOMMODITIES',
-              subtitle: 'Commodity Sourcing',
-              desc: 'Physical commodities platform with innovative barter trade solutions',
-              href: '#wincommodities',
-            },
-            {
-              logo: winlogisticsLogo,
-              logoBg: null,
-              logoClass: 'h-7 md:h-8 w-auto',
-              subtitleColor: 'text-[#DC2626]',
-              title: 'WIN LOGISTICS',
-              subtitle: 'Global Logistics',
-              desc: 'End-to-end air, sea, road logistics and warehousing solutions',
-              href: '#winlogistics',
-            },
-          ].map((item) => (
-            <motion.a
-              key={item.title}
-              href={item.href}
-              variants={fadeIn}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="group flex flex-col p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300 cursor-pointer"
-              data-testid={`card-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              <div className={`mb-5 h-12 flex items-center ${item.logoBg ? '' : ''}`}>
-                {item.logoBg ? (
-                  <div className={`inline-flex p-2 rounded-lg bg-gradient-to-br ${item.logoBg}`}>
-                    <img src={item.logo} alt={item.title} className={item.logoClass} />
-                  </div>
-                ) : (
-                  <img src={item.logo} alt={item.title} className={item.logoClass} />
-                )}
-              </div>
-              <p className={`text-sm font-medium ${item.subtitleColor} mb-3`}>{item.subtitle}</p>
-              <p className="text-gray-500 text-sm leading-relaxed flex-grow">{item.desc}</p>
-              <div className="mt-4 flex items-center gap-1 text-sm font-medium text-[#8A2BE2] opacity-0 group-hover:opacity-100 transition-opacity">
-                Learn more <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </motion.a>
-          ))}
+          <div className="max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-lg border border-purple-100/50">
+            <img 
+              src={ecosystemStructure} 
+              alt="Raminvest Holding ecosystem — Finatrades at the center, connected to WinCommodities, WinGold & Metals, and WinLogistics" 
+              className="w-full h-auto"
+              data-testid="ecosystem-overview-image"
+            />
+          </div>
         </motion.div>
 
         <motion.div
