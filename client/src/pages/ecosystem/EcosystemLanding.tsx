@@ -523,6 +523,16 @@ function WingoldSection() {
                 delivers both financial security and profitability. With a global network and deep market insight, we help clients maximize 
                 the value of their precious metal assets.
               </p>
+              <a 
+                href="https://wingoldandmetals.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#B8860B] hover:to-[#8B6914] active:scale-[0.98] transition-all shadow-lg shadow-[#D4AF37]/20 mb-4"
+                data-testid="btn-visit-wingold"
+              >
+                Visit wingoldandmetals.com
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </a>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/5 border border-[#D4AF37]/20">
                 <span className="text-[#D4AF37]/60 text-xs">TRANSFORMING PRECIOUS METALS INTO STRATEGIC FINANCIAL ASSETS</span>
               </div>
@@ -567,11 +577,21 @@ function WinCommoditiesSection() {
                   </div>
                 ))}
               </div>
-              <p className="text-white/50 text-sm leading-relaxed">
+              <p className="text-white/50 text-sm leading-relaxed mb-6">
                 WinCommodities offers an innovative platform enabling governments and businesses to trade essential goods through 
                 a secure and fully compliant barter system. By providing real-time transaction transparency, our platform reduces 
                 reliance on foreign currencies and mitigates exchange rate risks.
               </p>
+              <a 
+                href="https://wincommodities.finatrades.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#16A34A] hover:to-[#15803D] active:scale-[0.98] transition-all shadow-lg shadow-[#22C55E]/20"
+                data-testid="btn-visit-wincommodities"
+              >
+                Visit wincommodities.finatrades.com
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </a>
             </motion.div>
 
             <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -650,6 +670,16 @@ function WinLogisticsSection() {
                 in key trade zones. By combining structured documentation handling with technology-enabled visibility and tracking, 
                 we ensure every shipment is managed with precision, security, and real-time transparency.
               </p>
+              <a 
+                href="https://winlogistics.finatrades.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] active:scale-[0.98] transition-all shadow-lg shadow-[#3B82F6]/20 mb-4"
+                data-testid="btn-visit-winlogistics"
+              >
+                Visit winlogistics.finatrades.com
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </a>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3B82F6]/5 border border-[#3B82F6]/20">
                 <span className="text-[#3B82F6]/60 text-xs">BUILDING THE NEXT GENERATION OF GLOBAL LOGISTICS INFRASTRUCTURE</span>
               </div>
