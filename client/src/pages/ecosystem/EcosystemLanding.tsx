@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import FloatingAgentChat from '@/components/FloatingAgentChat';
 import finatradesLogoEcosystem from '@/assets/finatrades-logo-ecosystem.png';
 import raminvestLogo from '@/assets/raminvest-logo.webp';
 import wingoldLogo from '@/assets/wingold-logo.png';
@@ -897,6 +898,7 @@ export default function EcosystemLanding() {
         <CTASection />
       </main>
       <EcosystemFooter />
+      <FloatingAgentChat />
     </div>
   );
 }
