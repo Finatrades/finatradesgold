@@ -324,16 +324,7 @@ function EcosystemOverview() {
           variants={fadeIn}
           className="mb-12"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-center">
-            <div className="rounded-3xl overflow-hidden shadow-lg border border-purple-100/50">
-              <img 
-                src={ecosystemStructure} 
-                alt="Raminvest Holding ecosystem — Finatrades at the center, connected to WinCommodities, WinGold & Metals, and WinLogistics" 
-                className="w-full h-auto"
-                data-testid="ecosystem-overview-image"
-              />
-            </div>
-
+          <div className="max-w-lg mx-auto">
             <EcosystemDiagram testId="ecosystem-overview-diagram" />
           </div>
         </motion.div>
