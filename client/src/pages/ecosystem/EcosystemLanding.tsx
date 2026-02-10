@@ -242,41 +242,50 @@ function EcosystemDiagram({ testId }: { testId: string }) {
       data-testid={testId}
       style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}
     >
-      <div className="relative w-full" style={{ aspectRatio: '4 / 3' }}>
+      <div className="relative w-full">
         <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
+          className="w-full h-auto"
           viewBox="0 0 600 450"
           fill="none"
-          preserveAspectRatio="xMidYMid meet"
         >
           <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d="M 350 55 C 460 65, 530 130, 545 195" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 545 245 C 530 320, 410 380, 340 390" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 260 390 C 190 380, 70 320, 55 245" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 55 195 C 70 130, 140 65, 250 55" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 345 50 C 460 55, 540 140, 555 210" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 555 240 C 540 330, 420 395, 345 405" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 255 405 C 180 395, 60 330, 45 240" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 45 210 C 60 140, 140 55, 255 50" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+
+          <foreignObject x="200" y="10" width="200" height="70">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center' }}>
+              <img src={raminvestLogo} alt="Raminvest Holding DIFC" style={{ height: '55px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="190" y="195" width="220" height="60">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <img src={finatradesLogoEcosystem} alt="Finatrades" style={{ height: '50px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="5" y="200" width="140" height="50">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+              <img src={wincommoditiesLogo} alt="WinCommodities" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="455" y="200" width="140" height="50">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+              <img src={wingoldLogo} alt="WinGold & Metals DMCC" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="215" y="385" width="170" height="45">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <img src={winlogisticsLogo} alt="WinLogistics" style={{ width: '100%', height: 'auto', filter: 'brightness(0) invert(1)' }} />
+            </div>
+          </foreignObject>
         </svg>
-
-        <div className="absolute" style={{ left: '50%', top: '5%', transform: 'translateX(-50%)' }}>
-          <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="brightness-0 invert" style={{ width: '100px', height: 'auto' }} />
-        </div>
-
-        <div className="absolute" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-          <img src={finatradesLogoEcosystem} alt="Finatrades" className="brightness-0 invert" style={{ width: '160px', height: 'auto' }} />
-        </div>
-
-        <div className="absolute" style={{ left: '3%', top: '48%', transform: 'translateY(-50%)', maxWidth: '22%' }}>
-          <img src={wincommoditiesLogo} alt="WinCommodities" className="brightness-0 invert w-full h-auto" />
-        </div>
-
-        <div className="absolute" style={{ right: '3%', top: '48%', transform: 'translateY(-50%)', maxWidth: '22%' }}>
-          <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="brightness-0 invert w-full h-auto" />
-        </div>
-
-        <div className="absolute" style={{ left: '50%', bottom: '8%', transform: 'translateX(-50%)', maxWidth: '20%' }}>
-          <img src={winlogisticsLogo} alt="WinLogis" className="brightness-0 invert w-full h-auto" />
-        </div>
       </div>
     </div>
   );
