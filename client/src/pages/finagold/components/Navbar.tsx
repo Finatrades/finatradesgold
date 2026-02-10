@@ -13,7 +13,7 @@ type NavLink = {
 };
 
 const universalLinks: NavLink[] = [
-  { label: 'Home', href: '/' },
+  { label: 'Ecosystem', href: '/ecosystem' },
   { label: 'Products', href: '#products', isAnchor: true },
   { label: 'How It Works', href: '#how-it-works', isAnchor: true },
   { label: 'About', href: '#who-its-for', isAnchor: true },
@@ -21,7 +21,7 @@ const universalLinks: NavLink[] = [
 ];
 
 const productLinks: NavLink[] = [
-  { label: 'Home', href: '/' },
+  { label: 'Ecosystem', href: '/ecosystem' },
   { label: 'FinaVault', href: '/finagold/finavault' },
   { label: 'FinaPay', href: '/finagold/finapay' },
   { label: 'BNSL', href: '/finagold/bnsl' },
@@ -51,6 +51,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
   const isActive = (href: string) => {
     if (href.startsWith('#')) return false;
+    if (href === '/ecosystem') return location === '/ecosystem';
     if (href === '/') return location === '/' || location === '/finagold';
     return location.startsWith(href);
   };

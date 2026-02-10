@@ -97,7 +97,7 @@ function HomeRedirect() {
   }
   
   if (!user) {
-    return <Redirect to={domainMode === 'business' ? "/finatrades" : "/finagold"} />;
+    return <Redirect to="/ecosystem" />;
   }
   
   // Redirect admins to admin dashboard, regular users to user dashboard
@@ -197,6 +197,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import ReferralsPage from "@/pages/ReferralsPage";
 import FinagoldLanding from "@/pages/finagold/FinagoldLanding";
 import FinatradesLanding from "@/pages/finatrades/FinatradesLanding";
+import EcosystemLanding from "@/pages/ecosystem/EcosystemLanding";
 import BNSLLanding from "@/pages/finagold/BNSLLanding";
 import FinaVaultLanding from "@/pages/finagold/FinaVaultLanding";
 import FinaBridgeLanding from "@/pages/finagold/FinaBridgeLanding";
@@ -211,6 +212,7 @@ function Router() {
       <ScrollToTop />
       <Switch>
       <Route path="/" component={HomeRedirect} />
+      <Route path="/ecosystem" component={EcosystemLanding} />
       <Route path="/finagold" component={FinagoldLanding} />
       <Route path="/finatrades" component={FinatradesLanding} />
       <Route path="/finagold/bnsl" component={BNSLLanding} />
