@@ -253,10 +253,10 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d="M 300 55 C 450 55, 540 160, 540 215" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
-          <path d="M 540 215 C 540 310, 430 400, 300 400" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
-          <path d="M 300 400 C 170 400, 60 310, 60 215" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
-          <path d="M 60 215 C 60 160, 150 55, 300 55" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
+          <path d="M 340 65 C 440 75, 510 140, 530 195" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 530 240 C 520 320, 430 390, 340 400" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 260 400 C 180 390, 90 320, 70 240" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d="M 70 195 C 90 130, 170 70, 260 65" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.85" />
         </svg>
 
         <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '4%' }}>
