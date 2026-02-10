@@ -281,26 +281,45 @@ function EcosystemOverview() {
             </div>
 
             <div className="relative rounded-2xl overflow-hidden shadow-2xl" data-testid="ecosystem-overview-diagram" style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}>
-              <div className="relative px-4 py-6 sm:px-6 sm:py-8">
-                <div className="flex flex-col items-center mb-3">
-                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-8 sm:h-9 w-auto" />
+              <div className="relative px-6 py-8 sm:px-10 sm:py-10" style={{ minHeight: '340px' }}>
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 340" fill="none" preserveAspectRatio="xMidYMid meet">
+                  <ellipse cx="200" cy="170" rx="130" ry="110" stroke="white" strokeWidth="1" fill="none" opacity="0.15" />
+                  <path d="M 200 60 C 320 60, 350 170, 330 230" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  <path d="M 330 230 C 310 300, 200 310, 130 280" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  <path d="M 130 280 C 60 250, 50 130, 100 80" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                </svg>
+                <div className="relative flex flex-col items-center mb-2" style={{ zIndex: 2 }}>
+                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-7 sm:h-8 w-auto mb-0.5" />
+                  <span className="text-white/90 text-[10px] sm:text-xs font-bold tracking-wider">RAMINVEST</span>
+                  <span className="text-white/60 text-[8px] sm:text-[9px] tracking-wider">HOLDING DIFC</span>
                 </div>
-                <div className="relative mx-auto" style={{ width: '200px', height: '200px' }}>
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
-                    <circle cx="100" cy="100" r="75" stroke="white" strokeWidth="1.5" fill="none" opacity="0.3" />
+                <div className="relative mx-auto" style={{ width: '140px', height: '140px', zIndex: 2 }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 140 140" fill="none">
+                    <circle cx="70" cy="70" r="60" stroke="white" strokeWidth="1.5" fill="none" opacity="0.25" />
+                    <circle cx="70" cy="70" r="40" stroke="white" strokeWidth="0.5" fill="rgba(255,255,255,0.03)" opacity="0.3" />
                   </svg>
-                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-6 sm:h-7 w-auto brightness-0 invert" />
+                    <span className="text-white/80 text-[9px] sm:text-[10px] font-semibold tracking-wider">FINATRADES</span>
                   </div>
                 </div>
-                <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-[5%]">
-                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-[10%] flex items-center gap-1.5" style={{ zIndex: 2 }}>
+                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">WIN</span>
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">COMMODITIES</span>
+                  </div>
                 </div>
-                <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-[5%]">
-                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="absolute right-3 sm:right-6 top-1/2 -translate-y-[10%] flex items-center gap-1.5" style={{ zIndex: 2 }}>
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">WINGOLD</span>
+                    <span className="text-white/70 text-[7px] sm:text-[8px] leading-tight">& Metals — DMCC</span>
+                  </div>
                 </div>
-                <div className="flex justify-center -mt-2">
-                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="relative flex items-center justify-center gap-1.5 mt-1" style={{ zIndex: 2 }}>
+                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <span className="text-white font-bold text-[10px] sm:text-xs">WINLOGIS</span>
                 </div>
               </div>
             </div>
@@ -365,32 +384,51 @@ function RaminvestSection() {
             </div>
 
             <div className="relative rounded-2xl overflow-hidden shadow-2xl" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}>
-              <div className="relative px-4 py-6 sm:px-6 sm:py-8">
+              <div className="relative px-6 py-8 sm:px-10 sm:py-10" style={{ minHeight: '340px' }}>
 
-                <div className="flex flex-col items-center mb-3">
-                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-8 sm:h-9 w-auto" />
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 340" fill="none" preserveAspectRatio="xMidYMid meet">
+                  <ellipse cx="200" cy="170" rx="130" ry="110" stroke="white" strokeWidth="1" fill="none" opacity="0.15" />
+                  <path d="M 200 60 C 320 60, 350 170, 330 230" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  <path d="M 330 230 C 310 300, 200 310, 130 280" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  <path d="M 130 280 C 60 250, 50 130, 100 80" stroke="#E8364F" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                </svg>
+
+                <div className="relative flex flex-col items-center mb-2" style={{ zIndex: 2 }}>
+                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-7 sm:h-8 w-auto mb-0.5" />
+                  <span className="text-white/90 text-[10px] sm:text-xs font-bold tracking-wider">RAMINVEST</span>
+                  <span className="text-white/60 text-[8px] sm:text-[9px] tracking-wider">HOLDING DIFC</span>
                 </div>
 
-                <div className="relative mx-auto" style={{ width: '200px', height: '200px' }}>
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
-                    <circle cx="100" cy="100" r="75" stroke="white" strokeWidth="1.5" fill="none" opacity="0.3" />
+                <div className="relative mx-auto" style={{ width: '140px', height: '140px', zIndex: 2 }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 140 140" fill="none">
+                    <circle cx="70" cy="70" r="60" stroke="white" strokeWidth="1.5" fill="none" opacity="0.25" />
+                    <circle cx="70" cy="70" r="40" stroke="white" strokeWidth="0.5" fill="rgba(255,255,255,0.03)" opacity="0.3" />
                   </svg>
-
-                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 w-auto brightness-0 invert" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-6 sm:h-7 w-auto brightness-0 invert" />
+                    <span className="text-white/80 text-[9px] sm:text-[10px] font-semibold tracking-wider">FINATRADES</span>
                   </div>
                 </div>
 
-                <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-[5%]">
-                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-[10%] flex items-center gap-1.5" style={{ zIndex: 2 }}>
+                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">WIN</span>
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">COMMODITIES</span>
+                  </div>
                 </div>
 
-                <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-[5%]">
-                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="absolute right-3 sm:right-6 top-1/2 -translate-y-[10%] flex items-center gap-1.5" style={{ zIndex: 2 }}>
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-[10px] sm:text-xs leading-tight">WINGOLD</span>
+                    <span className="text-white/70 text-[7px] sm:text-[8px] leading-tight">& Metals — DMCC</span>
+                  </div>
                 </div>
 
-                <div className="flex justify-center -mt-2">
-                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-4 sm:h-5 w-auto brightness-0 invert" />
+                <div className="relative flex items-center justify-center gap-1.5 mt-1" style={{ zIndex: 2 }}>
+                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-5 sm:h-6 w-auto brightness-0 invert" />
+                  <span className="text-white font-bold text-[10px] sm:text-xs">WINLOGIS</span>
                 </div>
               </div>
             </div>
