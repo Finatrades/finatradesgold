@@ -191,8 +191,7 @@ function HeroSection() {
           </motion.h2>
 
           <motion.p variants={fadeIn} className="text-[#4A4A4A] text-sm sm:text-base leading-relaxed max-w-3xl mx-auto mb-8">
-            An integrated ecosystem of trade finance, precious metals, commodity sourcing, and logistics — 
-            all backed by physical gold within an institutionally governed framework under Raminvest Holding.
+            International commodity trade — particularly along the Global South — faces persistent structural challenges: counterparty risk, limited trade finance access, unstable exchange rates and logistical complexity. Finatrades addresses these through a dedicated Ecosystem.
           </motion.p>
 
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12">
