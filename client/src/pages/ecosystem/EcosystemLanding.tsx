@@ -843,7 +843,7 @@ export default function EcosystemLanding() {
 
   return (
     <>
-    <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden overflow-y-auto">
+    <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden">
       <style>{`
         .finagold-landing {
           --gold: #D4AF37;
