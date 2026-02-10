@@ -395,36 +395,33 @@ function RaminvestSection() {
               </div>
             </div>
 
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#4A0E2B]" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(135deg, #3D0A3E 0%, #5C1148 30%, #6B1650 50%, #5C1148 70%, #3D0A3E 100%)' }}>
-              <div className="px-6 py-8 md:px-10 md:py-10">
-                <div className="relative w-full flex justify-center" style={{ height: '340px' }}>
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 340" fill="none" preserveAspectRatio="xMidYMid meet">
-                    <ellipse cx="200" cy="185" rx="95" ry="95" stroke="white" strokeWidth="1.5" fill="none" opacity="0.45" />
-                    <path d="M200 90 Q200 55 200 30" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
-                    <path d="M105 185 Q70 185 35 185" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
-                    <path d="M295 185 Q330 185 365 185" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
-                    <path d="M200 280 Q200 305 200 325" stroke="white" strokeWidth="1" fill="none" opacity="0.35" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl" data-testid="ecosystem-structure-diagram" style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)' }}>
+              <div className="relative px-4 py-10 sm:px-8 sm:py-12 md:px-6 md:py-10 lg:px-8 lg:py-12">
+
+                <div className="flex flex-col items-center">
+                  <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-10 sm:h-12 w-auto mb-6 sm:mb-8" />
+                </div>
+
+                <div className="relative mx-auto" style={{ width: '100%', maxWidth: '380px', aspectRatio: '1' }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 380 380" fill="none" preserveAspectRatio="xMidYMid meet">
+                    <circle cx="190" cy="190" r="120" stroke="white" strokeWidth="1.5" fill="none" opacity="0.35" />
                   </svg>
 
-                  <div className="absolute left-1/2 -translate-x-1/2 top-0">
-                    <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-8 md:h-10 w-auto" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-6 sm:h-7 w-auto brightness-0 invert opacity-90" />
                   </div>
+                </div>
 
-                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-[45%]">
-                    <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-7 md:h-8 w-auto brightness-0 invert" />
-                  </div>
+                <div className="absolute left-3 sm:left-6 md:left-4 lg:left-6 top-1/2 -translate-y-[10%]">
+                  <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 sm:h-6 md:h-5 lg:h-7 w-auto brightness-0 invert" />
+                </div>
 
-                  <div className="absolute left-1 top-1/2 -translate-y-1/2">
-                    <img src={wincommoditiesLogo} alt="WinCommodities" className="h-6 md:h-8 w-auto brightness-0 invert" />
-                  </div>
+                <div className="absolute right-3 sm:right-6 md:right-4 lg:right-6 top-1/2 -translate-y-[10%]">
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-5 sm:h-6 md:h-5 lg:h-7 w-auto brightness-0 invert" />
+                </div>
 
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                    <img src={wingoldLogo} alt="WinGold & Metals" className="h-6 md:h-8 w-auto brightness-0 invert" />
-                  </div>
-
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
-                    <img src={winlogisticsLogo} alt="WinLogistics" className="h-6 md:h-8 w-auto brightness-0 invert" />
-                  </div>
+                <div className="flex justify-center mt-[-20px] sm:mt-[-16px]">
+                  <img src={winlogisticsLogo} alt="WinLogistics" className="h-5 sm:h-6 md:h-5 lg:h-7 w-auto brightness-0 invert" />
                 </div>
               </div>
             </div>
