@@ -393,94 +393,115 @@ function RaminvestSection() {
             </div>
           </motion.div>
 
-          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-16">
-            <div className="relative bg-gradient-to-br from-[#2A0044] via-[#3D0066] to-[#1A002F] rounded-3xl p-8 md:p-12 shadow-2xl border border-purple-500/20 overflow-hidden" data-testid="ecosystem-structure-diagram">
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(138,43,226,0.3) 0%, transparent 70%)' }} />
+          <motion.div variants={fadeIn} className="max-w-5xl mx-auto mb-16">
+            <div className="relative bg-gradient-to-br from-[#1A002F] via-[#2D0050] to-[#1A002F] rounded-3xl py-12 px-6 md:py-16 md:px-12 shadow-2xl border border-purple-500/20 overflow-hidden" data-testid="ecosystem-structure-diagram">
+              <div className="absolute inset-0">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]" style={{ backgroundImage: 'radial-gradient(circle, rgba(138,43,226,0.15) 0%, transparent 70%)' }} />
               </div>
 
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="flex flex-col items-center mb-6 md:mb-8">
-                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 mb-2">
-                    <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-10 md:h-14 w-auto" />
+              <div className="relative z-10">
+                <div className="flex flex-col items-center mb-10 md:mb-14">
+                  <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mb-3 shadow-lg shadow-purple-900/30">
+                    <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-12 md:h-16 w-auto" />
                   </div>
-                  <span className="text-white/60 text-[10px] md:text-xs tracking-wider font-medium">PARENT COMPANY</span>
+                  <span className="text-white/50 text-xs md:text-sm tracking-[0.2em] font-medium uppercase">Parent Company</span>
                 </div>
 
-                <div className="relative w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[380px] md:h-[380px]">
-                  <div className="absolute inset-4 sm:inset-6 md:inset-8 rounded-full border-2 border-dashed border-purple-400/30" />
-                  <div className="absolute inset-8 sm:inset-12 md:inset-16 rounded-full border border-purple-300/20" />
+                <div className="hidden md:block relative mx-auto" style={{ width: '520px', height: '520px' }}>
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 520 520" fill="none">
+                    <circle cx="260" cy="260" r="200" stroke="url(#circleGrad)" strokeWidth="1.5" strokeDasharray="8 6" fill="none" opacity="0.4" />
+                    <circle cx="260" cy="260" r="160" stroke="rgba(168,85,247,0.15)" strokeWidth="1" fill="none" />
+                    <circle cx="260" cy="260" r="120" stroke="rgba(168,85,247,0.08)" strokeWidth="1" fill="none" />
 
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 380 380" fill="none">
-                    <path d="M190 50 A140 140 0 0 1 330 190" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
-                    <path d="M330 190 A140 140 0 0 1 190 330" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
-                    <path d="M190 330 A140 140 0 0 1 50 190" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
-                    <path d="M50 190 A140 140 0 0 1 190 50" stroke="url(#arcGrad)" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <line x1="260" y1="160" x2="260" y2="60" stroke="rgba(168,85,247,0.25)" strokeWidth="1" strokeDasharray="4 4" />
+                    <line x1="360" y1="260" x2="460" y2="260" stroke="rgba(168,85,247,0.25)" strokeWidth="1" strokeDasharray="4 4" />
+                    <line x1="260" y1="360" x2="260" y2="460" stroke="rgba(168,85,247,0.25)" strokeWidth="1" strokeDasharray="4 4" />
+                    <line x1="160" y1="260" x2="60" y2="260" stroke="rgba(168,85,247,0.25)" strokeWidth="1" strokeDasharray="4 4" />
+
                     <defs>
-                      <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#8A2BE2" />
-                        <stop offset="100%" stopColor="#FF2FBF" />
+                      <linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#A855F7" />
+                        <stop offset="50%" stopColor="#EC4899" />
+                        <stop offset="100%" stopColor="#A855F7" />
                       </linearGradient>
                     </defs>
                   </svg>
 
                   <motion.div 
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                    animate={{ scale: [1, 1.04, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <div className="p-3 md:p-4 rounded-2xl bg-gradient-to-br from-purple-600/40 to-pink-600/30 backdrop-blur-md border border-white/20 shadow-lg shadow-purple-500/20">
-                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-8 md:h-12 w-auto brightness-0 invert" />
+                    <div className="px-6 py-4 rounded-2xl bg-gradient-to-br from-purple-700/50 to-purple-900/50 backdrop-blur-md border border-purple-400/30 shadow-xl shadow-purple-500/20">
+                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-10 w-auto brightness-0 invert" />
                     </div>
                   </motion.div>
 
-                  <motion.div 
-                    className="absolute left-1/2 -translate-x-1/2 -top-1 md:top-0"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
-                        <img src={wingoldLogo} alt="WinGold & Metals" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                  <motion.div className="absolute left-1/2 -translate-x-1/2 top-0" whileHover={{ scale: 1.08, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <div className="flex flex-col items-center gap-2 cursor-default">
+                      <div className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 shadow-lg">
+                        <img src={wingoldLogo} alt="WinGold & Metals" className="h-8 w-auto brightness-0 invert" />
                       </div>
-                      <span className="text-[9px] md:text-[10px] text-amber-300/80 font-medium">Precious Metals</span>
+                      <span className="text-xs text-amber-300/90 font-medium tracking-wide">Precious Metals</span>
                     </div>
                   </motion.div>
 
-                  <motion.div 
-                    className="absolute top-1/2 -translate-y-1/2 -right-2 md:right-0"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
-                        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 right-0" whileHover={{ scale: 1.08, x: 4 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <div className="flex flex-col items-center gap-2 cursor-default">
+                      <div className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 shadow-lg">
+                        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-8 w-auto brightness-0 invert" />
                       </div>
-                      <span className="text-[9px] md:text-[10px] text-red-300/80 font-medium">Commodities</span>
+                      <span className="text-xs text-red-300/90 font-medium tracking-wide">Commodities</span>
                     </div>
                   </motion.div>
 
-                  <motion.div 
-                    className="absolute left-1/2 -translate-x-1/2 -bottom-1 md:bottom-0"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
-                        <img src={winlogisticsLogo} alt="Win Logistics" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                  <motion.div className="absolute left-1/2 -translate-x-1/2 bottom-0" whileHover={{ scale: 1.08, y: 4 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <div className="flex flex-col items-center gap-2 cursor-default">
+                      <div className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 shadow-lg">
+                        <img src={winlogisticsLogo} alt="Win Logistics" className="h-8 w-auto brightness-0 invert" />
                       </div>
-                      <span className="text-[9px] md:text-[10px] text-red-300/80 font-medium">Logistics</span>
+                      <span className="text-xs text-red-300/90 font-medium tracking-wide">Logistics</span>
                     </div>
                   </motion.div>
 
-                  <motion.div 
-                    className="absolute top-1/2 -translate-y-1/2 -left-2 md:left-0"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 hover:bg-white/15 transition-colors">
-                        <img src={finatradesLogoEcosystem} alt="Finatrades Platform" className="h-5 md:h-7 w-auto brightness-0 invert" />
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 left-0" whileHover={{ scale: 1.08, x: -4 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <div className="flex flex-col items-center gap-2 cursor-default">
+                      <div className="px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 shadow-lg">
+                        <img src={finatradesLogoEcosystem} alt="Finatrades Platform" className="h-8 w-auto brightness-0 invert" />
                       </div>
-                      <span className="text-[9px] md:text-[10px] text-purple-300/80 font-medium">Trade Finance</span>
+                      <span className="text-xs text-purple-300/90 font-medium tracking-wide">Trade Finance</span>
                     </div>
                   </motion.div>
+                </div>
+
+                <div className="md:hidden flex flex-col items-center gap-6">
+                  <motion.div 
+                    className="mb-2"
+                    animate={{ scale: [1, 1.04, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className="px-6 py-3 rounded-2xl bg-gradient-to-br from-purple-700/50 to-purple-900/50 backdrop-blur-md border border-purple-400/30 shadow-xl shadow-purple-500/20">
+                      <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-9 w-auto brightness-0 invert" />
+                    </div>
+                  </motion.div>
+
+                  <div className="w-px h-6 bg-gradient-to-b from-purple-400/40 to-transparent" />
+
+                  <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+                    {[
+                      { logo: wingoldLogo, alt: 'WinGold & Metals', label: 'Precious Metals', labelColor: 'text-amber-300/90' },
+                      { logo: wincommoditiesLogo, alt: 'WinCommodities', label: 'Commodities', labelColor: 'text-red-300/90' },
+                      { logo: winlogisticsLogo, alt: 'Win Logistics', label: 'Logistics', labelColor: 'text-red-300/90' },
+                      { logo: finatradesLogoEcosystem, alt: 'Finatrades', label: 'Trade Finance', labelColor: 'text-purple-300/90' },
+                    ].map((item) => (
+                      <div key={item.alt} className="flex flex-col items-center gap-1.5">
+                        <div className="px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 shadow-lg w-full flex justify-center">
+                          <img src={item.logo} alt={item.alt} className="h-6 w-auto brightness-0 invert" />
+                        </div>
+                        <span className={`text-[10px] ${item.labelColor} font-medium tracking-wide`}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
