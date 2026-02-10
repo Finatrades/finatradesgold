@@ -58,14 +58,14 @@ function EcosystemNavbar() {
     >
       <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3">
+          <Link href="/finagold" className="flex items-center gap-3">
             <img 
               src={finatradesLogo} 
               alt="Finatrades Ecosystem" 
               className="h-12 w-auto brightness-0 invert"
               data-testid="logo-ecosystem"
             />
-          </a>
+          </Link>
 
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
