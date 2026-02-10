@@ -4,7 +4,7 @@ import {
   ArrowRight, Shield, Globe, Building2, Gem, Ship, 
   BarChart3, Banknote, Lock, TrendingUp, ChevronDown,
   Menu, X, ExternalLink, Truck, Factory, Leaf,
-  Users, Award, MapPin, Mail, Phone
+  Users, Award, MapPin, Mail, CheckCircle2
 } from 'lucide-react';
 import { Link } from 'wouter';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
@@ -46,8 +46,8 @@ function EcosystemNavbar() {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-[#0A0A1A]/95 backdrop-blur-xl shadow-lg shadow-black/20 border-b border-white/5' 
-          : 'bg-transparent'
+          ? 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] shadow-lg shadow-purple-900/20' 
+          : 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]'
       }`}
       data-testid="ecosystem-navbar"
     >
@@ -57,10 +57,9 @@ function EcosystemNavbar() {
             <img 
               src={finatradesLogo} 
               alt="Finatrades Ecosystem" 
-              className="h-10 w-auto brightness-0 invert"
+              className="h-12 w-auto brightness-0 invert"
               data-testid="logo-ecosystem"
             />
-            <span className="text-white/60 text-xs font-medium tracking-widest uppercase hidden sm:block">Ecosystem</span>
           </a>
 
           <div className="hidden lg:flex items-center gap-1">
@@ -68,7 +67,7 @@ function EcosystemNavbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3 py-2 rounded-full text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
+                className="px-3 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
                 data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 {link.label}
@@ -78,8 +77,15 @@ function EcosystemNavbar() {
 
           <div className="hidden lg:flex items-center gap-3">
             <Link 
+              href="/sign-in"
+              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-white/10"
+              data-testid="btn-sign-in"
+            >
+              Sign In
+            </Link>
+            <Link 
               href="/finagold"
-              className="group flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-5 py-2 rounded-full text-sm font-semibold hover:from-[#B8860B] hover:to-[#8B6914] transition-all shadow-lg shadow-[#D4AF37]/20"
+              className="group flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
               data-testid="btn-enter-platform"
             >
               Enter Platform
@@ -103,7 +109,7 @@ function EcosystemNavbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-4 pb-6 border-t border-white/10 pt-4"
+              className="lg:hidden mt-4 pb-6 border-t border-white/20 pt-4"
             >
               <div className="flex flex-col gap-1">
                 {navLinks.map((link) => (
@@ -118,8 +124,14 @@ function EcosystemNavbar() {
                   </a>
                 ))}
                 <Link 
+                  href="/sign-in"
+                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-white/10 transition-all flex items-center justify-center"
+                >
+                  Sign In
+                </Link>
+                <Link 
                   href="/finagold"
-                  className="mt-3 flex items-center justify-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold"
+                  className="mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold"
                   data-testid="mobile-btn-enter-platform"
                 >
                   Enter Platform
@@ -136,47 +148,51 @@ function EcosystemNavbar() {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden" data-testid="ecosystem-hero">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0A0A1A] via-[#0D001E] to-[#1A002F]" />
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/6 w-[600px] h-[600px] bg-[#D4AF37]/5 rounded-full blur-[200px]" />
-        <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/8 rounded-full blur-[180px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D4AF37]/3 rounded-full blur-[250px]" />
+    <section className="relative min-h-[auto] lg:min-h-screen pt-20 lg:pt-28 pb-12 lg:pb-20 overflow-x-hidden" data-testid="ecosystem-hero">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] pointer-events-none" />
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(138, 43, 226, 0.1) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
       </div>
-      <div className="absolute inset-0 opacity-20" style={{
-        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.15) 1px, transparent 0)`,
-        backgroundSize: '60px 60px'
-      }} />
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-6 w-full">
+      <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="text-center max-w-5xl mx-auto"
+          className="text-center max-w-5xl mx-auto lg:min-h-[calc(100vh-200px)] flex flex-col justify-center"
         >
-          <motion.div variants={fadeIn} className="mb-8">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30">
-              <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
-              <span className="text-[#D4AF37] text-sm font-semibold tracking-wide">INTEGRATED TRADE & FINANCE ECOSYSTEM</span>
+          <motion.div variants={fadeIn} className="mb-6 mt-6 sm:mt-0">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700">
+              <span className="text-white text-sm font-bold">+</span>
+              <span className="text-white text-sm font-medium">Integrated Trade & Finance Ecosystem</span>
+              <span className="text-white/70 text-xs">○</span>
             </div>
           </motion.div>
 
-          <motion.h1 variants={fadeIn} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-6">
-            <span className="text-white">FINATRADES</span>
+          <motion.h1 variants={fadeIn} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-4">
+            <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
             <br />
-            <span className="bg-gradient-to-r from-[#D4AF37] via-[#F7D878] to-[#D4AF37] bg-clip-text text-transparent">ECOSYSTEM</span>
+            <span className="text-[#0D0D0D]">ECOSYSTEM</span>
           </motion.h1>
 
-          <motion.p variants={fadeIn} className="text-white/60 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-10">
-            Securing international commodities transactions through an integrated ecosystem of trade finance, precious metals, 
-            commodity sourcing, and logistics — all backed by physical gold within an institutionally governed framework.
+          <motion.h2 variants={fadeIn} className="text-xl sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight mb-6">
+            Securing International Commodities Transactions
+          </motion.h2>
+
+          <motion.p variants={fadeIn} className="text-[#4A4A4A] text-sm sm:text-base leading-relaxed max-w-3xl mx-auto mb-8">
+            An integrated ecosystem of trade finance, precious metals, commodity sourcing, and logistics — 
+            all backed by physical gold within an institutionally governed framework under Raminvest Holding.
           </motion.p>
 
-          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12">
             <a 
               href="#ecosystem"
-              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:from-[#B8860B] hover:to-[#8B6914] active:scale-[0.98] transition-all shadow-lg shadow-[#D4AF37]/25"
+              className="group flex items-center justify-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto"
               data-testid="btn-discover"
             >
               Discover Our Ecosystem
@@ -184,7 +200,7 @@ function HeroSection() {
             </a>
             <Link 
               href="/finagold"
-              className="group flex items-center justify-center gap-2 border border-white/20 text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-white/5 hover:border-white/40 active:scale-[0.98] transition-all"
+              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 w-full sm:w-auto"
               data-testid="btn-platform-hero"
             >
               Access Finatrades Platform
@@ -192,7 +208,7 @@ function HeroSection() {
             </Link>
           </motion.div>
 
-          <motion.div variants={fadeIn} className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          <motion.div variants={fadeIn} className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             {[
               { icon: Shield, label: 'Swiss Regulated', sub: 'FINMA / SO-FIT' },
               { icon: Gem, label: 'Gold Backed', sub: 'Physical Collateral' },
@@ -200,27 +216,13 @@ function HeroSection() {
               { icon: Building2, label: 'Institutional', sub: 'DIFC Governed' },
             ].map((item) => (
               <div key={item.label} className="text-center" data-testid={`stat-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-[#D4AF37]" />
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 border border-purple-100/50 flex items-center justify-center">
+                  <item.icon className="w-5 h-5 text-[#8A2BE2]" />
                 </div>
-                <p className="text-white font-semibold text-sm">{item.label}</p>
-                <p className="text-white/40 text-xs mt-0.5">{item.sub}</p>
+                <p className="text-[#0D0D0D] font-semibold text-sm">{item.label}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{item.sub}</p>
               </div>
             ))}
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <ChevronDown className="w-6 h-6 text-white/30" />
           </motion.div>
         </motion.div>
       </div>
@@ -230,8 +232,10 @@ function HeroSection() {
 
 function EcosystemOverview() {
   return (
-    <section id="ecosystem" className="relative py-24 bg-[#0D001E]" data-testid="ecosystem-overview">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A1A] to-[#0D001E]" />
+    <section id="ecosystem" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="ecosystem-overview">
+      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
+      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
+
       <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
           initial="hidden"
@@ -240,17 +244,16 @@ function EcosystemOverview() {
           variants={stagger}
           className="text-center mb-16"
         >
-          <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-            <span className="text-[#D4AF37] text-xs font-semibold tracking-widest uppercase">Our Ecosystem</span>
-          </motion.div>
-          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-            An Integrated Trade & Finance{' '}
-            <span className="bg-gradient-to-r from-[#D4AF37] to-[#F7D878] bg-clip-text text-transparent">Ecosystem</span>
+          <motion.span variants={fadeIn} className="inline-block text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] mb-4">
+            OUR ECOSYSTEM
+          </motion.span>
+          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-6">
+            An Integrated Trade & Finance Ecosystem
           </motion.h2>
-          <motion.p variants={fadeIn} className="text-white/50 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+          <motion.p variants={fadeIn} className="text-gray-500 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
             International commodity trade — particularly along the Global South — faces persistent structural challenges: 
             counterparty risk, limited trade finance access, unstable exchange rates and logistical complexity. 
-            Finatrades addresses these through a dedicated Ecosystem specifically designed to secure international commodities transactions.
+            Finatrades addresses these through a dedicated Ecosystem.
           </motion.p>
         </motion.div>
 
@@ -259,73 +262,83 @@ function EcosystemOverview() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={stagger}
-          className="relative"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: Banknote,
-                color: '#8A2BE2',
-                title: 'FINATRADES',
-                subtitle: 'Trade & Finance Platform',
-                desc: 'Swiss-regulated digital platform for trade finance and gold-backed payments',
-                href: '#finatrades',
-              },
-              {
-                icon: Gem,
-                color: '#D4AF37',
-                title: 'WINGOLD & METALS',
-                subtitle: 'Precious Metals Trading',
-                desc: 'Strategic precious metals trading, storage and collateralization solutions',
-                href: '#wingold',
-              },
-              {
-                icon: Factory,
-                color: '#22C55E',
-                title: 'WINCOMMODITIES',
-                subtitle: 'Commodity Sourcing',
-                desc: 'Physical commodities platform with innovative barter trade solutions',
-                href: '#wincommodities',
-              },
-              {
-                icon: Truck,
-                color: '#3B82F6',
-                title: 'WIN LOGISTICS',
-                subtitle: 'Global Logistics',
-                desc: 'End-to-end air, sea, road logistics and warehousing solutions',
-                href: '#winlogistics',
-              },
-            ].map((item, i) => (
-              <motion.a
-                key={item.title}
-                href={item.href}
-                variants={fadeIn}
-                className="group relative p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
-                data-testid={`card-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: `${item.color}15`, border: `1px solid ${item.color}30` }}>
-                  <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                </div>
-                <h3 className="text-white font-bold text-lg mb-1">{item.title}</h3>
-                <p className="text-sm font-medium mb-3" style={{ color: item.color }}>{item.subtitle}</p>
-                <p className="text-white/50 text-sm leading-relaxed">{item.desc}</p>
-                <div className="mt-4 flex items-center gap-1 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: item.color }}>
-                  Learn more <ArrowRight className="w-3.5 h-3.5" />
-                </div>
-              </motion.a>
-            ))}
-          </div>
+          {[
+            {
+              icon: Banknote,
+              color: 'from-purple-500 to-pink-500',
+              iconBg: 'from-purple-100 to-pink-50',
+              iconColor: 'text-purple-600',
+              title: 'FINATRADES',
+              subtitle: 'Trade & Finance Platform',
+              desc: 'Swiss-regulated digital platform for trade finance and gold-backed payments',
+              href: '#finatrades',
+            },
+            {
+              icon: Gem,
+              color: 'from-amber-500 to-yellow-600',
+              iconBg: 'from-amber-100 to-yellow-50',
+              iconColor: 'text-amber-600',
+              title: 'WINGOLD & METALS',
+              subtitle: 'Precious Metals Trading',
+              desc: 'Strategic precious metals trading, storage and collateralization solutions',
+              href: '#wingold',
+            },
+            {
+              icon: Factory,
+              color: 'from-green-500 to-emerald-600',
+              iconBg: 'from-green-100 to-emerald-50',
+              iconColor: 'text-green-600',
+              title: 'WINCOMMODITIES',
+              subtitle: 'Commodity Sourcing',
+              desc: 'Physical commodities platform with innovative barter trade solutions',
+              href: '#wincommodities',
+            },
+            {
+              icon: Truck,
+              color: 'from-blue-500 to-indigo-600',
+              iconBg: 'from-blue-100 to-indigo-50',
+              iconColor: 'text-blue-600',
+              title: 'WIN LOGISTICS',
+              subtitle: 'Global Logistics',
+              desc: 'End-to-end air, sea, road logistics and warehousing solutions',
+              href: '#winlogistics',
+            },
+          ].map((item) => (
+            <motion.a
+              key={item.title}
+              href={item.href}
+              variants={fadeIn}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="group flex flex-col p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300 cursor-pointer"
+              data-testid={`card-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+              </div>
+              <h3 className="text-[#0D0D0D] font-bold text-lg mb-1">{item.title}</h3>
+              <p className={`text-sm font-medium bg-gradient-to-r ${item.color} bg-clip-text text-transparent mb-3`}>{item.subtitle}</p>
+              <p className="text-gray-500 text-sm leading-relaxed flex-grow">{item.desc}</p>
+              <div className="mt-4 flex items-center gap-1 text-sm font-medium text-[#8A2BE2] opacity-0 group-hover:opacity-100 transition-opacity">
+                Learn more <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </motion.a>
+          ))}
+        </motion.div>
 
-          <motion.div
-            variants={fadeIn}
-            className="mt-12 p-8 rounded-2xl bg-gradient-to-r from-[#D4AF37]/5 via-transparent to-[#8A2BE2]/5 border border-white/10 text-center"
-          >
-            <p className="text-white/70 text-base leading-relaxed max-w-4xl mx-auto">
-              By integrating trade finance solutions backed by <span className="text-[#D4AF37] font-semibold">physical gold</span> as operational collateral, 
-              within an institutionally governed framework, Finatrades mitigates counterparty risk and provides trusted third-party facilitation for cross-border trade. 
-              All companies operate under <span className="text-white font-semibold">RAMINVEST HOLDING</span> based in DIFC.
-            </p>
-          </motion.div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="p-8 rounded-2xl bg-white border border-purple-100/50 shadow-sm text-center"
+        >
+          <p className="text-gray-600 text-base leading-relaxed max-w-4xl mx-auto">
+            By integrating trade finance solutions backed by <span className="text-[#8A2BE2] font-semibold">physical gold</span> as operational collateral, 
+            within an institutionally governed framework, Finatrades mitigates counterparty risk and provides trusted third-party facilitation for cross-border trade. 
+            All companies operate under <span className="text-[#0D0D0D] font-semibold">RAMINVEST HOLDING</span> based in DIFC.
+          </p>
         </motion.div>
       </div>
     </section>
@@ -334,9 +347,12 @@ function EcosystemOverview() {
 
 function RaminvestSection() {
   return (
-    <section id="raminvest" className="relative py-24 bg-[#0A0A1A]" data-testid="raminvest-section">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent" />
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="raminvest" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="raminvest-section">
+      <div className="absolute inset-0">
+        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100/20 blur-[120px] rounded-full" />
+      </div>
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -344,25 +360,22 @@ function RaminvestSection() {
           variants={stagger}
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 mb-6">
-              <Building2 className="w-4 h-4 text-[#D4AF37]" />
-              <span className="text-[#D4AF37] text-xs font-semibold tracking-widest uppercase">Holding Company</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              RAMINVEST{' '}
-              <span className="bg-gradient-to-r from-[#D4AF37] to-[#F7D878] bg-clip-text text-transparent">HOLDING</span>
+            <span className="inline-block text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] mb-4">HOLDING COMPANY</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-4">
+              RAMINVEST HOLDING
             </h2>
-            <p className="text-white/40 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
+            <p className="text-gray-400 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
+            <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
           </motion.div>
 
-          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-16">
-            <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/10">
-              <p className="text-white/70 text-base leading-relaxed mb-6">
-                Headquartered in the prestigious <span className="text-white font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
+          <motion.div variants={fadeIn} className="max-w-4xl mx-auto mb-12">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
+                Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
                 delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
                 each focused on solving real-world trade and financial challenges.
               </p>
-              <p className="text-white/60 text-base leading-relaxed">
+              <p className="text-gray-500 text-base leading-relaxed">
                 From addressing hard currency shortages with innovative barter systems to enabling direct access to global commodities markets, 
                 Raminvest Holding is more than a holding company — it is a catalyst for sustainable economic growth and financial empowerment.
               </p>
@@ -389,14 +402,14 @@ function RaminvestSection() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="p-6 rounded-2xl bg-gradient-to-b from-[#D4AF37]/5 to-transparent border border-[#D4AF37]/10"
+                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
                 data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center mb-4">
-                  <item.icon className="w-5 h-5 text-[#D4AF37]" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <item.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-white/50 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </motion.div>
@@ -408,10 +421,9 @@ function RaminvestSection() {
 
 function FinatradesSection() {
   return (
-    <section id="finatrades" className="relative py-24 bg-[#0D001E]" data-testid="finatrades-section">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8A2BE2]/30 to-transparent" />
-      <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-[#8A2BE2]/5 rounded-full blur-[150px]" />
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="finatrades" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="finatrades-section">
+      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -420,26 +432,27 @@ function FinatradesSection() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 mb-6">
-                <Banknote className="w-4 h-4 text-[#8A2BE2]" />
-                <span className="text-[#8A2BE2] text-xs font-semibold tracking-widest uppercase">Swiss Regulated Platform</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
+                <span className="text-white text-sm font-bold">+</span>
+                <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
+                <span className="text-white/70 text-xs">○</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                FINATRADES
+              <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
               </h2>
-              <p className="text-[#8A2BE2] font-semibold text-lg mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
-              <p className="text-white/60 text-base leading-relaxed mb-6">
+              <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
                 A next-generation digital platform designed to streamline international trade, payments, and financial operations 
                 with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
               </p>
-              <p className="text-white/50 text-sm leading-relaxed mb-8">
+              <p className="text-gray-500 text-sm leading-relaxed mb-8">
                 By leveraging gold-backed solutions and a regulated barter transaction framework, Finatrades helps mitigate currency risk 
                 and simplifies complex cross-border transactions. This enables businesses and governments to trade more efficiently, 
                 optimize financing structures, and access global markets with enhanced security, transparency, and confidence.
               </p>
               <Link 
                 href="/finagold"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#7B27CC] hover:to-[#9338EE] active:scale-[0.98] transition-all shadow-lg shadow-[#8A2BE2]/25"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
                 data-testid="btn-access-finatrades"
               >
                 Access Finatrades Platform
@@ -456,12 +469,12 @@ function FinatradesSection() {
                 { icon: BarChart3, label: 'FinaPay', desc: 'Digital gold wallet for seamless payments' },
                 { icon: TrendingUp, label: 'FinaBridge', desc: 'Trade finance facilitation and deal rooms' },
               ].map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#8A2BE2]/30 transition-colors" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 flex items-center justify-center mb-3">
-                    <item.icon className="w-4 h-4 text-[#8A2BE2]" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-purple-600" />
                   </div>
-                  <h4 className="text-white font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-white/40 text-xs leading-relaxed">{item.desc}</p>
+                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -474,10 +487,12 @@ function FinatradesSection() {
 
 function WingoldSection() {
   return (
-    <section id="wingold" className="relative py-24 bg-[#0A0A1A]" data-testid="wingold-section">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
-      <div className="absolute bottom-1/3 left-0 w-[400px] h-[400px] bg-[#D4AF37]/5 rounded-full blur-[150px]" />
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="wingold" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="wingold-section">
+      <div className="absolute inset-0">
+        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-amber-100/20 blur-[150px] rounded-full" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100/20 blur-[120px] rounded-full" />
+      </div>
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -494,31 +509,28 @@ function WingoldSection() {
                 { icon: Leaf, label: 'Boudadya & Baraka', desc: 'Responsible mineral extraction operations' },
                 { icon: Award, label: 'Institutional Grade', desc: 'Solutions for governments and institutions' },
               ].map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#D4AF37]/30 transition-colors" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center mb-3">
-                    <item.icon className="w-4 h-4 text-[#D4AF37]" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-amber-600" />
                   </div>
-                  <h4 className="text-white font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-white/40 text-xs leading-relaxed">{item.desc}</p>
+                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 mb-6">
-                <Gem className="w-4 h-4 text-[#D4AF37]" />
-                <span className="text-[#D4AF37] text-xs font-semibold tracking-widest uppercase">Precious Metals — DMCC</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-amber-600 mb-4">PRECIOUS METALS — DMCC</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WINGOLD & METALS
               </h2>
-              <p className="text-[#D4AF37] font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
-              <p className="text-white/60 text-base leading-relaxed mb-6">
+              <p className="text-amber-600 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Wingold & Metals specializes in the trading and management of precious metals, providing strategic financial solutions 
                 for governments, institutions, and corporate clients. Through proprietary financial instruments and innovative structured solutions, 
                 we unlock liquidity and optimize asset value.
               </p>
-              <p className="text-white/50 text-sm leading-relaxed mb-6">
+              <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 Our expertise covers secure storage, collateralization, and market access, ensuring that every metal-backed transaction 
                 delivers both financial security and profitability. With a global network and deep market insight, we help clients maximize 
                 the value of their precious metal assets.
@@ -527,15 +539,12 @@ function WingoldSection() {
                 href="https://wingoldandmetals.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#B8860B] hover:to-[#8B6914] active:scale-[0.98] transition-all shadow-lg shadow-[#D4AF37]/20 mb-4"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
                 data-testid="btn-visit-wingold"
               >
                 Visit Website
                 <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/5 border border-[#D4AF37]/20">
-                <span className="text-[#D4AF37]/60 text-xs">TRANSFORMING PRECIOUS METALS INTO STRATEGIC FINANCIAL ASSETS</span>
-              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -546,10 +555,10 @@ function WingoldSection() {
 
 function WinCommoditiesSection() {
   return (
-    <section id="wincommodities" className="relative py-24 bg-[#0D001E]" data-testid="wincommodities-section">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent" />
-      <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-[#22C55E]/5 rounded-full blur-[150px]" />
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="wincommodities" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="wincommodities-section">
+      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
+      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100/20 rounded-full blur-[120px]" />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -558,26 +567,23 @@ function WinCommoditiesSection() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/20 mb-6">
-                <Factory className="w-4 h-4 text-[#22C55E]" />
-                <span className="text-[#22C55E] text-xs font-semibold tracking-widest uppercase">Commodities — DMCC</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-green-600 mb-4">COMMODITIES — DMCC</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WINCOMMODITIES
               </h2>
-              <p className="text-[#22C55E] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
-              <p className="text-white/60 text-base leading-relaxed mb-6">
+              <p className="text-green-600 font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
+              <p className="text-gray-600 text-base leading-relaxed mb-6">
                 As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
                 economies of scale on the sourcing, logistics and financial optimization. We focus on global transactions related to:
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-8">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 {['Oil & Fuels', 'Metals', 'Green Energy', 'Soft Commodities'].map((item) => (
-                  <div key={item} className="px-4 py-3 rounded-xl bg-[#22C55E]/5 border border-[#22C55E]/10 text-white/70 text-sm font-medium text-center" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div key={item} className="px-4 py-3 rounded-xl bg-white border border-green-100 text-gray-700 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
                   </div>
                 ))}
               </div>
-              <p className="text-white/50 text-sm leading-relaxed mb-6">
+              <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 WinCommodities offers an innovative platform enabling governments and businesses to trade essential goods through 
                 a secure and fully compliant barter system. By providing real-time transaction transparency, our platform reduces 
                 reliance on foreign currencies and mitigates exchange rate risks.
@@ -586,7 +592,7 @@ function WinCommoditiesSection() {
                 href="https://wincommodities.finatrades.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#16A34A] hover:to-[#15803D] active:scale-[0.98] transition-all shadow-lg shadow-[#22C55E]/20"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
                 data-testid="btn-visit-wincommodities"
               >
                 Access Here
@@ -603,12 +609,12 @@ function WinCommoditiesSection() {
                 { icon: TrendingUp, label: 'Scale Advantages', desc: 'Economies of scale in sourcing and logistics' },
                 { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
               ].map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#22C55E]/30 transition-colors" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center mb-3">
-                    <item.icon className="w-4 h-4 text-[#22C55E]" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-green-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-green-600" />
                   </div>
-                  <h4 className="text-white font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-white/40 text-xs leading-relaxed">{item.desc}</p>
+                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -621,10 +627,12 @@ function WinCommoditiesSection() {
 
 function WinLogisticsSection() {
   return (
-    <section id="winlogistics" className="relative py-24 bg-[#0A0A1A]" data-testid="winlogistics-section">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#3B82F6]/30 to-transparent" />
-      <div className="absolute bottom-1/3 left-0 w-[400px] h-[400px] bg-[#3B82F6]/5 rounded-full blur-[150px]" />
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="winlogistics" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="winlogistics-section">
+      <div className="absolute inset-0">
+        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-blue-100/20 blur-[150px] rounded-full" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100/20 blur-[120px] rounded-full" />
+      </div>
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -641,31 +649,28 @@ function WinLogisticsSection() {
                 { icon: Users, label: 'Strategic Partners', desc: 'Network of trusted global logistics providers' },
                 { icon: Award, label: 'Operational Integrity', desc: 'Precision, security, and transparency at every stage' },
               ].map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-[#3B82F6]/30 transition-colors" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 flex items-center justify-center mb-3">
-                    <item.icon className="w-4 h-4 text-[#3B82F6]" />
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-blue-600" />
                   </div>
-                  <h4 className="text-white font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-white/40 text-xs leading-relaxed">{item.desc}</p>
+                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/20 mb-6">
-                <Truck className="w-4 h-4 text-[#3B82F6]" />
-                <span className="text-[#3B82F6] text-xs font-semibold tracking-widest uppercase">Logistics — DMCC</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <span className="inline-block text-sm font-semibold tracking-[0.2em] text-blue-600 mb-4">LOGISTICS — DMCC</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0D0D0D] mb-2">
                 WIN LOGISTICS
               </h2>
-              <p className="text-[#3B82F6] font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
-              <p className="text-white/60 text-base leading-relaxed mb-6">
+              <p className="text-blue-600 font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
                 and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
                 processes and expert professional handling at every stage of the supply chain.
               </p>
-              <p className="text-white/50 text-sm leading-relaxed mb-6">
+              <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 We provide practical logistics execution across air, sea, and road, supported by professional warehousing partnerships 
                 in key trade zones. By combining structured documentation handling with technology-enabled visibility and tracking, 
                 we ensure every shipment is managed with precision, security, and real-time transparency.
@@ -674,15 +679,12 @@ function WinLogisticsSection() {
                 href="https://winlogistics.finatrades.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] active:scale-[0.98] transition-all shadow-lg shadow-[#3B82F6]/20 mb-4"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
                 data-testid="btn-visit-winlogistics"
               >
                 Access Here
                 <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3B82F6]/5 border border-[#3B82F6]/20">
-                <span className="text-[#3B82F6]/60 text-xs">BUILDING THE NEXT GENERATION OF GLOBAL LOGISTICS INFRASTRUCTURE</span>
-              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -693,11 +695,8 @@ function WinLogisticsSection() {
 
 function CTASection() {
   return (
-    <section className="relative py-24 bg-[#0D001E] overflow-hidden" data-testid="ecosystem-cta">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
-      <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D4AF37]/3 rounded-full blur-[250px]" />
-      </div>
+    <section className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#EDE9FE] overflow-hidden" data-testid="ecosystem-cta">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#8A2BE2]/5 rounded-full blur-[250px]" />
       <div className="relative max-w-4xl mx-auto px-6 text-center">
         <motion.div
           initial="hidden"
@@ -705,18 +704,18 @@ function CTASection() {
           viewport={{ once: true }}
           variants={stagger}
         >
-          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-6">
             Powering Efficient Trade,{' '}
-            <span className="bg-gradient-to-r from-[#D4AF37] to-[#F7D878] bg-clip-text text-transparent">One Transaction at a Time</span>
+            <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">One Transaction at a Time</span>
           </motion.h2>
-          <motion.p variants={fadeIn} className="text-white/50 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+          <motion.p variants={fadeIn} className="text-gray-500 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
             Whether supporting large-scale international trade operations or ongoing financial activities, 
             Finatrades empowers its partners to operate confidently in global markets.
           </motion.p>
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/finagold"
-              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white px-10 py-4 min-h-[52px] rounded-full text-lg font-semibold hover:from-[#B8860B] hover:to-[#8B6914] active:scale-[0.98] transition-all shadow-lg shadow-[#D4AF37]/25"
+              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-10 py-4 min-h-[52px] rounded-full text-lg font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25"
               data-testid="btn-cta-platform"
             >
               Enter Finatrades Platform
@@ -731,8 +730,7 @@ function CTASection() {
 
 function EcosystemFooter() {
   return (
-    <footer id="contact" className="relative py-16 bg-[#050510]" data-testid="ecosystem-footer">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    <footer id="contact" className="relative py-16 pb-[calc(4rem+env(safe-area-inset-bottom))] bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="ecosystem-footer">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-2">
@@ -740,27 +738,27 @@ function EcosystemFooter() {
               <img 
                 src={finatradesLogo} 
                 alt="Finatrades Ecosystem" 
-                className="h-14 w-auto mb-3 brightness-0 invert"
+                className="h-14 w-auto mb-2 brightness-0 invert"
               />
-              <p className="text-white/40 text-sm">Integrated Trade & Finance Ecosystem</p>
+              <p className="text-white/60 text-sm">Integrated Trade & Finance Ecosystem</p>
             </div>
-            <div className="space-y-2 text-white/50 text-sm mb-6">
+            <div className="space-y-2 text-white/70 text-xs mb-6">
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 text-[#D4AF37]/60 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mt-0.5 text-purple-400/60 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-white/60">Dubai</p>
+                  <p className="font-medium text-white/80">Dubai</p>
                   <p>Burj Daman Office 802 Waldorf Astoria, DIFC, UAE</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 text-[#D4AF37]/60 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mt-0.5 text-purple-400/60 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-white/60">Geneva</p>
+                  <p className="font-medium text-white/80">Geneva</p>
                   <p>Rue Robert-CÉARD, 1204 Genève</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-3">
-                <Mail className="w-4 h-4 text-[#D4AF37]/60 flex-shrink-0" />
+                <Mail className="w-4 h-4 text-purple-400/60 flex-shrink-0" />
                 <a href="mailto:admin@raminvestholding.com" className="text-white/60 hover:text-white transition-colors" data-testid="footer-link-email">
                   admin@raminvestholding.com
                 </a>
@@ -779,7 +777,7 @@ function EcosystemFooter() {
                 { label: 'Win Logistics', href: '#winlogistics' },
               ].map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-white/50 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <a href={link.href} className="text-white/60 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                     {link.label}
                   </a>
                 </li>
@@ -798,7 +796,7 @@ function EcosystemFooter() {
                 { label: 'Sign In', href: '/sign-in' },
               ].map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-white/50 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <Link href={link.href} className="text-white/60 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                     {link.label}
                   </Link>
                 </li>
@@ -807,9 +805,9 @@ function EcosystemFooter() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/10">
+        <div className="pt-8 border-t border-white/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-white/40 text-sm">
+            <p className="text-white/60 text-sm">
               &copy; {new Date().getFullYear()} Raminvest Holding. All rights reserved.
             </p>
             <div className="flex gap-6">
@@ -833,20 +831,40 @@ export default function EcosystemLanding() {
   }, []);
 
   return (
-    <div className="ecosystem-landing min-h-screen bg-[#0A0A1A] text-white antialiased selection:bg-[#D4AF37] selection:text-black overflow-x-hidden">
+    <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden overflow-y-auto">
       <style>{`
-        .ecosystem-landing {
+        .finagold-landing {
+          --gold: #D4AF37;
+          --gold-bright: #FFD500;
+          --gold-light: #F7D878;
+          --gold-dark: #B8860B;
+          --purple-deep: #8A2BE2;
+          --purple-magenta: #FF2FBF;
+          --purple-light: #A342FF;
+          --purple-pink: #FF4CD6;
+          --purple-violet: #4B0082;
+          --bg-darkest: #0D001E;
+          --bg-dark: #1A002F;
+          --bg-medium: #2A0055;
+          --bg-indigo: #4B0082;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          --primary: #8A2BE2;
+          --primary-foreground: #ffffff;
+          --ring: #8A2BE2;
+          --accent: #D4AF37;
+          --accent-foreground: #000000;
+        }
+        .finagold-landing {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
-        .ecosystem-landing::-webkit-scrollbar {
+        .finagold-landing::-webkit-scrollbar {
           display: none;
         }
         @media (prefers-reduced-motion: reduce) {
-          .ecosystem-landing *,
-          .ecosystem-landing *::before,
-          .ecosystem-landing *::after {
+          .finagold-landing *,
+          .finagold-landing *::before,
+          .finagold-landing *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
