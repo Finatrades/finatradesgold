@@ -252,10 +252,10 @@ function EcosystemDiagram({ testId }: { testId: string }) {
           <circle cx="300" cy="225" r="70" stroke="white" strokeWidth="1.2" fill="none" opacity="0.2" />
           <circle cx="300" cy="225" r="48" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
 
-          <path d="M 350 60 C 470 70, 545 150, 550 200" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 550 240 C 545 330, 420 400, 340 410" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 260 410 C 180 400, 55 330, 50 240" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          <path d="M 50 200 C 55 150, 130 70, 250 60" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 350 55 C 460 65, 530 130, 545 195" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 545 245 C 530 330, 420 395, 340 410" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 260 410 C 180 395, 70 330, 55 245" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
+          <path d="M 55 195 C 70 130, 140 65, 250 55" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" opacity="0.9" />
         </svg>
 
         <div className="absolute" style={{ left: '50%', top: '5%', transform: 'translateX(-50%)' }}>
