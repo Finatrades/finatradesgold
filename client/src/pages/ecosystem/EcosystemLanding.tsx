@@ -611,7 +611,8 @@ function WinLogisticsSection() {
               <div className="mb-5">
                 <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" data-testid="logo-winlogistics" />
               </div>
-              <p className="text-[#DC2626] font-semibold text-lg mb-6">Comprehensive Logistics Solutions Built for Global Trade</p>
+              <p className="text-[#DC2626] font-semibold text-lg mb-2">Comprehensive Logistics Solutions Built for Global Trade</p>
+              <p className="text-gray-400 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-4">
                 Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
                 and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
