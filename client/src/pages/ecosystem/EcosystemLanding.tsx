@@ -187,7 +187,7 @@ function HeroSection() {
             <span className="text-[#0D0D0D]">ECOSYSTEM</span>
           </motion.h1>
 
-          <motion.h2 variants={fadeIn} className="text-xl sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight mb-6">
+          <motion.h2 variants={fadeIn} className="text-lg sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight mb-6">
             Securing International Commodities Transactions
           </motion.h2>
 
