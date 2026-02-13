@@ -377,12 +377,8 @@ function WingoldSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { icon: BarChart3, label: 'Asset Liquidity', desc: 'Unlocking value from precious metal holdings' },
                 { icon: Lock, label: 'Collateral Solutions', desc: 'Metal-backed financial instruments' },
                 { icon: Shield, label: 'Secure Trading', desc: 'Certified storage and transparent management' },
-                { icon: TrendingUp, label: 'Market Access', desc: 'Direct access to global precious metals markets' },
-                { icon: Leaf, label: 'Boudadya & Baraka', desc: 'Responsible mineral extraction operations' },
-                { icon: Award, label: 'Institutional Grade', desc: 'Solutions for governments and institutions' },
               ].map((item) => (
                 <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
