@@ -228,122 +228,6 @@ function HeroSection() {
   );
 }
 
-function EcosystemDiagram({ testId }: { testId: string }) {
-  const cx = 400, cy = 280;
-  const rx = 310, ry = 210;
-  const gap = 0.18;
-  const pt = (a: number) => [
-    Math.round(cx + rx * Math.cos(a)),
-    Math.round(cy + ry * Math.sin(a)),
-  ] as const;
-
-  const [topRx, topRy] = pt(-Math.PI / 2 + gap);
-  const [topLx, topLy] = pt(-Math.PI / 2 - gap);
-  const [rightTx, rightTy] = pt(-gap);
-  const [rightBx, rightBy] = pt(gap);
-  const [botRx, botRy] = pt(Math.PI / 2 - gap);
-  const [botLx, botLy] = pt(Math.PI / 2 + gap);
-  const [leftBx, leftBy] = pt(Math.PI - gap);
-  const [leftTx, leftTy] = pt(Math.PI + gap);
-
-  const arcD = (x1: number, y1: number, x2: number, y2: number) =>
-    `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
-
-  return (
-    <div
-      className="relative rounded-2xl overflow-hidden shadow-2xl"
-      data-testid={testId}
-      style={{ background: 'linear-gradient(145deg, #2D0840 0%, #4A1259 35%, #5A1868 55%, #4A1259 75%, #2D0840 100%)', aspectRatio: '800 / 560' }}
-    >
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 560" fill="none" preserveAspectRatio="xMidYMid meet">
-        <circle cx={cx} cy={cy} r="68" stroke="white" strokeWidth="1" fill="none" opacity="0.18" />
-        <circle cx={cx} cy={cy} r="45" stroke="white" strokeWidth="0.6" fill="none" opacity="0.1" />
-
-        <path d={arcD(topRx, topRy, rightTx, rightTy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-        <path d={arcD(rightBx, rightBy, botRx, botRy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-        <path d={arcD(botLx, botLy, leftBx, leftBy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-        <path d={arcD(leftTx, leftTy, topLx, topLy)} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-      </svg>
-
-      <div className="absolute inset-0 flex items-start justify-center" style={{ top: '3%' }}>
-        <img src={raminvestLogo} alt="Raminvest Holding DIFC" className="h-[10%] w-auto brightness-0 invert" />
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-center">
-        <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-[8%] w-auto brightness-0 invert" />
-      </div>
-
-      <div className="absolute inset-0 flex items-center" style={{ left: '2%', right: 'auto' }}>
-        <img src={wincommoditiesLogo} alt="WinCommodities" className="h-auto brightness-0 invert" style={{ width: '18%' }} />
-      </div>
-
-      <div className="absolute inset-0 flex items-center justify-end" style={{ right: '2%', left: 'auto' }}>
-        <img src={wingoldLogo} alt="WinGold & Metals DMCC" className="h-auto brightness-0 invert" style={{ width: '18%' }} />
-      </div>
-
-      <div className="absolute inset-0 flex items-end justify-center" style={{ bottom: '3%' }}>
-        <img src={winlogisticsLogo} alt="WinLogistics" className="h-auto brightness-0 invert" style={{ width: '16%' }} />
-      </div>
-    </div>
-  );
-}
-
-function EcosystemOverview() {
-  return (
-    <section id="ecosystem" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="ecosystem-overview">
-      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
-      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px]" />
-
-      <div className="relative max-w-7xl mx-auto px-6">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-          className="text-center mb-16"
-        >
-          <motion.span variants={fadeIn} className="inline-block text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] mb-4">
-            OUR ECOSYSTEM
-          </motion.span>
-          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-6">
-            An Integrated Trade & Finance Ecosystem
-          </motion.h2>
-          <motion.p variants={fadeIn} className="text-gray-500 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
-            International commodity trade — particularly along the Global South — faces persistent structural challenges: 
-            counterparty risk, limited trade finance access, unstable exchange rates and logistical complexity. 
-            Finatrades addresses these through a dedicated Ecosystem.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={fadeIn}
-          className="mb-12"
-        >
-          <div className="max-w-3xl mx-auto">
-            <EcosystemDiagram testId="ecosystem-overview-diagram" />
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeIn}
-          className="p-8 rounded-2xl bg-white border border-purple-100/50 shadow-sm text-center"
-        >
-          <p className="text-gray-600 text-base leading-relaxed max-w-4xl mx-auto">
-            By integrating trade finance solutions backed by <span className="text-[#8A2BE2] font-semibold">physical gold</span> as operational collateral, 
-            within an institutionally governed framework, Finatrades mitigates counterparty risk and provides trusted third-party facilitation for cross-border trade. 
-            All companies operate under <span className="text-[#0D0D0D] font-semibold">RAMINVEST HOLDING</span> based in DIFC.
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 function RaminvestSection() {
   return (
@@ -862,7 +746,6 @@ export default function EcosystemLanding() {
       <main>
         <HeroSection />
         <RaminvestSection />
-        <EcosystemOverview />
         <FinatradesSection />
         <WingoldSection />
         <WinCommoditiesSection />
