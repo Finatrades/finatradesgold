@@ -446,7 +446,7 @@ function WinCommoditiesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
               <div className="mb-5">
-                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-wincommodities" />
+                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-6">
@@ -531,7 +531,7 @@ function WinLogisticsSection() {
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2">
               <div className="mb-5">
-                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" data-testid="logo-winlogistics" />
+                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-2">Comprehensive Logistics Solutions Built for Global Trade</p>
               <p className="text-gray-400 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
