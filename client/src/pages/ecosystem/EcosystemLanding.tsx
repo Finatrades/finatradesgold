@@ -312,29 +312,51 @@ function FinatradesSection() {
           viewport={{ once: true, margin: "-100px" }}
           variants={stagger}
         >
-          <motion.div variants={fadeIn}>
-            <div className="mb-6">
-              <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" />
-            </div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
-              <span className="text-white text-sm font-bold">+</span>
-              <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
-              <span className="text-white/70 text-xs">○</span>
-            </div>
-            <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
-            <p className="text-gray-600 text-base leading-relaxed mb-8">
-              A next-generation digital platform designed to streamline international trade, payments, and financial operations 
-              with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
-            </p>
-            <Link 
-              href="/finagold"
-              className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
-              data-testid="btn-access-finatrades"
-            >
-              Access Finatrades Platform
-              <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <motion.div variants={fadeIn}>
+              <div className="mb-6">
+                <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" />
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
+                <span className="text-white text-sm font-bold">+</span>
+                <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
+                <span className="text-white/70 text-xs">○</span>
+              </div>
+              <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
+              <p className="text-gray-600 text-base leading-relaxed mb-4">
+                A next-generation digital platform designed to streamline international trade, payments, and financial operations 
+                with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
+              </p>
+              <div className="mb-8" />
+              <Link 
+                href="/finagold"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
+                data-testid="btn-access-finatrades"
+              >
+                Access Finatrades Platform
+                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
+
+            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { icon: Shield, label: 'Trade Finance', desc: 'Structured trade solutions for international commerce' },
+                { icon: Gem, label: 'Gold-Backed System', desc: 'Physical gold collateral for transaction security' },
+                { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
+                { icon: Lock, label: 'FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
+                { icon: BarChart3, label: 'FinaPay', desc: 'Digital gold wallet for seamless payments' },
+                { icon: TrendingUp, label: 'FinaBridge', desc: 'Trade finance facilitation and deal rooms' },
+              ].map((item) => (
+                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
         </motion.div>
       </div>
     </section>
