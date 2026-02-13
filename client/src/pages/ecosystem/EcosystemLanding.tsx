@@ -435,7 +435,7 @@ function WinCommoditiesSection() {
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100/20 rounded-full blur-[120px]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#87CEEB] uppercase">WinCommodities</h2>
+          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#DC2626] uppercase">WinCommodities</h2>
         </motion.div>
         <motion.div
           initial="hidden"
@@ -446,7 +446,7 @@ function WinCommoditiesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn}>
               <div className="mb-5">
-                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
+                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-wincommodities" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-6">
