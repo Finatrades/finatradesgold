@@ -338,7 +338,7 @@ function FinatradesSection() {
               </Link>
             </motion.div>
 
-            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Shield, label: 'Trade Finance', desc: 'Structured trade solutions for international commerce' },
                 { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
