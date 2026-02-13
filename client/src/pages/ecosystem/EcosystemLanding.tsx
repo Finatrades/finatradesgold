@@ -375,7 +375,7 @@ function WingoldSection() {
           variants={stagger}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Lock, label: 'Collateral Solutions', desc: 'Metal-backed financial instruments' },
                 { icon: Shield, label: 'Secure Trading', desc: 'Certified storage and transparent management' },
