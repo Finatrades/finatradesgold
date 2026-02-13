@@ -501,14 +501,11 @@ function WinLogisticsSection() {
           variants={stagger}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Ship, label: 'Smart Freight', desc: 'Optimized air, sea, and road logistics' },
                 { icon: Building2, label: 'Warehousing', desc: 'Strategic warehouse partnerships in key trade zones' },
                 { icon: Globe, label: 'Trade Infrastructure', desc: 'Structured documentation and process handling' },
-                { icon: BarChart3, label: 'Real-Time Tracking', desc: 'Technology-enabled visibility and monitoring' },
-                { icon: Users, label: 'Strategic Partners', desc: 'Network of trusted global logistics providers' },
-                { icon: Award, label: 'Operational Integrity', desc: 'Precision, security, and transparency at every stage' },
               ].map((item) => (
                 <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
