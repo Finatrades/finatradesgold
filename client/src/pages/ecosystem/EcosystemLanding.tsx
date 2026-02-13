@@ -464,13 +464,10 @@ function WinCommoditiesSection() {
               </a>
             </motion.div>
 
-            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Banknote, label: 'Barter Solutions', desc: 'Innovative commodity exchange mechanisms' },
-                { icon: Shield, label: 'Currency Independence', desc: 'Reducing foreign currency reliance' },
                 { icon: Lock, label: 'Trade Security', desc: 'Fully compliant and transparent transactions' },
-                { icon: Globe, label: 'Emerging Markets', desc: 'Tailored solutions for developing economies' },
-                { icon: TrendingUp, label: 'Scale Advantages', desc: 'Economies of scale in sourcing and logistics' },
                 { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
               ].map((item) => (
                 <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
