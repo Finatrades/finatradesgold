@@ -342,7 +342,7 @@ function FinatradesSection() {
               {[
                 { icon: Shield, label: 'Trade Finance', desc: 'Structured trade solutions for international commerce' },
                 { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
-                { icon: Lock, label: 'FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
+                { icon: Lock, label: 'SO-FIT - FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
               ].map((item) => (
                 <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
