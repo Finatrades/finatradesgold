@@ -316,7 +316,7 @@ function FinatradesSection() {
           variants={stagger}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn}>
+            <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-6">
                 <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" />
               </div>
@@ -397,8 +397,8 @@ function WingoldSection() {
               ))}
             </motion.div>
 
-            <motion.div variants={fadeIn} className="order-1 lg:order-2">
-              <div className="mb-5 inline-flex items-center justify-start">
+            <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
+              <div className="mb-5 inline-flex items-center justify-center lg:justify-start">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A1A2E] to-[#16213E] shadow-lg">
                   <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" />
                 </div>
@@ -444,7 +444,7 @@ function WinCommoditiesSection() {
           variants={stagger}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn}>
+            <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-5">
                 <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
               </div>
@@ -453,7 +453,7 @@ function WinCommoditiesSection() {
                 As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
                 economies of scale on the sourcing, logistics and financial optimization. We focus on global transactions related to:
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-6 w-full">
                 {['Oil & Fuels', 'Metals', 'Green Energy', 'Soft Commodities'].map((item) => (
                   <div key={item} className="px-4 py-3 rounded-xl bg-white border border-red-100 text-gray-700 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
@@ -529,7 +529,7 @@ function WinLogisticsSection() {
               ))}
             </motion.div>
 
-            <motion.div variants={fadeIn} className="order-1 lg:order-2">
+            <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-5">
                 <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" />
               </div>
