@@ -379,6 +379,38 @@ function RaminvestSection() {
             </div>
           </motion.div>
 
+          <motion.div variants={fadeIn} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Users,
+                title: 'Diversified Ecosystem',
+                desc: 'Seamlessly connects finance, trade, and commodities through a strategic portfolio of specialized companies.',
+              },
+              {
+                icon: Globe,
+                title: 'Trusted Global Presence',
+                desc: 'Operating from Dubai and Geneva with deep ties across African markets and emerging economies.',
+              },
+              {
+                icon: TrendingUp,
+                title: 'Innovative Financial Solutions',
+                desc: 'Pioneers of digital platforms and alternative trade and finance mechanisms tailored for emerging economies.',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
+                data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <item.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </motion.div>
+
         </motion.div>
       </div>
     </section>
