@@ -14,6 +14,7 @@ import raminvestLogo from '@/assets/raminvest-logo.webp';
 import wingoldLogo from '@/assets/wingold-logo.png';
 import wincommoditiesLogo from '@/assets/wincommodities-logo.png';
 import winlogisticsLogo from '@/assets/winlogistics-logo.png';
+import ecosystemDiagramImg from '@/assets/ecosystem-diagram.png';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -213,8 +214,13 @@ function HeroSection() {
             </Link>
           </motion.div>
 
-          <motion.div variants={fadeIn} className="max-w-3xl mx-auto">
-            <EcosystemDiagram testId="hero-ecosystem-diagram" />
+          <motion.div variants={fadeIn} className="max-w-4xl mx-auto">
+            <img 
+              src={ecosystemDiagramImg} 
+              alt="Finatrades Ecosystem - Raminvest Holding, Finatrades, WinGold & Metals, WinCommodities, WinLogistics" 
+              className="w-full h-auto rounded-2xl shadow-2xl"
+              data-testid="hero-ecosystem-diagram"
+            />
           </motion.div>
         </motion.div>
       </div>
