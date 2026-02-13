@@ -435,7 +435,7 @@ function WinCommoditiesSection() {
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100/20 rounded-full blur-[120px]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#DC2626] uppercase">WinCommodities</h2>
+          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#2563EB] uppercase">WinCommodities</h2>
         </motion.div>
         <motion.div
           initial="hidden"
