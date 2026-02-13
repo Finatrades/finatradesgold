@@ -14,7 +14,7 @@ import raminvestLogo from '@/assets/raminvest-logo.webp';
 import wingoldLogo from '@/assets/wingold-logo.png';
 import wincommoditiesLogo from '@/assets/wincommodities-logo.png';
 import winlogisticsLogo from '@/assets/winlogistics-logo.png';
-import ecosystemDiagramImg from '@/assets/ecosystem-diagram.png';
+import ecosystemDiagramImg from '@/assets/ecosystem-diagram-new.jpg';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
