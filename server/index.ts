@@ -518,6 +518,14 @@ app.use((req, res, next) => {
     console.warn('[Monthly Summary] Scheduler initialization failed:', error);
   }
   
+  // Seed default RBAC roles if missing
+  try {
+    const { seedDefaultRBACRoles } = await import('./rbac-seed');
+    await seedDefaultRBACRoles();
+  } catch (error) {
+    console.warn('[RBAC] Seed initialization failed:', error);
+  }
+
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   
