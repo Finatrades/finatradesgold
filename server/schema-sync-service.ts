@@ -53,17 +53,26 @@ interface SyncResult {
 
 export async function compareSchemas(): Promise<SchemaDiff> {
   const devUrl = process.env.DATABASE_URL;
-  const prodUrl = process.env.AWS_DATABASE_URL;
+  const prodUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
   
   if (!devUrl || !prodUrl) {
-    throw new Error('Database URLs not configured');
+    throw new Error(`Database URLs not configured. DATABASE_URL: ${devUrl ? 'set' : 'missing'}, AWS_DATABASE_URL: ${prodUrl ? 'set' : 'missing'}`);
   }
   
-  const devClient = new pg.Client({ connectionString: devUrl });
-  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false } });
+  const devClient = new pg.Client({ connectionString: devUrl, connectionTimeoutMillis: 10000 });
+  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
   
-  await devClient.connect();
-  await prodClient.connect();
+  try {
+    await devClient.connect();
+  } catch (err) {
+    throw new Error(`Failed to connect to development database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
+  try {
+    await prodClient.connect();
+  } catch (err) {
+    await devClient.end().catch(() => {});
+    throw new Error(`Failed to connect to production database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
   
   try {
     // Get tables from both databases
@@ -133,17 +142,26 @@ export async function compareSchemas(): Promise<SchemaDiff> {
 
 export async function applyMissingSchema(diff: SchemaDiff): Promise<SyncResult> {
   const devUrl = process.env.DATABASE_URL;
-  const prodUrl = process.env.AWS_DATABASE_URL;
+  const prodUrl = process.env.AWS_PROD_DATABASE_URL || process.env.AWS_DATABASE_URL;
   
   if (!devUrl || !prodUrl) {
-    throw new Error('Database URLs not configured');
+    throw new Error(`Database URLs not configured. DATABASE_URL: ${devUrl ? 'set' : 'missing'}, AWS_DATABASE_URL: ${prodUrl ? 'set' : 'missing'}`);
   }
   
-  const devClient = new pg.Client({ connectionString: devUrl });
-  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false } });
+  const devClient = new pg.Client({ connectionString: devUrl, connectionTimeoutMillis: 10000 });
+  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
   
-  await devClient.connect();
-  await prodClient.connect();
+  try {
+    await devClient.connect();
+  } catch (err) {
+    throw new Error(`Failed to connect to development database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
+  try {
+    await prodClient.connect();
+  } catch (err) {
+    await devClient.end().catch(() => {});
+    throw new Error(`Failed to connect to production database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
   
   const errors: string[] = [];
   let tablesCreated = 0;
