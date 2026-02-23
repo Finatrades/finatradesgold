@@ -1,4 +1,36 @@
 import pg from 'pg';
+import fs from 'fs';
+import path from 'path';
+
+function getAwsSslConfig(): pg.ConnectionConfig['ssl'] {
+  const sslDisabled = process.env.AWS_RDS_SSL_DISABLED === 'true';
+  if (sslDisabled) return false;
+
+  const relaxedSsl = process.env.AWS_RDS_RELAXED_SSL === 'true';
+  if (relaxedSsl) return { rejectUnauthorized: false };
+
+  const cwd = process.cwd();
+  const caBundlePaths = [
+    path.join(cwd, 'certs', 'aws-rds-global-bundle.pem'),
+    path.join(cwd, 'dist', 'certs', 'aws-rds-global-bundle.pem'),
+    '/etc/ssl/certs/aws-rds-global-bundle.pem',
+  ];
+
+  for (const caPath of caBundlePaths) {
+    try {
+      if (fs.existsSync(caPath)) {
+        const ca = fs.readFileSync(caPath, 'utf8');
+        return { ca, rejectUnauthorized: true };
+      }
+    } catch {}
+  }
+
+  return { rejectUnauthorized: false };
+}
+
+function stripSslMode(url: string): string {
+  return url.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '');
+}
 
 // Types that are essentially equivalent in PostgreSQL
 const EQUIVALENT_TYPES: [string, string][] = [
@@ -60,7 +92,8 @@ export async function compareSchemas(): Promise<SchemaDiff> {
   }
   
   const devClient = new pg.Client({ connectionString: devUrl, connectionTimeoutMillis: 10000 });
-  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
+  const prodSsl = getAwsSslConfig();
+  const prodClient = new pg.Client({ connectionString: stripSslMode(prodUrl), ssl: prodSsl, connectionTimeoutMillis: 10000 });
   
   try {
     await devClient.connect();
@@ -149,7 +182,8 @@ export async function applyMissingSchema(diff: SchemaDiff): Promise<SyncResult> 
   }
   
   const devClient = new pg.Client({ connectionString: devUrl, connectionTimeoutMillis: 10000 });
-  const prodClient = new pg.Client({ connectionString: prodUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
+  const prodSsl = getAwsSslConfig();
+  const prodClient = new pg.Client({ connectionString: stripSslMode(prodUrl), ssl: prodSsl, connectionTimeoutMillis: 10000 });
   
   try {
     await devClient.connect();
