@@ -34,7 +34,6 @@ export function isR2Configured(): boolean {
 
 export function logR2Config(): void {
   console.log(`[R2 Config] ACCOUNT_ID: ${R2_ACCOUNT_ID ? 'set' : 'NOT SET'}`);
-  console.log(`[R2 Config] SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY ? 'set' : 'NOT SET'}`);
   console.log(`[R2 Config] BUCKET_NAME: ${R2_BUCKET_NAME ? 'set' : 'NOT SET'}`);
   console.log(`[R2 Config] PUBLIC_URL: ${R2_PUBLIC_URL ? 'set' : 'NOT SET'}`);
   console.log(`[R2 Config] isR2Configured(): ${isR2Configured()}`);
