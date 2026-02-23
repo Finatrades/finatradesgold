@@ -29,7 +29,11 @@ async function ensureAdminActionEnumValues() {
     
     for (const val of requiredValues) {
       if (!existingLabels.has(val)) {
-        await db.execute(sql.raw(`ALTER TYPE admin_action_type ADD VALUE IF NOT EXISTS '${val}'`));
+        if (!/^[a-z_]+$/.test(val)) {
+          console.error(`[RBAC] Skipping invalid enum value: ${val}`);
+          continue;
+        }
+        await db.execute(sql`ALTER TYPE admin_action_type ADD VALUE IF NOT EXISTS ${val}`);
         console.log(`[RBAC] Added enum value '${val}' to admin_action_type`);
       }
     }
