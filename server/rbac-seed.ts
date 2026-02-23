@@ -12,7 +12,35 @@ const DEFAULT_ROLES = [
   { id: 'role-vault-manager', name: 'Vault Manager', description: 'Vault and storage management access', department: 'Operations', riskLevel: 'High', isSystem: true },
 ];
 
+async function ensureAdminActionEnumValues() {
+  const requiredValues = [
+    'vault_deposit_approval', 'vault_deposit_rejection',
+    'vault_withdrawal_approval', 'vault_withdrawal_rejection',
+    'transaction_approval', 'transaction_rejection',
+    'database_sync'
+  ];
+  
+  try {
+    const existing = await db.execute(sql`
+      SELECT enumlabel FROM pg_enum 
+      WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'admin_action_type')
+    `);
+    const existingLabels = new Set(existing.rows.map((r: any) => r.enumlabel));
+    
+    for (const val of requiredValues) {
+      if (!existingLabels.has(val)) {
+        await db.execute(sql.raw(`ALTER TYPE admin_action_type ADD VALUE IF NOT EXISTS '${val}'`));
+        console.log(`[RBAC] Added enum value '${val}' to admin_action_type`);
+      }
+    }
+  } catch (error) {
+    console.error('[RBAC] Error ensuring admin_action_type enum values:', error);
+  }
+}
+
 export async function seedDefaultRBACRoles() {
+  await ensureAdminActionEnumValues();
+  
   try {
     const existing = await db.execute(sql`SELECT id FROM admin_roles LIMIT 1`);
     if (existing.rows.length > 0) {

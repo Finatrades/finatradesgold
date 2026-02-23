@@ -23807,9 +23807,7 @@ export async function registerRoutes(
       };
       
       if (!actionToSetting[actionType]) {
-
-
-      res.json({ required: false, message: "OTP not required for this action" });
+        return res.json({ required: false, message: "OTP not required for this action" });
       }
       
       // Get OTP context for informative messages
