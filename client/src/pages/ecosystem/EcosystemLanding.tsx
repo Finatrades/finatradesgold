@@ -205,7 +205,7 @@ function HeroSection() {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
             <Link 
-              href="/finagold"
+              href="/finatrades"
               className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 w-full sm:w-auto"
               data-testid="btn-platform-hero"
             >
@@ -332,7 +332,7 @@ function FinatradesSection() {
               </p>
               <div className="mb-8" />
               <Link 
-                href="/finagold"
+                href="/finatrades"
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
                 data-testid="btn-access-finatrades"
               >
