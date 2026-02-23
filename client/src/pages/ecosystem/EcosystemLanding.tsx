@@ -91,7 +91,7 @@ function EcosystemNavbar() {
               Sign In
             </Link>
             <Link 
-              href="/finagold"
+              href="/finatrades"
               className="group flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
               data-testid="btn-enter-platform"
             >
@@ -137,7 +137,7 @@ function EcosystemNavbar() {
                   Sign In
                 </Link>
                 <Link 
-                  href="/finagold"
+                  href="/finatrades"
                   className="mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold"
                   data-testid="mobile-btn-enter-platform"
                 >
