@@ -97,7 +97,7 @@ function HomeRedirect() {
   }
   
   if (!user) {
-    return <Redirect to="/ecosystem" />;
+    return <Redirect to="/finatrades" />;
   }
   
   // Redirect admins to admin dashboard, regular users to user dashboard
@@ -379,7 +379,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const isAdminRoute = location.startsWith('/admin');
   const isPublicRoute = ['/', '/finagold', '/login', '/register', '/get-started', '/sign-in', 
     '/forgot-password', '/reset-password', '/verify-email', '/verify-certificate',
-    '/privacy', '/terms', '/disclaimer'].some(p => location === p || location.startsWith('/finagold'));
+    '/privacy', '/terms', '/disclaimer', '/finatrades', '/ecosystem'].some(p => location === p || location.startsWith('/finagold'));
 
   if (systemStatus?.maintenanceMode && !systemStatus?.isAdmin && !isAdminRoute && !isPublicRoute && !user?.role?.includes('admin')) {
     return <MaintenancePage />;
