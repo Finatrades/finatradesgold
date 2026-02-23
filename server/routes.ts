@@ -4815,6 +4815,21 @@ export async function registerRoutes(
         createdBy: adminUser.id
       });
       
+      if (userId && rbacRoleId) {
+        try {
+          const existingAssignments = await storage.getUserRoleAssignments(userId);
+          const alreadyAssigned = existingAssignments.some((a: any) => a.role_id === rbacRoleId);
+          if (!alreadyAssigned) {
+            await db.execute(sql`
+              INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+              VALUES (gen_random_uuid(), ${userId}, ${rbacRoleId}, ${adminUser.id}, NOW(), true)
+            `);
+          }
+        } catch (err) {
+          console.error('[RBAC] Failed to create role assignment for new employee:', err);
+        }
+      }
+      
       // Create audit log with detailed data
       await storage.createAuditLog({
         entityType: "employee",
@@ -4859,6 +4874,32 @@ export async function registerRoutes(
       
       const employee = await storage.updateEmployee(req.params.id, updates);
       
+      if (rbacRoleId !== undefined && existingEmployee.userId) {
+        try {
+          if (existingEmployee.rbacRoleId) {
+            await db.execute(sql`
+              DELETE FROM user_role_assignments
+              WHERE user_id = ${existingEmployee.userId} AND role_id = ${existingEmployee.rbacRoleId}
+            `);
+          }
+          
+          if (rbacRoleId) {
+            await db.execute(sql`
+              INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+              VALUES (gen_random_uuid(), ${existingEmployee.userId}, ${rbacRoleId}, ${adminUser.id}, NOW(), true)
+            `);
+          }
+          
+          if (req.session?.userId === existingEmployee.userId) {
+            delete req.session.permissions;
+            delete req.session.isSuperAdmin;
+            delete req.session.permissionsCachedAt;
+          }
+        } catch (err) {
+          console.error('[RBAC] Failed to sync role assignment on employee update:', err);
+        }
+      }
+      
       // Create audit log with before/after data
       await storage.createAuditLog({
         entityType: "employee",
@@ -4900,6 +4941,15 @@ export async function registerRoutes(
       if (existingEmployee.userId) {
         await storage.updateUser(existingEmployee.userId, { role: 'user' });
         
+        try {
+          await db.execute(sql`
+            DELETE FROM user_role_assignments
+            WHERE user_id = ${existingEmployee.userId}
+          `);
+        } catch (rbacErr) {
+          console.error('[RBAC] Failed to remove role assignments on deactivation:', rbacErr);
+        }
+        
         // SECURITY: Invalidate all sessions for this user by deleting from session store
         // This ensures the deactivated employee is immediately logged out
         try {
@@ -4910,7 +4960,6 @@ export async function registerRoutes(
           console.log(`[Security] Invalidated admin sessions for deactivated employee: ${existingEmployee.employeeId}`);
         } catch (sessionError) {
           console.error('Failed to invalidate sessions:', sessionError);
-          // Continue even if session deletion fails - the middleware will block access
         }
       }
       
@@ -4947,6 +4996,26 @@ export async function registerRoutes(
       // If employee has a user account, update their role to admin
       if (existingEmployee.userId) {
         await storage.updateUser(existingEmployee.userId, { role: 'admin' });
+        
+        if (existingEmployee.rbacRoleId) {
+          try {
+            const existing = await storage.getUserRoleAssignments(existingEmployee.userId);
+            const alreadyAssigned = existing.some((a: any) => a.role_id === existingEmployee.rbacRoleId);
+            if (!alreadyAssigned) {
+              await db.execute(sql`
+                INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+                VALUES (gen_random_uuid(), ${existingEmployee.userId}, ${existingEmployee.rbacRoleId}, ${adminUser.id}, NOW(), true)
+              `);
+            } else {
+              await db.execute(sql`
+                UPDATE user_role_assignments SET is_active = true
+                WHERE user_id = ${existingEmployee.userId} AND role_id = ${existingEmployee.rbacRoleId}
+              `);
+            }
+          } catch (rbacErr) {
+            console.error('[RBAC] Failed to restore role assignment on reactivation:', rbacErr);
+          }
+        }
       }
       
       // Create audit log with before/after data
