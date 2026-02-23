@@ -1,7 +1,8 @@
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
 import { Lock, Wallet, TrendingUp, Building2, ArrowRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+import { useRef } from 'react';
 
 // Public folder paths (served from client/public/images)
 const goldBarsImage = '/images/deposit-gold.png';
@@ -97,6 +98,73 @@ const cardVariants = {
   }
 };
 
+function ProductCard({ product, index }: { product: { icon: any; title: string; description: string; cta: string; href: string; image: string }; index: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 300, damping: 30 });
+  const glowX = useTransform(mouseX, [-0.5, 0.5], ['0%', '100%']);
+  const glowY = useTransform(mouseY, [-0.5, 0.5], ['0%', '100%']);
+  const glowBackground = useMotionTemplate`radial-gradient(circle at ${glowX} ${glowY}, rgba(138, 43, 226, 0.08), transparent 60%)`;
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      variants={cardVariants}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+      className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-2xl hover:shadow-[#8A2BE2]/15 transition-all duration-300 relative overflow-hidden cursor-pointer"
+      data-testid={`product-card-${index}`}
+    >
+      <motion.div
+        className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: glowBackground }}
+      />
+      <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden relative z-10">
+        <motion.img 
+          src={product.image} 
+          alt={product.title} 
+          className="max-w-full max-h-full object-contain p-2"
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = 'https://placehold.co/400x300/8A2BE2/FFFFFF/png?text=' + encodeURIComponent(product.title);
+          }}
+        />
+      </div>
+
+      <h3 className="text-lg font-bold text-[#0D0D0D] mb-3 relative z-10 group-hover:text-[#8A2BE2] transition-colors duration-300">
+        {product.title}
+      </h3>
+
+      <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-grow relative z-10">
+        {product.description}
+      </p>
+
+      <Link href={product.href} className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20 cursor-pointer relative z-10">
+        {product.cta}
+        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function Products() {
   const { mode, isPersonal } = useMode();
   const c = content[mode];
@@ -142,40 +210,7 @@ export default function Products() {
           className={`grid gap-6 ${isPersonal ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'}`}
         >
           {c.products.map((product, index) => (
-            <motion.div
-              key={`${mode}-${product.title}`}
-              variants={cardVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
-              data-testid={`product-card-${index}`}
-            >
-              <div className="w-full h-48 mb-6 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={product.image} 
-                  alt={product.title} 
-                  className="max-w-full max-h-full object-contain p-2"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    console.error('Image failed to load:', product.image);
-                    // Fallback to placeholder if image fails
-                    target.src = 'https://placehold.co/400x300/8A2BE2/FFFFFF/png?text=' + encodeURIComponent(product.title);
-                  }}
-                />
-              </div>
-
-              <h3 className="text-lg font-bold text-[#0D0D0D] mb-3">
-                {product.title}
-              </h3>
-
-              <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-grow">
-                {product.description}
-              </p>
-
-              <Link href={product.href} className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20 cursor-pointer">
-                {product.cta}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
+            <ProductCard key={`${mode}-${product.title}`} product={product} index={index} />
           ))}
         </motion.div>
       </div>

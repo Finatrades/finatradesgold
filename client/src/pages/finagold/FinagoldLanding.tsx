@@ -15,6 +15,9 @@ import CookieConsent from './components/CookieConsent';
 import GeoRestrictionNotice from './components/GeoRestrictionNotice';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import MobileBottomNav from './components/MobileBottomNav';
+import GoldPriceTicker from '@/components/animations/GoldPriceTicker';
+import StatsCounter from '@/components/animations/StatsCounter';
+import TestimonialCarousel from '@/components/animations/TestimonialCarousel';
 
 function FinagoldContent() {
   useEffect(() => {
@@ -91,14 +94,17 @@ function FinagoldContent() {
         }
       `}</style>
       
+      <GoldPriceTicker />
       <Navbar />
       <main>
         <Hero />
+        <StatsCounter />
         <Products />
         <HowItWorks />
         <AboutSection />
         <SwissStandards />
         <WhoItsFor />
+        <TestimonialCarousel />
         <ValueProps />
         <CTA />
         <ContactForm />

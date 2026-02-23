@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Phone, MessageCircle } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
+import ShimmerText from '@/components/animations/ShimmerText';
 
 const content = {
   personal: {
@@ -64,7 +65,7 @@ export default function CTA() {
               {c.headline.includes('Gold') ? (
                 <>
                   {c.headline.split('Gold')[0]}
-                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Gold</span>
+                  <ShimmerText className="inline">Gold</ShimmerText>
                   {c.headline.split('Gold')[1]}
                 </>
               ) : (

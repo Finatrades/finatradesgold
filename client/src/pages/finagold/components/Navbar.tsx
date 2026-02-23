@@ -4,6 +4,7 @@ import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import LogoShimmer from '@/components/animations/LogoShimmer';
 
 type NavLink = {
   label: string;
@@ -71,12 +72,14 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img 
-              src={finatradesLogo} 
-              alt="Finatrades" 
-              className="h-12 w-auto brightness-0 invert"
-              data-testid="logo-finatrades"
-            />
+            <LogoShimmer>
+              <img 
+                src={finatradesLogo} 
+                alt="Finatrades" 
+                className="h-12 w-auto brightness-0 invert"
+                data-testid="logo-finatrades"
+              />
+            </LogoShimmer>
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">

@@ -4,6 +4,10 @@ import { ArrowRight, Phone, Shield, CheckCircle, X } from 'lucide-react';
 import { Link } from 'wouter';
 import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import ParticleField from '@/components/animations/ParticleField';
+import GradientMesh from '@/components/animations/GradientMesh';
+import GoldCoin3D from '@/components/animations/GoldCoin3D';
+import SecurityBadge from '@/components/animations/SecurityBadge';
 
 const content = {
   personal: {
@@ -181,6 +185,12 @@ export default function Hero() {
       {/* Light gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] pointer-events-none" />
       
+      {/* Animated gradient mesh background */}
+      <GradientMesh />
+      
+      {/* Floating particles */}
+      <ParticleField count={20} color="rgba(138, 43, 226, 0.15)" />
+      
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute inset-0" style={{
@@ -188,10 +198,6 @@ export default function Hero() {
           backgroundSize: '40px 40px'
         }} />
       </div>
-
-      {/* Purple glow effects */}
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center lg:min-h-[calc(100vh-200px)]">
@@ -281,6 +287,13 @@ export default function Hero() {
                 </Link>
               </motion.div>
 
+              {/* Security trust badges */}
+              <motion.div variants={itemVariants} className="flex flex-wrap gap-2 pt-2">
+                <SecurityBadge type="shield" label="Swiss Regulated" />
+                <SecurityBadge type="lock" label="Bank-Grade Security" />
+                <SecurityBadge type="verified" label="Vault Certified" />
+              </motion.div>
+
               {/* Mobile Card - visible only on mobile/tablet */}
               <motion.div variants={itemVariants} className="lg:hidden mt-8">
                 <div className={`w-full max-w-[320px] mx-auto h-[200px] rounded-2xl bg-gradient-to-br from-[#3D1A5C] via-[#2A0055] to-[#1a0a30] border-2 ${isPersonal ? 'border-[#8A2BE2]/60' : 'border-[#A342FF]/70'} p-4 shadow-xl shadow-[#8A2BE2]/30 relative overflow-hidden`}>
@@ -342,6 +355,14 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative hidden lg:block"
           >
+            {/* Floating 3D Gold Coin */}
+            <motion.div
+              className="absolute -top-8 -right-4 z-20"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <GoldCoin3D size={80} />
+            </motion.div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={mode}
