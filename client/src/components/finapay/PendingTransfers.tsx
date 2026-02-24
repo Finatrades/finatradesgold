@@ -524,23 +524,23 @@ export default function PendingTransfers() {
     pendingDeposits.length;
 
   return (
-    <Card className="border-amber-200/60 bg-gradient-to-b from-amber-50/80 to-white rounded-2xl shadow-sm overflow-hidden">
-      <CardHeader className="pb-3 border-b border-amber-100/60">
-        <CardTitle className="text-base font-bold flex items-center gap-2.5 text-amber-800">
-          <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
-            <Clock className="w-4 h-4 text-amber-600" />
-          </div>
+    <Card className="border-amber-200 bg-amber-50/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-bold flex items-center gap-2 text-amber-700">
+          <Clock className="w-5 h-5" />
           Pending Items
-          <span className="ml-1 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-amber-500 text-white text-xs font-bold tabular-nums">
+          <Badge
+            variant="secondary"
+            className="ml-2 bg-amber-200 text-amber-800"
+          >
             {totalPendingItems}
-          </span>
+          </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-4">
         {incomingTransfers.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <ArrowDownLeft className="w-3.5 h-3.5" />
+            <p className="text-sm font-medium text-muted-foreground">
               Incoming - Action Required
             </p>
             {incomingTransfers.map((transfer: PendingTransfer) => {
@@ -554,62 +554,62 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={transfer.id}
-                  className="group p-4 bg-white rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-200"
+                  className="p-4 bg-white rounded-lg border border-amber-200 shadow-sm"
                   data-testid={`pending-transfer-incoming-${transfer.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-green-50 ring-1 ring-green-200/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                        <ArrowDownLeft className="w-5 h-5 text-green-600" />
+                      <div className="p-2 bg-green-100 rounded-full">
+                        <ArrowDownLeft className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-gray-900 tabular-nums">
+                        <p className="font-semibold text-lg text-green-700">
                           {amount.primary}
                         </p>
                         {amount.secondary && (
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-sm text-muted-foreground">
                             {amount.secondary}
                           </p>
                         )}
-                        <p className="text-sm text-gray-500 flex items-center gap-1 mt-1.5">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <User className="w-3 h-3" />
                           from {senderName}
                         </p>
                         {transfer.memo && (
-                          <p className="text-sm text-gray-400 italic mt-1">
+                          <p className="text-sm text-muted-foreground italic mt-1">
                             "{transfer.memo}"
                           </p>
                         )}
                         {timeRemaining && (
                           <p
-                            className={`text-xs mt-1.5 flex items-center gap-1 ${timeRemaining === "Expired" ? "text-red-600" : "text-amber-600"}`}
+                            className={`text-xs mt-1 ${timeRemaining === "Expired" ? "text-red-600" : "text-amber-600"}`}
                           >
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3 h-3 inline mr-1" />
                             {timeRemaining}
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex flex-col gap-2">
                       <Button
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 rounded-lg text-xs h-8"
+                        className="bg-green-600 hover:bg-green-700"
                         onClick={() => handleAction(transfer, "accept")}
                         disabled={acceptMutation.isPending}
                         data-testid={`button-accept-${transfer.id}`}
                       >
-                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        <CheckCircle className="w-4 h-4 mr-1" />
                         Accept
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs h-8"
+                        className="border-red-200 text-red-600 hover:bg-red-50"
                         onClick={() => handleAction(transfer, "reject")}
                         disabled={rejectMutation.isPending}
                         data-testid={`button-reject-${transfer.id}`}
                       >
-                        <XCircle className="w-3.5 h-3.5 mr-1" />
+                        <XCircle className="w-4 h-4 mr-1" />
                         Reject
                       </Button>
                     </div>
@@ -622,8 +622,7 @@ export default function PendingTransfers() {
 
         {outgoingTransfers.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <Send className="w-3.5 h-3.5" />
+            <p className="text-sm font-medium text-muted-foreground">
               Outgoing - Awaiting Approval
             </p>
             {outgoingTransfers.map((transfer: PendingTransfer) => {
@@ -634,53 +633,59 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={transfer.id}
-                  className={`group p-4 bg-white rounded-xl transition-all duration-200 ${
+                  className={`p-4 bg-white rounded-lg shadow-sm ${
                     isInvitation
-                      ? "border border-purple-200 hover:border-purple-300 hover:shadow-md"
-                      : "border border-gray-100 hover:border-blue-200 hover:shadow-md opacity-90"
+                      ? "border-2 border-purple-300"
+                      : "border border-gray-200 opacity-80"
                   }`}
                   data-testid={`pending-transfer-outgoing-${transfer.id}`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ring-1 group-hover:scale-105 transition-transform ${
-                        isInvitation ? "bg-purple-50 ring-purple-200/60" : "bg-blue-50 ring-blue-200/60"
+                      className={`p-2 rounded-full ${
+                        isInvitation ? "bg-purple-100" : "bg-blue-100"
                       }`}
                     >
                       {isInvitation ? (
-                        <Mail className="w-5 h-5 text-purple-600" />
+                        <Mail className="w-4 h-4 text-purple-600" />
                       ) : (
-                        <Clock className="w-5 h-5 text-blue-600" />
+                        <Clock className="w-4 h-4 text-blue-600" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-base text-gray-900 tabular-nums">
+                      <p
+                        className={`font-semibold text-lg ${
+                          isInvitation ? "text-purple-700" : "text-blue-700"
+                        }`}
+                      >
                         {amount.primary}
                       </p>
                       {amount.secondary && (
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-sm text-muted-foreground">
                           {amount.secondary}
                         </p>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {isInvitation ? "Invitation sent to" : "Sent to"}{" "}
                         {transfer.recipientIdentifier}
                       </p>
                       {transfer.memo && (
-                        <p className="text-sm text-gray-400 italic mt-1">
+                        <p className="text-sm text-muted-foreground italic mt-1">
                           "{transfer.memo}"
                         </p>
                       )}
                       {isInvitation ? (
-                        <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium ring-1 ring-purple-200/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        <Badge className="mt-2 bg-purple-100 text-purple-700 border border-purple-300">
+                          <Mail className="w-3 h-3 mr-1" />
                           Awaiting registration
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium ring-1 ring-amber-200/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <Badge
+                          variant="outline"
+                          className="mt-2 text-amber-600 border-amber-300"
+                        >
                           Awaiting recipient approval
-                        </span>
+                        </Badge>
                       )}
                       {timeRemaining && (
                         <div
@@ -713,8 +718,8 @@ export default function PendingTransfers() {
 
         {pendingDeposits.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <ArrowDownLeft className="w-3.5 h-3.5" />
+            <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+              <ArrowDownLeft className="w-4 h-4" />
               Add Funds - Awaiting Approval
             </p>
             {pendingDeposits.map((deposit: DepositRequest) => {
@@ -726,39 +731,42 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={deposit.id}
-                  className="group p-4 bg-white rounded-xl border border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all duration-200"
+                  className="p-4 bg-white rounded-lg border border-emerald-200 shadow-sm"
                   data-testid={`pending-deposit-${deposit.id}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-50 ring-1 ring-emerald-200/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <ArrowDownLeft className="w-5 h-5 text-emerald-600" />
+                    <div className="p-2 bg-emerald-100 rounded-full">
+                      <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-base text-gray-900 tabular-nums">
+                      <p className="font-semibold text-lg text-emerald-700">
                         {goldGrams > 0
                           ? `${goldGrams.toFixed(4)}g Gold`
                           : `$${usdValue.toFixed(2)}`}
                       </p>
                       {goldGrams > 0 && (
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-sm text-muted-foreground">
                           ≈ ${usdValue.toFixed(2)}
                         </p>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         via {deposit.paymentMethod} •{" "}
                         {deposit.goldWalletType || "LGPW"} Wallet
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Ref: {deposit.referenceNumber}
                       </p>
-                      <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium ring-1 ring-amber-200/60">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                      <Badge
+                        variant="outline"
+                        className="mt-2 text-amber-600 border-amber-300"
+                      >
+                        <Clock className="w-3 h-3 mr-1" />
                         Awaiting Bank approval - usually within 24-48 hours
-                      </span>
-                      <p className="text-xs text-emerald-600 mt-1.5">
+                      </Badge>
+                      <p className="text-xs text-emerald-600 mt-1">
                         Once approved, gold will be credited to your wallet
                       </p>
-                      <p className="text-xs text-gray-400 mt-1.5">
+                      <p className="text-xs text-muted-foreground mt-2">
                         Submitted{" "}
                         {formatDistanceToNow(new Date(deposit.createdAt), {
                           addSuffix: true,
@@ -774,8 +782,8 @@ export default function PendingTransfers() {
 
         {receivedRequests.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5" />
+            <p className="text-sm font-medium text-purple-700 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
               Payment Requests - Action Required
             </p>
             {receivedRequests.map((request: GoldRequest) => {
@@ -789,24 +797,24 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={request.id}
-                  className="group p-4 bg-white rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-200"
+                  className="p-4 bg-white rounded-lg border border-purple-200 shadow-sm"
                   data-testid={`payment-request-${request.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-purple-50 ring-1 ring-purple-200/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                        <DollarSign className="w-5 h-5 text-purple-600" />
+                      <div className="p-2 bg-purple-100 rounded-full">
+                        <DollarSign className="w-4 h-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-gray-900 tabular-nums">
+                        <p className="font-semibold text-lg text-purple-700">
                           {amount.primary}
                         </p>
                         {amount.secondary && (
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-sm text-muted-foreground">
                             {amount.secondary}
                           </p>
                         )}
-                        <p className="text-sm text-gray-500 flex items-center gap-1 mt-1.5">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <User className="w-3 h-3" />
                           requested by {requesterName}
                         </p>
@@ -859,26 +867,26 @@ export default function PendingTransfers() {
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex flex-col gap-2">
                       <Button
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 rounded-lg text-xs h-8"
+                        className="bg-purple-600 hover:bg-purple-700"
                         onClick={() => handleRequestAction(request, "pay")}
                         disabled={payRequestMutation.isPending}
                         data-testid={`button-pay-${request.id}`}
                       >
-                        <Send className="w-3.5 h-3.5 mr-1" />
+                        <Send className="w-4 h-4 mr-1" />
                         Pay
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs h-8"
+                        className="border-red-200 text-red-600 hover:bg-red-50"
                         onClick={() => handleRequestAction(request, "decline")}
                         disabled={declineRequestMutation.isPending}
                         data-testid={`button-decline-${request.id}`}
                       >
-                        <XCircle className="w-3.5 h-3.5 mr-1" />
+                        <XCircle className="w-4 h-4 mr-1" />
                         Decline
                       </Button>
                     </div>
