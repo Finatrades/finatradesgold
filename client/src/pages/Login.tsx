@@ -126,7 +126,7 @@ const [otpLoading, setOtpLoading] = useState(false);
       // Call biometric login API
       const response = await fetch('/api/biometric/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ email: credentials.email }),
       });
 
@@ -259,6 +259,7 @@ const [otpLoading, setOtpLoading] = useState(false);
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         credentials: 'include',
@@ -294,6 +295,7 @@ const [otpLoading, setOtpLoading] = useState(false);
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         credentials: 'include',
