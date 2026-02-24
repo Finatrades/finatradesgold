@@ -16,7 +16,7 @@ import GeoRestrictionNotice from './components/GeoRestrictionNotice';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 import MobileBottomNav from './components/MobileBottomNav';
 import GoldPriceTicker from '@/components/animations/GoldPriceTicker';
-import StatsCounter from '@/components/animations/StatsCounter';
+
 import TestimonialCarousel from '@/components/animations/TestimonialCarousel';
 
 function FinagoldContent() {
@@ -98,7 +98,7 @@ function FinagoldContent() {
       <Navbar />
       <main>
         <Hero />
-        <StatsCounter />
+
         <Products />
         <HowItWorks />
         <AboutSection />
