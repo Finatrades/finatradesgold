@@ -182,15 +182,34 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                  <DropdownMenuTrigger asChild>
                    <Button variant="outline" size="sm" className="h-8 bg-gray-50/80 border-gray-200 text-gray-600 rounded-lg hover:bg-gray-100">
                      <Filter className="w-3.5 h-3.5 mr-2" />
-                     {filter}
+                     {filter === 'All' ? 'All Types' : filter.replace('_', ' ')}
+                     <ChevronDown className="w-3 h-3 ml-1.5 opacity-50" />
                    </Button>
                  </DropdownMenuTrigger>
-                 <DropdownMenuContent className="bg-popover border-border text-foreground">
-                   <DropdownMenuItem onClick={() => setFilter('All')}>All</DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => setFilter('Deposit')}>Deposit</DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => setFilter('Buy')}>Buy</DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => setFilter('Sell')}>Sell</DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => setFilter('Send')}>Send</DropdownMenuItem>
+                 <DropdownMenuContent align="end" className="w-44 bg-white border border-gray-200 shadow-lg rounded-xl p-1">
+                   {[
+                     { value: 'All', label: 'All Types' },
+                     { value: 'Buy', label: 'Buy' },
+                     { value: 'Sell', label: 'Sell' },
+                     { value: 'Send', label: 'Send' },
+                     { value: 'Receive', label: 'Receive' },
+                     { value: 'Deposit', label: 'Deposit' },
+                     { value: 'Withdrawal', label: 'Withdrawal' },
+                     { value: 'Swap', label: 'Swap' },
+                     { value: 'Vault_Deposit', label: 'Vault Deposit' },
+                     { value: 'Vault_Withdrawal', label: 'Vault Withdrawal' },
+                     { value: 'Bank_Deposit', label: 'Bank Deposit' },
+                     { value: 'Crypto_Deposit', label: 'Crypto Deposit' },
+                   ].map(opt => (
+                     <DropdownMenuItem 
+                       key={opt.value}
+                       onClick={() => setFilter(opt.value)} 
+                       className={`rounded-lg text-sm cursor-pointer ${filter === opt.value ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                     >
+                       {opt.label}
+                       {filter === opt.value && <span className="ml-auto text-purple-500">✓</span>}
+                     </DropdownMenuItem>
+                   ))}
                  </DropdownMenuContent>
                </DropdownMenu>
 
@@ -201,7 +220,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                      Export
                    </Button>
                  </DropdownMenuTrigger>
-                 <DropdownMenuContent className="bg-popover border-border text-foreground">
+                 <DropdownMenuContent align="end" className="w-44 bg-white border border-gray-200 shadow-lg rounded-xl p-1">
                    <DropdownMenuItem 
                      onClick={() => exportToCSV(filteredTransactions.map(tx => ({
                        id: tx.id,
@@ -215,11 +234,12 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                        assetType: tx.assetType
                      })), 'finapay_transactions')}
                      data-testid="button-export-csv"
+                     className="rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                    >
-                     <FileSpreadsheet className="w-4 h-4 mr-2" />
+                     <FileSpreadsheet className="w-4 h-4 mr-2 text-gray-400" />
                      Export to CSV
                    </DropdownMenuItem>
-                   <DropdownMenuSeparator />
+                   <DropdownMenuSeparator className="my-1 bg-gray-100" />
                    <DropdownMenuItem 
                      onClick={() => exportToPDF(filteredTransactions.map(tx => ({
                        id: tx.id,
@@ -233,8 +253,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                        assetType: tx.assetType
                      })), 'FinaPay Transaction History')}
                      data-testid="button-export-pdf"
+                     className="rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                    >
-                     <FileText className="w-4 h-4 mr-2" />
+                     <FileText className="w-4 h-4 mr-2 text-gray-400" />
                      Export to PDF
                    </DropdownMenuItem>
                  </DropdownMenuContent>
