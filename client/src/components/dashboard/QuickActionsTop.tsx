@@ -17,54 +17,60 @@ const actions = [
   {
     title: 'Add Fund',
     path: '',
-    icon: <Plus className="w-4 h-4" />,
-    gradient: 'from-emerald-500 to-green-600',
-    hoverGradient: 'hover:from-emerald-600 hover:to-green-700',
+    icon: <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#8A2BE2',
+    bgLight: 'rgba(138, 43, 226, 0.08)',
+    bgHover: 'rgba(138, 43, 226, 0.14)',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Buy Gold Bar',
     path: '',
-    icon: <ShoppingCart className="w-4 h-4" />,
-    gradient: 'from-amber-500 to-yellow-500',
-    hoverGradient: 'hover:from-amber-600 hover:to-yellow-600',
+    icon: <ShoppingCart className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#D4A017',
+    bgLight: 'rgba(212, 160, 23, 0.08)',
+    bgHover: 'rgba(212, 160, 23, 0.14)',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Deposit Gold',
     path: '',
-    icon: <Database className="w-4 h-4" />,
-    gradient: 'from-teal-500 to-cyan-600',
-    hoverGradient: 'hover:from-teal-600 hover:to-cyan-700',
+    icon: <Database className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#0D9488',
+    bgLight: 'rgba(13, 148, 136, 0.08)',
+    bgHover: 'rgba(13, 148, 136, 0.14)',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Send Payment',
     path: '',
-    icon: <Send className="w-4 h-4" />,
-    gradient: 'from-purple-500 to-red-500',
-    hoverGradient: 'hover:from-purple-600 hover:to-red-600',
+    icon: <Send className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#6366F1',
+    bgLight: 'rgba(99, 102, 241, 0.08)',
+    bgHover: 'rgba(99, 102, 241, 0.14)',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'Request Payment',
     path: '',
-    icon: <ArrowDownLeft className="w-4 h-4" />,
-    gradient: 'from-pink-500 to-rose-500',
-    hoverGradient: 'hover:from-pink-600 hover:to-rose-600',
+    icon: <ArrowDownLeft className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#E11D48',
+    bgLight: 'rgba(225, 29, 72, 0.08)',
+    bgHover: 'rgba(225, 29, 72, 0.14)',
     requiresKyc: true,
     isModal: true
   },
   {
     title: 'BNSL',
     path: '/bnsl?step=configure',
-    icon: <TrendingUp className="w-4 h-4" />,
-    gradient: 'from-violet-500 to-purple-600',
-    hoverGradient: 'hover:from-violet-600 hover:to-purple-700',
+    icon: <TrendingUp className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+    color: '#7C3AED',
+    bgLight: 'rgba(124, 58, 237, 0.08)',
+    bgHover: 'rgba(124, 58, 237, 0.14)',
     requiresKyc: true,
     isModal: false
   },
@@ -141,9 +147,8 @@ export default function QuickActionsTop() {
 
   return (
     <>
-      {/* Mobile: Horizontal scrollable compact buttons */}
       <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" data-testid="quick-actions-mobile">
-        <div className="flex gap-2 min-w-max">
+        <div className="flex gap-2.5 min-w-max">
           {actions.map((action, index) => {
             const isLocked = action.requiresKyc && !isKycApproved;
             
@@ -153,24 +158,26 @@ export default function QuickActionsTop() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.03 }}
-                whileTap={{ scale: isLocked ? 1 : 0.95 }}
+                whileTap={{ scale: isLocked ? 1 : 0.93 }}
                 onClick={() => handleAction(action)}
-                className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl text-white font-medium shadow-md transition-all relative ${
-                  isLocked 
-                    ? 'bg-gray-400 cursor-not-allowed opacity-60' 
-                    : `bg-gradient-to-br ${action.gradient}`
-                }`}
+                className="flex flex-col items-center justify-center w-[68px] h-[68px] rounded-2xl font-medium transition-all relative border"
+                style={{
+                  backgroundColor: isLocked ? '#f3f4f6' : action.bgLight,
+                  borderColor: isLocked ? '#e5e7eb' : `${action.color}20`,
+                  color: isLocked ? '#9ca3af' : action.color,
+                }}
                 data-testid={`button-action-mobile-${action.title.toLowerCase().replace(' ', '-')}`}
               >
-                <span className="flex items-center justify-center w-7 h-7 bg-white/20 rounded-lg mb-1">
+                <span className="flex items-center justify-center w-8 h-8 rounded-xl mb-0.5"
+                  style={{ backgroundColor: isLocked ? '#e5e7eb' : `${action.color}15` }}>
                   {action.icon}
                 </span>
-                <span className="text-[10px] leading-tight text-center px-1 truncate w-full">
+                <span className="text-[10px] leading-tight text-center font-semibold tracking-tight">
                   {action.title.split(' ')[0]}
                 </span>
                 {isLocked && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
-                    <Lock className="w-2.5 h-2.5" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5 text-white" />
                   </div>
                 )}
               </motion.button>
@@ -179,40 +186,53 @@ export default function QuickActionsTop() {
         </div>
       </div>
 
-      {/* Desktop: Modern Premium Quick Actions */}
-      <div className="hidden md:flex flex-wrap gap-3" data-testid="quick-actions-container">
+      <div className="hidden md:flex flex-wrap gap-2.5" data-testid="quick-actions-container">
         {actions.map((action, index) => {
           const isLocked = action.requiresKyc && !isKycApproved;
           
           return (
             <motion.button
               key={action.title}
-              initial={{ opacity: 0, y: 15, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ 
-                delay: index * 0.05,
+                delay: index * 0.04,
                 type: "spring",
-                stiffness: 300,
-                damping: 25
+                stiffness: 400,
+                damping: 28
               }}
-              whileHover={{ scale: isLocked ? 1 : 1.05, y: isLocked ? 0 : -2 }}
-              whileTap={{ scale: isLocked ? 1 : 0.95 }}
+              whileHover={{ scale: isLocked ? 1 : 1.03, y: isLocked ? 0 : -1 }}
+              whileTap={{ scale: isLocked ? 1 : 0.97 }}
               onClick={() => handleAction(action)}
-              className={`group flex items-center gap-2.5 px-5 py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-300 relative overflow-hidden ${
-                isLocked 
-                  ? 'bg-gray-400 cursor-not-allowed opacity-60' 
-                  : `bg-gradient-to-r ${action.gradient} hover:shadow-xl`
-              }`}
+              className="group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 border cursor-pointer"
+              style={{
+                backgroundColor: isLocked ? '#f9fafb' : action.bgLight,
+                borderColor: isLocked ? '#e5e7eb' : `${action.color}20`,
+                color: isLocked ? '#9ca3af' : action.color,
+              }}
+              onMouseEnter={(e) => {
+                if (!isLocked) {
+                  e.currentTarget.style.backgroundColor = action.bgHover;
+                  e.currentTarget.style.borderColor = `${action.color}35`;
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${action.color}15`;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLocked) {
+                  e.currentTarget.style.backgroundColor = action.bgLight;
+                  e.currentTarget.style.borderColor = `${action.color}20`;
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
               data-testid={`button-action-${action.title.toLowerCase().replace(' ', '-')}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10" />
-              <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/10 rounded-t-xl" />
-              <span className="relative z-10 flex items-center justify-center w-7 h-7 bg-white/25 backdrop-blur-sm rounded-lg shadow-sm group-hover:bg-white/30 transition-colors">
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-200"
+                style={{ backgroundColor: isLocked ? '#e5e7eb' : `${action.color}12` }}>
                 {action.icon}
               </span>
-              <span className="relative z-10 whitespace-nowrap">{action.title}</span>
+              <span className="whitespace-nowrap tracking-tight">{action.title}</span>
               {isLocked && (
-                <Lock className="relative z-10 w-3.5 h-3.5 ml-1 opacity-80" />
+                <Lock className="w-3.5 h-3.5 ml-0.5 opacity-60" />
               )}
             </motion.button>
           );
