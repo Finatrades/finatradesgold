@@ -440,23 +440,25 @@ export default function VaultActivityList() {
       case 'Vault Deposit': return <Box className="w-4 h-4" />;
       case 'Vault Withdrawal': return <ArrowUpRight className="w-4 h-4" />;
       case 'Bank Deposit': return <ArrowDownLeft className="w-4 h-4" />;
+      case 'Crypto Deposit': return <ArrowDownLeft className="w-4 h-4" />;
       default: return <Coins className="w-4 h-4" />;
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'Buy': return 'bg-green-100 text-green-700';
-      case 'Sell': return 'bg-red-100 text-red-700';
-      case 'Send': return 'bg-purple-100 text-purple-700';
-      case 'Receive': return 'bg-purple-100 text-purple-700';
-      case 'Deposit': return 'bg-emerald-100 text-emerald-700';
-      case 'Withdrawal': return 'bg-purple-100 text-fuchsia-700';
-      case 'Swap': return 'bg-amber-100 text-amber-700';
-      case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
-      case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
-      case 'Bank Deposit': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'Buy': return 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/50';
+      case 'Sell': return 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/50';
+      case 'Send': return 'bg-violet-50 text-violet-600 ring-1 ring-violet-200/50';
+      case 'Receive': return 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/50';
+      case 'Deposit': return 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/50';
+      case 'Withdrawal': return 'bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-200/50';
+      case 'Swap': return 'bg-amber-50 text-amber-600 ring-1 ring-amber-200/50';
+      case 'Vault Deposit': return 'bg-[#D4AF37]/10 text-[#B8860B] ring-1 ring-[#D4AF37]/20';
+      case 'Vault Withdrawal': return 'bg-purple-50 text-purple-600 ring-1 ring-purple-200/50';
+      case 'Bank Deposit': return 'bg-blue-50 text-blue-600 ring-1 ring-blue-200/50';
+      case 'Crypto Deposit': return 'bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200/50';
+      default: return 'bg-gray-50 text-gray-600 ring-1 ring-gray-200/50';
     }
   };
   
@@ -469,32 +471,24 @@ export default function VaultActivityList() {
   };
 
   const getStatusBadge = (status: string, rejectionReason?: string | null) => {
-    switch (status) {
-      case 'Completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Completed</Badge>;
-      case 'Pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pending</Badge>;
-      case 'Cancelled':
-        return (
-          <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
-            {rejectionReason && (
-              <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
-            )}
-          </div>
-        );
-      case 'Rejected':
-        return (
-          <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
-            {rejectionReason && (
-              <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
-            )}
-          </div>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    const statusConfig: Record<string, { dot: string; text: string; bg: string; label: string }> = {
+      'Completed': { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100', label: 'Completed' },
+      'Pending': { dot: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50 border-amber-100', label: 'Pending' },
+      'Cancelled': { dot: 'bg-red-400', text: 'text-red-700', bg: 'bg-red-50 border-red-100', label: 'Rejected' },
+      'Rejected': { dot: 'bg-red-400', text: 'text-red-700', bg: 'bg-red-50 border-red-100', label: 'Rejected' },
+    };
+    const config = statusConfig[status] || { dot: 'bg-gray-400', text: 'text-gray-600', bg: 'bg-gray-50 border-gray-100', label: status };
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${config.bg} ${config.text}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+          {config.label}
+        </span>
+        {rejectionReason && (status === 'Cancelled' || status === 'Rejected') && (
+          <span className="text-xs text-red-400 cursor-help" title={rejectionReason}>ⓘ</span>
+        )}
+      </div>
+    );
   };
 
   // Use original vault activity data which has full metadata (certificates, counterparty emails, etc.)
@@ -830,122 +824,142 @@ export default function VaultActivityList() {
     return tx.type;
   };
 
-  // Render a single transaction row
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  };
+
   const renderTransactionRow = (tx: VaultTransaction, isNested: boolean = false) => (
     <div
       key={tx.id}
-      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer ${isNested ? 'bg-muted/20 border-l-4 border-muted-foreground/20' : ''}`}
+      className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 transition-all duration-200 cursor-pointer ${
+        isNested 
+          ? 'bg-gray-50/50 border-l-2 border-purple-200 pl-8' 
+          : 'hover:bg-gray-50/80'
+      }`}
       onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}
       data-testid={`row-vault-tx-${tx.id}`}
     >
-      <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-        <div className={`${isNested ? 'w-8 h-8' : 'w-10 h-10'} flex-shrink-0 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
+      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+        <div className={`${isNested ? 'w-9 h-9' : 'w-11 h-11'} flex-shrink-0 rounded-xl flex items-center justify-center ${getTypeColor(tx.type)} transition-transform duration-200 group-hover:scale-105`}>
           {getTypeIcon(tx.type)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`font-medium ${isNested ? 'text-sm text-muted-foreground' : ''}`}>{getDisplayName(tx)}</span>
+            <span className={`font-semibold text-gray-800 ${isNested ? 'text-[13px] text-gray-500' : 'text-sm'}`}>{getDisplayName(tx)}</span>
             {tx.type === 'Swap' ? (
               tx.description?.includes('LGPW to FGPW') ? (
-                <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300">
+                <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-gradient-to-r from-blue-50 to-amber-50 text-amber-700 border border-amber-200/50">
                   LGPW → FGPW
-                </Badge>
+                </span>
               ) : tx.description?.includes('FGPW to LGPW') ? (
-                <Badge variant="outline" className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300">
+                <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-50 to-blue-50 text-blue-700 border border-blue-200/50">
                   FGPW → LGPW
-                </Badge>
+                </span>
               ) : (
-                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">Swap</Badge>
+                <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/50">Swap</span>
               )
             ) : tx.goldWalletType && (
-              <Badge variant="outline" className={`text-xs ${tx.goldWalletType === 'LGPW' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+              <span className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded border ${tx.goldWalletType === 'LGPW' ? 'bg-blue-50 text-blue-600 border-blue-200/50' : 'bg-amber-50 text-amber-600 border-amber-200/50'}`}>
                 {tx.goldWalletType}
-              </Badge>
+              </span>
             )}
             {tx.certificates.length > 0 && (
-              <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
-                <Award className="w-3 h-3 mr-1" />
-                {tx.certificates.length} Cert
-              </Badge>
+              <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#D4AF37]/10 text-[#B8860B] border border-[#D4AF37]/20">
+                <Award className="w-2.5 h-2.5 mr-0.5" />
+                {tx.certificates.length}
+              </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
-            {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : new Date(tx.createdAt).toLocaleString())}
+          <p className="text-xs text-gray-500 truncate max-w-[220px] sm:max-w-none mt-0.5">
+            {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : formatDate(tx.createdAt))}
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 ml-13 sm:ml-0">
-        <div className="text-left sm:text-right">
+      <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-5 ml-14 sm:ml-0">
+        <div className="text-left sm:text-right min-w-[100px]">
           {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
             <>
-              <p className="font-bold text-amber-600">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              <p className="font-bold text-amber-600 tabular-nums text-sm">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               {tx.goldPriceUsdPerGram && (
-                <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
-                  <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
+                <p className="text-[11px] text-amber-500 font-medium whitespace-nowrap mt-0.5">
                   ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
                 </p>
               )}
             </>
           ) : tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
             <>
-              <p className="font-bold text-green-600">+${parseFloat(tx.amountUsd).toFixed(2)}</p>
+              <p className="font-bold text-emerald-600 tabular-nums text-sm">+${parseFloat(tx.amountUsd).toFixed(2)}</p>
               {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
-                <p className="text-xs sm:text-sm text-fuchsia-600 font-medium">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+                <p className="text-[11px] text-gray-400 font-medium mt-0.5">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               )}
             </>
           ) : tx.type === 'Bank Deposit' && tx.isExpectedValue && tx.amountGold ? (
             <>
-              <p className="font-bold text-green-600">~{parseFloat(tx.amountGold).toFixed(4)}g</p>
-              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
-              {tx.amountUsd && <p className="text-xs text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
+              <p className="font-bold text-emerald-600 tabular-nums text-sm">≈{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              {tx.amountUsd && <p className="text-[11px] text-gray-500 mt-0.5">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
             </>
           ) : tx.type === 'Bank Deposit' && !tx.amountGold && tx.amountUsd ? (
             <>
-              <p className="font-bold text-green-600">${parseFloat(tx.amountUsd).toFixed(2)}</p>
-              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
+              <p className="font-bold text-emerald-600 tabular-nums text-sm">${parseFloat(tx.amountUsd).toFixed(2)}</p>
             </>
           ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
             <>
-              <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`font-bold tabular-nums text-sm ${isGoldIncoming(tx.type) ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {isGoldIncoming(tx.type) ? '+' : '-'}{parseFloat(tx.amountGold).toFixed(4)}g
               </p>
-              {tx.amountUsd && <p className="text-xs sm:text-sm text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
+              {tx.amountUsd && <p className="text-[11px] text-gray-500 mt-0.5">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
             </>
           ) : tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
-            <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`font-bold tabular-nums text-sm ${isUsdIncoming(tx.type) ? 'text-emerald-600' : 'text-rose-600'}`}>
               {isUsdIncoming(tx.type) ? '+' : '-'}${parseFloat(tx.amountUsd).toFixed(2)}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">--</p>
+            <p className="text-sm text-gray-300">--</p>
           )}
         </div>
-        <div className="text-right shrink-0">
-          {getStatusBadge(tx.status, tx.rejectionReason)}
-          <p className="text-xs text-muted-foreground mt-1 hidden sm:block">{new Date(tx.createdAt).toLocaleDateString()}</p>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="text-right">
+            {getStatusBadge(tx.status, tx.rejectionReason)}
+            <p className="text-[11px] text-gray-500 mt-1 hidden sm:block">{formatDate(tx.createdAt)}</p>
+          </div>
+          {!isNested && (
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 group-hover:text-gray-500 group-hover:bg-gray-100 transition-all hidden sm:flex">
+              <Eye className="w-4 h-4" />
+            </div>
+          )}
         </div>
-        {!isNested && <Button size="icon" variant="ghost" className="shrink-0 hidden sm:flex"><Eye className="w-4 h-4" /></Button>}
       </div>
     </div>
   );
 
   return (
-    <Card className="bg-white shadow-sm border border-border overflow-hidden">
-      <CardHeader className="border-b border-border bg-muted/30">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <CardTitle className="text-lg font-semibold">Vault Activity History</CardTitle>
+    <Card className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <CardHeader className="border-b border-gray-100 bg-white px-5 py-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-base font-semibold text-gray-800">Activity History</CardTitle>
+            <p className="text-xs text-gray-400 mt-0.5">{filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}</p>
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <Input
-                placeholder="Search transactions..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-48"
+                className="pl-9 w-44 h-9 text-sm rounded-lg border-gray-200 bg-gray-50/80 focus:bg-white"
                 data-testid="input-search-vault"
               />
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-36" data-testid="select-type-filter">
+              <SelectTrigger className="w-32 h-9 text-sm rounded-lg border-gray-200 bg-gray-50/80" data-testid="select-type-filter">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -956,32 +970,40 @@ export default function VaultActivityList() {
                 <SelectItem value="Receive">Receive</SelectItem>
                 <SelectItem value="Deposit">Deposit</SelectItem>
                 <SelectItem value="Withdrawal">Withdrawal</SelectItem>
-                <SelectItem value="Swap">Swap (LGPW↔FGPW)</SelectItem>
+                <SelectItem value="Swap">Swap</SelectItem>
                 <SelectItem value="Vault Deposit">Vault Deposit</SelectItem>
                 <SelectItem value="Vault Withdrawal">Vault Withdrawal</SelectItem>
                 <SelectItem value="Bank Deposit">Bank Deposit</SelectItem>
                 <SelectItem value="Crypto Deposit">Crypto Deposit</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="icon" variant="outline" onClick={fetchActivity} data-testid="button-refresh-vault">
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            <button 
+              onClick={fetchActivity} 
+              aria-label="Refresh vault activity"
+              className="w-9 h-9 rounded-lg border border-gray-200 bg-gray-50/80 hover:bg-gray-100 flex items-center justify-center transition-colors"
+              data-testid="button-refresh-vault"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-16">
+            <RefreshCw className="w-5 h-5 animate-spin text-purple-400 mb-3" />
+            <p className="text-sm text-gray-400">Loading activity...</p>
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Coins className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No vault activity found</p>
-            <p className="text-sm">Transactions will appear here once you buy, sell, send, or receive gold.</p>
+          <div className="text-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+              <Coins className="w-7 h-7 text-gray-300" />
+            </div>
+            <p className="font-medium text-gray-500 mb-1">No activity yet</p>
+            <p className="text-sm text-gray-400">Transactions will appear here once you start trading gold.</p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-gray-50">
             {groupedTransactions.map(({ primary, related }) => (
               related.length > 0 ? (
                 <Collapsible
@@ -991,27 +1013,26 @@ export default function VaultActivityList() {
                 >
                   <div className="relative">
                     <CollapsibleTrigger asChild>
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 cursor-pointer p-1 hover:bg-muted rounded">
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 cursor-pointer p-1 hover:bg-gray-100 rounded-md transition-colors">
                         {expandedGroups.has(primary.id) ? (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                         )}
                       </div>
                     </CollapsibleTrigger>
-                    <div className="pl-8">
+                    <div className="pl-6">
                       {renderTransactionRow(primary)}
                     </div>
-                    <Badge 
-                      variant="secondary" 
-                      className="absolute right-36 top-1/2 -translate-y-1/2 text-xs cursor-pointer hover:bg-muted z-10"
+                    <span 
+                      className="absolute right-32 top-1/2 -translate-y-1/2 text-[10px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full cursor-pointer hover:bg-purple-100 transition-colors z-10 border border-purple-100"
                       onClick={(e) => { e.stopPropagation(); toggleGroup(primary.id); }}
                     >
-                      +{related.length} related
-                    </Badge>
+                      +{related.length}
+                    </span>
                   </div>
                   <CollapsibleContent>
-                    <div className="border-l-2 border-muted-foreground/20 ml-6">
+                    <div className="ml-6">
                       {related.map(tx => renderTransactionRow(tx, true))}
                     </div>
                   </CollapsibleContent>
