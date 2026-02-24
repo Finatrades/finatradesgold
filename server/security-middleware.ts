@@ -36,8 +36,8 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   // Check if route is exempt
   const isExempt = CSRF_EXEMPT_ROUTES.some(route => req.path.startsWith(route));
   
-  // Generate token for GET requests or if not present
-  if (req.method === 'GET' || !req.cookies?.[CSRF_COOKIE]) {
+  // Generate token only if not already present in cookie
+  if (!req.cookies?.[CSRF_COOKIE]) {
     const token = generateCsrfToken();
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false, // Must be readable by JavaScript
@@ -70,11 +70,15 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 
 // Get CSRF token endpoint
 export function getCsrfTokenHandler(req: Request, res: Response) {
+  const existingToken = req.cookies?.[CSRF_COOKIE];
+  if (existingToken) {
+    return res.json({ csrfToken: existingToken });
+  }
   const token = generateCsrfToken();
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax', // Changed from 'strict' to match session cookies
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000,
   });
   res.json({ csrfToken: token });
