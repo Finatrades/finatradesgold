@@ -158,9 +158,9 @@ export default function QuickActionsTop() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.03 }}
-                whileTap={{ scale: isLocked ? 1 : 0.94, y: isLocked ? 0 : 1 }}
+                whileTap={{ scale: isLocked ? 1 : 0.93 }}
                 onClick={() => handleAction(action)}
-                className="flex flex-col items-center justify-center w-[68px] h-[68px] rounded-2xl font-medium transition-all relative border active:shadow-inner"
+                className="flex flex-col items-center justify-center w-[68px] h-[68px] rounded-2xl font-medium transition-all relative border"
                 style={{
                   backgroundColor: isLocked ? '#f3f4f6' : action.bgLight,
                   borderColor: isLocked ? '#e5e7eb' : `${action.color}20`,
@@ -201,8 +201,8 @@ export default function QuickActionsTop() {
                 stiffness: 400,
                 damping: 28
               }}
-              whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -1 }}
-              whileTap={{ scale: isLocked ? 1 : 0.96, y: isLocked ? 0 : 0.5 }}
+              whileHover={{ scale: isLocked ? 1 : 1.03, y: isLocked ? 0 : -1 }}
+              whileTap={{ scale: isLocked ? 1 : 0.97 }}
               onClick={() => handleAction(action)}
               className="group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 border cursor-pointer"
               style={{
