@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -143,10 +143,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-3">
               
               <SyncStatusIndicator />
-
-              <div className="hidden md:block">
-                <LanguageSwitcher />
-              </div>
 
               <NotificationCenter />
               
