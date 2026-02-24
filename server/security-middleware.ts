@@ -12,18 +12,27 @@ const CSRF_COOKIE = 'csrf_token';
 
 // Routes exempt from CSRF protection (webhooks only - external services need to POST without our tokens)
 const CSRF_EXEMPT_ROUTES = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/send-verification',
+  '/api/auth/verify-email',
+  '/api/auth/finatrades-id-login',
+  '/api/auth/finatrades-id-verify',
+  '/api/admin/login',
   '/api/webhooks/',
   '/api/binance-pay/webhook',
   '/api/ngenius/webhook',
   '/api/stripe/webhook',
   '/api/wingold/webhooks',
-  '/api/unified/callback/wingold-order', // Wingold order webhooks
+  '/api/unified/callback/wingold-order',
   '/api/certificates/verify',
   '/api/verify-certificate',
   '/api/sso/verify-token',
-  '/api/admin/branding/logo', // Admin-authenticated file upload
-  '/api/documents/upload', // Authenticated file upload
-  '/api/admin/email-test', // Admin-authenticated test email
+  '/api/admin/branding/logo',
+  '/api/documents/upload',
+  '/api/admin/email-test',
 ];
 
 // Generate secure CSRF token
