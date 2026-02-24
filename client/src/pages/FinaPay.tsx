@@ -368,57 +368,57 @@ export default function FinaPay() {
         
         {/* FinaPay Wallet Card - Only show when user has wallet activity */}
         {hasWalletActivity && (
-          <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-gray-100 p-6 shadow-sm transition-all duration-500 ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg shrink-0">
-                  <WalletIcon className="w-5 h-5 text-fuchsia-600" />
+                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                  <WalletIcon className="w-5 h-5 text-purple-600" />
                 </div>
-                <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
+                <h2 className="text-base font-bold text-gray-900" data-testid="text-finapay-title">{getContent('hero', 'title', 'FinaPay Wallet')}</h2>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <WalletIcon className="w-20 h-20 text-purple-500" />
+              <div className="relative p-5 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/40 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-[0.06]">
+                  <WalletIcon className="w-16 h-16 text-emerald-600" />
                 </div>
                 <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
-                  <p className="text-3xl font-bold text-foreground mb-1">
+                  <p className="text-[10px] font-semibold text-emerald-700/70 uppercase tracking-wider mb-2">Available Balance</p>
+                  <p className="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">
                     {goldGrams.toFixed(4)} g
                   </p>
-                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-muted-foreground mt-3">Gold balance. USD is approximate at current price.</p>
+                  <p className="text-xs text-gray-500 tabular-nums">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-[10px] text-gray-400 mt-3">Gold balance. USD is approximate.</p>
                 </div>
               </div>
 
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <Lock className="w-20 h-20 text-purple-500" />
+              <div className="relative p-5 rounded-xl bg-gradient-to-br from-purple-50 to-violet-100/50 border border-purple-200/40 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-[0.06]">
+                  <Lock className="w-16 h-16 text-purple-600" />
                 </div>
                 <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
-                  <p className="text-3xl font-bold text-purple-500 mb-1">0.0000 g</p>
-                  <p className="text-sm text-purple-500/70">≈ $0.00</p>
-                  <p className="text-xs text-muted-foreground mt-3">
+                  <p className="text-[10px] font-semibold text-purple-700/70 uppercase tracking-wider mb-2">Locked Assets</p>
+                  <p className="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">0.0000 g</p>
+                  <p className="text-xs text-gray-500 tabular-nums">≈ $0.00</p>
+                  <p className="text-[10px] text-gray-400 mt-3">
                     <Lock className="w-3 h-3 inline mr-1" />
-                    Assets locked in active plans and trades.
+                    Locked in active plans & trades.
                   </p>
                 </div>
               </div>
 
-              <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-                <div className="absolute right-2 bottom-2 opacity-5">
-                  <TrendingUp className="w-20 h-20 text-purple-500" />
+              <div className="relative p-5 rounded-xl bg-gradient-to-br from-slate-50 to-gray-100/50 border border-gray-200/40 overflow-hidden">
+                <div className="absolute right-2 bottom-2 opacity-[0.06]">
+                  <TrendingUp className="w-16 h-16 text-gray-600" />
                 </div>
                 <div className="relative z-10">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Wallet Value</p>
-                  <p className="text-3xl font-bold text-purple-500 mb-1">
+                  <p className="text-[10px] font-semibold text-gray-600/70 uppercase tracking-wider mb-2">Total Wallet Value</p>
+                  <p className="text-2xl font-bold text-gray-900 mb-0.5 tabular-nums">
                     {goldGrams.toFixed(4)} g
                   </p>
-                  <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-gray-500 tabular-nums">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
 
@@ -451,8 +451,8 @@ export default function FinaPay() {
         <PendingTransfers />
 
         {/* Transaction History */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-foreground mb-4">Recent Transactions</h3>
+        <div>
+          <h3 className="text-base font-bold text-gray-900 mb-4">Recent Transactions</h3>
           {transactions.length === 0 && ledgerEntries.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
