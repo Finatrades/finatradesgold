@@ -143,7 +143,7 @@ Comprehensive system with toggleable `email_notification_settings` and `email_lo
 - @hookform/resolvers
 
 **Payment Integrations:**
-- Binance Pay (crypto payments via API and webhooks)
+- (Payment gateway integrations removed during Feb 2026 cleanup — Binance Pay, N-Genius were unused dead code)
 
 **Gold Price API:**
 - Metals-API.com (Copper Pack) with smart caching, usage-based throttling, ETag support, and fallback chain (gold-api.com, last known price).

@@ -476,54 +476,10 @@ app.use((req, res, next) => {
   // Initialize enterprise job queue system
   try {
     const { initializeJobQueues } = await import('./job-queue');
-    const { startJobProcessors } = await import('./job-processor');
     initializeJobQueues();
-    startJobProcessors();
     console.log('[Enterprise] Background job processing enabled');
-  // Start DCA (Dollar Cost Averaging) processor
-  try {
-    const { startDcaProcessor } = await import('./dca-processor');
-    startDcaProcessor();
-    console.log('[DCA] DCA auto-buy processor enabled');
-  } catch (error) {
-    console.warn('[DCA] DCA processor initialization skipped:', error);
-  }
   } catch (error) {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
-  }
-  
-  // AUTO-REPAIR: Fix all corrupted wallets and orphaned transfers on startup
-  try {
-    const { runAllRepairs, startExpiryScheduler } = await import('./repair-wallet');
-    await runAllRepairs();
-    // Start the periodic scheduler for expiring unclaimed invitation transfers
-    startExpiryScheduler();
-  } catch (error) {
-    console.warn('[Data Repair] Automatic repair failed:', error);
-  }
-  
-  // Start database sync scheduler (AWS RDS → Replit every 6 hours)
-  try {
-    const { startSyncScheduler } = await import('./database-sync-scheduler');
-    startSyncScheduler();
-  } catch (error) {
-    console.warn('[DB Sync] Scheduler initialization failed:', error);
-  }
-  
-  // Start monthly summary email scheduler
-  try {
-    const { startMonthlySummaryScheduler } = await import('./monthly-summary-processor');
-    startMonthlySummaryScheduler();
-  } catch (error) {
-    console.warn('[Monthly Summary] Scheduler initialization failed:', error);
-  }
-  
-  // Seed default RBAC roles if missing
-  try {
-    const { seedDefaultRBACRoles } = await import('./rbac-seed');
-    await seedDefaultRBACRoles();
-  } catch (error) {
-    console.warn('[RBAC] Seed initialization failed:', error);
   }
 
   // Setup Socket.IO for real-time chat
