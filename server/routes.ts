@@ -22644,9 +22644,9 @@ export async function registerRoutes(
   });
 
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
-  // Use larger body limit for liveness capture base64 images
-  app.post("/api/finatrades-kyc/personal", ensureAuthenticated, express.json({ limit: '100mb' }), async (req, res) => {
+  app.post("/api/finatrades-kyc/personal", ensureAuthenticated, async (req, res) => {
     try {
+      console.log(`[KYC] Personal KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
       const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate } = req.body;
       
       if (!userId) {
@@ -22751,6 +22751,7 @@ export async function registerRoutes(
   // Submit Finatrades Corporate KYC (questionnaire)
   app.post("/api/finatrades-kyc/corporate", ensureAuthenticated, async (req, res) => {
     try {
+      console.log(`[KYC] Corporate KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
       const { 
         userId, 
         livenessCapture: representativeLiveness,

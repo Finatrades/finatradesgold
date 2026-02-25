@@ -534,6 +534,14 @@ app.use((req, res, next) => {
   registerR2ProxyRoutes(app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    if (err.type === 'entity.too.large') {
+      console.error(`[BodyParser] Payload too large on ${req.method} ${req.path} - limit exceeded`);
+      return res.status(413).json({ message: 'Request payload is too large. Please reduce the size of uploaded files.' });
+    }
+    if (err.type === 'entity.parse.failed') {
+      console.error(`[BodyParser] JSON parse failed on ${req.method} ${req.path}`);
+      return res.status(400).json({ message: 'Invalid request format.' });
+    }
     const status = err.status || err.statusCode || 500;
     const isServerError = status >= 500;
     const isProd = process.env.NODE_ENV === 'production';

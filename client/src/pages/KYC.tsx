@@ -322,7 +322,7 @@ export default function KYC() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.restore();
         
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         setCapturedSelfie(dataUrl);
         stopLivenessCamera();
         toast.success('Liveness verified! Photo captured.');
@@ -425,7 +425,39 @@ export default function KYC() {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  const compressImage = (file: File, maxWidth = 1600, maxHeight = 1600, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          resolve(canvas.toDataURL(mimeType, quality));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const fileToBase64 = async (file: File): Promise<string> => {
+    if (file.type.startsWith('image/')) {
+      return compressImage(file);
+    }
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -507,9 +539,13 @@ export default function KYC() {
       });
       
       setLocation("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[KYC] Personal submission error:', error);
+      const msg = error?.message || 'Please try again later.';
       toast.error("Submission Failed", {
-        description: "Please try again later."
+        description: msg.includes('payload') || msg.includes('too large') || msg.includes('413')
+          ? 'Your documents are too large. Please use smaller or lower-resolution images.'
+          : msg
       });
     } finally {
       setIsSubmitting(false);
@@ -580,9 +616,13 @@ export default function KYC() {
       });
       
       setLocation("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[KYC] Corporate submission error:', error);
+      const msg = error?.message || 'Please try again later.';
       toast.error("Submission Failed", {
-        description: "Please try again later."
+        description: msg.includes('payload') || msg.includes('too large') || msg.includes('413')
+          ? 'Your documents are too large. Please use smaller or lower-resolution images.'
+          : msg
       });
     } finally {
       setIsSubmitting(false);
