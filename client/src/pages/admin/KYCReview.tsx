@@ -1451,7 +1451,7 @@ export default function KYCReview() {
               </div>
             </div>
 
-            {selectedApplication?.status === 'In Progress' && (
+            {selectedApplication?.status !== 'Rejected' && (
               <DialogFooter className="gap-2 sm:gap-0">
                 <Button 
                   variant="destructive" 
@@ -1459,8 +1459,23 @@ export default function KYCReview() {
                   disabled={rejectMutation.isPending}
                   data-testid="button-reject-kyc"
                 >
-                  <XCircle className="w-4 h-4 mr-2" /> Reject
+                  <XCircle className="w-4 h-4 mr-2" /> {selectedApplication?.status === 'Approved' ? 'Revoke & Reject' : 'Reject'}
                 </Button>
+                {selectedApplication?.status !== 'Approved' && (
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700" 
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending}
+                    data-testid="button-approve-kyc"
+                  >
+                    {approveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    Approve & Verify
+                  </Button>
+                )}
+              </DialogFooter>
+            )}
+            {selectedApplication?.status === 'Rejected' && (
+              <DialogFooter className="gap-2 sm:gap-0">
                 <Button 
                   className="bg-green-600 hover:bg-green-700" 
                   onClick={handleApprove}
@@ -1468,7 +1483,7 @@ export default function KYCReview() {
                   data-testid="button-approve-kyc"
                 >
                   {approveMutation.isPending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                  Approve & Verify
+                  Re-Approve & Verify
                 </Button>
               </DialogFooter>
             )}
