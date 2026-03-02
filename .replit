@@ -56,8 +56,12 @@ WINGOLD_WEBHOOK_SECRET = "wg-webhook-secret-2025"
 WINGOLD_ALLOWED_ORIGINS = "https://wingoldandmetals--imcharanpratap.replit.app,https://wingoldandmetals.com,https://www.wingoldandmetals.com"
 REPLICATION_COMPARE_MODE = "true"
 APP_URL = "https://finatrades.com"
-SMTP_FROM = "noreply@finatrades.xyz"
+SMTP_FROM = "no-reply@finatrades.com"
 SMTP_USER = "928966001@smtp-brevo.com"
+SMTP_HOST = "smtp-relay.brevo.com"
+SMTP_PORT = "587"
+SMTP_SECURE = "false"
+SMTP_PASS = "xsmtpsib-cf6fcd5067867ec4b280cafbbf086ba71748c5b87b0c973b3e802bbf8df30aaa-ZbFGkg7eAh9BRPdg"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
