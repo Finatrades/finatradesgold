@@ -5262,31 +5262,52 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const existingSubmission = await storage.getKycSubmission(userId);
-      if (!existingSubmission) {
-        return res.status(404).json({ message: "No KYC submission found" });
+      let submissionId: string | null = null;
+      let kycType: string = 'kycAml';
+
+      const kycAmlSubmission = await storage.getKycSubmission(userId);
+      if (kycAmlSubmission && (kycAmlSubmission.status === 'Rejected' || kycAmlSubmission.status === 'Changes Requested')) {
+        submissionId = kycAmlSubmission.id;
+        kycType = 'kycAml';
+        await storage.deleteKycSubmission(kycAmlSubmission.id);
       }
 
-      if (existingSubmission.status !== 'Rejected' && existingSubmission.status !== 'Changes Requested') {
-        return res.status(400).json({ message: "Only rejected or changes-requested KYC submissions can be reset" });
+      if (!submissionId) {
+        const personalKyc = await storage.getFinatradesPersonalKyc(userId);
+        if (personalKyc && (personalKyc.status === 'Rejected' || personalKyc.status === 'Changes Requested')) {
+          submissionId = personalKyc.id;
+          kycType = 'finatrades_personal';
+          await storage.updateFinatradesPersonalKyc(personalKyc.id, { status: 'In Progress' });
+        }
       }
 
-      await storage.deleteKycSubmission(existingSubmission.id);
-      
+      if (!submissionId) {
+        const corporateKyc = await storage.getFinatradesCorporateKyc(userId);
+        if (corporateKyc && (corporateKyc.status === 'Rejected' || corporateKyc.status === 'Changes Requested')) {
+          submissionId = corporateKyc.id;
+          kycType = 'finatrades_corporate';
+          await storage.updateFinatradesCorporateKyc(corporateKyc.id, { status: 'In Progress' });
+        }
+      }
+
+      if (!submissionId) {
+        return res.status(404).json({ message: "No rejected or changes-requested KYC submission found" });
+      }
+
       await storage.updateUser(userId, {
-        kycStatus: "Not Started",
+        kycStatus: "In Progress",
       });
 
       await storage.createAuditLog({
         entityType: "kyc",
-        entityId: existingSubmission.id,
-        actionType: "delete",
+        entityId: submissionId,
+        actionType: "update",
         actor: userId,
         actorRole: "user",
-        details: "User reset rejected KYC submission to resubmit",
+        details: `User reset ${kycType} KYC submission for resubmission`,
       });
 
-      res.json({ success: true, message: "KYC reset successfully. You can now submit new verification documents." });
+      res.json({ success: true, message: "KYC reset successfully. You can now update and resubmit your verification." });
     } catch (error) {
       res.status(500).json({ message: error instanceof Error ? error.message : "Failed to reset KYC" });
     }
