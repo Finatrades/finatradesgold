@@ -234,8 +234,6 @@ export default function RoleManagement() {
       canView: currentPerms?.can_view || false,
       canCreate: currentPerms?.can_create || false,
       canEdit: currentPerms?.can_edit || false,
-      canApproveL1: currentPerms?.can_approve_l1 || false,
-      canApproveFinal: currentPerms?.can_approve_final || false,
       canReject: currentPerms?.can_reject || false,
       canExport: currentPerms?.can_export || false,
       canDelete: currentPerms?.can_delete || false,
@@ -255,9 +253,9 @@ export default function RoleManagement() {
     setApplyingPreset(true);
     const comps = targetComponents || components;
     const permMap = {
-      full: { canView: true, canCreate: true, canEdit: true, canApproveL1: true, canApproveFinal: true, canReject: true, canExport: true, canDelete: true },
-      viewOnly: { canView: true, canCreate: false, canEdit: false, canApproveL1: false, canApproveFinal: false, canReject: false, canExport: true, canDelete: false },
-      clear: { canView: false, canCreate: false, canEdit: false, canApproveL1: false, canApproveFinal: false, canReject: false, canExport: false, canDelete: false },
+      full: { canView: true, canCreate: true, canEdit: true, canReject: true, canExport: true, canDelete: true },
+      viewOnly: { canView: true, canCreate: false, canEdit: false, canReject: false, canExport: true, canDelete: false },
+      clear: { canView: false, canCreate: false, canEdit: false, canReject: false, canExport: false, canDelete: false },
     };
     const perms = permMap[preset];
     try {
@@ -276,7 +274,6 @@ export default function RoleManagement() {
 
   const permKeyMap: Record<string, string> = {
     canView: "can_view", canCreate: "can_create", canEdit: "can_edit",
-    canApproveL1: "can_approve_l1", canApproveFinal: "can_approve_final",
     canReject: "can_reject", canExport: "can_export", canDelete: "can_delete",
   };
 
@@ -300,8 +297,6 @@ export default function RoleManagement() {
           canView: currentPerms?.can_view || false,
           canCreate: currentPerms?.can_create || false,
           canEdit: currentPerms?.can_edit || false,
-          canApproveL1: currentPerms?.can_approve_l1 || false,
-          canApproveFinal: currentPerms?.can_approve_final || false,
           canReject: currentPerms?.can_reject || false,
           canExport: currentPerms?.can_export || false,
           canDelete: currentPerms?.can_delete || false,
@@ -339,8 +334,6 @@ export default function RoleManagement() {
               <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" /> View</span>
               <span className="flex items-center gap-1.5"><Plus className="h-4 w-4" /> Create</span>
               <span className="flex items-center gap-1.5"><FileEdit className="h-4 w-4" /> Edit</span>
-              <span className="flex items-center gap-1.5"><CircleCheck className="h-4 w-4" /> L1 Approve</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Final Approve</span>
               <span className="flex items-center gap-1.5"><X className="h-4 w-4" /> Reject</span>
               <span className="flex items-center gap-1.5"><Download className="h-4 w-4" /> Export</span>
               <span className="flex items-center gap-1.5"><Trash2 className="h-4 w-4" /> Delete</span>
@@ -539,8 +532,6 @@ export default function RoleManagement() {
                                     { key: "canView", icon: <Eye className="h-3.5 w-3.5" /> },
                                     { key: "canCreate", icon: <Plus className="h-3.5 w-3.5" /> },
                                     { key: "canEdit", icon: <FileEdit className="h-3.5 w-3.5" /> },
-                                    { key: "canApproveL1", icon: <CircleCheck className="h-3.5 w-3.5" /> },
-                                    { key: "canApproveFinal", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
                                     { key: "canReject", icon: <X className="h-3.5 w-3.5" /> },
                                     { key: "canExport", icon: <Download className="h-3.5 w-3.5" /> },
                                     { key: "canDelete", icon: <Trash2 className="h-3.5 w-3.5" /> },
@@ -576,12 +567,6 @@ export default function RoleManagement() {
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_edit || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canEdit", !!v)} />
-                                      </TableCell>
-                                      <TableCell className="text-center">
-                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_approve_l1 || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveL1", !!v)} />
-                                      </TableCell>
-                                      <TableCell className="text-center">
-                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_approve_final || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveFinal", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
                                         <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_reject || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canReject", !!v)} />
