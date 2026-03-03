@@ -6,7 +6,6 @@ import { useMode } from '../context/ModeContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import ParticleField from '@/components/animations/ParticleField';
 import GradientMesh from '@/components/animations/GradientMesh';
-import GoldCoin3D from '@/components/animations/GoldCoin3D';
 import SecurityBadge from '@/components/animations/SecurityBadge';
 
 const content = {
@@ -355,14 +354,6 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative hidden lg:block"
           >
-            {/* Floating 3D Gold Coin */}
-            <motion.div
-              className="absolute -top-8 -right-4 z-20"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <GoldCoin3D size={80} />
-            </motion.div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={mode}
