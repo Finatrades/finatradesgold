@@ -5362,17 +5362,35 @@ export async function registerRoutes(
 
       const { sectionReviews: sectionReviewsInput, decisionNotes, ...dbUpdates } = updates;
       
-      let submission: any = await storage.updateKycSubmission(req.params.id, dbUpdates);
+      let submission: any = null;
       let kycType = 'kycAml';
-      
-      if (!submission) {
-        submission = await storage.updateFinatradesPersonalKyc(req.params.id, dbUpdates);
+
+      const safeKycUpdates: any = {};
+      if (dbUpdates.status !== undefined) safeKycUpdates.status = dbUpdates.status;
+      if (dbUpdates.rejectionReason !== undefined) safeKycUpdates.rejectionReason = dbUpdates.rejectionReason;
+      if (dbUpdates.reviewedBy !== undefined) safeKycUpdates.reviewedBy = dbUpdates.reviewedBy;
+      if (dbUpdates.reviewedAt !== undefined) safeKycUpdates.reviewedAt = dbUpdates.reviewedAt;
+
+      const existingPersonal = await storage.getFinatradesPersonalKycById(req.params.id);
+      if (existingPersonal) {
+        submission = await storage.updateFinatradesPersonalKyc(req.params.id, safeKycUpdates);
         kycType = 'finatrades_personal';
       }
-      
+
       if (!submission) {
-        submission = await storage.updateFinatradesCorporateKyc(req.params.id, dbUpdates);
-        kycType = 'finatrades_corporate';
+        const existingCorporate = await storage.getFinatradesCorporateKycById(req.params.id);
+        if (existingCorporate) {
+          submission = await storage.updateFinatradesCorporateKyc(req.params.id, safeKycUpdates);
+          kycType = 'finatrades_corporate';
+        }
+      }
+
+      if (!submission) {
+        try {
+          submission = await storage.updateKycSubmission(req.params.id, dbUpdates);
+          kycType = 'kycAml';
+        } catch (e) {
+        }
       }
       
       if (!submission) {
