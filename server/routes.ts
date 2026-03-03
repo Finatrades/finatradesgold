@@ -5257,7 +5257,7 @@ export async function registerRoutes(
   // Reset rejected KYC submission - allows user to resubmit
   app.post("/api/kyc/reset", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -12302,7 +12302,7 @@ export async function registerRoutes(
   // Get current user's pending deposit requests - for dashboard display
   app.get("/api/deposit-requests/pending", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any)?.id;
+      const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -17166,9 +17166,10 @@ export async function registerRoutes(
       }
       
       // Only requester or recipient can download attachment
-      const userId = (req.user as any)?.id;
-      const userEmail = (req.user as any)?.email;
-      const userFinatradesId = (req.user as any)?.finatradesId;
+      const userId = req.session.userId;
+      const currentUser = userId ? await storage.getUser(userId) : null;
+      const userEmail = currentUser?.email;
+      const userFinatradesId = currentUser?.finatradesId;
       
       // Check if user is the requester
       const isRequester = request.requesterId === userId;
