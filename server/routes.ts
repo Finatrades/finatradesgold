@@ -5257,21 +5257,23 @@ export async function registerRoutes(
   // Reset rejected KYC submission - allows user to resubmit
   app.post("/api/kyc/reset", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const existingSubmission = await storage.getKycSubmission(userId);
-      if (!existingSubmission) {
-        return res.status(404).json({ message: "No KYC submission found" });
-      }
-
-      if (existingSubmission.status !== 'Rejected') {
+      const user = await storage.getUser(userId);
+      if (!user || (user.kycStatus !== 'Rejected')) {
         return res.status(400).json({ message: "Only rejected KYC submissions can be reset" });
       }
 
-      await storage.deleteKycSubmission(existingSubmission.id);
+      const existingSubmission = await storage.getKycSubmission(userId);
+      if (existingSubmission) {
+        if (existingSubmission.status !== 'Rejected') {
+          return res.status(400).json({ message: "Only rejected KYC submissions can be reset" });
+        }
+        await storage.deleteKycSubmission(existingSubmission.id);
+      }
       
       await storage.updateUser(userId, {
         kycStatus: "Not Started",
@@ -5279,7 +5281,7 @@ export async function registerRoutes(
 
       await storage.createAuditLog({
         entityType: "kyc",
-        entityId: existingSubmission.id,
+        entityId: existingSubmission?.id || userId,
         actionType: "delete",
         actor: userId,
         actorRole: "user",
