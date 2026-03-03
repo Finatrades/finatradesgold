@@ -5262,14 +5262,39 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      const { submissionId: reqSubmissionId, kycType: reqKycType } = req.body || {};
       let submissionId: string | null = null;
-      let kycType: string = 'kycAml';
+      let kycType: string = reqKycType || 'kycAml';
 
-      const kycAmlSubmission = await storage.getKycSubmission(userId);
-      if (kycAmlSubmission && (kycAmlSubmission.status === 'Rejected' || kycAmlSubmission.status === 'Changes Requested')) {
-        submissionId = kycAmlSubmission.id;
-        kycType = 'kycAml';
-        await storage.deleteKycSubmission(kycAmlSubmission.id);
+      console.log(`[KYC Reset] Session user ${userId}, submissionId=${reqSubmissionId}, kycType=${reqKycType}`);
+
+      if (reqSubmissionId) {
+        if (reqKycType === 'finatrades_personal') {
+          const personalKyc = await storage.getFinatradesPersonalKycById(reqSubmissionId);
+          if (personalKyc && (personalKyc.status === 'Rejected' || personalKyc.status === 'Changes Requested')) {
+            submissionId = personalKyc.id;
+            kycType = 'finatrades_personal';
+            await storage.updateFinatradesPersonalKyc(personalKyc.id, { status: 'In Progress' });
+            await storage.updateUser(personalKyc.userId, { kycStatus: "In Progress" });
+          }
+        } else if (reqKycType === 'finatrades_corporate') {
+          const corporateKyc = await storage.getFinatradesCorporateKycById(reqSubmissionId);
+          if (corporateKyc && (corporateKyc.status === 'Rejected' || corporateKyc.status === 'Changes Requested')) {
+            submissionId = corporateKyc.id;
+            kycType = 'finatrades_corporate';
+            await storage.updateFinatradesCorporateKyc(corporateKyc.id, { status: 'In Progress' });
+            await storage.updateUser(corporateKyc.userId, { kycStatus: "In Progress" });
+          }
+        }
+      }
+
+      if (!submissionId) {
+        const kycAmlSubmission = await storage.getKycSubmission(userId);
+        if (kycAmlSubmission && (kycAmlSubmission.status === 'Rejected' || kycAmlSubmission.status === 'Changes Requested')) {
+          submissionId = kycAmlSubmission.id;
+          kycType = 'kycAml';
+          await storage.deleteKycSubmission(kycAmlSubmission.id);
+        }
       }
 
       if (!submissionId) {
@@ -5291,12 +5316,15 @@ export async function registerRoutes(
       }
 
       if (!submissionId) {
+        console.log(`[KYC Reset] No resettable submission found for user ${userId}`);
         return res.status(404).json({ message: "No rejected or changes-requested KYC submission found" });
       }
 
-      await storage.updateUser(userId, {
-        kycStatus: "In Progress",
-      });
+      if (!reqSubmissionId) {
+        await storage.updateUser(userId, {
+          kycStatus: "In Progress",
+        });
+      }
 
       await storage.createAuditLog({
         entityType: "kyc",

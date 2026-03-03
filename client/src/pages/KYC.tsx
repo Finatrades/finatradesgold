@@ -1058,7 +1058,7 @@ export default function KYC() {
                   onClick={async () => {
                     try {
                       setIsResettingKyc(true);
-                      const response = await apiRequest('POST', '/api/kyc/reset', {});
+                      const response = await apiRequest('POST', '/api/kyc/reset', { submissionId: existingSubmission?.id, kycType: user?.accountType === 'business' ? 'finatrades_corporate' : 'finatrades_personal' });
                       const data = await response.json();
                       if (data.success) {
                         toast.success('KYC reset successful. You can now update and resubmit your verification.');
