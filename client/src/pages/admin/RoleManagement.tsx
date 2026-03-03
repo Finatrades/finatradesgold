@@ -545,8 +545,8 @@ export default function RoleManagement() {
                                     { key: "canExport", icon: <Download className="h-3.5 w-3.5" /> },
                                     { key: "canDelete", icon: <Trash2 className="h-3.5 w-3.5" /> },
                                   ].map(({ key, icon }) => (
-                                    <TableHead key={key} className="text-center w-[60px]">
-                                      <div className="flex flex-col items-center gap-1">
+                                    <TableHead key={key} className="w-[60px] px-0">
+                                      <div className="flex flex-col items-center justify-center gap-1 mx-auto w-full">
                                         {icon}
                                         {!isSystemRoleLocked(selectedRole) && (
                                           <Checkbox
