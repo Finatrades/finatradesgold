@@ -5266,7 +5266,7 @@ export async function registerRoutes(
       let submissionId: string | null = null;
       let kycType: string = reqKycType || 'kycAml';
 
-      console.log(`[KYC Reset] Session user ${userId}, submissionId=${reqSubmissionId}, kycType=${reqKycType}`);
+      
 
       if (reqSubmissionId) {
         if (reqKycType === 'finatrades_personal') {
@@ -5316,7 +5316,7 @@ export async function registerRoutes(
       }
 
       if (!submissionId) {
-        console.log(`[KYC Reset] No resettable submission found for user ${userId}`);
+        
         return res.status(404).json({ message: "No rejected or changes-requested KYC submission found" });
       }
 
