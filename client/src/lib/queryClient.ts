@@ -2,29 +2,72 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 export const SESSION_EXPIRED_EVENT = 'session:expired';
 
-function handleSessionExpired() {
+let sessionExpiredFired = false;
+let sessionVerifying = false;
+
+export function resetSessionExpiredLatch() {
+  sessionExpiredFired = false;
+  sessionVerifying = false;
+}
+
+async function verifyAndExpireSession() {
+  if (sessionExpiredFired || sessionVerifying) return;
+
   const currentPath = window.location.pathname;
   const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
-  
-  if (!publicPaths.some(path => currentPath === path || currentPath.startsWith('/reset-password'))) {
-    console.log('[Session] Session expired, redirecting to login...');
-    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  if (publicPaths.some(path => currentPath === path || currentPath.startsWith('/reset-password'))) {
+    return;
   }
+
+  sessionVerifying = true;
+
+  try {
+    const storedUserId = localStorage.getItem('fina_user_id');
+
+    const verifyUrl = storedUserId
+      ? `/api/auth/me/${storedUserId}`
+      : '/api/csrf-token';
+
+    const verifyRes = await fetch(verifyUrl, {
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+
+    if (verifyRes.ok) {
+      console.log('[Session] 401 received but session is still valid (transient error), skipping logout');
+      return;
+    }
+
+    if (verifyRes.status === 429 || verifyRes.status >= 500) {
+      console.warn('[Session] Verification returned', verifyRes.status, '- treating as transient, skipping logout');
+      return;
+    }
+
+    triggerSessionExpired();
+  } catch (err) {
+    console.warn('[Session] Verification network error - treating as transient, skipping logout', err);
+  } finally {
+    sessionVerifying = false;
+  }
+}
+
+function triggerSessionExpired() {
+  if (sessionExpiredFired) return;
+  sessionExpiredFired = true;
+  console.log('[Session] Session confirmed expired, redirecting to login...');
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
 }
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     
-    // Try to parse JSON for structured errors
     let errorData: any = null;
     try {
       errorData = JSON.parse(text);
     } catch {
-      // Not JSON, use text as-is
     }
     
-    // Handle KYC errors with proper structure
     if (errorData?.code === 'KYC_REQUIRED') {
       const error: any = new Error('Please complete your identity verification to access this feature.');
       error.code = 'KYC_REQUIRED';
@@ -32,16 +75,15 @@ async function throwIfResNotOk(res: Response) {
       throw error;
     }
     
-    // Convert technical errors to user-friendly messages
     let friendlyMessage = errorData?.message || text;
     if (errorData?.code === 'RBAC_PERMISSION_DENIED') {
       friendlyMessage = "Access Denied: You do not have permission to view this section. Please contact your system administrator.";
     } else if (res.status === 403 && text.includes('CSRF')) {
       friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
-      handleSessionExpired();
+      verifyAndExpireSession();
     } else if (res.status === 401) {
       friendlyMessage = 'Please log in to continue.';
-      handleSessionExpired();
+      verifyAndExpireSession();
     } else if (res.status === 429) {
       friendlyMessage = 'Too many requests. Please wait a moment and try again.';
     } else if (res.status === 500) {
@@ -54,13 +96,11 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get CSRF token from cookie
 function getCsrfToken(): string | null {
   const match = document.cookie.match(/csrf_token=([^;]+)/);
   return match ? match[1] : null;
 }
 
-// Fetch CSRF token if not present
 async function ensureCsrfToken(): Promise<string | null> {
   let token = getCsrfToken();
   if (!token) {
@@ -91,7 +131,6 @@ export async function apiRequest(
     headers['Content-Type'] = 'application/json';
   }
   
-  // Add CSRF token for state-changing requests
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
     const csrfToken = await ensureCsrfToken();
     if (csrfToken) {
@@ -121,7 +160,6 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      handleSessionExpired();
       return null;
     }
 
@@ -133,10 +171,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      staleTime: 300000, // 5 minutes - enterprise caching for reduced latency
-      gcTime: 1800000, // 30 minutes - keep data much longer
-      refetchOnWindowFocus: false, // Disable automatic refetch on focus - use socket events instead
-      refetchOnReconnect: false, // Disabled - socket events handle sync to prevent mobile auto-refresh issues
+      staleTime: 300000,
+      gcTime: 1800000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
       retry: 1,
       refetchInterval: false,
     },
@@ -166,15 +204,10 @@ export function prefetchDashboardData(userId: string) {
 
 export function clearQueryCache() {
   console.log('[Cache] Clearing all query cache on logout');
-  // Clear all React Query cache
   queryClient.clear();
-  // Reset all queries to ensure no stale data
   queryClient.resetQueries();
-  // Remove any cached query data
   queryClient.removeQueries();
-  // Clear any session-specific storage
   try {
-    // Clear IndexedDB cache if any
     if (typeof indexedDB !== 'undefined') {
       indexedDB.databases?.().then(dbs => {
         dbs.forEach(db => {
