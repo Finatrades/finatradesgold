@@ -8,12 +8,14 @@ interface AdminPermissionContextValue {
   hasMenuPermission: (menuPath: string) => boolean;
   effectivePermissions: string[];
   isSuperAdmin: boolean;
+  permissionsLoading: boolean;
 }
 
 const AdminPermissionContext = createContext<AdminPermissionContextValue>({
   hasMenuPermission: () => true,
   effectivePermissions: [],
   isSuperAdmin: false,
+  permissionsLoading: true,
 });
 
 export const useAdminPermissions = () => useContext(AdminPermissionContext);
@@ -177,7 +179,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   // Fetch user's effective RBAC permissions for menu access control
-  const { data: rbacPermissions } = useQuery({
+  const { data: rbacPermissions, isLoading: rbacLoading } = useQuery({
     queryKey: ['/api/admin/rbac/my-permissions'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/admin/rbac/my-permissions');
@@ -445,6 +447,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     hasMenuPermission,
     effectivePermissions,
     isSuperAdmin,
+    permissionsLoading: rbacLoading,
   };
 
   return (
@@ -639,7 +642,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <main className="min-h-[calc(100vh-7rem)] p-4 lg:p-6 bg-muted">
           <div className="max-w-[1600px] mx-auto">
-            {hasMenuPermission(location) ? children : (
+            {rbacLoading ? (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : hasMenuPermission(location) ? children : (
               <div className="flex items-center justify-center min-h-[60vh]" data-testid="access-denied-container">
                 <div className="max-w-md w-full text-center space-y-6">
                   <div className="mx-auto w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
