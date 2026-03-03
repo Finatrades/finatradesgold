@@ -673,6 +673,7 @@ export const EMAIL_TEMPLATES = {
   // KYC
   KYC_APPROVED: 'kyc_approved',
   KYC_REJECTED: 'kyc_rejected',
+  KYC_CHANGES_REQUESTED: 'kyc_changes_requested',
   KYC_PENDING_REVIEW: 'kyc_pending_review',
   DOCUMENT_EXPIRY_REMINDER: 'document_expiry_reminder',
   
@@ -864,6 +865,38 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'user_name', description: 'User\'s full name' },
       { name: 'rejection_reason', description: 'Reason for rejection' },
       { name: 'kyc_url', description: 'Link to KYC page' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.KYC_CHANGES_REQUESTED,
+    name: 'KYC Changes Requested',
+    type: 'email' as const,
+    module: 'kyc',
+    subject: 'Action required: Updates needed for your verification',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Changes Requested</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Our compliance team has reviewed your verification submission and requires updates to the following sections:</p>
+          {{section_reasons}}
+          <p>Sections that have been approved will remain locked. You only need to update the items listed above.</p>
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Your Submission</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User full name' },
+      { name: 'section_reasons', description: 'HTML list of section-level rejection reasons' },
+      { name: 'kyc_url', description: 'Deep link to KYC resubmission page' },
     ],
     status: 'published' as const,
   },

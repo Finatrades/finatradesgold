@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, Plus, Trash2, Landmark, CreditCard } from 'lucide-react';
+import { ShieldCheck, Upload, CheckCircle2, AlertCircle, Camera, FileText, User, Building, RefreshCw, Clock, Plus, Trash2, Landmark, CreditCard, XCircle, Lock, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -92,6 +92,16 @@ const COUNTRIES = [
   { code: 'ZW', name: 'Zimbabwe' }
 ];
 
+const SECTION_LABELS: Record<string, string> = {
+  personal_information: 'Personal Information',
+  documents: 'Documents (ID, Passport, Address Proof)',
+  liveness: 'Selfie / Liveness Verification',
+  corporate_details: 'Company Information',
+  beneficial_owners: 'Beneficial Owners & Shareholding',
+  corporate_documents: 'Corporate Documents',
+  representative_liveness: 'Representative Liveness',
+};
+
 const SOURCE_OF_FUNDS_OPTIONS = [
   'Employment Income',
   'Business Income',
@@ -148,6 +158,37 @@ export default function KYC() {
   });
   
   const existingSubmission = existingKycData?.submission;
+
+  const isChangesRequested = existingSubmission?.status === 'Changes Requested';
+  const isResubmitMode = isChangesRequested && (typeof window !== 'undefined' && window.location.search.includes('resubmit=true'));
+
+  const { data: sectionReviewsData } = useQuery({
+    queryKey: ['/api/kyc/section-reviews', existingSubmission?.id],
+    queryFn: async () => {
+      if (!existingSubmission?.id) return null;
+      const res = await fetch(`/api/kyc/${existingSubmission.id}/section-reviews`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!existingSubmission?.id && (isChangesRequested || existingSubmission?.status === 'Rejected')
+  });
+
+  const sectionReviews: Array<{
+    id: string;
+    sectionName: string;
+    status: string;
+    reasonCode: string | null;
+    freeText: string | null;
+    reviewedAt: string | null;
+  }> = sectionReviewsData?.reviews || [];
+
+  const approvedSections = sectionReviews.filter(r => r.status === 'approved').map(r => r.sectionName);
+  const rejectedSections = sectionReviews.filter(r => r.status === 'rejected');
+
+  const isSectionLocked = (sectionName: string) => {
+    if (!isResubmitMode) return false;
+    return approvedSections.includes(sectionName);
+  };
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -201,6 +242,27 @@ export default function KYC() {
       setPersonalAccountType(user.accountType || 'personal');
     }
   }, [user]);
+
+  // Pre-fill from existing submission in resubmit mode
+  useEffect(() => {
+    if (isResubmitMode && existingSubmission) {
+      const pi = existingSubmission.personalInformation || existingSubmission;
+      if (pi.fullName) setPersonalFullName(pi.fullName);
+      if (pi.email) setPersonalEmail(pi.email);
+      if (pi.phone || pi.phoneNumber) setPersonalPhone(pi.phone || pi.phoneNumber || '');
+      if (pi.dateOfBirth) setPersonalDateOfBirth(pi.dateOfBirth);
+      if (pi.nationality) setPersonalNationality(pi.nationality);
+      if (pi.country) setPersonalCountry(pi.country);
+      if (pi.city) setPersonalCity(pi.city);
+      if (pi.address) setPersonalAddress(pi.address);
+      if (pi.postalCode) setPersonalPostalCode(pi.postalCode);
+      if (pi.occupation) setPersonalOccupation(pi.occupation);
+      if (pi.sourceOfFunds) setPersonalSourceOfFunds(pi.sourceOfFunds);
+      if (pi.accountType) setPersonalAccountType(pi.accountType);
+      if (existingSubmission.companyName) setCompanyName(existingSubmission.companyName);
+      if (existingSubmission.registrationNumber) setCorporateRegNumber(existingSubmission.registrationNumber);
+    }
+  }, [isResubmitMode, existingSubmission]);
 
   // Get allowed countries from server settings
   const blockedCountries = kycModeData?.blockedCountries || [];
@@ -722,11 +784,12 @@ export default function KYC() {
   }
   
   // Show status page if user has already submitted KYC
-  if (existingSubmission && ['In Progress', 'Pending Review', 'Escalated'].includes(existingSubmission.status)) {
+  if (existingSubmission && ['In Progress', 'Pending Review', 'Escalated', 'In Review'].includes(existingSubmission.status)) {
     const isCorporate = user?.accountType === 'business';
     const expectedDays = isCorporate ? '5 business days' : '24 hours';
     const statusLabel = existingSubmission.status === 'Escalated' ? 'Under Enhanced Review' 
-      : existingSubmission.status === 'Pending Review' ? 'Pending Review' 
+      : existingSubmission.status === 'Pending Review' ? 'Pending Review'
+      : existingSubmission.status === 'In Review' ? 'Under Active Review'
       : 'Under Review';
     
     return (
@@ -807,6 +870,113 @@ export default function KYC() {
     );
   }
   
+  // Show 'Changes Requested' status with section-wise reasons
+  if (existingSubmission && existingSubmission.status === 'Changes Requested' && !isResubmitMode) {
+    const isCorporate = user?.accountType === 'business';
+    
+    return (
+      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-changes-requested">
+        <div className="min-h-screen py-12 bg-background">
+          <div className="container mx-auto px-6 max-w-2xl">
+            <Card className="border-orange-200 shadow-lg">
+              <CardHeader className="text-center pb-4">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                  <AlertCircle className="w-10 h-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-orange-800" data-testid="text-kyc-status-title">Changes Requested</CardTitle>
+                <div className="flex justify-center mt-2">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                    <AlertCircle className="w-4 h-4" />
+                    Status: Changes Requested
+                  </span>
+                </div>
+                <CardDescription className="text-base mt-2">
+                  Our compliance team has reviewed your {isCorporate ? 'Corporate' : 'Personal'} KYC submission and requires updates to some sections.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {rejectedSections.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-orange-800 flex items-center gap-2">
+                      <XCircle className="w-4 h-4" />
+                      Sections Requiring Updates
+                    </h4>
+                    {rejectedSections.map((review, idx) => (
+                      <div key={review.id || idx} className="p-4 bg-red-50 rounded-lg border border-red-200" data-testid={`section-review-${review.sectionName}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <XCircle className="w-4 h-4 text-red-500" />
+                          <span className="font-medium text-red-800 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                        </div>
+                        {review.reasonCode && (
+                          <p className="text-sm text-red-700 ml-6">Reason: {review.reasonCode}</p>
+                        )}
+                        {review.freeText && (
+                          <p className="text-sm text-red-600 ml-6 mt-1">{review.freeText}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {approvedSections.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-green-800 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Approved Sections (No Changes Needed)
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {approvedSections.map((section) => (
+                        <span key={section} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
+                          <Lock className="w-3 h-3" />
+                          {SECTION_LABELS[section] || section.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {existingSubmission.rejectionReason && (
+                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                      <span className="font-semibold text-amber-800">Additional Notes</span>
+                    </div>
+                    <p className="text-sm text-amber-700">{existingSubmission.rejectionReason}</p>
+                  </div>
+                )}
+
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <RefreshCw className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-blue-800">How to Resubmit</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Click "Fix & Resubmit" below. Only the sections marked for updates will be editable. 
+                    Approved sections are locked and do not need changes.
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <Button variant="outline" onClick={() => setLocation('/dashboard')}>
+                  Return to Dashboard
+                </Button>
+                <Button 
+                  variant="default"
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={() => setLocation('/kyc?resubmit=true')}
+                  data-testid="button-fix-resubmit"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Fix & Resubmit
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show rejected status with option to resubmit
   if (existingSubmission && existingSubmission.status === 'Rejected') {
     const isCorporate = user?.accountType === 'business';
@@ -832,6 +1002,29 @@ export default function KYC() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {rejectedSections.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-red-800 flex items-center gap-2">
+                      <XCircle className="w-4 h-4" />
+                      Section-wise Rejection Details
+                    </h4>
+                    {rejectedSections.map((review, idx) => (
+                      <div key={review.id || idx} className="p-3 bg-red-50 rounded-lg border border-red-200" data-testid={`rejection-detail-${review.sectionName}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <XCircle className="w-4 h-4 text-red-500" />
+                          <span className="font-medium text-red-800 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                        </div>
+                        {review.reasonCode && (
+                          <p className="text-sm text-red-700 ml-6">Reason: {review.reasonCode}</p>
+                        )}
+                        {review.freeText && (
+                          <p className="text-sm text-red-600 ml-6 mt-1">{review.freeText}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {existingSubmission.rejectionReason && (
                   <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex items-center gap-3 mb-2">
@@ -974,7 +1167,7 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isDocumentsComplete = idFrontFile && idBackFile && passportFile && passportExpiryDate && addressProofFile;
+    const isDocumentsComplete = isSectionLocked('documents') || (idFrontFile && idBackFile && passportFile && passportExpiryDate && addressProofFile);
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -982,11 +1175,41 @@ export default function KYC() {
           <div className="container mx-auto px-6 max-w-4xl">
             
             <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Identity Verification</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {isResubmitMode ? 'Resubmit Verification' : 'Identity Verification'}
+              </h1>
               <p className="text-muted-foreground">
-                Complete your identity verification to access all features.
+                {isResubmitMode 
+                  ? 'Update the sections marked for changes and resubmit your verification.'
+                  : 'Complete your identity verification to access all features.'}
               </p>
             </div>
+
+            {isResubmitMode && rejectedSections.length > 0 && (
+              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmit-banner">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-orange-800 text-sm">Sections Requiring Updates</h4>
+                    <ul className="mt-1 space-y-1">
+                      {rejectedSections.map((review) => (
+                        <li key={review.id} className="text-sm text-orange-700 flex items-center gap-1">
+                          <XCircle className="w-3 h-3 text-red-500" />
+                          <span className="capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                          {review.freeText && <span className="text-orange-500">— {review.freeText}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    {approvedSections.length > 0 && (
+                      <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Approved sections are locked and cannot be edited.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mb-8">
               <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
@@ -1044,17 +1267,27 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           <User className="w-5 h-5" />
                           Personal Information
+                          {isSectionLocked('personal_information') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
                         </CardTitle>
-                        <CardDescription>Please provide your personal details. Some fields are pre-filled from your profile.</CardDescription>
+                        <CardDescription>
+                          {isSectionLocked('personal_information') 
+                            ? 'This section has been approved and is locked.'
+                            : 'Please provide your personal details. Some fields are pre-filled from your profile.'}
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className={`grid grid-cols-2 gap-4 ${isSectionLocked('personal_information') ? 'opacity-60 pointer-events-none' : ''}`}>
                           <div className="col-span-2">
                             <Label>Full Name <span className="text-red-500">*</span></Label>
                             <Input
                               value={personalFullName}
                               onChange={(e) => setPersonalFullName(e.target.value)}
                               placeholder="Enter your full legal name"
+                              disabled={isSectionLocked('personal_information')}
                               data-testid="input-full-name"
                             />
                           </div>
@@ -1199,10 +1432,19 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           <FileText className="w-5 h-5" />
                           Document Upload
+                          {isSectionLocked('documents') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
                         </CardTitle>
-                        <CardDescription>Upload clear photos of your identification documents.</CardDescription>
+                        <CardDescription>
+                          {isSectionLocked('documents')
+                            ? 'This section has been approved and is locked.'
+                            : 'Upload clear photos of your identification documents.'}
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-6">
+                      <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
                         {/* Format requirements notice */}
                         <div className="p-3 bg-gray-50 border rounded-lg">
                           <p className="text-sm font-medium text-gray-700">Accepted Formats:</p>
@@ -1316,8 +1558,19 @@ export default function KYC() {
                   {finatradesStep === 'liveness' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
-                        <CardTitle>Liveness Check</CardTitle>
-                        <CardDescription>We need to verify you're a real person. Follow the instructions below.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                          Liveness Check
+                          {isSectionLocked('liveness') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('liveness')
+                            ? 'This section has been approved and is locked.'
+                            : 'We need to verify you\'re a real person. Follow the instructions below.'}
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-col items-center py-6">
                          <canvas ref={canvasRef} className="hidden" />
@@ -1428,11 +1681,11 @@ export default function KYC() {
                         <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('documents'); }}>Back</Button>
                         <Button 
                           onClick={handleFinatradesPersonalSubmit}
-                          disabled={!capturedSelfie || isSubmitting}
+                          disabled={(!capturedSelfie && !isSectionLocked('liveness')) || isSubmitting}
                           className="bg-green-600 hover:bg-green-700 text-white font-bold"
                           data-testid="button-submit-kyc"
                         >
-                          {isSubmitting ? 'Submitting...' : 'Submit Verification'}
+                          {isSubmitting ? 'Submitting...' : isResubmitMode ? 'Resubmit Verification' : 'Submit Verification'}
                         </Button>
                       </CardFooter>
                     </div>
@@ -1468,11 +1721,41 @@ export default function KYC() {
           <div className="container mx-auto px-6 max-w-5xl">
             
             <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Corporate KYC Verification</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {isResubmitMode ? 'Resubmit Corporate Verification' : 'Corporate KYC Verification'}
+              </h1>
               <p className="text-muted-foreground">
-                Complete your corporate verification questionnaire.
+                {isResubmitMode 
+                  ? 'Update the sections marked for changes and resubmit your corporate verification.'
+                  : 'Complete your corporate verification questionnaire.'}
               </p>
             </div>
+
+            {isResubmitMode && rejectedSections.length > 0 && (
+              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmit-banner-corporate">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-orange-800 text-sm">Sections Requiring Updates</h4>
+                    <ul className="mt-1 space-y-1">
+                      {rejectedSections.map((review) => (
+                        <li key={review.id} className="text-sm text-orange-700 flex items-center gap-1">
+                          <XCircle className="w-3 h-3 text-red-500" />
+                          <span className="capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                          {review.freeText && <span className="text-orange-500">— {review.freeText}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    {approvedSections.length > 0 && (
+                      <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Approved sections are locked and cannot be edited.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mb-8">
               <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
@@ -1550,10 +1833,21 @@ export default function KYC() {
                   {corporateStep === 1 && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
-                        <CardTitle>Corporate Details</CardTitle>
-                        <CardDescription>Enter your company's registration and contact information.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                          Corporate Details
+                          {isSectionLocked('corporate_details') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('corporate_details')
+                            ? 'This section has been approved and is locked.'
+                            : 'Enter your company\'s registration and contact information.'}
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-6">
+                      <CardContent className={`space-y-6 ${isSectionLocked('corporate_details') ? 'opacity-60 pointer-events-none' : ''}`}>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Company Name <span className="text-red-500">*</span></Label>
@@ -1668,10 +1962,21 @@ export default function KYC() {
                   {corporateStep === 2 && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
-                        <CardTitle>Beneficial Owners & Shareholding</CardTitle>
-                        <CardDescription>List all persons with more than 25% ownership or control. Include passport details.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                          Beneficial Owners & Shareholding
+                          {isSectionLocked('beneficial_owners') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('beneficial_owners')
+                            ? 'This section has been approved and is locked.'
+                            : 'List all persons with more than 25% ownership or control. Include passport details.'}
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-6">
+                      <CardContent className={`space-y-6 ${isSectionLocked('beneficial_owners') ? 'opacity-60 pointer-events-none' : ''}`}>
                         {beneficialOwners.map((owner, index) => (
                           <div key={index} className="p-4 border rounded-lg space-y-4">
                             <div className="flex justify-between items-center">
@@ -1784,10 +2089,21 @@ export default function KYC() {
                   {corporateStep === 3 && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
-                        <CardTitle>Corporate Documents</CardTitle>
-                        <CardDescription>Upload required corporate documents. All documents should be certified copies or originals.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                          Corporate Documents
+                          {isSectionLocked('corporate_documents') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('corporate_documents')
+                            ? 'This section has been approved and is locked.'
+                            : 'Upload required corporate documents. All documents should be certified copies or originals.'}
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className={`space-y-4 ${isSectionLocked('corporate_documents') ? 'opacity-60 pointer-events-none' : ''}`}>
                         {[
                           { key: 'certificateOfIncorporation', label: 'Certificate of Incorporation', required: true },
                           { key: 'tradeLicense', label: 'Trade License / Business License', required: false },
@@ -1879,8 +2195,19 @@ export default function KYC() {
                   {corporateStep === 4 && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
-                        <CardTitle>Authorized Representative Verification</CardTitle>
-                        <CardDescription>The authorized representative must complete a liveness check to verify their identity.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                          Authorized Representative Verification
+                          {isSectionLocked('representative_liveness') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('representative_liveness')
+                            ? 'This section has been approved and is locked.'
+                            : 'The authorized representative must complete a liveness check to verify their identity.'}
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-col items-center py-6">
                          <canvas ref={canvasRef} className="hidden" />
@@ -2070,11 +2397,11 @@ export default function KYC() {
                         <Button variant="outline" onClick={() => setCorporateStep(4)}>Back</Button>
                         <Button 
                           onClick={handleFinatradesCorporateSubmit}
-                          disabled={isSubmitting || !capturedSelfie}
+                          disabled={isSubmitting || (!capturedSelfie && !isSectionLocked('representative_liveness'))}
                           className="bg-green-600 hover:bg-green-700 text-white font-bold"
                           data-testid="button-submit-corporate-kyc"
                         >
-                          {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                          {isSubmitting ? 'Submitting...' : isResubmitMode ? 'Resubmit Application' : 'Submit Application'}
                         </Button>
                       </CardFooter>
                     </div>

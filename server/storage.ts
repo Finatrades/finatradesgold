@@ -134,7 +134,12 @@ import {
   type WorkflowExpectedStep, type InsertWorkflowExpectedStep,
   userBankAccounts, userCryptoWallets,
   type UserBankAccount, type InsertUserBankAccount,
-  type UserCryptoWallet, type InsertUserCryptoWallet
+  type UserCryptoWallet, type InsertUserCryptoWallet,
+  kycSubmissionVersions, kycSectionReviews, kycReasonCodes, kycDecisionRecords,
+  type KycSubmissionVersion, type InsertKycSubmissionVersion,
+  type KycSectionReview, type InsertKycSectionReview,
+  type KycReasonCode, type InsertKycReasonCode,
+  type KycDecisionRecord, type InsertKycDecisionRecord
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -700,6 +705,18 @@ export interface IStorage {
   createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
   updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
   
+  // KYC Versioning & Section Reviews
+  createKycVersion(data: InsertKycSubmissionVersion): Promise<KycSubmissionVersion>;
+  getKycVersions(submissionId: string): Promise<KycSubmissionVersion[]>;
+  getLatestKycVersion(submissionId: string): Promise<KycSubmissionVersion | undefined>;
+  updateKycVersion(id: string, updates: Partial<KycSubmissionVersion>): Promise<KycSubmissionVersion | undefined>;
+  createKycSectionReview(data: InsertKycSectionReview): Promise<KycSectionReview>;
+  getKycSectionReviews(versionId: string): Promise<KycSectionReview[]>;
+  getKycSectionReviewsBySubmission(submissionId: string): Promise<KycSectionReview[]>;
+  createKycDecisionRecord(data: InsertKycDecisionRecord): Promise<KycDecisionRecord>;
+  getKycDecisionRecords(submissionId: string): Promise<KycDecisionRecord[]>;
+  getKycReasonCodes(): Promise<KycReasonCode[]>;
+
   // User Notifications
   getNotification(id: string): Promise<Notification | undefined>;
   getUserNotifications(userId: string): Promise<Notification[]>;
@@ -3466,6 +3483,69 @@ export class DatabaseStorage implements IStorage {
   async updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined> {
     const [kyc] = await db.update(finatradesCorporateKyc).set({ ...updates, updatedAt: new Date() }).where(eq(finatradesCorporateKyc.id, id)).returning();
     return kyc || undefined;
+  }
+
+  // ============================================
+  // KYC VERSIONING & SECTION REVIEWS
+  // ============================================
+
+  async createKycVersion(data: InsertKycSubmissionVersion): Promise<KycSubmissionVersion> {
+    const [version] = await db.insert(kycSubmissionVersions).values(data).returning();
+    return version;
+  }
+
+  async getKycVersions(submissionId: string): Promise<KycSubmissionVersion[]> {
+    return await db.select().from(kycSubmissionVersions)
+      .where(eq(kycSubmissionVersions.submissionId, submissionId))
+      .orderBy(desc(kycSubmissionVersions.versionNumber));
+  }
+
+  async getLatestKycVersion(submissionId: string): Promise<KycSubmissionVersion | undefined> {
+    const [version] = await db.select().from(kycSubmissionVersions)
+      .where(eq(kycSubmissionVersions.submissionId, submissionId))
+      .orderBy(desc(kycSubmissionVersions.versionNumber))
+      .limit(1);
+    return version || undefined;
+  }
+
+  async updateKycVersion(id: string, updates: Partial<KycSubmissionVersion>): Promise<KycSubmissionVersion | undefined> {
+    const [version] = await db.update(kycSubmissionVersions)
+      .set(updates)
+      .where(eq(kycSubmissionVersions.id, id))
+      .returning();
+    return version || undefined;
+  }
+
+  async createKycSectionReview(data: InsertKycSectionReview): Promise<KycSectionReview> {
+    const [review] = await db.insert(kycSectionReviews).values(data).returning();
+    return review;
+  }
+
+  async getKycSectionReviews(versionId: string): Promise<KycSectionReview[]> {
+    return await db.select().from(kycSectionReviews)
+      .where(eq(kycSectionReviews.versionId, versionId));
+  }
+
+  async getKycSectionReviewsBySubmission(submissionId: string): Promise<KycSectionReview[]> {
+    return await db.select().from(kycSectionReviews)
+      .where(eq(kycSectionReviews.submissionId, submissionId))
+      .orderBy(desc(kycSectionReviews.createdAt));
+  }
+
+  async createKycDecisionRecord(data: InsertKycDecisionRecord): Promise<KycDecisionRecord> {
+    const [record] = await db.insert(kycDecisionRecords).values(data).returning();
+    return record;
+  }
+
+  async getKycDecisionRecords(submissionId: string): Promise<KycDecisionRecord[]> {
+    return await db.select().from(kycDecisionRecords)
+      .where(eq(kycDecisionRecords.submissionId, submissionId))
+      .orderBy(desc(kycDecisionRecords.decidedAt));
+  }
+
+  async getKycReasonCodes(): Promise<KycReasonCode[]> {
+    return await db.select().from(kycReasonCodes)
+      .where(eq(kycReasonCodes.isActive, true));
   }
 
   // ============================================

@@ -5267,8 +5267,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No KYC submission found" });
       }
 
-      if (existingSubmission.status !== 'Rejected') {
-        return res.status(400).json({ message: "Only rejected KYC submissions can be reset" });
+      if (existingSubmission.status !== 'Rejected' && existingSubmission.status !== 'Changes Requested') {
+        return res.status(400).json({ message: "Only rejected or changes-requested KYC submissions can be reset" });
       }
 
       await storage.deleteKycSubmission(existingSubmission.id);
@@ -5301,29 +5301,28 @@ export async function registerRoutes(
     }
   });
   
-  // Update KYC status (Admin) - handles both kycAml and Finatrades personal KYC
+  // Update KYC status (Admin) - handles kycAml, Finatrades personal, and corporate KYC
   app.patch("/api/kyc/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const updates = { ...req.body };
+      const adminUser = (req as any).adminUser;
       
-      // Convert reviewedAt string to Date if provided
       if (updates.reviewedAt && typeof updates.reviewedAt === 'string') {
         updates.reviewedAt = new Date(updates.reviewedAt);
       }
+
+      const { sectionReviews: sectionReviewsInput, decisionNotes, ...dbUpdates } = updates;
       
-      // Try kycAml table first
-      let submission: any = await storage.updateKycSubmission(req.params.id, updates);
+      let submission: any = await storage.updateKycSubmission(req.params.id, dbUpdates);
       let kycType = 'kycAml';
       
-      // If not found in kycAml, try Finatrades personal KYC table
       if (!submission) {
-        submission = await storage.updateFinatradesPersonalKyc(req.params.id, updates);
+        submission = await storage.updateFinatradesPersonalKyc(req.params.id, dbUpdates);
         kycType = 'finatrades_personal';
       }
       
-      // If not found in personal, try Finatrades corporate KYC table
       if (!submission) {
-        submission = await storage.updateFinatradesCorporateKyc(req.params.id, updates);
+        submission = await storage.updateFinatradesCorporateKyc(req.params.id, dbUpdates);
         kycType = 'finatrades_corporate';
       }
       
@@ -5331,13 +5330,46 @@ export async function registerRoutes(
         return res.status(404).json({ message: "KYC submission not found" });
       }
       
-      // Update user KYC status and send notification email
       if (req.body.status) {
-        await storage.updateUser(submission.userId, {
-          kycStatus: req.body.status,
-        });
+        await storage.updateUser(submission.userId, { kycStatus: req.body.status });
+
+        const latestVersion = await storage.getLatestKycVersion(req.params.id);
+
+        if (latestVersion && (req.body.status === 'Approved' || req.body.status === 'Rejected' || req.body.status === 'Changes Requested')) {
+          const versionStatus = req.body.status === 'Approved' ? 'approved' : req.body.status === 'Rejected' ? 'rejected' : 'changes_requested';
+          await storage.updateKycVersion(latestVersion.id, {
+            status: versionStatus as any,
+            lockedAt: new Date(),
+          });
+
+          if (Array.isArray(sectionReviewsInput) && sectionReviewsInput.length > 0) {
+            for (const sr of sectionReviewsInput) {
+              await storage.createKycSectionReview({
+                versionId: latestVersion.id,
+                submissionId: req.params.id,
+                sectionName: sr.section,
+                status: sr.status,
+                reasonCode: sr.reasonCode || null,
+                freeText: sr.freeText || null,
+                reviewedBy: adminUser?.id || 'admin',
+                reviewedAt: new Date(),
+              });
+            }
+          }
+
+          await storage.createKycDecisionRecord({
+            versionId: latestVersion.id,
+            submissionId: req.params.id,
+            userId: submission.userId,
+            decision: req.body.status,
+            decidedBy: adminUser?.id || 'admin',
+            decidedByName: adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin',
+            notes: decisionNotes || req.body.rejectionReason || null,
+            sectionReviews: sectionReviewsInput || null,
+            decidedAt: new Date(),
+          });
+        }
         
-        // Send email notification based on status
         const user = await storage.getUser(submission.userId);
         let emailSent = false;
         if (user) {
@@ -5349,7 +5381,6 @@ export async function registerRoutes(
             });
             emailSent = emailResult.success;
             
-            // Create in-app notification for KYC approval
             await storage.createNotification({
               userId: submission.userId,
               title: 'KYC Approved',
@@ -5359,37 +5390,59 @@ export async function registerRoutes(
               read: false,
             });
 
-            // Sync KYC approval to Wingold (non-blocking)
             WingoldUserSyncService.onKycApproved(submission.userId).catch(err => console.error("[WingoldSync] KYC approval sync failed:", err));
 
-            // Issue Verifiable Credential on KYC approval (non-blocking)
             credentialIssuer.issueKycCredential(user).then(credential => {
               console.log("[VC] Verifiable credential issued on KYC approval for user:", submission.userId, "credentialId:", credential?.credentialId);
             }).catch(err => console.error("[VC] Failed to issue verifiable credential on KYC approval:", err));
           } else if (req.body.status === 'Rejected') {
+            const rejectionSummary = Array.isArray(sectionReviewsInput)
+              ? sectionReviewsInput.filter((s: any) => s.status === 'rejected').map((s: any) => `${s.section}: ${s.freeText || s.reasonCode || 'Not specified'}`).join('; ')
+              : req.body.rejectionReason || 'Documents could not be verified';
+
             const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_REJECTED, {
               user_name: `${user.firstName} ${user.lastName}`,
-              rejection_reason: req.body.rejectionReason || 'Documents could not be verified',
+              rejection_reason: rejectionSummary,
               kyc_url: `${baseUrl}/kyc`,
             });
             emailSent = emailResult.success;
             
-            // Create in-app notification for KYC rejection
             await storage.createNotification({
               userId: submission.userId,
               title: 'KYC Rejected',
-              message: req.body.rejectionReason || 'Your verification documents could not be verified. Please resubmit with valid documents.',
+              message: rejectionSummary,
               type: 'error',
               link: '/kyc',
               read: false,
             });
 
-            // Sync KYC rejection to Wingold (non-blocking)
             WingoldUserSyncService.onKycRejected(submission.userId).catch(err => console.error("[WingoldSync] KYC rejection sync failed:", err));
+          } else if (req.body.status === 'Changes Requested') {
+            const rejectedSections = Array.isArray(sectionReviewsInput)
+              ? sectionReviewsInput.filter((s: any) => s.status === 'rejected')
+              : [];
+            const sectionReasonsHtml = rejectedSections.length > 0
+              ? `<ul style="margin: 15px 0; padding-left: 20px;">${rejectedSections.map((s: any) => `<li style="margin-bottom: 8px;"><strong>${s.section}:</strong> ${s.freeText || s.reasonCode || 'Update required'}</li>`).join('')}</ul>`
+              : '<p>Please review your submission for required updates.</p>';
+
+            const emailResult = await sendEmail(user.email, EMAIL_TEMPLATES.KYC_CHANGES_REQUESTED, {
+              user_name: `${user.firstName} ${user.lastName}`,
+              section_reasons: sectionReasonsHtml,
+              kyc_url: `${baseUrl}/kyc?resubmit=true`,
+            });
+            emailSent = emailResult.success;
+
+            await storage.createNotification({
+              userId: submission.userId,
+              title: 'KYC Changes Requested',
+              message: 'Our compliance team has reviewed your submission and requires updates to some sections. Please check your KYC page for details.',
+              type: 'warning',
+              link: '/kyc?resubmit=true',
+              read: false,
+            });
           }
         }
         
-        // Include email status in response for admin visibility
         return res.json({ submission, emailSent, kycType });
       }
       
@@ -5400,7 +5453,143 @@ export async function registerRoutes(
       res.status(400).json({ message });
     }
   });
-  
+
+  // Get KYC reason codes (public for frontend use)
+  app.get("/api/kyc/reason-codes", ensureAuthenticated, async (_req, res) => {
+    try {
+      const codes = await storage.getKycReasonCodes();
+      res.json({ reasonCodes: codes });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reason codes" });
+    }
+  });
+
+  // Get KYC version history (Admin)
+  app.get("/api/admin/kyc/:id/versions", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    try {
+      const versions = await storage.getKycVersions(req.params.id);
+      res.json({ versions });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch KYC versions" });
+    }
+  });
+
+  // Get KYC section reviews for latest version (Admin + User)
+  app.get("/api/kyc/:id/section-reviews", ensureAuthenticated, async (req, res) => {
+    try {
+      const latestVersion = await storage.getLatestKycVersion(req.params.id);
+      if (!latestVersion) {
+        return res.json({ reviews: [] });
+      }
+      const reviews = await storage.getKycSectionReviews(latestVersion.id);
+      res.json({ reviews });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch section reviews" });
+    }
+  });
+
+  // Get KYC decision records (Admin)
+  app.get("/api/admin/kyc/:id/decisions", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
+    try {
+      const decisions = await storage.getKycDecisionRecords(req.params.id);
+      res.json({ decisions });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch decision records" });
+    }
+  });
+
+  // Claim KYC review (Admin)
+  app.post("/api/admin/kyc/:id/claim", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      let submission: any = await storage.updateKycSubmission(req.params.id, {
+        status: 'In Review',
+        reviewedBy: adminUser?.id || 'admin',
+      });
+      let kycType = 'kycAml';
+
+      if (!submission) {
+        submission = await storage.updateFinatradesPersonalKyc(req.params.id, {
+          status: 'In Review',
+          reviewedBy: adminUser?.id || 'admin',
+        });
+        kycType = 'finatrades_personal';
+      }
+      if (!submission) {
+        submission = await storage.updateFinatradesCorporateKyc(req.params.id, {
+          status: 'In Review',
+          reviewedBy: adminUser?.id || 'admin',
+        });
+        kycType = 'finatrades_corporate';
+      }
+
+      if (!submission) {
+        return res.status(404).json({ message: "KYC submission not found" });
+      }
+
+      await storage.updateUser(submission.userId, { kycStatus: 'In Review' });
+
+      const latestVersion = await storage.getLatestKycVersion(req.params.id);
+      if (latestVersion) {
+        await storage.updateKycVersion(latestVersion.id, { status: 'in_review' as any });
+      }
+
+      await storage.createAuditLog({
+        entityType: "kyc",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: adminUser?.id || "admin",
+        actorRole: "admin",
+        details: `KYC review claimed by ${adminUser?.firstName || 'admin'} ${adminUser?.lastName || ''}`,
+      });
+
+      res.json({ submission, kycType, message: "Review claimed successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to claim review" });
+    }
+  });
+
+  // Release KYC review (Admin)
+  app.post("/api/admin/kyc/:id/release", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
+    try {
+      let submission: any = await storage.updateKycSubmission(req.params.id, {
+        status: 'Pending Review',
+        reviewedBy: null,
+      });
+      let kycType = 'kycAml';
+
+      if (!submission) {
+        submission = await storage.updateFinatradesPersonalKyc(req.params.id, {
+          status: 'Pending Review',
+          reviewedBy: null,
+        });
+        kycType = 'finatrades_personal';
+      }
+      if (!submission) {
+        submission = await storage.updateFinatradesCorporateKyc(req.params.id, {
+          status: 'Pending Review',
+          reviewedBy: null,
+        });
+        kycType = 'finatrades_corporate';
+      }
+
+      if (!submission) {
+        return res.status(404).json({ message: "KYC submission not found" });
+      }
+
+      await storage.updateUser(submission.userId, { kycStatus: 'Pending Review' });
+
+      const latestVersion = await storage.getLatestKycVersion(req.params.id);
+      if (latestVersion) {
+        await storage.updateKycVersion(latestVersion.id, { status: 'submitted' as any });
+      }
+
+      res.json({ submission, kycType, message: "Review released" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to release review" });
+    }
+  });
+
   // Simple test endpoint to verify admin access
   app.get("/api/admin/kyc-test", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     return res.json({ success: true, message: "Admin KYC test endpoint works", timestamp: new Date().toISOString() });
@@ -20536,45 +20725,58 @@ export async function registerRoutes(
         status: 'In Progress' as const,
       };
       
-      // Check if already has a submission
       const existing = await storage.getFinatradesPersonalKyc(userId);
       
       if (existing) {
-        // Update existing submission
-        const updated = await storage.updateFinatradesPersonalKyc(userId, kycData);
+        const updated = await storage.updateFinatradesPersonalKyc(existing.id, kycData);
+        await storage.updateUser(userId, { kycStatus: 'Pending Review' });
+
+        const versions = await storage.getKycVersions(existing.id);
+        const nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+        await storage.createKycVersion({
+          submissionId: existing.id,
+          userId,
+          kycType: 'finatrades_personal',
+          versionNumber: nextVersion,
+          snapshot: kycData as any,
+          status: 'submitted',
+          submittedAt: new Date(),
+        });
+
+        if (existing.status === 'Changes Requested' || existing.status === 'Rejected') {
+          await storage.updateFinatradesPersonalKyc(existing.id, { status: 'Pending Review' as any });
+        }
         
-        // Update user's KYC status
-        await storage.updateUser(userId, { kycStatus: 'In Progress' });
-        
-        // Notify all admins of KYC update
         notifyAllAdmins({
-          title: 'KYC Updated',
-          message: `${user.firstName} ${user.lastName} updated their personal KYC submission`,
+          title: nextVersion > 1 ? 'KYC Resubmission' : 'KYC Updated',
+          message: `${user.firstName} ${user.lastName} ${nextVersion > 1 ? 'resubmitted' : 'updated'} their personal KYC (v${nextVersion})`,
           type: 'info',
           link: '/admin/kyc',
         });
-        
 
-
-      res.json({ success: true, submission: updated });
+        res.json({ success: true, submission: updated });
       } else {
-        // Create new submission
         const submission = await storage.createFinatradesPersonalKyc(kycData);
+        await storage.updateUser(userId, { kycStatus: 'Pending Review' });
+
+        await storage.createKycVersion({
+          submissionId: submission.id,
+          userId,
+          kycType: 'finatrades_personal',
+          versionNumber: 1,
+          snapshot: kycData as any,
+          status: 'submitted',
+          submittedAt: new Date(),
+        });
         
-        // Update user's KYC status
-        await storage.updateUser(userId, { kycStatus: 'In Progress' });
-        
-        // Notify all admins of new KYC submission
         notifyAllAdmins({
           title: 'New KYC Submission',
           message: `${user.firstName} ${user.lastName} submitted personal KYC documents for review`,
           type: 'info',
           link: '/admin/kyc',
         });
-        
 
-
-      res.json({ success: true, submission });
+        res.json({ success: true, submission });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades personal KYC:", error);
@@ -20670,48 +20872,61 @@ export async function registerRoutes(
         status: status || 'In Progress',
       };
       
-      // Check if already has a submission
       const existing = await storage.getFinatradesCorporateKyc(userId);
       
       if (existing) {
-        // Update existing submission
         const updated = await storage.updateFinatradesCorporateKyc(existing.id, kycData);
-        
-        // Update user's KYC status and account type to business
-        await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
-        
-        // Notify all admins of corporate KYC update
+        await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
+
+        const versions = await storage.getKycVersions(existing.id);
+        const nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+        await storage.createKycVersion({
+          submissionId: existing.id,
+          userId,
+          kycType: 'finatrades_corporate',
+          versionNumber: nextVersion,
+          snapshot: kycData as any,
+          status: 'submitted',
+          submittedAt: new Date(),
+        });
+
+        if (existing.status === 'Changes Requested' || existing.status === 'Rejected') {
+          await storage.updateFinatradesCorporateKyc(existing.id, { status: 'Pending Review' as any });
+        }
+
         notifyAllAdmins({
-          title: 'Corporate KYC Updated',
-          message: `${companyName || user.firstName} updated their corporate KYC submission`,
+          title: nextVersion > 1 ? 'Corporate KYC Resubmission' : 'Corporate KYC Updated',
+          message: `${companyName || user.firstName} ${nextVersion > 1 ? 'resubmitted' : 'updated'} their corporate KYC (v${nextVersion})`,
           type: 'info',
           link: '/admin/kyc',
         });
-        
 
-
-      res.json({ success: true, submission: updated });
+        res.json({ success: true, submission: updated });
       } else {
-        // Create new submission
         const submission = await storage.createFinatradesCorporateKyc({
           userId,
           ...kycData,
         });
-        
-        // Update user's KYC status and account type to business
-        await storage.updateUser(userId, { kycStatus: 'In Progress', accountType: 'business' });
-        
-        // Notify all admins of new corporate KYC submission
+        await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
+
+        await storage.createKycVersion({
+          submissionId: submission.id,
+          userId,
+          kycType: 'finatrades_corporate',
+          versionNumber: 1,
+          snapshot: kycData as any,
+          status: 'submitted',
+          submittedAt: new Date(),
+        });
+
         notifyAllAdmins({
           title: 'New Corporate KYC',
           message: `${companyName || user.firstName} submitted corporate KYC documents for review`,
           type: 'info',
           link: '/admin/kyc',
         });
-        
 
-
-      res.json({ success: true, submission });
+        res.json({ success: true, submission });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades corporate KYC:", error);

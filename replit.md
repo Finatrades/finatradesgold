@@ -77,8 +77,18 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - **Legacy Mapping**: `LEGACY_PERM_TO_COMPONENT` in `rbac-middleware.ts` maps old permission strings (e.g., `view_users`) to new component-based system.
 - **Mounted Routers**: `adminVaultExposureRoutes` and `unifiedTallyRoutes` are protected at mount point with `ensureAdminAsync` + `requirePermission('view_vault', 'manage_vault')`.
 
-**KYC System:**
+**KYC System (March 2026):**
 Supports `kycAml` (tiered verification) and `Finatrades` (personal info + documents + liveness) modes, configurable via admin settings.
+- **Status Flow**: Not Started → In Progress → Pending Review → In Review → Approved / Changes Requested / Rejected / Escalated
+- **Versioned Submissions**: Every submit/resubmit creates an immutable version snapshot in `kyc_submission_versions`. Version history preserved for audit.
+- **Section-wise Review**: Admin can approve/reject individual sections (personal_information, documents, liveness, corporate_details, beneficial_owners, corporate_documents, representative_liveness). Rejected sections require a reason code + optional free text.
+- **Section Locking**: On resubmit, approved sections are locked (read-only); only rejected sections are editable.
+- **Reason Codes**: Seeded reference table `kyc_reason_codes` with 22 codes across categories: documents, personal_info, liveness, compliance, corporate, general.
+- **Decision Records**: Every approve/reject/changes_requested decision logged in `kyc_decision_records` with reviewer info, section reviews, and notes.
+- **Email Notifications**: `kyc_changes_requested` template sends section-wise rejection reasons with deep link to resubmit.
+- **Admin Claim/Release**: Admin can claim review (sets status to "In Review") and release it back to queue.
+- **New DB Tables**: `kyc_submission_versions`, `kyc_section_reviews`, `kyc_reason_codes`, `kyc_decision_records`
+- **New Enums**: `kyc_version_status` (draft/submitted/in_review/changes_requested/approved/rejected), `kyc_section_status` (pending/approved/rejected)
 
 **Custom Finatrades ID System (January 2026):**
 - Users can set a personalized Finatrades ID (format: FT-YOURNAME, 4-15 alphanumeric characters)

@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { AlertTriangle, ShieldCheck, ArrowRight, X } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, ArrowRight, X, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -45,6 +45,36 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           buttonText: 'Re-submit',
           canDismiss: false
         };
+      case 'Changes Requested':
+        return {
+          icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
+          title: 'Changes Requested',
+          message: 'Our compliance team requires updates to some sections of your KYC submission. Please review and resubmit.',
+          bgColor: 'bg-orange-50',
+          borderColor: 'border-orange-200',
+          buttonText: 'Fix & Resubmit',
+          canDismiss: false
+        };
+      case 'In Review':
+        return {
+          icon: <Clock className="w-5 h-5 text-indigo-500" />,
+          title: 'Under Active Review',
+          message: 'A compliance officer is currently reviewing your KYC submission.',
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200',
+          buttonText: 'Check Status',
+          canDismiss: true
+        };
+      case 'Pending Review':
+        return {
+          icon: <Clock className="w-5 h-5 text-blue-500" />,
+          title: 'Pending Review',
+          message: 'Your KYC submission is in the review queue. You will be notified once reviewed.',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
+          buttonText: 'Check Status',
+          canDismiss: true
+        };
       default:
         return null;
     }
@@ -71,7 +101,7 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/kyc">
+          <Link href={kycStatus === 'Changes Requested' ? '/kyc?resubmit=true' : '/kyc'}>
             <Button 
               size="sm" 
               className="bg-primary hover:bg-primary/90 text-primary-foreground"

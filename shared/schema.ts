@@ -10,7 +10,7 @@ import { z } from "zod";
 // ENUMS
 // ============================================
 
-export const kycStatusEnum = pgEnum('kyc_status', ['Not Started', 'In Progress', 'Approved', 'Rejected', 'Escalated', 'Pending Review']);
+export const kycStatusEnum = pgEnum('kyc_status', ['Not Started', 'In Progress', 'Approved', 'Rejected', 'Escalated', 'Pending Review', 'Changes Requested', 'In Review']);
 export const kycTierEnum = pgEnum('kyc_tier', ['tier_1_basic', 'tier_2_enhanced', 'tier_3_corporate']);
 export const accountTypeEnum = pgEnum('account_type', ['personal', 'business']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
@@ -901,6 +901,96 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
 export const insertFinatradesPersonalKycSchema = createInsertSchema(finatradesPersonalKyc).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertFinatradesPersonalKyc = z.infer<typeof insertFinatradesPersonalKycSchema>;
 export type FinatradesPersonalKyc = typeof finatradesPersonalKyc.$inferSelect;
+
+// ============================================
+// KYC SUBMISSION VERSIONING
+// ============================================
+
+export const kycVersionStatusEnum = pgEnum('kyc_version_status', ['draft', 'submitted', 'in_review', 'changes_requested', 'approved', 'rejected']);
+
+export const kycSubmissionVersions = pgTable("kyc_submission_versions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  kycType: varchar("kyc_type", { length: 50 }).notNull(),
+  versionNumber: integer("version_number").notNull().default(1),
+  snapshot: json("snapshot").$type<Record<string, any>>(),
+  status: kycVersionStatusEnum("status").notNull().default('submitted'),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  lockedAt: timestamp("locked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertKycSubmissionVersionSchema = createInsertSchema(kycSubmissionVersions).omit({ id: true, createdAt: true });
+export type InsertKycSubmissionVersion = z.infer<typeof insertKycSubmissionVersionSchema>;
+export type KycSubmissionVersion = typeof kycSubmissionVersions.$inferSelect;
+
+// ============================================
+// KYC SECTION REVIEWS (per-section rejection reasons)
+// ============================================
+
+export const kycSectionStatusEnum = pgEnum('kyc_section_status', ['pending', 'approved', 'rejected']);
+
+export const kycSectionReviews = pgTable("kyc_section_reviews", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id", { length: 255 }).notNull().references(() => kycSubmissionVersions.id),
+  submissionId: varchar("submission_id", { length: 255 }).notNull(),
+  sectionName: varchar("section_name", { length: 100 }).notNull(),
+  status: kycSectionStatusEnum("status").notNull().default('pending'),
+  reasonCode: varchar("reason_code", { length: 50 }),
+  freeText: text("free_text"),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertKycSectionReviewSchema = createInsertSchema(kycSectionReviews).omit({ id: true, createdAt: true });
+export type InsertKycSectionReview = z.infer<typeof insertKycSectionReviewSchema>;
+export type KycSectionReview = typeof kycSectionReviews.$inferSelect;
+
+// ============================================
+// KYC REASON CODES (reference data)
+// ============================================
+
+export const kycReasonCodes = pgTable("kyc_reason_codes", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  label: varchar("label", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertKycReasonCodeSchema = createInsertSchema(kycReasonCodes).omit({ id: true, createdAt: true });
+export type InsertKycReasonCode = z.infer<typeof insertKycReasonCodeSchema>;
+export type KycReasonCode = typeof kycReasonCodes.$inferSelect;
+
+// ============================================
+// KYC DECISION RECORDS (audit trail for decisions)
+// ============================================
+
+export const kycDecisionRecords = pgTable("kyc_decision_records", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  versionId: varchar("version_id", { length: 255 }).notNull().references(() => kycSubmissionVersions.id),
+  submissionId: varchar("submission_id", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  decision: varchar("decision", { length: 50 }).notNull(),
+  decidedBy: varchar("decided_by", { length: 255 }).notNull(),
+  decidedByName: varchar("decided_by_name", { length: 255 }),
+  notes: text("notes"),
+  sectionReviews: json("section_reviews").$type<Array<{
+    section: string;
+    status: string;
+    reasonCode?: string;
+    freeText?: string;
+  }>>(),
+  decidedAt: timestamp("decided_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertKycDecisionRecordSchema = createInsertSchema(kycDecisionRecords).omit({ id: true, createdAt: true });
+export type InsertKycDecisionRecord = z.infer<typeof insertKycDecisionRecordSchema>;
+export type KycDecisionRecord = typeof kycDecisionRecords.$inferSelect;
 
 // ============================================
 // FINAPAY - WALLETS & TRANSACTIONS
