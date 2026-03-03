@@ -1756,18 +1756,8 @@ export default function KYCReview() {
                       </div>
                       {sr.status === 'rejected' && (
                         <div className="space-y-2 mt-2">
-                          <Select value={sr.reasonCode} onValueChange={(val) => updateSectionReview(idx, 'reasonCode', val)}>
-                            <SelectTrigger className="h-8 text-xs" data-testid={`select-reason-code-${idx}`}>
-                              <SelectValue placeholder="Select reason code..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {reasonCodes.map((rc: any) => (
-                                <SelectItem key={rc.code} value={rc.code}>{rc.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                           <Textarea
-                            placeholder="Additional details (optional)..."
+                            placeholder="Rejection notes (required)..."
                             value={sr.freeText}
                             onChange={(e) => updateSectionReview(idx, 'freeText', e.target.value)}
                             className="min-h-[60px] text-xs"
@@ -1800,12 +1790,12 @@ export default function KYCReview() {
                       setShowRejectDialog(true);
                     } else {
                       const rejectedSections = sectionReviews.filter(sr => sr.status === 'rejected');
-                      const missingReason = rejectedSections.some(sr => !sr.reasonCode);
-                      if (missingReason) {
-                        toast.error('Please select a reason code for all rejected sections');
+                      const missingNotes = rejectedSections.some(sr => !sr.freeText?.trim());
+                      if (missingNotes) {
+                        toast.error('Please add rejection notes for all rejected sections');
                         return;
                       }
-                      const reason = rejectedSections.map(sr => `${SECTION_LABELS[sr.section] || sr.section}: ${sr.freeText || sr.reasonCode}`).join('; ');
+                      const reason = rejectedSections.map(sr => `${SECTION_LABELS[sr.section] || sr.section}: ${sr.freeText}`).join('; ');
                       setRejectionReason(reason);
                       performRejection(selectedApplication.id, reason);
                     }
