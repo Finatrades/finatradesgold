@@ -691,6 +691,7 @@ export interface IStorage {
   getAllFinatradesPersonalKyc(): Promise<FinatradesPersonalKyc[]>;
   createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc>;
   updateFinatradesPersonalKyc(id: string, updates: Partial<FinatradesPersonalKyc>): Promise<FinatradesPersonalKyc | undefined>;
+  deleteFinatradesPersonalKyc(id: string): Promise<boolean>;
   
   // Finatrades Corporate KYC
   getFinatradesCorporateKyc(userId: string): Promise<FinatradesCorporateKyc | undefined>;
@@ -699,6 +700,7 @@ export interface IStorage {
   getAllFinatradesCorporateKyc(): Promise<FinatradesCorporateKyc[]>;
   createFinatradesCorporateKyc(kyc: InsertFinatradesCorporateKyc): Promise<FinatradesCorporateKyc>;
   updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined>;
+  deleteFinatradesCorporateKyc(id: string): Promise<boolean>;
   
   // User Notifications
   getNotification(id: string): Promise<Notification | undefined>;
@@ -3407,6 +3409,11 @@ export class DatabaseStorage implements IStorage {
     return kyc || undefined;
   }
 
+  async deleteFinatradesPersonalKyc(id: string): Promise<boolean> {
+    const result = await db.delete(finatradesPersonalKyc).where(eq(finatradesPersonalKyc.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   // ============================================
   // FINATRADES CORPORATE KYC
   // ============================================
@@ -3466,6 +3473,11 @@ export class DatabaseStorage implements IStorage {
   async updateFinatradesCorporateKyc(id: string, updates: Partial<FinatradesCorporateKyc>): Promise<FinatradesCorporateKyc | undefined> {
     const [kyc] = await db.update(finatradesCorporateKyc).set({ ...updates, updatedAt: new Date() }).where(eq(finatradesCorporateKyc.id, id)).returning();
     return kyc || undefined;
+  }
+
+  async deleteFinatradesCorporateKyc(id: string): Promise<boolean> {
+    const result = await db.delete(finatradesCorporateKyc).where(eq(finatradesCorporateKyc.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // ============================================
