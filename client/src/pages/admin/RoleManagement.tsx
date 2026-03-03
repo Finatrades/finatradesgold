@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,10 +73,24 @@ interface AssignedUser {
 
 export default function RoleManagement() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedRole, setSelectedRole] = useState<AdminRole | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState({ name: "", description: "", department: "", riskLevel: "Low" });
+
+  const { data: rbacPermissions } = useQuery({
+    queryKey: ['/api/admin/rbac/my-permissions'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/rbac/my-permissions');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isSuperAdmin = rbacPermissions?.isSuperAdmin === true;
+  const isSystemRoleLocked = (role: AdminRole) => role.is_system && !isSuperAdmin;
 
   const { data: rolesData, isLoading: rolesLoading } = useQuery({
     queryKey: ["admin-roles"],
@@ -368,24 +383,26 @@ export default function RoleManagement() {
                   </CardTitle>
                   <CardDescription>{selectedRole.description || "No description"}</CardDescription>
                 </div>
-                {!selectedRole.is_system && (
+                {!isSystemRoleLocked(selectedRole) && (
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                       <Pencil className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm("Delete this role? Users with this role will lose access.")) {
-                          deleteRoleMutation.mutate(selectedRole.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
+                    {!selectedRole.is_system && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Delete this role? Users with this role will lose access.")) {
+                            deleteRoleMutation.mutate(selectedRole.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardHeader>
@@ -424,28 +441,28 @@ export default function RoleManagement() {
                                     <TableRow key={comp.id}>
                                       <TableCell className="font-medium">{comp.name}</TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_view || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canView", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_view || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canView", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_create || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canCreate", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_create || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canCreate", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_edit || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canEdit", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_edit || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canEdit", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_approve_l1 || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveL1", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_approve_l1 || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveL1", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_approve_final || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveFinal", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_approve_final || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canApproveFinal", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_reject || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canReject", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_reject || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canReject", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_export || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canExport", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_export || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canExport", !!v)} />
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Checkbox checked={selectedRole.is_system || perm?.can_delete || false} disabled={selectedRole.is_system} onCheckedChange={(v) => handlePermissionChange(comp.id, "canDelete", !!v)} />
+                                        <Checkbox checked={isSystemRoleLocked(selectedRole) || perm?.can_delete || false} disabled={isSystemRoleLocked(selectedRole)} onCheckedChange={(v) => handlePermissionChange(comp.id, "canDelete", !!v)} />
                                       </TableCell>
                                     </TableRow>
                                   );
