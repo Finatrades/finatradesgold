@@ -591,6 +591,7 @@ export default function KYC() {
       });
       
       clearKycDraft();
+      queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
       toast.success("KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
@@ -669,6 +670,7 @@ export default function KYC() {
       });
       
       clearKycDraft();
+      queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
       toast.success("Corporate KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
@@ -720,12 +722,15 @@ export default function KYC() {
   }
   
   // Show status page if user has already submitted KYC
-  if (existingSubmission && ['In Progress', 'Pending Review'].includes(existingSubmission.status)) {
+  if (existingSubmission && ['In Progress', 'Pending Review', 'Escalated'].includes(existingSubmission.status)) {
     const isCorporate = user?.accountType === 'business';
     const expectedDays = isCorporate ? '5 business days' : '24 hours';
+    const statusLabel = existingSubmission.status === 'Escalated' ? 'Under Enhanced Review' 
+      : existingSubmission.status === 'Pending Review' ? 'Pending Review' 
+      : 'Under Review';
     
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-in-progress">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-green-200 shadow-lg">
@@ -733,12 +738,19 @@ export default function KYC() {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                   <Clock className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-green-800">Verification In Progress</CardTitle>
+                <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-status-title">Verification {statusLabel}</CardTitle>
                 <CardDescription className="text-base">
-                  Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been submitted and is under review.
+                  Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been submitted and is currently being reviewed.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="flex justify-center">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 text-amber-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                    <Clock className="w-4 h-4" />
+                    Status: {statusLabel}
+                  </span>
+                </div>
+
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center gap-3 mb-2">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -772,7 +784,7 @@ export default function KYC() {
                 </div>
                 
                 {existingSubmission.createdAt && (
-                  <div className="text-center text-sm text-muted-foreground">
+                  <div className="text-center text-sm text-muted-foreground" data-testid="text-kyc-submitted-date">
                     Submitted on: {new Date(existingSubmission.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -784,7 +796,7 @@ export default function KYC() {
                 )}
               </CardContent>
               <CardFooter className="flex justify-center pt-4">
-                <Button variant="outline" onClick={() => setLocation('/dashboard')}>
+                <Button variant="outline" onClick={() => setLocation('/dashboard')} data-testid="button-return-dashboard">
                   Return to Dashboard
                 </Button>
               </CardFooter>
@@ -800,7 +812,7 @@ export default function KYC() {
     const isCorporate = user?.accountType === 'business';
     
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-rejected">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-red-200 shadow-lg">
@@ -808,8 +820,14 @@ export default function KYC() {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
                   <AlertCircle className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-red-800">Verification Rejected</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="text-2xl text-red-800" data-testid="text-kyc-status-title">Verification Rejected</CardTitle>
+                <div className="flex justify-center mt-2">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                    <AlertCircle className="w-4 h-4" />
+                    Status: Rejected
+                  </span>
+                </div>
+                <CardDescription className="text-base mt-2">
                   Unfortunately, your {isCorporate ? 'Corporate' : 'Personal'} KYC verification was not approved.
                 </CardDescription>
               </CardHeader>
@@ -890,7 +908,7 @@ export default function KYC() {
     const isCorporate = user?.accountType === 'business';
     
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-approved">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-green-200 shadow-lg">
@@ -898,8 +916,14 @@ export default function KYC() {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-green-800">Verification Approved</CardTitle>
-                <CardDescription className="text-base">
+                <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-status-title">Verification Approved</CardTitle>
+                <div className="flex justify-center mt-2">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Status: Approved
+                  </span>
+                </div>
+                <CardDescription className="text-base mt-2">
                   Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been approved.
                 </CardDescription>
               </CardHeader>
@@ -913,9 +937,21 @@ export default function KYC() {
                     All platform features have been unlocked. You can now access all trading and financial services.
                   </p>
                 </div>
+
+                {existingSubmission.reviewedAt && (
+                  <div className="text-center text-sm text-muted-foreground" data-testid="text-kyc-reviewed-date">
+                    Approved on: {new Date(existingSubmission.reviewedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="flex justify-center pt-4">
-                <Button variant="default" onClick={() => setLocation('/dashboard')}>
+                <Button variant="default" onClick={() => setLocation('/dashboard')} data-testid="button-go-to-dashboard">
                   Go to Dashboard
                 </Button>
               </CardFooter>
