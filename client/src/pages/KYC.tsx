@@ -202,49 +202,6 @@ export default function KYC() {
     }
   }, [user]);
 
-  // Auto-save KYC draft to localStorage
-  useEffect(() => {
-    if (!user?.id) return;
-    const debounceTimer = setTimeout(() => {
-      try {
-        const draft = {
-          finatradesStep,
-          personalFullName, personalEmail, personalPhone, personalCountry,
-          personalCity, personalAddress, personalPostalCode, personalNationality,
-          personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-          passportExpiryDate,
-          corporateStep, companyName, corporateRegNumber, incorporationDate,
-          countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
-          headOfficeAddress, telephoneNumber, website, emailAddress,
-          tradingContactName, tradingContactEmail, tradingContactPhone,
-          financeContactName, financeContactEmail, financeContactPhone,
-          beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-          tradeLicenseExpiryDate, directorPassportExpiryDate,
-          savedAt: Date.now(),
-        };
-        localStorage.setItem(kycStorageKey, JSON.stringify(draft));
-      } catch (e) {
-        console.warn('[KYC] Failed to save draft:', e);
-      }
-    }, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [
-    finatradesStep, personalFullName, personalEmail, personalPhone, personalCountry,
-    personalCity, personalAddress, personalPostalCode, personalNationality,
-    personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-    passportExpiryDate, corporateStep, companyName, corporateRegNumber, incorporationDate,
-    countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
-    headOfficeAddress, telephoneNumber, website, emailAddress,
-    tradingContactName, tradingContactEmail, tradingContactPhone,
-    financeContactName, financeContactEmail, financeContactPhone,
-    beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey,
-  ]);
-
-  const clearKycDraft = () => {
-    try { localStorage.removeItem(kycStorageKey); } catch {}
-  };
-  
   // Get allowed countries from server settings
   const blockedCountries = kycModeData?.blockedCountries || [];
   const availableCountries = COUNTRIES.filter(c => !blockedCountries.includes(c.code));
@@ -295,7 +252,50 @@ export default function KYC() {
   // Corporate document expiry dates (for notification reminders)
   const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState(savedDraft?.tradeLicenseExpiryDate || '');
   const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState(savedDraft?.directorPassportExpiryDate || '');
-  
+
+  // Auto-save KYC draft to localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    const debounceTimer = setTimeout(() => {
+      try {
+        const draft = {
+          finatradesStep,
+          personalFullName, personalEmail, personalPhone, personalCountry,
+          personalCity, personalAddress, personalPostalCode, personalNationality,
+          personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
+          passportExpiryDate,
+          corporateStep, companyName, corporateRegNumber, incorporationDate,
+          countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
+          headOfficeAddress, telephoneNumber, website, emailAddress,
+          tradingContactName, tradingContactEmail, tradingContactPhone,
+          financeContactName, financeContactEmail, financeContactPhone,
+          beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
+          tradeLicenseExpiryDate, directorPassportExpiryDate,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(kycStorageKey, JSON.stringify(draft));
+      } catch (e) {
+        console.warn('[KYC] Failed to save draft:', e);
+      }
+    }, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [
+    finatradesStep, personalFullName, personalEmail, personalPhone, personalCountry,
+    personalCity, personalAddress, personalPostalCode, personalNationality,
+    personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
+    passportExpiryDate, corporateStep, companyName, corporateRegNumber, incorporationDate,
+    countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
+    headOfficeAddress, telephoneNumber, website, emailAddress,
+    tradingContactName, tradingContactEmail, tradingContactPhone,
+    financeContactName, financeContactEmail, financeContactPhone,
+    beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
+    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey,
+  ]);
+
+  const clearKycDraft = () => {
+    try { localStorage.removeItem(kycStorageKey); } catch {}
+  };
+
   // Pre-fill expiry dates from existing submission
   useEffect(() => {
     if (existingSubmission) {
