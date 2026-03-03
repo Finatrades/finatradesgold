@@ -70,6 +70,13 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - Admin accounts must use `/admin/login` portal (blocked from regular login endpoint).
 - Multi-tier KYC levels (Not Started, In Progress, Approved, Rejected).
 
+**RBAC Enforcement (March 2026):**
+- **Backend**: ALL `/api/admin/*` routes protected with `ensureAdminAsync` + `requirePermission()` middleware. Only exception: `/api/admin/rbac/my-permissions` (every admin needs own permissions).
+- **Frontend**: `MENU_PERMISSION_MAP` in `AdminLayout.tsx` covers ALL admin routes. Default is **deny** for unmapped routes (previously was allow-all).
+- **Permission Matrix**: 6 columns: View, Create, Edit, Reject, Export, Delete. L1/Final Approve removed from matrix (managed per-user in Assigned Users tab via `approval_level` column).
+- **Legacy Mapping**: `LEGACY_PERM_TO_COMPONENT` in `rbac-middleware.ts` maps old permission strings (e.g., `view_users`) to new component-based system.
+- **Mounted Routers**: `adminVaultExposureRoutes` and `unifiedTallyRoutes` are protected at mount point with `ensureAdminAsync` + `requirePermission('view_vault', 'manage_vault')`.
+
 **KYC System:**
 Supports `kycAml` (tiered verification) and `Finatrades` (personal info + documents + liveness) modes, configurable via admin settings.
 

@@ -807,8 +807,8 @@ export async function registerRoutes(
   // Register Wingold B2B integration routes
   app.use("/api/wingold", wingoldRoutes);
   // Register Admin Vault Exposure routes
-  app.use("/api/admin/vault-exposure", adminVaultExposureRoutes);
-  app.use("/api/admin/unified-tally", unifiedTallyRoutes);
+  app.use("/api/admin/vault-exposure", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), adminVaultExposureRoutes);
+  app.use("/api/admin/unified-tally", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), unifiedTallyRoutes);
   app.use("/api/physical-deposits", physicalDepositRoutes);
   // Register B2B order receiving routes
   app.use("/api/b2b", b2bRoutes);
@@ -5487,7 +5487,7 @@ export async function registerRoutes(
   });
   
   // Simple test endpoint to verify admin access
-  app.get("/api/admin/kyc-test", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/kyc-test", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     return res.json({ success: true, message: "Admin KYC test endpoint works", timestamp: new Date().toISOString() });
   });
 
@@ -12928,7 +12928,7 @@ export async function registerRoutes(
   });
   
   // Get all trade cases (Admin)
-  app.get("/api/admin/trade/cases", async (req, res) => {
+  app.get("/api/admin/trade/cases", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const cases = await storage.getAllTradeCases();
       res.json({ cases });
@@ -15154,32 +15154,8 @@ export async function registerRoutes(
     }
   });
   
-  // Admin: Get all deal rooms
-  app.get("/api/admin/deal-rooms", async (req, res) => {
-    try {
-      const rooms = await storage.getAllDealRooms();
-      
-      const roomsWithDetails = await Promise.all(rooms.map(async (room) => {
-        const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
-        const importer = await storage.getUser(room.importerUserId);
-        const exporter = await storage.getUser(room.exporterUserId);
-        
-        return {
-          ...room,
-          tradeRequest,
-          importer: importer ? { id: importer.id, finatradesId: importer.finatradesId } : null,
-          exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId } : null,
-        };
-      }));
-      
-      res.json({ rooms: roomsWithDetails });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get deal rooms" });
-    }
-  });
-  
   // Admin: Assign admin to deal room
-  app.post("/api/admin/deal-rooms/:id/assign", async (req, res) => {
+  app.post("/api/admin/deal-rooms/:id/assign", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { adminId } = req.body;
       if (!adminId) {
@@ -15991,7 +15967,7 @@ export async function registerRoutes(
   // === Content Pages ===
   
   // Get all content pages (Admin)
-  app.get("/api/admin/cms/pages", async (req, res) => {
+  app.get("/api/admin/cms/pages", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const pages = await storage.getAllContentPages();
       res.json({ pages });
@@ -16001,7 +15977,7 @@ export async function registerRoutes(
   });
   
   // Get content page by ID (Admin)
-  app.get("/api/admin/cms/pages/:id", async (req, res) => {
+  app.get("/api/admin/cms/pages/:id", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const page = await storage.getContentPage(req.params.id);
       if (!page) {
@@ -16015,7 +15991,7 @@ export async function registerRoutes(
   });
   
   // Create content page (Admin)
-  app.post("/api/admin/cms/pages", async (req, res) => {
+  app.post("/api/admin/cms/pages", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const pageData = insertContentPageSchema.parse(req.body);
       const page = await storage.createContentPage(pageData);
@@ -16026,7 +16002,7 @@ export async function registerRoutes(
   });
   
   // Update content page (Admin)
-  app.patch("/api/admin/cms/pages/:id", async (req, res) => {
+  app.patch("/api/admin/cms/pages/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const page = await storage.updateContentPage(req.params.id, req.body);
       if (!page) {
@@ -16039,7 +16015,7 @@ export async function registerRoutes(
   });
   
   // Delete content page (Admin)
-  app.delete("/api/admin/cms/pages/:id", async (req, res) => {
+  app.delete("/api/admin/cms/pages/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteContentPage(req.params.id);
       res.json({ success: true });
@@ -16051,7 +16027,7 @@ export async function registerRoutes(
   // === Content Blocks ===
   
   // Get all content blocks (Admin)
-  app.get("/api/admin/cms/blocks", async (req, res) => {
+  app.get("/api/admin/cms/blocks", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const blocks = await storage.getAllContentBlocks();
       res.json({ blocks });
@@ -16061,7 +16037,7 @@ export async function registerRoutes(
   });
   
   // Get content block by ID (Admin)
-  app.get("/api/admin/cms/blocks/:id", async (req, res) => {
+  app.get("/api/admin/cms/blocks/:id", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const block = await storage.getContentBlock(req.params.id);
       if (!block) {
@@ -16074,7 +16050,7 @@ export async function registerRoutes(
   });
   
   // Create content block (Admin)
-  app.post("/api/admin/cms/blocks", async (req, res) => {
+  app.post("/api/admin/cms/blocks", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const blockData = insertContentBlockSchema.parse(req.body);
       const block = await storage.createContentBlock(blockData);
@@ -16085,7 +16061,7 @@ export async function registerRoutes(
   });
   
   // Update content block (Admin)
-  app.patch("/api/admin/cms/blocks/:id", async (req, res) => {
+  app.patch("/api/admin/cms/blocks/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const block = await storage.updateContentBlock(req.params.id, req.body);
       if (!block) {
@@ -16098,7 +16074,7 @@ export async function registerRoutes(
   });
   
   // Delete content block (Admin)
-  app.delete("/api/admin/cms/blocks/:id", async (req, res) => {
+  app.delete("/api/admin/cms/blocks/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteContentBlock(req.params.id);
       res.json({ success: true });
@@ -16110,7 +16086,7 @@ export async function registerRoutes(
   // === Templates ===
   
   // Get all templates (Admin)
-  app.get("/api/admin/cms/templates", async (req, res) => {
+  app.get("/api/admin/cms/templates", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const templates = await storage.getAllTemplates();
       res.json({ templates });
@@ -16120,7 +16096,7 @@ export async function registerRoutes(
   });
   
   // Get templates by type (Admin)
-  app.get("/api/admin/cms/templates/type/:type", async (req, res) => {
+  app.get("/api/admin/cms/templates/type/:type", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const templates = await storage.getTemplatesByType(req.params.type);
       res.json({ templates });
@@ -16130,7 +16106,7 @@ export async function registerRoutes(
   });
   
   // Get template by ID (Admin)
-  app.get("/api/admin/cms/templates/:id", async (req, res) => {
+  app.get("/api/admin/cms/templates/:id", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const template = await storage.getTemplate(req.params.id);
       if (!template) {
@@ -16143,7 +16119,7 @@ export async function registerRoutes(
   });
   
   // Create template (Admin)
-  app.post("/api/admin/cms/templates", async (req, res) => {
+  app.post("/api/admin/cms/templates", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const templateData = insertTemplateSchema.parse(req.body);
       const template = await storage.createTemplate(templateData);
@@ -16154,7 +16130,7 @@ export async function registerRoutes(
   });
   
   // Update template (Admin)
-  app.patch("/api/admin/cms/templates/:id", async (req, res) => {
+  app.patch("/api/admin/cms/templates/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const template = await storage.updateTemplate(req.params.id, req.body);
       if (!template) {
@@ -16167,7 +16143,7 @@ export async function registerRoutes(
   });
   
   // Delete template (Admin)
-  app.delete("/api/admin/cms/templates/:id", async (req, res) => {
+  app.delete("/api/admin/cms/templates/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteTemplate(req.params.id);
       res.json({ success: true });
@@ -16179,7 +16155,7 @@ export async function registerRoutes(
   // === CMS Labels ===
   
   // Get all labels
-  app.get("/api/admin/cms/labels", async (req, res) => {
+  app.get("/api/admin/cms/labels", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const labels = await storage.getAllCmsLabels();
       res.json({ labels });
@@ -16189,7 +16165,7 @@ export async function registerRoutes(
   });
   
   // Create or update label
-  app.post("/api/admin/cms/labels", async (req, res) => {
+  app.post("/api/admin/cms/labels", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { key, value, category, description } = req.body;
       const label = await storage.upsertCmsLabel({ key, value, category, description, defaultValue: value });
@@ -16202,11 +16178,8 @@ export async function registerRoutes(
   // === CMS Export/Import (Seed) ===
   
   // Export all CMS data to seed file
-  app.post("/api/admin/cms/export", async (req, res) => {
+  app.post("/api/admin/cms/export", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const { exportCMSToFile } = await import('../scripts/cms-seed');
       const filePath = await exportCMSToFile();
@@ -16223,11 +16196,8 @@ export async function registerRoutes(
   });
   
   // Get current CMS data as JSON (for download)
-  app.get("/api/admin/cms/export/json", async (req, res) => {
+  app.get("/api/admin/cms/export/json", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const { exportCMSData } = await import('../scripts/cms-seed');
       const data = await exportCMSData();
@@ -16242,11 +16212,8 @@ export async function registerRoutes(
   });
   
   // Import CMS data from seed file
-  app.post("/api/admin/cms/import", async (req, res) => {
+  app.post("/api/admin/cms/import", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const { importCMSFromFile } = await import('../scripts/cms-seed');
       const result = await importCMSFromFile();
@@ -16263,11 +16230,8 @@ export async function registerRoutes(
   });
   
   // Import CMS data from uploaded JSON
-  app.post("/api/admin/cms/import/json", async (req, res) => {
+  app.post("/api/admin/cms/import/json", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const { seedCMSData } = await import('../scripts/cms-seed');
       const result = await seedCMSData(req.body);
@@ -16286,7 +16250,7 @@ export async function registerRoutes(
   // === Media Assets ===
   
   // Get all media assets (Admin)
-  app.get("/api/admin/cms/media", async (req, res) => {
+  app.get("/api/admin/cms/media", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const assets = await storage.getAllMediaAssets();
       res.json({ assets });
@@ -16296,7 +16260,7 @@ export async function registerRoutes(
   });
   
   // Create media asset (Admin)
-  app.post("/api/admin/cms/media", async (req, res) => {
+  app.post("/api/admin/cms/media", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const assetData = insertMediaAssetSchema.parse(req.body);
       const asset = await storage.createMediaAsset(assetData);
@@ -16307,7 +16271,7 @@ export async function registerRoutes(
   });
   
   // Delete media asset (Admin)
-  app.delete("/api/admin/cms/media/:id", async (req, res) => {
+  app.delete("/api/admin/cms/media/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteMediaAsset(req.params.id);
       res.json({ success: true });
@@ -16329,11 +16293,8 @@ export async function registerRoutes(
   });
   
   // Update branding settings (Admin only)
-  app.patch("/api/admin/branding", async (req, res) => {
+  app.patch("/api/admin/branding", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       const updates = req.body;
       const settings = await storage.updateBrandingSettings({
         ...updates,
@@ -16346,11 +16307,8 @@ export async function registerRoutes(
   });
 
   // Upload logo file (Admin only)
-  app.post("/api/admin/branding/logo", upload.single('logo'), async (req: Request, res: Response) => {
+  app.post("/api/admin/branding/logo", ensureAdminAsync, requirePermission('manage_settings'), upload.single('logo'), async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId || req.session.userRole !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       if (!req.file) {
         return res.status(400).json({ message: 'No logo file uploaded' });
@@ -18670,7 +18628,7 @@ export async function registerRoutes(
 
   // Financial Overview - total revenue, AUM, liabilities, net position
   // GOLD-FIRST ARCHITECTURE: All balances are gold grams, USD computed dynamically
-  app.get("/api/admin/financial/overview", async (req, res) => {
+  app.get("/api/admin/financial/overview", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
     try {
       // Get live gold price for USD calculations
       const goldPriceData = await getGoldPrice();
@@ -18813,7 +18771,7 @@ export async function registerRoutes(
   });
 
   // Product Metrics - FinaPay, FinaVault, BNSL performance
-  app.get("/api/admin/financial/metrics", async (req, res) => {
+  app.get("/api/admin/financial/metrics", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
 
@@ -18916,7 +18874,7 @@ export async function registerRoutes(
   });
 
   // User Financial Data - wallet balance, holdings, plans per user
-  app.get("/api/admin/financial/users", async (req, res) => {
+  app.get("/api/admin/financial/users", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
       const allUsers = await storage.getAllUsers();
@@ -27271,7 +27229,7 @@ export async function registerRoutes(
   // Organizational Chart
   // ===========================================================================
   
-  app.get("/api/admin/org-chart", ensureAdminAsync, async (req, res) => {
+  app.get("/api/admin/org-chart", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const positions = await db.select().from(schema.orgPositions).orderBy(schema.orgPositions.level, schema.orgPositions.order);
       res.json(positions);
@@ -27281,7 +27239,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/org-chart", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/org-chart", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const [position] = await db.insert(schema.orgPositions).values(req.body).returning();
       res.status(201).json(position);
@@ -27291,7 +27249,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/org-chart/seed", ensureAdminAsync, async (req, res) => {
+  app.post("/api/admin/org-chart/seed", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const defaultPositions = [
         { name: 'CEO', title: 'Chief Executive Officer', department: 'Executive', level: 0, order: 0 },
@@ -27311,7 +27269,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/admin/org-chart/:id", ensureAdminAsync, async (req, res) => {
+  app.put("/api/admin/org-chart/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { id } = req.params;
       const [updated] = await db.update(schema.orgPositions)
@@ -27326,7 +27284,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/admin/org-chart/:id", ensureAdminAsync, async (req, res) => {
+  app.delete("/api/admin/org-chart/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(schema.orgPositions).where(eq(schema.orgPositions.id, id));
@@ -27392,7 +27350,7 @@ export async function registerRoutes(
   });
 
   // Email Clawd Integration Guide as PDF
-  app.post("/api/docs/clawd-guide/email", ensureAdminAsync, async (req, res) => {
+  app.post("/api/docs/clawd-guide/email", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { recipientEmail, recipientName, customMessage } = req.body;
       

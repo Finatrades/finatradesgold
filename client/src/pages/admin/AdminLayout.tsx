@@ -68,6 +68,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin': [],
+  '/admin/dashboard': [],
   '/admin/financial-reports': ['view_reports', 'generate_reports'],
   '/admin/users': ['view_users', 'manage_users'],
   '/admin/employees': ['manage_employees'],
@@ -92,7 +93,9 @@ export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/vault-locations': ['view_vault', 'manage_vault'],
   '/admin/vault-routing': ['view_vault', 'manage_vault'],
   '/admin/vault-reconciliation': ['view_vault', 'manage_vault'],
+  '/admin/vault-legacy': ['view_vault', 'manage_vault'],
   '/admin/finabridge': ['view_finabridge', 'manage_finabridge'],
+  '/admin/finance': ['view_finabridge', 'manage_finabridge'],
   '/admin/bnsl': ['view_bnsl', 'manage_bnsl'],
   '/admin/documents': ['view_reports'],
   '/admin/attachments': ['view_reports'],
@@ -106,6 +109,7 @@ export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/settings': ['manage_settings'],
   '/admin/referrals': ['view_users', 'manage_users'],
   '/admin/account-deletion-requests': ['view_users', 'manage_users'],
+  '/admin/user-preferences': ['manage_settings'],
   '/admin/audit-trail': ['view_reports'],
   '/admin/workflow-audit': ['view_reports'],
   '/admin/daily-reconciliation': ['view_reports', 'generate_reports'],
@@ -119,6 +123,14 @@ export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/unified-gold-tally': ['view_vault', 'manage_vault'],
   '/admin/unified-payments': ['manage_deposits', 'manage_withdrawals'],
   '/admin/wingold-products': ['view_vault', 'manage_vault'],
+  '/admin/approvals': ['manage_deposits', 'manage_withdrawals', 'manage_kyc', 'manage_vault'],
+  '/admin/account-statements': ['view_reports', 'generate_reports'],
+  '/admin/interest-calculator': ['view_reports', 'generate_reports'],
+  '/admin/cards': ['manage_settings'],
+  '/admin/payments': ['manage_deposits', 'manage_withdrawals'],
+  '/admin/reports': ['view_reports', 'generate_reports'],
+  '/admin/announcements': ['manage_cms', 'manage_settings'],
+  '/admin/feedback': ['view_support', 'manage_support'],
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -201,12 +213,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSuperAdmin = isSuperAdminRbac || (rbacPerms.length === 0 && isSuperAdminLegacy);
 
   const hasMenuPermission = (menuPath: string): boolean => {
-    // Super Admin has full access
     if (isSuperAdmin) return true;
-    // Wildcard permission means full access
     if (effectivePermissions.includes('*')) return true;
     const requiredPermissions = MENU_PERMISSION_MAP[menuPath];
-    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    if (!requiredPermissions) return false;
+    if (requiredPermissions.length === 0) return true;
     return requiredPermissions.some(perm => effectivePermissions.includes(perm));
   };
 
