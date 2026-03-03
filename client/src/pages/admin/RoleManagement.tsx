@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Plus, Pencil, Trash2, Users, Lock, AlertTriangle, CheckCircle2, Eye, FileEdit, Download, X, CircleCheck, CircleAlert, Calendar, User } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, Lock, AlertTriangle, CheckCircle2, Eye, FileEdit, Download, X, CircleCheck, CircleAlert, Calendar, User, Zap, EyeIcon, Ban } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/queryClient";
@@ -229,6 +229,36 @@ export default function RoleManagement() {
     updatePermissionMutation.mutate({ roleId: selectedRole.id, componentId, permissions: newPerms });
   };
 
+  const [applyingPreset, setApplyingPreset] = useState(false);
+
+  const applyPreset = async (preset: "full" | "viewOnly" | "clear", targetComponents?: AdminComponent[]) => {
+    if (!selectedRole || applyingPreset) return;
+    if (preset === "clear") {
+      const scope = targetComponents ? "this category" : "all components";
+      if (!confirm(`Remove all permissions for ${scope}? This cannot be undone.`)) return;
+    }
+    setApplyingPreset(true);
+    const comps = targetComponents || components;
+    const permMap = {
+      full: { canView: true, canCreate: true, canEdit: true, canApproveL1: true, canApproveFinal: true, canReject: true, canExport: true, canDelete: true },
+      viewOnly: { canView: true, canCreate: false, canEdit: false, canApproveL1: false, canApproveFinal: false, canReject: false, canExport: true, canDelete: false },
+      clear: { canView: false, canCreate: false, canEdit: false, canApproveL1: false, canApproveFinal: false, canReject: false, canExport: false, canDelete: false },
+    };
+    const perms = permMap[preset];
+    try {
+      await Promise.all(comps.map((comp) =>
+        apiRequest("POST", "/api/admin/rbac/permissions", { roleId: selectedRole.id, componentId: comp.id, permissions: perms })
+      ));
+      queryClient.invalidateQueries({ queryKey: ["role-permissions", selectedRole.id] });
+      const labels = { full: "Full Access", viewOnly: "View Only", clear: "Cleared" };
+      toast.success(`${labels[preset]} applied to ${targetComponents ? "category" : "all components"}`);
+    } catch {
+      toast.error("Failed to apply preset");
+    } finally {
+      setApplyingPreset(false);
+    }
+  };
+
   const componentsByCategory = components.reduce((acc, comp) => {
     if (!acc[comp.category]) acc[comp.category] = [];
     acc[comp.category].push(comp);
@@ -417,9 +447,32 @@ export default function RoleManagement() {
                       <div className="text-center py-8 text-muted-foreground">Loading permissions...</div>
                     ) : (
                       <div className="space-y-6">
+                        {!isSystemRoleLocked(selectedRole) && (
+                          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border" data-testid="quick-presets">
+                            <span className="text-sm font-medium text-muted-foreground mr-1">Quick Set:</span>
+                            <Button variant="default" size="sm" className="h-7 text-xs gap-1" disabled={applyingPreset} onClick={() => applyPreset("full")} data-testid="preset-full-access">
+                              <Zap className="h-3 w-3" /> Full Access
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={applyingPreset} onClick={() => applyPreset("viewOnly")} data-testid="preset-view-only">
+                              <EyeIcon className="h-3 w-3" /> View Only
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" disabled={applyingPreset} onClick={() => applyPreset("clear")} data-testid="preset-clear-all">
+                              <Ban className="h-3 w-3" /> Clear All
+                            </Button>
+                          </div>
+                        )}
                         {Object.entries(componentsByCategory).map(([category, comps]) => (
                           <div key={category}>
-                            <h3 className="font-semibold mb-3 capitalize">{category}</h3>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="font-semibold capitalize">{category}</h3>
+                              {!isSystemRoleLocked(selectedRole) && (
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-6 text-xs px-2 text-muted-foreground" onClick={() => applyPreset("full", comps)} data-testid={`preset-category-full-${category}`}>All</Button>
+                                  <Button variant="ghost" size="sm" className="h-6 text-xs px-2 text-muted-foreground" onClick={() => applyPreset("viewOnly", comps)} data-testid={`preset-category-view-${category}`}>View</Button>
+                                  <Button variant="ghost" size="sm" className="h-6 text-xs px-2 text-muted-foreground" onClick={() => applyPreset("clear", comps)} data-testid={`preset-category-clear-${category}`}>None</Button>
+                                </div>
+                              )}
+                            </div>
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -471,18 +524,6 @@ export default function RoleManagement() {
                             </Table>
                           </div>
                         ))}
-                        <div className="text-sm text-muted-foreground p-4 bg-muted rounded-lg">
-                          <div className="grid grid-cols-4 gap-2">
-                            <div className="flex items-center gap-1"><Eye className="h-3 w-3" /> View</div>
-                            <div className="flex items-center gap-1"><Plus className="h-3 w-3" /> Create</div>
-                            <div className="flex items-center gap-1"><FileEdit className="h-3 w-3" /> Edit</div>
-                            <div className="flex items-center gap-1"><CircleCheck className="h-3 w-3" /> L1 Approve</div>
-                            <div className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Final Approve</div>
-                            <div className="flex items-center gap-1"><X className="h-3 w-3" /> Reject</div>
-                            <div className="flex items-center gap-1"><Download className="h-3 w-3" /> Export</div>
-                            <div className="flex items-center gap-1"><Trash2 className="h-3 w-3" /> Delete</div>
-                          </div>
-                        </div>
                       </div>
                     )}
                   </TabsContent>
