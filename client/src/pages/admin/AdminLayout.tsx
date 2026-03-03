@@ -50,7 +50,8 @@ import {
   Clock,
   Terminal,
   Coins,
-  FileCheck
+  FileCheck,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -215,8 +216,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const hasMenuPermission = (menuPath: string): boolean => {
     if (isSuperAdmin) return true;
     if (effectivePermissions.includes('*')) return true;
-    const requiredPermissions = MENU_PERMISSION_MAP[menuPath];
-    if (!requiredPermissions) return false;
+    let requiredPermissions = MENU_PERMISSION_MAP[menuPath];
+    if (!requiredPermissions) {
+      const parentPath = Object.keys(MENU_PERMISSION_MAP)
+        .filter(p => p !== '/admin' && menuPath.startsWith(p + '/'))
+        .sort((a, b) => b.length - a.length)[0];
+      if (parentPath) {
+        requiredPermissions = MENU_PERMISSION_MAP[parentPath];
+      } else {
+        return false;
+      }
+    }
     if (requiredPermissions.length === 0) return true;
     return requiredPermissions.some(perm => effectivePermissions.includes(perm));
   };
@@ -629,7 +639,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <main className="min-h-[calc(100vh-7rem)] p-4 lg:p-6 bg-muted">
           <div className="max-w-[1600px] mx-auto">
-            {children}
+            {hasMenuPermission(location) ? children : (
+              <div className="flex items-center justify-center min-h-[60vh]" data-testid="access-denied-container">
+                <div className="max-w-md w-full text-center space-y-6">
+                  <div className="mx-auto w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+                    <Lock className="w-10 h-10 text-red-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Access Denied</h2>
+                    <p className="text-muted-foreground mt-2">
+                      You are not authorized to access this section. Please contact the Admin Department if you believe this is an error.
+                    </p>
+                  </div>
+                  <Link href="/admin">
+                    <Button variant="outline" className="mt-4" data-testid="button-back-to-dashboard">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Back to Dashboard
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
