@@ -404,7 +404,7 @@ export default function KYCReview() {
   const handlePrintApplication = () => {
     if (!selectedApplication) return;
     
-    const app = selectedApplication;
+    const app = fullApplicationData || selectedApplication;
     const isFinatrades = isFinatradesKyc(app);
     
     // Build document images HTML
@@ -427,7 +427,7 @@ export default function KYCReview() {
         ${buildImageSection(app.idBackUrl, 'ID Back')}
         ${buildImageSection(app.passportUrl, 'Passport')}
         ${buildImageSection(app.addressProofUrl, 'Proof of Address')}
-        ${buildImageSection(app.selfieUrl || app.livenessImageUrl, 'Selfie / Liveness Verification')}
+        ${buildImageSection(app.livenessCapture || app.selfieUrl || app.livenessImageUrl, 'Selfie / Liveness Verification')}
       `;
     } else {
       documentsHtml = `
