@@ -10,7 +10,7 @@ export async function checkIsSuperAdmin(userId: string): Promise<boolean> {
     
     for (const assignment of assignments) {
       const role = await storage.getAdminRole(assignment.role_id);
-      if (role && (role.is_system || role.name === 'Super Admin')) {
+      if (role && role.name === 'Super Admin') {
         return true;
       }
     }

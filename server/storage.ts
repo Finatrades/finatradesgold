@@ -4916,15 +4916,14 @@ export class DatabaseStorage implements IStorage {
       return { permissions: [], components: [], isSuperAdmin: false };
     }
 
-    // Check if user has Super Admin role (check both name and system flag)
-    // Also query the admin_roles table for is_system flag to ensure robustness
+    // Check if user has the Super Admin role specifically (not just any system role)
     const superAdminCheck = await db.execute(sql`
-      SELECT ar.is_system, ar.name 
+      SELECT ar.name 
       FROM user_role_assignments ura
       JOIN admin_roles ar ON ura.role_id = ar.id
       WHERE ura.user_id = ${userId} 
         AND ura.is_active = true 
-        AND (ar.is_system = true OR ar.name = 'Super Admin')
+        AND ar.name = 'Super Admin'
       LIMIT 1
     `);
     
