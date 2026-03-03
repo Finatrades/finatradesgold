@@ -1251,21 +1251,21 @@ export default function KYC() {
                          )}
 
                          {!cameraStream && !capturedSelfie && (
-                           <div className="text-center">
-                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
+                           <div className="flex flex-col items-center justify-center text-center w-full">
+                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6 mx-auto">
                                <Camera className="w-16 h-16 text-muted-foreground" />
                              </div>
                              <Button 
                                type="button"
                                onClick={startLivenessCamera}
                                variant="secondary"
-                               className="gap-2 mb-4"
+                               className="gap-2 mb-4 mx-auto"
                                data-testid="button-start-liveness"
                              >
                                <Camera className="w-5 h-5" />
                                Start Liveness Check
                              </Button>
-                             <p className="text-xs text-muted-foreground max-w-xs">
+                             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
                                Please ensure your face is well-lit and centered. No glasses or hats.
                              </p>
                            </div>
@@ -1814,21 +1814,21 @@ export default function KYC() {
                          )}
 
                          {!cameraStream && !capturedSelfie && (
-                           <div className="text-center">
-                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6">
+                           <div className="flex flex-col items-center justify-center text-center w-full">
+                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6 mx-auto">
                                <Camera className="w-16 h-16 text-muted-foreground" />
                              </div>
                              <Button 
                                type="button"
                                onClick={startLivenessCamera}
                                variant="secondary"
-                               className="gap-2 mb-4"
+                               className="gap-2 mb-4 mx-auto"
                                data-testid="button-start-liveness"
                              >
                                <Camera className="w-5 h-5" />
                                Start Liveness Check
                              </Button>
-                             <p className="text-xs text-muted-foreground max-w-xs">
+                             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
                                Please ensure your face is well-lit and centered. No glasses or hats.
                              </p>
                            </div>
