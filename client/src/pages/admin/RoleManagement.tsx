@@ -274,6 +274,49 @@ export default function RoleManagement() {
     }
   };
 
+  const permKeyMap: Record<string, string> = {
+    canView: "can_view", canCreate: "can_create", canEdit: "can_edit",
+    canApproveL1: "can_approve_l1", canApproveFinal: "can_approve_final",
+    canReject: "can_reject", canExport: "can_export", canDelete: "can_delete",
+  };
+
+  const isColumnAllChecked = (comps: AdminComponent[], permKey: string) => {
+    const dbKey = permKeyMap[permKey];
+    return comps.every((comp) => {
+      const perm = getPermissionForComponent(comp.id);
+      return perm?.[dbKey] === true;
+    });
+  };
+
+  const toggleColumn = async (comps: AdminComponent[], permKey: string) => {
+    if (!selectedRole || applyingPreset) return;
+    const allChecked = isColumnAllChecked(comps, permKey);
+    const newValue = !allChecked;
+    setApplyingPreset(true);
+    try {
+      await Promise.all(comps.map((comp) => {
+        const currentPerms = getPermissionForComponent(comp.id);
+        const newPerms = {
+          canView: currentPerms?.can_view || false,
+          canCreate: currentPerms?.can_create || false,
+          canEdit: currentPerms?.can_edit || false,
+          canApproveL1: currentPerms?.can_approve_l1 || false,
+          canApproveFinal: currentPerms?.can_approve_final || false,
+          canReject: currentPerms?.can_reject || false,
+          canExport: currentPerms?.can_export || false,
+          canDelete: currentPerms?.can_delete || false,
+          [permKey]: newValue,
+        };
+        return apiRequest("POST", "/api/admin/rbac/permissions", { roleId: selectedRole.id, componentId: comp.id, permissions: newPerms });
+      }));
+      queryClient.invalidateQueries({ queryKey: ["role-permissions", selectedRole.id] });
+    } catch {
+      toast.error("Failed to update column");
+    } finally {
+      setApplyingPreset(false);
+    }
+  };
+
   const componentsByCategory = components.reduce((acc, comp) => {
     if (!acc[comp.category]) acc[comp.category] = [];
     acc[comp.category].push(comp);
@@ -492,14 +535,31 @@ export default function RoleManagement() {
                               <TableHeader>
                                 <TableRow>
                                   <TableHead className="w-[200px]">Component</TableHead>
-                                  <TableHead className="text-center w-[60px]"><Eye className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><Plus className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><FileEdit className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><CircleCheck className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><CheckCircle2 className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><X className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><Download className="h-4 w-4 mx-auto" /></TableHead>
-                                  <TableHead className="text-center w-[60px]"><Trash2 className="h-4 w-4 mx-auto" /></TableHead>
+                                  {[
+                                    { key: "canView", icon: <Eye className="h-3.5 w-3.5" /> },
+                                    { key: "canCreate", icon: <Plus className="h-3.5 w-3.5" /> },
+                                    { key: "canEdit", icon: <FileEdit className="h-3.5 w-3.5" /> },
+                                    { key: "canApproveL1", icon: <CircleCheck className="h-3.5 w-3.5" /> },
+                                    { key: "canApproveFinal", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+                                    { key: "canReject", icon: <X className="h-3.5 w-3.5" /> },
+                                    { key: "canExport", icon: <Download className="h-3.5 w-3.5" /> },
+                                    { key: "canDelete", icon: <Trash2 className="h-3.5 w-3.5" /> },
+                                  ].map(({ key, icon }) => (
+                                    <TableHead key={key} className="text-center w-[60px]">
+                                      <div className="flex flex-col items-center gap-1">
+                                        {icon}
+                                        {!isSystemRoleLocked(selectedRole) && (
+                                          <Checkbox
+                                            checked={isColumnAllChecked(comps, key)}
+                                            disabled={applyingPreset}
+                                            onCheckedChange={() => toggleColumn(comps, key)}
+                                            className="h-3.5 w-3.5"
+                                            data-testid={`col-toggle-${category}-${key}`}
+                                          />
+                                        )}
+                                      </div>
+                                    </TableHead>
+                                  ))}
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
