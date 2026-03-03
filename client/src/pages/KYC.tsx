@@ -1062,10 +1062,10 @@ export default function KYC() {
                       const data = await response.json();
                       if (data.success) {
                         toast.success('KYC reset successful. You can now update and resubmit your verification.');
-                        queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
-                        queryClient.invalidateQueries({ queryKey: ['/api/kyc/section-reviews'] });
-                        refreshUser();
-                        window.location.reload();
+                        await refreshUser();
+                        await queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
+                        await queryClient.invalidateQueries({ queryKey: ['/api/kyc/section-reviews'] });
+                        await queryClient.refetchQueries({ queryKey: ['/api/kyc-status', user?.id, user?.accountType] });
                       }
                     } catch (error: any) {
                       toast.error(error.message || 'Failed to reset KYC. Please try again.');
