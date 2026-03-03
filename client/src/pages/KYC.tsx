@@ -869,9 +869,8 @@ export default function KYC() {
                       const data = await response.json();
                       if (data.success) {
                         toast.success('KYC reset successful. You can now submit new verification documents.');
-                        await queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
-                        await refreshUser();
-                        window.location.reload();
+                        queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
+                        refreshUser();
                       }
                     } catch (error: any) {
                       toast.error(error.message || 'Failed to reset KYC. Please try again.');
