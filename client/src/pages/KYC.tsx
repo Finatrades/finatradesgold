@@ -151,16 +151,16 @@ export default function KYC() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const KYC_STORAGE_KEY = `kyc_draft_${user?.id || 'unknown'}`;
+  const kycStorageKey = `kyc_draft_${user?.id || 'unknown'}`;
 
-  const getSavedDraft = () => {
+  const savedDraftRef = useRef<Record<string, any> | null>(null);
+  if (savedDraftRef.current === null) {
     try {
-      const saved = localStorage.getItem(KYC_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  };
-
-  const savedDraft = getSavedDraft();
+      const saved = localStorage.getItem(kycStorageKey);
+      savedDraftRef.current = saved ? JSON.parse(saved) : {};
+    } catch { savedDraftRef.current = {}; }
+  }
+  const savedDraft = savedDraftRef.current;
 
   // Finatrades mode state - shared between personal and corporate
   const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>(
@@ -192,7 +192,7 @@ export default function KYC() {
   
   // Pre-fill data from user profile (only if no saved draft)
   useEffect(() => {
-    if (user && !savedDraft) {
+    if (user && !savedDraft?.savedAt) {
       setPersonalFullName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
       setPersonalEmail(user.email || '');
       setPersonalPhone(user.phoneNumber || '');
@@ -222,7 +222,7 @@ export default function KYC() {
           tradeLicenseExpiryDate, directorPassportExpiryDate,
           savedAt: Date.now(),
         };
-        localStorage.setItem(KYC_STORAGE_KEY, JSON.stringify(draft));
+        localStorage.setItem(kycStorageKey, JSON.stringify(draft));
       } catch (e) {
         console.warn('[KYC] Failed to save draft:', e);
       }
@@ -238,11 +238,11 @@ export default function KYC() {
     tradingContactName, tradingContactEmail, tradingContactPhone,
     financeContactName, financeContactEmail, financeContactPhone,
     beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, KYC_STORAGE_KEY,
+    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey,
   ]);
 
   const clearKycDraft = () => {
-    try { localStorage.removeItem(KYC_STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(kycStorageKey); } catch {}
   };
   
   // Get allowed countries from server settings

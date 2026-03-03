@@ -8,6 +8,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from "express";
+import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { 
@@ -719,8 +720,7 @@ router.get("/api/dual-wallet/:userId/certificates", ensureAuthenticated, async (
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const { getUserCertificates } = await import('./certificate-generator');
-    const certs = await getUserCertificates(userId, 100);
+    const certs = await storage.getUserCertificates(userId);
     
     res.json({ certificates: certs });
   } catch (error: any) {
