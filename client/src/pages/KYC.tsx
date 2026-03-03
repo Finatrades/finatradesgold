@@ -151,22 +151,35 @@ export default function KYC() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const KYC_STORAGE_KEY = `kyc_draft_${user?.id || 'unknown'}`;
+
+  const getSavedDraft = () => {
+    try {
+      const saved = localStorage.getItem(KYC_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  };
+
+  const savedDraft = getSavedDraft();
+
   // Finatrades mode state - shared between personal and corporate
-  const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>('personal_info');
+  const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>(
+    savedDraft?.finatradesStep || 'personal_info'
+  );
   
   // Personal Information (pre-filled from user where available)
-  const [personalFullName, setPersonalFullName] = useState('');
-  const [personalEmail, setPersonalEmail] = useState('');
-  const [personalPhone, setPersonalPhone] = useState('');
-  const [personalCountry, setPersonalCountry] = useState('');
-  const [personalCity, setPersonalCity] = useState('');
-  const [personalAddress, setPersonalAddress] = useState('');
-  const [personalPostalCode, setPersonalPostalCode] = useState('');
-  const [personalNationality, setPersonalNationality] = useState('');
-  const [personalOccupation, setPersonalOccupation] = useState('');
-  const [personalSourceOfFunds, setPersonalSourceOfFunds] = useState('');
-  const [personalAccountType, setPersonalAccountType] = useState('personal');
-  const [personalDateOfBirth, setPersonalDateOfBirth] = useState('');
+  const [personalFullName, setPersonalFullName] = useState(savedDraft?.personalFullName || '');
+  const [personalEmail, setPersonalEmail] = useState(savedDraft?.personalEmail || '');
+  const [personalPhone, setPersonalPhone] = useState(savedDraft?.personalPhone || '');
+  const [personalCountry, setPersonalCountry] = useState(savedDraft?.personalCountry || '');
+  const [personalCity, setPersonalCity] = useState(savedDraft?.personalCity || '');
+  const [personalAddress, setPersonalAddress] = useState(savedDraft?.personalAddress || '');
+  const [personalPostalCode, setPersonalPostalCode] = useState(savedDraft?.personalPostalCode || '');
+  const [personalNationality, setPersonalNationality] = useState(savedDraft?.personalNationality || '');
+  const [personalOccupation, setPersonalOccupation] = useState(savedDraft?.personalOccupation || '');
+  const [personalSourceOfFunds, setPersonalSourceOfFunds] = useState(savedDraft?.personalSourceOfFunds || '');
+  const [personalAccountType, setPersonalAccountType] = useState(savedDraft?.personalAccountType || 'personal');
+  const [personalDateOfBirth, setPersonalDateOfBirth] = useState(savedDraft?.personalDateOfBirth || '');
   
   // Document uploads
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
@@ -175,11 +188,11 @@ export default function KYC() {
   const [addressProofFile, setAddressProofFile] = useState<File | null>(null);
   
   // Document expiry dates (for notification reminders)
-  const [passportExpiryDate, setPassportExpiryDate] = useState('');
+  const [passportExpiryDate, setPassportExpiryDate] = useState(savedDraft?.passportExpiryDate || '');
   
-  // Pre-fill data from user profile
+  // Pre-fill data from user profile (only if no saved draft)
   useEffect(() => {
-    if (user) {
+    if (user && !savedDraft) {
       setPersonalFullName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
       setPersonalEmail(user.email || '');
       setPersonalPhone(user.phoneNumber || '');
@@ -188,38 +201,81 @@ export default function KYC() {
       setPersonalAccountType(user.accountType || 'personal');
     }
   }, [user]);
+
+  // Auto-save KYC draft to localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    const debounceTimer = setTimeout(() => {
+      try {
+        const draft = {
+          finatradesStep,
+          personalFullName, personalEmail, personalPhone, personalCountry,
+          personalCity, personalAddress, personalPostalCode, personalNationality,
+          personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
+          passportExpiryDate,
+          corporateStep, companyName, corporateRegNumber, incorporationDate,
+          countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
+          headOfficeAddress, telephoneNumber, website, emailAddress,
+          tradingContactName, tradingContactEmail, tradingContactPhone,
+          financeContactName, financeContactEmail, financeContactPhone,
+          beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
+          tradeLicenseExpiryDate, directorPassportExpiryDate,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(KYC_STORAGE_KEY, JSON.stringify(draft));
+      } catch (e) {
+        console.warn('[KYC] Failed to save draft:', e);
+      }
+    }, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [
+    finatradesStep, personalFullName, personalEmail, personalPhone, personalCountry,
+    personalCity, personalAddress, personalPostalCode, personalNationality,
+    personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
+    passportExpiryDate, corporateStep, companyName, corporateRegNumber, incorporationDate,
+    countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
+    headOfficeAddress, telephoneNumber, website, emailAddress,
+    tradingContactName, tradingContactEmail, tradingContactPhone,
+    financeContactName, financeContactEmail, financeContactPhone,
+    beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
+    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, KYC_STORAGE_KEY,
+  ]);
+
+  const clearKycDraft = () => {
+    try { localStorage.removeItem(KYC_STORAGE_KEY); } catch {}
+  };
   
   // Get allowed countries from server settings
   const blockedCountries = kycModeData?.blockedCountries || [];
   const availableCountries = COUNTRIES.filter(c => !blockedCountries.includes(c.code));
   
   // Corporate questionnaire state
-  const [corporateStep, setCorporateStep] = useState(1);
-  const [companyName, setCompanyName] = useState('');
-  const [corporateRegNumber, setCorporateRegNumber] = useState('');
-  const [incorporationDate, setIncorporationDate] = useState('');
-  const [countryOfIncorporation, setCountryOfIncorporation] = useState('');
-  const [companyType, setCompanyType] = useState<'public' | 'private'>('private');
-  const [natureOfBusiness, setNatureOfBusiness] = useState('');
-  const [numberOfEmployees, setNumberOfEmployees] = useState('');
-  const [headOfficeAddress, setHeadOfficeAddress] = useState('');
-  const [telephoneNumber, setTelephoneNumber] = useState('');
-  const [website, setWebsite] = useState('');
-  const [emailAddress, setEmailAddress] = useState('');
-  const [tradingContactName, setTradingContactName] = useState('');
-  const [tradingContactEmail, setTradingContactEmail] = useState('');
-  const [tradingContactPhone, setTradingContactPhone] = useState('');
-  const [financeContactName, setFinanceContactName] = useState('');
-  const [financeContactEmail, setFinanceContactEmail] = useState('');
-  const [financeContactPhone, setFinanceContactPhone] = useState('');
+  const [corporateStep, setCorporateStep] = useState(savedDraft?.corporateStep || 1);
+  const [companyName, setCompanyName] = useState(savedDraft?.companyName || '');
+  const [corporateRegNumber, setCorporateRegNumber] = useState(savedDraft?.corporateRegNumber || '');
+  const [incorporationDate, setIncorporationDate] = useState(savedDraft?.incorporationDate || '');
+  const [countryOfIncorporation, setCountryOfIncorporation] = useState(savedDraft?.countryOfIncorporation || '');
+  const [companyType, setCompanyType] = useState<'public' | 'private'>(savedDraft?.companyType || 'private');
+  const [natureOfBusiness, setNatureOfBusiness] = useState(savedDraft?.natureOfBusiness || '');
+  const [numberOfEmployees, setNumberOfEmployees] = useState(savedDraft?.numberOfEmployees || '');
+  const [headOfficeAddress, setHeadOfficeAddress] = useState(savedDraft?.headOfficeAddress || '');
+  const [telephoneNumber, setTelephoneNumber] = useState(savedDraft?.telephoneNumber || '');
+  const [website, setWebsite] = useState(savedDraft?.website || '');
+  const [emailAddress, setEmailAddress] = useState(savedDraft?.emailAddress || '');
+  const [tradingContactName, setTradingContactName] = useState(savedDraft?.tradingContactName || '');
+  const [tradingContactEmail, setTradingContactEmail] = useState(savedDraft?.tradingContactEmail || '');
+  const [tradingContactPhone, setTradingContactPhone] = useState(savedDraft?.tradingContactPhone || '');
+  const [financeContactName, setFinanceContactName] = useState(savedDraft?.financeContactName || '');
+  const [financeContactEmail, setFinanceContactEmail] = useState(savedDraft?.financeContactEmail || '');
+  const [financeContactPhone, setFinanceContactPhone] = useState(savedDraft?.financeContactPhone || '');
   
   // Beneficial owners
-  const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([
-    { name: '', passportNumber: '', emailId: '', shareholdingPercentage: 0 }
-  ]);
-  const [shareholderCompanyUbos, setShareholderCompanyUbos] = useState('');
-  const [hasPepOwners, setHasPepOwners] = useState(false);
-  const [pepDetails, setPepDetails] = useState('');
+  const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>(
+    savedDraft?.beneficialOwners || [{ name: '', passportNumber: '', emailId: '', shareholdingPercentage: 0 }]
+  );
+  const [shareholderCompanyUbos, setShareholderCompanyUbos] = useState(savedDraft?.shareholderCompanyUbos || '');
+  const [hasPepOwners, setHasPepOwners] = useState(savedDraft?.hasPepOwners || false);
+  const [pepDetails, setPepDetails] = useState(savedDraft?.pepDetails || '');
   
   // Corporate documents
   const [corpDocs, setCorpDocs] = useState<{
@@ -237,8 +293,8 @@ export default function KYC() {
   }>({});
   
   // Corporate document expiry dates (for notification reminders)
-  const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState('');
-  const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState('');
+  const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState(savedDraft?.tradeLicenseExpiryDate || '');
+  const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState(savedDraft?.directorPassportExpiryDate || '');
   
   // Pre-fill expiry dates from existing submission
   useEffect(() => {
@@ -534,6 +590,7 @@ export default function KYC() {
         type: 'info'
       });
       
+      clearKycDraft();
       toast.success("KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
@@ -611,6 +668,7 @@ export default function KYC() {
         type: 'info'
       });
       
+      clearKycDraft();
       toast.success("Corporate KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
