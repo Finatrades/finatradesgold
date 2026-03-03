@@ -69,6 +69,7 @@ interface AssignedUser {
   assigned_by: string | null;
   assigned_by_first_name: string | null;
   assigned_by_last_name: string | null;
+  approval_level: string;
 }
 
 export default function RoleManagement() {
@@ -185,6 +186,20 @@ export default function RoleManagement() {
     },
     onError: () => {
       toast.error("Failed to update permission");
+    },
+  });
+
+  const updateApprovalLevelMutation = useMutation({
+    mutationFn: async ({ userId, roleId, approvalLevel }: { userId: string; roleId: string; approvalLevel: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/rbac/users/${userId}/roles/${roleId}/approval-level`, { approvalLevel });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["role-users", selectedRole?.id] });
+      toast.success("Approval level updated");
+    },
+    onError: () => {
+      toast.error("Failed to update approval level");
     },
   });
 
@@ -537,42 +552,98 @@ export default function RoleManagement() {
                             {roleUsersData.users.length} user{roleUsersData.users.length !== 1 ? 's' : ''} assigned to this role
                           </p>
                         </div>
-                        {roleUsersData.users.map((user: AssignedUser) => (
-                          <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={user.profile_photo_url || undefined} />
-                                <AvatarFallback>
-                                  {(user.first_name?.[0] || '') + (user.last_name?.[0] || user.email[0].toUpperCase())}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">
-                                  {user.first_name && user.last_name 
-                                    ? `${user.first_name} ${user.last_name}` 
-                                    : user.email}
-                                </p>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                              </div>
-                            </div>
-                            <div className="text-right text-sm">
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                <span>Assigned {new Date(user.assigned_at).toLocaleDateString()}</span>
-                              </div>
-                              {user.assigned_by_first_name && (
-                                <p className="text-xs text-muted-foreground">
-                                  by {user.assigned_by_first_name} {user.assigned_by_last_name}
-                                </p>
-                              )}
-                              {user.expires_at && (
-                                <p className="text-xs text-amber-600">
-                                  Expires: {new Date(user.expires_at).toLocaleDateString()}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                        <div className="rounded-lg border overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>User</TableHead>
+                                <TableHead className="w-[180px]">Approval Level</TableHead>
+                                <TableHead className="text-right w-[160px]">Assigned</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {roleUsersData.users.map((user: AssignedUser) => (
+                                <TableRow key={user.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-9 w-9">
+                                        <AvatarImage src={user.profile_photo_url || undefined} />
+                                        <AvatarFallback className="text-xs">
+                                          {(user.first_name?.[0] || '') + (user.last_name?.[0] || user.email[0].toUpperCase())}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="font-medium text-sm">
+                                          {user.first_name && user.last_name 
+                                            ? `${user.first_name} ${user.last_name}` 
+                                            : user.email}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={user.approval_level || "none"}
+                                      onValueChange={(val) => {
+                                        if (selectedRole) {
+                                          updateApprovalLevelMutation.mutate({ userId: user.id, roleId: selectedRole.id, approvalLevel: val });
+                                        }
+                                      }}
+                                      data-testid={`approval-level-${user.id}`}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs w-[160px]">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="h-2 w-2 rounded-full bg-gray-300" />
+                                            No Approval
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="l1">
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="h-2 w-2 rounded-full bg-blue-500" />
+                                            L1 Approver
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="final">
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="h-2 w-2 rounded-full bg-green-500" />
+                                            Final Approver
+                                          </span>
+                                        </SelectItem>
+                                        <SelectItem value="both">
+                                          <span className="flex items-center gap-1.5">
+                                            <span className="h-2 w-2 rounded-full bg-purple-500" />
+                                            L1 + Final
+                                          </span>
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="text-xs text-muted-foreground">
+                                      <div className="flex items-center justify-end gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{new Date(user.assigned_at).toLocaleDateString()}</span>
+                                      </div>
+                                      {user.assigned_by_first_name && (
+                                        <p>by {user.assigned_by_first_name} {user.assigned_by_last_name}</p>
+                                      )}
+                                      {user.expires_at && (
+                                        <p className="text-amber-600">
+                                          Expires: {new Date(user.expires_at).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">

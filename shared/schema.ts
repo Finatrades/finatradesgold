@@ -349,6 +349,7 @@ export const userRoleAssignments = pgTable("user_role_assignments", {
   assignedAt: timestamp("assigned_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),
   isActive: boolean("is_active").notNull().default(true),
+  approvalLevel: varchar("approval_level", { length: 20 }).default("none"),
 });
 
 export const insertUserRoleAssignmentSchema = createInsertSchema(userRoleAssignments)

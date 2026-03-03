@@ -25511,6 +25511,25 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/rbac/users/:userId/roles/:roleId/approval-level", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
+    try {
+      const { userId, roleId } = req.params;
+      const { approvalLevel } = req.body;
+      const validLevels = ["none", "l1", "final", "both"];
+      if (!validLevels.includes(approvalLevel)) {
+        return res.status(400).json({ error: "Invalid approval level. Must be: none, l1, final, or both" });
+      }
+      const updated = await storage.updateUserApprovalLevel(userId, roleId, approvalLevel);
+      if (!updated) {
+        return res.status(404).json({ error: "Role assignment not found" });
+      }
+      res.json({ success: true, approvalLevel });
+    } catch (error) {
+      console.error("Update approval level error:", error);
+      res.status(500).json({ error: "Failed to update approval level" });
+    }
+  });
+
   // Get task definitions
   app.get("/api/admin/rbac/tasks", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {

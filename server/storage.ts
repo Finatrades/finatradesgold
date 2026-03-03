@@ -5047,6 +5047,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db.execute(sql`
       SELECT u.id, u.email, u.first_name, u.last_name, u.profile_photo,
         ura.assigned_at, ura.expires_at, ura.assigned_by,
+        COALESCE(ura.approval_level, 'none') as approval_level,
         ab.first_name as assigned_by_first_name, ab.last_name as assigned_by_last_name
       FROM user_role_assignments ura
       JOIN users u ON ura.user_id = u.id
@@ -5056,6 +5057,14 @@ export class DatabaseStorage implements IStorage {
       ORDER BY ura.assigned_at DESC
     `);
     return result.rows;
+  }
+
+  async updateUserApprovalLevel(userId: string, roleId: string, approvalLevel: string): Promise<boolean> {
+    const result = await db.execute(sql`
+      UPDATE user_role_assignments SET approval_level = ${approvalLevel}
+      WHERE user_id = ${userId} AND role_id = ${roleId} AND is_active = true
+    `);
+    return (result.rowCount || 0) > 0;
   }
 
   async getUserComponentPermissions(userId: string): Promise<any[]> {
