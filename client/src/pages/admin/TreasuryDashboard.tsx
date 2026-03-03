@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import AdminLayout from './AdminLayout';
 import { 
   Wallet, TrendingUp, TrendingDown, ArrowRightLeft, 
   DollarSign, Coins, AlertTriangle, CheckCircle2, 
@@ -133,13 +134,16 @@ export default function TreasuryDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
+    <AdminLayout>
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
@@ -466,5 +470,6 @@ export default function TreasuryDashboard() {
         </CardContent>
       </Card>
     </div>
+    </AdminLayout>
   );
 }
