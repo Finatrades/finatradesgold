@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Users, DollarSign, Activity, ShieldCheck, ArrowUpRight, ArrowDownRight, 
   Clock, Loader2, TrendingUp, BarChart3, AlertTriangle, Settings, Briefcase,
-  CreditCard, FileText, UserCheck, Wallet, Building2, Shield, LayoutDashboard
+  CreditCard, FileText, UserCheck, Wallet, Building2, Shield, LayoutDashboard, Lock
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -176,6 +176,9 @@ interface PendingCounts {
 }
 
 export default function AdminDashboard() {
+  const { hasMenuPermission, isSuperAdmin, effectivePermissions } = useAdminPermissions();
+  const hasStatsAccess = isSuperAdmin || effectivePermissions.includes('view_reports');
+
   const { data: stats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: async () => {
@@ -183,7 +186,12 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error('Failed to fetch stats');
       return res.json();
     },
-    refetchInterval: 30000
+    refetchInterval: 30000,
+    enabled: hasStatsAccess,
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('Access Denied') || error?.message?.includes('Permission denied')) return false;
+      return failureCount < 3;
+    }
   });
 
   const { data: pendingCounts } = useQuery<PendingCounts>({
@@ -193,11 +201,16 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error('Failed to fetch pending counts');
       return res.json();
     },
-    refetchInterval: 30000
+    refetchInterval: 30000,
+    enabled: hasStatsAccess,
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('Access Denied') || error?.message?.includes('Permission denied')) return false;
+      return failureCount < 3;
+    }
   });
 
   useEffect(() => {
-    if (error) {
+    if (error && !error.message?.includes('Access Denied') && !error.message?.includes('Permission denied')) {
       toast.error('Failed to load dashboard stats', {
         description: 'Please try refreshing the page.'
       });
@@ -205,9 +218,6 @@ export default function AdminDashboard() {
   }, [error]);
 
   const totalPending = (pendingCounts?.pendingKyc || 0) + (pendingCounts?.pendingDeposits || 0) + (pendingCounts?.pendingWithdrawals || 0) + (pendingCounts?.pendingPhysicalDeposits || 0) + (pendingCounts?.pendingTradeCases || 0) + (pendingCounts?.pendingBnslRequests || 0) + (pendingCounts?.pendingAccountDeletions || 0) + (pendingCounts?.unreadChats || 0);
-
-  // Get permission checking from context
-  const { hasMenuPermission, isSuperAdmin } = useAdminPermissions();
 
   // Filter QUICK_ACTIONS based on permissions
   const filteredQuickActions = useMemo(() => {
@@ -270,7 +280,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Critical Alerts Banner */}
-        {!isLoading && totalPending > 0 && (
+        {hasStatsAccess && !isLoading && totalPending > 0 && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2">
@@ -340,47 +350,65 @@ export default function AdminDashboard() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <GlassStatsCard 
-            title="Total Users" 
-            value={isLoading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
-            subtitle="Registered accounts"
-            icon={<Users className="w-6 h-6" />} 
-            gradient="from-blue-500 to-indigo-600"
-            loading={isLoading}
-            percentChange={stats?.userGrowthChange ?? 0}
-            href="/admin/users"
-          />
-          <GlassStatsCard 
-            title="Total Volume" 
-            value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
-            subtitle={isLoading ? 'All-time transactions' : `${formatAed(stats?.totalVolumeAed || 0)}`}
-            icon={<BarChart3 className="w-6 h-6" />} 
-            gradient="from-purple-500 to-pink-600"
-            loading={isLoading}
-            percentChange={stats?.volumeChange ?? 0}
-            href="/admin/transactions"
-          />
-          <GlassStatsCard 
-            title="Pending KYC" 
-            value={isLoading ? '...' : stats?.pendingKycCount?.toString() || '0'}
-            subtitle="Awaiting review"
-            icon={<ShieldCheck className="w-6 h-6" />} 
-            gradient="from-purple-500 to-red-500"
-            loading={isLoading}
-            href="/admin/kyc"
-          />
-          <GlassStatsCard 
-            title="Revenue" 
-            value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
-            subtitle={isLoading ? 'Platform earnings' : `${formatAed(stats?.revenueAed || 0)}`}
-            icon={<TrendingUp className="w-6 h-6" />} 
-            gradient="from-emerald-500 to-teal-600"
-            loading={isLoading}
-            percentChange={stats?.revenueChange ?? 0}
-            href="/admin/financial-reports"
-          />
-        </div>
+        {hasStatsAccess ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <GlassStatsCard 
+              title="Total Users" 
+              value={isLoading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
+              subtitle="Registered accounts"
+              icon={<Users className="w-6 h-6" />} 
+              gradient="from-blue-500 to-indigo-600"
+              loading={isLoading}
+              percentChange={stats?.userGrowthChange ?? 0}
+              href="/admin/users"
+            />
+            <GlassStatsCard 
+              title="Total Volume" 
+              value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
+              subtitle={isLoading ? 'All-time transactions' : `${formatAed(stats?.totalVolumeAed || 0)}`}
+              icon={<BarChart3 className="w-6 h-6" />} 
+              gradient="from-purple-500 to-pink-600"
+              loading={isLoading}
+              percentChange={stats?.volumeChange ?? 0}
+              href="/admin/transactions"
+            />
+            <GlassStatsCard 
+              title="Pending KYC" 
+              value={isLoading ? '...' : stats?.pendingKycCount?.toString() || '0'}
+              subtitle="Awaiting review"
+              icon={<ShieldCheck className="w-6 h-6" />} 
+              gradient="from-purple-500 to-red-500"
+              loading={isLoading}
+              href="/admin/kyc"
+            />
+            <GlassStatsCard 
+              title="Revenue" 
+              value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
+              subtitle={isLoading ? 'Platform earnings' : `${formatAed(stats?.revenueAed || 0)}`}
+              icon={<TrendingUp className="w-6 h-6" />} 
+              gradient="from-emerald-500 to-teal-600"
+              loading={isLoading}
+              percentChange={stats?.revenueChange ?? 0}
+              href="/admin/financial-reports"
+            />
+          </div>
+        ) : (
+          <Card className="border border-blue-200 bg-blue-50/50" data-testid="card-restricted-stats">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-blue-100">
+                  <Lock className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900">Dashboard Statistics</h3>
+                  <p className="text-sm text-blue-700 mt-0.5">
+                    You do not have permission to view platform statistics. Please use the navigation menu to access sections assigned to your role.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -427,7 +455,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Operations Overview */}
-        <div>
+        {hasStatsAccess && <div>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Operations Overview</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <MetricCard
@@ -519,10 +547,10 @@ export default function AdminDashboard() {
               href="/admin/bnsl"
             />
           </div>
-        </div>
+        </div>}
 
         {/* Recent Activity & KYC Requests */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        {hasStatsAccess && <div className="grid lg:grid-cols-3 gap-8">
           
           {/* Recent KYC Requests */}
           <Card className="lg:col-span-2">
@@ -590,10 +618,10 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-        </div>
+        </div>}
 
         {/* Recent Transactions */}
-        <Card>
+        {hasStatsAccess && <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Transactions</CardTitle>
             <Link href="/admin/transactions">
@@ -675,7 +703,7 @@ export default function AdminDashboard() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
       </div>
     </AdminLayout>
   );
