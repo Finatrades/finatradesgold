@@ -191,6 +191,7 @@ export default function KYC() {
   };
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   const kycStorageKey = `kyc_draft_${user?.id || 'unknown'}`;
 
@@ -654,11 +655,12 @@ export default function KYC() {
       
       clearKycDraft();
       queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finatrades-kyc/personal'] });
       toast.success("KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
       
-      setLocation("/dashboard");
+      setIsSubmitted(true);
     } catch (error: any) {
       console.error('[KYC] Personal submission error:', error);
       const msg = error?.message || 'Please try again later.';
@@ -733,11 +735,12 @@ export default function KYC() {
       
       clearKycDraft();
       queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finatrades-kyc/corporate'] });
       toast.success("Corporate KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
       
-      setLocation("/dashboard");
+      setIsSubmitted(true);
     } catch (error: any) {
       console.error('[KYC] Corporate submission error:', error);
       const msg = error?.message || 'Please try again later.';
@@ -1250,11 +1253,11 @@ export default function KYC() {
                   isCompleted={!!capturedSelfie && currentStepIdx >= 2}
                 />
                 <StepItem 
-                  title="Complete"
-                  description="Submit for review" 
+                  title="Review & Submit"
+                  description="Confirm and submit" 
                   icon={<CheckCircle2 className="w-5 h-5" />} 
                   isActive={finatradesStep === 'complete'} 
-                  isCompleted={false}
+                  isCompleted={isSubmitted}
                 />
               </div>
 
@@ -1682,8 +1685,147 @@ export default function KYC() {
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('documents'); }}>Back</Button>
                         <Button 
+                          onClick={() => { stopLivenessCamera(); setFinatradesStep('complete'); }}
+                          disabled={!capturedSelfie && !isSectionLocked('liveness')}
+                          className="bg-primary hover:bg-primary/90 text-white font-bold"
+                          data-testid="button-continue-to-review"
+                        >
+                          Continue to Review
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {finatradesStep === 'complete' && isSubmitted && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader className="text-center pb-2">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                          <CheckCircle2 className="w-10 h-10 text-white" />
+                        </div>
+                        <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-submitted-title">
+                          {isResubmitMode ? 'Resubmission Successful!' : 'KYC Submitted Successfully!'}
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                          Your verification documents have been received and are now under review by our compliance team.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-3 mb-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="font-semibold text-green-800">What happens next?</span>
+                          </div>
+                          <ul className="text-sm text-green-700 space-y-1 ml-8 list-disc">
+                            <li>Our team will review your submitted documents</li>
+                            <li>You'll receive an email notification with the result</li>
+                            <li>Expected processing time: 24 hours</li>
+                            <li>Once approved, all platform features will be unlocked</li>
+                          </ul>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-center pt-4">
+                        <Button onClick={() => setLocation('/dashboard')} className="bg-primary hover:bg-primary/90 text-white" data-testid="button-go-dashboard">
+                          Go to Dashboard
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {finatradesStep === 'complete' && !isSubmitted && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          Review & Submit
+                        </CardTitle>
+                        <CardDescription>
+                          Please review your information below before submitting.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="p-4 rounded-lg border border-border bg-muted/30">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <User className="w-4 h-4 text-primary" />
+                              Personal Information
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><span className="text-muted-foreground">Name:</span> <span className="font-medium" data-testid="review-fullname">{personalFullName}</span></div>
+                              <div><span className="text-muted-foreground">Email:</span> <span className="font-medium" data-testid="review-email">{personalEmail}</span></div>
+                              <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium" data-testid="review-phone">{personalPhone}</span></div>
+                              <div><span className="text-muted-foreground">DOB:</span> <span className="font-medium" data-testid="review-dob">{personalDateOfBirth}</span></div>
+                              <div><span className="text-muted-foreground">Nationality:</span> <span className="font-medium">{personalNationality}</span></div>
+                              <div><span className="text-muted-foreground">Country:</span> <span className="font-medium">{personalCountry}</span></div>
+                              <div><span className="text-muted-foreground">City:</span> <span className="font-medium">{personalCity}</span></div>
+                              <div><span className="text-muted-foreground">Address:</span> <span className="font-medium">{personalAddress}</span></div>
+                              <div><span className="text-muted-foreground">Occupation:</span> <span className="font-medium">{personalOccupation}</span></div>
+                              <div><span className="text-muted-foreground">Source of Funds:</span> <span className="font-medium">{personalSourceOfFunds}</span></div>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-lg border border-border bg-muted/30">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <FileText className="w-4 h-4 text-primary" />
+                              Documents
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                {idFrontFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                                <span>ID Front</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {idBackFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                                <span>ID Back</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {addressProofFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                                <span>Address Proof</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {passportFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <span className="text-muted-foreground text-xs">Passport (optional)</span>}
+                                {passportFile && <span>Passport</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-lg border border-border bg-muted/30">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <Camera className="w-4 h-4 text-primary" />
+                              Liveness Verification
+                            </h4>
+                            <div className="flex items-center gap-3">
+                              {capturedSelfie ? (
+                                <>
+                                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-500">
+                                    <img src={capturedSelfie} alt="Selfie" className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="text-sm font-medium">Verified</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex items-center gap-2 text-amber-600">
+                                  <AlertCircle className="w-4 h-4" />
+                                  <span className="text-sm">Not completed</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm text-blue-700">
+                            By submitting, you confirm that all information provided is accurate and complete. 
+                            Our compliance team will review your submission within 24 hours.
+                          </p>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setFinatradesStep('liveness')} data-testid="button-back-to-liveness">Back</Button>
+                        <Button 
                           onClick={handleFinatradesPersonalSubmit}
-                          disabled={(!capturedSelfie && !isSectionLocked('liveness')) || isSubmitting}
+                          disabled={isSubmitting}
                           className="bg-green-600 hover:bg-green-700 text-white font-bold"
                           data-testid="button-submit-kyc"
                         >
@@ -2331,7 +2473,42 @@ export default function KYC() {
                   )}
 
                   {/* STEP 5: Review & Submit */}
-                  {corporateStep === 5 && (
+                  {corporateStep === 5 && isSubmitted && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader className="text-center pb-2">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                          <CheckCircle2 className="w-10 h-10 text-white" />
+                        </div>
+                        <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-submitted-title">
+                          {isResubmitMode ? 'Resubmission Successful!' : 'Corporate KYC Submitted Successfully!'}
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                          Your corporate verification documents have been received and are now under review by our compliance team.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-3 mb-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="font-semibold text-green-800">What happens next?</span>
+                          </div>
+                          <ul className="text-sm text-green-700 space-y-1 ml-8 list-disc">
+                            <li>Our team will review your submitted documents</li>
+                            <li>You'll receive an email notification with the result</li>
+                            <li>Expected processing time: 5 business days</li>
+                            <li>Once approved, all platform features will be unlocked</li>
+                          </ul>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-center pt-4">
+                        <Button onClick={() => setLocation('/dashboard')} className="bg-primary hover:bg-primary/90 text-white" data-testid="button-go-dashboard-corp">
+                          Go to Dashboard
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {corporateStep === 5 && !isSubmitted && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle>Review & Submit</CardTitle>
