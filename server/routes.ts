@@ -5510,6 +5510,15 @@ export async function registerRoutes(
           }
         }
         
+        emitLedgerEvent(submission.userId, {
+          type: 'kyc_update',
+          module: 'system',
+          action: `kyc_${req.body.status.toLowerCase().replace(/\s+/g, '_')}`,
+          data: { status: req.body.status, submissionId: req.params.id },
+          timestamp: new Date().toISOString(),
+          syncVersion: Date.now(),
+        });
+
         return res.json({ submission, emailSent, kycType });
       }
       

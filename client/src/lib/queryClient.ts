@@ -133,10 +133,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      staleTime: 300000, // 5 minutes - enterprise caching for reduced latency
-      gcTime: 1800000, // 30 minutes - keep data much longer
-      refetchOnWindowFocus: false, // Disable automatic refetch on focus - use socket events instead
-      refetchOnReconnect: false, // Disabled - socket events handle sync to prevent mobile auto-refresh issues
+      staleTime: 30000, // 30 seconds - ensures user sees fresh data quickly after admin actions
+      gcTime: 300000, // 5 minutes - keep data in cache for background tabs
+      refetchOnWindowFocus: true, // Re-enable: critical for seeing admin KYC decisions when user switches tabs
+      refetchOnReconnect: true, // Re-enable: ensure fresh data after network drops
       retry: 1,
       refetchInterval: false,
     },

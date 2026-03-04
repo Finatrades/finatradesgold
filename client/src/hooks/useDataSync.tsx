@@ -4,7 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
 interface LedgerEvent {
-  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer' | 'physical_deposit_update' | 'negotiation_message' | 'negotiation_update';
+  type: 'balance_update' | 'transaction' | 'certificate' | 'notification' | 'gold_price' | 'admin_update' | 'deposit_rejected' | 'withdrawal_rejected' | 'crypto_rejected' | 'pending_transfer' | 'physical_deposit_update' | 'negotiation_message' | 'negotiation_update' | 'kyc_update';
   module: 'finapay' | 'finavault' | 'bnsl' | 'finabridge' | 'system' | 'admin';
   action: string;
   data?: any;
@@ -23,6 +23,7 @@ const QUERY_KEY_MAP: Record<string, string[][]> = {
   'withdrawal_rejected': [['withdrawal-requests'], ['notifications'], ['dashboard']],
   'crypto_rejected': [['crypto-payments'], ['notifications']],
   'pending_transfer': [['pendingTransfers'], ['wallet']], // Pending affects wallet
+  'kyc_update': [['dashboard'], ['notifications'], ['/api/finatrades-kyc'], ['/api/kyc-status'], ['/api/auth/me']],
   'admin_update': [['admin-transactions'], ['admin-users']], // Minimal admin updates
   'physical_deposit_update': [['physical-deposits'], ['user-physical-deposits']], // Physical deposit status updates
   'negotiation_message': [['physical-deposits'], ['user-physical-deposits']], // Negotiation messages
@@ -79,6 +80,11 @@ export function useDataSync() {
       processedEvents.current = new Set(entries.slice(-50));
     }
 
+    if (event.type === 'kyc_update' && user?.id) {
+      console.log('[DataSync] KYC status changed, refreshing user context');
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    }
+
     const queriesToInvalidate: string[][] = [];
 
     const typeQueries = QUERY_KEY_MAP[event.type] || [];
@@ -102,7 +108,7 @@ export function useDataSync() {
         queryClient.invalidateQueries({ queryKey });
       });
     }, 100);
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
