@@ -20805,7 +20805,7 @@ export async function registerRoutes(
       const existing = await storage.getFinatradesPersonalKyc(userId);
       
       if (existing) {
-        const updated = await storage.updateFinatradesPersonalKyc(existing.id, kycData);
+        const updated = await storage.updateFinatradesPersonalKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
         await storage.updateUser(userId, { kycStatus: 'Pending Review' });
 
         const versions = await storage.getKycVersions(existing.id);
@@ -20819,10 +20819,6 @@ export async function registerRoutes(
           status: 'submitted',
           submittedAt: new Date(),
         });
-
-        if (existing.status === 'Changes Requested' || existing.status === 'Rejected') {
-          await storage.updateFinatradesPersonalKyc(existing.id, { status: 'Pending Review' as any });
-        }
         
         notifyAllAdmins({
           title: nextVersion > 1 ? 'KYC Resubmission' : 'KYC Updated',
@@ -20968,7 +20964,7 @@ export async function registerRoutes(
       const existing = await storage.getFinatradesCorporateKyc(userId);
       
       if (existing) {
-        const updated = await storage.updateFinatradesCorporateKyc(existing.id, kycData);
+        const updated = await storage.updateFinatradesCorporateKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
         await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
 
         const versions = await storage.getKycVersions(existing.id);
@@ -20982,10 +20978,6 @@ export async function registerRoutes(
           status: 'submitted',
           submittedAt: new Date(),
         });
-
-        if (existing.status === 'Changes Requested' || existing.status === 'Rejected') {
-          await storage.updateFinatradesCorporateKyc(existing.id, { status: 'Pending Review' as any });
-        }
 
         notifyAllAdmins({
           title: nextVersion > 1 ? 'Corporate KYC Resubmission' : 'Corporate KYC Updated',
