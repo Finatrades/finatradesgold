@@ -48,30 +48,31 @@ export async function loadUserPermissions(userId: string): Promise<Record<string
 }
 
 // Legacy permission string to RBAC component mapping
-const LEGACY_PERM_TO_COMPONENT: Record<string, { component: string, action: 'view' | 'edit' }> = {
-  'view_users': { component: 'user-management', action: 'view' },
-  'manage_users': { component: 'user-management', action: 'edit' },
-  'view_kyc': { component: 'kyc-reviews', action: 'view' },
-  'manage_kyc': { component: 'kyc-reviews', action: 'edit' },
-  'manage_employees': { component: 'employees', action: 'edit' },
-  'view_reports': { component: 'financial-reports', action: 'view' },
-  'generate_reports': { component: 'financial-reports', action: 'edit' },
-  'view_vault': { component: 'vault-management', action: 'view' },
-  'manage_vault': { component: 'vault-management', action: 'edit' },
-  'view_transactions': { component: 'payment-operations', action: 'view' },
-  'manage_transactions': { component: 'payment-operations', action: 'edit' },
-  'manage_deposits': { component: 'payment-operations', action: 'edit' },
-  'manage_withdrawals': { component: 'payment-operations', action: 'edit' },
-  'manage_fees': { component: 'fee-management', action: 'edit' },
-  'view_bnsl': { component: 'bnsl-management', action: 'view' },
-  'manage_bnsl': { component: 'bnsl-management', action: 'edit' },
-  'view_finabridge': { component: 'finabridge-management', action: 'view' },
-  'manage_finabridge': { component: 'finabridge-management', action: 'edit' },
-  'manage_settings': { component: 'platform-settings', action: 'edit' },
-  'view_cms': { component: 'cms-management', action: 'view' },
-  'manage_cms': { component: 'cms-management', action: 'edit' },
-  'view_support': { component: 'support', action: 'view' },
-  'manage_support': { component: 'support', action: 'edit' },
+// Some permissions map to multiple components (e.g., view_reports can come from financial-reports OR audit-logs)
+const LEGACY_PERM_TO_COMPONENT: Record<string, { components: string[], action: 'view' | 'edit' }> = {
+  'view_users': { components: ['user-management'], action: 'view' },
+  'manage_users': { components: ['user-management'], action: 'edit' },
+  'view_kyc': { components: ['kyc-reviews', 'compliance-dashboard'], action: 'view' },
+  'manage_kyc': { components: ['kyc-reviews', 'compliance-dashboard'], action: 'edit' },
+  'manage_employees': { components: ['employees', 'role-management'], action: 'edit' },
+  'view_reports': { components: ['financial-reports', 'audit-logs', 'treasury', 'compliance-dashboard'], action: 'view' },
+  'generate_reports': { components: ['financial-reports', 'treasury'], action: 'edit' },
+  'view_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'view' },
+  'manage_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'edit' },
+  'view_transactions': { components: ['payment-operations'], action: 'view' },
+  'manage_transactions': { components: ['payment-operations'], action: 'edit' },
+  'manage_deposits': { components: ['payment-operations'], action: 'edit' },
+  'manage_withdrawals': { components: ['payment-operations'], action: 'edit' },
+  'manage_fees': { components: ['fee-management'], action: 'edit' },
+  'view_bnsl': { components: ['bnsl-management'], action: 'view' },
+  'manage_bnsl': { components: ['bnsl-management'], action: 'edit' },
+  'view_finabridge': { components: ['finabridge-management'], action: 'view' },
+  'manage_finabridge': { components: ['finabridge-management'], action: 'edit' },
+  'manage_settings': { components: ['platform-settings', 'security-settings', 'branding'], action: 'edit' },
+  'view_cms': { components: ['cms-management'], action: 'view' },
+  'manage_cms': { components: ['cms-management'], action: 'edit' },
+  'view_support': { components: ['support'], action: 'view' },
+  'manage_support': { components: ['support'], action: 'edit' },
 };
 
 // Check if a string is a legacy permission format
@@ -120,15 +121,15 @@ export function requirePermission(...permissions: string[]) {
           if (isLegacyPermission(perm)) {
             const mapping = LEGACY_PERM_TO_COMPONENT[perm];
             if (mapping) {
-              const componentPerms = req.session.permissions[mapping.component];
-              if (componentPerms) {
-                // For view_ permissions, check can_view
-                // For manage_/generate_ permissions, check can_edit, can_create, can_delete, or can_approve
-                if (mapping.action === 'view' && componentPerms.view) {
-                  return next();
-                }
-                if (mapping.action === 'edit' && (componentPerms.edit || componentPerms.create || componentPerms.delete || componentPerms.approve_l1 || componentPerms.approve_final)) {
-                  return next();
+              for (const component of mapping.components) {
+                const componentPerms = req.session.permissions[component];
+                if (componentPerms) {
+                  if (mapping.action === 'view' && componentPerms.view) {
+                    return next();
+                  }
+                  if (mapping.action === 'edit' && (componentPerms.edit || componentPerms.create || componentPerms.delete || componentPerms.approve_l1 || componentPerms.approve_final)) {
+                    return next();
+                  }
                 }
               }
             }

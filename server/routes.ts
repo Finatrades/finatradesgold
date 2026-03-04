@@ -404,63 +404,64 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
 type RbacAction = 'view' | 'edit' | 'create' | 'delete' | 'approve_l1' | 'approve_final' | 'reject' | 'export';
 
 // Legacy permission to RBAC component mapping
-// Maps legacy string permissions to the new RBAC system (component slug + action)
-const LEGACY_TO_RBAC_MAP: Record<string, { component: string; action: RbacAction }> = {
+// Maps legacy string permissions to the new RBAC system (component slugs + action)
+// Some permissions can be satisfied by ANY of multiple components (e.g., view_reports from financial-reports OR audit-logs)
+const LEGACY_TO_RBAC_MAP: Record<string, { components: string[]; action: RbacAction }> = {
   // User management
-  'view_users': { component: 'user-management', action: 'view' },
-  'manage_users': { component: 'user-management', action: 'edit' },
-  'approve_users': { component: 'user-management', action: 'approve_final' },
+  'view_users': { components: ['user-management'], action: 'view' },
+  'manage_users': { components: ['user-management'], action: 'edit' },
+  'approve_users': { components: ['user-management'], action: 'approve_final' },
   
   // KYC/Compliance
-  'view_kyc': { component: 'kyc-reviews', action: 'view' },
-  'manage_kyc': { component: 'kyc-reviews', action: 'edit' },
-  'approve_kyc': { component: 'kyc-reviews', action: 'approve_final' },
-  'reject_kyc': { component: 'kyc-reviews', action: 'reject' },
+  'view_kyc': { components: ['kyc-reviews', 'compliance-dashboard'], action: 'view' },
+  'manage_kyc': { components: ['kyc-reviews', 'compliance-dashboard'], action: 'edit' },
+  'approve_kyc': { components: ['kyc-reviews'], action: 'approve_final' },
+  'reject_kyc': { components: ['kyc-reviews'], action: 'reject' },
   
   // Vault management
-  'view_vault': { component: 'vault-management', action: 'view' },
-  'manage_vault': { component: 'vault-management', action: 'edit' },
-  'approve_vault': { component: 'vault-management', action: 'approve_final' },
+  'view_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'view' },
+  'manage_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'edit' },
+  'approve_vault': { components: ['vault-management'], action: 'approve_final' },
   
   // Employees
-  'manage_employees': { component: 'employees', action: 'edit' },
+  'manage_employees': { components: ['employees', 'role-management'], action: 'edit' },
   
   // Platform settings
-  'manage_settings': { component: 'platform-settings', action: 'edit' },
+  'manage_settings': { components: ['platform-settings', 'security-settings', 'branding'], action: 'edit' },
   
   // Reports
-  'view_reports': { component: 'financial-reports', action: 'view' },
-  'generate_reports': { component: 'financial-reports', action: 'create' },
-  'export_reports': { component: 'financial-reports', action: 'export' },
+  'view_reports': { components: ['financial-reports', 'audit-logs', 'treasury', 'compliance-dashboard'], action: 'view' },
+  'generate_reports': { components: ['financial-reports', 'treasury'], action: 'create' },
+  'export_reports': { components: ['financial-reports'], action: 'export' },
   
   // Payment operations
-  'manage_deposits': { component: 'payment-operations', action: 'edit' },
-  'manage_withdrawals': { component: 'payment-operations', action: 'edit' },
-  'view_transactions': { component: 'payment-operations', action: 'view' },
-  'manage_transactions': { component: 'payment-operations', action: 'edit' },
-  'approve_deposits': { component: 'payment-operations', action: 'approve_final' },
-  'approve_withdrawals': { component: 'payment-operations', action: 'approve_final' },
-  'reject_deposits': { component: 'payment-operations', action: 'reject' },
-  'reject_withdrawals': { component: 'payment-operations', action: 'reject' },
+  'manage_deposits': { components: ['payment-operations'], action: 'edit' },
+  'manage_withdrawals': { components: ['payment-operations'], action: 'edit' },
+  'view_transactions': { components: ['payment-operations'], action: 'view' },
+  'manage_transactions': { components: ['payment-operations'], action: 'edit' },
+  'approve_deposits': { components: ['payment-operations'], action: 'approve_final' },
+  'approve_withdrawals': { components: ['payment-operations'], action: 'approve_final' },
+  'reject_deposits': { components: ['payment-operations'], action: 'reject' },
+  'reject_withdrawals': { components: ['payment-operations'], action: 'reject' },
   
   // Fee management
-  'manage_fees': { component: 'fee-management', action: 'edit' },
+  'manage_fees': { components: ['fee-management'], action: 'edit' },
   
   // FinaBridge
-  'view_finabridge': { component: 'finabridge-management', action: 'view' },
-  'manage_finabridge': { component: 'finabridge-management', action: 'edit' },
+  'view_finabridge': { components: ['finabridge-management'], action: 'view' },
+  'manage_finabridge': { components: ['finabridge-management'], action: 'edit' },
   
   // BNSL
-  'view_bnsl': { component: 'bnsl-management', action: 'view' },
-  'manage_bnsl': { component: 'bnsl-management', action: 'edit' },
+  'view_bnsl': { components: ['bnsl-management'], action: 'view' },
+  'manage_bnsl': { components: ['bnsl-management'], action: 'edit' },
   
   // CMS
-  'view_cms': { component: 'cms-management', action: 'view' },
-  'manage_cms': { component: 'cms-management', action: 'edit' },
+  'view_cms': { components: ['cms-management'], action: 'view' },
+  'manage_cms': { components: ['cms-management'], action: 'edit' },
   
   // Support
-  'view_support': { component: 'platform-settings', action: 'view' },
-  'manage_support': { component: 'platform-settings', action: 'edit' },
+  'view_support': { components: ['support'], action: 'view' },
+  'manage_support': { components: ['support'], action: 'edit' },
 };
 
 // Middleware to require specific employee permissions
@@ -511,8 +512,10 @@ function requirePermission(...requiredPermissions: string[]) {
           return false;
         }
         
-        const componentPerms = req.session.permissions?.[rbacMapping.component];
-        return componentPerms && componentPerms[rbacMapping.action];
+        return rbacMapping.components.some(component => {
+          const componentPerms = req.session.permissions?.[component];
+          return componentPerms && componentPerms[rbacMapping.action];
+        });
       });
       
       if (!hasPermission) {
