@@ -20822,6 +20822,14 @@ export async function registerRoutes(
           link: '/admin/kyc',
         });
 
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        sendEmail(user.email, EMAIL_TEMPLATES.KYC_PENDING_REVIEW, {
+          user_name: user.firstName || personalInformation?.fullName || 'Valued Customer',
+          kyc_type: 'Personal',
+          processing_time: '24 hours',
+          dashboard_url: `${baseUrl}/dashboard`,
+        }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
+
         res.json({ success: true, submission: updated });
       } else {
         const submission = await storage.createFinatradesPersonalKyc(kycData);
@@ -20843,6 +20851,14 @@ export async function registerRoutes(
           type: 'info',
           link: '/admin/kyc',
         });
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        sendEmail(user.email, EMAIL_TEMPLATES.KYC_PENDING_REVIEW, {
+          user_name: user.firstName || personalInformation?.fullName || 'Valued Customer',
+          kyc_type: 'Personal',
+          processing_time: '24 hours',
+          dashboard_url: `${baseUrl}/dashboard`,
+        }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
 
         res.json({ success: true, submission });
       }
@@ -20969,6 +20985,14 @@ export async function registerRoutes(
           link: '/admin/kyc',
         });
 
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        sendEmail(user.email, EMAIL_TEMPLATES.KYC_PENDING_REVIEW, {
+          user_name: companyName || user.firstName || 'Valued Customer',
+          kyc_type: 'Corporate',
+          processing_time: '5 business days',
+          dashboard_url: `${baseUrl}/dashboard`,
+        }).catch(err => console.error('[KYC] Failed to send corporate submission confirmation email:', err));
+
         res.json({ success: true, submission: updated });
       } else {
         const submission = await storage.createFinatradesCorporateKyc({
@@ -20993,6 +21017,14 @@ export async function registerRoutes(
           type: 'info',
           link: '/admin/kyc',
         });
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        sendEmail(user.email, EMAIL_TEMPLATES.KYC_PENDING_REVIEW, {
+          user_name: companyName || user.firstName || 'Valued Customer',
+          kyc_type: 'Corporate',
+          processing_time: '5 business days',
+          dashboard_url: `${baseUrl}/dashboard`,
+        }).catch(err => console.error('[KYC] Failed to send corporate submission confirmation email:', err));
 
         res.json({ success: true, submission });
       }

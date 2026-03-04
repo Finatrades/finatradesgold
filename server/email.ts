@@ -901,6 +901,46 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     status: 'published' as const,
   },
   {
+    slug: EMAIL_TEMPLATES.KYC_PENDING_REVIEW,
+    name: 'KYC Submission Confirmation',
+    type: 'email' as const,
+    module: 'kyc',
+    subject: 'Your KYC verification has been submitted',
+    body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Verification Submitted</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff;">
+          <p>Hello {{user_name}},</p>
+          <p>Thank you for submitting your {{kyc_type}} verification documents. Your submission has been received and is now under review.</p>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; font-weight: 600; color: #166534;">What happens next?</p>
+            <ul style="margin: 0; padding-left: 20px; color: #15803d;">
+              <li>Our compliance team will review your documents</li>
+              <li>Expected processing time: {{processing_time}}</li>
+              <li>You will receive an email notification with the result</li>
+            </ul>
+          </div>
+          <p style="color: #6b7280; font-size: 13px;">If you have any questions, please contact our support team.</p>
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Go to Dashboard</a>
+          </p>
+        </div>
+        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
+          <p>Finatrades - Gold-Backed Digital Finance</p>
+        </div>
+      </div>
+    `,
+    variables: [
+      { name: 'user_name', description: 'User full name' },
+      { name: 'kyc_type', description: 'Type of KYC (Personal or Corporate)' },
+      { name: 'processing_time', description: 'Expected processing time' },
+      { name: 'dashboard_url', description: 'Link to user dashboard' },
+    ],
+    status: 'published' as const,
+  },
+  {
     slug: EMAIL_TEMPLATES.GOLD_PURCHASE,
     name: 'Gold Purchase Confirmation',
     type: 'email' as const,
