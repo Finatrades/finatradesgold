@@ -605,30 +605,40 @@ export default function KYCReview() {
             <h3>Applicant Details</h3>
             <div class="details-grid">
               <span class="label">Full Name:</span>
-              <span class="value">${app.fullName || 'Not provided'}</span>
+              <span class="value">${app.fullName || app.companyName || 'Not provided'}</span>
               <span class="label">Account Type:</span>
               <span class="value">${app.accountType || 'Personal'}</span>
               ${isFinatrades ? `
                 <span class="label">Email:</span>
-                <span class="value">${app.email || 'Not provided'}</span>
+                <span class="value">${app.emailAddress || app.email || 'Not provided'}</span>
                 <span class="label">Phone:</span>
-                <span class="value">${app.phone || 'Not provided'}</span>
-                <span class="label">Date of Birth:</span>
-                <span class="value">${app.dateOfBirth || 'Not provided'}</span>
+                <span class="value">${app.telephoneNumber || app.phone || 'Not provided'}</span>
+                ${app.accountType !== 'business' ? `
+                  <span class="label">Date of Birth:</span>
+                  <span class="value">${app.dateOfBirth || 'Not provided'}</span>
+                ` : ''}
               ` : ''}
               <span class="label">Country:</span>
-              <span class="value">${app.country || 'Not provided'}</span>
-              ${isFinatrades ? `
+              <span class="value">${app.countryOfIncorporation || app.country || 'Not provided'}</span>
+              ${isFinatrades && app.accountType !== 'business' ? `
                 <span class="label">City:</span>
                 <span class="value">${app.city || 'Not provided'}</span>
                 <span class="label">Address:</span>
-                <span class="value">${app.address || 'Not provided'}</span>
+                <span class="value">${app.headOfficeAddress || app.address || 'Not provided'}</span>
                 <span class="label">Postal Code:</span>
                 <span class="value">${app.postalCode || 'Not provided'}</span>
               ` : ''}
-              <span class="label">Nationality:</span>
-              <span class="value">${app.nationality || 'Not provided'}</span>
-              ${isFinatrades ? `
+              ${isFinatrades && app.accountType === 'business' ? `
+                <span class="label">Address:</span>
+                <span class="value">${app.headOfficeAddress || app.address || 'Not provided'}</span>
+                ${app.website ? `<span class="label">Website:</span><span class="value">${app.website}</span>` : ''}
+                ${app.natureOfBusiness ? `<span class="label">Nature of Business:</span><span class="value">${app.natureOfBusiness}</span>` : ''}
+              ` : ''}
+              ${app.accountType !== 'business' ? `
+                <span class="label">Nationality:</span>
+                <span class="value">${app.nationality || 'Not provided'}</span>
+              ` : ''}
+              ${isFinatrades && app.accountType !== 'business' ? `
                 <span class="label">Occupation:</span>
                 <span class="value">${app.occupation || 'Not provided'}</span>
                 <span class="label">Source of Funds:</span>
@@ -647,6 +657,11 @@ export default function KYCReview() {
                 <span class="value">${app.companyName || 'Not provided'}</span>
                 <span class="label">Registration Number:</span>
                 <span class="value">${app.registrationNumber || 'Not provided'}</span>
+                ${app.companyType ? `<span class="label">Company Type:</span><span class="value">${app.companyType}</span>` : ''}
+                ${app.incorporationDate ? `<span class="label">Incorporation Date:</span><span class="value">${app.incorporationDate}</span>` : ''}
+                ${app.tradingContactName ? `<span class="label">Trading Contact:</span><span class="value">${app.tradingContactName} (${app.tradingContactEmail})</span>` : ''}
+                ${app.financeContactName ? `<span class="label">Finance Contact:</span><span class="value">${app.financeContactName} (${app.financeContactEmail})</span>` : ''}
+                ${app.bankName ? `<span class="label">Bank:</span><span class="value">${app.bankName}${app.bankCity ? ', ' + app.bankCity : ''}${app.bankCountry ? ', ' + app.bankCountry : ''}</span>` : ''}
                 <span class="label">Tax ID:</span>
                 <span class="value">${app.taxId || 'Not provided'}</span>
               </div>
@@ -1234,89 +1249,169 @@ export default function KYCReview() {
               <div className="space-y-4">
                 <h4 className="font-medium border-b pb-2">Applicant Details</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-gray-500">Full Name:</span>
-                  <span className="font-medium">{selectedApplication?.fullName || 'Not provided'}</span>
-                  <span className="text-gray-500">Account Type:</span>
-                  <span className="font-medium capitalize">{selectedApplication?.accountType}</span>
-                  
-                  {/* Show additional fields for Finatrades KYC */}
-                  {isFinatradesKyc(selectedApplication) && (
-                    <>
-                      <span className="text-gray-500">Email:</span>
-                      <span className="font-medium">{selectedApplication?.email || 'Not provided'}</span>
-                      <span className="text-gray-500">Phone:</span>
-                      <span className="font-medium">{selectedApplication?.phone || 'Not provided'}</span>
-                      <span className="text-gray-500">Date of Birth:</span>
-                      <span className="font-medium">{selectedApplication?.dateOfBirth || 'Not provided'}</span>
-                    </>
-                  )}
-                  
-                  <span className="text-gray-500">Country:</span>
-                  <span className="font-medium">{selectedApplication?.country || 'Not provided'}</span>
-                  
-                  {isFinatradesKyc(selectedApplication) && (
-                    <>
-                      <span className="text-gray-500">City:</span>
-                      <span className="font-medium">{selectedApplication?.city || 'Not provided'}</span>
-                      <span className="text-gray-500">Address:</span>
-                      <span className="font-medium">{selectedApplication?.address || 'Not provided'}</span>
-                      <span className="text-gray-500">Postal Code:</span>
-                      <span className="font-medium">{selectedApplication?.postalCode || 'Not provided'}</span>
-                    </>
-                  )}
-                  
-                  <span className="text-gray-500">Nationality:</span>
-                  <span className="font-medium">{selectedApplication?.nationality || 'Not provided'}</span>
-                  
-                  {isFinatradesKyc(selectedApplication) && (
-                    <>
-                      <span className="text-gray-500">Occupation:</span>
-                      <span className="font-medium">{selectedApplication?.occupation || 'Not provided'}</span>
-                      <span className="text-gray-500">Source of Funds:</span>
-                      <span className="font-medium">{selectedApplication?.sourceOfFunds || 'Not provided'}</span>
-                      {selectedApplication?.passportExpiryDate && (
-                        <>
-                          <span className="text-gray-500">Passport Expiry:</span>
-                          <span className="font-medium">{selectedApplication.passportExpiryDate}</span>
-                        </>
-                      )}
-                    </>
-                  )}
-                  
-                  {selectedApplication?.kycType === 'finatrades_corporate' && (
-                    <>
-                      {selectedApplication?.tradeLicenseExpiryDate && (
-                        <>
-                          <span className="text-gray-500">Trade License Expiry:</span>
-                          <span className="font-medium">{selectedApplication.tradeLicenseExpiryDate}</span>
-                        </>
-                      )}
-                      {selectedApplication?.directorPassportExpiryDate && (
-                        <>
-                          <span className="text-gray-500">Director Passport Expiry:</span>
-                          <span className="font-medium">{selectedApplication.directorPassportExpiryDate}</span>
-                        </>
-                      )}
-                    </>
-                  )}
-                  
-                  <span className="text-gray-500">Submitted:</span>
-                  <span className="font-medium">{selectedApplication?.createdAt ? new Date(selectedApplication.createdAt).toLocaleString() : '-'}</span>
+                  {(() => {
+                    const appData = fullApplicationData || selectedApplication;
+                    const isCorporate = appData?.kycType === 'finatrades_corporate' || appData?.accountType === 'business';
+                    const email = isCorporate ? (appData?.emailAddress || appData?.email) : appData?.email;
+                    const phone = isCorporate ? (appData?.telephoneNumber || appData?.phone) : appData?.phone;
+                    const country = isCorporate ? (appData?.countryOfIncorporation || appData?.country) : appData?.country;
+                    const address = isCorporate ? (appData?.headOfficeAddress || appData?.address) : appData?.address;
+                    const city = isCorporate ? (appData?.bankCity || appData?.city) : appData?.city;
+                    
+                    return (
+                      <>
+                        <span className="text-gray-500">Full Name:</span>
+                        <span className="font-medium">{appData?.fullName || appData?.companyName || 'Not provided'}</span>
+                        <span className="text-gray-500">Account Type:</span>
+                        <span className="font-medium capitalize">{appData?.accountType}</span>
+                        
+                        {isFinatradesKyc(appData) && (
+                          <>
+                            <span className="text-gray-500">Email:</span>
+                            <span className="font-medium">{email || 'Not provided'}</span>
+                            <span className="text-gray-500">Phone:</span>
+                            <span className="font-medium">{phone || 'Not provided'}</span>
+                            {!isCorporate && (
+                              <>
+                                <span className="text-gray-500">Date of Birth:</span>
+                                <span className="font-medium">{appData?.dateOfBirth || 'Not provided'}</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                        
+                        <span className="text-gray-500">Country:</span>
+                        <span className="font-medium">{country || 'Not provided'}</span>
+                        
+                        {isFinatradesKyc(appData) && (
+                          <>
+                            {!isCorporate && (
+                              <>
+                                <span className="text-gray-500">City:</span>
+                                <span className="font-medium">{city || 'Not provided'}</span>
+                              </>
+                            )}
+                            <span className="text-gray-500">Address:</span>
+                            <span className="font-medium">{address || 'Not provided'}</span>
+                            {!isCorporate && (
+                              <>
+                                <span className="text-gray-500">Postal Code:</span>
+                                <span className="font-medium">{appData?.postalCode || 'Not provided'}</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                        
+                        {!isCorporate && (
+                          <>
+                            <span className="text-gray-500">Nationality:</span>
+                            <span className="font-medium">{appData?.nationality || 'Not provided'}</span>
+                          </>
+                        )}
+                        
+                        {isFinatradesKyc(appData) && !isCorporate && (
+                          <>
+                            <span className="text-gray-500">Occupation:</span>
+                            <span className="font-medium">{appData?.occupation || 'Not provided'}</span>
+                            <span className="text-gray-500">Source of Funds:</span>
+                            <span className="font-medium">{appData?.sourceOfFunds || 'Not provided'}</span>
+                            {appData?.passportExpiryDate && (
+                              <>
+                                <span className="text-gray-500">Passport Expiry:</span>
+                                <span className="font-medium">{appData.passportExpiryDate}</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                        
+                        {isCorporate && (
+                          <>
+                            {appData?.website && (
+                              <>
+                                <span className="text-gray-500">Website:</span>
+                                <span className="font-medium">{appData.website}</span>
+                              </>
+                            )}
+                            {appData?.natureOfBusiness && (
+                              <>
+                                <span className="text-gray-500">Nature of Business:</span>
+                                <span className="font-medium">{appData.natureOfBusiness}</span>
+                              </>
+                            )}
+                            {appData?.tradeLicenseExpiryDate && (
+                              <>
+                                <span className="text-gray-500">Trade License Expiry:</span>
+                                <span className="font-medium">{appData.tradeLicenseExpiryDate}</span>
+                              </>
+                            )}
+                            {appData?.directorPassportExpiryDate && (
+                              <>
+                                <span className="text-gray-500">Director Passport Expiry:</span>
+                                <span className="font-medium">{appData.directorPassportExpiryDate}</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                        
+                        <span className="text-gray-500">Submitted:</span>
+                        <span className="font-medium">{appData?.createdAt ? new Date(appData.createdAt).toLocaleString() : '-'}</span>
+                      </>
+                    );
+                  })()}
                 </div>
                 
-                {selectedApplication?.accountType === 'business' && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h4 className="font-medium mb-2">Business Details</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-gray-500">Company Name:</span>
-                      <span className="font-medium">{selectedApplication?.companyName || 'Not provided'}</span>
-                      <span className="text-gray-500">Registration Number:</span>
-                      <span className="font-medium">{selectedApplication?.registrationNumber || 'Not provided'}</span>
-                      <span className="text-gray-500">Tax ID:</span>
-                      <span className="font-medium">{selectedApplication?.taxId || 'Not provided'}</span>
+                {(selectedApplication?.accountType === 'business' || fullApplicationData?.kycType === 'finatrades_corporate') && (() => {
+                  const biz = fullApplicationData || selectedApplication;
+                  return (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="font-medium mb-2">Business Details</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <span className="text-gray-500">Company Name:</span>
+                        <span className="font-medium">{biz?.companyName || 'Not provided'}</span>
+                        <span className="text-gray-500">Registration Number:</span>
+                        <span className="font-medium">{biz?.registrationNumber || 'Not provided'}</span>
+                        {biz?.companyType && (
+                          <>
+                            <span className="text-gray-500">Company Type:</span>
+                            <span className="font-medium">{biz.companyType}</span>
+                          </>
+                        )}
+                        {biz?.incorporationDate && (
+                          <>
+                            <span className="text-gray-500">Incorporation Date:</span>
+                            <span className="font-medium">{biz.incorporationDate}</span>
+                          </>
+                        )}
+                        {biz?.numberOfEmployees && (
+                          <>
+                            <span className="text-gray-500">Number of Employees:</span>
+                            <span className="font-medium">{biz.numberOfEmployees}</span>
+                          </>
+                        )}
+                        {biz?.tradingContactName && (
+                          <>
+                            <span className="text-gray-500">Trading Contact:</span>
+                            <span className="font-medium">{biz.tradingContactName} ({biz.tradingContactEmail})</span>
+                          </>
+                        )}
+                        {biz?.financeContactName && (
+                          <>
+                            <span className="text-gray-500">Finance Contact:</span>
+                            <span className="font-medium">{biz.financeContactName} ({biz.financeContactEmail})</span>
+                          </>
+                        )}
+                        {biz?.bankName && (
+                          <>
+                            <span className="text-gray-500">Bank:</span>
+                            <span className="font-medium">{biz.bankName}{biz.bankCity ? `, ${biz.bankCity}` : ''}{biz.bankCountry ? `, ${biz.bankCountry}` : ''}</span>
+                          </>
+                        )}
+                        <span className="text-gray-500">Tax ID:</span>
+                        <span className="font-medium">{biz?.taxId || 'Not provided'}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               <div className="space-y-4">
