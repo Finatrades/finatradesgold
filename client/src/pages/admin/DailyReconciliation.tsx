@@ -65,7 +65,11 @@ export default function DailyReconciliation() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/reconciliation'] });
       refetch();
     },
-    onError: () => toast.error('Failed to generate report'),
+    onError: (error: any) => {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to generate report');
+      }
+    },
   });
 
   const reviewMutation = useMutation({
@@ -77,7 +81,11 @@ export default function DailyReconciliation() {
       setReviewNotes('');
       queryClient.invalidateQueries({ queryKey: ['/api/admin/reconciliation'] });
     },
-    onError: () => toast.error('Failed to review report'),
+    onError: (error: any) => {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to review report');
+      }
+    },
   });
 
   const getStatusBadge = (status: string) => {
