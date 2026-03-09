@@ -64,15 +64,15 @@ export default function DashboardWalletCards({
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Available Balance</p>
             <p className="text-xl font-bold text-gray-900">
-              {finaPayWallet.goldGrams.toFixed(2)} <span className="text-base text-gray-600">g</span>
+              {Number(finaPayWallet.goldGrams).toFixed(2)} <span className="text-base text-gray-600">g</span>
             </p>
-            <p className="text-xs text-muted-foreground">≈ ${finaPayWallet.usdValue.toFixed(2)} USD</p>
+            <p className="text-xs text-muted-foreground">≈ ${Number(finaPayWallet.usdValue).toFixed(2)} USD</p>
           </div>
           
           <div className="flex justify-between pt-3 mt-3 border-t border-emerald-200">
             <div>
               <p className="text-xs text-gray-500">Pending</p>
-              <p className="text-sm font-semibold text-emerald-600">{(finaPayWallet.pending || 0).toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-emerald-600">{Number(finaPayWallet.pending || 0).toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Transactions</p>
@@ -177,15 +177,15 @@ export default function DashboardWalletCards({
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Available Balance</p>
             <p className="text-xl font-bold text-gray-900">
-              {bnslData.goldGrams.toFixed(2)} <span className="text-base text-gray-600">g</span>
+              {Number(bnslData.goldGrams).toFixed(2)} <span className="text-base text-gray-600">g</span>
             </p>
-            <p className="text-xs text-muted-foreground">≈ ${bnslData.usdValue.toFixed(2)} USD</p>
+            <p className="text-xs text-muted-foreground">≈ ${Number(bnslData.usdValue).toFixed(2)} USD</p>
           </div>
           
           <div className="flex justify-between pt-3 mt-3 border-t border-purple-200">
             <div>
               <p className="text-xs text-gray-500">Locked</p>
-              <p className="text-sm font-semibold text-fuchsia-600">{bnslData.lockedGrams.toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-fuchsia-600">{Number(bnslData.lockedGrams).toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Active Plans</p>
