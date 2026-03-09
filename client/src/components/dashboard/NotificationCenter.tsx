@@ -27,6 +27,8 @@ export default function NotificationCenter() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<string>('all');
+  const [clearingAll, setClearingAll] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = useQuery<{ notifications: Notification[] }>({
@@ -43,6 +45,9 @@ export default function NotificationCenter() {
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      if (filter === 'unread') {
+        setDismissedIds(prev => new Set([...prev, notificationId]));
+      }
       const res = await fetch(`/api/notifications/${notificationId}/read`, { 
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -51,7 +56,9 @@ export default function NotificationCenter() {
       if (!res.ok) throw new Error('Failed to mark as read');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      }, 300);
     },
   });
 
@@ -64,14 +71,30 @@ export default function NotificationCenter() {
       });
       if (!res.ok) throw new Error('Failed to mark all as read');
     },
+    onMutate: () => {
+      setClearingAll(true);
+      const allNotifs = data?.notifications || [];
+      const unreadNotifs = allNotifs.filter(n => !n.read);
+      unreadNotifs.forEach((n, index) => {
+        setTimeout(() => {
+          setDismissedIds(prev => new Set([...prev, n.id]));
+        }, index * 120);
+      });
+      const totalDelay = unreadNotifs.length * 120 + 400;
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        setClearingAll(false);
+        setDismissedIds(new Set());
+      }, totalDelay);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('All notifications marked as read');
     },
   });
 
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      setDismissedIds(prev => new Set([...prev, notificationId]));
       const res = await fetch(`/api/notifications/${notificationId}`, { 
         method: 'DELETE',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -80,7 +103,13 @@ export default function NotificationCenter() {
       if (!res.ok) throw new Error('Failed to delete notification');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        setDismissedIds(prev => {
+          const next = new Set(prev);
+          return next;
+        });
+      }, 300);
     },
   });
 
@@ -98,6 +127,7 @@ export default function NotificationCenter() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const filteredNotifications = notifications.filter(n => {
+    if (dismissedIds.has(n.id)) return false;
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
     return n.type === filter;
@@ -175,11 +205,11 @@ export default function NotificationCenter() {
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     onClick={() => markAllAsReadMutation.mutate()}
-                    disabled={markAllAsReadMutation.isPending}
+                    disabled={markAllAsReadMutation.isPending || clearingAll}
                     title="Mark all as read"
                     data-testid="button-mark-all-read"
                   >
-                    <CheckCheck className="w-4 h-4" />
+                    <CheckCheck className={`w-4 h-4 ${clearingAll ? 'animate-spin' : ''}`} />
                   </Button>
                 )}
                 <Button 
@@ -231,14 +261,16 @@ export default function NotificationCenter() {
                 </div>
               ) : (
                 <div className="divide-y divide-border" data-testid="notification-list">
-                  <AnimatePresence>
+                  <AnimatePresence mode="popLayout">
                     {filteredNotifications.map((notification) => (
                       <motion.div 
                         key={notification.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        className={`p-3 hover:bg-muted/50 transition-colors group ${!notification.read ? 'bg-primary/5' : ''}`}
+                        layout
+                        initial={{ opacity: 0, x: 0 }}
+                        animate={{ opacity: 1, x: 0, height: 'auto' }}
+                        exit={{ opacity: 0, x: 300, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
+                        className={`p-3 hover:bg-muted/50 transition-colors group overflow-hidden ${!notification.read ? 'bg-primary/5' : ''}`}
                         data-testid={`notification-item-${notification.id}`}
                       >
                         <div className="flex gap-3">
