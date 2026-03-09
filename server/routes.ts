@@ -9141,6 +9141,7 @@ export async function registerRoutes(
       res.json({ request });
     } catch (error) {
       console.error('Create deposit request error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Deposit Request Failed', route: 'POST /api/deposit', userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
     }
   });
@@ -9465,6 +9466,7 @@ export async function registerRoutes(
       res.json({ request });
     } catch (error) {
       console.error('Create withdrawal request error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Withdrawal Request Failed', route: 'POST /api/withdrawal', userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
     }
   });
@@ -9627,6 +9629,7 @@ export async function registerRoutes(
       res.json({ request: updatedRequest });
     } catch (error) {
       console.error('Update withdrawal request error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Withdrawal Update Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update withdrawal request" });
     }
   });
@@ -10970,6 +10973,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('BNSL transfer error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'BNSL Transfer Failed', route: 'POST /api/bnsl/transfer', userId: req.session?.userId || undefined });
       res.status(400).json({ message: "Failed to transfer to BNSL wallet" });
     }
   });
@@ -12820,6 +12824,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('[Deposit Approval] Error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Deposit Approval Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update deposit request" });
     }
   });
@@ -18058,6 +18063,7 @@ export async function registerRoutes(
       
     } catch (error) {
       console.error('[Routes] Error accepting transfer:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Transfer Accept Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(400).json({ message: "Failed to accept transfer" });
     }
   });
@@ -18534,6 +18540,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('[QR Payment] Error:', error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'QR Payment Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
     }
   });
@@ -20881,6 +20888,7 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("Failed to submit Finatrades personal KYC:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Personal KYC Submission Failed', route: 'POST /api/finatrades-kyc/personal', userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
     }
   });
@@ -21052,6 +21060,7 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("Failed to submit Finatrades corporate KYC:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Corporate KYC Submission Failed', route: 'POST /api/finatrades-kyc/corporate', userId: req.session?.userId || undefined });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
     }
   });
@@ -23382,6 +23391,7 @@ export async function registerRoutes(
       res.json({ paymentRequest, depositRequest, walletConfig });
     } catch (error) {
       console.error("Failed to create crypto payment request:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Request Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(500).json({ message: "Failed to create payment request" });
     }
   });
@@ -23450,6 +23460,7 @@ export async function registerRoutes(
       res.json({ paymentRequest: updated });
     } catch (error) {
       console.error("Failed to submit payment proof:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Payment Proof Submission Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(500).json({ message: "Failed to submit payment proof" });
     }
   });
@@ -23874,6 +23885,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("[DEBUG] Failed to approve crypto payment:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Approval Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       return res.status(500).json({ message: "Failed to approve crypto payment", error: String(error) });
     }
   });
@@ -24196,6 +24208,7 @@ export async function registerRoutes(
       res.json({ paymentRequest: updated });
     } catch (error) {
       console.error("Failed to reject crypto payment:", error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Rejection Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
       res.status(500).json({ message: "Failed to reject payment" });
     }
   });
@@ -27762,6 +27775,31 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Email guide error:", error);
       res.status(500).json({ message: "Failed to send guide", error: error.message });
+    }
+  });
+
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const userId = req.session?.userId;
+    const route = `${req.method} ${req.originalUrl}`;
+
+    console.error(`[API Error] ${route}:`, errorMessage);
+
+    notifyError({
+      error: err instanceof Error ? err : new Error(errorMessage),
+      context: 'Unhandled API Error',
+      route,
+      userId: userId || undefined,
+      requestData: {
+        method: req.method,
+        path: req.originalUrl,
+        userAgent: req.headers['user-agent'],
+        ip: req.ip,
+      },
+    });
+
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Something went wrong. Our team has been notified.' });
     }
   });
 
