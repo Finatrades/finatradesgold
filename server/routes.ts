@@ -20811,17 +20811,22 @@ export async function registerRoutes(
         const updated = await storage.updateFinatradesPersonalKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
         await storage.updateUser(userId, { kycStatus: 'Pending Review' });
 
-        const versions = await storage.getKycVersions(existing.id);
-        const nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
-        await storage.createKycVersion({
-          submissionId: existing.id,
-          userId,
-          kycType: 'finatrades_personal',
-          versionNumber: nextVersion,
-          snapshot: kycData as any,
-          status: 'submitted',
-          submittedAt: new Date(),
-        });
+        let nextVersion = 1;
+        try {
+          const versions = await storage.getKycVersions(existing.id);
+          nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+          await storage.createKycVersion({
+            submissionId: existing.id,
+            userId,
+            kycType: 'finatrades_personal',
+            versionNumber: nextVersion,
+            snapshot: kycData as any,
+            status: 'submitted',
+            submittedAt: new Date(),
+          });
+        } catch (versionError) {
+          console.warn('[KYC] Could not create version record (table may not exist yet):', versionError instanceof Error ? versionError.message : versionError);
+        }
         
         notifyAllAdmins({
           title: nextVersion > 1 ? 'KYC Resubmission' : 'KYC Updated',
@@ -20843,15 +20848,19 @@ export async function registerRoutes(
         const submission = await storage.createFinatradesPersonalKyc(kycData);
         await storage.updateUser(userId, { kycStatus: 'Pending Review' });
 
-        await storage.createKycVersion({
-          submissionId: submission.id,
-          userId,
-          kycType: 'finatrades_personal',
-          versionNumber: 1,
-          snapshot: kycData as any,
-          status: 'submitted',
-          submittedAt: new Date(),
-        });
+        try {
+          await storage.createKycVersion({
+            submissionId: submission.id,
+            userId,
+            kycType: 'finatrades_personal',
+            versionNumber: 1,
+            snapshot: kycData as any,
+            status: 'submitted',
+            submittedAt: new Date(),
+          });
+        } catch (versionError) {
+          console.warn('[KYC] Could not create version record (table may not exist yet):', versionError instanceof Error ? versionError.message : versionError);
+        }
         
         notifyAllAdmins({
           title: 'New KYC Submission',
@@ -20970,17 +20979,22 @@ export async function registerRoutes(
         const updated = await storage.updateFinatradesCorporateKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
         await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
 
-        const versions = await storage.getKycVersions(existing.id);
-        const nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
-        await storage.createKycVersion({
-          submissionId: existing.id,
-          userId,
-          kycType: 'finatrades_corporate',
-          versionNumber: nextVersion,
-          snapshot: kycData as any,
-          status: 'submitted',
-          submittedAt: new Date(),
-        });
+        let nextVersion = 1;
+        try {
+          const versions = await storage.getKycVersions(existing.id);
+          nextVersion = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+          await storage.createKycVersion({
+            submissionId: existing.id,
+            userId,
+            kycType: 'finatrades_corporate',
+            versionNumber: nextVersion,
+            snapshot: kycData as any,
+            status: 'submitted',
+            submittedAt: new Date(),
+          });
+        } catch (versionError) {
+          console.warn('[KYC] Could not create version record (table may not exist yet):', versionError instanceof Error ? versionError.message : versionError);
+        }
 
         notifyAllAdmins({
           title: nextVersion > 1 ? 'Corporate KYC Resubmission' : 'Corporate KYC Updated',
@@ -21005,15 +21019,19 @@ export async function registerRoutes(
         });
         await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
 
-        await storage.createKycVersion({
-          submissionId: submission.id,
-          userId,
-          kycType: 'finatrades_corporate',
-          versionNumber: 1,
-          snapshot: kycData as any,
-          status: 'submitted',
-          submittedAt: new Date(),
-        });
+        try {
+          await storage.createKycVersion({
+            submissionId: submission.id,
+            userId,
+            kycType: 'finatrades_corporate',
+            versionNumber: 1,
+            snapshot: kycData as any,
+            status: 'submitted',
+            submittedAt: new Date(),
+          });
+        } catch (versionError) {
+          console.warn('[KYC] Could not create version record (table may not exist yet):', versionError instanceof Error ? versionError.message : versionError);
+        }
 
         notifyAllAdmins({
           title: 'New Corporate KYC',
