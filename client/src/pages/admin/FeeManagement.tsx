@@ -69,7 +69,9 @@ export default function FeeManagement() {
       const data = await res.json();
       setFees(data.fees || []);
     } catch (err: any) {
-      if (!err?.message?.includes('Access Denied') && !err?.message?.includes('RBAC_PERMISSION_DENIED')) {
+      if (err?.isAccessDenied || err?.message?.includes('Access Denied')) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
         toast.error('Failed to load fees');
       }
     } finally {

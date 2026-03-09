@@ -66,7 +66,9 @@ export default function DailyReconciliation() {
       refetch();
     },
     onError: (error: any) => {
-      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+      if (error?.isAccessDenied || error?.message?.includes('Access Denied')) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
         toast.error('Failed to generate report');
       }
     },
@@ -82,7 +84,9 @@ export default function DailyReconciliation() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/reconciliation'] });
     },
     onError: (error: any) => {
-      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+      if (error?.isAccessDenied || error?.message?.includes('Access Denied')) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
         toast.error('Failed to review report');
       }
     },

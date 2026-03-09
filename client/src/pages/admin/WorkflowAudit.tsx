@@ -95,7 +95,9 @@ export default function WorkflowAudit() {
       setSummaries(summariesData.summaries || []);
       setStats(statsData);
     } catch (error: any) {
-      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+      if (error?.isAccessDenied || error?.message?.includes('Access Denied')) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
         toast.error("Failed to load workflow audit data");
       }
     } finally {

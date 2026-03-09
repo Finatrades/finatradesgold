@@ -253,7 +253,13 @@ export default function GoldBackingReport() {
       });
     } catch (error: any) {
       console.error('Failed to download PDF:', error);
-      if (!error?.isAccessDenied && !error?.message?.includes('Access Denied')) {
+      if (error?.isAccessDenied || error?.message?.includes('Access Denied')) {
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to download this report. Please contact Admin IT.',
+          variant: 'destructive',
+        });
+      } else {
         toast({
           title: 'Download Failed',
           description: 'Failed to generate PDF report. Please try again.',
