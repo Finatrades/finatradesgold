@@ -24,52 +24,6 @@ const QUICK_ACTIONS = [
   { label: 'Settings', href: '/admin/settings', icon: Settings, color: 'gray' },
 ];
 
-const ACTION_SECTIONS = [
-  {
-    title: 'User Operations',
-    icon: Users,
-    color: 'purple',
-    items: [
-      { label: 'KYC Review', href: '/admin/kyc', badgeKey: 'pendingKycCount' as const },
-      { label: 'User Management', href: '/admin/users' },
-      { label: 'Employee Management', href: '/admin/employees' },
-      { label: 'Role Management', href: '/admin/roles' },
-    ]
-  },
-  {
-    title: 'Financial Operations',
-    icon: DollarSign,
-    color: 'green',
-    items: [
-      { label: 'Payment Operations', href: '/admin/payment-operations', badgeKey: 'pendingDeposits' as const },
-      { label: 'Transactions', href: '/admin/transactions' },
-      { label: 'Financial Reports', href: '/admin/financial-reports' },
-      { label: 'Fee Management', href: '/admin/fees' },
-    ]
-  },
-  {
-    title: 'Products',
-    icon: Briefcase,
-    color: 'blue',
-    items: [
-      { label: 'BNSL Management', href: '/admin/bnsl', badgeKey: 'activeBnslPlans' as const },
-      { label: 'FinaBridge', href: '/admin/finabridge' },
-      { label: 'Vault Management', href: '/admin/vault' },
-      { label: 'Gold Orders', href: '/admin/wingold-orders' },
-    ]
-  },
-  {
-    title: 'System',
-    icon: Settings,
-    color: 'gray',
-    items: [
-      { label: 'Platform Config', href: '/admin/platform-config' },
-      { label: 'Security Settings', href: '/admin/security' },
-      { label: 'Audit Logs', href: '/admin/audit-logs' },
-      { label: 'System Health', href: '/admin/system-health' },
-    ]
-  },
-];
 
 interface AdminStats {
   totalUsers: number;
@@ -223,15 +177,6 @@ export default function AdminDashboard() {
   const filteredQuickActions = useMemo(() => {
     if (permissionsLoading || isSuperAdmin) return QUICK_ACTIONS;
     return QUICK_ACTIONS.filter(action => hasMenuPermission(action.href));
-  }, [permissionsLoading, isSuperAdmin, hasMenuPermission]);
-
-  // Filter ACTION_SECTIONS based on permissions
-  const filteredActionSections = useMemo(() => {
-    if (permissionsLoading || isSuperAdmin) return ACTION_SECTIONS;
-    return ACTION_SECTIONS.map(section => ({
-      ...section,
-      items: section.items.filter(item => hasMenuPermission(item.href))
-    })).filter(section => section.items.length > 0);
   }, [permissionsLoading, isSuperAdmin, hasMenuPermission]);
 
   return (
@@ -409,50 +354,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
-
-        {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredActionSections.map((section) => {
-            const SectionIcon = section.icon;
-            const sectionColors: Record<string, { bg: string; border: string; icon: string; text: string }> = {
-              purple: { bg: 'bg-purple-50', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-600', text: 'text-purple-700' },
-              green: { bg: 'bg-green-50', border: 'border-green-200', icon: 'bg-green-100 text-green-600', text: 'text-green-700' },
-              blue: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600', text: 'text-blue-700' },
-              gray: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'bg-gray-100 text-gray-600', text: 'text-gray-700' },
-            };
-            const colors = sectionColors[section.color] || sectionColors.gray;
-            return (
-              <Card key={section.title} className={`${colors.bg} ${colors.border} border shadow-sm`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg ${colors.icon}`}>
-                      <SectionIcon className="w-4 h-4" />
-                    </div>
-                    <CardTitle className={`text-sm font-semibold ${colors.text}`}>{section.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-1">
-                    {section.items.map((item) => {
-                      const badgeKey = (item as any).badgeKey;
-                      const badgeValue = badgeKey && stats ? (stats as any)[badgeKey] ?? 0 : 0;
-                      return (
-                        <Link key={item.label} href={item.href}>
-                          <div className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer group">
-                            <span className="text-sm text-gray-700 group-hover:text-gray-900">{item.label}</span>
-                            {badgeKey && badgeValue > 0 && (
-                              <Badge variant="secondary" className="bg-white text-xs">{badgeValue}</Badge>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
 
         {/* Operations Overview */}
         {hasStatsAccess && <div>
