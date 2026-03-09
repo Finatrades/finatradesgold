@@ -771,6 +771,8 @@ export default function KYC() {
   };
 
   if (!user) {
+    const currentUrl = window.location.pathname + window.location.search;
+    sessionStorage.setItem('returnUrl', currentUrl);
     setLocation('/login');
     return null;
   }

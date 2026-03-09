@@ -74,9 +74,13 @@ const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      // Regular login page always goes to user dashboard
-      // Admins must use /admin/login to access admin portal
-      setLocation('/dashboard');
+      const returnUrl = sessionStorage.getItem('returnUrl');
+      if (returnUrl) {
+        sessionStorage.removeItem('returnUrl');
+        setLocation(returnUrl);
+      } else {
+        setLocation('/dashboard');
+      }
     }
   }, [user, setLocation]);
 

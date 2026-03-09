@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     apiRequest('POST', '/api/auth/logout', {}).catch(() => {});
     
+    const currentUrl = window.location.pathname + window.location.search;
+    const skipReturnPaths = ['/', '/login', '/register', '/admin/login'];
+    if (!skipReturnPaths.includes(window.location.pathname)) {
+      sessionStorage.setItem('returnUrl', currentUrl);
+    }
+    
     toast.error('Your session has expired. Please log in again.');
     setLocation('/login');
   }, [setLocation]);
