@@ -23985,9 +23985,8 @@ export async function registerRoutes(
         vaultHoldingId: holding.id,
         certificateNumber: docCertNum,
         goldGrams: goldGrams.toString(),
-        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        vaultLocation: vaultLocation || 'Dubai - Wingold & Metals DMCC',
         goldPriceUsdPerGram: goldPrice.toString(),
-          issuer: vaultLocation || 'Wingold & Metals DMCC',
       });
       generatedCertificates.push(digitalCert);
       
@@ -24001,9 +24000,8 @@ export async function registerRoutes(
         vaultHoldingId: holding.id,
         certificateNumber: sscCertNum,
         goldGrams: goldGrams.toString(),
-        vaultLocation: 'Dubai - Wingold & Metals DMCC',
+        vaultLocation: vaultLocation || 'Dubai - Wingold & Metals DMCC',
         goldPriceUsdPerGram: goldPrice.toString(),
-          issuer: vaultLocation || 'Wingold & Metals DMCC',
       });
       generatedCertificates.push(storageCert);
       
