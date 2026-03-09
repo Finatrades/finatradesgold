@@ -180,8 +180,8 @@ export default function FinaCard() {
   });
 
   const activateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/finacard/activate', {});
+    mutationFn: async (cardId: string) => {
+      const res = await apiRequest('POST', '/api/finacard/activate', { cardId });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || 'Failed to activate card');
@@ -453,7 +453,7 @@ export default function FinaCard() {
                 </p>
               )}
               <Button
-                onClick={() => activateMutation.mutate()}
+                onClick={() => activateMutation.mutate(activeCard.id)}
                 disabled={activateMutation.isPending}
                 className="h-14 px-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl text-base font-bold shadow-lg shadow-green-500/25"
                 data-testid="button-activate-finacard"

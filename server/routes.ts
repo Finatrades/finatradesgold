@@ -6850,12 +6850,27 @@ export async function registerRoutes(
       const userId = req.session.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
 
-      const [card] = await db.select().from(finacardCards)
-        .where(and(
-          eq(finacardCards.userId, userId),
-          eq(finacardCards.cardStatus, 'approved')
-        ))
-        .limit(1);
+      const { cardId } = req.body;
+
+      let card;
+      if (cardId) {
+        const [found] = await db.select().from(finacardCards)
+          .where(and(
+            eq(finacardCards.id, cardId),
+            eq(finacardCards.userId, userId),
+            eq(finacardCards.cardStatus, 'approved')
+          ))
+          .limit(1);
+        card = found;
+      } else {
+        const [found] = await db.select().from(finacardCards)
+          .where(and(
+            eq(finacardCards.userId, userId),
+            eq(finacardCards.cardStatus, 'approved')
+          ))
+          .limit(1);
+        card = found;
+      }
 
       if (!card) return res.status(404).json({ message: "No approved card found to activate" });
 
