@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Notification {
   id: string;
@@ -48,12 +49,7 @@ export default function NotificationCenter() {
       if (filter === 'unread') {
         setDismissedIds(prev => new Set([...prev, notificationId]));
       }
-      const res = await fetch(`/api/notifications/${notificationId}/read`, { 
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to mark as read');
+      await apiRequest('POST', `/api/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
       setTimeout(() => {
@@ -64,43 +60,44 @@ export default function NotificationCenter() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/users/${user?.id}/notifications/read-all`, { 
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to mark all as read');
+      await apiRequest('POST', `/api/users/${user?.id}/notifications/read-all`);
     },
     onMutate: () => {
       setClearingAll(true);
       const allNotifs = data?.notifications || [];
       const unreadNotifs = allNotifs.filter(n => !n.read);
-      unreadNotifs.forEach((n, index) => {
+      
+      if (filter === 'unread') {
+        unreadNotifs.forEach((n, index) => {
+          setTimeout(() => {
+            setDismissedIds(prev => new Set([...prev, n.id]));
+          }, index * 120);
+        });
+        const totalDelay = unreadNotifs.length * 120 + 400;
         setTimeout(() => {
-          setDismissedIds(prev => new Set([...prev, n.id]));
-        }, index * 120);
-      });
-      const totalDelay = unreadNotifs.length * 120 + 400;
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          setClearingAll(false);
+        }, totalDelay);
+      } else {
         setClearingAll(false);
-        setDismissedIds(new Set());
-      }, totalDelay);
+      }
     },
     onSuccess: () => {
-      toast.success('All notifications marked as read');
+      const allNotifs = data?.notifications || [];
+      const unreadNotifs = allNotifs.filter(n => !n.read);
+      const delay = filter === 'unread' ? (unreadNotifs.length * 120 + 500) : 0;
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        setDismissedIds(new Set());
+        setClearingAll(false);
+        toast.success('All notifications marked as read');
+      }, delay);
     },
   });
 
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       setDismissedIds(prev => new Set([...prev, notificationId]));
-      const res = await fetch(`/api/notifications/${notificationId}`, { 
-        method: 'DELETE',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to delete notification');
+      await apiRequest('DELETE', `/api/notifications/${notificationId}`);
     },
     onSuccess: () => {
       setTimeout(() => {
