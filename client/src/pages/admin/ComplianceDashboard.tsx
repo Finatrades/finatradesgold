@@ -170,8 +170,10 @@ export default function ComplianceDashboard() {
       toast.success('AML rules seeded successfully');
       queryClient.invalidateQueries({ queryKey: ['admin-aml-rules'] });
     },
-    onError: () => {
-      toast.error('Failed to seed AML rules');
+    onError: (error: any) => {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to seed AML rules');
+      }
     },
   });
 
