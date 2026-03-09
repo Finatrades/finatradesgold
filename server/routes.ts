@@ -5782,6 +5782,25 @@ export async function registerRoutes(
       const startIndex = (pageNum - 1) * limitNum;
       const paginatedSubmissions = allSubmissions.slice(startIndex, startIndex + limitNum);
       const totalPages = Math.ceil(totalRecords / limitNum);
+
+      // Resolve reviewer names for submissions that have reviewedBy
+      const reviewerIds = [...new Set(paginatedSubmissions.map(s => s.reviewedBy).filter(Boolean))];
+      const reviewerMap: Record<string, string> = {};
+      if (reviewerIds.length > 0) {
+        for (const rid of reviewerIds) {
+          try {
+            const reviewer = await storage.getUser(rid);
+            if (reviewer) {
+              reviewerMap[rid] = `${reviewer.firstName || ''} ${reviewer.lastName || ''}`.trim() || reviewer.email;
+            }
+          } catch {}
+        }
+      }
+      for (const s of paginatedSubmissions) {
+        if (s.reviewedBy && reviewerMap[s.reviewedBy]) {
+          s.reviewedByName = reviewerMap[s.reviewedBy];
+        }
+      }
       
       const duration = Date.now() - startTime;
       console.log(`[KYC] Admin query: ${duration}ms, ${totalRecords} total, page ${pageNum}/${totalPages}`);
