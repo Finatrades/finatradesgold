@@ -1068,32 +1068,32 @@ export default function KYCReview() {
                 <table className="w-full">
                   <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-3 py-3 text-left w-10">
+                      <th className="px-3 py-3 text-left align-middle w-10">
                         <Checkbox 
                           checked={selectedIds.size === filteredSubmissions.length && filteredSubmissions.length > 0}
                           onCheckedChange={toggleSelectAll}
                           data-testid="checkbox-select-all"
                         />
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold tracking-wide">Applicant</th>
-                      <th className="px-4 py-3 text-left font-semibold tracking-wide">Type</th>
-                      <th className="px-4 py-3 text-left font-semibold tracking-wide">Status</th>
-                      <th className="px-4 py-3 text-left font-semibold tracking-wide">Reviewer</th>
-                      <th className="px-4 py-3 text-left font-semibold tracking-wide">Submitted</th>
-                      <th className="px-4 py-3 text-right font-semibold tracking-wide">Actions</th>
+                      <th className="px-4 py-3 text-left align-middle font-semibold tracking-wide">Applicant</th>
+                      <th className="px-4 py-3 text-left align-middle font-semibold tracking-wide">Type</th>
+                      <th className="px-4 py-3 text-left align-middle font-semibold tracking-wide">Status</th>
+                      <th className="px-4 py-3 text-left align-middle font-semibold tracking-wide">Reviewer</th>
+                      <th className="px-4 py-3 text-left align-middle font-semibold tracking-wide">Submitted</th>
+                      <th className="px-4 py-3 text-right align-middle font-semibold tracking-wide">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredSubmissions.map((app: any, index: number) => (
                       <tr key={app.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`kyc-submission-${app.id}`}>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3 align-middle">
                           <Checkbox 
                             checked={selectedIds.has(app.id)}
                             onCheckedChange={() => toggleSelection(app.id)}
                             data-testid={`checkbox-kyc-${app.id}`}
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 align-middle">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                               {app.accountType === 'business' ? <Building className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -1101,17 +1101,17 @@ export default function KYCReview() {
                             <span className="font-medium">{app.fullName || 'Not provided'}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 capitalize text-sm">{app.accountType}</td>
-                        <td className="px-4 py-3">{getStatusBadge(app.status)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500" data-testid={`text-reviewer-${app.id}`}>
+                        <td className="px-4 py-3 align-middle capitalize text-sm">{app.accountType}</td>
+                        <td className="px-4 py-3 align-middle">{getStatusBadge(app.status)}</td>
+                        <td className="px-4 py-3 align-middle text-sm text-gray-500" data-testid={`text-reviewer-${app.id}`}>
                           {app.reviewedBy ? (
                             <span className="text-blue-600 font-medium">{app.reviewedByName || 'Assigned'}</span>
                           ) : (
                             <span className="text-gray-400">Unassigned</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{new Date(app.createdAt).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 align-middle text-sm text-gray-500">{new Date(app.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 align-middle text-right">
                           <Button variant="ghost" size="sm" onClick={() => setSelectedApplication(app)} data-testid={`button-review-${app.id}`}>
                             Review
                           </Button>
