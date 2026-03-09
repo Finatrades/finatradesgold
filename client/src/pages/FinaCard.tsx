@@ -4,12 +4,24 @@ import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CreditCard, Shield, Globe, Zap, ArrowDownToLine, ArrowUpFromLine, Wallet, History, Sparkles, Check, RefreshCw } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  CreditCard, Shield, Globe, Zap, ArrowDownToLine, ArrowUpFromLine,
+  Wallet, History, Sparkles, Check, RefreshCw, Clock, CheckCircle2,
+  XCircle, Snowflake, ShoppingBag, Utensils, Plane, ShoppingCart,
+  Film, Fuel, MoreHorizontal, Store, Loader2
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +42,62 @@ interface FinacardTransfer {
   createdAt: string;
 }
 
+interface FinacardCardData {
+  id: string;
+  userId: string;
+  cardType: string;
+  cardStatus: 'applied' | 'under_review' | 'approved' | 'active' | 'frozen' | 'cancelled';
+  last4Digits: string | null;
+  expiryMonth: number | null;
+  expiryYear: number | null;
+  dailyLimitGrams: string;
+  monthlyLimitGrams: string;
+  isFrozen: boolean;
+  frozenReason: string | null;
+  adminNotes: string | null;
+  appliedAt: string;
+  reviewedAt: string | null;
+  issuedAt: string | null;
+  activatedAt: string | null;
+  cancelledAt: string | null;
+}
+
+interface SpendingRecord {
+  id: string;
+  merchantName: string;
+  merchantCategory: string | null;
+  merchantCountry: string | null;
+  amountLocal: string;
+  currencyLocal: string;
+  goldGramsDeducted: string;
+  goldPriceAtTime: string;
+  usdEquivalent: string;
+  status: string;
+  createdAt: string;
+}
+
+const MERCHANT_CATEGORIES = [
+  { value: 'Groceries', label: 'Groceries', icon: ShoppingCart },
+  { value: 'Dining', label: 'Dining', icon: Utensils },
+  { value: 'Travel', label: 'Travel', icon: Plane },
+  { value: 'Shopping', label: 'Shopping', icon: ShoppingBag },
+  { value: 'Entertainment', label: 'Entertainment', icon: Film },
+  { value: 'Gas', label: 'Gas', icon: Fuel },
+  { value: 'Other', label: 'Other', icon: MoreHorizontal },
+];
+
+const CURRENCIES = [
+  { value: 'USD', label: 'USD', symbol: '$' },
+  { value: 'AED', label: 'AED', symbol: 'د.إ' },
+  { value: 'EUR', label: 'EUR', symbol: '€' },
+  { value: 'GBP', label: 'GBP', symbol: '£' },
+];
+
+function getCategoryIcon(category: string | null) {
+  const found = MERCHANT_CATEGORIES.find(c => c.value === category);
+  return found ? found.icon : Store;
+}
+
 export default function FinaCard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -37,6 +105,11 @@ export default function FinaCard() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [showFundDialog, setShowFundDialog] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+
+  const [merchantName, setMerchantName] = useState('');
+  const [merchantCategory, setMerchantCategory] = useState('');
+  const [spendAmount, setSpendAmount] = useState('');
+  const [spendCurrency, setSpendCurrency] = useState('USD');
 
   const { data: goldPriceData } = useQuery({
     queryKey: ['/api/gold-price'],
@@ -66,6 +139,62 @@ export default function FinaCard() {
       return res.json();
     },
     enabled: !!user?.id,
+  });
+
+  const { data: cardData, isLoading: cardLoading } = useQuery<{ card: FinacardCardData | null; allCards: FinacardCardData[] }>({
+    queryKey: ['/api/finacard/card', user?.id],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/finacard/card/${user?.id}`);
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: spendingData } = useQuery<{ spending: SpendingRecord[] }>({
+    queryKey: ['/api/finacard/spending', user?.id],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/finacard/spending/${user?.id}`);
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const activeCard = cardData?.card || null;
+
+  const applyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/finacard/apply', { cardType: 'virtual' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to apply for FinaCard');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Application submitted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['/api/finacard/card'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/finacard/activate', {});
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to activate card');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Card activated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['/api/finacard/card'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
   });
 
   const fundMutation = useMutation({
@@ -114,30 +243,269 @@ export default function FinaCard() {
     },
   });
 
+  const spendMutation = useMutation({
+    mutationFn: async (payload: { merchantName: string; merchantCategory: string; amountLocal: number; currencyLocal: string }) => {
+      const res = await apiRequest('POST', '/api/finacard/spend', payload);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Spending transaction failed');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Payment successful!');
+      queryClient.invalidateQueries({ queryKey: ['/api/finacard/balance'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finacard/spending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finacard/transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      setMerchantName('');
+      setMerchantCategory('');
+      setSpendAmount('');
+      setSpendCurrency('USD');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   if (!user) return null;
 
   const finacardGrams = parseFloat(balanceData?.finacardGoldGrams || '0');
   const walletGrams = parseFloat(balanceData?.walletGoldGrams || '0');
   const finacardUsd = finacardGrams * goldPrice;
   const transfers = transfersData?.transfers || [];
+  const spendingHistory = spendingData?.spending || [];
 
   const fundAmountNum = parseFloat(fundAmount || '0');
   const withdrawAmountNum = parseFloat(withdrawAmount || '0');
+  const spendAmountNum = parseFloat(spendAmount || '0');
 
-  return (
-    <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+  const fxRates: Record<string, number> = { USD: 1, AED: 0.2723, EUR: 1.08, GBP: 1.27 };
+  const spendUsdEquiv = spendCurrency === 'USD' ? spendAmountNum : spendAmountNum * (fxRates[spendCurrency] || 1);
+  const spendGoldPreview = goldPrice > 0 ? spendUsdEquiv / goldPrice : 0;
 
-        {/* Card Visual + Balance */}
-        <div className="grid md:grid-cols-2 gap-8 items-start">
+  const cardStatus = activeCard?.cardStatus;
 
-          {/* Card Visual */}
+  if (cardLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!activeCard || cardStatus === 'cancelled') {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto space-y-8 pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="p-8 md:p-12 bg-gradient-to-br from-zinc-900 via-purple-950 to-black border-0 text-white rounded-3xl overflow-hidden relative" data-testid="card-apply-finacard">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/20 via-transparent to-transparent pointer-events-none" />
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold">FinaCard</h1>
+                    <p className="text-white/60 text-sm">Spend gold anywhere in the world</p>
+                  </div>
+                </div>
+
+                <p className="text-white/80 text-lg leading-relaxed max-w-xl">
+                  Turn your gold into spending power. Use FinaCard at 40M+ merchants worldwide with 0% FX fees and instant gold-to-spend conversion.
+                </p>
+
+                <div className="grid grid-cols-3 gap-4 pt-2">
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                    <Globe className="w-6 h-6 text-blue-400" />
+                    <span className="text-xs text-white/70 font-medium">40M+ Merchants</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                    <Sparkles className="w-6 h-6 text-yellow-400" />
+                    <span className="text-xs text-white/70 font-medium">0% FX Fee</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                    <Zap className="w-6 h-6 text-green-400" />
+                    <span className="text-xs text-white/70 font-medium">Instant Conversion</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => applyMutation.mutate()}
+                  disabled={applyMutation.isPending}
+                  className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl text-base font-bold shadow-lg shadow-purple-500/25"
+                  data-testid="button-apply-finacard"
+                >
+                  {applyMutation.isPending ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...</>
+                  ) : (
+                    <><CreditCard className="w-5 h-5 mr-2" /> Apply for FinaCard</>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {cardStatus === 'cancelled' && activeCard?.adminNotes && (
+            <Card className="p-5 border-red-200 bg-red-50 rounded-2xl" data-testid="card-cancelled-reason">
+              <div className="flex items-start gap-3">
+                <XCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-red-800 text-sm">Previous Application Rejected</p>
+                  <p className="text-red-600 text-sm mt-1">{activeCard.adminNotes}</p>
+                  <p className="text-red-400 text-xs mt-2">You may apply again with updated information.</p>
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (cardStatus === 'applied' || cardStatus === 'under_review') {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto space-y-6 pb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="p-8 text-center rounded-2xl" data-testid="card-application-status">
+              <motion.div
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-yellow-200 flex items-center justify-center mb-6"
+              >
+                <Clock className="w-10 h-10 text-amber-600" />
+              </motion.div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-application-title">
+                {cardStatus === 'applied' ? 'Application Submitted' : 'Under Review'}
+              </h2>
+              <p className="text-gray-500 max-w-md mx-auto mb-6">
+                {cardStatus === 'applied'
+                  ? 'Your FinaCard application has been submitted and is waiting to be reviewed by our team.'
+                  : 'Your application is currently being reviewed. We\'ll notify you once a decision is made.'}
+              </p>
+
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="text-xs text-gray-500">Submitted</span>
+                </div>
+                <div className="w-12 h-0.5 bg-gray-200 relative overflow-hidden">
+                  <motion.div
+                    className="absolute inset-0 bg-amber-400"
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className={`w-3 h-3 rounded-full ${cardStatus === 'under_review' ? 'bg-amber-400' : 'bg-gray-300'}`} />
+                  <span className="text-xs text-gray-500">Reviewing</span>
+                </div>
+                <div className="w-12 h-0.5 bg-gray-200" />
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gray-300" />
+                  <span className="text-xs text-gray-500">Approved</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400">
+                Applied {formatDistanceToNow(new Date(activeCard.appliedAt), { addSuffix: true })}
+              </p>
+            </Card>
+          </motion.div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (cardStatus === 'approved') {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto space-y-6 pb-12">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-900 shadow-2xl p-6 md:p-8 flex flex-col justify-between overflow-hidden border border-white/10 group hover:scale-[1.01] transition-transform duration-500">
+            <Card className="p-8 text-center rounded-2xl border-green-200 bg-gradient-to-b from-green-50 to-white" data-testid="card-activate-finacard">
+              <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Card is Approved!</h2>
+              <p className="text-gray-500 max-w-md mx-auto mb-2">
+                Congratulations! Your FinaCard application has been approved. Activate your card to start spending gold worldwide.
+              </p>
+              {activeCard.last4Digits && (
+                <p className="text-sm text-gray-400 mb-6">
+                  Card ending in •••• {activeCard.last4Digits}
+                </p>
+              )}
+              <Button
+                onClick={() => activateMutation.mutate()}
+                disabled={activateMutation.isPending}
+                className="h-14 px-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl text-base font-bold shadow-lg shadow-green-500/25"
+                data-testid="button-activate-finacard"
+              >
+                {activateMutation.isPending ? (
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Activating...</>
+                ) : (
+                  <><Zap className="w-5 h-5 mr-2" /> Activate Your Card</>
+                )}
+              </Button>
+            </Card>
+          </motion.div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (cardStatus === 'frozen') {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto space-y-6 pb-12">
+          <Card className="p-8 text-center rounded-2xl border-blue-200 bg-blue-50" data-testid="card-frozen-finacard">
+            <div className="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-6">
+              <Snowflake className="w-10 h-10 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Card Frozen</h2>
+            <p className="text-gray-500 max-w-md mx-auto mb-4">
+              Your FinaCard has been temporarily frozen. Spending is disabled until the card is unfrozen.
+            </p>
+            {activeCard.frozenReason && (
+              <p className="text-sm text-blue-700 bg-blue-100 rounded-lg p-3 inline-block" data-testid="text-frozen-reason">
+                Reason: {activeCard.frozenReason}
+              </p>
+            )}
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-900 shadow-2xl p-6 md:p-8 flex flex-col justify-between overflow-hidden border border-white/10 group hover:scale-[1.01] transition-transform duration-500" data-testid="card-visual-finacard">
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               <div className="relative z-10 flex justify-between items-start">
                 <div className="flex items-center gap-2">
@@ -151,17 +519,19 @@ export default function FinaCard() {
                   <div className="w-12 h-8 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-md opacity-80" />
                   <Zap className="w-6 h-6 text-white/50 rotate-90" />
                 </div>
-                <p className="font-mono text-xl md:text-2xl text-white tracking-widest">
-                  •••• •••• •••• 9012
+                <p className="font-mono text-xl md:text-2xl text-white tracking-widest" data-testid="text-card-number">
+                  •••• •••• •••• {activeCard.last4Digits || '0000'}
                 </p>
                 <div className="flex justify-between items-end text-white/90">
                   <div>
                     <p className="text-[10px] uppercase font-bold text-white/50 mb-1">Card Holder</p>
-                    <p className="font-medium tracking-wide uppercase text-sm">{user.firstName} {user.lastName}</p>
+                    <p className="font-medium tracking-wide uppercase text-sm" data-testid="text-card-holder">{user.firstName} {user.lastName}</p>
                   </div>
                   <div>
                     <p className="text-[10px] uppercase font-bold text-white/50 mb-1">Expires</p>
-                    <p className="font-medium tracking-wide text-sm">12/28</p>
+                    <p className="font-medium tracking-wide text-sm" data-testid="text-card-expiry">
+                      {activeCard.expiryMonth ? `${String(activeCard.expiryMonth).padStart(2, '0')}/${String(activeCard.expiryYear).slice(-2)}` : '--/--'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -169,7 +539,6 @@ export default function FinaCard() {
             <div className="absolute -bottom-8 left-4 right-4 h-8 bg-black/15 blur-xl rounded-full" />
           </motion.div>
 
-          {/* Balance + Actions */}
           <div className="space-y-4">
             <Card className="p-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-0 text-white rounded-2xl" data-testid="card-finacard-balance">
               <div className="flex items-center gap-2 mb-1">
@@ -226,35 +595,166 @@ export default function FinaCard() {
           </div>
         </div>
 
-        {/* How It Works */}
-        <Card className="p-6 border-dashed border-2 border-purple-200 bg-purple-50/30 rounded-2xl">
-          <h3 className="font-bold text-lg text-gray-900 mb-4">How FinaCard Works</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700 font-bold text-sm">1</div>
+        <Card className="p-6 rounded-2xl" data-testid="card-simulate-spending">
+          <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-purple-600" />
+            Simulate Spending
+          </h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div>
-                <p className="font-semibold text-sm text-gray-900">Fund Your Card</p>
-                <p className="text-xs text-gray-500 mt-0.5">Transfer gold from your FinaPay wallet to FinaCard. Gold is instantly available for spending.</p>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Merchant Name</label>
+                <Input
+                  placeholder="e.g. Amazon, Starbucks, Emirates"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  data-testid="input-merchant-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Category</label>
+                <Select value={merchantCategory} onValueChange={setMerchantCategory}>
+                  <SelectTrigger data-testid="select-merchant-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MERCHANT_CATEGORIES.map(cat => (
+                      <SelectItem key={cat.value} value={cat.value} data-testid={`option-category-${cat.value.toLowerCase()}`}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Amount</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="100.00"
+                    value={spendAmount}
+                    onChange={(e) => setSpendAmount(e.target.value)}
+                    data-testid="input-spend-amount"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Currency</label>
+                  <Select value={spendCurrency} onValueChange={setSpendCurrency}>
+                    <SelectTrigger data-testid="select-spend-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map(c => (
+                        <SelectItem key={c.value} value={c.value} data-testid={`option-currency-${c.value.toLowerCase()}`}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-700 font-bold text-sm">2</div>
-              <div>
-                <p className="font-semibold text-sm text-gray-900">Spend Anywhere</p>
-                <p className="text-xs text-gray-500 mt-0.5">Use your card at any merchant worldwide. Gold is converted to local currency at spot price.</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 text-purple-700 font-bold text-sm">3</div>
-              <div>
-                <p className="font-semibold text-sm text-gray-900">Return Anytime</p>
-                <p className="text-xs text-gray-500 mt-0.5">Don't need the balance? Move gold back to your FinaPay wallet instantly, no fees.</p>
-              </div>
+
+            <div className="space-y-4">
+              {spendAmountNum > 0 && goldPrice > 0 && (
+                <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-xl p-5 space-y-3" data-testid="card-spend-preview">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Preview</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Amount</span>
+                    <span className="font-semibold">{CURRENCIES.find(c => c.value === spendCurrency)?.symbol}{spendAmountNum.toFixed(2)} {spendCurrency}</span>
+                  </div>
+                  {spendCurrency !== 'USD' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">USD Equivalent</span>
+                      <span className="font-medium">${spendUsdEquiv.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Gold Price</span>
+                    <span className="font-medium">${goldPrice.toFixed(2)}/g</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3 flex justify-between">
+                    <span className="text-gray-700 font-medium">Gold to Deduct</span>
+                    <span className="font-bold text-purple-700" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
+                  </div>
+                  {spendGoldPreview > finacardGrams && (
+                    <p className="text-xs text-red-500 font-medium" data-testid="text-insufficient-balance">
+                      ⚠ Insufficient balance. You have {finacardGrams.toFixed(4)}g available.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                onClick={() => spendMutation.mutate({
+                  merchantName,
+                  merchantCategory,
+                  amountLocal: spendAmountNum,
+                  currencyLocal: spendCurrency,
+                })}
+                disabled={
+                  !merchantName.trim() ||
+                  !merchantCategory ||
+                  spendAmountNum <= 0 ||
+                  spendGoldPreview > finacardGrams ||
+                  spendMutation.isPending
+                }
+                className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold"
+                data-testid="button-spend"
+              >
+                {spendMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                ) : (
+                  <><CreditCard className="w-4 h-4 mr-2" /> Pay {spendAmountNum > 0 ? `${CURRENCIES.find(c => c.value === spendCurrency)?.symbol}${spendAmountNum.toFixed(2)}` : ''}</>
+                )}
+              </Button>
             </div>
           </div>
         </Card>
 
-        {/* Transfer History */}
+        {spendingHistory.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-gray-400" />
+                Recent Spending
+              </h3>
+            </div>
+            <Card className="divide-y divide-gray-100 overflow-hidden" data-testid="card-spending-history">
+              {spendingHistory.map((s) => {
+                const CategoryIcon = getCategoryIcon(s.merchantCategory);
+                return (
+                  <div key={s.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors" data-testid={`row-spending-${s.id}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
+                        <CategoryIcon className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-900" data-testid={`text-merchant-${s.id}`}>{s.merchantName}</p>
+                        <p className="text-xs text-gray-400">
+                          {s.merchantCategory && <span>{s.merchantCategory} · </span>}
+                          {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-sm text-red-600" data-testid={`text-spend-amount-${s.id}`}>
+                        -{Number(s.goldGramsDeducted).toFixed(4)}g
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {s.currencyLocal !== 'USD' ? `${Number(s.amountLocal).toFixed(2)} ${s.currencyLocal} · ` : ''}
+                        ${Number(s.usdEquivalent).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+          </div>
+        )}
+
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
@@ -303,7 +803,6 @@ export default function FinaCard() {
           )}
         </div>
 
-        {/* Fund Dialog */}
         <Dialog open={showFundDialog} onOpenChange={setShowFundDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -366,7 +865,6 @@ export default function FinaCard() {
           </DialogContent>
         </Dialog>
 
-        {/* Withdraw Dialog */}
         <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

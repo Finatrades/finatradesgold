@@ -187,6 +187,7 @@ import Announcements from "@/pages/admin/Announcements";
 import InterestCalculator from "@/pages/admin/InterestCalculator";
 import WingoldOrders from "@/pages/admin/WingoldOrders";
 import WingoldProducts from "@/pages/admin/WingoldProducts";
+import FinaCardAdmin from "@/pages/admin/FinaCardAdmin";
 import WingoldCallback from "@/pages/WingoldCallback";
 import PriceAlertsPage from "@/pages/PriceAlertsPage";
 import DCAPage from "@/pages/DCAPage";
@@ -346,6 +347,7 @@ function Router() {
       {/* System & DevOps */}
       
       {/* Communication */}
+      <Route path="/admin/finacard-management" component={FinaCardAdmin} />
       <Route path="/admin/announcements" component={Announcements} />
 
       <Route component={NotFound} />

@@ -38,7 +38,9 @@ import {
   beneficiaries, insertBeneficiarySchema,
   userActivityLogs, insertUserActivityLogSchema, InsertUserActivityLog,
   reportExports, insertReportExportSchema,
-  finacardTransfers
+  finacardTransfers,
+  finacardCards,
+  finacardSpending
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -6786,6 +6788,273 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error('[FinaCard] Withdraw error:', error);
       res.status(500).json({ message: "Failed to withdraw from FinaCard" });
+    }
+  });
+
+  // FinaCard - Card Application & Management
+  app.post("/api/finacard/apply", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const { cardType } = req.body;
+      const type = cardType === 'physical' ? 'physical' : 'virtual';
+
+      const existing = await db.select().from(finacardCards)
+        .where(and(
+          eq(finacardCards.userId, userId),
+          inArray(finacardCards.cardStatus, ['applied', 'under_review', 'approved', 'active'])
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ message: "You already have an active or pending card application" });
+      }
+
+      const last4 = String(Math.floor(1000 + Math.random() * 9000));
+      const now = new Date();
+      const expiryMonth = now.getMonth() + 1;
+      const expiryYear = now.getFullYear() + 3;
+
+      const [card] = await db.insert(finacardCards).values({
+        userId,
+        cardType: type,
+        cardStatus: 'applied',
+        last4Digits: last4,
+        expiryMonth,
+        expiryYear,
+      }).returning();
+
+      res.json({ success: true, message: "Card application submitted successfully", card });
+    } catch (error: any) {
+      console.error('[FinaCard] Apply error:', error);
+      res.status(500).json({ message: "Failed to submit card application" });
+    }
+  });
+
+  app.get("/api/finacard/card/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const cards = await db.select().from(finacardCards)
+        .where(eq(finacardCards.userId, req.params.userId))
+        .orderBy(desc(finacardCards.appliedAt));
+      
+      const activeCard = cards.find(c => ['active', 'approved', 'applied', 'under_review'].includes(c.cardStatus));
+      res.json({ card: activeCard || null, allCards: cards });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get card details" });
+    }
+  });
+
+  app.post("/api/finacard/activate", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const [card] = await db.select().from(finacardCards)
+        .where(and(
+          eq(finacardCards.userId, userId),
+          eq(finacardCards.cardStatus, 'approved')
+        ))
+        .limit(1);
+
+      if (!card) return res.status(404).json({ message: "No approved card found to activate" });
+
+      const [updated] = await db.update(finacardCards)
+        .set({ cardStatus: 'active', activatedAt: new Date(), issuedAt: new Date() })
+        .where(eq(finacardCards.id, card.id))
+        .returning();
+
+      res.json({ success: true, message: "Card activated successfully", card: updated });
+    } catch (error: any) {
+      console.error('[FinaCard] Activate error:', error);
+      res.status(500).json({ message: "Failed to activate card" });
+    }
+  });
+
+  app.get("/api/finacard/spending/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const spending = await db.select().from(finacardSpending)
+        .where(eq(finacardSpending.userId, req.params.userId))
+        .orderBy(desc(finacardSpending.createdAt))
+        .limit(50);
+      res.json({ spending });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get spending history" });
+    }
+  });
+
+  app.post("/api/finacard/spend", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const { merchantName, merchantCategory, merchantCountry, amountLocal, currencyLocal } = req.body;
+      
+      if (!merchantName || !amountLocal) return res.status(400).json({ message: "Merchant name and amount are required" });
+      
+      const amount = parseFloat(amountLocal);
+      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+
+      const [card] = await db.select().from(finacardCards)
+        .where(and(
+          eq(finacardCards.userId, userId),
+          eq(finacardCards.cardStatus, 'active')
+        ))
+        .limit(1);
+
+      if (!card) return res.status(400).json({ message: "No active card found. Please activate your card first." });
+      if (card.isFrozen) return res.status(400).json({ message: "Your card is currently frozen" });
+
+      const priceData = await getGoldPrice().catch(() => ({ pricePerGram: 0, source: 'fallback' }));
+      const price = priceData.pricePerGram;
+      if (price <= 0) return res.status(400).json({ message: "Unable to determine gold price. Please try again." });
+
+      const currency = currencyLocal || 'USD';
+      let usdAmount = amount;
+      let fxRate = null;
+      
+      const fxRates: Record<string, number> = { USD: 1, AED: 0.2723, EUR: 1.08, GBP: 1.27, CHF: 1.12, SAR: 0.2667 };
+      if (currency !== 'USD') {
+        const rate = fxRates[currency];
+        if (!rate) return res.status(400).json({ message: `Unsupported currency: ${currency}` });
+        usdAmount = amount * rate;
+        fxRate = rate;
+      }
+
+      const goldGramsNeeded = parseFloat((usdAmount / price).toFixed(6));
+
+      const result = await db.transaction(async (tx) => {
+        const [updated] = await tx.update(wallets)
+          .set({
+            finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${goldGramsNeeded.toFixed(6)}`,
+            updatedAt: new Date()
+          })
+          .where(and(
+            eq(wallets.userId, userId),
+            sql`${wallets.finacardGoldGrams} >= ${goldGramsNeeded.toFixed(6)}`
+          ))
+          .returning();
+
+        if (!updated) {
+          throw new Error('INSUFFICIENT_BALANCE');
+        }
+
+        await tx.insert(finacardSpending).values({
+          userId,
+          cardId: card.id,
+          merchantName,
+          merchantCategory: merchantCategory || null,
+          merchantCountry: merchantCountry || null,
+          amountLocal: amount.toFixed(2),
+          currencyLocal: currency,
+          goldGramsDeducted: goldGramsNeeded.toFixed(6),
+          goldPriceAtTime: price.toFixed(6),
+          usdEquivalent: usdAmount.toFixed(2),
+          fxRate: fxRate ? fxRate.toFixed(6) : null,
+          fxFeeGrams: '0',
+        });
+
+        return updated;
+      });
+
+      res.json({
+        success: true,
+        message: `Payment of ${currency} ${amount.toFixed(2)} at ${merchantName} successful`,
+        goldDeducted: goldGramsNeeded,
+        finacardGoldGrams: result?.finacardGoldGrams || '0',
+      });
+    } catch (error: any) {
+      if (error.message === 'INSUFFICIENT_BALANCE') {
+        return res.status(400).json({ message: "Insufficient card balance for this transaction" });
+      }
+      console.error('[FinaCard] Spend error:', error);
+      res.status(500).json({ message: "Failed to process card payment" });
+    }
+  });
+
+  // FinaCard Admin Routes
+  app.get("/api/admin/finacard/applications", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
+    try {
+      const { status } = req.query;
+      let query = db.select({
+        card: finacardCards,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+        }
+      }).from(finacardCards)
+        .innerJoin(users, eq(finacardCards.userId, users.id))
+        .orderBy(desc(finacardCards.appliedAt));
+
+      if (status && status !== 'all') {
+        query = query.where(eq(finacardCards.cardStatus, status as any)) as any;
+      }
+
+      const results = await query;
+      res.json({ applications: results });
+    } catch (error: any) {
+      console.error('[FinaCard Admin] List error:', error);
+      res.status(500).json({ message: "Failed to list card applications" });
+    }
+  });
+
+  app.post("/api/admin/finacard/approve/:cardId", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
+    try {
+      const { cardId } = req.params;
+      const adminId = (req as any).adminUser?.id || req.session.userId;
+
+      const [card] = await db.select().from(finacardCards).where(eq(finacardCards.id, cardId)).limit(1);
+      if (!card) return res.status(404).json({ message: "Card application not found" });
+      if (!['applied', 'under_review'].includes(card.cardStatus)) {
+        return res.status(400).json({ message: `Cannot approve card with status: ${card.cardStatus}` });
+      }
+
+      const [updated] = await db.update(finacardCards)
+        .set({
+          cardStatus: 'approved',
+          reviewedAt: new Date(),
+          reviewedBy: adminId,
+          adminNotes: req.body.notes || null,
+        })
+        .where(eq(finacardCards.id, cardId))
+        .returning();
+
+      res.json({ success: true, message: "Card application approved", card: updated });
+    } catch (error: any) {
+      console.error('[FinaCard Admin] Approve error:', error);
+      res.status(500).json({ message: "Failed to approve card application" });
+    }
+  });
+
+  app.post("/api/admin/finacard/reject/:cardId", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
+    try {
+      const { cardId } = req.params;
+      const adminId = (req as any).adminUser?.id || req.session.userId;
+      const { reason } = req.body;
+
+      const [card] = await db.select().from(finacardCards).where(eq(finacardCards.id, cardId)).limit(1);
+      if (!card) return res.status(404).json({ message: "Card application not found" });
+      if (!['applied', 'under_review', 'approved'].includes(card.cardStatus)) {
+        return res.status(400).json({ message: `Cannot reject card with status: ${card.cardStatus}` });
+      }
+
+      const [updated] = await db.update(finacardCards)
+        .set({
+          cardStatus: 'cancelled',
+          reviewedAt: new Date(),
+          reviewedBy: adminId,
+          adminNotes: reason || 'Rejected by admin',
+          cancelledAt: new Date(),
+        })
+        .where(eq(finacardCards.id, cardId))
+        .returning();
+
+      res.json({ success: true, message: "Card application rejected", card: updated });
+    } catch (error: any) {
+      console.error('[FinaCard Admin] Reject error:', error);
+      res.status(500).json({ message: "Failed to reject card application" });
     }
   });
 

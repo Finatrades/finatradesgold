@@ -129,6 +129,7 @@ export const MENU_PERMISSION_MAP: Record<string, string[]> = {
   '/admin/approvals': ['manage_deposits', 'manage_withdrawals', 'manage_kyc', 'manage_vault'],
   '/admin/account-statements': ['view_reports', 'generate_reports'],
   '/admin/interest-calculator': ['view_reports', 'generate_reports'],
+  '/admin/finacard-management': ['manage_deposits', 'manage_withdrawals'],
   '/admin/cards': ['manage_settings'],
   '/admin/payments': ['manage_deposits', 'manage_withdrawals'],
   '/admin/reports': ['view_reports', 'generate_reports'],
@@ -353,6 +354,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <Package className="w-4 h-4" />,
       items: [
         { label: 'Gold Bar Catalog', href: '/admin/wingold-products' },
+        { label: 'FinaCard', href: '/admin/finacard-management' },
         { label: 'FinaPay', href: '/admin/finapay' },
         { label: 'FinaVault', href: '/admin/vault' },
         { label: 'FinaBridge', href: '/admin/finabridge' },

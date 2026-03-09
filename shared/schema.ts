@@ -1046,6 +1046,58 @@ export const insertFinacardTransferSchema = createInsertSchema(finacardTransfers
 export type InsertFinacardTransfer = z.infer<typeof insertFinacardTransferSchema>;
 export type FinacardTransfer = typeof finacardTransfers.$inferSelect;
 
+export const finacardCardStatusEnum = pgEnum("finacard_card_status", ["applied", "under_review", "approved", "active", "frozen", "cancelled"]);
+export const finacardCardTypeEnum = pgEnum("finacard_card_type", ["virtual", "physical"]);
+export const finacardSpendingStatusEnum = pgEnum("finacard_spending_status", ["completed", "reversed", "pending"]);
+
+export const finacardCards = pgTable("finacard_cards", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  cardType: finacardCardTypeEnum("card_type").notNull().default("virtual"),
+  cardStatus: finacardCardStatusEnum("card_status").notNull().default("applied"),
+  last4Digits: varchar("last4_digits", { length: 4 }),
+  expiryMonth: integer("expiry_month"),
+  expiryYear: integer("expiry_year"),
+  dailyLimitGrams: decimal("daily_limit_grams", { precision: 18, scale: 6 }).notNull().default('5'),
+  monthlyLimitGrams: decimal("monthly_limit_grams", { precision: 18, scale: 6 }).notNull().default('50'),
+  isFrozen: boolean("is_frozen").notNull().default(false),
+  frozenAt: timestamp("frozen_at"),
+  frozenReason: text("frozen_reason"),
+  adminNotes: text("admin_notes"),
+  appliedAt: timestamp("applied_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by", { length: 255 }),
+  issuedAt: timestamp("issued_at"),
+  activatedAt: timestamp("activated_at"),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export const insertFinacardCardSchema = createInsertSchema(finacardCards).omit({ id: true, appliedAt: true });
+export type InsertFinacardCard = z.infer<typeof insertFinacardCardSchema>;
+export type FinacardCard = typeof finacardCards.$inferSelect;
+
+export const finacardSpending = pgTable("finacard_spending", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  cardId: varchar("card_id", { length: 255 }).notNull().references(() => finacardCards.id),
+  merchantName: varchar("merchant_name", { length: 500 }).notNull(),
+  merchantCategory: varchar("merchant_category", { length: 255 }),
+  merchantCountry: varchar("merchant_country", { length: 100 }),
+  amountLocal: decimal("amount_local", { precision: 18, scale: 2 }).notNull(),
+  currencyLocal: varchar("currency_local", { length: 10 }).notNull().default('USD'),
+  goldGramsDeducted: decimal("gold_grams_deducted", { precision: 18, scale: 6 }).notNull(),
+  goldPriceAtTime: decimal("gold_price_at_time", { precision: 18, scale: 6 }).notNull(),
+  usdEquivalent: decimal("usd_equivalent", { precision: 18, scale: 2 }).notNull(),
+  fxRate: decimal("fx_rate", { precision: 18, scale: 6 }),
+  fxFeeGrams: decimal("fx_fee_grams", { precision: 18, scale: 6 }).notNull().default('0'),
+  status: finacardSpendingStatusEnum("status").notNull().default("completed"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFinacardSpendingSchema = createInsertSchema(finacardSpending).omit({ id: true, createdAt: true });
+export type InsertFinacardSpending = z.infer<typeof insertFinacardSpendingSchema>;
+export type FinacardSpending = typeof finacardSpending.$inferSelect;
+
 /**
  * TRANSACTIONS TABLE - GOLD-ONLY COMPLIANCE
  * 
