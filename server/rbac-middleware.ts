@@ -127,7 +127,7 @@ export function requirePermission(...permissions: string[]) {
                   if (mapping.action === 'view' && componentPerms.view) {
                     return next();
                   }
-                  if (mapping.action === 'edit' && (componentPerms.edit || componentPerms.create || componentPerms.delete || componentPerms.approve_l1 || componentPerms.approve_final)) {
+                  if (mapping.action === 'edit' && (componentPerms.edit || componentPerms.create || componentPerms.approve_l1 || componentPerms.approve_final)) {
                     return next();
                   }
                 }

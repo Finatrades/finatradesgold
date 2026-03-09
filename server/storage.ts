@@ -5090,10 +5090,12 @@ export class DatabaseStorage implements IStorage {
       const mappedPerms = componentPermMap[slug] || [];
       
       // Add permissions based on what the user can do
+      // View permission controls section visibility
       if (row.can_view) {
         mappedPerms.filter(p => p.startsWith('view_')).forEach(p => legacyPermissions.add(p));
       }
-      if (row.can_create || row.can_edit || row.can_delete || row.can_approve_l1 || row.can_approve_final) {
+      // Manage permissions require create/edit/approve — delete alone does NOT grant manage access
+      if (row.can_create || row.can_edit || row.can_approve_l1 || row.can_approve_final) {
         mappedPerms.filter(p => p.startsWith('manage_') || p.startsWith('generate_')).forEach(p => legacyPermissions.add(p));
       }
     }
