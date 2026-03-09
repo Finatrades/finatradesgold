@@ -34,8 +34,12 @@ async function throwIfResNotOk(res: Response) {
     
     // Convert technical errors to user-friendly messages
     let friendlyMessage = errorData?.message || text;
-    if (errorData?.code === 'RBAC_PERMISSION_DENIED') {
+    if (errorData?.code === 'RBAC_PERMISSION_DENIED' || (res.status === 403 && !text.includes('CSRF'))) {
       friendlyMessage = "Access Denied: You do not have permission to view this section. Please contact your system administrator.";
+      const error: any = new Error(friendlyMessage);
+      error.isAccessDenied = true;
+      error.status = res.status;
+      throw error;
     } else if (res.status === 403 && text.includes('CSRF')) {
       friendlyMessage = 'Your session may have expired. Please refresh the page and try again.';
       handleSessionExpired();
@@ -129,19 +133,34 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+export function isAccessDeniedError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'isAccessDenied' in error) return true;
+  if (error instanceof Error) {
+    const msg = error.message;
+    return msg.includes('Access Denied') || msg.includes('RBAC_PERMISSION_DENIED') || msg.includes('do not have permission');
+  }
+  return false;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      staleTime: 30000, // 30 seconds - ensures user sees fresh data quickly after admin actions
-      gcTime: 300000, // 5 minutes - keep data in cache for background tabs
-      refetchOnWindowFocus: true, // Re-enable: critical for seeing admin KYC decisions when user switches tabs
-      refetchOnReconnect: true, // Re-enable: ensure fresh data after network drops
-      retry: 1,
+      staleTime: 30000,
+      gcTime: 300000,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: (failureCount, error) => {
+        if (isAccessDeniedError(error)) return false;
+        return failureCount < 1;
+      },
       refetchInterval: false,
     },
     mutations: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (isAccessDeniedError(error)) return false;
+        return failureCount < 1;
+      },
     },
   },
 });
