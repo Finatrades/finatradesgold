@@ -364,27 +364,35 @@ export default function Dashboard() {
             
             {/* Desktop: KPI Cards Row 2 - Soft Colors with Outlines */}
             <div className="hidden md:grid grid-cols-3 gap-4">
-              {/* Total Portfolio */}
-              <Card className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-2 border-indigo-200 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">Total Portfolio</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-indigo-200 flex items-center justify-center cursor-pointer hover:bg-indigo-300 transition-colors">
-                          <Info className="w-4 h-4 text-indigo-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Combined value of all your investments including wallet gold, vault storage, and BNSL plans.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              {/* Total Portfolio - Premium Wallet Card */}
+              <Card className="relative p-5 overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-0 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full blur-2xl -mr-16 -mt-16" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500/15 to-transparent rounded-full blur-xl -ml-10 -mb-10" />
+                <div className="absolute top-3 right-3 w-12 h-8 rounded-md bg-gradient-to-br from-amber-300 to-yellow-500 opacity-70" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center">
+                      <Wallet className="w-4 h-4 text-white/80" />
+                    </div>
+                    <p className="text-white/70 text-xs font-medium tracking-wide uppercase">Total Portfolio</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors ml-auto">
+                            <Info className="w-3 h-3 text-white/60" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm">
+                          <p>Combined value of all your investments including wallet gold, vault storage, and BNSL plans.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                  </p>
+                  <p className="text-white/50 text-xs mt-2 font-medium">Overall Investment</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Overall Investment</p>
               </Card>
               
               {/* BNSL Invested */}
