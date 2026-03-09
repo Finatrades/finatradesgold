@@ -176,8 +176,8 @@ interface PendingCounts {
 }
 
 export default function AdminDashboard() {
-  const { hasMenuPermission, isSuperAdmin, effectivePermissions } = useAdminPermissions();
-  const hasStatsAccess = isSuperAdmin || effectivePermissions.includes('view_reports');
+  const { hasMenuPermission, isSuperAdmin, effectivePermissions, permissionsLoading } = useAdminPermissions();
+  const hasStatsAccess = permissionsLoading || isSuperAdmin || effectivePermissions.includes('view_reports') || effectivePermissions.includes('*');
 
   const { data: stats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
@@ -221,18 +221,18 @@ export default function AdminDashboard() {
 
   // Filter QUICK_ACTIONS based on permissions
   const filteredQuickActions = useMemo(() => {
-    if (isSuperAdmin) return QUICK_ACTIONS;
+    if (permissionsLoading || isSuperAdmin) return QUICK_ACTIONS;
     return QUICK_ACTIONS.filter(action => hasMenuPermission(action.href));
-  }, [isSuperAdmin, hasMenuPermission]);
+  }, [permissionsLoading, isSuperAdmin, hasMenuPermission]);
 
   // Filter ACTION_SECTIONS based on permissions
   const filteredActionSections = useMemo(() => {
-    if (isSuperAdmin) return ACTION_SECTIONS;
+    if (permissionsLoading || isSuperAdmin) return ACTION_SECTIONS;
     return ACTION_SECTIONS.map(section => ({
       ...section,
       items: section.items.filter(item => hasMenuPermission(item.href))
     })).filter(section => section.items.length > 0);
-  }, [isSuperAdmin, hasMenuPermission]);
+  }, [permissionsLoading, isSuperAdmin, hasMenuPermission]);
 
   return (
     <AdminLayout>
