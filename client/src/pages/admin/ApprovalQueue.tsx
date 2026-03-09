@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, CheckCircle, XCircle, AlertTriangle, FileText, User, Calendar, MessageSquare, ChevronRight, History } from "lucide-react";
 import { toast } from "sonner";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, isAccessDeniedError } from "@/lib/queryClient";
 import { formatDistanceToNow, format } from "date-fns";
 
 interface ApprovalItem {
@@ -62,7 +62,7 @@ export default function ApprovalQueue() {
   const [actionType, setActionType] = useState<"approve_l1" | "approve_final" | "reject" | null>(null);
   const [comments, setComments] = useState("");
 
-  const { data: pendingData, isLoading: pendingLoading } = useQuery({
+  const { data: pendingData, isLoading: pendingLoading, error: pendingError } = useQuery({
     queryKey: ["pending-approvals"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/admin/rbac/pending-approvals");
@@ -71,7 +71,7 @@ export default function ApprovalQueue() {
     refetchInterval: 30000,
   });
 
-  const { data: allApprovalsData, isLoading: allLoading } = useQuery({
+  const { data: allApprovalsData, isLoading: allLoading, error: allError } = useQuery({
     queryKey: ["approval-queue", statusFilter],
     queryFn: async () => {
       const url = statusFilter === "all" ? "/api/admin/rbac/approvals" : `/api/admin/rbac/approvals?status=${statusFilter}`;
@@ -105,7 +105,11 @@ export default function ApprovalQueue() {
       toast.success("Approval processed successfully");
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to process approval");
+      if (isAccessDeniedError(err)) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
+        toast.error(err.message || "Failed to process approval");
+      }
     },
   });
 
@@ -148,6 +152,28 @@ export default function ApprovalQueue() {
   const canApproveL1 = selectedApproval?.status === "pending_l1";
   const canApproveFinal = selectedApproval?.status === "pending_final";
   const canReject = selectedApproval?.status === "pending_l1" || selectedApproval?.status === "pending_final";
+
+  const hasAccessError = isAccessDeniedError(pendingError) || isAccessDeniedError(allError);
+
+  if (hasAccessError) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]" data-testid="access-denied-container">
+          <div className="max-w-md w-full text-center space-y-6">
+            <div className="mx-auto w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="w-10 h-10 text-red-500" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Access Denied</h2>
+              <p className="text-muted-foreground mt-2">
+                You do not have permission to view the Approval Queue. Please contact Admin IT.
+              </p>
+            </div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -192,8 +218,9 @@ export default function ApprovalQueue() {
                 <div className="p-4 text-center text-muted-foreground">Loading...</div>
               ) : allApprovals.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>No approval requests found</p>
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-400" />
+                  <p className="font-medium text-foreground">All Clear</p>
+                  <p className="text-sm mt-1">No approval requests found</p>
                 </div>
               ) : (
                 <div className="divide-y">
@@ -398,8 +425,9 @@ export default function ApprovalQueue() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
-              <FileText className="h-16 w-16 mb-4 opacity-30" />
-              <p>Select a request to view details</p>
+              <FileText className="h-16 w-16 mb-4 text-purple-200" />
+              <p className="font-medium text-foreground">No Request Selected</p>
+              <p className="text-sm mt-1">Select a request from the list to view its details</p>
             </div>
           )}
         </Card>
