@@ -4116,8 +4116,8 @@ export async function registerRoutes(
         summary: {
           physicalGoldGrams: report.physicalGold.totalGrams,
           customerLiabilitiesGrams: report.customerLiabilities.totalGrams,
-          backingRatio: report.backingRatio,
-          surplus: report.surplus,
+          backingRatio: report.backing?.overallRatio ?? 0,
+          surplus: report.backing?.overallSurplus ?? 0,
           generatedAt: new Date().toISOString()
         },
         physicalGold: {
@@ -4131,8 +4131,8 @@ export async function registerRoutes(
         customerLiabilities: {
           totalGrams: report.customerLiabilities.totalGrams,
           finapay: {
-            count: report.customerLiabilities.wallets.count,
-            totalGrams: report.customerLiabilities.wallets.totalGrams,
+            count: report.customerLiabilities.mpgw?.count ?? 0,
+            totalGrams: report.customerLiabilities.mpgw?.totalGrams ?? 0,
             users: finapayUsers.map((u: any) => ({
               name: `${u.firstName} ${u.lastName}`,
               email: u.email,
@@ -4140,9 +4140,9 @@ export async function registerRoutes(
             }))
           },
           bnsl: {
-            count: report.customerLiabilities.bnsl.count,
-            availableGrams: report.customerLiabilities.bnsl.availableGrams,
-            lockedGrams: report.customerLiabilities.bnsl.lockedGrams,
+            count: report.customerLiabilities.bnsl?.count ?? 0,
+            availableGrams: report.customerLiabilities.bnsl?.availableGrams ?? 0,
+            lockedGrams: report.customerLiabilities.bnsl?.lockedGrams ?? 0,
             users: bnslUsers.map((u: any) => ({
               name: `${u.firstName} ${u.lastName}`,
               email: u.email,
