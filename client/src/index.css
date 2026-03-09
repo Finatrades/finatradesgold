@@ -166,6 +166,10 @@
   }
 }
 
+button:focus {
+  outline: none;
+}
+
 /* Custom scrollbar for sidebar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
