@@ -114,8 +114,10 @@ export default function FinaVaultManagement() {
       
       setDeposits(depositsData.requests || []);
       setWithdrawals(withdrawalsData.requests || []);
-    } catch (err) {
-      toast.error('Failed to fetch vault data');
+    } catch (err: any) {
+      if (!err?.message?.includes('Access Denied') && !err?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to fetch vault data');
+      }
     } finally {
       setLoading(false);
     }

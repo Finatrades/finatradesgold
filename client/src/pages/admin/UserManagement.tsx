@@ -64,8 +64,10 @@ export default function UserManagement() {
       const response = await apiRequest('GET', '/api/admin/users');
       const data = await response.json();
       setUsers(data.users || []);
-    } catch (error) {
-      toast.error("Failed to load users");
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error("Failed to load users");
+      }
     } finally {
       setIsLoading(false);
     }

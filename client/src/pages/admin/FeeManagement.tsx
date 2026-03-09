@@ -68,8 +68,10 @@ export default function FeeManagement() {
       const res = await apiRequest('GET', '/api/admin/fees');
       const data = await res.json();
       setFees(data.fees || []);
-    } catch (err) {
-      toast.error('Failed to load fees');
+    } catch (err: any) {
+      if (!err?.message?.includes('Access Denied') && !err?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to load fees');
+      }
     } finally {
       setLoading(false);
     }

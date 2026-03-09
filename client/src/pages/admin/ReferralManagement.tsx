@@ -63,8 +63,10 @@ export default function ReferralManagement() {
         usersMap[user.id] = user;
       });
       setUsers(usersMap);
-    } catch (error) {
-      toast.error("Failed to load referrals");
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error("Failed to load referrals");
+      }
     } finally {
       setIsLoading(false);
     }

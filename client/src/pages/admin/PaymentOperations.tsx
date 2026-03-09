@@ -280,8 +280,10 @@ export default function FinaPayManagement() {
         userMap[u.id] = u;
       });
       setUsers(userMap);
-    } catch (error) {
-      toast.error("Failed to load data");
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('403') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error("Failed to load data");
+      }
     } finally {
       setIsLoading(false);
     }

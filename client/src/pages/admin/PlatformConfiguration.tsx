@@ -153,8 +153,10 @@ export default function PlatformConfiguration() {
         values[c.id] = c.configValue;
       });
       setEditedValues(values);
-    } catch (err) {
-      toast.error('Failed to load platform configuration');
+    } catch (err: any) {
+      if (!err?.message?.includes('Access Denied') && !err?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to load platform configuration');
+      }
     } finally {
       setLoading(false);
     }

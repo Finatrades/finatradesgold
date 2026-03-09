@@ -69,8 +69,10 @@ export default function SecuritySettings() {
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setSettings(data);
-    } catch (error) {
-      toast.error('Failed to load security settings');
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to load security settings');
+      }
     } finally {
       setLoading(false);
     }

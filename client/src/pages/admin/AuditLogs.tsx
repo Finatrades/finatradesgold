@@ -55,8 +55,10 @@ export default function AuditLogs() {
         usersMap[user.id] = user;
       });
       setUsers(usersMap);
-    } catch (error) {
-      toast.error("Failed to load audit logs");
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error("Failed to load audit logs");
+      }
     } finally {
       setIsLoading(false);
     }

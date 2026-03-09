@@ -94,8 +94,10 @@ export default function WorkflowAudit() {
       const statsData = await statsRes.json();
       setSummaries(summariesData.summaries || []);
       setStats(statsData);
-    } catch (error) {
-      toast.error("Failed to load workflow audit data");
+    } catch (error: any) {
+      if (!error?.message?.includes('Access Denied') && !error?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error("Failed to load workflow audit data");
+      }
     } finally {
       setIsLoading(false);
     }

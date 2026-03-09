@@ -85,8 +85,10 @@ function BnslTemplatesManager() {
       const res = await apiRequest('GET', '/api/admin/bnsl/templates');
       const data = await res.json();
       setTemplates(data.templates || []);
-    } catch (err) {
-      toast.error('Failed to load templates');
+    } catch (err: any) {
+      if (!err?.message?.includes('Access Denied') && !err?.message?.includes('RBAC_PERMISSION_DENIED')) {
+        toast.error('Failed to load templates');
+      }
     } finally {
       setLoading(false);
     }
