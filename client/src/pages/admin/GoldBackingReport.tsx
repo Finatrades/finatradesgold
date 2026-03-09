@@ -251,13 +251,15 @@ export default function GoldBackingReport() {
         title: 'Download Complete',
         description: 'Gold backing report PDF has been downloaded.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to download PDF:', error);
-      toast({
-        title: 'Download Failed',
-        description: 'Failed to generate PDF report. Please try again.',
-        variant: 'destructive',
-      });
+      if (!error?.isAccessDenied && !error?.message?.includes('Access Denied')) {
+        toast({
+          title: 'Download Failed',
+          description: 'Failed to generate PDF report. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsDownloading(false);
     }
