@@ -910,7 +910,8 @@ export async function registerRoutes(
         certificates,
         finabridgeWallet,
         buyGoldRequests,
-        vaultSummaryResult
+        vaultSummaryResult,
+        fcTransfers
       ] = await Promise.all([
         storage.getWallet(userId).catch(() => null),
         storage.getUserVaultHoldings(userId).catch(() => []),
@@ -925,6 +926,7 @@ export async function registerRoutes(
         storage.getFinabridgeWallet(userId).catch(() => null),
         storage.getUserBuyGoldRequests(userId).catch(() => []),
         db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId)).limit(1).catch(() => []),
+        db.select().from(finacardTransfers).where(eq(finacardTransfers.userId, userId)).orderBy(desc(finacardTransfers.createdAt)).catch(() => []),
       ]);
 
       const goldPrice = priceData.pricePerGram || 85;
@@ -976,8 +978,20 @@ export async function registerRoutes(
           sourceModule: 'Wingold',
         }));
 
+      const finacardTransactions = (fcTransfers || []).map((t: any) => ({
+        id: `fc-${t.id}`,
+        type: t.type === 'fund' ? 'FinaCard Fund' : 'FinaCard Return',
+        status: 'Completed',
+        amountGold: t.goldGrams,
+        amountUsd: t.usdEquivalent || '0',
+        goldGrams: t.goldGrams,
+        createdAt: t.createdAt,
+        description: t.type === 'fund' ? 'Transferred gold to FinaCard' : 'Returned gold from FinaCard',
+        sourceModule: 'FinaCard',
+      }));
+
       // Combine and sort transactions (limit to 20 for dashboard)
-      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions, ...buyGoldTransactions]
+      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions, ...buyGoldTransactions, ...finacardTransactions]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 20);
 
@@ -6847,8 +6861,27 @@ export async function registerRoutes(
   // Get user transactions - PROTECTED: requires matching session
   app.get("/api/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
-      const transactions = await storage.getUserTransactions(req.params.userId);
-      res.json({ transactions });
+      const [transactions, fcTransfers] = await Promise.all([
+        storage.getUserTransactions(req.params.userId),
+        db.select().from(finacardTransfers)
+          .where(eq(finacardTransfers.userId, req.params.userId))
+          .orderBy(desc(finacardTransfers.createdAt))
+          .catch(() => [])
+      ]);
+
+      const finacardTxns = fcTransfers.map((t: any) => ({
+        id: `fc-${t.id}`,
+        type: t.type === 'fund' ? 'FinaCard Fund' : 'FinaCard Return',
+        status: 'Completed',
+        amountGold: t.goldGrams,
+        amountUsd: t.usdEquivalent || '0',
+        goldGrams: t.goldGrams,
+        createdAt: t.createdAt,
+        description: t.type === 'fund' ? 'Transferred gold to FinaCard' : 'Returned gold from FinaCard',
+        sourceModule: 'FinaCard',
+      }));
+
+      res.json({ transactions: [...transactions, ...finacardTxns].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) });
     } catch (error) {
       res.status(400).json({ message: "Failed to get transactions" });
     }
