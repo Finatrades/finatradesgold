@@ -1020,6 +1020,7 @@ export const wallets = pgTable("wallets", {
   aedBalance: decimal("aed_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   chfBalance: decimal("chf_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   sarBalance: decimal("sar_balance", { precision: 18, scale: 2 }).notNull().default('0'),
+  finacardGoldGrams: decimal("finacard_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1027,6 +1028,23 @@ export const wallets = pgTable("wallets", {
 export const insertWalletSchema = createInsertSchema(wallets).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWallet = z.infer<typeof insertWalletSchema>;
 export type Wallet = typeof wallets.$inferSelect;
+
+export const finacardTransferTypeEnum = pgEnum("finacard_transfer_type", ["fund", "withdraw"]);
+
+export const finacardTransfers = pgTable("finacard_transfers", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  type: finacardTransferTypeEnum("type").notNull(),
+  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
+  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }),
+  usdEquivalent: decimal("usd_equivalent", { precision: 18, scale: 2 }),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertFinacardTransferSchema = createInsertSchema(finacardTransfers).omit({ id: true, createdAt: true });
+export type InsertFinacardTransfer = z.infer<typeof insertFinacardTransferSchema>;
+export type FinacardTransfer = typeof finacardTransfers.$inferSelect;
 
 /**
  * TRANSACTIONS TABLE - GOLD-ONLY COMPLIANCE

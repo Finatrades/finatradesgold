@@ -37,7 +37,8 @@ import {
   savingsGoals, insertSavingsGoalSchema,
   beneficiaries, insertBeneficiarySchema,
   userActivityLogs, insertUserActivityLogSchema, InsertUserActivityLog,
-  reportExports, insertReportExportSchema
+  reportExports, insertReportExportSchema,
+  finacardTransfers
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -1091,7 +1092,9 @@ export async function registerRoutes(
           fpgwPendingGrams: parseFloat(vaultSummary?.fpgwPendingGrams || '0'),
           fpgwLockedBnslGrams: parseFloat(vaultSummary?.fpgwLockedBnslGrams || '0'),
           fpgwReservedTradeGrams: parseFloat(vaultSummary?.fpgwReservedTradeGrams || '0'),
-          fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0')
+          fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0'),
+          finacardGoldGrams: parseFloat(wallet?.finacardGoldGrams || '0'),
+          finacardValueUsd: parseFloat(wallet?.finacardGoldGrams || '0') * goldPrice
         },
         _meta: { 
           loadTimeMs: loadTime,
@@ -6645,7 +6648,133 @@ export async function registerRoutes(
   // All wallet updates must go through proper transaction flows
   // with admin approval (deposits, purchases, transfers, etc.)
   // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
-  
+
+  // FinaCard - Gold-backed card wallet
+  app.get("/api/finacard/balance/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const wallet = await storage.getWallet(req.params.userId);
+      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
+      res.json({ 
+        finacardGoldGrams: wallet.finacardGoldGrams || '0',
+        walletGoldGrams: wallet.goldGrams || '0'
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get FinaCard balance" });
+    }
+  });
+
+  app.get("/api/finacard/transfers/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const transfers = await db.select().from(finacardTransfers)
+        .where(eq(finacardTransfers.userId, req.params.userId))
+        .orderBy(desc(finacardTransfers.createdAt))
+        .limit(50);
+      res.json({ transfers });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get FinaCard transfers" });
+    }
+  });
+
+  app.post("/api/finacard/fund", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      
+      const { goldGrams, goldPricePerGram } = req.body;
+      const amount = parseFloat(goldGrams);
+      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+      if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
+
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
+
+      const available = parseFloat(wallet.goldGrams || '0');
+      if (amount > available) return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
+
+      const price = parseFloat(goldPricePerGram || '0');
+      const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
+
+      await db.transaction(async (tx) => {
+        await tx.update(wallets)
+          .set({
+            goldGrams: sql`${wallets.goldGrams} - ${amount.toFixed(6)}`,
+            finacardGoldGrams: sql`${wallets.finacardGoldGrams} + ${amount.toFixed(6)}`,
+            updatedAt: new Date()
+          })
+          .where(eq(wallets.userId, userId));
+
+        await tx.insert(finacardTransfers).values({
+          userId,
+          type: 'fund',
+          goldGrams: amount.toFixed(6),
+          goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
+          usdEquivalent: usdEquiv,
+        });
+      });
+
+      const updatedWallet = await storage.getWallet(userId);
+      res.json({ 
+        success: true,
+        message: `${amount.toFixed(4)}g gold transferred to FinaCard`,
+        finacardGoldGrams: updatedWallet?.finacardGoldGrams || '0',
+        walletGoldGrams: updatedWallet?.goldGrams || '0'
+      });
+    } catch (error: any) {
+      console.error('[FinaCard] Fund error:', error);
+      res.status(500).json({ message: "Failed to fund FinaCard" });
+    }
+  });
+
+  app.post("/api/finacard/withdraw", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+      const { goldGrams, goldPricePerGram } = req.body;
+      const amount = parseFloat(goldGrams);
+      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+      if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
+
+      const wallet = await storage.getWallet(userId);
+      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
+
+      const finacardBalance = parseFloat(wallet.finacardGoldGrams || '0');
+      if (amount > finacardBalance) return res.status(400).json({ message: "Insufficient FinaCard balance" });
+
+      const price = parseFloat(goldPricePerGram || '0');
+      const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
+
+      await db.transaction(async (tx) => {
+        await tx.update(wallets)
+          .set({
+            goldGrams: sql`${wallets.goldGrams} + ${amount.toFixed(6)}`,
+            finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${amount.toFixed(6)}`,
+            updatedAt: new Date()
+          })
+          .where(eq(wallets.userId, userId));
+
+        await tx.insert(finacardTransfers).values({
+          userId,
+          type: 'withdraw',
+          goldGrams: amount.toFixed(6),
+          goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
+          usdEquivalent: usdEquiv,
+        });
+      });
+
+      const updatedWallet = await storage.getWallet(userId);
+      res.json({
+        success: true,
+        message: `${amount.toFixed(4)}g gold returned to FinaPay wallet`,
+        finacardGoldGrams: updatedWallet?.finacardGoldGrams || '0',
+        walletGoldGrams: updatedWallet?.goldGrams || '0'
+      });
+    } catch (error: any) {
+      console.error('[FinaCard] Withdraw error:', error);
+      res.status(500).json({ message: "Failed to withdraw from FinaCard" });
+    }
+  });
+
   // Create transaction - all transactions start as Pending and require admin approval
   app.post("/api/transactions", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
     try {

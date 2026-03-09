@@ -381,9 +381,11 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <p className="text-3xl font-bold text-white tracking-tight">
-                      {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                      {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 4)}g` : hiddenValue}
                     </p>
-                    <p className="text-white/50 text-xs mt-2 font-medium">Overall Investment</p>
+                    <p className="text-white/50 text-xs mt-2 font-medium">
+                      {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
+                    </p>
                   </div>
                 </Card>
               </Link>
