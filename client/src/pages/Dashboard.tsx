@@ -374,7 +374,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center">
                       <Wallet className="w-4 h-4 text-white/80" />
                     </div>
-                    <p className="text-white/70 text-xs font-medium tracking-wide uppercase">Total Portfolio</p>
+                    <p className="text-white/70 text-xs font-medium tracking-wide uppercase">Card Wallet</p>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
