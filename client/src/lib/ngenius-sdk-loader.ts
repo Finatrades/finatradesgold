@@ -19,10 +19,21 @@ export async function fetchSDKConfig(): Promise<SDKConfig> {
   
   if (!sdkConfigPromise) {
     sdkConfigPromise = apiRequest('GET', '/api/ngenius/sdk-config')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('SDK config not available');
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('SDK config endpoint returned non-JSON response');
+        }
+        return res.json();
+      })
       .then(config => {
         cachedConfig = config;
         return config;
+      })
+      .catch(() => {
+        sdkConfigPromise = null;
+        throw new Error('SDK config unavailable');
       });
   }
   
@@ -70,9 +81,8 @@ export async function preloadNGeniusSDK(): Promise<{ config: SDKConfig; ready: b
     await loadSDKScript(config.sdkUrl);
     
     return { config, ready: !!window.NI };
-  } catch (error) {
-    console.error('Failed to preload NGenius SDK:', error);
-    throw error;
+  } catch {
+    return { config: { enabled: false, apiKey: '', outletRef: '', sdkUrl: '', mode: '' }, ready: false };
   }
 }
 
