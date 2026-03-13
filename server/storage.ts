@@ -5135,8 +5135,40 @@ export class DatabaseStorage implements IStorage {
       LEFT JOIN users ab ON ura.assigned_by = ab.id
       WHERE ura.role_id = ${roleId} AND ura.is_active = true
         AND (ura.expires_at IS NULL OR ura.expires_at > NOW())
-      ORDER BY ura.assigned_at DESC
+
+      UNION
+
+      SELECT u.id, u.email, u.first_name, u.last_name, u.profile_photo,
+        e.created_at as assigned_at, NULL as expires_at, e.created_by as assigned_by,
+        'none' as approval_level,
+        cb.first_name as assigned_by_first_name, cb.last_name as assigned_by_last_name
+      FROM employees e
+      JOIN users u ON e.user_id = u.id
+      LEFT JOIN users cb ON e.created_by = cb.id
+      WHERE e.rbac_role_id = ${roleId} AND e.status = 'active'
+        AND e.user_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM user_role_assignments ura2
+          WHERE ura2.user_id = e.user_id AND ura2.role_id = ${roleId} AND ura2.is_active = true
+        )
+
+      ORDER BY assigned_at DESC
     `);
+
+    for (const row of result.rows as any[]) {
+      const hasAssignment = await db.execute(sql`
+        SELECT 1 FROM user_role_assignments WHERE user_id = ${(row as any).id} AND role_id = ${roleId} AND is_active = true LIMIT 1
+      `);
+      if ((hasAssignment.rows?.length || 0) === 0 && (row as any).id) {
+        try {
+          await db.execute(sql`
+            INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+            VALUES (gen_random_uuid(), ${(row as any).id}, ${roleId}, ${(row as any).assigned_by}, NOW(), true)
+          `);
+        } catch {}
+      }
+    }
+
     return result.rows;
   }
 
