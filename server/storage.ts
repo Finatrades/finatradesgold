@@ -4984,6 +4984,30 @@ export class DatabaseStorage implements IStorage {
       JOIN admin_roles ar ON ura.role_id = ar.id
       WHERE ura.user_id = ${userId} AND ura.is_active = true
     `);
+
+    if (result.rows.length === 0) {
+      const empResult = await db.execute(sql`
+        SELECT e.rbac_role_id as role_id, e.user_id, e.created_at as assigned_at,
+          ar.name as role_name, ar.risk_level, ar.department,
+          true as is_active, e.created_by as assigned_by
+        FROM employees e
+        JOIN admin_roles ar ON e.rbac_role_id = ar.id
+        WHERE e.user_id = ${userId} AND e.status = 'active' AND e.rbac_role_id IS NOT NULL
+      `);
+
+      if (empResult.rows.length > 0) {
+        for (const row of empResult.rows as any[]) {
+          try {
+            await db.execute(sql`
+              INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+              VALUES (gen_random_uuid(), ${userId}, ${row.role_id}, ${row.assigned_by}, NOW(), true)
+            `);
+          } catch {}
+        }
+        return empResult.rows;
+      }
+    }
+
     return result.rows;
   }
 
