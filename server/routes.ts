@@ -26140,6 +26140,17 @@ export async function registerRoutes(
   });
 
 
+  app.get("/api/admin/rbac/my-role", ensureAdminAsync, async (req, res) => {
+    try {
+      const userId = req.session?.userId || "";
+      const assignments = await storage.getUserRoleAssignments(userId);
+      res.json({ assignments });
+    } catch (error) {
+      console.error('Get my role error:', error);
+      res.status(500).json({ error: 'Failed to get role' });
+    }
+  });
+
   // Get user's effective RBAC permissions (for menu access control)
   app.get("/api/admin/rbac/my-permissions", ensureAdminAsync, async (req, res) => {
     try {

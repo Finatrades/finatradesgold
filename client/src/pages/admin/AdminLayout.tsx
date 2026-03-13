@@ -166,12 +166,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     staleTime: 10000,
   });
 
-  // Fetch user's RBAC role assignments
+  // Fetch user's own RBAC role (no special permission needed)
   const { data: rbacRoleData } = useQuery({
-    queryKey: ['/api/admin/rbac/users/roles', user?.id],
+    queryKey: ['/api/admin/rbac/my-role'],
     queryFn: async () => {
-      if (!user?.id) return null;
-      const res = await apiRequest('GET', `/api/admin/rbac/users/${user.id}/roles`);
+      const res = await apiRequest('GET', '/api/admin/rbac/my-role');
       if (!res.ok) return null;
       return res.json();
     },
