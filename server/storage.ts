@@ -4997,12 +4997,11 @@ export class DatabaseStorage implements IStorage {
 
       if (empResult.rows.length > 0) {
         for (const row of empResult.rows as any[]) {
-          try {
-            await db.execute(sql`
-              INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
-              VALUES (gen_random_uuid(), ${userId}, ${row.role_id}, ${row.assigned_by}, NOW(), true)
-            `);
-          } catch {}
+          await db.execute(sql`
+            INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+            VALUES (gen_random_uuid(), ${userId}, ${(row as any).role_id}, ${(row as any).assigned_by}, NOW(), true)
+          `);
+          console.log(`[RBAC] Auto-repaired missing role assignment: user=${userId}, role=${(row as any).role_id}`);
         }
         return empResult.rows;
       }
@@ -5184,12 +5183,11 @@ export class DatabaseStorage implements IStorage {
         SELECT 1 FROM user_role_assignments WHERE user_id = ${(row as any).id} AND role_id = ${roleId} AND is_active = true LIMIT 1
       `);
       if ((hasAssignment.rows?.length || 0) === 0 && (row as any).id) {
-        try {
-          await db.execute(sql`
-            INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
-            VALUES (gen_random_uuid(), ${(row as any).id}, ${roleId}, ${(row as any).assigned_by}, NOW(), true)
-          `);
-        } catch {}
+        await db.execute(sql`
+          INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
+          VALUES (gen_random_uuid(), ${(row as any).id}, ${roleId}, ${(row as any).assigned_by}, NOW(), true)
+        `);
+        console.log(`[RBAC] Auto-repaired missing role assignment in getUsersByRoleId: user=${(row as any).id}, role=${roleId}`);
       }
     }
 
