@@ -402,31 +402,51 @@ function FloatingAgentChatContent() {
       {/* Floating Button */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.button
-            initial={{ scale: 0 }}
-            animate={{ 
-              scale: 1,
-              y: [0, -8, 0]
-            }}
-            exit={{ scale: 0 }}
-            whileHover={{ scale: 1.1 }}
-            transition={{
-              y: {
-                duration: 1.5,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }
-            }}
-            onClick={openChat}
-            className={`fixed z-50 flex items-center justify-center ${isMobile ? 'bottom-20 right-3 w-14 h-14' : 'bottom-6 right-6 w-20 h-20'}`}
-          >
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
-              alt="Chat"
-              className={`object-contain drop-shadow-2xl ${isMobile ? 'w-14 h-14' : 'w-20 h-20'}`}
-            />
-            <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
-          </motion.button>
+          <div className={`fixed z-50 ${isMobile ? 'bottom-20 right-3' : 'bottom-6 right-6'}`}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className={`absolute ${isMobile ? '-top-10 -left-24' : '-top-12 -left-32'} whitespace-nowrap`}
+            >
+              <div className="bg-white/95 backdrop-blur-sm text-gray-800 text-sm font-medium px-4 py-2 rounded-full shadow-lg border border-purple-100">
+                <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent font-semibold">
+                  I am here to help
+                </span>
+                <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full ml-2 animate-pulse" />
+              </div>
+              <div className={`absolute -bottom-1.5 ${isMobile ? 'right-4' : 'right-6'} w-3 h-3 bg-white/95 border-r border-b border-purple-100 transform rotate-45`} />
+            </motion.div>
+
+            <motion.button
+              initial={{ scale: 0 }}
+              animate={{ 
+                scale: 1,
+                y: [0, -8, 0]
+              }}
+              exit={{ scale: 0 }}
+              whileHover={{ scale: 1.1 }}
+              transition={{
+                y: {
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              onClick={openChat}
+              className={`relative flex items-center justify-center ${isMobile ? 'w-14 h-14' : 'w-20 h-20'}`}
+            >
+              <div className={`absolute inset-[-6px] rounded-full border-2 border-purple-400/60 animate-ping`} style={{ animationDuration: '2s' }} />
+              <div className={`absolute inset-[-6px] rounded-full border-2 border-purple-500/40`} style={{ animation: 'spin 4s linear infinite' }} />
+              <div className={`absolute inset-[-10px] rounded-full border border-pink-400/30`} style={{ animation: 'spin 6s linear infinite reverse' }} />
+              <img
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69293bd8e52dce0074daa668/d8fcee3ed_FinatradesAIAgents.png"
+                alt="Chat"
+                className={`object-contain drop-shadow-2xl ${isMobile ? 'w-14 h-14' : 'w-20 h-20'}`}
+              />
+              <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+            </motion.button>
+          </div>
         )}
       </AnimatePresence>
 
