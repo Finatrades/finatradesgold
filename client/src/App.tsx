@@ -97,7 +97,7 @@ function HomeRedirect() {
   }
   
   if (!user) {
-    return <Redirect to="/finatrades" />;
+    return <Redirect to="/ecosystem" />;
   }
   
   // Redirect admins to admin dashboard, regular users to user dashboard
