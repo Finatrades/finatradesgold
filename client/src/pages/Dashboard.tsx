@@ -74,7 +74,6 @@ export default function Dashboard() {
     staleTime: 300000,
   });
 
-  // Fetch user's pending physical deposit requests
   const { data: physicalDepositsData } = useQuery<{ deposits: Array<{ id: string; status: string; goldType: string; estimatedGrams: string; createdAt: string }> }>({
     queryKey: ['physical-deposits', user?.id],
     queryFn: async () => {
@@ -86,7 +85,6 @@ export default function Dashboard() {
     staleTime: 60000,
   });
 
-  // Fetch user's pending deposit requests (bank transfers, crypto, etc.)
   const { data: pendingDepositsData } = useQuery<{ requests: Array<{ id: string; status: string; expectedGoldGrams: number }> }>({
     queryKey: ['pending-deposit-requests', user?.id],
     queryFn: async () => {
@@ -98,12 +96,10 @@ export default function Dashboard() {
     staleTime: 60000,
   });
 
-  // Calculate total pending gold from deposit requests
   const pendingDepositGrams = (pendingDepositsData?.requests || []).reduce(
     (sum, req) => sum + (req.expectedGoldGrams || 0), 0
   );
 
-  // Filter for pending physical deposits (not yet completed/rejected/cancelled)
   const pendingPhysicalDeposits = (physicalDepositsData?.deposits || []).filter(
     d => ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'].includes(d.status)
   );
@@ -175,25 +171,25 @@ export default function Dashboard() {
 
         {/* Mobile: Hero Balance Card */}
         <section className="md:hidden">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-500 p-5 shadow-lg">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-violet-800 p-5 shadow-lg">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-white/80 text-xs font-medium">Welcome back</p>
-                  <h1 className="text-white text-xl font-bold">{userName}</h1>
+                  <p className="text-white/80 text-[12px] font-medium">Welcome back</p>
+                  <h1 className="text-white text-[20px] font-bold">{userName}</h1>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                   <Coins className="w-5 h-5 text-white" />
                 </div>
               </div>
               <div className="mt-4">
-                <p className="text-white/70 text-xs mb-1">Total Portfolio Value</p>
+                <p className="text-white/70 text-[12px] mb-1">Total Portfolio Value</p>
                 <p className="text-white text-3xl font-bold tracking-tight">
                   {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
                 </p>
-                <p className="text-white/60 text-xs mt-1">
+                <p className="text-white/60 text-[12px] mt-1">
                   {showBalance ? `≈ ${formatNumber(totalGoldGrams, 4)}g gold` : ''}
                 </p>
               </div>
@@ -215,231 +211,184 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Desktop: Welcome Header - Clean Design */}
+        {/* Desktop: Welcome Header */}
         <section className="hidden md:block pb-0">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-[20px] font-bold text-gray-900">
                 Welcome back, {userName}
               </h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's an overview of your portfolio performance</p>
+              <p className="text-gray-500 text-[12px] mt-0.5">Here's an overview of your portfolio performance</p>
             </div>
-            <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-              <span className="text-xs text-gray-500">FINATRADES ID:</span>
-              <span className="text-sm font-semibold text-purple-700">{finatradesId}</span>
-              <button onClick={copyFinatradesId} className="p-1 hover:bg-purple-100 rounded transition-colors" title="Copy ID">
-                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-purple-600" />}
+            <div className="flex items-center gap-2 bg-violet-50 px-3 py-2 rounded-lg border border-violet-200">
+              <span className="text-[12px] text-gray-500">FINATRADES ID:</span>
+              <span className="text-sm font-semibold text-violet-700">{finatradesId}</span>
+              <button onClick={copyFinatradesId} className="p-1 hover:bg-violet-100 rounded transition-colors" title="Copy ID" data-testid="button-copy-id">
+                {copiedId ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-violet-600" />}
               </button>
             </div>
           </div>
         </section>
 
-        {/* Quick Actions - Colorful buttons */}
+        {/* Quick Actions */}
         <section>
           <QuickActionsTop />
         </section>
 
         {/* Stats Cards + Metal Card Layout */}
-        <section className="flex flex-col lg:flex-row gap-4 md:gap-6">
-          {/* Left side - Stats Cards */}
-          <div className="flex-1 space-y-3 md:space-y-4">
-            {/* Mobile: Compact 2x2 grid for secondary stats */}
-            <div className="grid grid-cols-2 gap-2 md:hidden">
-              <Card className="p-3 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-sm">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <p className="text-[11px] text-gray-600 font-medium">BNSL</p>
-                </div>
-                <p className="text-lg font-bold text-gray-900">{formatNumber(totals.bnslLockedGrams || 0, 1)}g</p>
-                <p className="text-[10px] text-green-600 font-medium">+${formatNumber(totals.bnslTotalProfit || 0)}</p>
-              </Card>
-              
-              <Card className="p-3 bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-xl shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm">
-                    <Database className="w-4 h-4 text-white" />
-                  </div>
-                  <p className="text-[11px] text-gray-600 font-medium">Vault</p>
-                </div>
-                <p className="text-lg font-bold text-gray-900">{formatNumber((totals.vaultGoldGrams || 0), 2)}g</p>
-                <p className="text-[10px] text-gray-500">FinaVault</p>
-              </Card>
-              
-              <Card className="p-3 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-xl shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
-                    <ArrowUpRight className="w-4 h-4 text-white" />
-                  </div>
-                  <p className="text-[11px] text-gray-600 font-medium">Profit</p>
-                </div>
-                <p className="text-lg font-bold text-emerald-600">+${formatNumber(totals.bnslTotalProfit || 0)}</p>
-                <p className="text-[10px] text-gray-500">Total ROI</p>
-              </Card>
-              
-              <Card className="p-3 bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-xl shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                  <p className="text-[11px] text-gray-600 font-medium">Growth</p>
-                </div>
-                <p className="text-lg font-bold text-gray-900">{formatNumber(totals.walletGoldGrams || 0, 2)}g</p>
-                <p className="text-[10px] text-gray-500">Wallet</p>
-              </Card>
-            </div>
-
-            {/* Desktop: KPI Cards Row 1 - Soft Colors with Outlines */}
-            <div className="hidden md:grid grid-cols-3 gap-4">
-              {/* Gold Balance */}
-              <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 border-2 border-purple-200 rounded-xl shadow-sm hover:shadow-md hover:border-purple-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">Gold Balance</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-purple-200 flex items-center justify-center cursor-pointer hover:bg-purple-300 transition-colors">
-                          <Info className="w-4 h-4 text-purple-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Your total gold holdings across all wallets (LGPW + FGPW).</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Total Gold Holdings</p>
-              </Card>
-              
-              {/* Gold Value USD */}
-              <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">Gold Value (USD)</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center cursor-pointer hover:bg-blue-300 transition-colors">
-                          <Info className="w-4 h-4 text-blue-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Current market value of your total gold holdings in US Dollars based on live gold price.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Worth in USD</p>
-              </Card>
-              
-              {/* Gold Value AED */}
-              <Card className="p-4 bg-gradient-to-br from-teal-50 to-teal-100/50 border-2 border-teal-200 rounded-xl shadow-sm hover:shadow-md hover:border-teal-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">Gold Value (AED)</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-teal-200 flex items-center justify-center cursor-pointer hover:bg-teal-300 transition-colors">
-                          <Info className="w-4 h-4 text-teal-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Current market value of your total gold holdings in UAE Dirhams (AED).</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Worth in AED</p>
-              </Card>
-            </div>
+        <section className="space-y-4">
+          {/* Desktop: KPI Cards Row 1 - Gold-related = amber/yellow tones */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Gold Balance - Amber */}
+            <Card className="p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-200" data-testid="card-gold-balance">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[14px] text-gray-700 font-medium">Gold Balance</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors">
+                        <Info className="w-4 h-4 text-amber-700" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-sm">
+                      <p>Your total gold holdings across all wallets (LGPW + FGPW).</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[24px] font-bold text-gray-900">
+                {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
+              </p>
+              <p className="text-[12px] text-gray-400 mt-1">Total gold you own across all wallets</p>
+            </Card>
             
-            {/* Desktop: KPI Cards Row 2 - Soft Colors with Outlines */}
-            <div className="hidden md:grid grid-cols-3 gap-4">
-              {/* Card Wallet - Links to FinaCard */}
-              <Link href="/finacard">
-                <Card className="relative p-5 overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-0 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full blur-2xl -mr-16 -mt-16" />
-                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500/15 to-transparent rounded-full blur-xl -ml-10 -mb-10" />
-                  <div className="absolute top-3 right-3 w-12 h-8 rounded-md bg-gradient-to-br from-amber-300 to-yellow-500 opacity-70" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center">
-                        <Wallet className="w-4 h-4 text-white/80" />
+            {/* Gold Value USD - Amber */}
+            <Card className="p-4 bg-gradient-to-br from-amber-50/70 to-orange-50 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-200" data-testid="card-gold-usd">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[14px] text-gray-700 font-medium">Gold Value (USD)</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors">
+                        <Info className="w-4 h-4 text-amber-700" />
                       </div>
-                      <p className="text-white/70 text-xs font-medium tracking-wide uppercase">Card Wallet</p>
-                      <div className="ml-auto">
-                        <ArrowUpRight className="w-4 h-4 text-white/40" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-sm">
+                      <p>Current market value of your total gold holdings in US Dollars based on live gold price.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[24px] font-bold text-gray-900">
+                {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
+              </p>
+              <p className="text-[12px] text-gray-400 mt-1">Market value at current gold price</p>
+            </Card>
+            
+            {/* Gold Value AED - Amber */}
+            <Card className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50/70 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-200" data-testid="card-gold-aed">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[14px] text-gray-700 font-medium">Gold Value (AED)</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors">
+                        <Info className="w-4 h-4 text-amber-700" />
                       </div>
-                    </div>
-                    <p className="text-3xl font-bold text-white tracking-tight">
-                      {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 4)}g` : hiddenValue}
-                    </p>
-                    <p className="text-white/50 text-xs mt-2 font-medium">
-                      {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-              
-              {/* BNSL Invested */}
-              <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">BNSL Invested</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors">
-                          <Info className="w-4 h-4 text-amber-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Gold locked in Buy Now Sell Later (BNSL) investment plans earning returns over time.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">In active plans</p>
-              </Card>
-              
-              {/* Total Profit */}
-              <Card className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 font-medium">Total Profit</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center cursor-pointer hover:bg-emerald-300 transition-colors">
-                          <Info className="w-4 h-4 text-emerald-700" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-sm">
-                        <p>Total return on investment earned from your BNSL plans.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <p className="text-2xl font-bold text-emerald-600">
-                  {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">ROI from BNSL</p>
-              </Card>
-            </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-sm">
+                      <p>Current market value of your total gold holdings in UAE Dirhams (AED).</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[24px] font-bold text-gray-900">
+                {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
+              </p>
+              <p className="text-[12px] text-gray-400 mt-1">Worth in UAE Dirhams</p>
+            </Card>
           </div>
           
-          {/* Right side - Metal Card */}
-          <div className="hidden lg:flex items-center justify-center">
+          {/* Desktop: KPI Cards Row 2 - Mixed color system */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card Wallet - Green tones */}
+            <Link href="/finacard">
+              <Card className="relative p-5 overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-0 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer" data-testid="card-wallet">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full blur-2xl -mr-16 -mt-16" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500/15 to-transparent rounded-full blur-xl -ml-10 -mb-10" />
+                <div className="absolute top-3 right-3 w-12 h-8 rounded-md bg-gradient-to-br from-amber-300 to-yellow-500 opacity-70" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center">
+                      <Wallet className="w-4 h-4 text-white/80" />
+                    </div>
+                    <p className="text-white/70 text-[14px] font-medium tracking-wide uppercase">Card Wallet</p>
+                    <div className="ml-auto">
+                      <ArrowUpRight className="w-4 h-4 text-white/40" />
+                    </div>
+                  </div>
+                  <p className="text-[24px] font-bold text-white tracking-tight">
+                    {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 4)}g` : hiddenValue}
+                  </p>
+                  <p className="text-white/50 text-[12px] mt-2 font-medium">
+                    {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
+                  </p>
+                  <p className="text-white/40 text-[11px] mt-1">Gold loaded on your FinaCard for spending</p>
+                </div>
+              </Card>
+            </Link>
+            
+            {/* BNSL Invested - Purple tones */}
+            <Card className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl shadow-sm hover:shadow-md hover:border-violet-300 hover:-translate-y-0.5 transition-all duration-200" data-testid="card-bnsl">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[14px] text-gray-700 font-medium">BNSL Invested</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-7 h-7 rounded-full bg-violet-200 flex items-center justify-center cursor-pointer hover:bg-violet-300 transition-colors">
+                        <Info className="w-4 h-4 text-violet-700" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-sm">
+                      <p>Gold locked in Buy Now Sell Later (BNSL) investment plans earning returns over time.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[24px] font-bold text-gray-900">
+                {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
+              </p>
+              <p className="text-[12px] text-gray-400 mt-1">Gold locked in active investment plans</p>
+            </Card>
+            
+            {/* Total Profit - Green tones */}
+            <Card className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200" data-testid="card-profit">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[14px] text-gray-700 font-medium">Total Profit</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center cursor-pointer hover:bg-emerald-300 transition-colors">
+                        <Info className="w-4 h-4 text-emerald-700" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-sm">
+                      <p>Total return on investment earned from your BNSL plans.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-[24px] font-bold text-emerald-600">
+                {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
+              </p>
+              <p className="text-[12px] text-gray-400 mt-1">Total earnings from BNSL investments</p>
+            </Card>
+          </div>
+        </section>
+
+        {/* Virtual Card - Dedicated Section */}
+        <section className="hidden lg:block">
+          <div className="flex items-center justify-center">
             <MetalCard />
           </div>
         </section>

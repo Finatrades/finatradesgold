@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowLeftRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowLeftRight, Calendar } from 'lucide-react';
 import { Link } from 'wouter';
 import { format } from 'date-fns';
 
@@ -71,28 +72,93 @@ const getTransactionLabel = (type: string, description: string | null) => {
   return type || 'Transaction';
 };
 
+const getFilterCategory = (type: string, description: string | null) => {
+  if (isSwapType(description) || type?.toLowerCase().includes('swap')) return 'swap';
+  if (description?.includes('BNSL') || type?.toLowerCase() === 'lock' || type?.toLowerCase().includes('lock')) return 'lock';
+  const t = type?.toLowerCase() || '';
+  if (t === 'deposit' || t === 'buy' || t.includes('buy') || t.includes('deposit') || t.includes('add_funds') || description?.includes('Crypto deposit')) return 'buy';
+  return 'other';
+};
+
 export default function TransactionsTable({ transactions = [], goldPrice = 85 }: TransactionsTableProps) {
-  const recentTransactions = transactions.slice(0, 8);
+  const [filter, setFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('all');
+
+  const filteredTransactions = useMemo(() => {
+    let filtered = transactions;
+
+    if (filter !== 'all') {
+      filtered = filtered.filter(tx => getFilterCategory(tx.type, tx.description) === filter);
+    }
+
+    if (dateRange !== 'all') {
+      const now = new Date();
+      let cutoff: Date;
+      switch (dateRange) {
+        case '7d':
+          cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          cutoff = new Date(0);
+      }
+      filtered = filtered.filter(tx => new Date(tx.createdAt) >= cutoff);
+    }
+
+    return filtered.slice(0, 8);
+  }, [transactions, filter, dateRange]);
 
   return (
-    <Card className="p-5 bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.3)] hover:border-purple-300 transition-all duration-300">
+    <Card className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm" data-testid="transactions-card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-gray-900">Recent Transactions</h3>
+        <h3 className="text-[20px] font-bold text-gray-900">Recent Transactions</h3>
         <Link href="/transactions">
-          <Button variant="ghost" size="sm" className="text-purple-600 text-xs h-7 px-2">
+          <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-transactions">
             View All
           </Button>
         </Link>
       </div>
 
-      <div className="space-y-1">
-        {recentTransactions.length === 0 ? (
+      <div className="flex items-center gap-2 mb-4">
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-xs" data-testid="select-transaction-filter">
+            <SelectValue placeholder="Filter" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="buy">Buy Gold</SelectItem>
+            <SelectItem value="swap">Swap</SelectItem>
+            <SelectItem value="lock">Lock</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={dateRange} onValueChange={setDateRange}>
+          <SelectTrigger className="w-[130px] h-8 text-xs" data-testid="select-date-range">
+            <Calendar className="w-3 h-3 mr-1" />
+            <SelectValue placeholder="Date range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="7d">Last 7 Days</SelectItem>
+            <SelectItem value="30d">Last 30 Days</SelectItem>
+            <SelectItem value="90d">Last 90 Days</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-0.5">
+        {filteredTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">
             <RefreshCw className="w-8 h-8 mb-2 opacity-50" />
-            <p className="text-sm">No transactions yet</p>
+            <p className="text-sm">No transactions found</p>
           </div>
         ) : (
-          recentTransactions.map((tx) => {
+          filteredTransactions.map((tx) => {
             const goldAmount = parseFloat(tx.amountGold || '0');
             const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
             const isSwap = isSwapType(tx.description);
@@ -102,14 +168,14 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
             return (
               <div 
                 key={tx.id} 
-                className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0"
+                className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"
                 data-testid={`transaction-row-${tx.id}`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : 'bg-gray-100'
+                  isSwap ? 'bg-violet-100' : isCredit ? 'bg-green-100' : 'bg-gray-100'
                 }`}>
                   {isSwap ? (
-                    <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                    <ArrowLeftRight className="w-4 h-4 text-violet-600" />
                   ) : isCredit ? (
                     <ArrowDownLeft className="w-4 h-4 text-green-600" />
                   ) : (
@@ -118,26 +184,26 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-[14px] font-medium text-gray-900 truncate">
                     {getTransactionLabel(tx.type, tx.description)}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[12px] text-gray-500">
                     {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
                   </p>
                 </div>
                 
                 <div className="text-right shrink-0">
                   {goldAmount > 0 ? (
-                    <p className={`text-sm font-semibold ${
-                      isSwap ? 'text-purple-600' : isCredit ? 'text-green-600' : 'text-gray-900'
+                    <p className={`text-[14px] font-semibold ${
+                      isSwap ? 'text-violet-600' : isCredit ? 'text-green-600' : 'text-gray-900'
                     }`}>
                       {isCredit ? '+' : isDebit ? '-' : ''}{goldAmount.toFixed(2)}g
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-400">—</p>
+                    <p className="text-sm text-gray-400">&mdash;</p>
                   )}
                   {usdAmount > 0 && (
-                    <p className="text-xs text-gray-500">${usdAmount.toFixed(2)}</p>
+                    <p className="text-[12px] text-gray-500">${usdAmount.toFixed(2)}</p>
                   )}
                 </div>
                 

@@ -79,25 +79,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-muted text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
+    <div className="min-h-screen bg-muted text-foreground font-['Inter',sans-serif] selection:bg-primary selection:text-primary-foreground relative">
       
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       <div className="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
         
-        <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm' : 'bg-background border-b border-border'}`}>
-          {/* Top Info Bar with Gold Price, Settlement Assurance, 2FA */}
-          <div className="h-8 bg-gradient-to-r from-green-50 via-emerald-50 to-purple-50 border-b border-green-200 flex items-center justify-between px-4 text-xs">
-            {/* Gold Price */}
-            <div className="flex items-center gap-1.5 text-green-700 font-medium">
+        <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
+          {/* Row 1: Dark Ticker Bar */}
+          <div className="h-9 bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 flex items-center justify-between px-5 text-xs">
+            <div className="flex items-center gap-2 text-emerald-400 font-medium" data-testid="gold-price-ticker">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Gold Price: <strong>${goldPrice.toFixed(2)}/gram</strong></span>
+              <span>Gold Price: <strong className="text-white">${goldPrice.toFixed(2)}/gram</strong></span>
+              {isGoldPriceLive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              )}
             </div>
             
-            {/* Settlement Assurance with animation */}
             <div 
-              className="flex items-center gap-1.5 text-green-700 cursor-pointer hover:text-green-900 transition-colors group"
+              className="flex items-center gap-2 text-emerald-300 cursor-pointer hover:text-emerald-200 transition-colors group"
               onClick={() => setShowAssuranceDialog(true)}
+              data-testid="settlement-assurance-trigger"
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
@@ -105,60 +107,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
               </motion.div>
-              <span className="hidden sm:inline">Settlement Assurance</span>
+              <span className="hidden sm:inline font-medium">Settlement Assurance</span>
               <motion.span 
-                className="hidden md:inline text-green-600 font-medium"
+                className="hidden md:inline text-emerald-400/80 font-medium"
                 animate={{ opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                • Backed by USD 42.134 Billion
+                Backed by USD 42.134 Billion
               </motion.span>
             </div>
             
-            {/* 2FA Reminder */}
-            {!user.mfaEnabled && (
+            {!user.mfaEnabled ? (
               <Link href="/security">
-                <div className="flex items-center gap-1.5 text-red-600 hover:text-red-800 cursor-pointer transition-colors">
-                  <Shield className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full cursor-pointer transition-colors text-xs font-semibold" data-testid="button-enable-2fa">
+                  <Shield className="w-3 h-3" />
                   <span className="hidden sm:inline">Enable 2FA</span>
                 </div>
               </Link>
+            ) : (
+              <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">2FA Active</span>
+              </div>
             )}
           </div>
           
-          {/* Main Header */}
-          <div className="h-14 px-6 flex items-center justify-between">
+          {/* Row 2: White User Bar */}
+          <div className="h-14 px-6 flex items-center justify-between bg-white border-b border-gray-200">
             
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors"
                 data-testid="button-mobile-sidebar"
               >
                 <Menu className="w-5 h-5" />
               </button>
               
+              <SyncStatusIndicator />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               
-              <SyncStatusIndicator />
-
               <NotificationCenter />
+              
+              <div className="h-8 w-px bg-gray-200" />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-3 pl-3 border-l border-border cursor-pointer hover:opacity-80 transition-opacity" data-testid="button-user-menu">
+                  <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" data-testid="button-user-menu">
                     <div className="text-right hidden sm:block">
-                      <p className="text-sm font-medium text-foreground">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-primary capitalize font-medium">{accountType} Account</p>
+                      <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-violet-600 capitalize font-medium">{accountType} Account</p>
                     </div>
-                    <Avatar className="h-10 w-10 border-2 border-primary/30 ring-2 ring-primary/10">
+                    <Avatar className="h-10 w-10 border-2 border-violet-200 ring-2 ring-violet-100">
                       <AvatarImage 
-                        src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=8A2BE2&textColor=ffffff`} 
+                        src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=7C3AED&textColor=ffffff`} 
                         alt={user.firstName} 
                       />
-                      <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                      <AvatarFallback className="bg-violet-600 text-white font-bold">
                         {user.firstName[0]}{user.lastName[0]}
                       </AvatarFallback>
                     </Avatar>
