@@ -262,6 +262,7 @@ export default function KYC() {
       if (pi.accountType) setPersonalAccountType(pi.accountType);
       if (existingSubmission.companyName) setCompanyName(existingSubmission.companyName);
       if (existingSubmission.registrationNumber) setCorporateRegNumber(existingSubmission.registrationNumber);
+      if (existingSubmission.corporateRole) setCorporateRole(existingSubmission.corporateRole);
     }
   }, [isResubmitMode, existingSubmission]);
 
@@ -276,6 +277,7 @@ export default function KYC() {
   const [incorporationDate, setIncorporationDate] = useState(savedDraft?.incorporationDate || '');
   const [countryOfIncorporation, setCountryOfIncorporation] = useState(savedDraft?.countryOfIncorporation || '');
   const [companyType, setCompanyType] = useState<'public' | 'private'>(savedDraft?.companyType || 'private');
+  const [corporateRole, setCorporateRole] = useState<'importer' | 'exporter' | 'both'>(savedDraft?.corporateRole || 'importer');
   const [natureOfBusiness, setNatureOfBusiness] = useState(savedDraft?.natureOfBusiness || '');
   const [numberOfEmployees, setNumberOfEmployees] = useState(savedDraft?.numberOfEmployees || '');
   const [headOfficeAddress, setHeadOfficeAddress] = useState(savedDraft?.headOfficeAddress || '');
@@ -702,6 +704,7 @@ export default function KYC() {
         incorporationDate,
         countryOfIncorporation,
         companyType,
+        corporateRole,
         natureOfBusiness,
         numberOfEmployees,
         headOfficeAddress,
@@ -2020,6 +2023,19 @@ export default function KYC() {
                               <SelectContent>
                                 <SelectItem value="private">Private Company</SelectItem>
                                 <SelectItem value="public">Public Company</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Role <span className="text-red-500">*</span></Label>
+                            <Select value={corporateRole} onValueChange={(v: 'importer' | 'exporter' | 'both') => setCorporateRole(v)}>
+                              <SelectTrigger data-testid="select-corporate-role">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="importer">Importer</SelectItem>
+                                <SelectItem value="exporter">Exporter</SelectItem>
+                                <SelectItem value="both">Both (Importer & Exporter)</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

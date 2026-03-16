@@ -766,6 +766,7 @@ export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
   incorporationDate: varchar("incorporation_date", { length: 50 }),
   countryOfIncorporation: varchar("country_of_incorporation", { length: 100 }),
   companyType: varchar("company_type", { length: 50 }), // 'public' or 'private'
+  corporateRole: varchar("corporate_role", { length: 20 }), // 'importer', 'exporter', or 'both'
   natureOfBusiness: text("nature_of_business"),
   numberOfEmployees: varchar("number_of_employees", { length: 50 }),
   headOfficeAddress: text("head_office_address"),

@@ -712,6 +712,7 @@ export default function KYCReview() {
                 <span class="label">Registration Number:</span>
                 <span class="value">${app.registrationNumber || 'Not provided'}</span>
                 ${app.companyType ? `<span class="label">Company Type:</span><span class="value">${app.companyType}</span>` : ''}
+                ${app.corporateRole ? `<span class="label">Role:</span><span class="value">${app.corporateRole === 'both' ? 'Importer & Exporter' : app.corporateRole}</span>` : ''}
                 ${app.incorporationDate ? `<span class="label">Incorporation Date:</span><span class="value">${app.incorporationDate}</span>` : ''}
                 ${app.tradingContactName ? `<span class="label">Trading Contact:</span><span class="value">${app.tradingContactName} (${app.tradingContactEmail})</span>` : ''}
                 ${app.financeContactName ? `<span class="label">Finance Contact:</span><span class="value">${app.financeContactName} (${app.financeContactEmail})</span>` : ''}
@@ -1428,6 +1429,12 @@ export default function KYCReview() {
                           <>
                             <span className="text-gray-500">Company Type:</span>
                             <span className="font-medium">{biz.companyType}</span>
+                          </>
+                        )}
+                        {biz?.corporateRole && (
+                          <>
+                            <span className="text-gray-500">Role:</span>
+                            <span className="font-medium capitalize">{biz.corporateRole === 'both' ? 'Importer & Exporter' : biz.corporateRole}</span>
                           </>
                         )}
                         {biz?.incorporationDate && (
