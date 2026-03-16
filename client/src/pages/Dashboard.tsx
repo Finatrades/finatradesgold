@@ -321,7 +321,19 @@ export default function Dashboard() {
                       <Wallet className="w-4 h-4 text-white/80" />
                     </div>
                     <p className="text-white/70 text-[14px] font-medium tracking-wide uppercase">Card Wallet</p>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onClick={(e) => e.preventDefault()}>
+                              <Info className="w-4 h-4 text-white/60" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[250px] text-sm">
+                            <p>Gold loaded on your FinaCard for spending. Tap to manage your card wallet.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <ArrowUpRight className="w-4 h-4 text-white/40" />
                     </div>
                   </div>
