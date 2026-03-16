@@ -95,12 +95,30 @@ function isDocUrl(url: string): boolean {
   return detectDocumentType(url) === 'doc';
 }
 
+function convertR2ToProxy(url: string): string {
+  if (!url) return url;
+  const r2Match = url.match(/https?:\/\/[^/]*r2\.dev\/(.+)$/);
+  if (r2Match) {
+    return `/api/files/${r2Match[1]}`;
+  }
+  const r2CustomMatch = url.match(/https?:\/\/[^/]*\.r2\.cloudflarestorage\.com\/[^/]+\/(.+)$/);
+  if (r2CustomMatch) {
+    return `/api/files/${r2CustomMatch[1]}`;
+  }
+  if (url.startsWith('http') && (url.includes('r2.dev') || url.includes('r2.cloudflarestorage'))) {
+    const parts = url.split('/');
+    const key = parts.slice(3).join('/');
+    return `/api/files/${key}`;
+  }
+  return url;
+}
+
 // Helper to ensure proper document URL format (handles base64 without prefix)
 function getDocumentSrc(url: string): string {
   if (!url) return '';
-  // If already a data URI or HTTP URL, return as-is
-  if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
+  if (url.startsWith('data:')) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return convertR2ToProxy(url);
   }
   // If looks like base64 (long string without slashes at start), add data URI prefix
   if (url.length > 100 && !url.includes('/')) {
@@ -190,17 +208,39 @@ function DocumentViewer({
     setPdfLoading(true);
     setPdfError(false);
     if (isPdf) {
-      // Use the formatted URL which now has proper data: prefix
       if (formattedUrl.startsWith('data:')) {
         const blobUrl = base64ToBlobUrl(formattedUrl);
         setPdfBlobUrl(blobUrl);
+        setPdfLoading(false);
         return () => {
           if (blobUrl.startsWith('blob:')) {
             URL.revokeObjectURL(blobUrl);
           }
         };
+      } else if (formattedUrl.startsWith('/api/files/') || formattedUrl.startsWith('http')) {
+        fetch(formattedUrl, { credentials: 'include' })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch PDF');
+            return res.blob();
+          })
+          .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            setPdfBlobUrl(blobUrl);
+            setPdfLoading(false);
+          })
+          .catch(err => {
+            console.error('PDF fetch error:', err);
+            setPdfError(true);
+            setPdfLoading(false);
+          });
+        return () => {
+          if (pdfBlobUrl && pdfBlobUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(pdfBlobUrl);
+          }
+        };
       } else {
         setPdfBlobUrl(formattedUrl);
+        setPdfLoading(false);
       }
     }
   }, [formattedUrl, isPdf]);
@@ -244,8 +284,11 @@ function DocumentViewer({
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    // Create blob URL for download
-    const downloadUrl = formattedUrl.startsWith('data:') ? base64ToBlobUrl(formattedUrl) : formattedUrl;
+    const downloadUrl = pdfBlobUrl && pdfBlobUrl.startsWith('blob:') 
+      ? pdfBlobUrl 
+      : formattedUrl.startsWith('data:') 
+        ? base64ToBlobUrl(formattedUrl) 
+        : formattedUrl;
     link.href = downloadUrl;
     // Determine file extension based on document type
     let fileExt = 'jpg';
@@ -309,17 +352,28 @@ function DocumentViewer({
             </div>
           ) : isPdf ? (
             <div className="w-full h-[70vh]">
-              <PDFViewer
-                file={formattedUrl}
-                className="w-full h-full"
-                maxWidth={700}
-                showControls={true}
-                onLoadSuccess={() => setPdfLoading(false)}
-                onLoadError={() => {
-                  setPdfLoading(false);
-                  setPdfError(true);
-                }}
-              />
+              {pdfLoading ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin mb-4" />
+                  <p className="text-gray-600">Loading PDF...</p>
+                </div>
+              ) : pdfError ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+                  <p className="text-gray-700 font-medium">Failed to load PDF</p>
+                  <p className="text-gray-500 text-sm mt-2">Try downloading the file instead</p>
+                  <Button variant="default" className="mt-4" onClick={handleDownload}>
+                    <FileText className="w-4 h-4 mr-2" /> Download PDF
+                  </Button>
+                </div>
+              ) : pdfBlobUrl ? (
+                <PDFViewer
+                  file={pdfBlobUrl}
+                  className="w-full h-full"
+                  maxWidth={700}
+                  showControls={true}
+                />
+              ) : null}
             </div>
           ) : (
             <img 
