@@ -236,7 +236,8 @@ export default function Dashboard() {
         </section>
 
         {/* Stats Cards + Metal Card Layout */}
-        <section className="space-y-4">
+        <section className="flex flex-col lg:flex-row gap-4 md:gap-6">
+          <div className="flex-1 space-y-4">
           {/* Desktop: KPI Cards Row 1 - Gold-related = amber/yellow tones */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Gold Balance - Amber */}
@@ -384,11 +385,10 @@ export default function Dashboard() {
               <p className="text-[12px] text-gray-400 mt-1">Total earnings from BNSL investments</p>
             </Card>
           </div>
-        </section>
+          </div>
 
-        {/* Virtual Card - Dedicated Section */}
-        <section className="hidden lg:block">
-          <div className="flex items-center justify-center">
+          {/* Right side - Metal Card */}
+          <div className="hidden lg:flex items-center justify-center">
             <MetalCard />
           </div>
         </section>
