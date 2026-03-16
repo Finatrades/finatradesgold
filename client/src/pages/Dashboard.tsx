@@ -388,8 +388,8 @@ export default function Dashboard() {
           </div>
 
           {/* Right side - Metal Card */}
-          <div className="hidden lg:flex items-center justify-center">
-            <MetalCard />
+          <div className="hidden lg:flex items-stretch">
+            <MetalCard className="h-full" />
           </div>
         </section>
 
