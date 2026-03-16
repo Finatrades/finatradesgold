@@ -252,7 +252,7 @@ export default function Dashboard() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
-                      <p>Your total gold holdings across all wallets (LGPW + FGPW).</p>
+                      <p>Total gold you own across all wallets (LGPW + FGPW).</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -260,7 +260,6 @@ export default function Dashboard() {
               <p className="text-[24px] font-bold text-gray-900">
                 {showBalance ? `${formatNumber(totalGoldGrams, 4)}g` : hiddenValue}
               </p>
-              <p className="text-[12px] text-gray-400 mt-1">Total gold you own across all wallets</p>
             </Card>
             
             {/* Gold Value USD - Amber */}
@@ -275,7 +274,7 @@ export default function Dashboard() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
-                      <p>Current market value of your total gold holdings in US Dollars based on live gold price.</p>
+                      <p>Market value of your gold holdings in USD at current live gold price.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -283,7 +282,6 @@ export default function Dashboard() {
               <p className="text-[24px] font-bold text-gray-900">
                 {showBalance ? `$${formatNumber(totalGoldGrams * goldPrice)}` : hiddenValue}
               </p>
-              <p className="text-[12px] text-gray-400 mt-1">Market value at current gold price</p>
             </Card>
             
             {/* Gold Value AED - Amber */}
@@ -298,7 +296,7 @@ export default function Dashboard() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
-                      <p>Current market value of your total gold holdings in UAE Dirhams (AED).</p>
+                      <p>Current market value of your gold holdings in UAE Dirhams (AED).</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -306,7 +304,6 @@ export default function Dashboard() {
               <p className="text-[24px] font-bold text-gray-900">
                 {showBalance ? formatNumber(totalGoldGrams * goldPrice * 3.67) : hiddenValue}
               </p>
-              <p className="text-[12px] text-gray-400 mt-1">Worth in UAE Dirhams</p>
             </Card>
           </div>
           
@@ -334,7 +331,7 @@ export default function Dashboard() {
                   <p className="text-white/50 text-[12px] mt-2 font-medium">
                     {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
                   </p>
-                  <p className="text-white/40 text-[11px] mt-1">Gold loaded on your FinaCard for spending</p>
+                  <p className="text-white/40 text-[11px] mt-1">FinaCard Gold Wallet</p>
                 </div>
               </Card>
             </Link>
@@ -351,7 +348,7 @@ export default function Dashboard() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
-                      <p>Gold locked in Buy Now Sell Later (BNSL) investment plans earning returns over time.</p>
+                      <p>Gold locked in active BNSL investment plans earning returns over time.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -359,7 +356,6 @@ export default function Dashboard() {
               <p className="text-[24px] font-bold text-gray-900">
                 {showBalance ? `${formatNumber(totals.bnslLockedGrams || 0, 1)}g` : hiddenValue}
               </p>
-              <p className="text-[12px] text-gray-400 mt-1">Gold locked in active investment plans</p>
             </Card>
             
             {/* Total Profit - Green tones */}
@@ -374,7 +370,7 @@ export default function Dashboard() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
-                      <p>Total return on investment earned from your BNSL plans.</p>
+                      <p>Total earnings and return on investment from your BNSL plans.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -382,7 +378,6 @@ export default function Dashboard() {
               <p className="text-[24px] font-bold text-emerald-600">
                 {showBalance ? `+$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
               </p>
-              <p className="text-[12px] text-gray-400 mt-1">Total earnings from BNSL investments</p>
             </Card>
           </div>
           </div>
