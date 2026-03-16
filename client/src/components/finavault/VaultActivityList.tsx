@@ -1002,13 +1002,6 @@ export default function VaultActivityList() {
                     <div className="pl-8">
                       {renderTransactionRow(primary)}
                     </div>
-                    <Badge 
-                      variant="secondary" 
-                      className="absolute right-36 top-1/2 -translate-y-1/2 text-xs cursor-pointer hover:bg-muted z-10"
-                      onClick={(e) => { e.stopPropagation(); toggleGroup(primary.id); }}
-                    >
-                      +{related.length} related
-                    </Badge>
                   </div>
                   <CollapsibleContent>
                     <div className="border-l-2 border-muted-foreground/20 ml-6">
