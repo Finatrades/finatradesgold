@@ -22,7 +22,7 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
       whileHover={{ scale: 1.02, y: -4 }}
       className={`${className} group cursor-pointer h-full`}
     >
-      <div className="w-[340px] h-full min-h-[320px] rounded-2xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-6 shadow-2xl relative overflow-hidden border border-gray-700/50 transition-all duration-300 group-hover:shadow-[0_8px_40px_-8px_rgba(139,92,246,0.5)] group-hover:border-purple-500/50">
+      <div className="w-[340px] h-[210px] rounded-2xl bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] p-5 shadow-2xl relative overflow-hidden border border-gray-700/50 transition-all duration-300 group-hover:shadow-[0_8px_40px_-8px_rgba(139,92,246,0.5)] group-hover:border-purple-500/50">
         <div 
           className="absolute inset-0 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
           style={{
