@@ -114,14 +114,19 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       >
         <div className="flex flex-col h-full">
           
-          <div className="h-16 flex items-center justify-between px-3 border-b border-border bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]">
+          <div className="h-16 flex items-center justify-between px-3 border-b border-border bg-gradient-to-r from-[#1a1a2e] via-[#2a2a3e] to-[#1a1a2e]">
             <Link href="/">
-              <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
-                <img 
-                  src={finatradesLogo} 
-                  alt="Finatrades" 
-                  className="h-14 w-auto object-contain brightness-0 invert"
-                />
+              <div className="flex items-center gap-2.5 cursor-pointer" data-testid="sidebar-logo">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="3" width="18" height="18" rx="3" fill="white" fillOpacity="0.9"/>
+                    <path d="M7 12h10M12 7v10" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-base tracking-wide leading-tight">FINATRADES</span>
+                  <span className="text-[10px] font-semibold tracking-widest text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm leading-none mt-0.5 w-fit">GOLD MEMBER</span>
+                </div>
               </div>
             </Link>
             <button 
