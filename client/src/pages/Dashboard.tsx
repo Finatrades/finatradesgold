@@ -311,40 +311,30 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Card Wallet - Green tones */}
             <Link href="/finacard">
-              <Card className="relative p-5 overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-0 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer" data-testid="card-wallet">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full blur-2xl -mr-16 -mt-16" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-500/15 to-transparent rounded-full blur-xl -ml-10 -mb-10" />
-                <div className="absolute top-3 right-3 w-12 h-8 rounded-md bg-gradient-to-br from-amber-300 to-yellow-500 opacity-70" />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center">
-                      <Wallet className="w-4 h-4 text-white/80" />
-                    </div>
-                    <p className="text-white/70 text-[14px] font-medium tracking-wide uppercase">Card Wallet</p>
-                    <div className="ml-auto flex items-center gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onClick={(e) => e.preventDefault()}>
-                              <Info className="w-4 h-4 text-white/60" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[250px] text-sm">
-                            <p>Gold loaded on your FinaCard for spending. Tap to manage your card wallet.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <ArrowUpRight className="w-4 h-4 text-white/40" />
-                    </div>
+              <Card className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50 border-2 border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer" data-testid="card-wallet">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[14px] text-gray-700 font-medium">Card Wallet</p>
+                  <div className="flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-300 transition-colors" onClick={(e) => e.preventDefault()}>
+                            <Info className="w-4 h-4 text-slate-700" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm">
+                          <p>Gold loaded on your FinaCard for spending. Tap to manage your card wallet.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <p className="text-[24px] font-bold text-white tracking-tight">
-                    {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 4)}g` : hiddenValue}
-                  </p>
-                  <p className="text-white/50 text-[12px] mt-2 font-medium">
-                    {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
-                  </p>
-                  <p className="text-white/40 text-[11px] mt-1">FinaCard Gold Wallet</p>
                 </div>
+                <p className="text-[24px] font-bold text-gray-900">
+                  {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 4)}g` : hiddenValue}
+                </p>
+                <p className="text-[12px] text-slate-500 mt-1 font-medium">
+                  {showBalance ? `≈ $${formatNumber(totals.finacardValueUsd || 0)}` : ''}
+                </p>
               </Card>
             </Link>
             
