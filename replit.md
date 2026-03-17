@@ -73,3 +73,14 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 
 **Mobile App:**
 - Capacitor (for iOS and Android builds).
+
+## Demo Users
+
+50 demo users are seeded via `scripts/demo-seeder.ts` (run: `npx tsx scripts/demo-seeder.ts`). Password for all: `Demo@2025!`
+
+- **demo1-3@finatrades.com**: Admin accounts (Super Admin RBAC). Must log in via `/admin/login`.
+- **demo4-13@finatrades.com**: Business accounts (FinaBridge-enabled).
+- **demo14-50@finatrades.com**: Personal accounts.
+- KYC pattern: indices 0,1,2,5,6,7,10,11,12... = Approved; 3,8,13... = Not Started; 4,9,14... = Rejected.
+
+**RBAC Setup**: Admin users require entries in both `employees` table (with `rbacRoleId`) and `user_role_assignments` table (linked to `admin_roles`). The seeder dynamically resolves the Super Admin role ID from `admin_roles`.
