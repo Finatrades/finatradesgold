@@ -49,7 +49,7 @@ function FinatradesIdSection() {
   const { data: idInfo, isLoading: isLoadingInfo } = useQuery({
     queryKey: ['finatrades-id-info'],
     queryFn: async () => {
-      const res = await fetch('/api/finatrades-id/info', { credentials: 'include' });
+      const res = await fetch('/api/finatrades-id/info', { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       if (!res.ok) throw new Error('Failed to fetch Finatrades ID info');
       return res.json();
     },
@@ -194,7 +194,7 @@ export default function Settings() {
   const { data, isLoading } = useQuery<{ preferences: UserPreferencesData }>({
     queryKey: ['preferences', user?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/users/${user?.id}/preferences`);
+      const res = await fetch(`/api/users/${user?.id}/preferences`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch preferences');
       return res.json();
     },
@@ -214,15 +214,7 @@ export default function Settings() {
 
   const saveMutation = useMutation({
     mutationFn: async (updates: Partial<UserPreferencesData>) => {
-      const res = await fetch(`/api/users/${user?.id}/preferences`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        body: JSON.stringify(updates),
-      });
+      const res = await apiRequest('PUT', `/api/users/${user?.id}/preferences`, updates);
       if (!res.ok) throw new Error('Failed to save preferences');
       return res.json();
     },
