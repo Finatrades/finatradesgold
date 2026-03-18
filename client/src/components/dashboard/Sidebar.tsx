@@ -17,11 +17,14 @@ import {
   X,
   Gift,
   HelpCircle,
-  Settings
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 
 interface MenuItem {
@@ -31,7 +34,14 @@ interface MenuItem {
   variant?: 'default' | 'danger';
 }
 
-export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) {
+interface SidebarProps {
+  isOpen: boolean;
+  setIsOpen: (v: boolean) => void;
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+}
+
+export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: SidebarProps) {
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const { accountType } = useAccountType();
@@ -73,10 +83,11 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
   const renderMenuItem = (item: MenuItem) => {
     const isDanger = item.variant === 'danger';
     const active = isActive(item.href);
-    return (
+    
+    const menuContent = (
       <Link key={item.href} href={item.href}>
         <div 
-          className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+          className={`relative flex items-center gap-3 ${collapsed ? 'px-4 lg:justify-center lg:px-2' : 'px-4'} py-2.5 rounded-xl transition-all cursor-pointer ${
             active 
               ? isDanger 
                 ? 'bg-red-600 text-white shadow-md' 
@@ -88,17 +99,36 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
           onClick={() => setIsOpen(false)}
           data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
         >
-          {active && !isDanger && (
+          {active && !isDanger && !collapsed && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
           )}
-          <div className={active ? 'text-white' : isDanger ? 'text-red-600' : ''}>
+          <div className={`flex-shrink-0 ${active ? 'text-white' : isDanger ? 'text-red-600' : ''}`}>
             {item.icon}
           </div>
-          <span className="font-medium text-sm">{item.label}</span>
+          <span className={`font-medium text-sm whitespace-nowrap ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
         </div>
       </Link>
     );
+
+    if (collapsed) {
+      return (
+        <TooltipProvider key={item.href} delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {menuContent}
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs font-medium">
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return menuContent;
   };
+
+  const sidebarWidth = collapsed ? 'w-72 lg:w-[72px]' : 'w-72';
 
   return (
     <>
@@ -111,34 +141,38 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 z-50 transition-transform duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
+        className={`fixed top-0 left-0 h-full ${sidebarWidth} bg-white border-r border-gray-200 z-50 transition-all duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         data-testid="sidebar"
       >
         <div className="flex flex-col h-full">
           
-          <div className="h-16 flex items-center justify-between px-3 border-b border-gray-200 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]">
+          <div className={`h-16 flex items-center ${collapsed ? 'justify-between px-3 lg:justify-center lg:px-2' : 'justify-between px-3'} border-b border-gray-200 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]`}>
             <Link href="/">
               <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
                 <img 
                   src={finatradesLogo} 
                   alt="Finatrades" 
-                  className="h-14 w-auto object-contain brightness-0 invert"
+                  className={`h-14 w-auto object-contain brightness-0 invert ${collapsed ? 'lg:hidden' : ''}`}
                 />
+                <div className={`items-center justify-center w-10 h-10 rounded-lg bg-white/10 hidden ${collapsed ? 'lg:flex' : ''}`}>
+                  <span className="text-white font-bold text-lg">F</span>
+                </div>
               </div>
             </Link>
             <button 
               className="lg:hidden p-2 text-white/70 hover:text-white"
               onClick={() => setIsOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-5 px-3 space-y-5 custom-scrollbar">
+          <div className={`flex-1 overflow-y-auto py-5 ${collapsed ? 'px-3 lg:px-2' : 'px-3'} space-y-5 custom-scrollbar`}>
             <div className="space-y-1">
-              <p className="px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
+              <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                 Main Menu
               </p>
               {mainMenuItems.map(renderMenuItem)}
@@ -146,7 +180,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
             {businessMenuItems.length > 0 && (
               <div className="space-y-1">
-                <p className="px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                   Business
                 </p>
                 {businessMenuItems.map(renderMenuItem)}
@@ -154,17 +188,17 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
             )}
 
             <div className="space-y-1">
-              <p className="px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
+              <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                 Account
               </p>
               {accountMenuItems.map(renderMenuItem)}
             </div>
           </div>
 
-          <div className="p-4 border-t border-gray-200">
-            <div className="mb-3 p-3 rounded-xl bg-violet-50 border border-violet-100">
+          <div className={`border-t border-gray-200 ${collapsed ? 'p-4 lg:p-2' : 'p-4'}`}>
+            <div className={`mb-3 p-3 rounded-xl bg-violet-50 border border-violet-100 ${collapsed ? 'lg:hidden' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#7C3AED] flex items-center justify-center text-white font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-[#7C3AED] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -177,15 +211,66 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
                 </div>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-gray-500 hover:text-red-600 hover:bg-red-50"
-              onClick={logout}
-              data-testid="button-logout"
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              Log Out
-            </Button>
+
+            <div className={`hidden ${collapsed ? 'lg:block' : ''}`}>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="w-full flex items-center justify-center p-2.5 rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      onClick={logout}
+                      data-testid="button-logout-collapsed"
+                      aria-label="Log Out"
+                    >
+                      <LogOut className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs font-medium">Log Out</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className={collapsed ? 'lg:hidden' : ''}>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-gray-500 hover:text-red-600 hover:bg-red-50"
+                onClick={logout}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                Log Out
+              </Button>
+            </div>
+
+            <div className="mt-2 hidden lg:block">
+              {collapsed ? (
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setCollapsed(false)}
+                        className="w-full flex items-center justify-center p-2.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        aria-label="Expand sidebar"
+                        data-testid="button-expand-sidebar"
+                      >
+                        <PanelLeftOpen className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs font-medium">Expand sidebar</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <button
+                  onClick={() => setCollapsed(true)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  aria-label="Collapse sidebar"
+                  data-testid="button-collapse-sidebar"
+                >
+                  <PanelLeftClose className="w-5 h-5" />
+                  <span className="font-medium text-sm">Hide Sidebar</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </aside>

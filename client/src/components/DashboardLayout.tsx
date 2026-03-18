@@ -25,10 +25,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout } = useAuth();
   const { accountType, setAccountType } = useAccountType();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    }
+    return false;
+  });
   const [scrolled, setScrolled] = useState(false);
   const [showAssuranceDialog, setShowAssuranceDialog] = useState(false);
   const [, setLocation] = useLocation();
   const isMobile = useIsMobile();
+
+  const handleSetCollapsed = (v: boolean) => {
+    setSidebarCollapsed(v);
+    localStorage.setItem('sidebar-collapsed', String(v));
+  };
   
   const { showWarning, remainingSeconds, stayActive, logout: idleLogout } = useIdleTimeout({
     timeoutMinutes: 30,
@@ -80,9 +91,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-muted text-foreground font-['Inter',sans-serif] selection:bg-primary selection:text-primary-foreground relative">
       
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} collapsed={sidebarCollapsed} setCollapsed={handleSetCollapsed} />
 
-      <div className="lg:ml-72 min-h-screen flex flex-col transition-all duration-300">
+      <div className={`${sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'} min-h-screen flex flex-col transition-all duration-300`}>
         
         <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
           {/* Row 1: Dark Ticker Bar */}
