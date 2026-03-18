@@ -289,11 +289,14 @@ export default function Security() {
     setSetupStep('qr');
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/mfa/setup', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId: user.id }),
       });
@@ -317,11 +320,14 @@ export default function Security() {
     setIsSettingUp(true);
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/mfa/enable', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId: user.id, token: verifyCode }),
       });
@@ -353,11 +359,14 @@ export default function Security() {
     setIsDisabling(true);
     
     try {
+      const csrfToken = await ensureCsrfToken();
       const res = await fetch('/api/mfa/disable', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
         },
         body: JSON.stringify({ userId: user.id, password: disablePassword }),
       });
