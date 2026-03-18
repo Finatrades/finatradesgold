@@ -21,6 +21,7 @@ import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
+import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 
 import DualWalletDisplay from "@/components/finapay/DualWalletDisplay";
 import { useLocation, useSearch } from 'wouter';
@@ -532,6 +533,10 @@ export default function FinaPay() {
           isOpen={activeModal === 'withdraw'} 
           onClose={handleModalClose}
           walletBalance={usdBalance}
+        />
+        <BuyGoldBarModal
+          isOpen={activeModal === 'buyWingold'}
+          onClose={handleModalClose}
         />
         {/* Deposit Callback Modal */}
         <Dialog open={depositCallbackStatus !== null} onOpenChange={closeDepositCallback}>

@@ -18,6 +18,7 @@ import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
+import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 
 const parseNumericValue = (value: any): number => {
   if (value === null || value === undefined) return 0;
@@ -451,6 +452,10 @@ export default function MobileFinaPay() {
           handleRefresh();
         }}
         walletBalance={usdBalance}
+      />
+      <BuyGoldBarModal
+        isOpen={showBuyModal}
+        onClose={() => setShowBuyModal(false)}
       />
     </div>
   );
