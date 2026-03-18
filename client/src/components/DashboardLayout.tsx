@@ -3,7 +3,6 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
-import SyncStatusIndicator from '@/components/SyncStatusIndicator';
 import IdleTimeoutWarning from '@/components/IdleTimeoutWarning';
 import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
@@ -144,7 +143,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Menu className="w-5 h-5" />
               </button>
               
-              <SyncStatusIndicator />
             </div>
 
             <div className="flex items-center gap-4">
