@@ -19,7 +19,7 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 **Frontend:**
 - **Frameworks**: React 18 with TypeScript, Vite, Wouter, React Context API, shadcn/ui, Tailwind CSS v4, TanStack React Query, Framer Motion.
 - **Real-time**: Socket.IO client for live features and event-driven data synchronization.
-- **UI/UX Design**: Purple gradient aesthetic (light mode) using Inter font family, standardized components, and centralized design tokens.
+- **UI/UX Design**: Finexy-style clean white dashboard with orange/coral accent (#f97316) color scheme using Inter font family, standardized components, and centralized design tokens. Dashboard uses 3-column layout (Balance+Wallets | Stats | Chart) with activity table below.
 
 **Backend:**
 - **Technology**: Node.js with Express, TypeScript (ESM).
