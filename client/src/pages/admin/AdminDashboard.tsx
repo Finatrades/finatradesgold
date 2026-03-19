@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import AdminLayout, { useAdminPermissions, MENU_PERMISSION_MAP } from './AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -82,13 +83,22 @@ interface AdminStats {
   }>;
 }
 
-function formatAed(amount: number): string {
+function formatAedNum(amount: number): string {
   if (amount >= 1000000) {
-    return `~~ ${(amount / 1000000).toFixed(1)}M`;
+    return `${(amount / 1000000).toFixed(1)}M`;
   } else if (amount >= 1000) {
-    return `~~ ${(amount / 1000).toFixed(1)}k`;
+    return `${(amount / 1000).toFixed(1)}k`;
   }
-  return `~~ ${amount.toFixed(0)}`;
+  return `${amount.toFixed(0)}`;
+}
+
+function AedSubtitle({ amount }: { amount: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <DirhamSymbol size="0.85em" />
+      {formatAedNum(amount)}
+    </span>
+  );
 }
 
 function formatCurrency(amount: number): string {
@@ -310,7 +320,7 @@ export default function AdminDashboard() {
             <GlassStatsCard 
               title="Total Volume" 
               value={isLoading ? '...' : formatCurrency(stats?.totalVolume || 0)}
-              subtitle={isLoading ? 'All-time transactions' : `${formatAed(stats?.totalVolumeAed || 0)}`}
+              subtitle={isLoading ? 'All-time transactions' : <AedSubtitle amount={stats?.totalVolumeAed || 0} />}
               icon={<BarChart3 className="w-6 h-6" />} 
               gradient="from-purple-500 to-pink-600"
               loading={isLoading}
@@ -329,7 +339,7 @@ export default function AdminDashboard() {
             <GlassStatsCard 
               title="Revenue" 
               value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
-              subtitle={isLoading ? 'Platform earnings' : `${formatAed(stats?.revenueAed || 0)}`}
+              subtitle={isLoading ? 'Platform earnings' : <AedSubtitle amount={stats?.revenueAed || 0} />}
               icon={<TrendingUp className="w-6 h-6" />} 
               gradient="from-emerald-500 to-teal-600"
               loading={isLoading}
@@ -613,7 +623,7 @@ export default function AdminDashboard() {
 function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, percentChange, href }: { 
   title: string; 
   value: string; 
-  subtitle: string; 
+  subtitle: React.ReactNode; 
   icon: React.ReactNode; 
   gradient: string; 
   loading: boolean;
