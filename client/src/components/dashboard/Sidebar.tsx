@@ -26,6 +26,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import faviconIcon from '@/assets/favicon-icon.png';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -157,7 +158,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                   className={`h-14 w-auto object-contain brightness-0 invert ${collapsed ? 'lg:hidden' : ''}`}
                 />
                 <img 
-                  src="/favicon.png" 
+                  src={faviconIcon} 
                   alt="Finatrades" 
                   className={`w-10 h-10 rounded-lg object-contain hidden ${collapsed ? 'lg:block' : ''}`}
                 />
