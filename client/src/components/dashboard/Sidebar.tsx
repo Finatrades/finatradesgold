@@ -149,13 +149,13 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
       >
         <div className="flex flex-col h-full">
           
-          <div className={`h-16 flex items-center ${collapsed ? 'justify-between px-3 lg:justify-center lg:px-2' : 'justify-between px-3'} border-b border-gray-200 bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]`}>
+          <div className={`h-16 flex items-center ${collapsed ? 'justify-between px-3 lg:justify-center lg:px-2' : 'justify-between px-3'} border-b border-purple-100 bg-white`}>
             <Link href="/">
               <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
                 <img 
                   src={finatradesLogo} 
                   alt="Finatrades" 
-                  className={`h-14 w-auto object-contain brightness-0 invert ${collapsed ? 'lg:hidden' : ''}`}
+                  className={`h-14 w-auto object-contain ${collapsed ? 'lg:hidden' : ''}`}
                 />
                 <img 
                   src={faviconIcon} 
@@ -165,7 +165,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
               </div>
             </Link>
             <button 
-              className="lg:hidden p-2 text-white/70 hover:text-white"
+              className="lg:hidden p-2 text-gray-500 hover:text-gray-700"
               onClick={() => setIsOpen(false)}
               aria-label="Close sidebar"
             >
