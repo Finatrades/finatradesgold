@@ -156,9 +156,11 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                   alt="Finatrades" 
                   className={`h-14 w-auto object-contain brightness-0 invert ${collapsed ? 'lg:hidden' : ''}`}
                 />
-                <div className={`items-center justify-center w-10 h-10 rounded-lg bg-white/10 hidden ${collapsed ? 'lg:flex' : ''}`}>
-                  <span className="text-white font-bold text-lg">F</span>
-                </div>
+                <img 
+                  src="/favicon.png" 
+                  alt="Finatrades" 
+                  className={`w-10 h-10 rounded-lg object-contain hidden ${collapsed ? 'lg:block' : ''}`}
+                />
               </div>
             </Link>
             <button 
