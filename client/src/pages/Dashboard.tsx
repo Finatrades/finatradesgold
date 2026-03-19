@@ -274,7 +274,7 @@ export default function Dashboard() {
                       <button className="text-gray-400 hover:text-gray-600" aria-label="USD wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
                     <p className="text-[14px] font-bold text-gray-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Limit is $50k a month</p>
+
                     <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 relative" data-testid="wallet-aed">
@@ -306,7 +306,7 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-spending-limit">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Monthly Transaction Limit</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Monthly Transaction Usage</h3>
               <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
                 <div 
                   className="absolute h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500"
@@ -314,8 +314,8 @@ export default function Dashboard() {
                 />
               </div>
               <div className="flex justify-between mt-2">
-                <span className="text-[12px] text-gray-500"><strong className="text-gray-700">${formatNumber(walletGoldValue > 0 ? walletGoldValue * 0.25 : 1400)}</strong> spent out of</span>
-                <span className="text-[12px] font-semibold text-gray-700">$50,000.00</span>
+                <span className="text-[12px] text-gray-500">This month's usage</span>
+                <span className="text-[12px] font-semibold text-gray-700">${formatNumber(walletGoldValue > 0 ? walletGoldValue * 0.25 : 1400)}</span>
               </div>
             </div>
 
