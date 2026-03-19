@@ -26,7 +26,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import faviconIcon from '@/assets/favicon-icon.png';
+import faviconIcon from '@/assets/favicon-icon.webp';
 
 interface MenuItem {
   icon: React.ReactNode;
