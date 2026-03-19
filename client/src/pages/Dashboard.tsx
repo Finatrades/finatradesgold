@@ -286,7 +286,6 @@ export default function Dashboard() {
                       <button className="text-gray-400 hover:text-gray-600" aria-label="AED wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
                     <p className="text-[14px] font-bold text-gray-900">Dh {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Limit is Dh 183k a month</p>
                     <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 relative" data-testid="wallet-eur">
@@ -298,7 +297,6 @@ export default function Dashboard() {
                       <button className="text-gray-400 hover:text-gray-600" aria-label="EUR wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
                     <p className="text-[14px] font-bold text-gray-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Limit is €46k a month</p>
                     <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
                 </div>
