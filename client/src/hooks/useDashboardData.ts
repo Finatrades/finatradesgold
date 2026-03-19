@@ -189,12 +189,12 @@ export function useDashboardData(): DashboardData {
   });
 
   useEffect(() => {
-    if (error) {
+    if (error && !data) {
       toast.error('Failed to load dashboard data', {
         description: 'Some data may not be displayed. Please try refreshing.'
       });
     }
-  }, [error]);
+  }, [error, data]);
 
   useEffect(() => {
     if (!socket || !userId) return;

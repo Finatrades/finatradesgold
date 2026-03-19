@@ -811,7 +811,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           {goldPrice && (
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-              <span>Live: <span className="font-semibold text-foreground">${goldPrice.pricePerGram.toFixed(2)}/g</span></span>
+              <span>Live: <span className="font-semibold text-foreground">${(goldPrice?.pricePerGram ?? 0).toFixed(2)}/g</span></span>
             </div>
           )}
           
@@ -2973,7 +2973,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
         <DialogFooter>
           {step === 'amount' && (
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <>
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button 
+                onClick={handleAmountContinue}
+                disabled={
+                  inputMode === 'gold'
+                    ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                    : !amount || parseFloat(amount) < (platformSettings.minDeposit || 50)
+                }
+                data-testid="button-continue-amount"
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continue
+              </Button>
+            </>
           )}
           {(step === 'select' || step === 'card-amount') && (
             <>

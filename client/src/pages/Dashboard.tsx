@@ -14,9 +14,10 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
+import { motion } from 'framer-motion';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -142,6 +143,28 @@ export default function Dashboard() {
     ).slice(0, 5);
   }, [transactions, activitySearch]);
 
+  const monthlySpend = useMemo(() => {
+    const now = new Date();
+    return transactions
+      .filter(tx => {
+        if (!tx.createdAt) return false;
+        const d = new Date(tx.createdAt);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, tx) => sum + Math.abs(parseFloat(tx.amountUsd || '0')), 0);
+  }, [transactions]);
+
+  const MONTHLY_LIMIT = 50000;
+  const progressPercent = Math.max(Math.min((monthlySpend / MONTHLY_LIMIT) * 100, 100), monthlySpend > 0 ? 2 : 0.5);
+
+  const getTransactionAmount = (tx: { amountUsd: string | null; amountGold: string | null }) => {
+    const usdAmt = parseFloat(tx.amountUsd || '0');
+    if (usdAmt > 0) return `$${formatNumber(usdAmt)}`;
+    const goldAmt = parseFloat(tx.amountGold || '0');
+    if (goldAmt > 0) return `$${formatNumber(goldAmt * goldPrice)}`;
+    return '$0.00';
+  };
+
   if (!user) return null;
   
   if (isLoading) {
@@ -211,8 +234,9 @@ export default function Dashboard() {
 
         <section className="flex items-center justify-between">
           <div>
-            <h1 className="text-[28px] font-bold text-gray-900 tracking-tight" data-testid="text-welcome">
-              {getGreeting()}, {userName}
+            <h1 className="text-[28px] font-bold tracking-tight" data-testid="text-welcome">
+              <span className="text-gray-900">{getGreeting()}, </span>
+              <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{userName}</span>
             </h1>
             <p className="text-gray-500 text-[14px] mt-1">Stay on top of your gold portfolio, monitor progress, and track status.</p>
           </div>
@@ -251,11 +275,11 @@ export default function Dashboard() {
               </div>
 
               <div className="flex gap-3">
-                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-2.5 px-4 rounded-xl text-sm font-medium transition-colors" data-testid="button-transfer">
+                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-2.5 px-4 rounded-xl text-sm font-medium transition-all hover:shadow-lg hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b, #fbbf24)' }} data-testid="button-transfer">
                   <Send className="w-4 h-4" />
                   Transfer
                 </Link>
-                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 transition-colors" data-testid="button-request">
+                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 transition-all hover:shadow-sm" data-testid="button-request">
                   <Download className="w-4 h-4" />
                   Request
                 </Link>
@@ -266,42 +290,41 @@ export default function Dashboard() {
                   <span className="text-[13px] text-gray-500 font-medium">Wallets <span className="text-gray-300">|</span> <span className="text-gray-400">Total 3 wallets</span></span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 relative" data-testid="wallet-usd">
+                  <div className="rounded-xl p-3 relative border border-blue-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px]">🇺🇸</span>
-                        <span className="text-[11px] font-semibold text-gray-600">USD</span>
+                        <span className="text-[11px] font-semibold text-blue-700">USD</span>
                       </div>
-                      <button className="text-gray-400 hover:text-gray-600" aria-label="USD wallet options"><MoreVertical className="w-3 h-3" /></button>
+                      <button className="text-blue-300 hover:text-blue-500" aria-label="USD wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
-                    <p className="text-[14px] font-bold text-gray-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
-
-                    <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                    <p className="text-[14px] font-bold text-blue-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
+                    <Badge className="mt-2 bg-blue-100 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 relative" data-testid="wallet-aed">
+                  <div className="rounded-xl p-3 relative border border-amber-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px]">🇦🇪</span>
-                        <span className="text-[11px] font-semibold text-gray-600">AED</span>
+                        <span className="text-[11px] font-semibold text-amber-700">AED</span>
                       </div>
-                      <button className="text-gray-400 hover:text-gray-600" aria-label="AED wallet options"><MoreVertical className="w-3 h-3" /></button>
+                      <button className="text-amber-300 hover:text-amber-500" aria-label="AED wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
-                    <p className="text-[14px] font-bold text-gray-900 flex items-center gap-[3px]">
+                    <p className="text-[14px] font-bold text-amber-900 flex items-center gap-[3px]">
                       <DirhamSymbol size="0.95em" />
                       {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
                     </p>
-                    <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                    <Badge className="mt-2 bg-amber-100 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 relative" data-testid="wallet-eur">
+                  <div className="rounded-xl p-3 relative border border-indigo-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px]">🇪🇺</span>
-                        <span className="text-[11px] font-semibold text-gray-600">EUR</span>
+                        <span className="text-[11px] font-semibold text-indigo-700">EUR</span>
                       </div>
-                      <button className="text-gray-400 hover:text-gray-600" aria-label="EUR wallet options"><MoreVertical className="w-3 h-3" /></button>
+                      <button className="text-indigo-300 hover:text-indigo-500" aria-label="EUR wallet options"><MoreVertical className="w-3 h-3" /></button>
                     </div>
-                    <p className="text-[14px] font-bold text-gray-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                    <Badge className="mt-2 bg-green-100 text-green-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                    <p className="text-[14px] font-bold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                    <Badge className="mt-2 bg-indigo-100 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
                   </div>
                 </div>
               </div>
@@ -309,15 +332,19 @@ export default function Dashboard() {
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-spending-limit">
               <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Monthly Transaction Usage</h3>
-              <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  className="absolute h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(((walletGoldValue > 0 ? walletGoldValue * 0.25 : 1400) / 50000) * 100, 100)}%` }}
+              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+                <motion.div
+                  className="absolute h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, #fbbf24)' }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
                 />
+                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
               </div>
               <div className="flex justify-between mt-2">
                 <span className="text-[12px] text-gray-500">This month's usage</span>
-                <span className="text-[12px] font-semibold text-gray-700">${formatNumber(walletGoldValue > 0 ? walletGoldValue * 0.25 : 1400)}</span>
+                <span className="text-[12px] font-semibold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-normal">/ $50k</span></span>
               </div>
             </div>
 
@@ -380,7 +407,14 @@ export default function Dashboard() {
 
           <div className="col-span-12 xl:col-span-3 space-y-5">
 
-            <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 text-white shadow-sm" data-testid="card-total-earnings">
+            <motion.div 
+              className="rounded-2xl p-5 text-white relative overflow-hidden" 
+              style={{ background: 'linear-gradient(135deg, #ea580c, #f97316, #ef4444)' }}
+              animate={{ boxShadow: ['0 0 0 0 rgba(249,115,22,0)', '0 0 20px 4px rgba(249,115,22,0.35)', '0 0 0 0 rgba(249,115,22,0)'] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              data-testid="card-total-earnings"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="flex items-center justify-between mb-6">
                 <span className="text-[13px] text-white/90 font-medium">Gold Earnings</span>
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -394,7 +428,7 @@ export default function Dashboard() {
                 <TrendingUp className="w-3 h-3 text-white/80" />
                 <span className="text-[11px] text-white/80 font-medium">↑ 7% This month</span>
               </div>
-            </div>
+            </motion.div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-total-spending">
               <div className="flex items-center justify-between mb-4">
@@ -457,7 +491,17 @@ export default function Dashboard() {
               </div>
               <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} barGap={2} barSize={14}>
+                  <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="inflowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="outflowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#1f2937" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#1f2937" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
@@ -465,9 +509,9 @@ export default function Dashboard() {
                       contentStyle={{ borderRadius: '12px', border: '1px solid #f0f0f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px' }}
                       formatter={(value: number) => [`$${formatNumber(value)}`, '']}
                     />
-                    <Bar dataKey="income" fill="#f97316" radius={[4, 4, 0, 0]} name="Inflow" />
-                    <Bar dataKey="expense" fill="#1f2937" radius={[4, 4, 0, 0]} name="Outflow" />
-                  </BarChart>
+                    <Area type="monotone" dataKey="income" name="Inflow" stroke="#f97316" strokeWidth={2} fill="url(#inflowGradient)" dot={false} activeDot={{ r: 4, fill: '#f97316' }} />
+                    <Area type="monotone" dataKey="expense" name="Outflow" stroke="#1f2937" strokeWidth={2} fill="url(#outflowGradient)" dot={false} activeDot={{ r: 4, fill: '#1f2937' }} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -511,8 +555,16 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => (
-                  <tr key={tx.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors" data-testid={`row-activity-${i}`}>
-                    <td className="py-3.5 px-5">
+                  <motion.tr 
+                    key={tx.id} 
+                    className="border-t border-gray-50 hover:bg-orange-50/30 transition-colors group cursor-default" 
+                    data-testid={`row-activity-${i}`}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: i * 0.06 }}
+                  >
+                    <td className="py-3.5 px-5 relative">
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span className="text-[13px] font-medium text-gray-700">{tx.id.slice(0, 12).toUpperCase()}</span>
                     </td>
                     <td className="py-3.5 px-5">
@@ -523,7 +575,7 @@ export default function Dashboard() {
                     </td>
                     <td className="py-3.5 px-5">
                       <span className="text-[13px] font-semibold text-gray-900">
-                        ${formatNumber(Math.abs(parseFloat(tx.amountUsd || '0')))}
+                        {getTransactionAmount(tx)}
                       </span>
                     </td>
                     <td className="py-3.5 px-5">
@@ -540,7 +592,7 @@ export default function Dashboard() {
                     <td className="py-3.5 px-2">
                       <button className="text-gray-400 hover:text-gray-600 p-1" aria-label="Activity options"><MoreVertical className="w-4 h-4" /></button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 )) : (
                   <tr>
                     <td colSpan={6} className="py-10 text-center text-gray-400 text-[13px]">No recent activities found</td>
