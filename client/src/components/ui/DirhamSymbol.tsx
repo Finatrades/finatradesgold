@@ -5,7 +5,7 @@ interface DirhamSymbolProps {
   size?: number | string;
 }
 
-export const AED_SYMBOL = 'Dh';
+export const AED_SYMBOL = '~~';
 
 export function DirhamSymbol({ className = '', size = '1em' }: DirhamSymbolProps) {
   return (

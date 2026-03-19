@@ -416,7 +416,7 @@ export default function Settings() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="AED">AED (Dh)</SelectItem>
+                    <SelectItem value="AED">AED (~~)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
                   </SelectContent>
                 </Select>

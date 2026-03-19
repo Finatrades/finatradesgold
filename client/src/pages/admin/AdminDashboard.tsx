@@ -84,11 +84,11 @@ interface AdminStats {
 
 function formatAed(amount: number): string {
   if (amount >= 1000000) {
-    return `Dh ${(amount / 1000000).toFixed(1)}M`;
+    return `~~ ${(amount / 1000000).toFixed(1)}M`;
   } else if (amount >= 1000) {
-    return `Dh ${(amount / 1000).toFixed(1)}k`;
+    return `~~ ${(amount / 1000).toFixed(1)}k`;
   }
-  return `Dh ${amount.toFixed(0)}`;
+  return `~~ ${amount.toFixed(0)}`;
 }
 
 function formatCurrency(amount: number): string {
