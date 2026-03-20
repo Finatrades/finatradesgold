@@ -465,62 +465,6 @@ export default function Dashboard() {
                 <span className="text-[12px] font-semibold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-normal">/ $50k</span></span>
               </div>
             </div>
-
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-my-cards">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
-                  <h3 className="text-[14px] font-semibold text-gray-900">My Cards</h3>
-                </div>
-                <Link href="/finacard" className="flex items-center gap-1 text-[12px] text-orange-600 hover:text-orange-700 font-medium" data-testid="button-add-card">
-                  <Plus className="w-3.5 h-3.5" />
-                  Add new
-                </Link>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-                <div className="relative min-w-[200px] h-[125px] rounded-xl bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 p-4 flex flex-col justify-between overflow-hidden flex-shrink-0" data-testid="card-finacard-1">
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-orange-500/80" />
-                  <div className="absolute top-3 right-6 w-8 h-8 rounded-full bg-red-500/60" />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <div className="w-6 h-4 bg-amber-400/90 rounded-sm" />
-                    </div>
-                    <Badge className="bg-green-500/20 text-green-300 border-0 text-[8px] px-1.5">Active</Badge>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-gray-400 mb-0.5">Card Number</p>
-                    <div className="flex items-center gap-3 text-white text-[11px] font-mono tracking-wider">
-                      <span>****</span><span>****</span><span>{showBalance ? finatradesId.slice(-4) : '****'}</span>
-                    </div>
-                    <div className="flex gap-4 mt-1.5">
-                      <div>
-                        <p className="text-[8px] text-gray-500">EXP</p>
-                        <p className="text-[10px] text-white font-medium">12/28</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] text-gray-500">CVV</p>
-                        <p className="text-[10px] text-white font-medium">{showBalance ? '***' : '***'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative min-w-[200px] h-[125px] rounded-xl bg-gradient-to-br from-orange-600 via-orange-700 to-red-700 p-4 flex flex-col justify-between overflow-hidden flex-shrink-0" data-testid="card-finacard-2">
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-orange-400/60" />
-                  <div className="absolute top-3 right-6 w-8 h-8 rounded-full bg-yellow-400/40" />
-                  <div className="flex items-center justify-between">
-                    <div className="w-6 h-4 bg-amber-300/90 rounded-sm" />
-                    <Badge className="bg-green-500/20 text-green-300 border-0 text-[8px] px-1.5">Active</Badge>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-orange-200/70 mb-0.5">Card Number</p>
-                    <div className="flex items-center gap-3 text-white text-[11px] font-mono tracking-wider">
-                      <span>****</span><span>****</span><span>{showBalance ? (user.id?.slice(-4) || '0000') : '****'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="col-span-12 xl:col-span-3 space-y-5">
