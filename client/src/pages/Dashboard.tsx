@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -18,6 +19,12 @@ import MobileDashboard from '@/components/mobile/MobileDashboard';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import { motion } from 'framer-motion';
+import DepositModal from '@/components/finapay/modals/DepositModal';
+import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
+import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
+import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
+import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
+import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -212,6 +219,7 @@ export default function Dashboard() {
   const [copiedId, setCopiedId] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activitySearch, setActivitySearch] = useState('');
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -422,55 +430,41 @@ export default function Dashboard() {
         </motion.section>
 
         <motion.div variants={itemVariants} className="flex flex-wrap gap-2.5" data-testid="quick-actions">
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
-              data-testid="button-add-funds">
-              <Plus className="w-3.5 h-3.5" /> Add Funds
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200"
-              data-testid="button-buy-gold">
-              <Package className="w-3.5 h-3.5" /> Buy Gold Bar
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200"
-              data-testid="button-sell-gold">
-              <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 hover:shadow-md hover:shadow-orange-100/50 transition-all duration-200"
-              data-testid="button-withdraw-gold">
-              <ArrowUpRight className="w-3.5 h-3.5" /> Withdraw Gold
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:shadow-md hover:shadow-blue-100/50 transition-all duration-200"
-              data-testid="button-send-gold">
-              <Send className="w-3.5 h-3.5" /> Send Gold
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 hover:shadow-md hover:shadow-cyan-100/50 transition-all duration-200"
-              data-testid="button-request-gold">
-              <ArrowDownLeft className="w-3.5 h-3.5" /> Request Gold
-            </motion.button>
-          </Link>
-          <Link href="/finapay">
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200"
-              data-testid="button-lock-gold">
-              <Shield className="w-3.5 h-3.5" /> Lock Gold Price
-            </motion.button>
-          </Link>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('deposit')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
+            data-testid="button-add-funds">
+            <Plus className="w-3.5 h-3.5" /> Add Funds
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200"
+            data-testid="button-buy-gold">
+            <Package className="w-3.5 h-3.5" /> Buy Gold Bar
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200"
+            data-testid="button-sell-gold">
+            <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 hover:shadow-md hover:shadow-orange-100/50 transition-all duration-200"
+            data-testid="button-withdraw-gold">
+            <ArrowUpRight className="w-3.5 h-3.5" /> Withdraw Gold
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:shadow-md hover:shadow-blue-100/50 transition-all duration-200"
+            data-testid="button-send-gold">
+            <Send className="w-3.5 h-3.5" /> Send Gold
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 hover:shadow-md hover:shadow-cyan-100/50 transition-all duration-200"
+            data-testid="button-request-gold">
+            <ArrowDownLeft className="w-3.5 h-3.5" /> Request Gold
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200"
+            data-testid="button-lock-gold">
+            <Shield className="w-3.5 h-3.5" /> Lock Gold Price
+          </motion.button>
         </motion.div>
 
         <div className="grid grid-cols-12 gap-5">
@@ -855,6 +849,56 @@ export default function Dashboard() {
       {showOnboarding && (
         <OnboardingTour onComplete={completeOnboarding} />
       )}
+
+      <DepositModal isOpen={activeModal === 'deposit'} onClose={() => setActiveModal(null)} />
+      <BuyGoldBarModal isOpen={activeModal === 'buybar'} onClose={() => setActiveModal(null)} />
+      <SellGoldModal
+        isOpen={activeModal === 'sell'}
+        onClose={() => setActiveModal(null)}
+        goldPrice={goldPrice}
+        walletBalance={totals.walletGoldGrams || 0}
+        spreadPercent={1.5}
+        onConfirm={() => setActiveModal(null)}
+      />
+      <WithdrawalModal isOpen={activeModal === 'withdraw'} onClose={() => setActiveModal(null)} />
+      <SendGoldModal
+        isOpen={activeModal === 'send'}
+        onClose={() => setActiveModal(null)}
+        walletBalance={(totals.walletGoldGrams || 0) * goldPrice}
+        goldBalance={totals.walletGoldGrams || 0}
+        onConfirm={() => setActiveModal(null)}
+      />
+      <RequestGoldModal
+        isOpen={activeModal === 'request'}
+        onClose={() => setActiveModal(null)}
+        onConfirm={() => setActiveModal(null)}
+      />
+      <Dialog open={activeModal === 'lock'} onOpenChange={(open) => !open && setActiveModal(null)}>
+        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Lock className="w-5 h-5 text-emerald-600" /> Lock Gold Price
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Lock your gold at the current market price to protect against price fluctuations.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <span className="text-sm text-gray-600">Current Gold Price</span>
+              <span className="font-bold text-emerald-700">${formatNumber(goldPrice)}/g</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              To lock your gold price, please go to the FinaPay wallet section where you can transfer gold between your Live Gold Price Wallet and Fixed Gold Price Wallet.
+            </p>
+            <Link href="/finapay">
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl" onClick={() => setActiveModal(null)} data-testid="button-go-to-finapay-lock">
+                Go to FinaPay Wallet
+              </Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
