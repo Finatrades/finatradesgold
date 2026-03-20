@@ -67,12 +67,12 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
 
   const total = modules.reduce((s, d) => s + d.value, 0);
 
-  const size = 240;
+  const size = 260;
   const cx = size / 2;
   const cy = size / 2;
-  const ringW = 8;
-  const gap = 6;
-  const innerR = 40;
+  const ringW = 10;
+  const gap = 10;
+  const innerR = 38;
 
   const rings = useMemo(() => modules.map((mod, idx) => {
     const r = innerR + idx * (ringW + gap);
