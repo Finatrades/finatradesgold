@@ -438,7 +438,8 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
-        <motion.div variants={itemVariants} className="flex flex-wrap gap-2.5" data-testid="quick-actions">
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2.5" data-testid="quick-actions">
+          <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Quick Access :</span>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('deposit')}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
             data-testid="button-add-funds">
