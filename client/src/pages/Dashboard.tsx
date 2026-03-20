@@ -854,7 +854,9 @@ export default function Dashboard() {
           {/* Panel 1 — Recent Transactions */}
           <motion.div
             variants={itemVariants}
-            className="glass-card-elevated rounded-[20px] overflow-hidden"
+            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
             data-testid="card-recent-activities"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
@@ -927,7 +929,9 @@ export default function Dashboard() {
           {/* Panel 2 — Certificates */}
           <motion.div
             variants={itemVariants}
-            className="glass-card-elevated rounded-[20px] overflow-hidden"
+            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
             data-testid="card-certificates"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
