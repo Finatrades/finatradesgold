@@ -687,9 +687,9 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-2.5">
                   {(certificates.recent || []).slice(0, 5).map((cert, i) => (
+                    <Link key={cert.id} href="/certificates">
                     <motion.div
-                      key={cert.id}
-                      className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"
+                      className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-purple-50/40 rounded-xl px-1 transition-colors"
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.06 }}
@@ -716,6 +716,7 @@ export default function Dashboard() {
                         {cert.status === 'ACTIVE' ? 'Active' : cert.status}
                       </span>
                     </motion.div>
+                    </Link>
                   ))}
                 </div>
               </motion.div>
