@@ -97,11 +97,9 @@ interface GuestInfo {
 }
 
 function BotAvatar({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClass = size === 'lg' ? 'w-16 h-16 text-xl' : size === 'md' ? 'w-10 h-10 text-sm' : 'w-7 h-7 text-[10px]';
+  const sizeClass = size === 'lg' ? 'w-16 h-16' : size === 'md' ? 'w-10 h-10' : 'w-7 h-7';
   return (
-    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center font-bold text-white shadow-md flex-shrink-0`}>
-      FT
-    </div>
+    <img src="/favicon.png" alt="FT" className={`${sizeClass} rounded-full shadow-md flex-shrink-0 object-cover`} />
   );
 }
 
