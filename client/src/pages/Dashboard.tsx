@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -580,7 +580,57 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="col-span-12 xl:col-span-4">
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-4">
+            {/* My FinaCard */}
+            <Link href="/finacard">
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full aspect-[1.9/1] rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-800 shadow-xl p-5 flex flex-col justify-between overflow-hidden border border-white/10 cursor-pointer"
+                data-testid="card-dashboard-finacard"
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10 pointer-events-none" />
+                <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-purple-600/10 blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded bg-gradient-to-br from-purple-500 to-pink-600" />
+                    <span className="text-white text-sm font-bold tracking-tight">Finatrades</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1">
+                    <CreditCard className="w-3 h-3 text-white/70" />
+                    <span className="text-white/70 text-[10px] font-medium">My Card</span>
+                  </div>
+                </div>
+
+                <div className="relative z-10 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-6 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-sm opacity-80" />
+                    <Zap className="w-4 h-4 text-white/30 rotate-90" />
+                  </div>
+                  <p className="font-mono text-base text-white tracking-widest">•••• •••• •••• ••••</p>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[9px] uppercase font-bold text-white/40 mb-0.5">Card Holder</p>
+                      <p className="text-white/90 text-xs font-semibold uppercase tracking-wide">
+                        {user?.firstName || ''} {user?.lastName || ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase font-bold text-white/40 mb-0.5">Balance</p>
+                      <p className="text-white/90 text-xs font-semibold">
+                        {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
+                      </p>
+                      <p className="text-white/40 text-[9px]">
+                        {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+
             <PortfolioDonutCard
               walletGoldValue={walletGoldValue}
               vaultGoldValue={vaultGoldValue}
