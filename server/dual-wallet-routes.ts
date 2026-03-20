@@ -467,7 +467,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           entryType: 'FPGW_UNLOCK',
           amountUsd: usdAmountUnlock.toFixed(2),
           direction: 'debit',
-          runningBalanceUsd: Math.max(0, currentCashBalanceUnlock - usdAmountUnlock).toFixed(2),
+          runningBalanceUsd: (currentCashBalanceUnlock - usdAmountUnlock).toFixed(2),
           userId,
           notes: `User unlocked ${batchGrams.toFixed(6)}g (locked at $${batchLockedPrice.toFixed(2)}/g) → LGPW`
         });
