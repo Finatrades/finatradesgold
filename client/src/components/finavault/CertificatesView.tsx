@@ -40,13 +40,13 @@ interface Certificate {
   parentCertificateId: string | null;
 }
 
-interface CertificateDetailModalProps {
+export interface CertificateDetailModalProps {
   certificate: Certificate | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
+export function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);

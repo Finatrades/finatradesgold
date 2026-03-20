@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { CertificateDetailModal } from '@/components/finavault/CertificatesView';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
@@ -1026,77 +1026,12 @@ export default function Dashboard() {
         goldPrice={goldPrice}
       />
 
-      {/* Certificate Detail Modal */}
-      <Dialog open={!!selectedCert} onOpenChange={() => setSelectedCert(null)}>
-        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
-          {selectedCert && (() => {
-            const certTypeLabel =
-              selectedCert.type === 'DIGITAL_OWNERSHIP' ? 'Digital Ownership Certificate'
-              : selectedCert.type === 'PHYSICAL_STORAGE' ? 'Physical Storage Certificate'
-              : selectedCert.type === 'CONVERSION' ? 'Conversion Certificate'
-              : selectedCert.type || 'Certificate';
-            const isActive = selectedCert.status === 'Active' || selectedCert.status === 'ACTIVE';
-            const goldVal = Number(selectedCert.goldGrams || 0);
-            const usdVal = selectedCert.totalValueUsd ? Number(selectedCert.totalValueUsd) : goldVal * goldPrice;
-            const pricePerGram = selectedCert.goldPriceUsdPerGram ? Number(selectedCert.goldPriceUsdPerGram) : goldPrice;
-            return (
-              <>
-                {/* Header banner */}
-                <div className="relative px-6 pt-6 pb-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e0a3c 0%, #3b1278 50%, #1a0a4a 100%)' }}>
-                  <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #9f3fff, transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm">
-                      <Shield className="w-6 h-6 text-purple-300" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-white/50 font-medium uppercase tracking-wider">FinaVault</p>
-                      <h2 className="text-[17px] font-bold text-white leading-tight">{certTypeLabel}</h2>
-                    </div>
-                    <span className={`ml-auto px-3 py-1 rounded-full text-[11px] font-bold ${isActive ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-gray-500/20 text-gray-300 border border-gray-400/30'}`}>
-                      {isActive ? 'Active' : selectedCert.status}
-                    </span>
-                  </div>
-                  {/* Big grams */}
-                  <div className="mt-5 relative z-10">
-                    <p className="text-[36px] font-extrabold text-white leading-none">{goldVal.toFixed(4)}g</p>
-                    <p className="text-[13px] text-white/50 mt-1">${usdVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</p>
-                  </div>
-                </div>
-
-                {/* Detail rows */}
-                <div className="px-6 py-5 space-y-3 bg-white">
-                  {[
-                    { label: 'Certificate No.', value: selectedCert.certificateNumber || '—' },
-                    { label: 'Issuer', value: selectedCert.issuer || 'Finatrades' },
-                    { label: 'Gold Price at Issuance', value: `$${pricePerGram.toLocaleString('en-US', { minimumFractionDigits: 2 })} / g` },
-                    { label: 'Vault Location', value: selectedCert.vaultLocation || 'Dubai, UAE' },
-                    ...(selectedCert.wingoldStorageRef ? [{ label: 'Wingold Ref.', value: selectedCert.wingoldStorageRef }] : []),
-                    { label: 'Issued On', value: selectedCert.issuedAt && isValid(new Date(selectedCert.issuedAt)) ? format(new Date(selectedCert.issuedAt), 'MMM dd, yyyy • HH:mm') : '—' },
-                    ...(selectedCert.expiresAt ? [{ label: 'Expires On', value: isValid(new Date(selectedCert.expiresAt)) ? format(new Date(selectedCert.expiresAt), 'MMM dd, yyyy') : '—' }] : []),
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                      <span className="text-[12px] text-gray-500 font-medium">{label}</span>
-                      <span className="text-[13px] font-semibold text-gray-800 text-right max-w-[60%] truncate">{value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
-                  <Link href="/finavault" className="flex-1">
-                    <button className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:shadow-lg" style={{ background: 'linear-gradient(135deg, #9f3fff, #7c3aed)' }}>
-                      View in FinaVault
-                    </button>
-                  </Link>
-                  <button onClick={() => setSelectedCert(null)} className="px-4 py-2.5 rounded-xl text-[13px] font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
-                    Close
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      {/* Certificate Detail Modal — same as FinaVault */}
+      <CertificateDetailModal
+        certificate={selectedCert}
+        open={!!selectedCert}
+        onOpenChange={(open) => { if (!open) setSelectedCert(null); }}
+      />
     </DashboardLayout>
   );
 }
