@@ -31,6 +31,7 @@ import LockGoldPriceModal from '@/components/finapay/modals/LockGoldPriceModal';
 import TransactionDetailsModal from '@/components/finapay/modals/TransactionDetailsModal';
 import QuickBnslModal from '@/components/dashboard/QuickBnslModal';
 import QuickTradeModal from '@/components/dashboard/QuickTradeModal';
+import InternalTransferModal from '@/components/dashboard/InternalTransferModal';
 import type { Transaction } from '@/types/finapay';
 
 interface UserPreferences {
@@ -90,6 +91,7 @@ export default function Dashboard() {
   const [savingsGoal] = useState(500);
   const [showBnslModal, setShowBnslModal] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -431,10 +433,10 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-[0_0_24px_rgba(159,63,255,0.5)] hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #9f3fff 0%, #7c3aed 50%, #6d28d9 100%)', border: '1px solid rgba(255,255,255,0.15)' }} data-testid="button-transfer">
+                  <button onClick={() => setShowTransferModal(true)} className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-[0_0_24px_rgba(159,63,255,0.5)] hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #9f3fff 0%, #7c3aed 50%, #6d28d9 100%)', border: '1px solid rgba(255,255,255,0.15)' }} data-testid="button-transfer">
                     <Send className="w-4 h-4" />
                     Transfer
-                  </Link>
+                  </button>
                   <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white/90 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:bg-white/20 hover:shadow-lg active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(12px)' }} data-testid="button-request">
                     <Download className="w-4 h-4" />
                     Request
@@ -1500,6 +1502,13 @@ export default function Dashboard() {
         open={showTradeModal}
         onOpenChange={setShowTradeModal}
         currentGoldPrice={goldPrice}
+      />
+      <InternalTransferModal
+        open={showTransferModal}
+        onOpenChange={setShowTransferModal}
+        availableGoldGrams={totals.walletGoldGrams || 0}
+        currentGoldPrice={goldPrice}
+        isBusinessUser={isBusinessUser}
       />
     </DashboardLayout>
   );
