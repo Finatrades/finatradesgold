@@ -235,9 +235,9 @@ export default function Dashboard() {
   const isBusinessUser = user?.accountType === 'business' || !!user?.finabridgeRole;
   const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.vaultGoldGrams || 0);
   const totalPortfolioValue = totals.totalPortfolioUsd || 0;
-  const walletGoldValue = (totals.walletGoldGrams || 0) * goldPrice;
+  const walletGoldValue = ((totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0)) * goldPrice;
   const vaultGoldValue = (totals.vaultGoldGrams || 0) * goldPrice;
-  const bnslValue = (totals.bnslLockedGrams || 0) * goldPrice;
+  const bnslValue = (totals.bnslWalletGoldGrams || 0) * goldPrice;
   const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
 

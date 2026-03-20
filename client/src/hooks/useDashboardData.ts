@@ -101,6 +101,8 @@ interface DashboardResponse {
     fpgwLockedBnslGrams: number;
     fpgwReservedTradeGrams: number;
     fpgwWeightedAvgPriceUsd: number;
+    bnslWalletGoldGrams: number;
+    bnslWalletValueUsd: number;
     finacardGoldGrams: number;
     finacardValueUsd: number;
   };
@@ -147,6 +149,8 @@ interface DashboardData {
     fpgwLockedBnslGrams: number;
     fpgwReservedTradeGrams: number;
     fpgwWeightedAvgPriceUsd: number;
+    bnslWalletGoldGrams: number;
+    bnslWalletValueUsd: number;
     finacardGoldGrams: number;
     finacardValueUsd: number;
   };
@@ -254,6 +258,8 @@ export function useDashboardData(): DashboardData {
     fpgwLockedBnslGrams: 0,
     fpgwReservedTradeGrams: 0,
     fpgwWeightedAvgPriceUsd: 0,
+    bnslWalletGoldGrams: 0,
+    bnslWalletValueUsd: 0,
     finacardGoldGrams: 0,
     finacardValueUsd: 0,
   };

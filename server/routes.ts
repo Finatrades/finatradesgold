@@ -1050,8 +1050,12 @@ export async function registerRoutes(
       const bnslWalletGoldGrams = parseFloat(bnslWallet?.availableGoldGrams || '0');
       const bnslWalletValueUsd = bnslWalletGoldGrams * goldPrice;
       
-      // Total portfolio includes: vault + FinaPay wallet + BNSL wallet + FinaBridge + USD balance
-      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
+      // FinaCard gold (sub-wallet of FinaPay, gold loaded onto the card)
+      const finacardGoldGrams = parseFloat(wallet?.finacardGoldGrams || '0');
+      const finacardGoldValueUsd = finacardGoldGrams * goldPrice;
+
+      // Total portfolio includes: vault + FinaPay wallet + FinaCard + BNSL wallet + FinaBridge + USD balance
+      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + finacardGoldValueUsd + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
@@ -1139,8 +1143,10 @@ export async function registerRoutes(
           fpgwLockedBnslGrams: parseFloat(vaultSummary?.fpgwLockedBnslGrams || '0'),
           fpgwReservedTradeGrams: parseFloat(vaultSummary?.fpgwReservedTradeGrams || '0'),
           fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0'),
-          finacardGoldGrams: parseFloat(wallet?.finacardGoldGrams || '0'),
-          finacardValueUsd: parseFloat(wallet?.finacardGoldGrams || '0') * goldPrice
+          bnslWalletGoldGrams,
+          bnslWalletValueUsd,
+          finacardGoldGrams,
+          finacardValueUsd: finacardGoldValueUsd
         },
         _meta: { 
           loadTimeMs: loadTime,
