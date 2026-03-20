@@ -99,7 +99,7 @@ interface GuestInfo {
 function BotAvatar({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
   const sizeClass = size === 'lg' ? 'w-10 h-10' : size === 'md' ? 'w-7 h-7' : 'w-5 h-5';
   return (
-    <img src="/favicon.webp" alt="FT" className={`${sizeClass} rounded-full shadow-md flex-shrink-0 object-cover`} />
+    <img src="/favicon.webp" alt="FT" className={`${sizeClass} shadow-md flex-shrink-0 object-contain`} />
   );
 }
 
