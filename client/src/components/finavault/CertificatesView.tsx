@@ -165,7 +165,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
     doc.text('GOLD WEIGHT', margin + colWidth * 0.5, detailsY, { align: 'center' });
     doc.text('PURITY', margin + colWidth * 1.5, detailsY, { align: 'center' });
     doc.text('VALUE (USD)', margin + colWidth * 2.5, detailsY, { align: 'center' });
-    doc.text('STORAGE REF', margin + colWidth * 3.5, detailsY, { align: 'center' });
+    doc.text(certificate.type === 'Conversion' ? 'LOCKED PRICE' : 'STORAGE REF', margin + colWidth * 3.5, detailsY, { align: 'center' });
     
     // Column values
     doc.setTextColor(255, 255, 255);
@@ -174,8 +174,11 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
     doc.text(`${goldGrams.toFixed(4)}g`, margin + colWidth * 0.5, detailsY + 10, { align: 'center' });
     doc.text('999.9', margin + colWidth * 1.5, detailsY + 10, { align: 'center' });
     doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + colWidth * 2.5, detailsY + 10, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(certificate.wingoldStorageRef || 'N/A', margin + colWidth * 3.5, detailsY + 10, { align: 'center' });
+    doc.setFontSize(14);
+    const col4Value = certificate.type === 'Conversion'
+      ? (certificate.goldPriceUsdPerGram ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g` : 'N/A')
+      : (certificate.wingoldStorageRef || 'N/A');
+    doc.text(col4Value, margin + colWidth * 3.5, detailsY + 10, { align: 'center' });
     y = detailsY + 25;
     
     // Separator line
@@ -504,8 +507,15 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
               <div>
                 <p className={`text-xs uppercase tracking-wider mb-1 ${
                   isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Storage Ref</p>
-                <p className="text-sm font-mono font-bold text-white">{certificate.wingoldStorageRef || 'N/A'}</p>
+                }`}>{certificate.type === 'Conversion' ? 'Locked Price' : 'Storage Ref'}</p>
+                <p className="text-xl font-bold text-white">
+                  {certificate.type === 'Conversion'
+                    ? certificate.goldPriceUsdPerGram
+                      ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g`
+                      : 'N/A'
+                    : <span className="text-sm font-mono">{certificate.wingoldStorageRef || 'N/A'}</span>
+                  }
+                </p>
               </div>
             </div>
 
