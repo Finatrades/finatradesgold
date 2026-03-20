@@ -855,25 +855,6 @@ export default function Dashboard() {
           {/* ═══ CENTRE COLUMN — Stats + Referral + Gold Price Lock ═══ */}
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
-            {/* Gold Earnings */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 text-white overflow-hidden" style={{ background: 'linear-gradient(135deg, #7c3aed, #8A2BE2, #a855f7)' }} data-testid="card-total-earnings">
-              <div className="absolute inset-0 holo-shimmer" />
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[12px] text-white/80 font-semibold tracking-wide">Gold Earnings</span>
-                  <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-                <p className="text-[24px] font-extrabold tracking-tight leading-none" data-testid="text-earnings">
-                  {showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
-                </p>
-                <p className="text-[10px] text-white/60 font-medium mt-1">Paid BNSL margin earnings</p>
-              </div>
-            </motion.div>
-
             {/* Vault + BNSL Grid */}
             <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
               <div className="glass-card-elevated rounded-[18px] p-3.5 glow-border-hover group" data-testid="card-vault-value">
