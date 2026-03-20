@@ -8094,64 +8094,18 @@ export async function registerRoutes(
             if (!wallet) throw new Error('User wallet not found');
             const currentGold = parseFloat(wallet.goldGrams || '0');
             const newGoldBalance = currentGold + goldGrams;
+            // Credit FinaPay (MPGW) wallet — liquid gold for the user
             await txStorage.updateWallet(depositReq.userId, {
               goldGrams: newGoldBalance.toFixed(6),
             });
             
-            // 2. Create or update FinaVault holding
-            const existingHoldings = await txStorage.getUserVaultHoldings(depositReq.userId);
-            let holdingId: string;
-            if (existingHoldings.length > 0) {
-              const holding = existingHoldings[0];
-              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
-              await txStorage.updateVaultHolding(holding.id, {
-                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
-              });
-              holdingId = holding.id;
-            } else {
-              const newHolding = await txStorage.createVaultHolding({
-                userId: depositReq.userId,
-                goldGrams: goldGrams.toFixed(6),
-                vaultLocation: 'Dubai - Wingold & Metals DMCC',
-                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
-                isPhysicallyDeposited: false,
-              });
-              holdingId = newHolding.id;
-            }
+            // NOTE: vault_holdings (FPGW) are NOT created here.
+            // Regular deposits (bank/card/crypto) credit MPGW (FinaPay liquid).
+            // vault_holdings only exist for Buy Gold Bar and physical gold deposits,
+            // which represent separately locked FPGW gold. Creating vault holdings here
+            // would cause double-counting in the portfolio (wallet + vault same gold).
             
-            // 3. Issue Digital Ownership Certificate (Finatrades Finance SA)
-            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-            const digitalCert = await txStorage.createCertificate({
-              certificateNumber: docCertNum,
-              userId: depositReq.userId,
-              vaultHoldingId: holdingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              referenceId: (depositReq as any).referenceNumber,
-            });
-            
-            // 4. Issue Physical Storage Certificate (Wingold & Metals DMCC)
-            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-            await txStorage.createCertificate({
-              certificateNumber: pscCertNum,
-              userId: depositReq.userId,
-              vaultHoldingId: holdingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              referenceId: (depositReq as any).referenceNumber,
-            });
-            
-            // 5. Create completed transaction record
+            // Create completed transaction record
             const newTransaction = await txStorage.createTransaction({
               userId: depositReq.userId,
               type: 'Buy',
@@ -8166,7 +8120,7 @@ export async function registerRoutes(
               completedAt: new Date(),
             });
             
-            // 6. Record vault ledger entry
+            // Record vault ledger entry for audit trail
             const { vaultLedgerService } = await import('./vault-ledger-service');
             await vaultLedgerService.recordLedgerEntry({
               userId: depositReq.userId,
@@ -8177,12 +8131,11 @@ export async function registerRoutes(
               toWallet: 'FinaPay',
               toStatus: 'Available',
               transactionId: newTransaction.id,
-              certificateId: digitalCert.id,
               notes: `${paymentLabel} approved - Ref: ${(depositReq as any).referenceNumber} | $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g`,
               createdBy: req.body.adminId || 'admin',
             });
             
-            return { newTransaction, newGoldBalance, holdingId };
+            return { newTransaction, newGoldBalance };
           });
           
           // Update deposit request status
@@ -8306,7 +8259,7 @@ export async function registerRoutes(
             : depositAmountUsd / goldPricePerGram;
           
           const result = await storage.withTransaction(async (txStorage) => {
-            // 1. Credit wallet.goldGrams (NOT usdBalance)
+            // 1. Credit FinaPay (MPGW) wallet.goldGrams — liquid gold for the user
             const wallet = await txStorage.getWallet(cryptoReq.userId);
             if (!wallet) throw new Error('User wallet not found');
             const currentGold = parseFloat(wallet.goldGrams || '0');
@@ -8315,58 +8268,12 @@ export async function registerRoutes(
               goldGrams: newGoldBalance.toFixed(6),
             });
             
-            // 2. Create or update FinaVault holding
-            const existingHoldings = await txStorage.getUserVaultHoldings(cryptoReq.userId);
-            let holdingId: string;
-            if (existingHoldings.length > 0) {
-              const holding = existingHoldings[0];
-              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
-              await txStorage.updateVaultHolding(holding.id, {
-                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
-              });
-              holdingId = holding.id;
-            } else {
-              const newHolding = await txStorage.createVaultHolding({
-                userId: cryptoReq.userId,
-                goldGrams: goldGrams.toFixed(6),
-                vaultLocation: 'Dubai - Wingold & Metals DMCC',
-                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
-                isPhysicallyDeposited: false,
-              });
-              holdingId = newHolding.id;
-            }
+            // NOTE: vault_holdings (FPGW) are NOT created here.
+            // Crypto deposits credit MPGW (FinaPay liquid). vault_holdings only exist
+            // for Buy Gold Bar and physical gold deposits (FPGW locked vault).
+            // Creating vault holdings here would double-count in the portfolio.
             
-            // 3. Issue Digital Ownership Certificate (Finatrades Finance SA)
-            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-            const digitalCert = await txStorage.createCertificate({
-              certificateNumber: docCertNum,
-              userId: cryptoReq.userId,
-              vaultHoldingId: holdingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            });
-            
-            // 4. Issue Physical Storage Certificate (Wingold & Metals DMCC)
-            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-            await txStorage.createCertificate({
-              certificateNumber: pscCertNum,
-              userId: cryptoReq.userId,
-              vaultHoldingId: holdingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            });
-            
-            // 5. Create completed transaction record
+            // 2. Create completed transaction record
             const newTransaction = await txStorage.createTransaction({
               userId: cryptoReq.userId,
               type: 'Buy',
@@ -8380,7 +8287,7 @@ export async function registerRoutes(
               completedAt: new Date(),
             });
             
-            // 6. Record vault ledger entry
+            // 3. Record vault ledger entry for audit trail
             const { vaultLedgerService } = await import('./vault-ledger-service');
             await vaultLedgerService.recordLedgerEntry({
               userId: cryptoReq.userId,
@@ -8391,17 +8298,16 @@ export async function registerRoutes(
               toWallet: 'FinaPay',
               toStatus: 'Available',
               transactionId: newTransaction.id,
-              certificateId: digitalCert.id,
               notes: `Crypto deposit approved - $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g gold`,
               createdBy: req.body.adminId || 'admin',
             });
             
-            // 7. Update crypto request with credited transaction ID
+            // 4. Update crypto request with credited transaction ID
             await db.update(cryptoPaymentRequests)
               .set({ status: 'Approved', reviewedAt: new Date(), creditedTransactionId: newTransaction.id })
               .where(eq(cryptoPaymentRequests.id, req.params.id));
             
-            return { newTransaction, newGoldBalance, holdingId };
+            return { newTransaction, newGoldBalance };
           });
           
           // Audit log
