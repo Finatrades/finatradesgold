@@ -24269,6 +24269,26 @@ export async function registerRoutes(
       }
       console.log('[DEBUG] Generated Physical Storage Certificate:', storageCert.id, storageCert.certificateNumber);
       
+      // 1b. Generate Digital Ownership Certificate (Finatrades Finance SA) — linked to Physical Storage cert
+      let digitalOwnershipCert;
+      try {
+        digitalOwnershipCert = await storage.createCertificate({
+          userId: paymentRequest.userId,
+          type: 'Digital Ownership',
+          certificateNumber: `DOC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+          status: 'Active',
+          goldGrams: goldGrams.toString(),
+          vaultLocation: vaultLocation,
+          goldPriceUsdPerGram: goldPrice.toString(),
+          totalValueUsd: (goldGrams * goldPrice).toFixed(2),
+          issuer: 'Finatrades Finance SA',
+          relatedCertificateId: storageCert.id,
+        });
+        console.log('[DEBUG] Generated Digital Ownership Certificate:', digitalOwnershipCert.id, digitalOwnershipCert.certificateNumber);
+      } catch (docError) {
+        console.error('[DEBUG] Digital Ownership Certificate creation failed (non-fatal):', docError);
+      }
+      
       // 2. Credit user wallet (GOLDEN RULE: certificate verified above)
       const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
       const newGoldGrams = currentGoldGrams + goldGrams;

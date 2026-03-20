@@ -31,6 +31,16 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 - **Observability**: Pino for logging and OpenTelemetry for distributed tracing.
 - **Security Hardening**: HTTPS, Helmet.js, CSRF protection, request sanitization, idempotency, rate limiting, secure session management, PII handling, and PASETO v4 for internal service authentication.
 
+**Deposit Architecture — Golden Rule:**
+All deposit approvals (bank transfer, card, crypto, physical gold) must go through the Unified Payment Management (UFM) screen at `/admin/unified-payments`. The UFM creates: (1) Physical Storage Certificate (issuer: Wingold & Metals DMCC), (2) Digital Ownership Certificate (issuer: Finatrades Finance SA), (3) unified_tally_transaction record, and credits the user's MPGW (wallet.goldGrams) or FPGW batch. Old individual deposit approval handlers enforce the Golden Rule by redirecting to UFM. The old crypto approval handler (`/api/admin/crypto-payments/:id/approve`) also creates both certificates as a fallback path. FinaVault certificates page shows certificates from ALL deposit types.
+
+**Gold Wallet Types:**
+- **MPGW (Market Price Gold Wallet)** = `wallet.goldGrams` — liquid gold valued at live market price. Regular deposits credit here.
+- **FPGW (Fixed Price Gold Wallet)** = `fpgw_batches` table — gold locked at a specific price, protects against market fluctuation. Admin can select LGPW/FGPW at deposit approval time in UFM.
+- **BNSL Wallet** = `bnsl_wallets` table — gold transferred from FinaPay for BNSL plans (available + locked sub-balances).
+- **FinaBridge** = `vault_ownership_summary.finaBridgeAvailableGrams` — gold reserved for trade finance.
+- **FinaCard** = `finacard_accounts.goldGrams` — gold backing the physical card.
+
 **Key Features:**
 - **Transaction Architecture**: `unified_tally_transactions` (UTT) table as the primary source for all deposit/credit transactions, replacing legacy systems.
 - **KYC System**: Supports tiered verification with versioned submissions, section-wise review (approve/reject with reason codes), and audit trails for all decisions.
