@@ -589,8 +589,75 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Pending Deposits Alert + Savings Goal */}
+          {/* Right column — Gold Card + Portfolio Ring Chart + Pending Deposits */}
           <div className="flex flex-col gap-5">
+            {/* FinaCard — Premium dark card with holographic effect */}
+            <Link href="/finacard">
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ scale: 1.015, y: -4 }}
+                transition={{ duration: 0.35 }}
+                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
+                data-testid="card-dashboard-finacard"
+              >
+                <div className="absolute inset-0 holo-shimmer" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
+                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
+                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
+
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5">
+                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
+                      <CreditCard className="w-3 h-3 text-white/60" />
+                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
+                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
+                      </div>
+                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
+                    </div>
+                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
+                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
+                          {user?.firstName || ''} {user?.lastName || ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
+                        <p className="text-white/90 text-sm font-extrabold">
+                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
+                        </p>
+                        <p className="text-white/30 text-[9px] font-medium">
+                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+
+            <PortfolioRingChart
+              walletGoldGrams={totals.walletGoldGrams || 0}
+              finacardGoldGrams={totals.finacardGoldGrams || 0}
+              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
+              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
+              totalGoldGrams={totalGoldGrams}
+              showBalance={showBalance}
+              hiddenValue={hiddenValue}
+              formatNumber={formatNumber}
+            />
+
             {pendingDeposits.length > 0 && (
               <motion.div variants={itemVariants} className="rounded-[20px] p-5 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9f3fff 50%, #6d28d9 100%)' }} data-testid="card-pending-deposits">
                 <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
@@ -613,36 +680,6 @@ export default function Dashboard() {
                 </div>
               </motion.div>
             )}
-
-            {/* Savings Goal Tracker */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 flex-1" data-testid="card-savings-goal">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                  <Target className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="text-[13px] font-bold text-gray-900">Savings Goal</h3>
-                  <p className="text-[10px] text-gray-400">Gold accumulation target</p>
-                </div>
-              </div>
-              <div className="flex items-end justify-between mb-3">
-                <div>
-                  <p className="text-[22px] font-extrabold text-gray-900">{formatNumber(totalGoldGrams, 2)}g</p>
-                  <p className="text-[11px] text-gray-400">of {formatNumber(savingsGoal, 0)}g target</p>
-                </div>
-                <p className="text-[18px] font-bold text-purple-600">{((totalGoldGrams / savingsGoal) * 100).toFixed(1)}%</p>
-              </div>
-              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-                <motion.div
-                  className="absolute h-full rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37)' }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((totalGoldGrams / savingsGoal) * 100, 100)}%` }}
-                  transition={{ duration: 1.4, ease: 'easeOut', delay: 0.3 }}
-                />
-              </div>
-              <p className="text-[10px] text-gray-400 mt-2">{formatNumber(savingsGoal - totalGoldGrams, 2)}g remaining to goal</p>
-            </motion.div>
           </div>
         </div>
 
@@ -1030,75 +1067,8 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* ═══ RIGHT COLUMN — FinaCard + Donut ═══ */}
+          {/* ═══ RIGHT COLUMN — Gold Price Lock ═══ */}
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-5">
-            {/* FinaCard — Premium dark card with holographic effect */}
-            <Link href="/finacard">
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ scale: 1.015, y: -4 }}
-                transition={{ duration: 0.35 }}
-                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
-                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
-                data-testid="card-dashboard-finacard"
-              >
-                <div className="absolute inset-0 holo-shimmer" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
-                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
-                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
-
-                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
-                      <CreditCard className="w-3 h-3 text-white/60" />
-                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
-                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
-                      </div>
-                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
-                    </div>
-                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
-                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
-                          {user?.firstName || ''} {user?.lastName || ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
-                        <p className="text-white/90 text-sm font-extrabold">
-                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
-                        </p>
-                        <p className="text-white/30 text-[9px] font-medium">
-                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-
-            <PortfolioRingChart
-              walletGoldGrams={totals.walletGoldGrams || 0}
-              finacardGoldGrams={totals.finacardGoldGrams || 0}
-              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
-              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
-              totalGoldGrams={totalGoldGrams}
-              showBalance={showBalance}
-              hiddenValue={hiddenValue}
-              formatNumber={formatNumber}
-            />
-
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
               <div className="flex items-center gap-2 mb-3">
