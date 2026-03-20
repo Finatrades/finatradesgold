@@ -165,7 +165,7 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
           </Tabs>
         </div>
 
-        <div className="overflow-y-auto p-4 md:p-8">
+        <div className="overflow-y-auto flex-1 min-h-0 p-4 md:p-8">
           
           {/* DIGITAL OWNERSHIP CERTIFICATE */}
           {activeTab === 'ownership' && (

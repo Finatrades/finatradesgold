@@ -53,7 +53,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
   
   if (!certificate) return null;
 
-  const isDigitalOwnership = certificate.type === 'Digital Ownership' || certificate.type === 'BNSL Lock' || certificate.type === 'Trade Lock' || certificate.type === 'Trade Release';
+  const isDigitalOwnership = certificate.type === 'Digital Ownership' || certificate.type === 'BNSL Lock' || certificate.type === 'Trade Lock' || certificate.type === 'Trade Release' || certificate.type === 'Conversion' || certificate.type === 'Transfer';
   const issueDate = new Date(certificate.issuedAt).toLocaleDateString('en-US', { 
     day: 'numeric', 
     month: 'long', 
@@ -469,7 +469,9 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             )}
             
             <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-              {certificate.type === 'Transfer' ? (
+              {certificate.type === 'Conversion' ? (
+                <>This certifies the conversion of <strong>{goldGrams.toFixed(4)}g</strong> of gold between wallet types in the Finatrades ledger.</>
+              ) : certificate.type === 'Transfer' ? (
                 <>This certifies the transfer of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold between Finatrades users.</>
               ) : isDigitalOwnership ? (
                 <>This certifies that the holder is the beneficial owner of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold, secured and recorded in the Finatrades digital ledger.</>
@@ -594,7 +596,7 @@ export default function CertificatesView() {
 
   const filteredCertificates = certificates.filter(cert => {
     if (filter === 'active') return cert.status === 'Active';
-    if (filter === 'digital') return cert.type === 'Digital Ownership' || cert.type === 'BNSL Lock' || cert.type === 'Trade Lock' || cert.type === 'Trade Release';
+    if (filter === 'digital') return cert.type === 'Digital Ownership' || cert.type === 'BNSL Lock' || cert.type === 'Trade Lock' || cert.type === 'Trade Release' || cert.type === 'Conversion';
     if (filter === 'storage') return cert.type === 'Physical Storage';
     if (filter === 'transfer') return cert.type === 'Transfer';
     return true;
