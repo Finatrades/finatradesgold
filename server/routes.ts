@@ -8062,7 +8062,7 @@ export async function registerRoutes(
         }
       }
       
-      // Handle deposit requests from depositRequests table
+      // Handle deposit requests from depositRequests table (bank transfer, card, crypto via depositRequests)
       if (sourceTable === 'depositRequests') {
         const depositReq = await storage.getDepositRequest(req.params.id);
         if (!depositReq) {
@@ -8072,90 +8072,184 @@ export async function registerRoutes(
           return res.status(400).json({ message: "Only pending requests can be approved" });
         }
         
-        // Update status to Approved
-        await storage.updateDepositRequest(req.params.id, { status: 'Approved', reviewedAt: new Date() });
-        
-        // Credit user wallet with USD
-        const wallet = await storage.getWallet(depositReq.userId);
-        if (wallet) {
-          const currentUsd = parseFloat(wallet.usdBalance || '0');
-          const depositAmount = parseFloat(depositReq.amount || '0');
-          await storage.updateWallet(depositReq.userId, {
-            usdBalance: (currentUsd + depositAmount).toFixed(2)
-          });
-        }
-        
-        // Audit log
-        await storage.createAuditLog({
-          entityType: "deposit_request",
-          entityId: req.params.id,
-          actionType: "approve",
-          actor: req.body.adminId || 'admin',
-          actorRole: "admin",
-          details: `Deposit request approved - Amount: $${depositReq.amount}`,
-        });
-        
-        // Check and complete referral on first deposit
         try {
-          const pendingReferral = await storage.getPendingReferralByReferredId(depositReq.userId);
-          if (pendingReferral) {
-            // Get platform config for referral rewards
-            const configs = await storage.getAllPlatformConfigs();
-            const configMap: Record<string, string> = {};
-            configs.forEach(c => { configMap[c.configKey] = c.configValue; });
-            const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
-            
-            // Get current gold price to convert bonus to grams
-            const goldPricePerGram = await getGoldPricePerGram();
-            const bonusGrams = referrerBonusUsd / goldPricePerGram;
-            
-            // Credit referrer's wallet with bonus gold
-            let referrerWallet = await storage.getWallet(pendingReferral.referrerId);
-            
-            // Create wallet if it doesn't exist
-            if (!referrerWallet) {
-              referrerWallet = await storage.createWallet({
-                userId: pendingReferral.referrerId,
-                goldGrams: '0',
-                usdBalance: '0',
-              });
-              console.log(`[Referral] Created wallet for referrer ${pendingReferral.referrerId}`);
-            }
-            
-            if (referrerWallet) {
-              const currentGold = parseFloat(referrerWallet.goldGrams || '0');
-              await storage.updateWallet(pendingReferral.referrerId, {
-                goldGrams: (currentGold + bonusGrams).toFixed(6)
-              });
-              
-              // Mark referral as completed
-              await storage.updateReferral(pendingReferral.id, {
-                status: 'Completed',
-                rewardAmount: referrerBonusUsd.toFixed(2),
-                rewardPaidAt: new Date(),
-                completedAt: new Date(),
-              });
-              
-              // Create notification for referrer
-              await storage.createNotification({
-                userId: pendingReferral.referrerId,
-                type: 'referral',
-                title: 'Referral Bonus Earned!',
-                message: `Your referral made their first deposit. You earned ${bonusGrams.toFixed(4)}g gold ($${referrerBonusUsd}).`,
-                priority: 'medium',
-              });
-              
-              console.log(`[Referral] Completed referral ${pendingReferral.id}: credited ${bonusGrams.toFixed(4)}g to referrer`);
-            } else {
-              console.error(`[Referral] Failed to create/find wallet for referrer ${pendingReferral.referrerId}`);
-            }
+          // Fetch live gold price for conversion
+          const goldPricePerGram = await getGoldPricePerGram();
+          const depositAmountUsd = parseFloat((depositReq as any).amountUsd || (depositReq as any).amount || '0');
+          if (!depositAmountUsd || depositAmountUsd <= 0) {
+            return res.status(400).json({ message: "Invalid deposit amount" });
           }
-        } catch (refError) {
-          console.error('[Referral Completion Error]', refError);
-          // Don't fail the deposit approval if referral fails
+          
+          // Convert USD → gold grams at live price
+          const goldGrams = depositAmountUsd / goldPricePerGram;
+          
+          // Payment method label for descriptions
+          const paymentLabel = (depositReq as any).paymentMethod === 'Card Payment' ? 'Card payment'
+                             : (depositReq as any).paymentMethod === 'Crypto' ? 'Crypto payment'
+                             : 'Bank transfer';
+          
+          const result = await storage.withTransaction(async (txStorage) => {
+            // 1. Credit wallet.goldGrams (NOT usdBalance — gold is the asset)
+            const wallet = await txStorage.getWallet(depositReq.userId);
+            if (!wallet) throw new Error('User wallet not found');
+            const currentGold = parseFloat(wallet.goldGrams || '0');
+            const newGoldBalance = currentGold + goldGrams;
+            await txStorage.updateWallet(depositReq.userId, {
+              goldGrams: newGoldBalance.toFixed(6),
+            });
+            
+            // 2. Create or update FinaVault holding
+            const existingHoldings = await txStorage.getUserVaultHoldings(depositReq.userId);
+            let holdingId: string;
+            if (existingHoldings.length > 0) {
+              const holding = existingHoldings[0];
+              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
+              await txStorage.updateVaultHolding(holding.id, {
+                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
+              });
+              holdingId = holding.id;
+            } else {
+              const newHolding = await txStorage.createVaultHolding({
+                userId: depositReq.userId,
+                goldGrams: goldGrams.toFixed(6),
+                vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+                isPhysicallyDeposited: false,
+              });
+              holdingId = newHolding.id;
+            }
+            
+            // 3. Issue Digital Ownership Certificate (Finatrades Finance SA)
+            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+            const digitalCert = await txStorage.createCertificate({
+              certificateNumber: docCertNum,
+              userId: depositReq.userId,
+              vaultHoldingId: holdingId,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmountUsd.toFixed(2),
+              issuer: 'Finatrades Finance SA',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              referenceId: (depositReq as any).referenceNumber,
+            });
+            
+            // 4. Issue Physical Storage Certificate (Wingold & Metals DMCC)
+            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+            await txStorage.createCertificate({
+              certificateNumber: pscCertNum,
+              userId: depositReq.userId,
+              vaultHoldingId: holdingId,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmountUsd.toFixed(2),
+              issuer: 'Wingold and Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+              referenceId: (depositReq as any).referenceNumber,
+            });
+            
+            // 5. Create completed transaction record
+            const newTransaction = await txStorage.createTransaction({
+              userId: depositReq.userId,
+              type: 'Buy',
+              status: 'Completed',
+              amountGold: goldGrams.toFixed(6),
+              amountUsd: depositAmountUsd.toFixed(2),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              description: `${paymentLabel} deposit confirmed - Ref: ${(depositReq as any).referenceNumber} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              sourceModule: 'finapay',
+              method: (depositReq as any).paymentMethod,
+              referenceId: (depositReq as any).referenceNumber,
+              completedAt: new Date(),
+            });
+            
+            // 6. Record vault ledger entry
+            const { vaultLedgerService } = await import('./vault-ledger-service');
+            await vaultLedgerService.recordLedgerEntry({
+              userId: depositReq.userId,
+              action: 'Deposit',
+              goldGrams,
+              goldPriceUsdPerGram: goldPricePerGram,
+              fromWallet: 'External',
+              toWallet: 'FinaPay',
+              toStatus: 'Available',
+              transactionId: newTransaction.id,
+              certificateId: digitalCert.id,
+              notes: `${paymentLabel} approved - Ref: ${(depositReq as any).referenceNumber} | $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g`,
+              createdBy: req.body.adminId || 'admin',
+            });
+            
+            return { newTransaction, newGoldBalance, holdingId };
+          });
+          
+          // Update deposit request status
+          await storage.updateDepositRequest(req.params.id, { status: 'Approved', reviewedAt: new Date() });
+          
+          // Audit log
+          await storage.createAuditLog({
+            entityType: "deposit_request",
+            entityId: req.params.id,
+            actionType: "approve",
+            actor: req.body.adminId || 'admin',
+            actorRole: "admin",
+            details: `${paymentLabel} deposit approved - $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
+          });
+          
+          // Notify user
+          await storage.createNotification({
+            userId: depositReq.userId,
+            type: 'deposit',
+            title: 'Deposit Approved',
+            message: `Your ${paymentLabel.toLowerCase()} of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your FinaPay wallet.`,
+            priority: 'high',
+          });
+          
+          // Emit real-time balance update
+          const io = getIO();
+          io.to(`user:${depositReq.userId}`).emit('ledger:balance_update', {
+            goldGrams: result.newGoldBalance.toFixed(6),
+          });
+          io.to(`user:${depositReq.userId}`).emit('ledger:vault_update', {
+            holdingId: result.holdingId,
+          });
+          
+          // Check and complete referral on first deposit
+          try {
+            const pendingReferral = await storage.getPendingReferralByReferredId(depositReq.userId);
+            if (pendingReferral) {
+              const configs = await storage.getAllPlatformConfigs();
+              const configMap: Record<string, string> = {};
+              configs.forEach(c => { configMap[c.configKey] = c.configValue; });
+              const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
+              const bonusGrams = referrerBonusUsd / goldPricePerGram;
+              let referrerWallet = await storage.getWallet(pendingReferral.referrerId);
+              if (!referrerWallet) {
+                referrerWallet = await storage.createWallet({ userId: pendingReferral.referrerId, goldGrams: '0', usdBalance: '0' });
+              }
+              if (referrerWallet) {
+                const currentGold = parseFloat(referrerWallet.goldGrams || '0');
+                await storage.updateWallet(pendingReferral.referrerId, { goldGrams: (currentGold + bonusGrams).toFixed(6) });
+                await storage.updateReferral(pendingReferral.id, { status: 'Completed', rewardAmount: referrerBonusUsd.toFixed(2), rewardPaidAt: new Date(), completedAt: new Date() });
+                await storage.createNotification({ userId: pendingReferral.referrerId, type: 'referral', title: 'Referral Bonus Earned!', message: `Your referral made their first deposit. You earned ${bonusGrams.toFixed(4)}g gold ($${referrerBonusUsd}).`, priority: 'medium' });
+              }
+            }
+          } catch (refError) {
+            console.error('[Referral Completion Error]', refError);
+          }
+          
+          return res.json({ 
+            message: 'Deposit approved and wallet credited with gold',
+            goldGrams: goldGrams.toFixed(6),
+            goldPrice: goldPricePerGram.toFixed(2),
+            amountUsd: depositAmountUsd.toFixed(2),
+          });
+        } catch (e) {
+          console.error('Failed to approve deposit request:', e);
+          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve deposit request" });
         }
-        
-        return res.json({ message: 'Deposit request approved and wallet credited' });
       }
       
       // Handle withdrawal requests from withdrawalRequests table
@@ -8190,27 +8284,125 @@ export async function registerRoutes(
         }
       }
       
-      // Handle crypto payment requests
+      // Handle crypto payment requests (dedicated crypto_payment_requests table)
       if (sourceTable === 'cryptoPaymentRequests') {
         try {
           const [cryptoReq] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, req.params.id));
           if (!cryptoReq) {
             return res.status(404).json({ message: "Crypto payment request not found" });
           }
-          
-          await db.update(cryptoPaymentRequests)
-            .set({ status: 'Approved' })
-            .where(eq(cryptoPaymentRequests.id, req.params.id));
-          
-          // Credit user wallet
-          const wallet = await storage.getWallet(cryptoReq.userId);
-          if (wallet && cryptoReq.amountUsd) {
-            const currentUsd = parseFloat(wallet.usdBalance || '0');
-            const depositAmount = parseFloat(cryptoReq.amountUsd || '0');
-            await storage.updateWallet(cryptoReq.userId, {
-              usdBalance: (currentUsd + depositAmount).toFixed(2)
-            });
+          if (cryptoReq.status !== 'Pending' && cryptoReq.status !== 'Under Review') {
+            return res.status(400).json({ message: "Only pending crypto requests can be approved" });
           }
+          
+          // Use the gold price locked at request time, or fetch live if missing
+          const goldPricePerGram = cryptoReq.goldPriceAtTime
+            ? parseFloat(cryptoReq.goldPriceAtTime)
+            : await getGoldPricePerGram();
+          const depositAmountUsd = parseFloat(cryptoReq.amountUsd || '0');
+          // Use the pre-calculated gold grams from the request (locked at submission) or compute
+          const goldGrams = cryptoReq.goldGrams
+            ? parseFloat(cryptoReq.goldGrams)
+            : depositAmountUsd / goldPricePerGram;
+          
+          const result = await storage.withTransaction(async (txStorage) => {
+            // 1. Credit wallet.goldGrams (NOT usdBalance)
+            const wallet = await txStorage.getWallet(cryptoReq.userId);
+            if (!wallet) throw new Error('User wallet not found');
+            const currentGold = parseFloat(wallet.goldGrams || '0');
+            const newGoldBalance = currentGold + goldGrams;
+            await txStorage.updateWallet(cryptoReq.userId, {
+              goldGrams: newGoldBalance.toFixed(6),
+            });
+            
+            // 2. Create or update FinaVault holding
+            const existingHoldings = await txStorage.getUserVaultHoldings(cryptoReq.userId);
+            let holdingId: string;
+            if (existingHoldings.length > 0) {
+              const holding = existingHoldings[0];
+              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
+              await txStorage.updateVaultHolding(holding.id, {
+                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
+              });
+              holdingId = holding.id;
+            } else {
+              const newHolding = await txStorage.createVaultHolding({
+                userId: cryptoReq.userId,
+                goldGrams: goldGrams.toFixed(6),
+                vaultLocation: 'Dubai - Wingold & Metals DMCC',
+                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
+                isPhysicallyDeposited: false,
+              });
+              holdingId = newHolding.id;
+            }
+            
+            // 3. Issue Digital Ownership Certificate (Finatrades Finance SA)
+            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
+            const digitalCert = await txStorage.createCertificate({
+              certificateNumber: docCertNum,
+              userId: cryptoReq.userId,
+              vaultHoldingId: holdingId,
+              type: 'Digital Ownership',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmountUsd.toFixed(2),
+              issuer: 'Finatrades Finance SA',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            });
+            
+            // 4. Issue Physical Storage Certificate (Wingold & Metals DMCC)
+            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
+            await txStorage.createCertificate({
+              certificateNumber: pscCertNum,
+              userId: cryptoReq.userId,
+              vaultHoldingId: holdingId,
+              type: 'Physical Storage',
+              status: 'Active',
+              goldGrams: goldGrams.toFixed(6),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              totalValueUsd: depositAmountUsd.toFixed(2),
+              issuer: 'Wingold and Metals DMCC',
+              vaultLocation: 'Dubai - Wingold & Metals DMCC',
+            });
+            
+            // 5. Create completed transaction record
+            const newTransaction = await txStorage.createTransaction({
+              userId: cryptoReq.userId,
+              type: 'Buy',
+              status: 'Completed',
+              amountGold: goldGrams.toFixed(6),
+              amountUsd: depositAmountUsd.toFixed(2),
+              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
+              description: `Crypto deposit confirmed - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
+              sourceModule: 'finapay',
+              method: 'Crypto',
+              completedAt: new Date(),
+            });
+            
+            // 6. Record vault ledger entry
+            const { vaultLedgerService } = await import('./vault-ledger-service');
+            await vaultLedgerService.recordLedgerEntry({
+              userId: cryptoReq.userId,
+              action: 'Deposit',
+              goldGrams,
+              goldPriceUsdPerGram: goldPricePerGram,
+              fromWallet: 'External',
+              toWallet: 'FinaPay',
+              toStatus: 'Available',
+              transactionId: newTransaction.id,
+              certificateId: digitalCert.id,
+              notes: `Crypto deposit approved - $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g gold`,
+              createdBy: req.body.adminId || 'admin',
+            });
+            
+            // 7. Update crypto request with credited transaction ID
+            await db.update(cryptoPaymentRequests)
+              .set({ status: 'Approved', reviewedAt: new Date(), creditedTransactionId: newTransaction.id })
+              .where(eq(cryptoPaymentRequests.id, req.params.id));
+            
+            return { newTransaction, newGoldBalance, holdingId };
+          });
           
           // Audit log
           await storage.createAuditLog({
@@ -8219,13 +8411,36 @@ export async function registerRoutes(
             actionType: "approve",
             actor: req.body.adminId || 'admin',
             actorRole: "admin",
-            details: `Crypto payment request approved`,
+            details: `Crypto deposit approved - $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
           });
           
-          return res.json({ message: 'Crypto payment approved and wallet credited' });
+          // Notify user
+          await storage.createNotification({
+            userId: cryptoReq.userId,
+            type: 'deposit',
+            title: 'Crypto Deposit Approved',
+            message: `Your crypto payment of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your FinaPay wallet.`,
+            priority: 'high',
+          });
+          
+          // Emit real-time balance update
+          const io = getIO();
+          io.to(`user:${cryptoReq.userId}`).emit('ledger:balance_update', {
+            goldGrams: result.newGoldBalance.toFixed(6),
+          });
+          io.to(`user:${cryptoReq.userId}`).emit('ledger:vault_update', {
+            holdingId: result.holdingId,
+          });
+          
+          return res.json({ 
+            message: 'Crypto payment approved and wallet credited with gold',
+            goldGrams: goldGrams.toFixed(6),
+            goldPrice: goldPricePerGram.toFixed(2),
+            amountUsd: depositAmountUsd.toFixed(2),
+          });
         } catch (e) {
           console.error('Failed to approve crypto payment:', e);
-          return res.status(400).json({ message: "Failed to approve crypto payment" });
+          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve crypto payment" });
         }
       }
       
