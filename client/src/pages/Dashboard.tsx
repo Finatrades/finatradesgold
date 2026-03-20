@@ -311,11 +311,11 @@ export default function Dashboard() {
   const progressPercent = Math.max(Math.min((monthlySpend / MONTHLY_LIMIT) * 100, 100), monthlySpend > 0 ? 2 : 0.5);
 
   const getTransactionAmount = (tx: { amountUsd: string | null; amountGold: string | null }) => {
-    const usdAmt = parseFloat(tx.amountUsd || '0');
-    if (usdAmt !== 0) return `$${formatNumber(Math.abs(usdAmt))}`;
     const goldAmt = parseFloat(tx.amountGold || '0');
-    if (goldAmt !== 0) return `$${formatNumber(Math.abs(goldAmt) * goldPrice)}`;
-    return '$0.00';
+    if (goldAmt !== 0) return `${formatNumber(Math.abs(goldAmt), 4)}g`;
+    const usdAmt = parseFloat(tx.amountUsd || '0');
+    if (usdAmt !== 0) return `${formatNumber(Math.abs(usdAmt) / goldPrice, 4)}g`;
+    return '0.0000g';
   };
 
   if (!user) return null;
