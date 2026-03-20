@@ -601,6 +601,94 @@ export default function Dashboard() {
                 <span className="text-[12px] font-bold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-medium">/ $50k</span></span>
               </div>
             </motion.div>
+
+            {/* Gold Market Overview */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-gold-market">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[14px] font-bold text-gray-900">Gold Market</h3>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-600">LIVE</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100/60">
+                  <div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Per Gram</span>
+                    <p className="text-[18px] font-extrabold text-gray-900">${formatNumber(goldPrice)}</p>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <span className="text-[16px]">🥇</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100/60">
+                  <div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Per Ounce</span>
+                    <p className="text-[18px] font-extrabold text-gray-900">${formatNumber(goldPrice * 31.1035)}</p>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Quick Links */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-quick-links">
+              <h3 className="text-[14px] font-bold text-gray-900 mb-4">Quick Links</h3>
+              <div className="space-y-2">
+                <Link href="/finapay">
+                  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-purple-50/60 transition-all cursor-pointer group" data-testid="link-finapay">
+                    <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Vault className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[13px] font-semibold text-gray-800">FinaPay Wallet</span>
+                      <p className="text-[10px] text-gray-400">Manage your gold wallet</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-500 transition-colors" />
+                  </div>
+                </Link>
+                <Link href="/bnsl">
+                  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-cyan-50/60 transition-all cursor-pointer group" data-testid="link-bnsl">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-4 h-4 text-cyan-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[13px] font-semibold text-gray-800">BNSL Yield</span>
+                      <p className="text-[10px] text-gray-400">Buy Now Sell Later</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cyan-500 transition-colors" />
+                  </div>
+                </Link>
+                {isBusinessUser && (
+                  <Link href="/finabridge">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50/60 transition-all cursor-pointer group" data-testid="link-finabridge">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Landmark className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[13px] font-semibold text-gray-800">FinaBridge</span>
+                        <p className="text-[10px] text-gray-400">Trade finance</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                  </Link>
+                )}
+                <Link href="/finacard">
+                  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50/60 transition-all cursor-pointer group" data-testid="link-finacard">
+                    <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <CreditCard className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[13px] font-semibold text-gray-800">FinaCard</span>
+                      <p className="text-[10px] text-gray-400">Gold-backed card</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" />
+                  </div>
+                </Link>
+              </div>
+            </motion.div>
           </div>
 
           {/* ═══ MIDDLE COLUMN — Earnings + FinaCard Balance + Vault/BNSL ═══ */}
