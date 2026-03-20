@@ -22,9 +22,9 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
 
   // Calculate deposit fee if not provided (0.5% for bank deposits)
   const isDeposit = transaction.type === 'Deposit' || transaction.description?.includes('Bank Deposit');
-  const calculatedFee = isDeposit && !transaction.feeUsd ? transaction.amountUsd * 0.005 : (transaction.feeUsd || 0);
+  const calculatedFee = isDeposit && !transaction.feeUsd ? Number(transaction.amountUsd || 0) * 0.005 : Number(transaction.feeUsd || 0);
   
-  const displayGoldGrams = Number(transaction.amountGrams) || (goldPrice > 0 ? transaction.amountUsd / goldPrice : 0);
+  const displayGoldGrams = Number(transaction.amountGrams) || (goldPrice > 0 ? Number(transaction.amountUsd || 0) / goldPrice : 0);
 
   const formatDescription = (description: string | undefined | null): string | null => {
     if (!description) return null;
@@ -55,7 +55,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   const displayDescription = formatDescription(transaction.description);
 
   const handleShare = async () => {
-    const shareText = `Finatrades Transaction Receipt\n\nType: ${transaction.type}\nAmount: ${transaction.assetType === 'GOLD' ? `${transaction.amountGrams?.toFixed(4)} g` : `$${transaction.amountUsd.toFixed(2)}`}\nStatus: ${transaction.status}\nReference: ${transaction.referenceId}\nDate: ${new Date(transaction.timestamp).toLocaleDateString()}`;
+    const shareText = `Finatrades Transaction Receipt\n\nType: ${transaction.type}\nAmount: ${transaction.assetType === 'GOLD' ? `${Number(transaction.amountGrams || 0).toFixed(4)} g` : `$${Number(transaction.amountUsd || 0).toFixed(2)}`}\nStatus: ${transaction.status}\nReference: ${transaction.referenceId}\nDate: ${new Date(transaction.timestamp).toLocaleDateString()}`;
     
     if (navigator.share) {
       try {
@@ -90,8 +90,8 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(16);
     
-    const goldAmount = transaction.amountGrams ? transaction.amountGrams.toFixed(4) : '0.0000';
-    const usdAmount = transaction.amountUsd ? transaction.amountUsd.toFixed(2) : '0.00';
+    const goldAmount = transaction.amountGrams ? Number(transaction.amountGrams).toFixed(4) : '0.0000';
+    const usdAmount = transaction.amountUsd ? Number(transaction.amountUsd).toFixed(2) : '0.00';
     const amount = transaction.assetType === 'GOLD' 
       ? goldAmount + ' g' 
       : 'USD ' + usdAmount;
@@ -189,13 +189,13 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
               <h2 className={`text-2xl font-bold ${transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit' ? 'text-green-600' : 'text-foreground'}`}>
                 {transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit' ? '+' : '-'} 
                 {transaction.assetType === 'GOLD' 
-                  ? `${transaction.amountGrams?.toFixed(4)} g` 
-                  : `$${transaction.amountUsd.toFixed(2)}`
+                  ? `${Number(transaction.amountGrams || 0).toFixed(4)} g` 
+                  : `$${Number(transaction.amountUsd || 0).toFixed(2)}`
                 }
               </h2>
               {transaction.assetType === 'GOLD' ? (
                 <p className="text-sm text-muted-foreground mt-1">
-                  ≈ ${transaction.amountUsd.toFixed(2)} USD
+                  ≈ ${Number(transaction.amountUsd || 0).toFixed(2)} USD
                 </p>
               ) : goldPrice > 0 && (
                 <p className="text-sm text-fuchsia-600 font-medium mt-1">
