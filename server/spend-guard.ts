@@ -8,7 +8,7 @@
  */
 
 import { db } from "./db";
-import { vaultOwnershipSummary } from "@shared/schema";
+import { vaultOwnershipSummary, wallets } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { validateSpendableFpgw, getFpgwBalanceSummary } from "./fpgw-batch-service";
 
@@ -57,8 +57,15 @@ export async function getBalanceSummary(userId: string): Promise<BalanceSummary>
   // Get FGPW details from batches
   const fpgwDetails = await getFpgwBalanceSummary(userId);
 
+  const walletRow = await db
+    .select({ goldGrams: wallets.goldGrams })
+    .from(wallets)
+    .where(eq(wallets.userId, userId))
+    .then(rows => rows[0]);
+  const actualWalletGrams = walletRow ? parseFloat(walletRow.goldGrams) : 0;
+
   const mpgw = {
-    availableGrams: ownership ? parseFloat(ownership.mpgwAvailableGrams) : 0,
+    availableGrams: actualWalletGrams,
     pendingGrams: ownership ? parseFloat(ownership.mpgwPendingGrams) : 0,
     lockedBnslGrams: ownership ? parseFloat(ownership.mpgwLockedBnslGrams) : 0,
     reservedTradeGrams: ownership ? parseFloat(ownership.mpgwReservedTradeGrams) : 0,
