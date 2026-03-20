@@ -238,7 +238,7 @@ export default function Dashboard() {
   const walletGoldValue = (totals.walletGoldGrams || 0) * goldPrice;
   const vaultGoldValue = (totals.vaultGoldGrams || 0) * goldPrice;
   const bnslValue = (totals.bnslLockedGrams || 0) * goldPrice;
-  const finacardValue = (totals as any).finacardValueUsd || 0;
+  const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
 
   const chartData = useMemo(() => {
