@@ -21,6 +21,10 @@ export const getTransactionLabel = (actionType: string): string => {
     'LOCK': 'Lock',
     'UNLOCK': 'Unlock',
     'SWAP': 'Swap',
+    'LGPW_TO_FGPW': 'Lock Gold Price (MPGW → FPGW)',
+    'FGPW_TO_LGPW': 'Unlock Gold Price (FPGW → MPGW)',
+    'MPGW_TO_FPGW': 'Lock Gold Price (MPGW → FPGW)',
+    'FPGW_TO_MPGW': 'Unlock Gold Price (FPGW → MPGW)',
   };
   return labelMap[action] || actionType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };

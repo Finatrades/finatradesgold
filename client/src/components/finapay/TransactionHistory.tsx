@@ -246,7 +246,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                   {(() => {
                     let runningBalance = 0;
                     return filteredTransactions.map((tx, index) => {
-                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
+                      const isMpgwToFpgw = tx.type === 'Lock Gold Price (MPGW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
+                      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → MPGW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
+                      const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       const isCompleted = tx.status?.toLowerCase() === 'completed';
@@ -258,7 +260,11 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                       }
                       const currentBalance = isCompleted ? runningBalance : null;
                       
-                      const transactionLabel = isSwap
+                      const transactionLabel = isMpgwToFpgw
+                        ? 'Lock Gold Price (MPGW → FPGW)'
+                        : isFpgwToMpgw
+                        ? 'Unlock Gold Price (FPGW → MPGW)'
+                        : isSwap
                         ? 'Swap Gold'
                         : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
@@ -332,7 +338,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                     {(() => {
                       let runningBalance = 0;
                       return filteredTransactions.map((tx, index) => {
-                      const isSwap = tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
+                      const isMpgwToFpgw = tx.type === 'Lock Gold Price (MPGW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
+                      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → MPGW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
+                      const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
                       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
                       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
                       const isCompleted = tx.status?.toLowerCase() === 'completed';
@@ -343,7 +351,11 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                       }
                       const currentBalance = isCompleted ? runningBalance : null;
                       
-                      const transactionLabel = isSwap
+                      const transactionLabel = isMpgwToFpgw
+                        ? 'Lock Gold Price (MPGW → FPGW)'
+                        : isFpgwToMpgw
+                        ? 'Unlock Gold Price (FPGW → MPGW)'
+                        : isSwap
                         ? 'Swap Gold'
                         : tx.description?.includes('FinaVault') || tx.description?.includes('physical gold')
                         ? 'Deposit Physical Gold'
@@ -406,7 +418,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 <span className="text-amber-600 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
-                                <div className="text-xs text-muted-foreground">from LGPW</div>
+                                <div className="text-xs text-muted-foreground">{isMpgwToFpgw ? 'from MPGW' : isFpgwToMpgw ? 'from FPGW' : 'from LGPW'}</div>
                               </div>
                             ) : isDebit ? (
                               <div>
@@ -427,7 +439,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 <span className="text-green-600 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
-                                <div className="text-xs text-muted-foreground">to FGPW</div>
+                                <div className="text-xs text-muted-foreground">{isMpgwToFpgw ? 'to FPGW' : isFpgwToMpgw ? 'to MPGW' : 'to FGPW'}</div>
                               </div>
                             ) : isCredit ? (
                               <div>

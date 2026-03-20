@@ -214,12 +214,12 @@ export default function FinaVaultHistory() {
       // Bank/card/crypto purchases
       return 'Acquire Gold';
     }
-    // Handle LGPW/FGPW conversion actions
+    // Handle MPGW/FPGW (LGPW/FGPW) conversion actions
     if (action === 'LGPW_To_FGPW') {
-      return 'LGPW → FGPW Conversion';
+      return 'Lock Gold Price (MPGW → FPGW)';
     }
     if (action === 'FGPW_To_LGPW') {
-      return 'FGPW → LGPW Conversion';
+      return 'Unlock Gold Price (FPGW → MPGW)';
     }
     // For other actions, add spaces before uppercase letters that follow lowercase
     return action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();

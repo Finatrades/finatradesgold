@@ -35,8 +35,12 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 All deposit approvals (bank transfer, card, crypto, physical gold) must go through the Unified Payment Management (UFM) screen at `/admin/unified-payments`. The UFM creates: (1) Physical Storage Certificate (issuer: Wingold & Metals DMCC), (2) Digital Ownership Certificate (issuer: Finatrades Finance SA), (3) unified_tally_transaction record, and credits the user's MPGW (wallet.goldGrams) or FPGW batch. Old individual deposit approval handlers enforce the Golden Rule by redirecting to UFM. The old crypto approval handler (`/api/admin/crypto-payments/:id/approve`) also creates both certificates as a fallback path. FinaVault certificates page shows certificates from ALL deposit types.
 
 **Gold Wallet Types:**
-- **MPGW (Market Price Gold Wallet)** = `wallet.goldGrams` — liquid gold valued at live market price. Regular deposits credit here.
+- **MPGW (Market Price Gold Wallet)** = `vault_ownership_summary.mpgwAvailableGrams` — liquid gold valued at live market price. Regular deposits credit here.
 - **FPGW (Fixed Price Gold Wallet)** = `fpgw_batches` table — gold locked at a specific price, protects against market fluctuation. Admin can select LGPW/FGPW at deposit approval time in UFM.
+- **MPGW → FPGW Lock**: Users can lock MPGW gold at the current market price via `POST /api/wallet/mpgw-to-fpgw` (or `/api/dual-wallet/transfer` with `fromWalletType='LGPW'`). Creates a new `fpgw_batch` record at the live gold price.
+- **FPGW → MPGW Unlock**: Users can unlock FPGW gold back to market price via `POST /api/wallet/fpgw-to-mpgw` (or `/api/dual-wallet/transfer` with `fromWalletType='FGPW'`). Consumes FIFO batches and credits MPGW.
+- Both operations create `Swap` type transactions with `sourceModule='dual-wallet'` and vault ledger entries with actions `LGPW_To_FGPW` / `FGPW_To_LGPW`.
+- Transaction history displays these as "Lock Gold Price (MPGW → FPGW)" and "Unlock Gold Price (FPGW → MPGW)" using `sourceModule` + description prefix detection.
 - **BNSL Wallet** = `bnsl_wallets` table — gold transferred from FinaPay for BNSL plans (available + locked sub-balances).
 - **FinaBridge** = `vault_ownership_summary.finaBridgeAvailableGrams` — gold reserved for trade finance.
 - **FinaCard** = `finacard_accounts.goldGrams` — gold backing the physical card.

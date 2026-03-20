@@ -1,30 +1,60 @@
-import React, { useState } from 'react';
-import { Wallet, Lock, TrendingUp, ArrowRightLeft, BarChart3, Layers, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { Wallet, Lock, TrendingUp, ArrowRightLeft, BarChart3, Layers, AlertTriangle, ShieldCheck, Info, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDualWalletBalance, useInternalTransfer } from '@/hooks/useDualWallet';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
+export interface DualWalletDisplayHandle {
+  openLockDialog: () => void;
+  openUnlockDialog: () => void;
+}
+
 interface DualWalletDisplayProps {
   userId: string;
   onTransferFromVault?: () => void;
+  initialDirection?: 'LGPW_to_FGPW' | 'FGPW_to_LGPW';
+  openOnMount?: boolean;
 }
 
-export default function DualWalletDisplay({ userId, onTransferFromVault }: DualWalletDisplayProps) {
+const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayProps>(
+  function DualWalletDisplay({ userId, onTransferFromVault, initialDirection, openOnMount }, ref) {
   const { data: balance, isLoading, error } = useDualWalletBalance(userId);
   const internalTransfer = useInternalTransfer();
   const { toast } = useToast();
   
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
-  const [transferDirection, setTransferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>('LGPW_to_FGPW');
+  const [transferDirection, setTransferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>(initialDirection || 'LGPW_to_FGPW');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openLockDialog: () => {
+      setTransferDirection('LGPW_to_FGPW');
+      setTransferAmount('');
+      setAgreedToTerms(false);
+      setShowTransferModal(true);
+    },
+    openUnlockDialog: () => {
+      setTransferDirection('FGPW_to_LGPW');
+      setTransferAmount('');
+      setAgreedToTerms(false);
+      setShowTransferModal(true);
+    }
+  }));
+
+  useEffect(() => {
+    if (openOnMount) {
+      setShowTransferModal(true);
+    }
+  }, [openOnMount]);
 
   if (isLoading) {
     return (
@@ -67,17 +97,21 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
         toWalletType: toType
       });
 
+      const actionLabel = transferDirection === 'LGPW_to_FGPW'
+        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (MPGW → FPGW)`
+        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → MPGW)`;
+
       toast({
-        title: 'Transfer Successful',
-        description: `Transferred ${amount.toFixed(6)}g from ${fromType} to ${toType}`,
+        title: transferDirection === 'LGPW_to_FGPW' ? 'Gold Price Locked' : 'Gold Price Unlocked',
+        description: actionLabel,
       });
       setShowTransferModal(false);
       setTransferAmount('');
       setAgreedToTerms(false);
     } catch (err: any) {
       toast({
-        title: 'Transfer Failed',
-        description: err.message || 'Failed to complete transfer',
+        title: transferDirection === 'LGPW_to_FGPW' ? 'Lock Failed' : 'Unlock Failed',
+        description: err.message || 'Failed to complete operation',
         variant: 'destructive'
       });
     }
@@ -87,7 +121,10 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
     ? balance.mpgw.availableGrams 
     : balance.fpgw.availableGrams;
 
+  const isLocking = transferDirection === 'LGPW_to_FGPW';
+
   return (
+    <TooltipProvider>
     <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -95,22 +132,35 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             <Layers className="w-5 h-5 text-fuchsia-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Dual Gold Wallet</h2>
-            <p className="text-xs text-muted-foreground">LGPW (Market Price) & FGPW (Fixed Price)</p>
+            <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Gold Wallet Breakdown</h2>
+            <p className="text-xs text-muted-foreground">MPGW (Market Price) & FPGW (Fixed/Locked Price)</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button 
             size="sm" 
             variant="outline"
-            onClick={() => setShowTransferModal(true)}
-            data-testid="btn-transfer-wallets"
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm border-amber-300 text-amber-700 hover:bg-amber-50"
+            onClick={() => { setTransferDirection('LGPW_to_FGPW'); setTransferAmount(''); setAgreedToTerms(false); setShowTransferModal(true); }}
+            data-testid="btn-lock-gold-price"
           >
-            <ArrowRightLeft className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Transfer Between Wallets</span>
-            <span className="sm:hidden">Transfer</span>
+            <Lock className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Lock Gold Price</span>
+            <span className="sm:hidden">Lock</span>
           </Button>
+          {balance.fpgw.availableGrams > 0.000001 && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="text-xs sm:text-sm border-purple-300 text-purple-700 hover:bg-purple-50"
+              onClick={() => { setTransferDirection('FGPW_to_LGPW'); setTransferAmount(''); setAgreedToTerms(false); setShowTransferModal(true); }}
+              data-testid="btn-unlock-gold-price"
+            >
+              <Unlock className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Unlock to Market Price</span>
+              <span className="sm:hidden">Unlock</span>
+            </Button>
+          )}
           {onTransferFromVault && (
             <Button 
               size="sm" 
@@ -126,12 +176,23 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* MPGW - Market Price Gold Wallet */}
         <div className="p-5 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="w-5 h-5 text-amber-600" />
-            <h3 className="font-bold text-amber-800">LGPW - Market Price Gold</h3>
+            <h3 className="font-bold text-amber-800">MPGW</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-amber-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-sm font-semibold mb-1">Market Price Gold Wallet (MPGW)</p>
+                <p className="text-xs">Your gold is valued at the live market price. If gold prices rise, your USD value rises. If gold prices fall, your USD value falls. This is the standard gold wallet.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-          <p className="text-xs text-amber-700 mb-4">Value fluctuates with live gold market price</p>
+          <p className="text-xs text-amber-700 mb-1 font-medium">Market Price Gold Wallet</p>
+          <p className="text-xs text-amber-600 mb-4">USD value fluctuates with the live gold market price</p>
           
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -141,7 +202,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                   {balance.mpgw.availableGrams.toFixed(4)} g
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  ≈ ${(balance.mpgw.availableGrams * balance.goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ≈ ${(balance.mpgw.availableGrams * balance.goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} at ${balance.goldPricePerGram.toFixed(2)}/g
                 </p>
               </div>
             </div>
@@ -170,7 +231,7 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             
             <div className="pt-2 border-t border-amber-200">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-amber-800">Total LGPW</span>
+                <span className="text-sm font-semibold text-amber-800">Total MPGW</span>
                 <div className="text-right">
                   <span className="text-lg font-bold text-amber-700" data-testid="mpgw-total">
                     {balance.mpgw.totalGrams.toFixed(4)} g
@@ -184,29 +245,40 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
           </div>
         </div>
 
+        {/* FPGW - Fixed Price Gold Wallet */}
         <div className="p-5 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-purple-600" />
-            <h3 className="font-bold text-purple-800">FGPW - Fixed Price Gold</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck className="w-5 h-5 text-purple-600" />
+            <h3 className="font-bold text-purple-800">FPGW</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-purple-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-sm font-semibold mb-1">Fixed Price Gold Wallet (FPGW)</p>
+                <p className="text-xs">Your gold USD value is locked at the price when you converted it. Even if the gold market price drops, your locked USD value stays the same. This protects you from short-term gold price drops.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-          <p className="text-xs text-purple-700 mb-4">
-            Value locked at purchase price 
+          <p className="text-xs text-purple-700 mb-1 font-medium">Fixed Price Gold Wallet</p>
+          <p className="text-xs text-purple-600 mb-4">
+            USD value locked at the price when you chose to lock
             {balance.fpgw.weightedAvgPrice > 0 && (
               <span className="ml-1 font-semibold">
-                (Avg: ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g)
+                — avg locked: ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g
               </span>
             )}
           </p>
           
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Available</span>
+              <span className="text-sm text-muted-foreground">Available (locked)</span>
               <div className="text-right">
                 <span className="text-xl font-bold text-purple-600" data-testid="fpgw-available">
                   {balance.fpgw.availableGrams.toFixed(4)} g
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  ≈ ${(balance.fpgw.availableGrams * balance.fpgw.weightedAvgPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ≈ ${(balance.fpgw.availableGrams * balance.fpgw.weightedAvgPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (locked value)
                 </p>
               </div>
             </div>
@@ -235,13 +307,13 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             
             <div className="pt-2 border-t border-purple-200">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-purple-800">Total FGPW</span>
+                <span className="text-sm font-semibold text-purple-800">Total FPGW</span>
                 <div className="text-right">
                   <span className="text-lg font-bold text-purple-700" data-testid="fpgw-total">
                     {balance.fpgw.totalGrams.toFixed(4)} g
                   </span>
                   <p className="text-xs text-muted-foreground">
-                    ≈ ${balance.fpgwValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ≈ ${balance.fpgwValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (at locked price)
                   </p>
                 </div>
               </div>
@@ -272,46 +344,56 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
       
       <GoldBackedDisclosure className="mt-4" />
 
-      <Dialog open={showTransferModal} onOpenChange={(open) => { setShowTransferModal(open); if (!open) setAgreedToTerms(false); }}>
+      <Dialog open={showTransferModal} onOpenChange={(open) => { setShowTransferModal(open); if (!open) { setAgreedToTerms(false); setTransferAmount(''); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Transfer Between Wallets</DialogTitle>
+            <DialogTitle>
+              {isLocking ? 'Lock Gold at Current Price (MPGW → FPGW)' : 'Unlock Gold to Market Price (FPGW → MPGW)'}
+            </DialogTitle>
             <DialogDescription>
-              Move gold between your Market Price (LGPW) and Fixed Price (FGPW) wallets.
+              {isLocking
+                ? 'Move gold from your Market Price Wallet (MPGW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
+                : 'Move gold from your Fixed Price Wallet (FPGW) back to your Market Price Wallet (MPGW). Your gold will be valued at the live market price again.'}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-3">
-              <Label>Transfer Direction</Label>
+              <Label>Operation</Label>
               <RadioGroup 
                 value={transferDirection} 
-                onValueChange={(v) => setTransferDirection(v as 'LGPW_to_FGPW' | 'FGPW_to_LGPW')}
+                onValueChange={(v) => { setTransferDirection(v as 'LGPW_to_FGPW' | 'FGPW_to_LGPW'); setTransferAmount(''); }}
               >
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-amber-50 cursor-pointer">
+                <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${transferDirection === 'LGPW_to_FGPW' ? 'border-amber-400 bg-amber-50' : 'hover:bg-amber-50'}`}>
                   <RadioGroupItem value="LGPW_to_FGPW" id="mpgw-to-fpgw" />
                   <Label htmlFor="mpgw-to-fpgw" className="flex-1 cursor-pointer">
-                    <span className="font-semibold text-amber-700">LGPW</span>
-                    <span className="mx-2">→</span>
-                    <span className="font-semibold text-purple-700">FGPW</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-amber-700">MPGW</span>
+                      <span className="mx-1 text-muted-foreground">→</span>
+                      <span className="font-semibold text-purple-700">FPGW</span>
+                      <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Lock Price</span>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Lock at current market price (${balance.goldPricePerGram.toFixed(2)}/g)
+                      Lock your gold's USD value at the current market price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
                     </p>
+                    <p className="text-xs text-muted-foreground">Available MPGW: {balance.mpgw.availableGrams.toFixed(4)} g</p>
                   </Label>
                 </div>
-                {balance.fpgw.availableGrams > 0.000001 && (
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-purple-50 cursor-pointer">
-                    <RadioGroupItem value="FGPW_to_LGPW" id="fpgw-to-mpgw" />
-                    <Label htmlFor="fpgw-to-mpgw" className="flex-1 cursor-pointer">
-                      <span className="font-semibold text-purple-700">FGPW</span>
-                      <span className="mx-2">→</span>
-                      <span className="font-semibold text-amber-700">LGPW</span>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Convert to market price valuation (FIFO consumption)
-                      </p>
-                    </Label>
-                  </div>
-                )}
+                <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${transferDirection === 'FGPW_to_LGPW' ? 'border-purple-400 bg-purple-50' : 'hover:bg-purple-50'} ${balance.fpgw.availableGrams <= 0.000001 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <RadioGroupItem value="FGPW_to_LGPW" id="fpgw-to-mpgw" disabled={balance.fpgw.availableGrams <= 0.000001} />
+                  <Label htmlFor="fpgw-to-mpgw" className={`flex-1 ${balance.fpgw.availableGrams <= 0.000001 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-purple-700">FPGW</span>
+                      <span className="mx-1 text-muted-foreground">→</span>
+                      <span className="font-semibold text-amber-700">MPGW</span>
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Unlock Price</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Return gold to market price valuation. Oldest batches consumed first (FIFO).
+                    </p>
+                    <p className="text-xs text-muted-foreground">Available FPGW: {balance.fpgw.availableGrams.toFixed(4)} g</p>
+                  </Label>
+                </div>
               </RadioGroup>
             </div>
             
@@ -329,38 +411,59 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                 max={maxTransferAmount}
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(e.target.value)}
-                placeholder="Enter gold amount"
+                placeholder="Enter gold amount in grams"
                 data-testid="input-transfer-amount"
               />
               <Button 
                 variant="link" 
                 className="text-xs p-0 h-auto"
                 onClick={() => setTransferAmount(maxTransferAmount.toFixed(6))}
+                data-testid="btn-use-max-amount"
               >
                 Use Max Amount
               </Button>
             </div>
 
-            {transferDirection === 'LGPW_to_FGPW' && transferAmount && (
+            {isLocking && transferAmount && parseFloat(transferAmount) > 0 && (
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be locked at current price of 
-                  <strong> ${balance.goldPricePerGram.toFixed(2)}/g</strong>
-                </p>
-                <p className="text-xs text-amber-600 mt-1">
-                  Value: ≈ ${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}
-                </p>
+                <p className="text-sm font-semibold text-amber-800 mb-1">Price Lock Summary</p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-700">Gold to lock:</span>
+                    <span className="font-semibold text-amber-800">{parseFloat(transferAmount).toFixed(6)} g</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-700">Lock price:</span>
+                    <span className="font-semibold text-amber-800">${balance.goldPricePerGram.toFixed(2)}/g</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-amber-200 pt-1 mt-1">
+                    <span className="text-amber-700 font-semibold">Locked USD value:</span>
+                    <span className="font-bold text-amber-800">${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-amber-600 mt-2">This USD value will be preserved regardless of future gold price movements.</p>
               </div>
             )}
             
-            {transferDirection === 'FGPW_to_LGPW' && transferAmount && (
-              <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-                <p className="text-sm text-purple-800">
-                  <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be converted to market valuation
-                </p>
-                <p className="text-xs text-purple-600 mt-1">
-                  FGPW batches will be consumed in FIFO order
-                </p>
+            {!isLocking && transferAmount && parseFloat(transferAmount) > 0 && (
+              <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-orange-800 mb-1">Unlock Warning</p>
+                    <p className="text-sm text-orange-700">
+                      After unlocking, <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be valued at the live market price again.
+                    </p>
+                    {balance.fpgw.weightedAvgPrice > 0 && (
+                      <p className="text-xs text-orange-600 mt-1">
+                        Your locked price was ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g. Current market price is ${balance.goldPricePerGram.toFixed(2)}/g.
+                        {balance.goldPricePerGram < balance.fpgw.weightedAvgPrice
+                          ? ' ⚠ Unlocking now means your USD value may decrease.'
+                          : ' Your gold has appreciated since locking.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -376,10 +479,12 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                   htmlFor="transfer-terms"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                 >
-                  I agree to the Terms & Conditions
+                  I understand and agree
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  I understand that this transfer is irreversible and the gold will be moved between my wallets at the stated price.
+                  {isLocking
+                    ? 'I understand that by locking, my gold\'s USD value is frozen at the current price and will not benefit from future gold price increases while in FPGW.'
+                    : 'I understand that by unlocking, my gold will be valued at the live market price and the locked USD protection will be removed.'}
                 </p>
               </div>
             </div>
@@ -391,8 +496,8 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
             </Button>
             <Button 
               onClick={handleTransfer}
-              disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || !agreedToTerms}
-              className="bg-purple-500 hover:bg-purple-600"
+              disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || parseFloat(transferAmount) > maxTransferAmount || !agreedToTerms}
+              className={isLocking ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'}
               data-testid="btn-confirm-transfer"
             >
               {internalTransfer.isPending ? (
@@ -400,10 +505,15 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
+              ) : isLocking ? (
+                <>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Lock Gold Price
+                </>
               ) : (
                 <>
-                  <ArrowRightLeft className="w-4 h-4 mr-2" />
-                  Confirm Transfer
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Unlock to Market Price
                 </>
               )}
             </Button>
@@ -411,5 +521,8 @@ export default function DualWalletDisplay({ userId, onTransferFromVault }: DualW
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
-}
+});
+
+export default DualWalletDisplay;

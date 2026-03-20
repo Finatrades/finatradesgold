@@ -179,7 +179,7 @@ const internalTransferSchema = z.object({
   notes: z.string().optional()
 });
 
-router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempotencyMiddleware, async (req, res) => {
+async function handleDualWalletTransfer(req: Request, res: Response) {
   try {
     const parsed = internalTransferSchema.parse(req.body);
     const { userId, goldGrams, fromWalletType, toWalletType, notes } = parsed;
@@ -672,7 +672,9 @@ router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempote
     console.error('Internal transfer error:', error);
     res.status(500).json({ error: error.message || "Failed to transfer" });
   }
-});
+}
+
+router.post("/api/dual-wallet/transfer", ensureAuthenticated, conversionIdempotencyMiddleware, handleDualWalletTransfer);
 
 router.get("/api/dual-wallet/:userId/transfers", ensureAuthenticated, async (req, res) => {
   try {
@@ -727,6 +729,26 @@ router.get("/api/dual-wallet/:userId/certificates", ensureAuthenticated, async (
     console.error('Certificates error:', error);
     res.status(500).json({ error: error.message || "Failed to get certificates" });
   }
+});
+
+/**
+ * POST /api/wallet/mpgw-to-fpgw
+ * Lock gold from Market Price Gold Wallet (MPGW) into Fixed Price Gold Wallet (FPGW).
+ * Alias for POST /api/dual-wallet/transfer with fromWalletType='LGPW', toWalletType='FGPW'.
+ */
+router.post("/api/wallet/mpgw-to-fpgw", ensureAuthenticated, conversionIdempotencyMiddleware, async (req, res) => {
+  req.body = { ...req.body, fromWalletType: 'LGPW', toWalletType: 'FGPW' };
+  return handleDualWalletTransfer(req, res);
+});
+
+/**
+ * POST /api/wallet/fpgw-to-mpgw
+ * Unlock gold from Fixed Price Gold Wallet (FPGW) back to Market Price Gold Wallet (MPGW).
+ * Alias for POST /api/dual-wallet/transfer with fromWalletType='FGPW', toWalletType='LGPW'.
+ */
+router.post("/api/wallet/fpgw-to-mpgw", ensureAuthenticated, conversionIdempotencyMiddleware, async (req, res) => {
+  req.body = { ...req.body, fromWalletType: 'FGPW', toWalletType: 'LGPW' };
+  return handleDualWalletTransfer(req, res);
 });
 
 export function registerDualWalletRoutes(app: any) {

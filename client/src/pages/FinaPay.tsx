@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCMSPage } from '@/context/CMSContext';
@@ -7,7 +7,7 @@ import { usePlatform } from '@/context/PlatformContext';
 import { useFinaPay } from '@/context/FinaPayContext';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { useQuery } from '@tanstack/react-query';
-import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle } from 'lucide-react';
+import { Wallet as WalletIcon, RefreshCw, Loader2, AlertCircle, Lock, TrendingUp, ShoppingCart, Send, ArrowDownLeft, Plus, ArrowUpRight, Coins, BarChart3, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Transaction } from '@/types/finapay';
@@ -23,7 +23,7 @@ import DepositModal from '@/components/finapay/modals/DepositModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 
-import DualWalletDisplay from "@/components/finapay/DualWalletDisplay";
+import DualWalletDisplay, { type DualWalletDisplayHandle } from "@/components/finapay/DualWalletDisplay";
 import { useLocation, useSearch } from 'wouter';
 import { ShieldAlert } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -37,6 +37,7 @@ export default function FinaPay() {
   const { addNotification } = useNotifications();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
+  const dualWalletRef = useRef<DualWalletDisplayHandle>(null);
   
   // KYC verification check - only allow actions if KYC is approved
   const isKycApproved = user?.kycStatus === 'Approved';
@@ -162,18 +163,36 @@ export default function FinaPay() {
   // Apply status normalization for consistency
   const { transactions: contextTransactions } = useFinaPay();
   
-  const transactions: Transaction[] = contextTransactions.map((tx: any) => ({
-    id: tx.id || String(Math.random()),
-    type: getTransactionLabel(tx.type || tx.actionType || 'Transfer'),
-    amountGrams: tx.amountGold != null ? parseNumericValue(tx.amountGold) : (tx.amountGrams != null ? parseNumericValue(tx.amountGrams) : undefined),
-    amountUsd: parseNumericValue(tx.amountUsd),
-    feeUsd: parseNumericValue(tx.feeUsd || tx.fee || 0),
-    timestamp: tx.createdAt,
-    referenceId: formatReferenceId(tx.id || tx.referenceId),
-    status: normalizeStatus(tx.status),
-    assetType: (tx.amountGold != null || tx.amountGrams != null) ? 'GOLD' : 'USD',
-    description: tx.description || ''
-  }));
+  const transactions: Transaction[] = contextTransactions.map((tx: any) => {
+    const rawType = tx.type || tx.actionType || 'Transfer';
+    const desc = tx.description || '';
+    const sourceModule = tx.sourceModule || '';
+    const isDualWalletSwap = rawType === 'Swap' && sourceModule === 'dual-wallet';
+    const isLockAction = isDualWalletSwap && (desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW') || desc.startsWith('LGPW to FGPW'));
+    const isUnlockAction = isDualWalletSwap && (desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW') || desc.includes('FGPW to LGPW unlock'));
+    
+    let displayType: string;
+    if (isLockAction) {
+      displayType = 'Lock Gold Price (MPGW → FPGW)';
+    } else if (isUnlockAction) {
+      displayType = 'Unlock Gold Price (FPGW → MPGW)';
+    } else {
+      displayType = getTransactionLabel(rawType);
+    }
+    
+    return {
+      id: tx.id || String(Math.random()),
+      type: displayType,
+      amountGrams: tx.amountGold != null ? parseNumericValue(tx.amountGold) : (tx.amountGrams != null ? parseNumericValue(tx.amountGrams) : undefined),
+      amountUsd: parseNumericValue(tx.amountUsd),
+      feeUsd: parseNumericValue(tx.feeUsd || tx.fee || 0),
+      timestamp: tx.createdAt,
+      referenceId: formatReferenceId(tx.id || tx.referenceId),
+      status: normalizeStatus(tx.status),
+      assetType: (tx.amountGold != null || tx.amountGrams != null) ? 'GOLD' : 'USD',
+      description: desc
+    };
+  });
 
   // Check if user has any wallet activity (completed transactions OR positive balance OR ledger entries)
   const hasWalletActivity = transactions.some(tx => tx.status === 'Completed') || goldGrams > 0;
@@ -400,6 +419,29 @@ export default function FinaPay() {
               Request Gold
               {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
             </button>
+
+            <button
+              onClick={() => {
+                if (!isKycApproved) { handleKycRequired(); return; }
+                if (dualWalletRef.current) {
+                  dualWalletRef.current.openLockDialog();
+                  setTimeout(() => {
+                    const el = document.getElementById('dual-wallet-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 50);
+                }
+              }}
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
+                isKycApproved 
+                  ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-500 hover:text-white hover:border-violet-500 hover:shadow-md' 
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+              }`}
+              data-testid="button-lock-gold-price"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1.5" />
+              Lock Gold Price
+              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
+            </button>
           </div>
         </div>
         
@@ -463,8 +505,12 @@ export default function FinaPay() {
           </div>
         )}
 
-        {/* Dual Wallet Display - LGPW/FGPW - Only show when user has wallet activity */}
-        {hasWalletActivity && user && <DualWalletDisplay userId={user.id} />}
+        {/* Dual Wallet Display - MPGW/FPGW - Only show when user has wallet activity */}
+        {hasWalletActivity && user && (
+          <div id="dual-wallet-section">
+            <DualWalletDisplay ref={dualWalletRef} userId={user.id} />
+          </div>
+        )}
 
         {/* KYC Warning Banner */}
         {!isKycApproved && (
