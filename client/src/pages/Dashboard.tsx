@@ -102,7 +102,7 @@ function PortfolioRingChart({ walletGoldGrams, finacardGoldGrams, bnslGoldGrams,
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-[15px] font-bold text-gray-900">Portfolio Allocation</h3>
+          <h3 className="text-[15px] font-bold text-gray-900">Insights Allocation</h3>
           <p className="text-[11px] text-gray-400 mt-0.5">Digital Gold distribution across modules</p>
         </div>
         <div className="flex items-center gap-2">
