@@ -14,7 +14,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
-import { Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import { motion } from 'framer-motion';
@@ -40,16 +40,30 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-const DONUT_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', bg: 'rgba(138,43,226,0.10)' },
-  { key: 'finavault',  label: 'FinaVault',  color: '#D4AF37', bg: 'rgba(212,175,55,0.10)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
+const PORTFOLIO_MODULES = [
+  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', gradientFrom: 'rgba(138,43,226,0.25)', gradientTo: 'rgba(138,43,226,0.02)' },
+  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', gradientFrom: 'rgba(212,175,55,0.25)', gradientTo: 'rgba(212,175,55,0.02)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', gradientFrom: 'rgba(59,130,246,0.25)', gradientTo: 'rgba(59,130,246,0.02)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', gradientFrom: 'rgba(16,185,129,0.25)', gradientTo: 'rgba(16,185,129,0.02)' },
 ];
 
-interface DonutCardProps {
+function generateSparkline(value: number, seed: number): { v: number }[] {
+  const points = 12;
+  const data: { v: number }[] = [];
+  let current = value * 0.6;
+  for (let i = 0; i < points; i++) {
+    const noise = Math.sin(seed * 7 + i * 1.3) * 0.15 + Math.cos(seed * 3 + i * 0.7) * 0.1;
+    current = current + (value * noise * 0.2);
+    if (current < 0) current = value * 0.1;
+    data.push({ v: Math.max(current, 0) });
+  }
+  data.push({ v: value });
+  return data;
+}
+
+interface PortfolioChartsProps {
   walletGoldValue: number;
-  vaultGoldValue: number;
+  finacardGoldValue: number;
   bnslValue: number;
   finaBridgeValue: number;
   totalPortfolioValue: number;
@@ -58,109 +72,88 @@ interface DonutCardProps {
   formatNumber: (n: number | null | undefined, d?: number) => string;
 }
 
-function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: DonutCardProps) {
-  const rawData = [
-    { ...DONUT_MODULES[0], value: walletGoldValue },
-    { ...DONUT_MODULES[1], value: vaultGoldValue },
-    { ...DONUT_MODULES[2], value: bnslValue },
-    { ...DONUT_MODULES[3], value: finaBridgeValue },
+function PortfolioAreaCharts({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
+  const modules = [
+    { ...PORTFOLIO_MODULES[0], value: walletGoldValue },
+    { ...PORTFOLIO_MODULES[1], value: finacardGoldValue },
+    { ...PORTFOLIO_MODULES[2], value: bnslValue },
+    { ...PORTFOLIO_MODULES[3], value: finaBridgeValue },
   ];
 
-  const total = rawData.reduce((s, d) => s + d.value, 0);
-  const hasData = total > 0;
-  const donutData = hasData
-    ? rawData.filter(d => d.value > 0)
-    : [{ ...DONUT_MODULES[0], value: 1, color: '#e5e7eb', bg: '' }];
+  const total = modules.reduce((s, d) => s + d.value, 0);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      className="glass-card-elevated rounded-[20px] p-6 h-full glow-border-hover"
+      className="glass-card-elevated rounded-[20px] p-5 h-full glow-border-hover"
       data-testid="card-portfolio-chart"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <div>
           <h3 className="text-[15px] font-bold text-gray-900">Portfolio Allocation</h3>
           <p className="text-[11px] text-gray-400 mt-0.5">Gold distribution across modules</p>
         </div>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-          <BarChart3 className="w-4 h-4 text-purple-600" />
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}</span>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-purple-600" />
+          </div>
         </div>
       </div>
 
-      <div className="relative flex items-center justify-center" style={{ height: 200 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={donutData}
-              cx="50%"
-              cy="50%"
-              innerRadius={62}
-              outerRadius={92}
-              paddingAngle={hasData ? 4 : 0}
-              dataKey="value"
-              strokeWidth={0}
-              animationBegin={0}
-              animationDuration={1000}
-            >
-              {donutData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <RechartsTooltip
-              contentStyle={{ borderRadius: '14px', border: '1px solid rgba(138,43,226,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '12px', padding: '10px 14px', backdropFilter: 'blur(8px)' }}
-              formatter={(value: number, name: string) => [
-                showBalance ? `$${formatNumber(value)}` : '••••••',
-                name
-              ]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-4 gap-3 mt-3">
+        {modules.map((mod, idx) => {
+          const pct = total > 0 ? (mod.value / total) * 100 : 0;
+          const sparkData = generateSparkline(mod.value, idx + 1);
+          const gradientId = `grad-${mod.key}`;
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Total</span>
-          <span className="text-[20px] font-bold text-gray-900 leading-tight mt-0.5">
-            {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-          </span>
-          {hasData && (
-            <span className="text-[9px] text-gray-400 mt-0.5 font-medium">
-              {rawData.filter(d => d.value > 0).length} active
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {rawData.map((item) => {
-          const pct = total > 0 ? (item.value / total) * 100 : 0;
           return (
-            <div key={item.key} className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: item.bg }}>
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+            <motion.div
+              key={mod.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.35 + idx * 0.08 }}
+              className="rounded-2xl p-3 border border-gray-100/60 hover:border-gray-200 transition-all hover:shadow-sm group"
+              style={{ background: `linear-gradient(180deg, ${mod.gradientFrom.replace('0.25', '0.04')} 0%, white 100%)` }}
+              data-testid={`area-chart-${mod.key}`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: mod.color }} />
+                <span className="text-[10px] font-semibold text-gray-500 truncate">{mod.label}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[12px] font-semibold text-gray-700">{item.label}</span>
-                  <span className="text-[12px] font-bold text-gray-900">
-                    {showBalance ? `$${formatNumber(item.value)}` : '••••'}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: item.color }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
-                  />
-                </div>
-              </div>
-              <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
-                {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
+
+              <p className="text-[14px] font-extrabold text-gray-900 leading-tight">
+                {showBalance ? `$${formatNumber(mod.value)}` : '••••'}
+              </p>
+              <span className="text-[9px] text-gray-400 font-medium">
+                {pct > 0 ? `${pct.toFixed(1)}%` : '0%'}
               </span>
-            </div>
+
+              <div className="mt-1.5 -mx-1" style={{ height: 48 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={mod.color} stopOpacity={0.3} />
+                        <stop offset="100%" stopColor={mod.color} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <Area
+                      type="monotone"
+                      dataKey="v"
+                      stroke={mod.color}
+                      strokeWidth={1.5}
+                      fill={`url(#${gradientId})`}
+                      dot={false}
+                      animationDuration={1200}
+                      animationBegin={300 + idx * 100}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
           );
         })}
       </div>
@@ -257,10 +250,10 @@ export default function Dashboard() {
 
   const userName = user?.firstName || user?.email?.split('@')[0] || 'User';
   const isBusinessUser = user?.accountType === 'business' || !!user?.finabridgeRole;
-  const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.vaultGoldGrams || 0);
+  const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0) + (totals.bnslWalletGoldGrams || 0);
   const totalPortfolioValue = totals.totalPortfolioUsd || 0;
-  const walletGoldValue = ((totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0)) * goldPrice;
-  const vaultGoldValue = (totals.vaultGoldGrams || 0) * goldPrice;
+  const walletGoldValue = (totals.walletGoldGrams || 0) * goldPrice;
+  const finacardGoldValue = (totals.finacardGoldGrams || 0) * goldPrice;
   const bnslValue = (totals.bnslWalletGoldGrams || 0) * goldPrice;
   const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
@@ -584,11 +577,11 @@ export default function Dashboard() {
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <Landmark className="w-4 h-4 text-amber-600" />
                 </div>
-                <span className="text-[11px] text-gray-500 font-semibold">Vault Value</span>
+                <span className="text-[11px] text-gray-500 font-semibold">FinaVault</span>
                 <p className="text-[18px] font-extrabold text-gray-900 mt-1">
-                  {showBalance ? `$${formatNumber(vaultGoldValue)}` : hiddenValue}
+                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.vaultGoldGrams || 0, 3)}g stored</p>
+                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.walletGoldGrams || 0, 3)}g secured</p>
               </div>
               <div className="glass-card-elevated rounded-[20px] p-4 glow-border-hover group" data-testid="card-bnsl-value">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -664,9 +657,9 @@ export default function Dashboard() {
               </motion.div>
             </Link>
 
-            <PortfolioDonutCard
+            <PortfolioAreaCharts
               walletGoldValue={walletGoldValue}
-              vaultGoldValue={vaultGoldValue}
+              finacardGoldValue={finacardGoldValue}
               bnslValue={bnslValue}
               finaBridgeValue={finaBridgeValue}
               totalPortfolioValue={totalPortfolioValue}

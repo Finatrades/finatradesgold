@@ -1054,8 +1054,9 @@ export async function registerRoutes(
       const finacardGoldGrams = parseFloat(wallet?.finacardGoldGrams || '0');
       const finacardGoldValueUsd = finacardGoldGrams * goldPrice;
 
-      // Total portfolio includes: vault + FinaPay wallet + FinaCard + BNSL wallet + FinaBridge + USD balance
-      const totalPortfolioUsd = vaultGoldValueUsd + (walletGoldGrams * goldPrice) + finacardGoldValueUsd + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
+      // Total portfolio: wallet + FinaCard + BNSL wallet + FinaBridge + USD balance
+      // Note: vault_holdings tracks the same physical gold as wallet.goldGrams (parallel ledger), so NOT added separately to avoid double-counting
+      const totalPortfolioUsd = (walletGoldGrams * goldPrice) + finacardGoldValueUsd + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
       
       // Calculate pending deposits (bank transfers + crypto) as USD
       // Include both 'Pending' and 'Under Review' statuses as pending
