@@ -169,6 +169,7 @@ export default function QuickBnslModal({
     try {
       const { apiRequest } = await import('@/lib/queryClient');
       const planPayload = {
+        userId: user?.id,
         templateId: selectedTemplateId,
         variantId: currentVariant?.id,
         templateName: currentTemplate?.name,
@@ -483,21 +484,6 @@ export default function QuickBnslModal({
                 )}
               </div>
 
-              {/* Download draft */}
-              <div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadDraft}
-                  disabled={goldGrams <= 0}
-                  data-testid="button-download-draft"
-                  className="w-full border-white/20 text-white/80 hover:bg-white/10 hover:text-white bg-transparent text-[11px]"
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                  {hasDownloadedDraft ? 'Draft Downloaded ✓' : 'Download Draft Agreement'}
-                </Button>
-              </div>
-
               {/* T&C checkbox */}
               <div className="flex items-start gap-2.5">
                 <Checkbox
@@ -513,23 +499,44 @@ export default function QuickBnslModal({
                 </Label>
               </div>
 
-              {/* Digital signature */}
+              {/* Download draft */}
               <div>
-                <Label className="text-[11px] text-white/60 mb-1.5 flex items-center gap-1.5 block">
-                  <PenLine className="w-3.5 h-3.5" />
-                  Digital Signature — type your full name
-                </Label>
-                <Input
-                  value={signatureName}
-                  onChange={e => setSignatureName(e.target.value)}
-                  placeholder="Your full legal name"
-                  data-testid="input-signature"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30"
-                />
-                {signatureName.trim().length > 0 && !isValidSignature && (
-                  <p className="text-[10px] text-amber-400 mt-1">At least 3 characters required</p>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadDraft}
+                  disabled={goldGrams <= 0}
+                  data-testid="button-download-draft"
+                  className="w-full border-white/20 text-white/80 hover:bg-white/10 hover:text-white bg-transparent text-[11px]"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  {hasDownloadedDraft ? 'Draft Downloaded ✓' : 'Download Draft Agreement'}
+                </Button>
               </div>
+
+              {/* Digital signature — only shown after draft is downloaded */}
+              {hasDownloadedDraft && (
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-white/60 mb-0.5 flex items-center gap-1.5 block">
+                    <PenLine className="w-3.5 h-3.5" />
+                    Digital Signature — type your full name
+                  </Label>
+                  <p className="text-[9.5px] text-white/35 -mt-0.5">
+                    Your name will be recorded as your digital signature on the agreement.
+                  </p>
+                  <Input
+                    value={signatureName}
+                    onChange={e => setSignatureName(e.target.value)}
+                    placeholder="Your full legal name"
+                    data-testid="input-signature"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30"
+                    autoFocus
+                  />
+                  {signatureName.trim().length > 0 && !isValidSignature && (
+                    <p className="text-[10px] text-amber-400">At least 3 characters required</p>
+                  )}
+                </div>
+              )}
 
               {/* Security note */}
               <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-2">
