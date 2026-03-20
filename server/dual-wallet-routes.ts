@@ -240,6 +240,11 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
     
     const preTransferBalance = await getBalanceSummary(userId);
 
+    // Lock-centric: require lockId for FGPW→LGPW unlock BEFORE entering transaction
+    if (fromWalletType === 'FGPW' && toWalletType === 'LGPW' && !lockId) {
+      return res.status(400).json({ message: 'lockId is required for unlock. Use the Unlock button next to each active lock.' });
+    }
+
     await db.transaction(async (tx) => {
       if (fromWalletType === 'LGPW' && toWalletType === 'FGPW') {
         // ── LOCK: LGPW → FGPW ──────────────────────────────────────────
@@ -372,11 +377,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
 
       } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
         // ── UNLOCK: FGPW → LGPW (lock-centric model) ───────────────────
-        // Lock-centric unlock: lockId is REQUIRED (enforced at route level; reject generic unlocks)
-        if (!lockId) {
-          return res.status(400).json({ message: 'lockId is required for unlock. Use the Unlock button next to each active lock.' });
-        }
-
+        // lockId is guaranteed non-null here (pre-transaction check at line 246)
         const [found] = await tx
           .select({
             id: fpgwBatches.id,
@@ -386,7 +387,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           })
           .from(fpgwBatches)
           .where(and(
-            eq(fpgwBatches.id, lockId),
+            eq(fpgwBatches.id, lockId!),
             eq(fpgwBatches.userId, userId),
             eq(fpgwBatches.status, 'Active')
           ));

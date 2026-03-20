@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Lock, Unlock, Loader2 } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDualWalletBalance, useInternalTransfer } from '@/hooks/useDualWallet';
 import { useToast } from '@/hooks/use-toast';
@@ -21,12 +20,10 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
   const { toast } = useToast();
 
   const [transferAmount, setTransferAmount] = useState('');
-  const [transferDirection, setTransferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>('LGPW_to_FGPW');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleClose = () => {
     setTransferAmount('');
-    setTransferDirection('LGPW_to_FGPW');
     setAgreedToTerms(false);
     onClose();
   };
@@ -43,28 +40,21 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
     );
   }
 
-  const isLocking = transferDirection === 'LGPW_to_FGPW';
-  const maxTransferAmount = isLocking ? balance.mpgw.availableGrams : balance.fpgw.availableGrams;
+  const maxLockAmount = balance.mpgw.availableGrams;
 
-  const handleTransfer = async () => {
+  const handleLock = async () => {
     const amount = parseFloat(transferAmount);
     if (isNaN(amount) || amount <= 0) {
       toast({ title: 'Invalid Amount', description: 'Please enter a valid gold amount greater than 0', variant: 'destructive' });
       return;
     }
 
-    const fromType = isLocking ? 'LGPW' : 'FGPW';
-    const toType = isLocking ? 'FGPW' : 'LGPW';
-
     try {
-      await internalTransfer.mutateAsync({ userId, goldGrams: amount, fromWalletType: fromType, toWalletType: toType });
-      const actionLabel = isLocking
-        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (LGPW → FPGW)`
-        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → LGPW)`;
-      toast({ title: isLocking ? 'Gold Price Locked' : 'Gold Price Unlocked', description: actionLabel });
+      await internalTransfer.mutateAsync({ userId, goldGrams: amount, fromWalletType: 'LGPW', toWalletType: 'FGPW' });
+      toast({ title: 'Gold Price Locked', description: `Locked ${amount.toFixed(4)}g at $${balance.goldPricePerGram.toFixed(2)}/g (LGPW → FPGW)` });
       handleClose();
     } catch (err: any) {
-      toast({ title: isLocking ? 'Lock Failed' : 'Unlock Failed', description: err.message || 'Failed to complete operation', variant: 'destructive' });
+      toast({ title: 'Lock Failed', description: err.message || 'Failed to lock gold price', variant: 'destructive' });
     }
   };
 
@@ -73,68 +63,45 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
       <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isLocking ? <Lock className="w-5 h-5 text-amber-600" /> : <Unlock className="w-5 h-5 text-purple-600" />}
-            {isLocking ? 'Lock Gold at Current Price' : 'Unlock Gold to Live Price'}
+            <Lock className="w-5 h-5 text-amber-600" />
+            Lock Gold at Current Price
           </DialogTitle>
           <DialogDescription>
-            {isLocking
-              ? 'Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
-              : 'Move gold from your Fixed Price Wallet (FPGW) back to your Live Gold Price Wallet (LGPW). Your gold will be valued at the live market price again.'}
+            Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today's price. To unlock, use the Unlock button next to each active lock in the FPGW section.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">Operation</Label>
-            <RadioGroup value={transferDirection} onValueChange={(v) => { setTransferDirection(v as 'LGPW_to_FGPW' | 'FGPW_to_LGPW'); setTransferAmount(''); }}>
-              <div className={`flex items-center space-x-2 p-3 rounded-xl border cursor-pointer transition-colors ${transferDirection === 'LGPW_to_FGPW' ? 'border-amber-400 bg-amber-50' : 'hover:bg-amber-50/50'}`}>
-                <RadioGroupItem value="LGPW_to_FGPW" id="dash-mpgw-to-fpgw" />
-                <Label htmlFor="dash-mpgw-to-fpgw" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-amber-700">LGPW</span>
-                    <span className="mx-1 text-muted-foreground">→</span>
-                    <span className="font-semibold text-purple-700">FPGW</span>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg">Lock Price</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Lock at current price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
-                  </p>
-                  <p className="text-xs text-muted-foreground">Available: {balance.mpgw.availableGrams.toFixed(4)} g</p>
-                </Label>
-              </div>
-              <div className={`flex items-center space-x-2 p-3 rounded-xl border cursor-pointer transition-colors ${transferDirection === 'FGPW_to_LGPW' ? 'border-purple-400 bg-purple-50' : 'hover:bg-purple-50/50'} ${balance.fpgw.availableGrams <= 0.000001 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <RadioGroupItem value="FGPW_to_LGPW" id="dash-fpgw-to-mpgw" disabled={balance.fpgw.availableGrams <= 0.000001} />
-                <Label htmlFor="dash-fpgw-to-mpgw" className={`flex-1 ${balance.fpgw.availableGrams <= 0.000001 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-purple-700">FPGW</span>
-                    <span className="mx-1 text-muted-foreground">→</span>
-                    <span className="font-semibold text-amber-700">LGPW</span>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-lg">Unlock</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Return gold to market price valuation. You receive the same gram count back.</p>
-                  <p className="text-xs text-muted-foreground">Available: {balance.fpgw.availableGrams.toFixed(4)} g</p>
-                </Label>
-              </div>
-            </RadioGroup>
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-amber-700">LGPW</span>
+              <span className="mx-1 text-muted-foreground">→</span>
+              <span className="font-semibold text-purple-700">FPGW</span>
+              <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg">Lock Price</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Lock at current price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
+            </p>
+            <p className="text-xs text-muted-foreground">Available LGPW: {maxLockAmount.toFixed(4)} g</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label>Gold Amount (grams)</Label>
-              <span className="text-xs text-muted-foreground">Max: {maxTransferAmount.toFixed(6)} g</span>
+              <span className="text-xs text-muted-foreground">Max: {maxLockAmount.toFixed(6)} g</span>
             </div>
             <Input
-              type="number" step="0.000001" min="0" max={maxTransferAmount}
+              type="number" step="0.000001" min="0" max={maxLockAmount}
               value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)}
               placeholder="Enter gold amount in grams"
               data-testid="input-lock-amount"
             />
-            <Button variant="link" className="text-xs p-0 h-auto" onClick={() => setTransferAmount(maxTransferAmount.toFixed(6))} data-testid="btn-lock-use-max">
+            <Button variant="link" className="text-xs p-0 h-auto" onClick={() => setTransferAmount(maxLockAmount.toFixed(6))} data-testid="btn-lock-use-max">
               Use Max Amount
             </Button>
           </div>
 
-          {isLocking && transferAmount && parseFloat(transferAmount) > 0 && (
+          {transferAmount && parseFloat(transferAmount) > 0 && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
               <p className="text-sm font-semibold text-amber-800 mb-1">Price Lock Summary</p>
               <div className="space-y-1">
@@ -155,7 +122,6 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
             </div>
           )}
 
-
           <div className="flex items-start space-x-2 pt-2 border-t">
             <Checkbox id="dash-lock-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked === true)} data-testid="checkbox-lock-terms" />
             <div className="grid gap-1.5 leading-none">
@@ -163,9 +129,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
                 I understand and agree
               </label>
               <p className="text-xs text-muted-foreground">
-                {isLocking
-                  ? 'I understand that by locking, my gold\'s USD value is frozen at the current price and will not benefit from future gold price increases while in FPGW.'
-                  : 'I understand that by unlocking, my gold will be valued at the live market price and the locked USD protection will be removed.'}
+                I understand that by locking, my gold's USD value is frozen at the current price and will not benefit from future gold price increases while in FPGW.
               </p>
             </div>
           </div>
@@ -174,17 +138,15 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
           <Button
-            onClick={handleTransfer}
-            disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || parseFloat(transferAmount) > maxTransferAmount || !agreedToTerms}
-            className={isLocking ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'}
+            onClick={handleLock}
+            disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || parseFloat(transferAmount) > maxLockAmount || !agreedToTerms}
+            className="bg-amber-600 hover:bg-amber-700"
             data-testid="btn-confirm-lock"
           >
             {internalTransfer.isPending ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-            ) : isLocking ? (
-              <><Lock className="w-4 h-4 mr-2" /> Lock Gold Price</>
             ) : (
-              <><Unlock className="w-4 h-4 mr-2" /> Unlock to LGPW</>
+              <><Lock className="w-4 h-4 mr-2" /> Lock Gold Price</>
             )}
           </Button>
         </DialogFooter>

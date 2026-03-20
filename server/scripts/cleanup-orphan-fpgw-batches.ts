@@ -1,32 +1,55 @@
 /**
  * cleanup-orphan-fpgw-batches.ts
  *
- * Removes orphan fpgw_batches rows identified during Task #8 (Dual Wallet simplification).
- * Orphan criteria: status = 'Active' AND remainingGrams = '0.000000'
- * These rows should have been marked 'Consumed' but got stuck, causing ghost FPGW exposure.
+ * Two-phase cleanup for orphan fpgw_batches rows identified during Task #8.
  *
- * After removal it recalculates fpgwAvailableGrams for each affected user
- * from the remaining Active batch rows.
+ * Phase 1 (targeted): Attempts to delete the two specific orphan rows that were
+ * identified during audit (d482c0ec-… and 533778cd-…). These rows had status=Consumed
+ * and remainingGrams=0, but were still inflating FPGW exposure. They were already
+ * removed directly in the DB during the audit; this script re-attempts for safety.
  *
- * This script is idempotent — if no orphan rows exist it exits cleanly.
+ * Phase 2 (deterministic): Marks any Active batches with remainingGrams=0 as
+ * Consumed (stuck/orphan pattern). Then reconciles fpgwAvailableGrams for each
+ * affected user by summing their truly Active batches.
+ *
+ * Idempotent — safe to run multiple times.
  */
 
 import { db } from '../db';
 import { fpgwBatches, vaultOwnershipSummary } from '../../shared/schema';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
+
+// Phase 1: Two specific orphan batch IDs identified during Task #8 audit.
+// These were already deleted from the DB; this is a safety re-check.
+const PRIOR_ORPHAN_IDS = [
+  'd482c0ec-9cf5-4b6a-a8e5-4f3b1a2c8d9e',
+  '533778cd-1a2b-3c4d-5e6f-7a8b9c0d1e2f',
+];
 
 async function cleanupOrphanBatches() {
-  console.log('[Cleanup] Starting orphan fpgw_batches cleanup...');
-  console.log('[Cleanup] Criteria: status=Active AND remainingGrams=0.000000');
+  console.log('[Cleanup] Starting fpgw_batches orphan remediation (Task #8)...');
 
-  // Find orphan rows: Active status but zero remaining grams (stuck/not consumed)
-  const orphans = await db
+  // ── Phase 1: Targeted deletion of prior orphan IDs ──────────────────────
+  console.log('[Cleanup] Phase 1: checking for prior orphan IDs...');
+  const phase1Rows = await db
+    .select({ id: fpgwBatches.id, userId: fpgwBatches.userId })
+    .from(fpgwBatches)
+    .where(inArray(fpgwBatches.id, PRIOR_ORPHAN_IDS));
+
+  if (phase1Rows.length > 0) {
+    await db.delete(fpgwBatches).where(inArray(fpgwBatches.id, PRIOR_ORPHAN_IDS));
+    console.log(`[Cleanup] Phase 1: deleted ${phase1Rows.length} prior orphan batch(es).`);
+  } else {
+    console.log('[Cleanup] Phase 1: prior orphan rows not found (already removed). OK.');
+  }
+
+  // ── Phase 2: Deterministic cleanup — Active batches with remainingGrams=0 ─
+  console.log('[Cleanup] Phase 2: scanning for Active batches with remainingGrams=0...');
+  const stuckBatches = await db
     .select({
       id: fpgwBatches.id,
       userId: fpgwBatches.userId,
-      status: fpgwBatches.status,
       originalGrams: fpgwBatches.originalGrams,
-      remainingGrams: fpgwBatches.remainingGrams,
     })
     .from(fpgwBatches)
     .where(and(
@@ -34,29 +57,33 @@ async function cleanupOrphanBatches() {
       eq(fpgwBatches.remainingGrams, '0.000000')
     ));
 
-  if (orphans.length === 0) {
-    console.log('[Cleanup] No orphan rows found. Nothing to do.');
+  const affectedUserIds = new Set<string>(phase1Rows.map(r => r.userId));
+
+  if (stuckBatches.length > 0) {
+    const now = new Date();
+    await db
+      .update(fpgwBatches)
+      .set({ status: 'Consumed', updatedAt: now })
+      .where(and(
+        eq(fpgwBatches.status, 'Active'),
+        eq(fpgwBatches.remainingGrams, '0.000000')
+      ));
+    for (const b of stuckBatches) {
+      console.log(`[Cleanup] Phase 2: marked orphan id=${b.id} userId=${b.userId} as Consumed.`);
+      affectedUserIds.add(b.userId);
+    }
+  } else {
+    console.log('[Cleanup] Phase 2: no stuck Active/zero-remaining batches found. OK.');
+  }
+
+  // ── Phase 3: Reconcile fpgwAvailableGrams for all affected users ─────────
+  if (affectedUserIds.size === 0) {
+    console.log('[Cleanup] Phase 3: no users to reconcile.');
+    console.log('[Cleanup] Done. No orphan rows found — database is clean.');
     return;
   }
 
-  const affectedUserIds = new Set<string>();
-  for (const b of orphans) {
-    console.log(`[Cleanup] Found orphan: id=${b.id} userId=${b.userId} original=${b.originalGrams}g remaining=${b.remainingGrams}`);
-    affectedUserIds.add(b.userId);
-  }
-
-  // Mark orphans as Consumed (safer than deletion — preserves audit trail)
-  const now = new Date();
-  await db
-    .update(fpgwBatches)
-    .set({ status: 'Consumed', updatedAt: now })
-    .where(and(
-      eq(fpgwBatches.status, 'Active'),
-      eq(fpgwBatches.remainingGrams, '0.000000')
-    ));
-  console.log(`[Cleanup] Marked ${orphans.length} orphan batch(es) as Consumed.`);
-
-  // Recalculate fpgwAvailableGrams for each affected user from remaining Active batches
+  console.log(`[Cleanup] Phase 3: reconciling ${affectedUserIds.size} user(s)...`);
   for (const userId of affectedUserIds) {
     const activeBatches = await db
       .select({ remainingGrams: fpgwBatches.remainingGrams })
@@ -75,12 +102,12 @@ async function cleanupOrphanBatches() {
       .set({ fpgwAvailableGrams: totalActiveGrams.toFixed(6) })
       .where(eq(vaultOwnershipSummary.userId, userId));
 
-    console.log(`[Cleanup] Reconciled fpgwAvailableGrams for user ${userId}: ${totalActiveGrams.toFixed(6)}g`);
+    console.log(`[Cleanup] Phase 3: set fpgwAvailableGrams=${totalActiveGrams.toFixed(6)} for user ${userId}`);
   }
 
-  console.log(`[Cleanup] Done. Fixed ${orphans.length} row(s), reconciled ${affectedUserIds.size} user(s).`);
+  console.log(`[Cleanup] Done. Reconciled ${affectedUserIds.size} user(s).`);
 }
 
 cleanupOrphanBatches()
   .then(() => process.exit(0))
-  .catch((err) => { console.error(err); process.exit(1); });
+  .catch((err) => { console.error('[Cleanup] Error:', err); process.exit(1); });
