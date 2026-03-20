@@ -275,7 +275,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                   {balance.fpgw.availableGrams.toFixed(4)} g
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  ≈ ${(balance.fpgw.availableGrams * (balance.fpgw.weightedAvgPrice || balance.goldPricePerGram)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (locked value)
+                  ≈ ${(balance.fpgw.availableGrams * balance.goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (at live price)
                 </p>
               </div>
             </div>
@@ -466,14 +466,6 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                     <p className="text-sm text-orange-700">
                       After unlocking, <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be valued at the live market price again.
                     </p>
-                    {balance.fpgw.weightedAvgPrice > 0 && (
-                      <p className="text-xs text-orange-600 mt-1">
-                        Your locked price was ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g. Current market price is ${balance.goldPricePerGram.toFixed(2)}/g.
-                        {balance.goldPricePerGram < balance.fpgw.weightedAvgPrice
-                          ? ' ⚠ Unlocking now means your USD value may decrease.'
-                          : ' Your gold has appreciated since locking.'}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>

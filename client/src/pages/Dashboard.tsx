@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Do
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
+import { useFpgwLocks } from '@/hooks/useDualWallet';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -221,6 +222,8 @@ export default function Dashboard() {
   const certificates = dashData.certificates;
   const notifications = dashData.notifications || [];
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
+  const { data: fpgwLocksData } = useFpgwLocks(user?.id);
+  const activeFpgwLocks = fpgwLocksData?.locks ?? [];
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const isMobile = useIsMobile();
   
@@ -527,7 +530,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
           {/* Gold Price Trend Chart */}
-          <motion.div variants={itemVariants} className="xl:col-span-2 glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
+          <motion.div variants={itemVariants} className="xl:col-span-2 glass-card-elevated rounded-[20px] p-5 self-start" data-testid="card-gold-price-chart">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
@@ -1080,13 +1083,30 @@ export default function Dashboard() {
                   <p className="text-[10px] text-gray-400">Protect your buying rate</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-gray-300" />
-                  <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
+              {activeFpgwLocks.length > 0 ? (
+                <div className="space-y-1.5 mb-3">
+                  {activeFpgwLocks.map((lock) => (
+                    <div key={lock.id} className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-500" />
+                        <div>
+                          <span className="text-[11px] font-bold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
+                          <span className="text-[10px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-[10px] text-gray-400">Lock price for 24–72h</span>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-300" />
+                    <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
+                  </div>
+                  <span className="text-[10px] text-gray-400">Lock price for 24–72h</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-[11px] text-gray-500 mb-3">
                 <span>Current rate</span>
                 <span className="font-bold text-gray-800">${formatNumber(goldPrice, 2)}/g</span>

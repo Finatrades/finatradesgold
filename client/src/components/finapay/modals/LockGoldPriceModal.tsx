@@ -164,14 +164,6 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
                   <p className="text-sm text-orange-700">
                     After unlocking, <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be valued at the live market price.
                   </p>
-                  {balance.fpgw.weightedAvgPrice > 0 && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      Locked price: ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g. Current: ${balance.goldPricePerGram.toFixed(2)}/g.
-                      {balance.goldPricePerGram < balance.fpgw.weightedAvgPrice
-                        ? ' ⚠ Unlocking now means your USD value may decrease.'
-                        : ' Your gold has appreciated since locking.'}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>

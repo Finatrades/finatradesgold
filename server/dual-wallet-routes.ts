@@ -354,32 +354,9 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
 
       } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
         // ── UNLOCK: FGPW → LGPW ────────────────────────────────────────
-        // Collect active batches for FIFO marking (oldest first)
-        const activeBatchRows = await tx
-          .select()
-          .from(fpgwBatches)
-          .where(and(
-            eq(fpgwBatches.userId, userId),
-            eq(fpgwBatches.status, 'Active'),
-            gt(fpgwBatches.remainingGrams, '0')
-          ))
-          .orderBy(asc(fpgwBatches.createdAt));
+        // Simple: return same gram count at market price — no FIFO batch logic
 
-        // Compute locked price info for audit trail
-        let weightedLockedValue = 0;
-        let remainingForBatches = goldGrams;
-        const batchesToMark: { id: string; newRemaining: number }[] = [];
-        for (const batch of activeBatchRows) {
-          if (remainingForBatches <= 0) break;
-          const batchGrams = parseFloat(batch.remainingGrams);
-          const take = Math.min(batchGrams, remainingForBatches);
-          weightedLockedValue += take * parseFloat(batch.lockedPriceUsd);
-          batchesToMark.push({ id: batch.id, newRemaining: batchGrams - take });
-          remainingForBatches -= take;
-        }
-        const avgLockedPrice = goldGrams > 0 ? weightedLockedValue / goldGrams : currentGoldPrice;
-
-        // 1. Create transaction (same gram count returned — no price recalculation)
+        // 1. Create transaction (same gram count returned)
         const [insertedTxFpgw] = await tx.insert(transactions).values({
           userId,
           type: 'Swap',
@@ -388,7 +365,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           goldWalletType: 'LGPW',
-          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g (locked at $${avgLockedPrice.toFixed(2)}/g, market $${currentGoldPrice.toFixed(2)}/g)`,
+          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g at market $${currentGoldPrice.toFixed(2)}/g`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -403,7 +380,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxIdFpgw }
         );
 
-        // 2. Add same grams back to wallets.goldGrams (MPGW source of truth)
+        // 2. Add same grams back to wallets.goldGrams (LGPW source of truth)
         await tx
           .update(wallets)
           .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}`, updatedAt: now })
@@ -418,44 +395,25 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
 
-        // 4. Mark batches as Consumed (FIFO, inside tx for atomicity)
-        for (const { id: batchId, newRemaining } of batchesToMark) {
-          await tx
-            .update(fpgwBatches)
-            .set({
-              remainingGrams: newRemaining.toFixed(6),
-              status: newRemaining <= 0.000001 ? 'Consumed' : 'Active',
-              updatedAt: now
-            })
-            .where(eq(fpgwBatches.id, batchId));
-        }
-
-        await safeAuditStep(
-          flowInstanceId, flowType, 'fpgw_batches_consumed',
-          'PASS',
-          { batchesMarked: batchesToMark.length, goldGrams, avgLockedPrice },
-          { userId, transactionId: actualTxIdFpgw }
-        );
-        
         await safeAuditStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
-          { newMpgwGrams: preTransferBalance.mpgw.availableGrams + goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - goldGrams },
+          { newLgpwGrams: preTransferBalance.mpgw.availableGrams + goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - goldGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
 
-        // 5. Vault ledger entry
+        // 4. Vault ledger entry
         const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'FGPW_To_LGPW',
           goldGrams: goldGrams.toFixed(6),
-          goldPriceUsdPerGram: avgLockedPrice.toFixed(2),
+          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
           fromGoldWalletType: 'FGPW',
           toGoldWalletType: 'LGPW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxIdFpgw,
-          notes: `FGPW → LGPW: ${goldGrams.toFixed(6)}g unlocked (locked at $${avgLockedPrice.toFixed(2)}/g, market $${currentGoldPrice.toFixed(2)}/g)`
+          notes: `FGPW → LGPW: ${goldGrams.toFixed(6)}g unlocked at market $${currentGoldPrice.toFixed(2)}/g`
         }).returning({ id: vaultLedgerEntries.id });
         
         await safeAuditStep(
@@ -465,7 +423,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
         );
 
-        // 6. Issue Conversion certificate (no FIFO cert reduction)
+        // 5. Issue Conversion certificate
         const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         const [certFpgw] = await tx.insert(certificates).values({
           certificateNumber: certNumberFpgw,
@@ -477,7 +435,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           issuer: 'Wingold Metals DMCC',
           fromGoldWalletType: 'FGPW',
           toGoldWalletType: 'LGPW',
-          conversionPriceUsd: avgLockedPrice.toFixed(2),
+          conversionPriceUsd: currentGoldPrice.toFixed(2),
           status: 'Active',
           transactionId: actualTxIdFpgw,
           issuedAt: now
