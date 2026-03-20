@@ -19,7 +19,7 @@ All balances, ledgers, wallets, locks, and certificates exclusively record gold 
 **Frontend:**
 - **Frameworks**: React 18 with TypeScript, Vite, Wouter, React Context API, shadcn/ui, Tailwind CSS v4, TanStack React Query, Framer Motion.
 - **Real-time**: Socket.IO client for live features and event-driven data synchronization.
-- **UI/UX Design**: Finexy-style clean white dashboard with orange/coral accent (#f97316) color scheme using Inter font family, standardized components, and centralized design tokens. Dashboard uses 3-column layout (Balance+Wallets | Stats | Chart) with activity table below.
+- **UI/UX Design**: Premium fintech dashboard with purple brand (#8A2BE2) and gold accents (#D4AF37) using Inter font family. Features glassmorphism cards (glass-card-elevated), holographic shimmer effects, animated gradient borders, and staggered entrance animations. Dashboard uses 3-column layout (Hero Balance+Wallets | Stats | FinaCard+Chart) with activity table below. CSS utilities include hover-lift, glow-border-hover, mesh-gradient, holo-shimmer, gold-shimmer. Reduced-motion and focus-visible accessibility supported.
 
 **Backend:**
 - **Technology**: Node.js with Express, TypeScript (ESM).

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -41,10 +41,10 @@ function getGreeting(): string {
 }
 
 const DONUT_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
-  { key: 'finavault',  label: 'FinaVault',  color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', bg: 'rgba(138,43,226,0.10)' },
+  { key: 'finavault',  label: 'FinaVault',  color: '#D4AF37', bg: 'rgba(212,175,55,0.10)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
 ];
 
 interface DonutCardProps {
@@ -73,33 +73,44 @@ function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBr
     : [{ ...DONUT_MODULES[0], value: 1, color: '#e5e7eb', bg: '' }];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-full" data-testid="card-portfolio-chart">
-      <div className="mb-4">
-        <h3 className="text-[16px] font-bold text-gray-900">Portfolio Overview</h3>
-        <p className="text-[12px] text-gray-400 mt-0.5">Gold allocation across all modules</p>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      className="glass-card-elevated rounded-[20px] p-6 h-full glow-border-hover"
+      data-testid="card-portfolio-chart"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-[15px] font-bold text-gray-900">Portfolio Allocation</h3>
+          <p className="text-[11px] text-gray-400 mt-0.5">Gold distribution across modules</p>
+        </div>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+          <BarChart3 className="w-4 h-4 text-purple-600" />
+        </div>
       </div>
 
-      <div className="relative flex items-center justify-center" style={{ height: 220 }}>
+      <div className="relative flex items-center justify-center" style={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={donutData}
               cx="50%"
               cy="50%"
-              innerRadius={68}
-              outerRadius={100}
-              paddingAngle={hasData ? 3 : 0}
+              innerRadius={62}
+              outerRadius={92}
+              paddingAngle={hasData ? 4 : 0}
               dataKey="value"
               strokeWidth={0}
               animationBegin={0}
-              animationDuration={900}
+              animationDuration={1000}
             >
               {donutData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
             <RechartsTooltip
-              contentStyle={{ borderRadius: '12px', border: '1px solid #f0f0f0', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', fontSize: '12px', padding: '8px 12px' }}
+              contentStyle={{ borderRadius: '14px', border: '1px solid rgba(138,43,226,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '12px', padding: '10px 14px', backdropFilter: 'blur(8px)' }}
               formatter={(value: number, name: string) => [
                 showBalance ? `$${formatNumber(value)}` : '••••••',
                 name
@@ -109,25 +120,25 @@ function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBr
         </ResponsiveContainer>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[11px] text-gray-400 font-medium">Total</span>
-          <span className="text-[22px] font-bold text-gray-900 leading-tight">
+          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Total</span>
+          <span className="text-[20px] font-bold text-gray-900 leading-tight mt-0.5">
             {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
           </span>
           {hasData && (
-            <span className="text-[10px] text-gray-400 mt-0.5">
-              {rawData.filter(d => d.value > 0).length} modules
+            <span className="text-[9px] text-gray-400 mt-0.5 font-medium">
+              {rawData.filter(d => d.value > 0).length} active
             </span>
           )}
         </div>
       </div>
 
-      <div className="mt-4 space-y-2.5">
+      <div className="mt-4 space-y-3">
         {rawData.map((item) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0;
           return (
-            <div key={item.key} className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.bg }}>
-                <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
+            <div key={item.key} className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: item.bg }}>
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
@@ -142,20 +153,33 @@ function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBr
                     style={{ background: item.color }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                    transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
                   />
                 </div>
               </div>
-              <span className="text-[11px] text-gray-400 font-medium w-10 text-right flex-shrink-0">
+              <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
                 {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
               </span>
             </div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -268,9 +292,9 @@ export default function Dashboard() {
 
   const getTransactionAmount = (tx: { amountUsd: string | null; amountGold: string | null }) => {
     const usdAmt = parseFloat(tx.amountUsd || '0');
-    if (usdAmt > 0) return `$${formatNumber(usdAmt)}`;
+    if (usdAmt !== 0) return `$${formatNumber(Math.abs(usdAmt))}`;
     const goldAmt = parseFloat(tx.amountGold || '0');
-    if (goldAmt > 0) return `$${formatNumber(goldAmt * goldPrice)}`;
+    if (goldAmt !== 0) return `$${formatNumber(Math.abs(goldAmt) * goldPrice)}`;
     return '$0.00';
   };
 
@@ -298,268 +322,342 @@ export default function Dashboard() {
   const getActivityIcon = (type: string) => {
     const t = type?.toLowerCase() || '';
     if (t.includes('buy') || t.includes('deposit') || t.includes('add')) {
-      return <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center"><ArrowDownLeft className="w-4 h-4 text-green-600" /></div>;
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center"><ArrowDownLeft className="w-4 h-4 text-emerald-600" /></div>;
     }
     if (t.includes('sell') || t.includes('withdraw')) {
-      return <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-red-600" /></div>;
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-red-500" /></div>;
     }
     if (t.includes('send') || t.includes('transfer')) {
-      return <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"><Send className="w-4 h-4 text-blue-600" /></div>;
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center"><Send className="w-4 h-4 text-blue-600" /></div>;
     }
     if (t.includes('card')) {
-      return <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"><CreditCard className="w-4 h-4 text-purple-600" /></div>;
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center"><CreditCard className="w-4 h-4 text-purple-600" /></div>;
     }
-    return <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-gray-600" /></div>;
+    return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-gray-500" /></div>;
   };
 
-  const getStatusDot = (status: string) => {
+  const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || '';
-    if (s === 'completed' || s === 'complete') return 'bg-green-500';
-    if (s === 'pending') return 'bg-orange-500';
-    if (s === 'processing' || s === 'in progress') return 'bg-blue-500';
-    if (s === 'failed' || s === 'rejected') return 'bg-red-500';
-    return 'bg-gray-400';
+    if (s === 'completed' || s === 'complete') {
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Completed</span>;
+    }
+    if (s === 'pending') {
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-100"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Pending</span>;
+    }
+    if (s === 'processing' || s === 'in progress') {
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />Processing</span>;
+    }
+    if (s === 'failed' || s === 'rejected') {
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-100"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed</span>;
+    }
+    return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-50 text-gray-600 border border-gray-100"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
   };
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1400px] mx-auto space-y-6 pb-8">
+      <motion.div
+        className="max-w-[1400px] mx-auto space-y-6 pb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
 
         {pendingPhysicalDeposits.length > 0 && (
-          <Alert className="bg-amber-50 border-amber-200 rounded-xl" data-testid="alert-physical-deposit">
-            <Package className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="flex items-center justify-between">
-              <span className="text-amber-800" data-testid="text-physical-deposit-count">
-                You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
-              </span>
-              <Link href="/finavault">
-                <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-lg" data-testid="button-view-physical-status">
-                  View Status
-                </Button>
-              </Link>
-            </AlertDescription>
-          </Alert>
+          <motion.div variants={itemVariants}>
+            <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border-amber-200/60 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
+              <Package className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="flex items-center justify-between">
+                <span className="text-amber-800" data-testid="text-physical-deposit-count">
+                  You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
+                </span>
+                <Link href="/finavault">
+                  <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
+                    View Status
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          </motion.div>
         )}
 
-        <section className="flex items-center justify-between">
+        <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
             <h1 className="text-[28px] font-bold tracking-tight" data-testid="text-welcome">
               <span className="text-gray-900">{getGreeting()}, </span>
-              <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{userName}</span>
+              <span className="gradient-text-purple font-extrabold">{userName}</span>
             </h1>
-            <p className="text-gray-500 text-[14px] mt-1">Stay on top of your gold portfolio, monitor progress, and track status.</p>
+            <p className="text-gray-500 text-[14px] mt-1">Your gold portfolio at a glance</p>
           </div>
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-200">
-            <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">ID:</span>
-            <span className="text-sm font-semibold text-gray-800">{finatradesId}</span>
-            <button onClick={copyFinatradesId} className="p-1 hover:bg-gray-200 rounded-lg transition-colors" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
-              {copiedId ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/60 shadow-sm cursor-default"
+          >
+            <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">ID</span>
+            <span className="text-sm font-bold text-gray-800 font-mono tracking-wide">{finatradesId}</span>
+            <button onClick={copyFinatradesId} className="p-1.5 hover:bg-purple-50 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
+              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
             </button>
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
         <div className="grid grid-cols-12 gap-5">
 
+          {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
           <div className="col-span-12 xl:col-span-5 space-y-5">
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6" data-testid="card-total-balance">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[14px] text-gray-500 font-medium">Total Balance</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setBalanceVisible(!balanceVisible)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
-                    {balanceVisible ? <Eye className="w-4 h-4 text-gray-400" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
-                  </button>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg border border-gray-200 text-xs font-medium text-gray-700">
-                    <span className="text-[10px]">🥇</span> GOLD
+            {/* Hero Balance Card */}
+            <motion.div
+              variants={itemVariants}
+              className="relative rounded-[24px] overflow-hidden"
+              data-testid="card-total-balance"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#2d1054] to-[#0f0a2e]" />
+              <div className="absolute inset-0 mesh-gradient opacity-30" />
+              <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #8A2BE2, transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #D4AF37, transparent)', transform: 'translate(-20%, 20%)' }} />
+              <div className="holo-shimmer absolute inset-0" />
+
+              <div className="relative z-10 p-7">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                    </div>
+                    <span className="text-[13px] text-white/70 font-medium">Total Portfolio</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setBalanceVisible(!balanceVisible)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
+                      {balanceVisible ? <Eye className="w-4 h-4 text-white/50" /> : <EyeOff className="w-4 h-4 text-white/50" />}
+                    </button>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full border border-white/10 text-[10px] font-bold text-amber-300 tracking-wider">
+                      <span>🥇</span> GOLD
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p className="text-[32px] font-bold text-gray-900 tracking-tight" data-testid="text-total-balance">
-                {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-              </p>
-              <div className="flex items-center gap-1.5 mt-1 mb-5">
-                <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-green-600 text-[12px] font-semibold">↑ {formatNumber(totalGoldGrams, 2)}g</span>
-                <span className="text-gray-400 text-[12px]">total gold</span>
-              </div>
-
-              <div className="flex gap-3">
-                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-2.5 px-4 rounded-xl text-sm font-medium transition-all hover:shadow-lg hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b, #fbbf24)' }} data-testid="button-transfer">
-                  <Send className="w-4 h-4" />
-                  Transfer
-                </Link>
-                <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 transition-all hover:shadow-sm" data-testid="button-request">
-                  <Download className="w-4 h-4" />
-                  Request
-                </Link>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[13px] text-gray-500 font-medium">Wallets <span className="text-gray-300">|</span> <span className="text-gray-400">Total 3 wallets</span></span>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-xl p-3 relative border border-blue-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">🇺🇸</span>
-                        <span className="text-[11px] font-semibold text-blue-700">USD</span>
-                      </div>
-                      <button className="text-blue-300 hover:text-blue-500" aria-label="USD wallet options"><MoreVertical className="w-3 h-3" /></button>
-                    </div>
-                    <p className="text-[14px] font-bold text-blue-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
-                    <Badge className="mt-2 bg-blue-100 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                <motion.p
+                  className="text-[36px] font-extrabold text-white tracking-tight leading-none mt-3"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  data-testid="text-total-balance"
+                >
+                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                </motion.p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-400/20">
+                    <TrendingUp className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totalGoldGrams, 2)}g</span>
                   </div>
-                  <div className="rounded-xl p-3 relative border border-amber-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">🇦🇪</span>
-                        <span className="text-[11px] font-semibold text-amber-700">AED</span>
-                      </div>
-                      <button className="text-amber-300 hover:text-amber-500" aria-label="AED wallet options"><MoreVertical className="w-3 h-3" /></button>
+                  <span className="text-white/40 text-[11px]">total gold held</span>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-purple-600 to-purple-500 border border-white/10" data-testid="button-transfer">
+                    <Send className="w-4 h-4" />
+                    Transfer
+                  </Link>
+                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white/90 py-3 px-4 rounded-2xl text-sm font-bold border border-white/15 bg-white/10 backdrop-blur-sm transition-all hover:bg-white/15 hover:shadow-lg active:scale-[0.98]" data-testid="button-request">
+                    <Download className="w-4 h-4" />
+                    Request
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Wallet Cards */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[13px] text-gray-500 font-semibold">Multi-Currency Wallets</span>
+                <span className="text-[11px] text-gray-400 font-medium">3 active</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-blue-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
+                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-blue-400/10 blur-xl" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-[11px]">🇺🇸</span>
+                      <span className="text-[11px] font-bold text-blue-700">USD</span>
                     </div>
-                    <p className="text-[14px] font-bold text-amber-900 flex items-center gap-[3px]">
+                    <p className="text-[15px] font-extrabold text-blue-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
+                    <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
+                  </div>
+                </motion.div>
+                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-amber-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
+                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-400/10 blur-xl" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-[11px]">🇦🇪</span>
+                      <span className="text-[11px] font-bold text-amber-700">AED</span>
+                    </div>
+                    <p className="text-[15px] font-extrabold text-amber-900 flex items-center gap-[3px]">
                       <DirhamSymbol size="0.95em" />
                       {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
                     </p>
-                    <Badge className="mt-2 bg-amber-100 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                    <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
                   </div>
-                  <div className="rounded-xl p-3 relative border border-indigo-100 hover:shadow-md transition-all cursor-default" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">🇪🇺</span>
-                        <span className="text-[11px] font-semibold text-indigo-700">EUR</span>
-                      </div>
-                      <button className="text-indigo-300 hover:text-indigo-500" aria-label="EUR wallet options"><MoreVertical className="w-3 h-3" /></button>
+                </motion.div>
+                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-indigo-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
+                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-indigo-400/10 blur-xl" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-[11px]">🇪🇺</span>
+                      <span className="text-[11px] font-bold text-indigo-700">EUR</span>
                     </div>
-                    <p className="text-[14px] font-bold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                    <Badge className="mt-2 bg-indigo-100 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-medium">Active</Badge>
+                    <p className="text-[15px] font-extrabold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                    <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-spending-limit">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Monthly Transaction Usage</h3>
+            {/* Monthly Usage Bar */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-spending-limit">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[14px] font-bold text-gray-900">Monthly Usage</h3>
+                <span className="text-[11px] font-bold text-gray-400">{progressPercent.toFixed(0)}%</span>
+              </div>
               <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
                   className="absolute h-full rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, #fbbf24)' }}
+                  style={{ background: 'linear-gradient(90deg, #8A2BE2, #a855f7, #c084fc)' }}
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
                   transition={{ duration: 1.2, ease: 'easeOut' }}
                 />
-                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
+                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
               </div>
-              <div className="flex justify-between mt-2">
-                <span className="text-[12px] text-gray-500">This month's usage</span>
-                <span className="text-[12px] font-semibold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-normal">/ $50k</span></span>
+              <div className="flex justify-between mt-2.5">
+                <span className="text-[12px] text-gray-500">This month</span>
+                <span className="text-[12px] font-bold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-medium">/ $50k</span></span>
               </div>
-            </div>
+            </motion.div>
           </div>
 
+          {/* ═══ MIDDLE COLUMN — Earnings + FinaCard Balance + Vault/BNSL ═══ */}
           <div className="col-span-12 xl:col-span-3 space-y-5">
 
-            <motion.div 
-              className="rounded-2xl p-5 text-white relative overflow-hidden" 
-              style={{ background: 'linear-gradient(135deg, #ea580c, #f97316, #ef4444)' }}
-              animate={{ boxShadow: ['0 0 0 0 rgba(249,115,22,0)', '0 0 20px 4px rgba(249,115,22,0.35)', '0 0 0 0 rgba(249,115,22,0)'] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            {/* Gold Earnings — Premium gradient card */}
+            <motion.div
+              variants={itemVariants}
+              className="relative rounded-[20px] p-5 text-white overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #8A2BE2, #a855f7)' }}
               data-testid="card-total-earnings"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[13px] text-white/90 font-medium">Gold Earnings</span>
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
+              <div className="absolute inset-0 holo-shimmer" />
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-[12px] text-white/80 font-semibold tracking-wide">Gold Earnings</span>
+                  <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
                 </div>
-              </div>
-              <p className="text-[28px] font-bold tracking-tight" data-testid="text-earnings">
-                {showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
-              </p>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-[11px] text-white/70 font-medium">Paid BNSL margin earnings</span>
+                <p className="text-[28px] font-extrabold tracking-tight leading-none" data-testid="text-earnings">
+                  {showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
+                </p>
+                <p className="text-[11px] text-white/60 font-medium mt-2">Paid BNSL margin earnings</p>
               </div>
             </motion.div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-total-spending">
+            {/* FinaCard Balance */}
+            <motion.div
+              variants={itemVariants}
+              className="glass-card-elevated rounded-[20px] p-5 glow-border-hover"
+              data-testid="card-total-spending"
+            >
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[13px] text-gray-500 font-medium">FinaCard Balance</span>
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
+                <span className="text-[13px] text-gray-500 font-semibold">FinaCard Balance</span>
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-purple-600" />
                 </div>
               </div>
-              <p className="text-[24px] font-bold text-gray-900" data-testid="text-spending">
+              <p className="text-[26px] font-extrabold text-gray-900" data-testid="text-spending">
                 {showBalance ? `$${formatNumber(finacardValue)}` : hiddenValue}
               </p>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-[11px] text-gray-400 font-medium">Gold loaded on card</span>
-              </div>
-            </div>
+              <p className="text-[11px] text-gray-400 font-medium mt-1">Gold loaded on card</p>
+            </motion.div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" data-testid="card-vault-value">
-                <span className="text-[12px] text-gray-500 font-medium">Vault Value</span>
-                <p className="text-[18px] font-bold text-gray-900 mt-2">
+            {/* Vault + BNSL Grid */}
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+              <div className="glass-card-elevated rounded-[20px] p-4 glow-border-hover group" data-testid="card-vault-value">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Landmark className="w-4 h-4 text-amber-600" />
+                </div>
+                <span className="text-[11px] text-gray-500 font-semibold">Vault Value</span>
+                <p className="text-[18px] font-extrabold text-gray-900 mt-1">
                   {showBalance ? `$${formatNumber(vaultGoldValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.vaultGoldGrams || 0, 3)}g stored</p>
+                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.vaultGoldGrams || 0, 3)}g stored</p>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" data-testid="card-bnsl-value">
-                <span className="text-[12px] text-gray-500 font-medium">BNSL Value</span>
-                <p className="text-[18px] font-bold text-gray-900 mt-2">
+              <div className="glass-card-elevated rounded-[20px] p-4 glow-border-hover group" data-testid="card-bnsl-value">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="text-[11px] text-gray-500 font-semibold">BNSL Value</span>
+                <p className="text-[18px] font-extrabold text-gray-900 mt-1">
                   {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g in BNSL wallet</p>
+                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g in BNSL</p>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-4">
-            {/* My FinaCard */}
+          {/* ═══ RIGHT COLUMN — FinaCard + Donut ═══ */}
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5">
+            {/* FinaCard — Premium dark card with holographic effect */}
             <Link href="/finacard">
               <motion.div
-                whileHover={{ scale: 1.01 }}
-                transition={{ duration: 0.3 }}
-                className="relative w-full aspect-[1.9/1] rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-800 shadow-xl p-5 flex flex-col justify-between overflow-hidden border border-white/10 cursor-pointer"
+                variants={itemVariants}
+                whileHover={{ scale: 1.015, y: -4 }}
+                transition={{ duration: 0.35 }}
+                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
                 data-testid="card-dashboard-finacard"
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10 pointer-events-none" />
-                <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-purple-600/10 blur-2xl pointer-events-none" />
-                <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute inset-0 holo-shimmer" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
+                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
+                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
 
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded bg-gradient-to-br from-purple-500 to-pink-600" />
-                    <span className="text-white text-sm font-bold tracking-tight">Finatrades</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1">
-                    <CreditCard className="w-3 h-3 text-white/70" />
-                    <span className="text-white/70 text-[10px] font-medium">My Card</span>
-                  </div>
-                </div>
-
-                <div className="relative z-10 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-6 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-sm opacity-80" />
-                    <Zap className="w-4 h-4 text-white/30 rotate-90" />
-                  </div>
-                  <p className="font-mono text-base text-white tracking-widest">•••• •••• •••• ••••</p>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[9px] uppercase font-bold text-white/40 mb-0.5">Card Holder</p>
-                      <p className="text-white/90 text-xs font-semibold uppercase tracking-wide">
-                        {user?.firstName || ''} {user?.lastName || ''}
-                      </p>
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                        <Sparkles className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <span className="text-white text-sm font-extrabold tracking-tight">Finatrades</span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[9px] uppercase font-bold text-white/40 mb-0.5">Balance</p>
-                      <p className="text-white/90 text-xs font-semibold">
-                        {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
-                      </p>
-                      <p className="text-white/40 text-[9px]">
-                        {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
-                      </p>
+                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
+                      <CreditCard className="w-3 h-3 text-white/60" />
+                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
+                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
+                      </div>
+                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
+                    </div>
+                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
+                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
+                          {user?.firstName || ''} {user?.lastName || ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
+                        <p className="text-white/90 text-sm font-extrabold">
+                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
+                        </p>
+                        <p className="text-white/30 text-[9px] font-medium">
+                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -579,23 +677,31 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm" data-testid="card-recent-activities">
-          <div className="flex items-center justify-between p-5 pb-3">
-            <h3 className="text-[16px] font-bold text-gray-900">Recent Activities</h3>
+        {/* ═══ ACTIVITIES TABLE ═══ */}
+        <motion.div
+          variants={itemVariants}
+          className="glass-card-elevated rounded-[20px] overflow-hidden"
+          data-testid="card-recent-activities"
+        >
+          <div className="flex items-center justify-between p-6 pb-4">
+            <div>
+              <h3 className="text-[16px] font-bold text-gray-900">Recent Activities</h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">Your latest transactions</p>
+            </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Search..."
                   value={activitySearch}
                   onChange={(e) => setActivitySearch(e.target.value)}
-                  className="pl-9 pr-3 py-2 text-[13px] bg-gray-50 border border-gray-200 rounded-xl w-[180px] focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
+                  className="pl-9 pr-3 py-2 text-[13px] bg-gray-50/80 border border-gray-200/60 rounded-xl w-[180px] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all backdrop-blur-sm"
                   aria-label="Search activities"
                   data-testid="input-activity-search"
                 />
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors" data-testid="button-filter">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-gray-600 bg-gray-50/80 border border-gray-200/60 rounded-xl hover:bg-gray-100 transition-all" data-testid="button-filter">
                 Filter
                 <SlidersHorizontal className="w-3.5 h-3.5" />
               </button>
@@ -605,58 +711,60 @@ export default function Dashboard() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-t border-gray-100">
-                  <th className="text-left py-3 px-5 text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Order ID</th>
-                  <th className="text-left py-3 px-5 text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Activity</th>
-                  <th className="text-left py-3 px-5 text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Amount</th>
-                  <th className="text-left py-3 px-5 text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Status</th>
-                  <th className="text-left py-3 px-5 text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Date</th>
+                <tr className="border-t border-gray-100/60">
+                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Order ID</th>
+                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Activity</th>
+                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Amount</th>
+                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Status</th>
+                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Date</th>
                   <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => (
-                  <motion.tr 
-                    key={tx.id} 
-                    className="border-t border-gray-50 hover:bg-orange-50/30 transition-colors group cursor-default" 
+                  <motion.tr
+                    key={tx.id}
+                    className="border-t border-gray-50/60 hover:bg-purple-50/30 transition-all duration-200 group cursor-default"
                     data-testid={`row-activity-${i}`}
-                    initial={{ opacity: 0, x: -8 }}
+                    initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25, delay: i * 0.06 }}
+                    transition={{ duration: 0.3, delay: i * 0.06 }}
                   >
-                    <td className="py-3.5 px-5 relative">
-                      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full bg-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span className="text-[13px] font-medium text-gray-700">{tx.id.slice(0, 12).toUpperCase()}</span>
+                    <td className="py-4 px-6 relative">
+                      <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-purple-500 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                      <span className="text-[13px] font-semibold text-gray-700 font-mono">{tx.id.slice(0, 12).toUpperCase()}</span>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-2.5">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3">
                         {getActivityIcon(tx.type)}
-                        <span className="text-[13px] font-medium text-gray-800">{tx.type}</span>
+                        <span className="text-[13px] font-semibold text-gray-800">{tx.type}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className="text-[13px] font-semibold text-gray-900">
-                        {getTransactionAmount(tx)}
-                      </span>
+                    <td className="py-4 px-6">
+                      <span className="text-[13px] font-bold text-gray-900">{getTransactionAmount(tx)}</span>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${getStatusDot(tx.status)}`} />
-                        <span className="text-[12px] text-gray-600 capitalize">{tx.status}</span>
-                      </div>
+                    <td className="py-4 px-6">
+                      {getStatusBadge(tx.status)}
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className="text-[12px] text-gray-500">
+                    <td className="py-4 px-6">
+                      <span className="text-[12px] text-gray-500 font-medium">
                         {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'dd MMM, yyyy hh:mm a') : '-'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-2">
-                      <button className="text-gray-400 hover:text-gray-600 p-1" aria-label="Activity options"><MoreVertical className="w-4 h-4" /></button>
+                    <td className="py-4 px-2">
+                      <button className="text-gray-300 hover:text-gray-500 p-1 rounded-lg hover:bg-gray-100 transition-all" aria-label="Activity options"><MoreVertical className="w-4 h-4" /></button>
                     </td>
                   </motion.tr>
                 )) : (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-gray-400 text-[13px]">No recent activities found</td>
+                    <td colSpan={6} className="py-12 text-center text-gray-400 text-[13px]">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                          <Search className="w-5 h-5 text-gray-300" />
+                        </div>
+                        <span>No recent activities found</span>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -664,15 +772,15 @@ export default function Dashboard() {
           </div>
 
           {transactions.length > 5 && (
-            <div className="p-4 border-t border-gray-100 text-center">
-              <Link href="/transactions" className="text-[13px] text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 mx-auto" data-testid="button-view-all-activities">
+            <div className="p-5 border-t border-gray-100/60 text-center">
+              <Link href="/transactions" className="inline-flex items-center gap-1.5 text-[13px] text-purple-600 hover:text-purple-700 font-bold transition-colors" data-testid="button-view-all-activities">
                 View All Activities
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {showOnboarding && (
         <OnboardingTour onComplete={completeOnboarding} />
