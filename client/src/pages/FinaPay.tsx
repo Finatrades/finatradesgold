@@ -173,9 +173,9 @@ export default function FinaPay() {
     
     let displayType: string;
     if (isLockAction) {
-      displayType = 'Lock Gold Price (MPGW → FPGW)';
+      displayType = 'Lock Gold Price (LGPW → FPGW)';
     } else if (isUnlockAction) {
-      displayType = 'Unlock Gold Price (FPGW → MPGW)';
+      displayType = 'Unlock Gold Price (FPGW → LGPW)';
     } else {
       displayType = getTransactionLabel(rawType);
     }

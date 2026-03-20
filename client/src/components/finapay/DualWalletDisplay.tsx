@@ -100,8 +100,8 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       });
 
       const actionLabel = transferDirection === 'LGPW_to_FGPW'
-        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (MPGW → FPGW)`
-        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → MPGW)`;
+        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (LGPW → FPGW)`
+        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → LGPW)`;
 
       toast({
         title: transferDirection === 'LGPW_to_FGPW' ? 'Gold Price Locked' : 'Gold Price Unlocked',
@@ -135,7 +135,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Gold Wallet Breakdown</h2>
-            <p className="text-xs text-muted-foreground">MPGW (Market Price) & FPGW (Fixed/Locked Price)</p>
+            <p className="text-xs text-muted-foreground">LGPW (Live Price) & FPGW (Fixed/Locked Price)</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -159,7 +159,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               data-testid="btn-unlock-gold-price"
             >
               <Unlock className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Unlock to Market Price</span>
+              <span className="hidden sm:inline">Unlock to LGPW</span>
               <span className="sm:hidden">Unlock</span>
             </Button>
           )}
@@ -178,22 +178,22 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* MPGW - Market Price Gold Wallet */}
+        {/* LGPW - Live Gold Price Wallet */}
         <div className="p-5 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="w-5 h-5 text-amber-600" />
-            <h3 className="font-bold text-amber-800">MPGW</h3>
+            <h3 className="font-bold text-amber-800">LGPW</h3>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Info className="w-4 h-4 text-amber-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <p className="text-sm font-semibold mb-1">Market Price Gold Wallet (MPGW)</p>
+                <p className="text-sm font-semibold mb-1">Live Gold Price Wallet (LGPW)</p>
                 <p className="text-xs">Your gold is valued at the live market price. If gold prices rise, your USD value rises. If gold prices fall, your USD value falls. This is the standard gold wallet.</p>
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="text-xs text-amber-700 mb-1 font-medium">Market Price Gold Wallet</p>
+          <p className="text-xs text-amber-700 mb-1 font-medium">Live Gold Price Wallet</p>
           <p className="text-xs text-amber-600 mb-4">USD value fluctuates with the live gold market price</p>
           
           <div className="space-y-3">
@@ -233,7 +233,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             
             <div className="pt-2 border-t border-amber-200">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold text-amber-800">Total MPGW</span>
+                <span className="text-sm font-semibold text-amber-800">Total LGPW</span>
                 <div className="text-right">
                   <span className="text-lg font-bold text-amber-700" data-testid="mpgw-total">
                     {balance.mpgw.totalGrams.toFixed(4)} g
@@ -360,12 +360,12 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isLocking ? 'Lock Gold at Current Price (MPGW → FPGW)' : 'Unlock Gold to Market Price (FPGW → MPGW)'}
+              {isLocking ? 'Lock Gold at Current Price (LGPW → FPGW)' : 'Unlock Gold to Live Price (FPGW → LGPW)'}
             </DialogTitle>
             <DialogDescription>
               {isLocking
-                ? 'Move gold from your Market Price Wallet (MPGW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
-                : 'Move gold from your Fixed Price Wallet (FPGW) back to your Market Price Wallet (MPGW). Your gold will be valued at the live market price again.'}
+                ? 'Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
+                : 'Move gold from your Fixed Price Wallet (FPGW) back to your Live Gold Price Wallet (LGPW). Your gold will be valued at the live market price again.'}
             </DialogDescription>
           </DialogHeader>
           
@@ -380,7 +380,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                   <RadioGroupItem value="LGPW_to_FGPW" id="mpgw-to-fpgw" />
                   <Label htmlFor="mpgw-to-fpgw" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-amber-700">MPGW</span>
+                      <span className="font-semibold text-amber-700">LGPW</span>
                       <span className="mx-1 text-muted-foreground">→</span>
                       <span className="font-semibold text-purple-700">FPGW</span>
                       <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Lock Price</span>
@@ -388,7 +388,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                     <p className="text-xs text-muted-foreground mt-1">
                       Lock your gold's USD value at the current market price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
                     </p>
-                    <p className="text-xs text-muted-foreground">Available MPGW: {balance.mpgw.availableGrams.toFixed(4)} g</p>
+                    <p className="text-xs text-muted-foreground">Available LGPW: {balance.mpgw.availableGrams.toFixed(4)} g</p>
                   </Label>
                 </div>
                 <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${transferDirection === 'FGPW_to_LGPW' ? 'border-purple-400 bg-purple-50' : 'hover:bg-purple-50'} ${balance.fpgw.availableGrams <= 0.000001 ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -397,7 +397,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-purple-700">FPGW</span>
                       <span className="mx-1 text-muted-foreground">→</span>
-                      <span className="font-semibold text-amber-700">MPGW</span>
+                      <span className="font-semibold text-amber-700">LGPW</span>
                       <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Unlock Price</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -525,7 +525,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               ) : (
                 <>
                   <Unlock className="w-4 h-4 mr-2" />
-                  Unlock to Market Price
+                  Unlock to LGPW
                 </>
               )}
             </Button>

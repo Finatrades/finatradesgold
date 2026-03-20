@@ -216,10 +216,10 @@ export default function FinaVaultHistory() {
     }
     // Handle MPGW/FPGW (LGPW/FGPW) conversion actions
     if (action === 'LGPW_To_FGPW') {
-      return 'Lock Gold Price (MPGW → FPGW)';
+      return 'Lock Gold Price (LGPW → FPGW)';
     }
     if (action === 'FGPW_To_LGPW') {
-      return 'Unlock Gold Price (FPGW → MPGW)';
+      return 'Unlock Gold Price (FPGW → LGPW)';
     }
     // For other actions, add spaces before uppercase letters that follow lowercase
     return action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();

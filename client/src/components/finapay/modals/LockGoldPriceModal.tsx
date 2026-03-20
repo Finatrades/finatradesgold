@@ -59,8 +59,8 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
     try {
       await internalTransfer.mutateAsync({ userId, goldGrams: amount, fromWalletType: fromType, toWalletType: toType });
       const actionLabel = isLocking
-        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (MPGW → FPGW)`
-        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → MPGW)`;
+        ? `Locked ${amount.toFixed(6)}g at $${balance.goldPricePerGram.toFixed(2)}/g (LGPW → FPGW)`
+        : `Unlocked ${amount.toFixed(6)}g back to market price (FPGW → LGPW)`;
       toast({ title: isLocking ? 'Gold Price Locked' : 'Gold Price Unlocked', description: actionLabel });
       handleClose();
     } catch (err: any) {
@@ -74,12 +74,12 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isLocking ? <Lock className="w-5 h-5 text-amber-600" /> : <Unlock className="w-5 h-5 text-purple-600" />}
-            {isLocking ? 'Lock Gold at Current Price' : 'Unlock Gold to Market Price'}
+            {isLocking ? 'Lock Gold at Current Price' : 'Unlock Gold to Live Price'}
           </DialogTitle>
           <DialogDescription>
             {isLocking
-              ? 'Move gold from your Market Price Wallet (MPGW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
-              : 'Move gold from your Fixed Price Wallet (FPGW) back to your Market Price Wallet (MPGW). Your gold will be valued at the live market price again.'}
+              ? 'Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
+              : 'Move gold from your Fixed Price Wallet (FPGW) back to your Live Gold Price Wallet (LGPW). Your gold will be valued at the live market price again.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -91,7 +91,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
                 <RadioGroupItem value="LGPW_to_FGPW" id="dash-mpgw-to-fpgw" />
                 <Label htmlFor="dash-mpgw-to-fpgw" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-amber-700">MPGW</span>
+                    <span className="font-semibold text-amber-700">LGPW</span>
                     <span className="mx-1 text-muted-foreground">→</span>
                     <span className="font-semibold text-purple-700">FPGW</span>
                     <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg">Lock Price</span>
@@ -108,7 +108,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-purple-700">FPGW</span>
                     <span className="mx-1 text-muted-foreground">→</span>
-                    <span className="font-semibold text-amber-700">MPGW</span>
+                    <span className="font-semibold text-amber-700">LGPW</span>
                     <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-lg">Unlock</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Return gold to market price valuation. You receive the same gram count back.</p>
@@ -205,7 +205,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
             ) : isLocking ? (
               <><Lock className="w-4 h-4 mr-2" /> Lock Gold Price</>
             ) : (
-              <><Unlock className="w-4 h-4 mr-2" /> Unlock to Market Price</>
+              <><Unlock className="w-4 h-4 mr-2" /> Unlock to LGPW</>
             )}
           </Button>
         </DialogFooter>
