@@ -14,7 +14,6 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
-import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import { motion } from 'framer-motion';
@@ -40,26 +39,12 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-const PORTFOLIO_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', gradientFrom: 'rgba(138,43,226,0.25)', gradientTo: 'rgba(138,43,226,0.02)' },
-  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', gradientFrom: 'rgba(212,175,55,0.25)', gradientTo: 'rgba(212,175,55,0.02)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', gradientFrom: 'rgba(59,130,246,0.25)', gradientTo: 'rgba(59,130,246,0.02)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', gradientFrom: 'rgba(16,185,129,0.25)', gradientTo: 'rgba(16,185,129,0.02)' },
+const RING_MODULES = [
+  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', lightColor: 'rgba(138,43,226,0.12)' },
+  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', lightColor: 'rgba(212,175,55,0.12)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', lightColor: 'rgba(59,130,246,0.12)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', lightColor: 'rgba(16,185,129,0.12)' },
 ];
-
-function generateSparkline(value: number, seed: number): { v: number }[] {
-  const points = 12;
-  const data: { v: number }[] = [];
-  let current = value * 0.6;
-  for (let i = 0; i < points; i++) {
-    const noise = Math.sin(seed * 7 + i * 1.3) * 0.15 + Math.cos(seed * 3 + i * 0.7) * 0.1;
-    current = current + (value * noise * 0.2);
-    if (current < 0) current = value * 0.1;
-    data.push({ v: Math.max(current, 0) });
-  }
-  data.push({ v: value });
-  return data;
-}
 
 interface PortfolioChartsProps {
   walletGoldValue: number;
@@ -72,15 +57,47 @@ interface PortfolioChartsProps {
   formatNumber: (n: number | null | undefined, d?: number) => string;
 }
 
-function PortfolioAreaCharts({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
-  const modules = [
-    { ...PORTFOLIO_MODULES[0], value: walletGoldValue },
-    { ...PORTFOLIO_MODULES[1], value: finacardGoldValue },
-    { ...PORTFOLIO_MODULES[2], value: bnslValue },
-    { ...PORTFOLIO_MODULES[3], value: finaBridgeValue },
-  ];
+function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
+  const modules = useMemo(() => [
+    { ...RING_MODULES[0], value: walletGoldValue },
+    { ...RING_MODULES[1], value: finacardGoldValue },
+    { ...RING_MODULES[2], value: bnslValue },
+    { ...RING_MODULES[3], value: finaBridgeValue },
+  ], [walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue]);
 
   const total = modules.reduce((s, d) => s + d.value, 0);
+
+  const cx = 280;
+  const cy = 210;
+  const ringWidth = 22;
+  const ringGap = 6;
+  const startAngle = Math.PI;
+  const endAngle = 0;
+
+  function describeArc(radius: number, startA: number, endA: number): string {
+    const x1 = cx + radius * Math.cos(startA);
+    const y1 = cy - radius * Math.sin(startA);
+    const x2 = cx + radius * Math.cos(endA);
+    const y2 = cy - radius * Math.sin(endA);
+    const largeArc = endA - startA <= Math.PI ? 0 : 1;
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`;
+  }
+
+  const labelPositions = [168, 126, 84, 42];
+
+  const rings = modules.map((mod, idx) => {
+    const radius = 60 + idx * (ringWidth + ringGap);
+    const pct = total > 0 ? mod.value / total : 0;
+    const sweep = pct * Math.PI;
+    const filledEnd = startAngle - sweep;
+
+    const midAngle = startAngle - sweep / 2;
+    const dotX = cx + radius * Math.cos(midAngle);
+    const dotY = cy - radius * Math.sin(midAngle);
+    const labelY = labelPositions[idx];
+
+    return { ...mod, radius, pct, sweep, filledEnd, midAngle, dotX, dotY, labelY, idx };
+  });
 
   return (
     <motion.div
@@ -90,7 +107,7 @@ function PortfolioAreaCharts({ walletGoldValue, finacardGoldValue, bnslValue, fi
       className="glass-card-elevated rounded-[20px] p-5 h-full glow-border-hover"
       data-testid="card-portfolio-chart"
     >
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h3 className="text-[15px] font-bold text-gray-900">Portfolio Allocation</h3>
           <p className="text-[11px] text-gray-400 mt-0.5">Gold distribution across modules</p>
@@ -103,60 +120,123 @@ function PortfolioAreaCharts({ walletGoldValue, finacardGoldValue, bnslValue, fi
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mt-3">
-        {modules.map((mod, idx) => {
-          const pct = total > 0 ? (mod.value / total) * 100 : 0;
-          const sparkData = generateSparkline(mod.value, idx + 1);
-          const gradientId = `grad-${mod.key}`;
+      <svg viewBox="-120 0 540 230" className="w-full" style={{ maxHeight: 230 }}>
+        <defs>
+          {rings.map(r => (
+            <linearGradient key={`g-${r.key}`} id={`ring-grad-${r.key}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={r.color} stopOpacity={0.9} />
+              <stop offset="100%" stopColor={r.color} stopOpacity={1} />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {[...rings].reverse().map((r) => (
+          <g key={r.key}>
+            <path
+              d={describeArc(r.radius, startAngle, endAngle)}
+              fill="none"
+              stroke={r.lightColor}
+              strokeWidth={ringWidth}
+              strokeLinecap="round"
+            />
+
+            {r.pct > 0 && (
+              <motion.path
+                d={describeArc(r.radius, startAngle, r.filledEnd)}
+                fill="none"
+                stroke={`url(#ring-grad-${r.key})`}
+                strokeWidth={ringWidth}
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.2, delay: 0.3 + r.idx * 0.12, ease: "easeOut" }}
+              />
+            )}
+          </g>
+        ))}
+
+        <circle cx={cx} cy={cy} r={38} fill="white" stroke="rgba(138,43,226,0.08)" strokeWidth={2} />
+        <text x={cx} y={cy - 6} textAnchor="middle" className="text-[9px] fill-gray-400 font-semibold" style={{ fontSize: 9 }}>TOTAL</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" className="fill-gray-900 font-extrabold" style={{ fontSize: 13 }}>
+          {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+        </text>
+
+        {rings.map((r) => {
+          const elbowX = 110;
 
           return (
-            <motion.div
-              key={mod.key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.35 + idx * 0.08 }}
-              className="rounded-2xl p-3 border border-gray-100/60 hover:border-gray-200 transition-all hover:shadow-sm group"
-              style={{ background: `linear-gradient(180deg, ${mod.gradientFrom.replace('0.25', '0.04')} 0%, white 100%)` }}
-              data-testid={`area-chart-${mod.key}`}
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: mod.color }} />
-                <span className="text-[10px] font-semibold text-gray-500 truncate">{mod.label}</span>
-              </div>
-
-              <p className="text-[14px] font-extrabold text-gray-900 leading-tight">
-                {showBalance ? `$${formatNumber(mod.value)}` : '••••'}
-              </p>
-              <span className="text-[9px] text-gray-400 font-medium">
-                {pct > 0 ? `${pct.toFixed(1)}%` : '0%'}
-              </span>
-
-              <div className="mt-1.5 -mx-1" style={{ height: 48 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={mod.color} stopOpacity={0.3} />
-                        <stop offset="100%" stopColor={mod.color} stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <Area
-                      type="monotone"
-                      dataKey="v"
-                      stroke={mod.color}
-                      strokeWidth={1.5}
-                      fill={`url(#${gradientId})`}
-                      dot={false}
-                      animationDuration={1200}
-                      animationBegin={300 + idx * 100}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
+            <g key={`label-${r.key}`}>
+              <motion.line
+                x1={r.dotX}
+                y1={r.dotY}
+                x2={elbowX}
+                y2={r.labelY}
+                stroke={r.color}
+                strokeWidth={1}
+                strokeOpacity={0.4}
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.6, delay: 0.8 + r.idx * 0.1 }}
+              />
+              <motion.line
+                x1={elbowX}
+                y1={r.labelY}
+                x2={6}
+                y2={r.labelY}
+                stroke={r.color}
+                strokeWidth={1}
+                strokeOpacity={0.4}
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.4, delay: 1.0 + r.idx * 0.1 }}
+              />
+              <motion.g
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 1.1 + r.idx * 0.1 }}
+              >
+                <rect
+                  x={-110}
+                  y={r.labelY - 16}
+                  width={112}
+                  height={32}
+                  rx={8}
+                  fill={r.lightColor}
+                  stroke={r.color}
+                  strokeWidth={0.5}
+                  strokeOpacity={0.25}
+                />
+                <text x={-102} y={r.labelY - 2} style={{ fontSize: 9.5 }} className="font-bold" fill={r.color}>
+                  {r.label}
+                </text>
+                <text x={-102} y={r.labelY + 11} style={{ fontSize: 8.5 }} className="font-semibold fill-gray-500">
+                  {showBalance ? `$${formatNumber(r.value)}` : '****'} · {(r.pct * 100).toFixed(0)}%
+                </text>
+              </motion.g>
+              <circle cx={r.dotX} cy={r.dotY} r={3} fill={r.color} />
+            </g>
           );
         })}
-      </div>
+
+        {rings.map((r) => (
+          <motion.g
+            key={`num-${r.key}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 1.3 + r.idx * 0.08 }}
+          >
+            <text
+              x={cx + r.radius + 14}
+              y={cy + 5}
+              textAnchor="middle"
+              style={{ fontSize: 8.5 }}
+              className="fill-gray-400 font-bold"
+            >
+              {String(r.idx + 1).padStart(2, '0')}
+            </text>
+          </motion.g>
+        ))}
+      </svg>
     </motion.div>
   );
 }
@@ -657,7 +737,7 @@ export default function Dashboard() {
               </motion.div>
             </Link>
 
-            <PortfolioAreaCharts
+            <SemiCircleRingChart
               walletGoldValue={walletGoldValue}
               finacardGoldValue={finacardGoldValue}
               bnslValue={bnslValue}
