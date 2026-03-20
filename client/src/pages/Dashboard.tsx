@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -676,32 +676,49 @@ export default function Dashboard() {
               )}
             </motion.div>
 
-            {/* Certificates Summary */}
+            {/* Certificates List */}
             {certificates && certificates.summary.total > 0 && (
-              <Link href="/certificates">
-                <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover cursor-pointer group" data-testid="card-certificates">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[14px] font-bold text-gray-900">Certificates</h3>
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Shield className="w-4 h-4 text-amber-600" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100/50">
-                      <span className="text-[20px] font-extrabold text-purple-700">{certificates.summary.digitalOwnership}</span>
-                      <p className="text-[10px] text-purple-500 font-medium mt-0.5">Digital</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100/50">
-                      <span className="text-[20px] font-extrabold text-amber-700">{certificates.summary.physicalStorage}</span>
-                      <p className="text-[10px] text-amber-500 font-medium mt-0.5">Physical</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-3 text-gray-400 group-hover:text-purple-600 transition-colors">
-                    <span className="text-[11px] font-medium">View all {certificates.summary.total} certificates</span>
-                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </motion.div>
-              </Link>
+              <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-certificates">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[14px] font-bold text-gray-900">Certificates</h3>
+                  <Link href="/certificates">
+                    <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
+                  </Link>
+                </div>
+                <div className="space-y-2.5">
+                  {(certificates.recent || []).slice(0, 5).map((cert, i) => (
+                    <motion.div
+                      key={cert.id}
+                      className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0"
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      data-testid={`cert-row-${i}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                        <Shield className="w-4 h-4 text-purple-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-semibold text-gray-800 truncate">
+                          {cert.type === 'DIGITAL_OWNERSHIP' ? 'Digital Ownership'
+                            : cert.type === 'PHYSICAL_STORAGE' ? 'Physical Storage'
+                            : cert.type === 'CONVERSION' ? 'Conversion'
+                            : cert.type}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {cert.issuedAt && isValid(new Date(cert.issuedAt)) ? format(new Date(cert.issuedAt), 'MMM dd, yyyy') : '—'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[12px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
+                      </div>
+                      <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                        {cert.status === 'ACTIVE' ? 'Active' : cert.status}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
             )}
 
             {/* FinaBridge Trade Stats */}
@@ -875,118 +892,77 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ═══ ACTIVITIES TABLE ═══ */}
+        {/* ═══ RECENT TRANSACTIONS ═══ */}
         <motion.div
           variants={itemVariants}
           className="glass-card-elevated rounded-[20px] overflow-hidden"
           data-testid="card-recent-activities"
         >
-          <div className="flex items-center justify-between p-6 pb-4">
-            <div>
-              <h3 className="text-[16px] font-bold text-gray-900">Recent Activities</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">Your latest transactions</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={activitySearch}
-                  onChange={(e) => setActivitySearch(e.target.value)}
-                  className="pl-9 pr-3 py-2 text-[13px] bg-gray-50/80 border border-gray-200/60 rounded-xl w-[180px] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all backdrop-blur-sm"
-                  aria-label="Search activities"
-                  data-testid="input-activity-search"
-                />
+          <div className="flex items-center justify-between px-6 pt-5 pb-4">
+            <h3 className="text-[15px] font-bold text-gray-900">Recent Transactions</h3>
+            <Link href="/transactions">
+              <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer" data-testid="button-view-all-activities">View All</span>
+            </Link>
+          </div>
+
+          <div className="px-4 pb-4 space-y-1">
+            {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
+              const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit';
+              const grams = tx.amountGold ? `${isPositive ? '+' : ''}${Number(tx.amountGold).toFixed(2)}g` : null;
+              const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
+              const statusColor = tx.status === 'Completed' || tx.status === 'completed'
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                : tx.status === 'Pending' || tx.status === 'pending'
+                ? 'bg-amber-50 text-amber-600 border-amber-100'
+                : 'bg-rose-50 text-rose-600 border-rose-100';
+              return (
+                <motion.div
+                  key={tx.id}
+                  className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
+                  data-testid={`row-activity-${i}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.06 }}
+                  onClick={() => setSelectedTransaction({
+                    id: tx.id,
+                    type: tx.type,
+                    amountGrams: tx.amountGold ?? undefined,
+                    amountUsd: tx.amountUsd ?? 0,
+                    timestamp: tx.createdAt ?? '',
+                    referenceId: tx.id,
+                    status: tx.status,
+                    description: tx.description,
+                  })}
+                >
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-purple-50 border border-purple-100 group-hover:scale-105 transition-transform">
+                    {getActivityIcon(tx.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-gray-800 truncate">{tx.type}</p>
+                    <p className="text-[11px] text-gray-400">
+                      {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : 'text-gray-800'}`}>{grams}</p>}
+                    {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${statusColor}`}>
+                    {tx.status}
+                  </span>
+                </motion.div>
+              );
+            }) : (
+              <div className="py-10 text-center text-gray-400 text-[13px]">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <Search className="w-5 h-5 text-gray-300" />
+                  </div>
+                  <span>No recent transactions found</span>
+                </div>
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-gray-600 bg-gray-50/80 border border-gray-200/60 rounded-xl hover:bg-gray-100 transition-all" data-testid="button-filter">
-                Filter
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            )}
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-t border-gray-100/60">
-                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Order ID</th>
-                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Activity</th>
-                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Amount</th>
-                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Status</th>
-                  <th className="text-left py-3 px-6 text-[10px] text-gray-400 font-bold uppercase tracking-wider">Date</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => (
-                  <motion.tr
-                    key={tx.id}
-                    className="border-t border-gray-50/60 hover:bg-purple-50/30 transition-all duration-200 group cursor-pointer"
-                    data-testid={`row-activity-${i}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.06 }}
-                    onClick={() => setSelectedTransaction({
-                      id: tx.id,
-                      type: tx.type,
-                      amountGrams: tx.amountGold ?? undefined,
-                      amountUsd: tx.amountUsd ?? 0,
-                      timestamp: tx.createdAt ?? '',
-                      referenceId: tx.id,
-                      status: tx.status,
-                      description: tx.description,
-                    })}
-                  >
-                    <td className="py-4 px-6 relative">
-                      <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-purple-500 opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                      <span className="text-[13px] font-semibold text-gray-700 font-mono">{tx.id.slice(0, 12).toUpperCase()}</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        {getActivityIcon(tx.type)}
-                        <span className="text-[13px] font-semibold text-gray-800">{tx.type}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-[13px] font-bold text-gray-900">{getTransactionAmount(tx)}</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      {getStatusBadge(tx.status)}
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-[12px] text-gray-500 font-medium">
-                        {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'dd MMM, yyyy hh:mm a') : '-'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-2">
-                      <button className="text-gray-300 hover:text-gray-500 p-1 rounded-lg hover:bg-gray-100 transition-all" aria-label="Activity options"><MoreVertical className="w-4 h-4" /></button>
-                    </td>
-                  </motion.tr>
-                )) : (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-gray-400 text-[13px]">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-                          <Search className="w-5 h-5 text-gray-300" />
-                        </div>
-                        <span>No recent activities found</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {transactions.length > 5 && (
-            <div className="p-5 border-t border-gray-100/60 text-center">
-              <Link href="/transactions" className="inline-flex items-center gap-1.5 text-[13px] text-purple-600 hover:text-purple-700 font-bold transition-colors" data-testid="button-view-all-activities">
-                View All Activities
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
         </motion.div>
       </motion.div>
 
