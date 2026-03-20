@@ -485,10 +485,11 @@ export default function Dashboard() {
               className="relative rounded-[24px] overflow-hidden"
               data-testid="card-total-balance"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#2d1054] to-[#0f0a2e]" />
-              <div className="absolute inset-0 mesh-gradient opacity-30" />
-              <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #8A2BE2, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #D4AF37, transparent)', transform: 'translate(-20%, 20%)' }} />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #1e0a3c 0%, #3b1278 40%, #1a0a4a 70%, #0d0620 100%)' }} />
+              <div className="absolute inset-0 mesh-gradient opacity-20" />
+              <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, #9f3fff, transparent)', transform: 'translate(35%, -35%)' }} />
+              <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #D4AF37, transparent)', transform: 'translate(-20%, 25%)' }} />
+              <div className="absolute top-1/2 left-1/2 w-80 h-40 opacity-10" style={{ background: 'radial-gradient(ellipse, #bf7fff, transparent)', transform: 'translate(-50%, -50%)' }} />
               <div className="holo-shimmer absolute inset-0" />
 
               <div className="relative z-10 p-7">
@@ -503,7 +504,7 @@ export default function Dashboard() {
                     <button onClick={() => setBalanceVisible(!balanceVisible)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
                       {balanceVisible ? <Eye className="w-4 h-4 text-white/50" /> : <EyeOff className="w-4 h-4 text-white/50" />}
                     </button>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full border border-white/10 text-[10px] font-bold text-amber-300 tracking-wider">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
                       <span>🥇</span> GOLD
                     </div>
                   </div>
@@ -526,11 +527,11 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-purple-600 to-purple-500 border border-white/10" data-testid="button-transfer">
+                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-[0_0_24px_rgba(159,63,255,0.5)] hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #9f3fff 0%, #7c3aed 50%, #6d28d9 100%)', border: '1px solid rgba(255,255,255,0.15)' }} data-testid="button-transfer">
                     <Send className="w-4 h-4" />
                     Transfer
                   </Link>
-                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white/90 py-3 px-4 rounded-2xl text-sm font-bold border border-white/15 bg-white/10 backdrop-blur-sm transition-all hover:bg-white/15 hover:shadow-lg active:scale-[0.98]" data-testid="button-request">
+                  <Link href="/finapay" className="flex-1 flex items-center justify-center gap-2 text-white/90 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:bg-white/20 hover:shadow-lg active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(12px)' }} data-testid="button-request">
                     <Download className="w-4 h-4" />
                     Request
                   </Link>
