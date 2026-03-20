@@ -29,6 +29,7 @@ import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import LockGoldPriceModal from '@/components/finapay/modals/LockGoldPriceModal';
 import TransactionDetailsModal from '@/components/finapay/modals/TransactionDetailsModal';
+import QuickBnslModal from '@/components/dashboard/QuickBnslModal';
 import type { Transaction } from '@/types/finapay';
 
 interface UserPreferences {
@@ -235,6 +236,7 @@ export default function Dashboard() {
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
   const [chartPeriod, setChartPeriod] = useState<'7D' | '30D' | '90D'>('30D');
   const [savingsGoal] = useState(500);
+  const [showBnslModal, setShowBnslModal] = useState(false);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -668,17 +670,30 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                <Link href="/bnsl">
+                {(totals.activeBnslPlans || 0) > 0 ? (
+                  <Link href="/bnsl">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
+                      data-testid="button-quick-join-bnsl"
+                    >
+                      Manage My Plans
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </motion.button>
+                  </Link>
+                ) : (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowBnslModal(true)}
                     className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
                     data-testid="button-quick-join-bnsl"
                   >
-                    {(totals.activeBnslPlans || 0) > 0 ? 'Manage My Plans' : 'Join Plan Now'}
+                    Join Plan Now
                     <ChevronRight className="w-3.5 h-3.5" />
                   </motion.button>
-                </Link>
+                )}
               </div>
             </motion.div>
 
@@ -1229,6 +1244,13 @@ export default function Dashboard() {
         certificate={selectedCert}
         open={!!selectedCert}
         onOpenChange={(open) => { if (!open) setSelectedCert(null); }}
+      />
+
+      <QuickBnslModal
+        open={showBnslModal}
+        onOpenChange={setShowBnslModal}
+        bnslWalletBalance={totals.bnslWalletGoldGrams || 0}
+        currentGoldPrice={goldPrice}
       />
     </DashboardLayout>
   );
