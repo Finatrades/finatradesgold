@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock, Gift, Users } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, Landmark, Lock, Gift, Users } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
@@ -52,155 +52,6 @@ function getGreeting(): string {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
-}
-
-const RING_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
-  { key: 'finacard',   label: 'FinaCard',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
-];
-
-interface PortfolioChartsProps {
-  walletGoldGrams: number;
-  finacardGoldGrams: number;
-  bnslGoldGrams: number;
-  finaBridgeGoldGrams: number;
-  totalGoldGrams: number;
-  showBalance: boolean;
-  hiddenValue: string;
-  formatNumber: (n: number | null | undefined, d?: number) => string;
-}
-
-function PortfolioRingChart({ walletGoldGrams, finacardGoldGrams, bnslGoldGrams, finaBridgeGoldGrams, totalGoldGrams, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
-  const modules = useMemo(() => [
-    { ...RING_MODULES[0], value: walletGoldGrams },
-    { ...RING_MODULES[1], value: finacardGoldGrams },
-    { ...RING_MODULES[2], value: bnslGoldGrams },
-    { ...RING_MODULES[3], value: finaBridgeGoldGrams },
-  ], [walletGoldGrams, finacardGoldGrams, bnslGoldGrams, finaBridgeGoldGrams]);
-
-  const total = modules.reduce((s, d) => s + d.value, 0);
-
-  const size = 260;
-  const cx = size / 2;
-  const cy = size / 2;
-  const ringW = 10;
-  const gap = 10;
-  const innerR = 38;
-
-  const rings = useMemo(() => modules.map((mod, idx) => {
-    const r = innerR + idx * (ringW + gap);
-    const pct = total > 0 ? mod.value / total : 0;
-    const circ = 2 * Math.PI * r;
-    const filled = pct * circ;
-    return { ...mod, r, pct, circ, filled, idx };
-  }), [modules, total]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
-      className="glass-card-elevated rounded-[20px] p-5 h-full glow-border-hover"
-      data-testid="card-portfolio-chart"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-[15px] font-bold text-gray-900">Insights Allocation</h3>
-          <p className="text-[11px] text-gray-400 mt-0.5">Digital Gold distribution across modules</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(totalGoldGrams, 3)}g` : hiddenValue}</span>
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-purple-600" />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center mb-4">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {[...rings].reverse().map((ring) => (
-            <g key={ring.key} transform={`rotate(-90 ${cx} ${cy})`}>
-              <circle
-                cx={cx} cy={cy} r={ring.r}
-                fill="none"
-                stroke={ring.bg}
-                strokeWidth={ringW}
-              />
-              {ring.pct > 0 && (
-                <circle
-                  cx={cx} cy={cy} r={ring.r}
-                  fill="none"
-                  stroke={ring.color}
-                  strokeWidth={ringW}
-                  strokeLinecap="round"
-                  strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
-                  strokeDashoffset={0}
-                  className="portfolio-ring"
-                  style={{
-                    animationName: `ring-reveal-${ring.idx}`,
-                    animationDuration: '1s',
-                    animationTimingFunction: 'ease-out',
-                    animationDelay: `${0.3 + ring.idx * 0.12}s`,
-                    animationFillMode: 'backwards',
-                  }}
-                />
-              )}
-            </g>
-          ))}
-          <circle cx={cx} cy={cy} r={innerR - 10} fill="white" />
-          <circle cx={cx} cy={cy} r={innerR - 10} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1.5} />
-          <text x={cx} y={cy - 5} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
-          <text x={cx} y={cy + 9} textAnchor="middle" fill="#111827" style={{ fontSize: 13, fontWeight: 800 }}>
-            {showBalance ? `${formatNumber(totalGoldGrams, 3)}g` : '••••'}
-          </text>
-        </svg>
-      </div>
-
-      <style>{`
-        ${rings.map(r => `
-          @keyframes ring-reveal-${r.idx} {
-            from { stroke-dasharray: 0 ${r.circ}; }
-            to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
-          }
-        `).join('')}
-      `}</style>
-
-      <div className="space-y-3">
-        {modules.map((item, idx) => {
-          const pct = total > 0 ? (item.value / total) * 100 : 0;
-          return (
-            <div key={item.key} className="flex items-center gap-3 group" data-testid={`progress-${item.key}`}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: item.bg }}>
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[12px] font-semibold text-gray-700">{item.label}</span>
-                  <span className="text-[12px] font-bold text-gray-900">
-                    {showBalance ? `${formatNumber(item.value, 3)}g` : '••••'}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: item.color }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
-                  />
-                </div>
-              </div>
-              <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
-                {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
 }
 
 const containerVariants = {
@@ -1062,21 +913,341 @@ export default function Dashboard() {
               </motion.div>
             </Link>
 
-            <PortfolioRingChart
-              walletGoldGrams={totals.walletGoldGrams || 0}
-              finacardGoldGrams={totals.finacardGoldGrams || 0}
-              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
-              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
-              totalGoldGrams={totalGoldGrams}
-              showBalance={showBalance}
-              hiddenValue={hiddenValue}
-              formatNumber={formatNumber}
-            />
-
           </div>
         </div>
 
-        {/* ═══ GOLD PRICE TREND CHART (full-width, bottom) ═══ */}
+        {/* ═══ WALLET BREAKDOWN CARDS (2-panel) ═══ */}
+        {(() => {
+          const mpgwAvail = totals.mpgwAvailableGrams || 0;
+          const mpgwPend = totals.mpgwPendingGrams || 0;
+          const mpgwReserved = totals.mpgwReservedTradeGrams || 0;
+          const fpgwAvail = totals.fpgwAvailableGrams || 0;
+          const fpgwPend = totals.fpgwPendingGrams || 0;
+          const fpgwReserved = totals.fpgwReservedTradeGrams || 0;
+          const fpgwAvgPrice = totals.fpgwWeightedAvgPriceUsd || 0;
+          const bnslWallet = totals.bnslWalletGoldGrams || 0;
+          const finabridgeGrams = finaBridge?.goldGrams || 0;
+          const bnslLocked = totals.bnslLockedGrams || 0;
+          const tradeSettled = (mpgwReserved || 0) + (fpgwReserved || 0);
+
+          const allWalletZero = mpgwAvail === 0 && mpgwPend === 0 && mpgwReserved === 0 && fpgwAvail === 0 && fpgwPend === 0 && fpgwReserved === 0 && bnslWallet === 0 && finabridgeGrams === 0;
+          const allLockedZero = bnslLocked === 0 && tradeSettled === 0;
+
+          if (allWalletZero && allLockedZero) return null;
+
+          const totalLockedGrams = bnslLocked + tradeSettled;
+
+          const WALLET_ROWS = [
+            {
+              key: 'mpgw',
+              label: 'FinaPay Live (MPGW)',
+              color: '#7c3aed',
+              bg: 'rgba(124,58,237,0.10)',
+              grams: mpgwAvail,
+              usd: mpgwAvail * goldPrice,
+              sublabels: [
+                mpgwPend > 0 ? `${formatNumber(mpgwPend, 4)}g pending` : null,
+                mpgwReserved > 0 ? `${formatNumber(mpgwReserved, 4)}g reserved` : null,
+              ].filter(Boolean) as string[],
+              extra: null,
+            },
+            {
+              key: 'fpgw',
+              label: 'FinaPay Fixed / Hedged (FPGW)',
+              color: '#f59e0b',
+              bg: 'rgba(245,158,11,0.10)',
+              grams: fpgwAvail,
+              usd: fpgwAvail * goldPrice,
+              sublabels: [
+                fpgwPend > 0 ? `${formatNumber(fpgwPend, 4)}g pending` : null,
+                fpgwReserved > 0 ? `${formatNumber(fpgwReserved, 4)}g reserved` : null,
+              ].filter(Boolean) as string[],
+              extra: fpgwAvgPrice > 0 ? `Avg $${formatNumber(fpgwAvgPrice, 2)}/g` : null,
+            },
+            {
+              key: 'bnsl-wallet',
+              label: 'BNSL Wallet',
+              color: '#06b6d4',
+              bg: 'rgba(6,182,212,0.10)',
+              grams: bnslWallet,
+              usd: bnslWallet * goldPrice,
+              sublabels: [],
+              extra: null,
+            },
+            {
+              key: 'finabridge',
+              label: 'Finabridge Wallet',
+              color: '#22c55e',
+              bg: 'rgba(34,197,94,0.10)',
+              grams: finabridgeGrams,
+              usd: finabridgeGrams * goldPrice,
+              sublabels: [],
+              extra: null,
+            },
+          ];
+
+          const LOCKED_ROWS = [
+            {
+              key: 'bnsl-locked',
+              label: 'BNSL Plan Locked',
+              color: '#06b6d4',
+              bg: 'rgba(6,182,212,0.10)',
+              grams: bnslLocked,
+              usd: bnslLocked * goldPrice,
+            },
+            {
+              key: 'trade-settled',
+              label: 'Trades Settled (Locked)',
+              color: '#7c3aed',
+              bg: 'rgba(124,58,237,0.10)',
+              grams: tradeSettled,
+              usd: tradeSettled * goldPrice,
+            },
+          ];
+
+          return (
+            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Gold Wallets card — concentric ring chart */}
+              {!allWalletZero && (() => {
+                const walletTotal = WALLET_ROWS.reduce((s, r) => s + r.grams, 0);
+                const wSize = 200;
+                const wCx = wSize / 2;
+                const wCy = wSize / 2;
+                const wRingW = 8;
+                const wGap = 8;
+                const wInnerR = 30;
+                const wRings = WALLET_ROWS.map((row, idx) => {
+                  const r = wInnerR + idx * (wRingW + wGap);
+                  const pct = walletTotal > 0 ? row.grams / walletTotal : 0;
+                  const circ = 2 * Math.PI * r;
+                  const filled = pct * circ;
+                  return { ...row, r, pct, circ, filled, idx };
+                });
+                return (
+                  <motion.div
+                    variants={itemVariants}
+                    className="glass-card-elevated rounded-[20px] p-5"
+                    data-testid="card-gold-wallets"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-[15px] font-bold text-gray-900">Gold Wallets</h3>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Breakdown across wallet types</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(walletTotal, 3)}g` : hiddenValue}</span>
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                          <Vault className="w-4 h-4 text-purple-600" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-center mb-4">
+                      <svg width={wSize} height={wSize} viewBox={`0 0 ${wSize} ${wSize}`}>
+                        {[...wRings].reverse().map((ring) => (
+                          <g key={ring.key} transform={`rotate(-90 ${wCx} ${wCy})`}>
+                            <circle cx={wCx} cy={wCy} r={ring.r} fill="none" stroke={ring.bg} strokeWidth={wRingW} />
+                            {ring.pct > 0 && (
+                              <circle
+                                cx={wCx} cy={wCy} r={ring.r}
+                                fill="none" stroke={ring.color} strokeWidth={wRingW} strokeLinecap="round"
+                                strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
+                                strokeDashoffset={0}
+                                className="portfolio-ring"
+                                style={{
+                                  animationName: `wallet-ring-${ring.idx}`,
+                                  animationDuration: '1s',
+                                  animationTimingFunction: 'ease-out',
+                                  animationDelay: `${0.3 + ring.idx * 0.12}s`,
+                                  animationFillMode: 'backwards',
+                                }}
+                              />
+                            )}
+                          </g>
+                        ))}
+                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="white" />
+                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="none" stroke="rgba(124,58,237,0.06)" strokeWidth={1.5} />
+                        <text x={wCx} y={wCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
+                        <text x={wCx} y={wCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
+                          {showBalance ? `${formatNumber(walletTotal, 2)}g` : '••••'}
+                        </text>
+                      </svg>
+                    </div>
+
+                    <style>{`
+                      ${wRings.map(r => `
+                        @keyframes wallet-ring-${r.idx} {
+                          from { stroke-dasharray: 0 ${r.circ}; }
+                          to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
+                        }
+                      `).join('')}
+                    `}</style>
+
+                    <div className="space-y-3">
+                      {WALLET_ROWS.map((row, idx) => {
+                        const isZero = row.grams === 0 && row.usd === 0;
+                        const pct = walletTotal > 0 ? (row.grams / walletTotal * 100) : 0;
+                        return (
+                          <div key={row.key} className="flex items-center gap-3 group" data-testid={`wallet-row-${row.key}`}>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: row.bg }}>
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: row.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[12px] font-semibold text-gray-700">{row.label}</span>
+                                <span className="text-[12px] font-bold text-gray-900">
+                                  {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: row.color }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
+                                />
+                              </div>
+                              {row.sublabels.length > 0 && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">{row.sublabels.join(' · ')}</p>
+                              )}
+                              {row.extra && (
+                                <p className="text-[10px] font-medium mt-0.5" style={{ color: row.color }}>{row.extra}</p>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
+                              {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                );
+              })()}
+
+              {/* Locked Positions card — concentric ring chart */}
+              {!allLockedZero && (() => {
+                const lockedTotal = totalLockedGrams;
+                const lSize = 200;
+                const lCx = lSize / 2;
+                const lCy = lSize / 2;
+                const lRingW = 10;
+                const lGap = 12;
+                const lInnerR = 38;
+                const lRings = LOCKED_ROWS.map((row, idx) => {
+                  const r = lInnerR + idx * (lRingW + lGap);
+                  const pct = lockedTotal > 0 ? row.grams / lockedTotal : 0;
+                  const circ = 2 * Math.PI * r;
+                  const filled = pct * circ;
+                  return { ...row, r, pct, circ, filled, idx };
+                });
+                return (
+                  <motion.div
+                    variants={itemVariants}
+                    className="glass-card-elevated rounded-[20px] p-5"
+                    data-testid="card-locked-positions"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-[15px] font-bold text-gray-900">Locked Positions</h3>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Gold locked in plans &amp; escrow</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(lockedTotal, 3)}g` : hiddenValue}</span>
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 flex items-center justify-center">
+                          <Lock className="w-4 h-4 text-cyan-600" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-center mb-4">
+                      <svg width={lSize} height={lSize} viewBox={`0 0 ${lSize} ${lSize}`}>
+                        {[...lRings].reverse().map((ring) => (
+                          <g key={ring.key} transform={`rotate(-90 ${lCx} ${lCy})`}>
+                            <circle cx={lCx} cy={lCy} r={ring.r} fill="none" stroke={ring.bg} strokeWidth={lRingW} />
+                            {ring.pct > 0 && (
+                              <circle
+                                cx={lCx} cy={lCy} r={ring.r}
+                                fill="none" stroke={ring.color} strokeWidth={lRingW} strokeLinecap="round"
+                                strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
+                                strokeDashoffset={0}
+                                className="portfolio-ring"
+                                style={{
+                                  animationName: `locked-ring-${ring.idx}`,
+                                  animationDuration: '1s',
+                                  animationTimingFunction: 'ease-out',
+                                  animationDelay: `${0.3 + ring.idx * 0.12}s`,
+                                  animationFillMode: 'backwards',
+                                }}
+                              />
+                            )}
+                          </g>
+                        ))}
+                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="white" />
+                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="none" stroke="rgba(6,182,212,0.06)" strokeWidth={1.5} />
+                        <text x={lCx} y={lCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>LOCKED</text>
+                        <text x={lCx} y={lCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
+                          {showBalance ? `${formatNumber(lockedTotal, 2)}g` : '••••'}
+                        </text>
+                      </svg>
+                    </div>
+
+                    <style>{`
+                      ${lRings.map(r => `
+                        @keyframes locked-ring-${r.idx} {
+                          from { stroke-dasharray: 0 ${r.circ}; }
+                          to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
+                        }
+                      `).join('')}
+                    `}</style>
+
+                    <div className="space-y-3">
+                      {LOCKED_ROWS.map((row, idx) => {
+                        const isZero = row.grams === 0;
+                        const pct = lockedTotal > 0 ? (row.grams / lockedTotal * 100) : 0;
+                        return (
+                          <div key={row.key} className="flex items-center gap-3 group" data-testid={`locked-row-${row.key}`}>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: row.bg }}>
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: row.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[12px] font-semibold text-gray-700">{row.label}</span>
+                                <span className="text-[12px] font-bold text-gray-900">
+                                  {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: row.color }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
+                                />
+                              </div>
+                              {!isZero && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                  {showBalance ? `$${formatNumber(row.usd)}` : ''}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
+                              {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                );
+              })()}
+            </motion.div>
+          );
+        })()}
+
+        {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
         <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
           <div className="flex items-center justify-between mb-4">
             <div>
