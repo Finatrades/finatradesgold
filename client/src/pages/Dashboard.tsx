@@ -698,7 +698,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* BNSL Yield Summary */}
-            {(totals.activeBnslPlans > 0 || bnslPlans.length > 0) && (
+            {totals.activeBnslPlans > 0 && (
               <Link href="/bnsl">
                 <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
                   <div className="absolute inset-0 holo-shimmer" />
