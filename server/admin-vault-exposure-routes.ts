@@ -245,7 +245,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
     if (conversion.direction === 'LGPW_TO_FGPW') {
       newCashBalance = currentCashBalance + executionValue;
       await db.insert(cashSafetyLedger).values({
-        entryType: 'FGPW_LOCK',
+        entryType: 'FPGW_LOCK',
         amountUsd: executionValue.toFixed(2),
         direction: 'credit',
         runningBalanceUsd: newCashBalance.toFixed(2),
@@ -260,7 +260,7 @@ router.post('/conversions/:id/approve', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Insufficient cash safety balance for this conversion' });
       }
       await db.insert(cashSafetyLedger).values({
-        entryType: 'FGPW_UNLOCK',
+        entryType: 'FPGW_UNLOCK',
         amountUsd: executionValue.toFixed(2),
         direction: 'debit',
         runningBalanceUsd: newCashBalance.toFixed(2),

@@ -172,6 +172,7 @@ const internalTransferSchema = z.object({
   goldGrams: z.string().or(z.number()).transform(v => parseFloat(String(v))),
   fromWalletType: z.enum(['LGPW', 'FGPW']),
   toWalletType: z.enum(['LGPW', 'FGPW']),
+  lockId: z.string().optional(),
   notes: z.string().optional()
 });
 
@@ -193,7 +194,7 @@ async function safeAuditStep(
 async function handleDualWalletTransfer(req: Request, res: Response) {
   try {
     const parsed = internalTransferSchema.parse(req.body);
-    const { userId, goldGrams, fromWalletType, toWalletType, notes } = parsed;
+    const { userId, goldGrams, fromWalletType, toWalletType, lockId, notes } = parsed;
     const session = (req as any).session;
 
     if (session.userId !== userId && session.userRole !== 'admin') {
@@ -299,6 +300,23 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxId }
         );
 
+        // 4b. Cash safety ledger entry for LOCK — inside tx (atomic)
+        const [lastCashEntryLock] = await tx
+          .select({ balance: cashSafetyLedger.runningBalanceUsd })
+          .from(cashSafetyLedger)
+          .orderBy(desc(cashSafetyLedger.createdAt))
+          .limit(1);
+        const currentCashBalanceLock = parseFloat(lastCashEntryLock?.balance || '0');
+        const usdAmountLock = goldGrams * currentGoldPrice;
+        await tx.insert(cashSafetyLedger).values({
+          entryType: 'FPGW_LOCK',
+          amountUsd: usdAmountLock.toFixed(2),
+          direction: 'credit',
+          runningBalanceUsd: (currentCashBalanceLock + usdAmountLock).toFixed(2),
+          userId,
+          notes: `User locked ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`
+        });
+
         // 5. Vault ledger entry
         const [ledgerEntry] = await tx.insert(vaultLedgerEntries).values({
           userId,
@@ -353,19 +371,58 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         );
 
       } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
-        // ── UNLOCK: FGPW → LGPW ────────────────────────────────────────
-        // Simple: return same gram count at market price — no FIFO batch logic
+        // ── UNLOCK: FGPW → LGPW (lock-centric model) ───────────────────
+        // Find the ONE lock to close — by lockId if provided, else oldest Active
 
-        // 1. Create transaction (same gram count returned)
+        let targetBatch: { id: string; originalGrams: string; remainingGrams: string } | null = null;
+
+        if (lockId) {
+          const [found] = await tx
+            .select({ id: fpgwBatches.id, originalGrams: fpgwBatches.originalGrams, remainingGrams: fpgwBatches.remainingGrams })
+            .from(fpgwBatches)
+            .where(and(
+              eq(fpgwBatches.id, lockId),
+              eq(fpgwBatches.userId, userId),
+              eq(fpgwBatches.status, 'Active')
+            ));
+          targetBatch = found ?? null;
+        } else {
+          const [oldest] = await tx
+            .select({ id: fpgwBatches.id, originalGrams: fpgwBatches.originalGrams, remainingGrams: fpgwBatches.remainingGrams })
+            .from(fpgwBatches)
+            .where(and(
+              eq(fpgwBatches.userId, userId),
+              eq(fpgwBatches.status, 'Active'),
+              gt(fpgwBatches.remainingGrams, '0')
+            ))
+            .orderBy(asc(fpgwBatches.createdAt))
+            .limit(1);
+          targetBatch = oldest ?? null;
+        }
+
+        if (!targetBatch) {
+          throw new Error('No active lock found to unlock');
+        }
+
+        // Use the batch's exact original gram count (lock-centric: close the whole lock)
+        const batchGrams = parseFloat(targetBatch.originalGrams);
+
+        // 1. Mark the single batch as Consumed atomically
+        await tx
+          .update(fpgwBatches)
+          .set({ remainingGrams: '0.000000', status: 'Consumed', updatedAt: now })
+          .where(eq(fpgwBatches.id, targetBatch.id));
+
+        // 2. Create transaction record using the batch's gram count
         const [insertedTxFpgw] = await tx.insert(transactions).values({
           userId,
           type: 'Swap',
           status: 'Completed',
-          amountGold: goldGrams.toFixed(6),
-          amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          amountGold: batchGrams.toFixed(6),
+          amountUsd: (batchGrams * currentGoldPrice).toFixed(2),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           goldWalletType: 'LGPW',
-          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g at market $${currentGoldPrice.toFixed(2)}/g`,
+          description: `FGPW to LGPW unlock: ${batchGrams.toFixed(6)}g at market $${currentGoldPrice.toFixed(2)}/g`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -376,72 +433,61 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         await safeAuditStep(
           flowInstanceId, flowType, 'create_pending_txn',
           'PASS',
-          { transactionId: actualTxIdFpgw, goldGrams },
+          { transactionId: actualTxIdFpgw, batchGrams, batchId: targetBatch.id },
           { userId, transactionId: actualTxIdFpgw }
         );
 
-        // 2. Add same grams back to wallets.goldGrams (LGPW source of truth)
+        // 3. Add batch grams back to wallets.goldGrams (LGPW source of truth)
         await tx
           .update(wallets)
-          .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}`, updatedAt: now })
+          .set({ goldGrams: sql`${wallets.goldGrams} + ${batchGrams}`, updatedAt: now })
           .where(eq(wallets.userId, userId));
 
-        // 3. Deduct from FPGW in vault_ownership_summary
+        // 4. Deduct from FPGW in vault_ownership_summary
         await tx
           .update(vaultOwnershipSummary)
           .set({
-            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${goldGrams}`,
+            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${batchGrams}`,
             lastUpdated: now
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
 
-        // 3b. Mark corresponding fpgw_batches as Consumed (oldest-first, no price calc)
-        const activeBatchRows = await tx
-          .select({ id: fpgwBatches.id, remainingGrams: fpgwBatches.remainingGrams })
-          .from(fpgwBatches)
-          .where(and(
-            eq(fpgwBatches.userId, userId),
-            eq(fpgwBatches.status, 'Active'),
-            gt(fpgwBatches.remainingGrams, '0')
-          ))
-          .orderBy(asc(fpgwBatches.createdAt));
-
-        let remaining = goldGrams;
-        for (const batch of activeBatchRows) {
-          if (remaining <= 0) break;
-          const batchGrams = parseFloat(batch.remainingGrams);
-          const consume = Math.min(batchGrams, remaining);
-          const newRemaining = batchGrams - consume;
-          await tx
-            .update(fpgwBatches)
-            .set({
-              remainingGrams: newRemaining.toFixed(6),
-              status: newRemaining <= 0.000001 ? 'Consumed' : 'Active',
-              updatedAt: now
-            })
-            .where(eq(fpgwBatches.id, batch.id));
-          remaining -= consume;
-        }
-
         await safeAuditStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
-          { newLgpwGrams: preTransferBalance.mpgw.availableGrams + goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - goldGrams },
+          { newLgpwGrams: preTransferBalance.mpgw.availableGrams + batchGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - batchGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
 
-        // 4. Vault ledger entry
+        // 5. Cash safety ledger entry (inside tx — atomic with balance updates)
+        const [lastCashEntryUnlock] = await tx
+          .select({ balance: cashSafetyLedger.runningBalanceUsd })
+          .from(cashSafetyLedger)
+          .orderBy(desc(cashSafetyLedger.createdAt))
+          .limit(1);
+        const currentCashBalanceUnlock = parseFloat(lastCashEntryUnlock?.balance || '0');
+        const usdAmountUnlock = batchGrams * currentGoldPrice;
+        await tx.insert(cashSafetyLedger).values({
+          entryType: 'FPGW_UNLOCK',
+          amountUsd: usdAmountUnlock.toFixed(2),
+          direction: 'debit',
+          runningBalanceUsd: Math.max(0, currentCashBalanceUnlock - usdAmountUnlock).toFixed(2),
+          userId,
+          notes: `User unlocked ${batchGrams.toFixed(6)}g to market price ($${currentGoldPrice.toFixed(2)}/g)`
+        });
+
+        // 6. Vault ledger entry
         const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'FGPW_To_LGPW',
-          goldGrams: goldGrams.toFixed(6),
+          goldGrams: batchGrams.toFixed(6),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-          valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          valueUsd: (batchGrams * currentGoldPrice).toFixed(2),
           fromGoldWalletType: 'FGPW',
           toGoldWalletType: 'LGPW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxIdFpgw,
-          notes: `FGPW → LGPW: ${goldGrams.toFixed(6)}g unlocked at market $${currentGoldPrice.toFixed(2)}/g`
+          notes: `FGPW → LGPW: ${batchGrams.toFixed(6)}g unlocked at market $${currentGoldPrice.toFixed(2)}/g`
         }).returning({ id: vaultLedgerEntries.id });
         
         await safeAuditStep(
@@ -451,15 +497,15 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
         );
 
-        // 5. Issue Conversion certificate
+        // 7. Issue Conversion certificate
         const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         const [certFpgw] = await tx.insert(certificates).values({
           certificateNumber: certNumberFpgw,
           userId,
           type: 'Conversion',
-          goldGrams: goldGrams.toFixed(6),
+          goldGrams: batchGrams.toFixed(6),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          totalValueUsd: (batchGrams * currentGoldPrice).toFixed(2),
           issuer: 'Wingold Metals DMCC',
           fromGoldWalletType: 'FGPW',
           toGoldWalletType: 'LGPW',
@@ -477,40 +523,6 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         );
       }
     });
-
-    // Auto-insert cash safety ledger entry (non-critical — try/catch)
-    try {
-      const [lastEntry] = await db
-        .select({ balance: cashSafetyLedger.runningBalanceUsd })
-        .from(cashSafetyLedger)
-        .orderBy(desc(cashSafetyLedger.createdAt))
-        .limit(1);
-      const currentBalance = parseFloat(lastEntry?.balance || '0');
-      const usdAmount = goldGrams * currentGoldPrice;
-
-      if (fromWalletType === 'LGPW' && toWalletType === 'FGPW') {
-        await db.insert(cashSafetyLedger).values({
-          entryType: 'FPGW_LOCK',
-          amountUsd: usdAmount.toFixed(2),
-          direction: 'credit',
-          runningBalanceUsd: (currentBalance + usdAmount).toFixed(2),
-          userId,
-          notes: `User locked ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`
-        });
-      } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
-        const newBalance = Math.max(0, currentBalance - usdAmount);
-        await db.insert(cashSafetyLedger).values({
-          entryType: 'FPGW_UNLOCK',
-          amountUsd: usdAmount.toFixed(2),
-          direction: 'debit',
-          runningBalanceUsd: newBalance.toFixed(2),
-          userId,
-          notes: `User unlocked ${goldGrams.toFixed(6)}g to market price ($${currentGoldPrice.toFixed(2)}/g)`
-        });
-      }
-    } catch (cashErr: any) {
-      console.warn('[CashLedger] Non-critical cash_safety_ledger insert failed:', cashErr?.message);
-    }
 
     emitLedgerEvent(userId, {
       type: 'balance_update',

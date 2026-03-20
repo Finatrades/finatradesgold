@@ -77,6 +77,28 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
     );
   }
 
+  const handleUnlockLock = async (lockId: string, goldGrams: number) => {
+    try {
+      await internalTransfer.mutateAsync({
+        userId,
+        goldGrams,
+        fromWalletType: 'FGPW',
+        toWalletType: 'LGPW',
+        lockId
+      });
+      toast({
+        title: 'Gold Price Unlocked',
+        description: `Unlocked ${goldGrams.toFixed(4)}g back to live market price (FPGW → LGPW)`
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Unlock Failed',
+        description: err.message || 'Failed to unlock this lock',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const handleTransfer = async () => {
     const amount = parseFloat(transferAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -284,12 +306,22 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               <div className="mt-2 space-y-1.5">
                 <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Active Locks</p>
                 {activeLocks.map((lock) => (
-                  <div key={lock.id} className="flex justify-between items-center bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-100" data-testid={`lock-row-${lock.id}`}>
+                  <div key={lock.id} className="flex items-center justify-between bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-100" data-testid={`lock-row-${lock.id}`}>
                     <div>
                       <span className="text-sm font-semibold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
                       <span className="text-xs text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+                      <span className="text-xs text-purple-500 ml-1">= ${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <span className="text-xs font-semibold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[10px] border-purple-300 text-purple-700 hover:bg-purple-100"
+                      onClick={() => handleUnlockLock(lock.id, lock.goldGrams)}
+                      disabled={internalTransfer.isPending}
+                      data-testid={`button-unlock-lock-${lock.id}`}
+                    >
+                      <Unlock className="w-3 h-3 mr-1" /> Unlock
+                    </Button>
                   </div>
                 ))}
               </div>

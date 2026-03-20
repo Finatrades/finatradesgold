@@ -46,6 +46,7 @@ export interface InternalTransferParams {
   fromWalletType: 'LGPW' | 'FGPW';
   toWalletType: 'LGPW' | 'FGPW';
   notes?: string;
+  lockId?: string;
 }
 
 export function useDualWalletBalance(userId: string | undefined) {
