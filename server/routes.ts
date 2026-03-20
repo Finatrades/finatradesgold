@@ -1035,7 +1035,7 @@ export async function registerRoutes(
       const vaultGoldValueUsd = vaultGoldGrams * goldPrice;
       const vaultGoldValueAed = vaultGoldValueUsd * 3.67;
 
-      const activeBnslPlans = (bnslPlans || []).filter((p: any) => p.status === 'Active');
+      const activeBnslPlans = (bnslPlans || []).filter((p: any) => p.status === 'Active' || p.status === 'Pending Activation');
       const bnslLockedGrams = activeBnslPlans.reduce((sum: number, p: any) => 
         sum + parseFloat(p.goldSoldGrams || '0'), 0);
       const bnslTotalProfit = activeBnslPlans.reduce((sum: number, p: any) => 
@@ -11735,6 +11735,9 @@ export async function registerRoutes(
         availableGoldGrams: newAvailable.toFixed(6),
         lockedGoldGrams: newLocked.toFixed(6)
       });
+      
+      // Auto-activate on enrollment — no admin approval required
+      planData.status = 'Active';
       
       // Create the plan
       const plan = await storage.createBnslPlan(planData);
