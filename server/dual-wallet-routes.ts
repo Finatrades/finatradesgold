@@ -10,22 +10,18 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gt } from "drizzle-orm";
 import { 
   vaultOwnershipSummary, 
   vaultLedgerEntries, 
   certificates,
-  certificateEvents,
-  transactions
+  transactions,
+  wallets,
+  fpgwBatches,
+  cashSafetyLedger
 } from "@shared/schema";
 import { getBalanceSummary, validateSpend, validateInternalTransfer, type GoldWalletType } from "./spend-guard";
-import { 
-  createFpgwBatch, 
-  consumeFpgwBatches, 
-  transferFpgwBatches, 
-  getFpgwBalanceSummary,
-  updateFpgwOwnershipSummary
-} from "./fpgw-batch-service";
+import { createFpgwBatch, getFpgwBalanceSummary } from "./fpgw-batch-service";
 import { getGoldPricePerGram } from "./gold-price-service";
 import { emitLedgerEvent } from "./socket";
 import { z } from "zod";
@@ -245,6 +241,8 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
 
     await db.transaction(async (tx) => {
       if (fromWalletType === 'LGPW' && toWalletType === 'FGPW') {
+        // ── LOCK: LGPW → FGPW ──────────────────────────────────────────
+        // 1. Create transaction record
         const [insertedTx] = await tx.insert(transactions).values({
           userId,
           type: 'Swap',
@@ -253,7 +251,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           goldWalletType: 'LGPW',
-          description: `LGPW to FGPW conversion: ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`,
+          description: `LGPW to FGPW lock: ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -268,22 +266,30 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxId }
         );
         
+        // 2. Deduct from wallets.goldGrams (MPGW source of truth)
+        await tx
+          .update(wallets)
+          .set({ goldGrams: sql`${wallets.goldGrams} - ${goldGrams}`, updatedAt: now })
+          .where(eq(wallets.userId, userId));
+
+        // 3. Credit FPGW in vault_ownership_summary
         await tx
           .update(vaultOwnershipSummary)
           .set({
-            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGrams}`,
             fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} + ${goldGrams}`,
             lastUpdated: now
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
 
+        // 4. Create fpgw_batch inside the transaction (atomic — no orphan risk)
         await createFpgwBatch({
           userId,
           goldGrams,
           lockedPriceUsd: currentGoldPrice,
           sourceType: 'conversion',
           sourceTransactionId: actualTxId,
-          notes: notes || `LGPW to FGPW conversion at $${currentGoldPrice.toFixed(2)}/g`
+          notes: notes || `LGPW → FGPW lock at $${currentGoldPrice.toFixed(2)}/g`,
+          tx
         });
         
         await safeAuditStep(
@@ -293,6 +299,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxId }
         );
 
+        // 5. Vault ledger entry
         const [ledgerEntry] = await tx.insert(vaultLedgerEntries).values({
           userId,
           action: 'LGPW_To_FGPW',
@@ -303,7 +310,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           toGoldWalletType: 'FGPW',
           balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
           transactionId: actualTxId,
-          notes: `LGPW → FGPW: Debit ${goldGrams.toFixed(6)}g from LGPW, Credit ${goldGrams.toFixed(6)}g to FGPW`
+          notes: `LGPW → FGPW: ${goldGrams.toFixed(6)}g locked at $${currentGoldPrice.toFixed(2)}/g`
         }).returning({ id: vaultLedgerEntries.id });
         
         await safeAuditStep(
@@ -320,6 +327,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxId }
         );
 
+        // 6. Issue Conversion certificate (no FIFO cert reduction)
         const certNumber = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         const [cert] = await tx.insert(certificates).values({
           certificateNumber: certNumber,
@@ -337,158 +345,50 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           issuedAt: now
         }).returning({ id: certificates.id });
         
-        // Find existing LGPW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
-        const mpgwCerts = await tx.select()
-          .from(certificates)
-          .where(and(
-            eq(certificates.userId, userId),
-            eq(certificates.type, 'Digital Ownership'),
-            eq(certificates.status, 'Active'),
-            sql`(${certificates.goldWalletType} = 'LGPW' OR ${certificates.goldWalletType} IS NULL)`
-          ))
-          .orderBy(certificates.issuedAt);
-        
-        let remainingToDeduct = goldGrams;
-        let parentCertId: string | null = null;
-        
-        // Reduce remaining grams from existing certificates (FIFO order)
-        for (const mpgwCert of mpgwCerts) {
-          if (remainingToDeduct <= 0) break;
-          
-          const currentRemaining = parseFloat(mpgwCert.remainingGrams || mpgwCert.goldGrams);
-          if (currentRemaining <= 0) continue;
-          
-          const deductAmount = Math.min(remainingToDeduct, currentRemaining);
-          const newRemaining = currentRemaining - deductAmount;
-          
-          // Update the certificate's remaining grams
-          await tx.update(certificates)
-            .set({ remainingGrams: newRemaining.toFixed(6) })
-            .where(eq(certificates.id, mpgwCert.id));
-          
-          // Create partial surrender event
-          await tx.insert(certificateEvents).values({
-            certificateId: mpgwCert.id,
-            eventType: 'PARTIAL_SURRENDER',
-            gramsAffected: deductAmount.toFixed(6),
-            gramsBefore: currentRemaining.toFixed(6),
-            gramsAfter: newRemaining.toFixed(6),
-            transactionId: actualTxId,
-            notes: `${deductAmount.toFixed(6)}g converted from LGPW to FGPW at $${currentGoldPrice.toFixed(2)}/g`
-          });
-          
-          if (!parentCertId) parentCertId = mpgwCert.id;
-          remainingToDeduct -= deductAmount;
-        }
-        
-        // Generate Digital Ownership Certificate for the FGPW lock
-        const digitalCertNumber = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-        const [newFpgwCert] = await tx.insert(certificates).values({
-          certificateNumber: digitalCertNumber,
-          userId,
-          type: 'Digital Ownership',
-          goldGrams: goldGrams.toFixed(6),
-          remainingGrams: goldGrams.toFixed(6),
-          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-          issuer: 'Wingold Metals DMCC',
-          goldWalletType: 'FGPW',
-          parentCertificateId: parentCertId,
-          status: 'Active',
-          transactionId: actualTxId,
-          issuedAt: now
-        } as any).returning({ id: certificates.id });
-        
-        // Update the partial surrender event with child certificate ID
-        if (parentCertId && newFpgwCert) {
-          await tx.update(certificateEvents)
-            .set({ childCertificateId: newFpgwCert.id })
-            .where(and(
-              eq(certificateEvents.transactionId, actualTxId),
-              eq(certificateEvents.eventType, 'PARTIAL_SURRENDER')
-            ));
-        }
-        
-        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events
-        // Physical Storage certs remain unchanged (goldWalletType=LGPW) but we record the reclassification
-        const physicalStorageCerts = await tx.select()
-          .from(certificates)
-          .where(and(
-            eq(certificates.userId, userId),
-            eq(certificates.type, 'Physical Storage'),
-            eq(certificates.status, 'Active')
-          ))
-          .orderBy(certificates.issuedAt);
-        
-        // Create WALLET_RECLASSIFICATION events for Physical Storage certificates (FIFO)
-        let physicalReclassRemaining = goldGrams;
-        for (const psCert of physicalStorageCerts) {
-          if (physicalReclassRemaining <= 0) break;
-          
-          const psGrams = parseFloat(psCert.goldGrams);
-          const reclassAmount = Math.min(physicalReclassRemaining, psGrams);
-          
-          await tx.insert(certificateEvents).values({
-            certificateId: psCert.id,
-            eventType: 'WALLET_RECLASSIFICATION',
-            gramsAffected: reclassAmount.toFixed(6),
-            gramsBefore: psGrams.toFixed(6),
-            gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
-            transactionId: actualTxId,
-            childCertificateId: newFpgwCert?.id,
-            notes: `Physical storage backing reclassified: LGPW → FGPW (${reclassAmount.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g, locked rate)`
-          });
-          
-          physicalReclassRemaining -= reclassAmount;
-        }
-        
         await safeAuditStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber, parentCertId, physicalReclassCount: physicalStorageCerts.length },
+          { conversionCertNumber: certNumber },
           { userId, transactionId: actualTxId, certificateId: cert.id }
         );
 
       } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
-        const consumption = await consumeFpgwBatches(userId, goldGrams, 'Available');
-        
-        if (!consumption.success) {
-          throw new Error(consumption.error || 'FGPW consumption failed');
+        // ── UNLOCK: FGPW → LGPW ────────────────────────────────────────
+        // Collect active batches for FIFO marking (oldest first)
+        const activeBatchRows = await tx
+          .select()
+          .from(fpgwBatches)
+          .where(and(
+            eq(fpgwBatches.userId, userId),
+            eq(fpgwBatches.status, 'Active'),
+            gt(fpgwBatches.remainingGrams, '0')
+          ))
+          .orderBy(asc(fpgwBatches.createdAt));
+
+        // Compute locked price info for audit trail
+        let weightedLockedValue = 0;
+        let remainingForBatches = goldGrams;
+        const batchesToMark: { id: string; newRemaining: number }[] = [];
+        for (const batch of activeBatchRows) {
+          if (remainingForBatches <= 0) break;
+          const batchGrams = parseFloat(batch.remainingGrams);
+          const take = Math.min(batchGrams, remainingForBatches);
+          weightedLockedValue += take * parseFloat(batch.lockedPriceUsd);
+          batchesToMark.push({ id: batch.id, newRemaining: batchGrams - take });
+          remainingForBatches -= take;
         }
-        
-        await safeAuditStep(
-          flowInstanceId, flowType, 'fpgw_batches_consumed',
-          'PASS',
-          { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: (consumption as any).batchesConsumed?.length || 0 },
-          { userId }
-        );
+        const avgLockedPrice = goldGrams > 0 ? weightedLockedValue / goldGrams : currentGoldPrice;
 
-        // FGPW = Cash-backed. Calculate USD value from locked price, then buy gold at live price
-        const fgpwUsdValue = consumption.weightedValueUsd; // USD value locked in FGPW
-        const lgpwGoldGrams = fgpwUsdValue / currentGoldPrice; // Gold grams at live price
-        
-        await tx
-          .update(vaultOwnershipSummary)
-          .set({
-            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} + ${lgpwGoldGrams}`,
-            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${goldGrams}`,
-            lastUpdated: now
-          })
-          .where(eq(vaultOwnershipSummary.userId, userId));
-
-        const avgPrice = consumption.totalGramsConsumed > 0 
-          ? consumption.weightedValueUsd / consumption.totalGramsConsumed 
-          : currentGoldPrice;
-        
+        // 1. Create transaction (same gram count returned — no price recalculation)
         const [insertedTxFpgw] = await tx.insert(transactions).values({
           userId,
           type: 'Swap',
           status: 'Completed',
-          amountGold: lgpwGoldGrams.toFixed(6),
-          amountUsd: fgpwUsdValue.toFixed(2),
+          amountGold: goldGrams.toFixed(6),
+          amountUsd: (goldGrams * currentGoldPrice).toFixed(2),
           goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
           goldWalletType: 'LGPW',
-          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g FGPW @ $${avgPrice.toFixed(2)}/g = $${fgpwUsdValue.toFixed(2)} → ${lgpwGoldGrams.toFixed(6)}g LGPW @ $${currentGoldPrice.toFixed(2)}/g`,
+          description: `FGPW to LGPW unlock: ${goldGrams.toFixed(6)}g (locked at $${avgLockedPrice.toFixed(2)}/g, market $${currentGoldPrice.toFixed(2)}/g)`,
           sourceModule: 'dual-wallet',
           createdAt: now
         }).returning({ id: transactions.id });
@@ -502,25 +402,39 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { transactionId: actualTxIdFpgw, goldGrams },
           { userId, transactionId: actualTxIdFpgw }
         );
-        
-        const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
-          userId,
-          action: 'FGPW_To_LGPW',
-          goldGrams: goldGrams.toFixed(6),
-          goldPriceUsdPerGram: avgPrice.toFixed(2),
-          valueUsd: consumption.weightedValueUsd.toFixed(2),
-          fromGoldWalletType: 'FGPW',
-          toGoldWalletType: 'LGPW',
-          balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
-          transactionId: actualTxIdFpgw,
-          notes: `Converted ${goldGrams.toFixed(6)}g from FGPW to LGPW (FGPW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
-        }).returning({ id: vaultLedgerEntries.id });
-        
+
+        // 2. Add same grams back to wallets.goldGrams (MPGW source of truth)
+        await tx
+          .update(wallets)
+          .set({ goldGrams: sql`${wallets.goldGrams} + ${goldGrams}`, updatedAt: now })
+          .where(eq(wallets.userId, userId));
+
+        // 3. Deduct from FPGW in vault_ownership_summary
+        await tx
+          .update(vaultOwnershipSummary)
+          .set({
+            fpgwAvailableGrams: sql`${vaultOwnershipSummary.fpgwAvailableGrams} - ${goldGrams}`,
+            lastUpdated: now
+          })
+          .where(eq(vaultOwnershipSummary.userId, userId));
+
+        // 4. Mark batches as Consumed (FIFO, inside tx for atomicity)
+        for (const { id: batchId, newRemaining } of batchesToMark) {
+          await tx
+            .update(fpgwBatches)
+            .set({
+              remainingGrams: newRemaining.toFixed(6),
+              status: newRemaining <= 0.000001 ? 'Consumed' : 'Active',
+              updatedAt: now
+            })
+            .where(eq(fpgwBatches.id, batchId));
+        }
+
         await safeAuditStep(
-          flowInstanceId, flowType, 'ledger_post_reclass_fpgw_to_mpgw',
+          flowInstanceId, flowType, 'fpgw_batches_consumed',
           'PASS',
-          { ledgerEntryId: ledgerEntryFpgw.id },
-          { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
+          { batchesMarked: batchesToMark.length, goldGrams, avgLockedPrice },
+          { userId, transactionId: actualTxIdFpgw }
         );
         
         await safeAuditStep(
@@ -530,6 +444,28 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           { userId, transactionId: actualTxIdFpgw }
         );
 
+        // 5. Vault ledger entry
+        const [ledgerEntryFpgw] = await tx.insert(vaultLedgerEntries).values({
+          userId,
+          action: 'FGPW_To_LGPW',
+          goldGrams: goldGrams.toFixed(6),
+          goldPriceUsdPerGram: avgLockedPrice.toFixed(2),
+          valueUsd: (goldGrams * currentGoldPrice).toFixed(2),
+          fromGoldWalletType: 'FGPW',
+          toGoldWalletType: 'LGPW',
+          balanceAfterGrams: (preTransferBalance.total.totalGrams).toFixed(6),
+          transactionId: actualTxIdFpgw,
+          notes: `FGPW → LGPW: ${goldGrams.toFixed(6)}g unlocked (locked at $${avgLockedPrice.toFixed(2)}/g, market $${currentGoldPrice.toFixed(2)}/g)`
+        }).returning({ id: vaultLedgerEntries.id });
+        
+        await safeAuditStep(
+          flowInstanceId, flowType, 'ledger_post_reclass_fpgw_to_mpgw',
+          'PASS',
+          { ledgerEntryId: ledgerEntryFpgw.id },
+          { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
+        );
+
+        // 6. Issue Conversion certificate (no FIFO cert reduction)
         const certNumberFpgw = `CONV-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         const [certFpgw] = await tx.insert(certificates).values({
           certificateNumber: certNumberFpgw,
@@ -541,124 +477,54 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           issuer: 'Wingold Metals DMCC',
           fromGoldWalletType: 'FGPW',
           toGoldWalletType: 'LGPW',
-          conversionPriceUsd: avgPrice.toFixed(2),
+          conversionPriceUsd: avgLockedPrice.toFixed(2),
           status: 'Active',
           transactionId: actualTxIdFpgw,
           issuedAt: now
         }).returning({ id: certificates.id });
         
-        // Find existing FGPW Digital Ownership certificates to reduce remaining grams (FIFO - oldest first)
-        const fpgwCerts = await tx.select()
-          .from(certificates)
-          .where(and(
-            eq(certificates.userId, userId),
-            eq(certificates.type, 'Digital Ownership'),
-            eq(certificates.status, 'Active'),
-            eq(certificates.goldWalletType, 'FGPW')
-          ))
-          .orderBy(certificates.issuedAt);
-        
-        let remainingToDeductFpgw = goldGrams;
-        let parentCertIdFpgw: string | null = null;
-        
-        // Reduce remaining grams from existing FGPW certificates (FIFO order)
-        for (const fpgwCert of fpgwCerts) {
-          if (remainingToDeductFpgw <= 0) break;
-          
-          const currentRemainingFpgw = parseFloat(fpgwCert.remainingGrams || fpgwCert.goldGrams);
-          if (currentRemainingFpgw <= 0) continue;
-          
-          const deductAmountFpgw = Math.min(remainingToDeductFpgw, currentRemainingFpgw);
-          const newRemainingFpgw = currentRemainingFpgw - deductAmountFpgw;
-          
-          // Update the certificate's remaining grams
-          await tx.update(certificates)
-            .set({ remainingGrams: newRemainingFpgw.toFixed(6) })
-            .where(eq(certificates.id, fpgwCert.id));
-          
-          // Create partial surrender event
-          await tx.insert(certificateEvents).values({
-            certificateId: fpgwCert.id,
-            eventType: 'PARTIAL_SURRENDER',
-            gramsAffected: deductAmountFpgw.toFixed(6),
-            gramsBefore: currentRemainingFpgw.toFixed(6),
-            gramsAfter: newRemainingFpgw.toFixed(6),
-            transactionId: actualTxIdFpgw,
-            notes: `${deductAmountFpgw.toFixed(6)}g converted from FGPW to LGPW (FGPW cost: $${avgPrice.toFixed(2)}/g, market: $${currentGoldPrice.toFixed(2)}/g)`
-          });
-          
-          if (!parentCertIdFpgw) parentCertIdFpgw = fpgwCert.id;
-          remainingToDeductFpgw -= deductAmountFpgw;
-        }
-        
-        // Generate Digital Ownership Certificate for the LGPW unlock
-        const digitalCertNumberMpgw = `DOC-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-        const [newMpgwCert] = await tx.insert(certificates).values({
-          certificateNumber: digitalCertNumberMpgw,
-          userId,
-          type: 'Digital Ownership',
-          goldGrams: goldGrams.toFixed(6),
-          remainingGrams: goldGrams.toFixed(6),
-          goldPriceUsdPerGram: currentGoldPrice.toFixed(2),
-          totalValueUsd: (goldGrams * currentGoldPrice).toFixed(2),
-          issuer: 'Wingold Metals DMCC',
-          goldWalletType: 'LGPW',
-          parentCertificateId: parentCertIdFpgw,
-          status: 'Active',
-          transactionId: actualTxIdFpgw,
-          issuedAt: now
-        } as any).returning({ id: certificates.id });
-        
-        // Update the partial surrender event with child certificate ID
-        if (parentCertIdFpgw && newMpgwCert) {
-          await tx.update(certificateEvents)
-            .set({ childCertificateId: newMpgwCert.id })
-            .where(and(
-              eq(certificateEvents.transactionId, actualTxIdFpgw),
-              eq(certificateEvents.eventType, 'PARTIAL_SURRENDER')
-            ));
-        }
-        
-        // Find Physical Storage certificates to create WALLET_RECLASSIFICATION events (FGPW -> LGPW)
-        const physicalStorageCertsFpgw = await tx.select()
-          .from(certificates)
-          .where(and(
-            eq(certificates.userId, userId),
-            eq(certificates.type, 'Physical Storage'),
-            eq(certificates.status, 'Active')
-          ))
-          .orderBy(certificates.issuedAt);
-        
-        // Create WALLET_RECLASSIFICATION events for Physical Storage certificates (FIFO)
-        let physicalReclassRemainingFpgw = goldGrams;
-        for (const psCert of physicalStorageCertsFpgw) {
-          if (physicalReclassRemainingFpgw <= 0) break;
-          
-          const psGrams = parseFloat(psCert.goldGrams);
-          const reclassAmount = Math.min(physicalReclassRemainingFpgw, psGrams);
-          
-          await tx.insert(certificateEvents).values({
-            certificateId: psCert.id,
-            eventType: 'WALLET_RECLASSIFICATION',
-            gramsAffected: reclassAmount.toFixed(6),
-            gramsBefore: psGrams.toFixed(6),
-            gramsAfter: psGrams.toFixed(6), // Physical storage unchanged
-            transactionId: actualTxIdFpgw,
-            childCertificateId: newMpgwCert?.id,
-            notes: `Physical storage backing reclassified: FGPW → LGPW (${reclassAmount.toFixed(6)}g unlocked to market price)`
-          });
-          
-          physicalReclassRemainingFpgw -= reclassAmount;
-        }
-        
         await safeAuditStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
-          { certificateNumber: certNumberFpgw, digitalOwnershipCertNumber: digitalCertNumberMpgw, parentCertId: parentCertIdFpgw, physicalReclassCount: physicalStorageCertsFpgw.length },
+          { conversionCertNumber: certNumberFpgw },
           { userId, transactionId: actualTxIdFpgw, certificateId: certFpgw.id }
         );
       }
     });
+
+    // Auto-insert cash safety ledger entry (non-critical — try/catch)
+    try {
+      const [lastEntry] = await db
+        .select({ balance: cashSafetyLedger.runningBalanceUsd })
+        .from(cashSafetyLedger)
+        .orderBy(desc(cashSafetyLedger.createdAt))
+        .limit(1);
+      const currentBalance = parseFloat(lastEntry?.balance || '0');
+      const usdAmount = goldGrams * currentGoldPrice;
+
+      if (fromWalletType === 'LGPW' && toWalletType === 'FGPW') {
+        await db.insert(cashSafetyLedger).values({
+          entryType: 'FPGW_LOCK',
+          amountUsd: usdAmount.toFixed(2),
+          direction: 'credit',
+          runningBalanceUsd: (currentBalance + usdAmount).toFixed(2),
+          userId,
+          notes: `User locked ${goldGrams.toFixed(6)}g at $${currentGoldPrice.toFixed(2)}/g`
+        });
+      } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
+        const newBalance = Math.max(0, currentBalance - usdAmount);
+        await db.insert(cashSafetyLedger).values({
+          entryType: 'FPGW_UNLOCK',
+          amountUsd: usdAmount.toFixed(2),
+          direction: 'debit',
+          runningBalanceUsd: newBalance.toFixed(2),
+          userId,
+          notes: `User unlocked ${goldGrams.toFixed(6)}g to market price ($${currentGoldPrice.toFixed(2)}/g)`
+        });
+      }
+    } catch (cashErr: any) {
+      console.warn('[CashLedger] Non-critical cash_safety_ledger insert failed:', cashErr?.message);
+    }
 
     emitLedgerEvent(userId, {
       type: 'balance_update',
@@ -682,9 +548,6 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
       console.warn('[WorkflowAudit] completeFlow failed (non-critical):', auditErr?.message);
     }
 
-    // Update the FGPW ownership summary to sync with batches
-    await updateFpgwOwnershipSummary(userId);
-    
     const updatedBalance = await getBalanceSummary(userId);
 
     res.json({
@@ -736,6 +599,40 @@ router.get("/api/dual-wallet/:userId/allocations", ensureAuthenticated, async (r
   } catch (error: any) {
     console.error('Allocation summary error:', error);
     res.status(500).json({ error: error.message || "Failed to get allocations" });
+  }
+});
+
+router.get("/api/dual-wallet/:userId/locks", ensureAuthenticated, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const session = (req as any).session;
+
+    if (session.userId !== userId && session.userRole !== 'admin') {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const locks = await db
+      .select()
+      .from(fpgwBatches)
+      .where(and(
+        eq(fpgwBatches.userId, userId),
+        eq(fpgwBatches.status, 'Active'),
+        gt(fpgwBatches.remainingGrams, '0')
+      ))
+      .orderBy(asc(fpgwBatches.createdAt));
+
+    res.json({
+      locks: locks.map(b => ({
+        id: b.id,
+        goldGrams: parseFloat(b.remainingGrams),
+        lockedPriceUsd: parseFloat(b.lockedPriceUsd),
+        lockedValueUsd: parseFloat(b.remainingGrams) * parseFloat(b.lockedPriceUsd),
+        lockedAt: b.createdAt
+      }))
+    });
+  } catch (error: any) {
+    console.error('Active locks error:', error);
+    res.status(500).json({ error: error.message || "Failed to get locks" });
   }
 });
 

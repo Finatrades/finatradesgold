@@ -72,6 +72,26 @@ export function useFpgwBatches(userId: string | undefined) {
   });
 }
 
+export interface FpgwLock {
+  id: string;
+  goldGrams: number;
+  lockedPriceUsd: number;
+  lockedValueUsd: number;
+  lockedAt: string;
+}
+
+export function useFpgwLocks(userId: string | undefined) {
+  return useQuery<{ locks: FpgwLock[] }>({
+    queryKey: ['dual-wallet', 'locks', userId],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/dual-wallet/${userId}/locks`);
+      return res.json();
+    },
+    enabled: !!userId,
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useInternalTransfer() {
   const queryClient = useQueryClient();
   
@@ -81,7 +101,6 @@ export function useInternalTransfer() {
       return res.json();
     },
     onSuccess: (_, variables) => {
-      // Invalidate all wallet-related queries
       queryClient.invalidateQueries({ queryKey: ['dual-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });

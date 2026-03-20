@@ -5329,8 +5329,8 @@ export type WalletConversion = typeof walletConversions.$inferSelect;
 
 // Cash Safety Ledger Entry Type
 export const cashLedgerEntryTypeEnum = pgEnum('cash_ledger_entry_type', [
-  'FGPW_LOCK',           // Cash credited when user locks LGPW→FGPW
-  'FGPW_UNLOCK',         // Cash debited when user unlocks FGPW→LGPW
+  'FPGW_LOCK',           // Cash credited when user locks LGPW→FPGW
+  'FPGW_UNLOCK',         // Cash debited when user unlocks FPGW→LGPW
   'BANK_DEPOSIT',        // Manual deposit from bank
   'BANK_WITHDRAWAL',     // Manual withdrawal to bank
   'ADJUSTMENT',          // Admin adjustment

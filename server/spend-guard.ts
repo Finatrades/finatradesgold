@@ -8,9 +8,8 @@
  */
 
 import { db } from "./db";
-import { vaultOwnershipSummary, wallets } from "@shared/schema";
-import { eq } from "drizzle-orm";
-import { validateSpendableFpgw, getFpgwBalanceSummary } from "./fpgw-batch-service";
+import { vaultOwnershipSummary, wallets, fpgwBatches } from "@shared/schema";
+import { eq, and, gt } from "drizzle-orm";
 
 export type GoldWalletType = 'LGPW' | 'FGPW';
 
@@ -45,17 +44,16 @@ export interface BalanceSummary {
 }
 
 /**
- * Get the complete balance summary for a user (LGPW + FGPW)
+ * Get the complete balance summary for a user (LGPW + FGPW).
+ * MPGW available grams come from wallets.goldGrams (source of truth).
+ * FPGW available grams come from vault_ownership_summary.fpgwAvailableGrams (source of truth).
+ * Weighted avg price is derived from active fpgw_batches (display only).
  */
 export async function getBalanceSummary(userId: string): Promise<BalanceSummary> {
-  // Get ownership summary from database
   const [ownership] = await db
     .select()
     .from(vaultOwnershipSummary)
     .where(eq(vaultOwnershipSummary.userId, userId));
-
-  // Get FGPW details from batches
-  const fpgwDetails = await getFpgwBalanceSummary(userId);
 
   const walletRow = await db
     .select({ goldGrams: wallets.goldGrams })
@@ -63,6 +61,31 @@ export async function getBalanceSummary(userId: string): Promise<BalanceSummary>
     .where(eq(wallets.userId, userId))
     .then(rows => rows[0]);
   const actualWalletGrams = walletRow ? parseFloat(walletRow.goldGrams) : 0;
+
+  // FPGW balance from vault_ownership_summary (updated atomically on lock/unlock)
+  const fpgwAvailableGrams = ownership ? parseFloat(ownership.fpgwAvailableGrams) : 0;
+  const fpgwPendingGrams = ownership ? parseFloat(ownership.fpgwPendingGrams) : 0;
+  const fpgwLockedBnslGrams = ownership ? parseFloat(ownership.fpgwLockedBnslGrams) : 0;
+  const fpgwReservedTradeGrams = ownership ? parseFloat(ownership.fpgwReservedTradeGrams) : 0;
+
+  // Weighted avg price from active batches (for display only)
+  const activeBatches = await db
+    .select({ remainingGrams: fpgwBatches.remainingGrams, lockedPriceUsd: fpgwBatches.lockedPriceUsd })
+    .from(fpgwBatches)
+    .where(and(
+      eq(fpgwBatches.userId, userId),
+      eq(fpgwBatches.status, 'Active'),
+      gt(fpgwBatches.remainingGrams, '0')
+    ));
+
+  let weightedAvgPrice = 0;
+  if (activeBatches.length > 0) {
+    const totalValue = activeBatches.reduce(
+      (sum, b) => sum + parseFloat(b.remainingGrams) * parseFloat(b.lockedPriceUsd), 0
+    );
+    const totalGrams = activeBatches.reduce((sum, b) => sum + parseFloat(b.remainingGrams), 0);
+    weightedAvgPrice = totalGrams > 0 ? totalValue / totalGrams : 0;
+  }
 
   const mpgw = {
     availableGrams: actualWalletGrams,
@@ -74,12 +97,12 @@ export async function getBalanceSummary(userId: string): Promise<BalanceSummary>
   mpgw.totalGrams = mpgw.availableGrams + mpgw.pendingGrams + mpgw.lockedBnslGrams + mpgw.reservedTradeGrams;
 
   const fpgw = {
-    availableGrams: fpgwDetails.availableGrams,
-    pendingGrams: fpgwDetails.pendingGrams,
-    lockedBnslGrams: fpgwDetails.lockedBnslGrams,
-    reservedTradeGrams: fpgwDetails.reservedTradeGrams,
-    totalGrams: fpgwDetails.totalGrams,
-    weightedAvgPrice: fpgwDetails.weightedAvgPrice
+    availableGrams: fpgwAvailableGrams,
+    pendingGrams: fpgwPendingGrams,
+    lockedBnslGrams: fpgwLockedBnslGrams,
+    reservedTradeGrams: fpgwReservedTradeGrams,
+    totalGrams: fpgwAvailableGrams + fpgwPendingGrams + fpgwLockedBnslGrams + fpgwReservedTradeGrams,
+    weightedAvgPrice
   };
 
   return {
@@ -93,7 +116,9 @@ export async function getBalanceSummary(userId: string): Promise<BalanceSummary>
 }
 
 /**
- * Validate that user can spend the requested amount from a specific wallet type
+ * Validate that user can spend the requested amount from a specific wallet type.
+ * FGPW: checks vault_ownership_summary.fpgwAvailableGrams (direct, no batch aggregation).
+ * LGPW: checks wallets.goldGrams.
  */
 export async function validateSpend(
   userId: string,
@@ -111,19 +136,26 @@ export async function validateSpend(
   }
 
   if (walletType === 'FGPW') {
-    const result = await validateSpendableFpgw(userId, goldGrams);
+    const [ownership] = await db
+      .select({ fpgwAvailableGrams: vaultOwnershipSummary.fpgwAvailableGrams })
+      .from(vaultOwnershipSummary)
+      .where(eq(vaultOwnershipSummary.userId, userId));
+    const available = ownership ? parseFloat(ownership.fpgwAvailableGrams) : 0;
+    if (available >= goldGrams) {
+      return { valid: true, availableGrams: available, requestedGrams: goldGrams, walletType };
+    }
     return {
-      valid: result.valid,
-      availableGrams: result.available,
+      valid: false,
+      availableGrams: available,
       requestedGrams: goldGrams,
       walletType,
-      error: result.error
+      error: `Insufficient FPGW balance. Available: ${available.toFixed(6)}g, Requested: ${goldGrams.toFixed(6)}g. Pending/Locked gold cannot be spent.`
     };
   }
 
-  // LGPW validation
+  // LGPW validation — read from wallets.goldGrams
   const summary = await getBalanceSummary(userId);
-  
+
   if (summary.mpgw.availableGrams >= goldGrams) {
     return {
       valid: true,

@@ -111,7 +111,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
                     <span className="font-semibold text-amber-700">MPGW</span>
                     <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-lg">Unlock</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Return gold to market price valuation (FIFO)</p>
+                  <p className="text-xs text-muted-foreground mt-1">Return gold to market price valuation. You receive the same gram count back.</p>
                   <p className="text-xs text-muted-foreground">Available: {balance.fpgw.availableGrams.toFixed(4)} g</p>
                 </Label>
               </div>

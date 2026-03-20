@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDualWalletBalance, useInternalTransfer } from '@/hooks/useDualWallet';
+import { useDualWalletBalance, useInternalTransfer, useFpgwLocks } from '@/hooks/useDualWallet';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -27,8 +27,10 @@ interface DualWalletDisplayProps {
 const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayProps>(
   function DualWalletDisplay({ userId, onTransferFromVault, initialDirection, openOnMount }, ref) {
   const { data: balance, isLoading, error } = useDualWalletBalance(userId);
+  const { data: locksData } = useFpgwLocks(userId);
   const internalTransfer = useInternalTransfer();
   const { toast } = useToast();
+  const activeLocks = locksData?.locks ?? [];
   
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
@@ -262,12 +264,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
           </div>
           <p className="text-xs text-purple-700 mb-1 font-medium">Fixed Price Gold Wallet</p>
           <p className="text-xs text-purple-600 mb-4">
-            USD value locked at the price when you chose to lock
-            {balance.fpgw.weightedAvgPrice > 0 && (
-              <span className="ml-1 font-semibold">
-                — avg locked: ${balance.fpgw.weightedAvgPrice.toFixed(2)}/g
-              </span>
-            )}
+            USD value is locked at the price when you chose to lock. You get the same grams back on unlock.
           </p>
           
           <div className="space-y-3">
@@ -278,10 +275,25 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                   {balance.fpgw.availableGrams.toFixed(4)} g
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  ≈ ${(balance.fpgw.availableGrams * balance.fpgw.weightedAvgPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (locked value)
+                  ≈ ${(balance.fpgw.availableGrams * (balance.fpgw.weightedAvgPrice || balance.goldPricePerGram)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (locked value)
                 </p>
               </div>
             </div>
+
+            {activeLocks.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Active Locks</p>
+                {activeLocks.map((lock) => (
+                  <div key={lock.id} className="flex justify-between items-center bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-100" data-testid={`lock-row-${lock.id}`}>
+                    <div>
+                      <span className="text-sm font-semibold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
+                      <span className="text-xs text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+                    </div>
+                    <span className="text-xs font-semibold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             
             {balance.fpgw.lockedBnslGrams > 0 && (
               <div className="flex justify-between items-center">
@@ -389,7 +401,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                       <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Unlock Price</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Return gold to market price valuation. Oldest batches consumed first (FIFO).
+                      Return gold to market price valuation. You receive the same gram count back.
                     </p>
                     <p className="text-xs text-muted-foreground">Available FPGW: {balance.fpgw.availableGrams.toFixed(4)} g</p>
                   </Label>
