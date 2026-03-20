@@ -676,51 +676,6 @@ export default function Dashboard() {
               )}
             </motion.div>
 
-            {/* Certificates List */}
-            {certificates && certificates.summary.total > 0 && (
-              <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-certificates">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[14px] font-bold text-gray-900">Certificates</h3>
-                  <Link href="/finavault">
-                    <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
-                  </Link>
-                </div>
-                <div className="space-y-2.5">
-                  {(certificates.recent || []).slice(0, 5).map((cert, i) => (
-                    <Link key={cert.id} href="/finavault">
-                    <motion.div
-                      className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-purple-50/40 rounded-xl px-1 transition-colors"
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06 }}
-                      data-testid={`cert-row-${i}`}
-                    >
-                      <div className="w-9 h-9 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
-                        <Shield className="w-4 h-4 text-purple-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-semibold text-gray-800 truncate">
-                          {cert.type === 'DIGITAL_OWNERSHIP' ? 'Digital Ownership'
-                            : cert.type === 'PHYSICAL_STORAGE' ? 'Physical Storage'
-                            : cert.type === 'CONVERSION' ? 'Conversion'
-                            : cert.type}
-                        </p>
-                        <p className="text-[10px] text-gray-400">
-                          {cert.issuedAt && isValid(new Date(cert.issuedAt)) ? format(new Date(cert.issuedAt), 'MMM dd, yyyy') : '—'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[12px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
-                      </div>
-                      <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
-                        {cert.status === 'ACTIVE' ? 'Active' : cert.status}
-                      </span>
-                    </motion.div>
-                    </Link>
-                  ))}
-                </div>
-              </motion.div>
-            )}
 
             {/* FinaBridge Trade Stats */}
             {isBusinessUser && finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
@@ -893,78 +848,140 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ═══ RECENT TRANSACTIONS ═══ */}
-        <motion.div
-          variants={itemVariants}
-          className="glass-card-elevated rounded-[20px] overflow-hidden"
-          data-testid="card-recent-activities"
-        >
-          <div className="flex items-center justify-between px-6 pt-5 pb-4">
-            <h3 className="text-[15px] font-bold text-gray-900">Recent Transactions</h3>
-            <Link href="/transactions">
-              <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer" data-testid="button-view-all-activities">View All</span>
-            </Link>
-          </div>
+        {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <div className="px-4 pb-4 space-y-1">
-            {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
-              const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit';
-              const grams = tx.amountGold ? `${isPositive ? '+' : ''}${Number(tx.amountGold).toFixed(2)}g` : null;
-              const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
-              const statusColor = tx.status === 'Completed' || tx.status === 'completed'
-                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                : tx.status === 'Pending' || tx.status === 'pending'
-                ? 'bg-amber-50 text-amber-600 border-amber-100'
-                : 'bg-rose-50 text-rose-600 border-rose-100';
-              return (
-                <motion.div
-                  key={tx.id}
-                  className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
-                  data-testid={`row-activity-${i}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.06 }}
-                  onClick={() => setSelectedTransaction({
-                    id: tx.id,
-                    type: tx.type,
-                    amountGrams: tx.amountGold ?? undefined,
-                    amountUsd: tx.amountUsd ?? 0,
-                    timestamp: tx.createdAt ?? '',
-                    referenceId: tx.id,
-                    status: tx.status,
-                    description: tx.description,
-                  })}
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-purple-50 border border-purple-100 group-hover:scale-105 transition-transform">
-                    {getActivityIcon(tx.type)}
+          {/* Panel 1 — Recent Transactions */}
+          <motion.div
+            variants={itemVariants}
+            className="glass-card-elevated rounded-[20px] overflow-hidden"
+            data-testid="card-recent-activities"
+          >
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h3 className="text-[15px] font-bold text-gray-900">Recent Transactions</h3>
+              <Link href="/transactions">
+                <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer" data-testid="button-view-all-activities">View All</span>
+              </Link>
+            </div>
+
+            <div className="px-4 pb-4 space-y-1">
+              {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
+                const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit';
+                const grams = tx.amountGold ? `${isPositive ? '+' : ''}${Number(tx.amountGold).toFixed(2)}g` : null;
+                const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
+                const statusColor = tx.status === 'Completed' || tx.status === 'completed'
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                  : tx.status === 'Pending' || tx.status === 'pending'
+                  ? 'bg-amber-50 text-amber-600 border-amber-100'
+                  : 'bg-rose-50 text-rose-600 border-rose-100';
+                return (
+                  <motion.div
+                    key={tx.id}
+                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
+                    data-testid={`row-activity-${i}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.06 }}
+                    onClick={() => setSelectedTransaction({
+                      id: tx.id,
+                      type: tx.type,
+                      amountGrams: tx.amountGold ?? undefined,
+                      amountUsd: tx.amountUsd ?? 0,
+                      timestamp: tx.createdAt ?? '',
+                      referenceId: tx.id,
+                      status: tx.status,
+                      description: tx.description,
+                    })}
+                  >
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-purple-50 border border-purple-100 group-hover:scale-105 transition-transform">
+                      {getActivityIcon(tx.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-gray-800 truncate">{tx.type}</p>
+                      <p className="text-[11px] text-gray-400">
+                        {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : 'text-gray-800'}`}>{grams}</p>}
+                      {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${statusColor}`}>
+                      {tx.status}
+                    </span>
+                  </motion.div>
+                );
+              }) : (
+                <div className="py-10 text-center text-gray-400 text-[13px]">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                      <Search className="w-5 h-5 text-gray-300" />
+                    </div>
+                    <span>No recent transactions found</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-gray-800 truncate">{tx.type}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : 'text-gray-800'}`}>{grams}</p>}
-                    {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
-                  </div>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${statusColor}`}>
-                    {tx.status}
-                  </span>
-                </motion.div>
-              );
-            }) : (
-              <div className="py-10 text-center text-gray-400 text-[13px]">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-                    <Search className="w-5 h-5 text-gray-300" />
-                  </div>
-                  <span>No recent transactions found</span>
                 </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Panel 2 — Certificates */}
+          <motion.div
+            variants={itemVariants}
+            className="glass-card-elevated rounded-[20px] overflow-hidden"
+            data-testid="card-certificates"
+          >
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h3 className="text-[15px] font-bold text-gray-900">Certificates</h3>
+              <Link href="/finavault">
+                <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
+              </Link>
+            </div>
+            <div className="px-4 pb-4 space-y-1">
+              {certificates && (certificates.recent || []).length > 0 ? (certificates.recent || []).slice(0, 5).map((cert, i) => (
+                <Link key={cert.id} href="/finavault">
+                  <motion.div
+                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    data-testid={`cert-row-${i}`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Shield className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-gray-800 truncate">
+                        {cert.type === 'DIGITAL_OWNERSHIP' ? 'Digital Ownership'
+                          : cert.type === 'PHYSICAL_STORAGE' ? 'Physical Storage'
+                          : cert.type === 'CONVERSION' ? 'Conversion'
+                          : cert.type}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {cert.issuedAt && isValid(new Date(cert.issuedAt)) ? format(new Date(cert.issuedAt), 'MMM dd, yyyy') : '—'}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[13px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                      {cert.status === 'ACTIVE' ? 'Active' : cert.status}
+                    </span>
+                  </motion.div>
+                </Link>
+              )) : (
+                <div className="py-10 text-center text-gray-400 text-[13px]">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-gray-300" />
+                    </div>
+                    <span>No certificates yet</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+        </div>
       </motion.div>
 
       {showOnboarding && (
