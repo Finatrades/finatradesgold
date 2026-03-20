@@ -47,23 +47,23 @@ const RING_MODULES = [
 ];
 
 interface PortfolioChartsProps {
-  walletGoldValue: number;
-  finacardGoldValue: number;
-  bnslValue: number;
-  finaBridgeValue: number;
-  totalPortfolioValue: number;
+  walletGoldGrams: number;
+  finacardGoldGrams: number;
+  bnslGoldGrams: number;
+  finaBridgeGoldGrams: number;
+  totalGoldGrams: number;
   showBalance: boolean;
   hiddenValue: string;
   formatNumber: (n: number | null | undefined, d?: number) => string;
 }
 
-function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
+function PortfolioRingChart({ walletGoldGrams, finacardGoldGrams, bnslGoldGrams, finaBridgeGoldGrams, totalGoldGrams, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
   const modules = useMemo(() => [
-    { ...RING_MODULES[0], value: walletGoldValue },
-    { ...RING_MODULES[1], value: finacardGoldValue },
-    { ...RING_MODULES[2], value: bnslValue },
-    { ...RING_MODULES[3], value: finaBridgeValue },
-  ], [walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue]);
+    { ...RING_MODULES[0], value: walletGoldGrams },
+    { ...RING_MODULES[1], value: finacardGoldGrams },
+    { ...RING_MODULES[2], value: bnslGoldGrams },
+    { ...RING_MODULES[3], value: finaBridgeGoldGrams },
+  ], [walletGoldGrams, finacardGoldGrams, bnslGoldGrams, finaBridgeGoldGrams]);
 
   const total = modules.reduce((s, d) => s + d.value, 0);
 
@@ -96,7 +96,7 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
           <p className="text-[11px] text-gray-400 mt-0.5">Gold distribution across modules</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}</span>
+          <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(totalGoldGrams, 3)}g` : hiddenValue}</span>
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-purple-600" />
           </div>
@@ -138,7 +138,7 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
           <circle cx={cx} cy={cy} r={innerR - 10} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1.5} />
           <text x={cx} y={cy - 5} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
           <text x={cx} y={cy + 9} textAnchor="middle" fill="#111827" style={{ fontSize: 13, fontWeight: 800 }}>
-            {showBalance ? `$${formatNumber(totalPortfolioValue, 0)}` : '••••'}
+            {showBalance ? `${formatNumber(totalGoldGrams, 3)}g` : '••••'}
           </text>
         </svg>
       </div>
@@ -164,7 +164,7 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[12px] font-semibold text-gray-700">{item.label}</span>
                   <span className="text-[12px] font-bold text-gray-900">
-                    {showBalance ? `$${formatNumber(item.value)}` : '••••'}
+                    {showBalance ? `${formatNumber(item.value, 3)}g` : '••••'}
                   </span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -277,7 +277,7 @@ export default function Dashboard() {
 
   const userName = user?.firstName || user?.email?.split('@')[0] || 'User';
   const isBusinessUser = user?.accountType === 'business' || !!user?.finabridgeRole;
-  const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0) + (totals.bnslWalletGoldGrams || 0);
+  const totalGoldGrams = (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0) + (totals.bnslWalletGoldGrams || 0) + (finaBridge?.goldGrams || 0);
   const totalPortfolioValue = totals.totalPortfolioUsd || 0;
   const walletGoldValue = (totals.walletGoldGrams || 0) * goldPrice;
   const finacardGoldValue = (totals.finacardGoldGrams || 0) * goldPrice;
@@ -685,11 +685,11 @@ export default function Dashboard() {
             </Link>
 
             <PortfolioRingChart
-              walletGoldValue={walletGoldValue}
-              finacardGoldValue={finacardGoldValue}
-              bnslValue={bnslValue}
-              finaBridgeValue={finaBridgeValue}
-              totalPortfolioValue={totalPortfolioValue}
+              walletGoldGrams={totals.walletGoldGrams || 0}
+              finacardGoldGrams={totals.finacardGoldGrams || 0}
+              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
+              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
+              totalGoldGrams={totalGoldGrams}
               showBalance={showBalance}
               hiddenValue={hiddenValue}
               formatNumber={formatNumber}
