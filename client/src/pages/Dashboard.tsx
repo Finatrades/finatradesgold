@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
@@ -643,10 +644,7 @@ export default function Dashboard() {
                 <div className="relative z-10 p-5 h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                        <Sparkles className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <span className="text-white text-sm font-extrabold tracking-tight">Finatrades</span>
+                      <img src={finatradesLogo} alt="Finatrades" className="h-7 brightness-0 invert" />
                     </div>
                     <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
                       <CreditCard className="w-3 h-3 text-white/60" />
