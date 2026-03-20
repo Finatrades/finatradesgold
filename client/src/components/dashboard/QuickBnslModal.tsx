@@ -490,8 +490,8 @@ export default function QuickBnslModal({
                   id="agree-terms"
                   checked={agreedToTerms}
                   onCheckedChange={v => {
-                    setAgreedToTerms(!!v);
-                    if (v) handleDownloadDraft();
+                    setAgreedToTerms(v === true);
+                    if (v === true) handleDownloadDraft();
                   }}
                   disabled={!hasScrolledTerms}
                   data-testid="checkbox-agree-terms"
