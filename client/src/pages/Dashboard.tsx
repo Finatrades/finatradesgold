@@ -1071,7 +1071,7 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ RIGHT COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5">
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
               <div className="flex items-center gap-2 mb-3">
