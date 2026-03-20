@@ -14,7 +14,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import OnboardingTour, { useOnboarding } from '@/components/OnboardingTour';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
+import { Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import { motion } from 'framer-motion';
@@ -241,18 +241,6 @@ export default function Dashboard() {
   const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
 
-  const chartData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-    const base = (totalGoldGrams * goldPrice) / 8;
-    const inflowMultipliers = [0.4, 0.5, 0.55, 0.85, 0.9, 1.0, 0.95, 1.1];
-    const outflowMultipliers = [0.1, 0.15, 0.12, 0.2, 0.25, 0.18, 0.22, 0.3];
-    return months.map((m, i) => ({
-      name: m,
-      income: Math.round(base * inflowMultipliers[i]),
-      expense: Math.round(base * outflowMultipliers[i]),
-    }));
-  }, [totalGoldGrams, goldPrice]);
-
   const filteredActivities = useMemo(() => {
     if (!activitySearch) return transactions.slice(0, 5);
     return transactions.filter(t => 
@@ -263,11 +251,14 @@ export default function Dashboard() {
 
   const monthlySpend = useMemo(() => {
     const now = new Date();
+    const outgoingTypes = ['sell', 'withdraw', 'send', 'transfer', 'payment', 'spend', 'fee'];
     return transactions
       .filter(tx => {
         if (!tx.createdAt) return false;
         const d = new Date(tx.createdAt);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        const isThisMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        const isOutgoing = outgoingTypes.some(t => (tx.type || '').toLowerCase().includes(t));
+        return isThisMonth && isOutgoing;
       })
       .reduce((sum, tx) => sum + Math.abs(parseFloat(tx.amountUsd || '0')), 0);
   }, [transactions]);
@@ -519,7 +510,7 @@ export default function Dashboard() {
                 <p className="text-[18px] font-bold text-gray-900 mt-2">
                   {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.bnslLockedGrams || 0, 3)}g locked</p>
+                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g in BNSL wallet</p>
               </div>
             </div>
           </div>
