@@ -40,10 +40,10 @@ function getGreeting(): string {
 }
 
 const RING_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', lightColor: 'rgba(138,43,226,0.12)' },
-  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', lightColor: 'rgba(212,175,55,0.12)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', lightColor: 'rgba(59,130,246,0.12)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', lightColor: 'rgba(16,185,129,0.12)' },
+  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', lightColor: 'rgba(138,43,226,0.10)' },
+  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', lightColor: 'rgba(212,175,55,0.10)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', lightColor: 'rgba(59,130,246,0.10)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', lightColor: 'rgba(16,185,129,0.10)' },
 ];
 
 interface PortfolioChartsProps {
@@ -67,37 +67,20 @@ function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fi
 
   const total = modules.reduce((s, d) => s + d.value, 0);
 
-  const cx = 280;
-  const cy = 210;
-  const ringWidth = 22;
-  const ringGap = 6;
-  const startAngle = Math.PI;
-  const endAngle = 0;
+  const cx = 300;
+  const cy = 195;
+  const ringThickness = 20;
+  const ringGap = 5;
+  const innermost = 50;
 
-  function describeArc(radius: number, startA: number, endA: number): string {
-    const x1 = cx + radius * Math.cos(startA);
-    const y1 = cy - radius * Math.sin(startA);
-    const x2 = cx + radius * Math.cos(endA);
-    const y2 = cy - radius * Math.sin(endA);
-    const largeArc = endA - startA <= Math.PI ? 0 : 1;
-    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`;
-  }
-
-  const labelPositions = [168, 126, 84, 42];
-
-  const rings = modules.map((mod, idx) => {
-    const radius = 60 + idx * (ringWidth + ringGap);
+  const rings = useMemo(() => modules.map((mod, idx) => {
+    const r = innermost + idx * (ringThickness + ringGap);
     const pct = total > 0 ? mod.value / total : 0;
-    const sweep = pct * Math.PI;
-    const filledEnd = startAngle - sweep;
-
-    const midAngle = startAngle - sweep / 2;
-    const dotX = cx + radius * Math.cos(midAngle);
-    const dotY = cy - radius * Math.sin(midAngle);
-    const labelY = labelPositions[idx];
-
-    return { ...mod, radius, pct, sweep, filledEnd, midAngle, dotX, dotY, labelY, idx };
-  });
+    const circumference = Math.PI * r;
+    const filledLen = pct * circumference;
+    const labelY = 170 - idx * 42;
+    return { ...mod, r, pct, circumference, filledLen, labelY, idx };
+  }), [modules, total]);
 
   return (
     <motion.div
@@ -120,121 +103,87 @@ function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fi
         </div>
       </div>
 
-      <svg viewBox="-120 0 540 230" className="w-full" style={{ maxHeight: 230 }}>
-        <defs>
-          {rings.map(r => (
-            <linearGradient key={`g-${r.key}`} id={`ring-grad-${r.key}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={r.color} stopOpacity={0.9} />
-              <stop offset="100%" stopColor={r.color} stopOpacity={1} />
-            </linearGradient>
-          ))}
-        </defs>
+      <svg viewBox="0 0 460 210" className="w-full" preserveAspectRatio="xMidYMid meet">
 
-        {[...rings].reverse().map((r) => (
-          <g key={r.key}>
-            <path
-              d={describeArc(r.radius, startAngle, endAngle)}
+        {[...rings].reverse().map((ring) => (
+          <g key={ring.key}>
+            <circle
+              cx={cx}
+              cy={cy}
+              r={ring.r}
               fill="none"
-              stroke={r.lightColor}
-              strokeWidth={ringWidth}
+              stroke={ring.lightColor}
+              strokeWidth={ringThickness}
+              strokeDasharray={`${ring.circumference} ${ring.circumference}`}
+              strokeDashoffset={0}
               strokeLinecap="round"
+              transform={`rotate(180 ${cx} ${cy})`}
             />
 
-            {r.pct > 0 && (
-              <motion.path
-                d={describeArc(r.radius, startAngle, r.filledEnd)}
-                fill="none"
-                stroke={`url(#ring-grad-${r.key})`}
-                strokeWidth={ringWidth}
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.2, delay: 0.3 + r.idx * 0.12, ease: "easeOut" }}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={ring.r}
+              fill="none"
+              stroke={ring.color}
+              strokeWidth={ringThickness}
+              strokeDasharray={`${ring.filledLen} ${ring.circumference}`}
+              strokeDashoffset={0}
+              strokeLinecap="round"
+              transform={`rotate(180 ${cx} ${cy})`}
+              opacity={ring.pct > 0 ? 1 : 0}
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from={`${ring.circumference}`}
+                to="0"
+                dur="1.2s"
+                begin={`${0.3 + ring.idx * 0.15}s`}
+                fill="freeze"
+                calcMode="spline"
+                keySplines="0.4 0 0.2 1"
+                keyTimes="0;1"
               />
-            )}
+            </circle>
           </g>
         ))}
 
-        <circle cx={cx} cy={cy} r={38} fill="white" stroke="rgba(138,43,226,0.08)" strokeWidth={2} />
-        <text x={cx} y={cy - 6} textAnchor="middle" className="text-[9px] fill-gray-400 font-semibold" style={{ fontSize: 9 }}>TOTAL</text>
-        <text x={cx} y={cy + 10} textAnchor="middle" className="fill-gray-900 font-extrabold" style={{ fontSize: 13 }}>
+        <circle cx={cx} cy={cy} r={innermost - 14} fill="white" />
+        <circle cx={cx} cy={cy} r={innermost - 14} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1.5} />
+        <text x={cx} y={cy - 5} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.05em' }}>TOTAL</text>
+        <text x={cx} y={cy + 9} textAnchor="middle" fill="#111827" style={{ fontSize: 12, fontWeight: 800 }}>
           {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
         </text>
 
-        {rings.map((r) => {
-          const elbowX = 110;
+        {rings.map((ring) => {
+          const arcMidAngle = Math.PI - (ring.pct * Math.PI * 0.5);
+          const dotOnRingX = cx + ring.r * Math.cos(arcMidAngle);
+          const dotOnRingY = cy - ring.r * Math.sin(arcMidAngle);
+          const elbowX = 128;
+          const labelEndX = 4;
 
           return (
-            <g key={`label-${r.key}`}>
-              <motion.line
-                x1={r.dotX}
-                y1={r.dotY}
-                x2={elbowX}
-                y2={r.labelY}
-                stroke={r.color}
-                strokeWidth={1}
-                strokeOpacity={0.4}
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.6, delay: 0.8 + r.idx * 0.1 }}
-              />
-              <motion.line
-                x1={elbowX}
-                y1={r.labelY}
-                x2={6}
-                y2={r.labelY}
-                stroke={r.color}
-                strokeWidth={1}
-                strokeOpacity={0.4}
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.4, delay: 1.0 + r.idx * 0.1 }}
-              />
-              <motion.g
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 1.1 + r.idx * 0.1 }}
-              >
-                <rect
-                  x={-110}
-                  y={r.labelY - 16}
-                  width={112}
-                  height={32}
-                  rx={8}
-                  fill={r.lightColor}
-                  stroke={r.color}
-                  strokeWidth={0.5}
-                  strokeOpacity={0.25}
-                />
-                <text x={-102} y={r.labelY - 2} style={{ fontSize: 9.5 }} className="font-bold" fill={r.color}>
-                  {r.label}
-                </text>
-                <text x={-102} y={r.labelY + 11} style={{ fontSize: 8.5 }} className="font-semibold fill-gray-500">
-                  {showBalance ? `$${formatNumber(r.value)}` : '****'} · {(r.pct * 100).toFixed(0)}%
-                </text>
-              </motion.g>
-              <circle cx={r.dotX} cy={r.dotY} r={3} fill={r.color} />
+            <g key={`label-${ring.key}`}>
+              <line x1={dotOnRingX} y1={dotOnRingY} x2={elbowX} y2={ring.labelY} stroke={ring.color} strokeWidth={0.8} strokeOpacity={0.35} />
+              <line x1={elbowX} y1={ring.labelY} x2={labelEndX + 110} y2={ring.labelY} stroke={ring.color} strokeWidth={0.8} strokeOpacity={0.35} />
+
+              <rect x={labelEndX} y={ring.labelY - 15} width={108} height={30} rx={7} fill={ring.lightColor} stroke={ring.color} strokeWidth={0.5} strokeOpacity={0.2} />
+              <text x={labelEndX + 8} y={ring.labelY - 1} fill={ring.color} style={{ fontSize: 9.5, fontWeight: 700 }}>{ring.label}</text>
+              <text x={labelEndX + 8} y={ring.labelY + 10} fill="#6b7280" style={{ fontSize: 8, fontWeight: 600 }}>
+                {showBalance ? `$${formatNumber(ring.value)}` : '****'} · {(ring.pct * 100).toFixed(0)}%
+              </text>
+
+              <circle cx={dotOnRingX} cy={dotOnRingY} r={2.5} fill="white" stroke={ring.color} strokeWidth={1.5} />
             </g>
           );
         })}
 
-        {rings.map((r) => (
-          <motion.g
-            key={`num-${r.key}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 1.3 + r.idx * 0.08 }}
-          >
-            <text
-              x={cx + r.radius + 14}
-              y={cy + 5}
-              textAnchor="middle"
-              style={{ fontSize: 8.5 }}
-              className="fill-gray-400 font-bold"
-            >
-              {String(r.idx + 1).padStart(2, '0')}
+        {rings.map((ring) => (
+          <g key={`num-${ring.key}`}>
+            <text x={cx + ring.r} y={cy + 16} textAnchor="middle" fill="#d1d5db" style={{ fontSize: 8, fontWeight: 700 }}>
+              {String(ring.idx + 1).padStart(2, '0')}
             </text>
-          </motion.g>
+          </g>
         ))}
       </svg>
     </motion.div>
