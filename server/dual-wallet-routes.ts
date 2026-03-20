@@ -395,6 +395,34 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           })
           .where(eq(vaultOwnershipSummary.userId, userId));
 
+        // 3b. Mark corresponding fpgw_batches as Consumed (oldest-first, no price calc)
+        const activeBatchRows = await tx
+          .select({ id: fpgwBatches.id, remainingGrams: fpgwBatches.remainingGrams })
+          .from(fpgwBatches)
+          .where(and(
+            eq(fpgwBatches.userId, userId),
+            eq(fpgwBatches.status, 'Active'),
+            gt(fpgwBatches.remainingGrams, '0')
+          ))
+          .orderBy(asc(fpgwBatches.createdAt));
+
+        let remaining = goldGrams;
+        for (const batch of activeBatchRows) {
+          if (remaining <= 0) break;
+          const batchGrams = parseFloat(batch.remainingGrams);
+          const consume = Math.min(batchGrams, remaining);
+          const newRemaining = batchGrams - consume;
+          await tx
+            .update(fpgwBatches)
+            .set({
+              remainingGrams: newRemaining.toFixed(6),
+              status: newRemaining <= 0.000001 ? 'Consumed' : 'Active',
+              updatedAt: now
+            })
+            .where(eq(fpgwBatches.id, batch.id));
+          remaining -= consume;
+        }
+
         await safeAuditStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',

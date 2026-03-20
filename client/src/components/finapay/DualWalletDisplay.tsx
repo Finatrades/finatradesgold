@@ -457,19 +457,6 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               </div>
             )}
             
-            {!isLocking && transferAmount && parseFloat(transferAmount) > 0 && (
-              <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-orange-800 mb-1">Unlock Warning</p>
-                    <p className="text-sm text-orange-700">
-                      After unlocking, <strong>{parseFloat(transferAmount).toFixed(6)} g</strong> will be valued at the live market price again.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="flex items-start space-x-2 pt-2 border-t">
               <Checkbox 
