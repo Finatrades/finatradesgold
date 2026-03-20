@@ -32,6 +32,14 @@ async function throwIfResNotOk(res: Response) {
       throw error;
     }
     
+    // Handle Golden Rule enforcement — preserve code and redirect target for callers
+    if (errorData?.code === 'GOLDEN_RULE_ENFORCEMENT') {
+      const error: any = new Error(errorData.message || 'Golden Rule: approval must go through Unified Payment Management.');
+      error.code = 'GOLDEN_RULE_ENFORCEMENT';
+      error.redirectTo = errorData.redirectTo;
+      throw error;
+    }
+    
     // Convert technical errors to user-friendly messages
     let friendlyMessage = errorData?.message || text;
     if (errorData?.code === 'RBAC_PERMISSION_DENIED' || (res.status === 403 && !text.includes('CSRF'))) {

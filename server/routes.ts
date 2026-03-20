@@ -8064,146 +8064,14 @@ export async function registerRoutes(
       }
       
       // Handle deposit requests from depositRequests table (bank transfer, card, crypto via depositRequests)
+      // GOLDEN RULE ENFORCEMENT: This legacy path is deprecated. All deposit approvals must go through
+      // Unified Payment Management (UFM) to ensure certificates are issued and UTT records are created.
       if (sourceTable === 'depositRequests') {
-        const depositReq = await storage.getDepositRequest(req.params.id);
-        if (!depositReq) {
-          return res.status(404).json({ message: "Deposit request not found" });
-        }
-        if (depositReq.status !== 'Pending' && depositReq.status !== 'Under Review') {
-          return res.status(400).json({ message: "Only pending requests can be approved" });
-        }
-        
-        try {
-          // Fetch live gold price for conversion
-          const goldPricePerGram = await getGoldPricePerGram();
-          const depositAmountUsd = parseFloat((depositReq as any).amountUsd || (depositReq as any).amount || '0');
-          if (!depositAmountUsd || depositAmountUsd <= 0) {
-            return res.status(400).json({ message: "Invalid deposit amount" });
-          }
-          
-          // Convert USD → gold grams at live price
-          const goldGrams = depositAmountUsd / goldPricePerGram;
-          
-          // Payment method label for descriptions
-          const paymentLabel = (depositReq as any).paymentMethod === 'Card Payment' ? 'Card payment'
-                             : (depositReq as any).paymentMethod === 'Crypto' ? 'Crypto payment'
-                             : 'Bank transfer';
-          
-          const result = await storage.withTransaction(async (txStorage) => {
-            // 1. Credit wallet.goldGrams (NOT usdBalance — gold is the asset)
-            const wallet = await txStorage.getWallet(depositReq.userId);
-            if (!wallet) throw new Error('User wallet not found');
-            const currentGold = parseFloat(wallet.goldGrams || '0');
-            const newGoldBalance = currentGold + goldGrams;
-            // Credit FinaPay (MPGW) wallet — liquid gold for the user
-            await txStorage.updateWallet(depositReq.userId, {
-              goldGrams: newGoldBalance.toFixed(6),
-            });
-            
-            // NOTE: vault_holdings (FPGW) are NOT created here.
-            // Regular deposits (bank/card/crypto) credit MPGW (FinaPay liquid).
-            // vault_holdings only exist for Buy Gold Bar and physical gold deposits,
-            // which represent separately locked FPGW gold. Creating vault holdings here
-            // would cause double-counting in the portfolio (wallet + vault same gold).
-            
-            // Create completed transaction record
-            const newTransaction = await txStorage.createTransaction({
-              userId: depositReq.userId,
-              type: 'Buy',
-              status: 'Completed',
-              amountGold: goldGrams.toFixed(6),
-              amountUsd: depositAmountUsd.toFixed(2),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `${paymentLabel} deposit confirmed - Ref: ${(depositReq as any).referenceNumber} | ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-              sourceModule: 'finapay',
-              method: (depositReq as any).paymentMethod,
-              referenceId: (depositReq as any).referenceNumber,
-              completedAt: new Date(),
-            });
-            
-            // Record vault ledger entry for audit trail
-            const { vaultLedgerService } = await import('./vault-ledger-service');
-            await vaultLedgerService.recordLedgerEntry({
-              userId: depositReq.userId,
-              action: 'Deposit',
-              goldGrams,
-              goldPriceUsdPerGram: goldPricePerGram,
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              toStatus: 'Available',
-              transactionId: newTransaction.id,
-              notes: `${paymentLabel} approved - Ref: ${(depositReq as any).referenceNumber} | $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g`,
-              createdBy: req.body.adminId || 'admin',
-            });
-            
-            return { newTransaction, newGoldBalance };
-          });
-          
-          // Update deposit request status
-          await storage.updateDepositRequest(req.params.id, { status: 'Approved', reviewedAt: new Date() });
-          
-          // Audit log
-          await storage.createAuditLog({
-            entityType: "deposit_request",
-            entityId: req.params.id,
-            actionType: "approve",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `${paymentLabel} deposit approved - $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
-          });
-          
-          // Notify user
-          await storage.createNotification({
-            userId: depositReq.userId,
-            type: 'deposit',
-            title: 'Deposit Approved',
-            message: `Your ${paymentLabel.toLowerCase()} of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your FinaPay wallet.`,
-            priority: 'high',
-          });
-          
-          // Emit real-time balance update
-          const io = getIO();
-          io.to(`user:${depositReq.userId}`).emit('ledger:balance_update', {
-            goldGrams: result.newGoldBalance.toFixed(6),
-          });
-          io.to(`user:${depositReq.userId}`).emit('ledger:vault_update', {
-            holdingId: result.holdingId,
-          });
-          
-          // Check and complete referral on first deposit
-          try {
-            const pendingReferral = await storage.getPendingReferralByReferredId(depositReq.userId);
-            if (pendingReferral) {
-              const configs = await storage.getAllPlatformConfigs();
-              const configMap: Record<string, string> = {};
-              configs.forEach(c => { configMap[c.configKey] = c.configValue; });
-              const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
-              const bonusGrams = referrerBonusUsd / goldPricePerGram;
-              let referrerWallet = await storage.getWallet(pendingReferral.referrerId);
-              if (!referrerWallet) {
-                referrerWallet = await storage.createWallet({ userId: pendingReferral.referrerId, goldGrams: '0', usdBalance: '0' });
-              }
-              if (referrerWallet) {
-                const currentGold = parseFloat(referrerWallet.goldGrams || '0');
-                await storage.updateWallet(pendingReferral.referrerId, { goldGrams: (currentGold + bonusGrams).toFixed(6) });
-                await storage.updateReferral(pendingReferral.id, { status: 'Completed', rewardAmount: referrerBonusUsd.toFixed(2), rewardPaidAt: new Date(), completedAt: new Date() });
-                await storage.createNotification({ userId: pendingReferral.referrerId, type: 'referral', title: 'Referral Bonus Earned!', message: `Your referral made their first deposit. You earned ${bonusGrams.toFixed(4)}g gold ($${referrerBonusUsd}).`, priority: 'medium' });
-              }
-            }
-          } catch (refError) {
-            console.error('[Referral Completion Error]', refError);
-          }
-          
-          return res.json({ 
-            message: 'Deposit approved and wallet credited with gold',
-            goldGrams: goldGrams.toFixed(6),
-            goldPrice: goldPricePerGram.toFixed(2),
-            amountUsd: depositAmountUsd.toFixed(2),
-          });
-        } catch (e) {
-          console.error('Failed to approve deposit request:', e);
-          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve deposit request" });
-        }
+        return res.status(400).json({
+          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
+          code: "GOLDEN_RULE_ENFORCEMENT",
+          redirectTo: "/admin/unified-payments"
+        });
       }
       
       // Handle withdrawal requests from withdrawalRequests table
@@ -8239,116 +8107,14 @@ export async function registerRoutes(
       }
       
       // Handle crypto payment requests (dedicated crypto_payment_requests table)
+      // GOLDEN RULE ENFORCEMENT: This legacy path is deprecated. All crypto deposit approvals must go
+      // through Unified Payment Management (UFM) to ensure certificates are issued and UTT records are created.
       if (sourceTable === 'cryptoPaymentRequests') {
-        try {
-          const [cryptoReq] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, req.params.id));
-          if (!cryptoReq) {
-            return res.status(404).json({ message: "Crypto payment request not found" });
-          }
-          if (cryptoReq.status !== 'Pending' && cryptoReq.status !== 'Under Review') {
-            return res.status(400).json({ message: "Only pending crypto requests can be approved" });
-          }
-          
-          // Use the gold price locked at request time, or fetch live if missing
-          const goldPricePerGram = cryptoReq.goldPriceAtTime
-            ? parseFloat(cryptoReq.goldPriceAtTime)
-            : await getGoldPricePerGram();
-          const depositAmountUsd = parseFloat(cryptoReq.amountUsd || '0');
-          // Use the pre-calculated gold grams from the request (locked at submission) or compute
-          const goldGrams = cryptoReq.goldGrams
-            ? parseFloat(cryptoReq.goldGrams)
-            : depositAmountUsd / goldPricePerGram;
-          
-          const result = await storage.withTransaction(async (txStorage) => {
-            // 1. Credit FinaPay (MPGW) wallet.goldGrams — liquid gold for the user
-            const wallet = await txStorage.getWallet(cryptoReq.userId);
-            if (!wallet) throw new Error('User wallet not found');
-            const currentGold = parseFloat(wallet.goldGrams || '0');
-            const newGoldBalance = currentGold + goldGrams;
-            await txStorage.updateWallet(cryptoReq.userId, {
-              goldGrams: newGoldBalance.toFixed(6),
-            });
-            
-            // NOTE: vault_holdings (FPGW) are NOT created here.
-            // Crypto deposits credit MPGW (FinaPay liquid). vault_holdings only exist
-            // for Buy Gold Bar and physical gold deposits (FPGW locked vault).
-            // Creating vault holdings here would double-count in the portfolio.
-            
-            // 2. Create completed transaction record
-            const newTransaction = await txStorage.createTransaction({
-              userId: cryptoReq.userId,
-              type: 'Buy',
-              status: 'Completed',
-              amountGold: goldGrams.toFixed(6),
-              amountUsd: depositAmountUsd.toFixed(2),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `Crypto deposit confirmed - ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-              sourceModule: 'finapay',
-              method: 'Crypto',
-              completedAt: new Date(),
-            });
-            
-            // 3. Record vault ledger entry for audit trail
-            const { vaultLedgerService } = await import('./vault-ledger-service');
-            await vaultLedgerService.recordLedgerEntry({
-              userId: cryptoReq.userId,
-              action: 'Deposit',
-              goldGrams,
-              goldPriceUsdPerGram: goldPricePerGram,
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              toStatus: 'Available',
-              transactionId: newTransaction.id,
-              notes: `Crypto deposit approved - $${depositAmountUsd.toFixed(2)} → ${goldGrams.toFixed(4)}g gold`,
-              createdBy: req.body.adminId || 'admin',
-            });
-            
-            // 4. Update crypto request with credited transaction ID
-            await db.update(cryptoPaymentRequests)
-              .set({ status: 'Approved', reviewedAt: new Date(), creditedTransactionId: newTransaction.id })
-              .where(eq(cryptoPaymentRequests.id, req.params.id));
-            
-            return { newTransaction, newGoldBalance };
-          });
-          
-          // Audit log
-          await storage.createAuditLog({
-            entityType: "crypto_payment_request",
-            entityId: req.params.id,
-            actionType: "approve",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Crypto deposit approved - $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
-          });
-          
-          // Notify user
-          await storage.createNotification({
-            userId: cryptoReq.userId,
-            type: 'deposit',
-            title: 'Crypto Deposit Approved',
-            message: `Your crypto payment of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your FinaPay wallet.`,
-            priority: 'high',
-          });
-          
-          // Emit real-time balance update
-          const io = getIO();
-          io.to(`user:${cryptoReq.userId}`).emit('ledger:balance_update', {
-            goldGrams: result.newGoldBalance.toFixed(6),
-          });
-          io.to(`user:${cryptoReq.userId}`).emit('ledger:vault_update', {
-            holdingId: result.holdingId,
-          });
-          
-          return res.json({ 
-            message: 'Crypto payment approved and wallet credited with gold',
-            goldGrams: goldGrams.toFixed(6),
-            goldPrice: goldPricePerGram.toFixed(2),
-            amountUsd: depositAmountUsd.toFixed(2),
-          });
-        } catch (e) {
-          console.error('Failed to approve crypto payment:', e);
-          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve crypto payment" });
-        }
+        return res.status(400).json({
+          message: "Golden Rule: Direct crypto deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
+          code: "GOLDEN_RULE_ENFORCEMENT",
+          redirectTo: "/admin/unified-payments"
+        });
       }
       
       // Default: Handle regular transactions table
@@ -13127,14 +12893,16 @@ export async function registerRoutes(
         });
       }
       
-      // GOLDEN RULE ENFORCEMENT: Direct wallet credit is disabled
-      // All deposit approvals must go through Unified Payment Management
-      // to ensure physical gold allocation and storage certificate are provided
-      if (updates.status === 'Confirmed' && request.status === 'Pending') {
+      // GOLDEN RULE ENFORCEMENT: Direct wallet credit is disabled for ALL approval transitions.
+      // All deposit approvals must go through Unified Payment Management (UFM)
+      // to ensure physical gold allocation and storage certificate are provided.
+      // Block any attempt to set an approval status regardless of current request status.
+      const APPROVAL_STATUSES = ['Confirmed', 'Approved'];
+      if (updates.status && APPROVAL_STATUSES.includes(updates.status)) {
         return res.status(400).json({ 
-          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Payments) to approve deposits with proper gold allocation and storage certificate.",
+          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
           code: "GOLDEN_RULE_ENFORCEMENT",
-          redirectTo: "/admin/payments"
+          redirectTo: "/admin/unified-payments"
         });
       }
         /* DISABLED - Legacy direct wallet credit code (Golden Rule enforcement)

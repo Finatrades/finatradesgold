@@ -298,19 +298,34 @@ export default function FinaPayManagement() {
     return () => clearInterval(interval);
   }, []);
 
+  type ApiError = Error & { code?: string; redirectTo?: string };
+
   const handleApprove = async (txId: string, sourceTable?: string) => {
     try {
       const endpoint = sourceTable === 'buyGoldRequests' 
         ? `/api/admin/buy-gold/${txId}/approve`
         : `/api/admin/transactions/${txId}/approve`;
       
-      await apiRequest('POST', endpoint, {
-        adminId: currentUser?.id
+      const res = await apiRequest('POST', endpoint, {
+        adminId: currentUser?.id,
+        sourceTable,
       });
+      await res.json();
       toast.success(sourceTable === 'buyGoldRequests' ? "Buy gold request approved successfully" : "Transaction approved successfully");
       fetchData();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to approve");
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.code === 'GOLDEN_RULE_ENFORCEMENT') {
+        toast.error('Approval requires Unified Payment Management', {
+          description: 'This deposit must be approved via the Unified Payment Management screen to ensure gold certificates are issued. Redirecting...',
+          duration: 5000,
+        });
+        setTimeout(() => {
+          window.location.href = apiError.redirectTo || '/admin/unified-payments';
+        }, 2000);
+      } else {
+        toast.error(apiError instanceof Error ? apiError.message : "Failed to approve");
+      }
     }
   };
 
@@ -373,16 +388,17 @@ export default function FinaPayManagement() {
       toast.success(`Deposit ${action.toLowerCase()}`);
       setDepositDialogOpen(false);
       fetchData();
-    } catch (error: any) {
-      // Handle Golden Rule enforcement redirect
-      if (error?.code === 'GOLDEN_RULE_ENFORCEMENT' || error?.message?.includes('Golden Rule')) {
-        toast.error('Golden Rule: Use Unified Payment Management for approvals', {
-          description: 'Go to Admin > Payments to approve with proper allocation.',
-          duration: 8000,
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.code === 'GOLDEN_RULE_ENFORCEMENT' || apiError.message?.includes('Golden Rule')) {
+        toast.error('Approval requires Unified Payment Management', {
+          description: 'This deposit must be approved via Unified Payment Management to ensure gold certificates are issued. Redirecting...',
+          duration: 5000,
         });
         setDepositDialogOpen(false);
-        // Redirect to Unified Payment Management
-        window.location.href = '/admin/payments';
+        setTimeout(() => {
+          window.location.href = apiError.redirectTo || '/admin/unified-payments';
+        }, 2000);
       } else {
         toast.error(`Failed to ${action.toLowerCase()} deposit`);
       }

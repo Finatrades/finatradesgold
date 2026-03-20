@@ -51,18 +51,30 @@ export default function Transactions() {
     queryKey: ['/api/admin/transactions'],
   });
 
+  type ApiError = Error & { code?: string; redirectTo?: string };
+
   const approveMutation = useMutation({
     mutationFn: async ({ id, sourceTable }: { id: string; sourceTable?: string }) => {
       const res = await apiRequest('POST', `/api/admin/transactions/${id}/approve`, { sourceTable });
-      if (!res.ok) throw new Error('Failed to approve transaction');
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
       toast.success('Transaction approved and processed');
     },
-    onError: () => {
-      toast.error('Failed to approve transaction');
+    onError: (error: unknown) => {
+      const apiError = error as ApiError;
+      if (apiError.code === 'GOLDEN_RULE_ENFORCEMENT') {
+        toast.error('Approval requires Unified Payment Management', {
+          description: 'This deposit must be approved via the Unified Payment Management screen to ensure gold certificates are issued. Redirecting...',
+          duration: 5000,
+        });
+        setTimeout(() => {
+          window.location.href = apiError.redirectTo || '/admin/unified-payments';
+        }, 2000);
+      } else {
+        toast.error('Failed to approve transaction');
+      }
     },
   });
 
@@ -119,9 +131,11 @@ export default function Transactions() {
         ids.map(async (id) => {
           try {
             const res = await apiRequest('POST', `/api/admin/transactions/${id}/approve`, {});
-            return { id, success: res.ok };
-          } catch {
-            return { id, success: false };
+            await res.json();
+            return { id, success: true, blocked: false };
+          } catch (err: unknown) {
+            const apiError = err as ApiError;
+            return { id, success: false, blocked: apiError.code === 'GOLDEN_RULE_ENFORCEMENT' };
           }
         })
       );
@@ -129,7 +143,19 @@ export default function Transactions() {
     },
     onSuccess: (results) => {
       const successCount = results.filter(r => r.success).length;
-      toast.success(`Bulk Approved`, { description: `${successCount} transaction(s) approved.` });
+      const blockedCount = results.filter(r => r.blocked).length;
+      if (blockedCount > 0) {
+        toast.warning(`Bulk Approve: ${blockedCount} deposit(s) require UFM`, {
+          description: `${successCount} approved. ${blockedCount} deposit(s) must be approved individually via Unified Payment Management to ensure certificates are issued.`,
+          duration: 8000,
+          action: {
+            label: 'Go to UFM',
+            onClick: () => { window.location.href = '/admin/unified-payments'; },
+          },
+        });
+      } else {
+        toast.success(`Bulk Approved`, { description: `${successCount} transaction(s) approved.` });
+      }
       setSelectedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
     },
