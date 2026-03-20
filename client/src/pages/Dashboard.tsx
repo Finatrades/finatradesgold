@@ -106,7 +106,7 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
       <div className="flex items-center justify-center mb-4">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {[...rings].reverse().map((ring) => (
-            <g key={ring.key}>
+            <g key={ring.key} transform={`rotate(-90 ${cx} ${cy})`}>
               <circle
                 cx={cx} cy={cy} r={ring.r}
                 fill="none"
@@ -120,10 +120,16 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
                   stroke={ring.color}
                   strokeWidth={ringW}
                   strokeLinecap="round"
-                  strokeDasharray={`${ring.filled} ${ring.circ}`}
-                  strokeDashoffset={ring.circ}
-                  transform={`rotate(-90 ${cx} ${cy})`}
-                  style={{ animation: `ring-fill-${ring.idx} 1.2s ${0.3 + ring.idx * 0.12}s ease-out forwards` }}
+                  strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
+                  strokeDashoffset={0}
+                  className="portfolio-ring"
+                  style={{
+                    animationName: `ring-reveal-${ring.idx}`,
+                    animationDuration: '1s',
+                    animationTimingFunction: 'ease-out',
+                    animationDelay: `${0.3 + ring.idx * 0.12}s`,
+                    animationFillMode: 'backwards',
+                  }}
                 />
               )}
             </g>
@@ -139,9 +145,9 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
 
       <style>{`
         ${rings.map(r => `
-          @keyframes ring-fill-${r.idx} {
-            from { stroke-dashoffset: ${r.circ}; }
-            to { stroke-dashoffset: ${r.circ - r.filled}; }
+          @keyframes ring-reveal-${r.idx} {
+            from { stroke-dasharray: 0 ${r.circ}; }
+            to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
           }
         `).join('')}
       `}</style>
