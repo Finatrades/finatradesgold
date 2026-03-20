@@ -2,8 +2,7 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, MoreVertical, Search, SlidersHorizontal, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -25,6 +24,7 @@ import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
+import LockGoldPriceModal from '@/components/finapay/modals/LockGoldPriceModal';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -873,32 +873,7 @@ export default function Dashboard() {
         onClose={() => setActiveModal(null)}
         onConfirm={() => setActiveModal(null)}
       />
-      <Dialog open={activeModal === 'lock'} onOpenChange={(open) => !open && setActiveModal(null)}>
-        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <Lock className="w-5 h-5 text-emerald-600" /> Lock Gold Price
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Lock your gold at the current market price to protect against price fluctuations.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <span className="text-sm text-gray-600">Current Gold Price</span>
-              <span className="font-bold text-emerald-700">${formatNumber(goldPrice)}/g</span>
-            </div>
-            <p className="text-xs text-gray-500">
-              To lock your gold price, please go to the FinaPay wallet section where you can transfer gold between your Live Gold Price Wallet and Fixed Gold Price Wallet.
-            </p>
-            <Link href="/finapay">
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl" onClick={() => setActiveModal(null)} data-testid="button-go-to-finapay-lock">
-                Go to FinaPay Wallet
-              </Button>
-            </Link>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LockGoldPriceModal isOpen={activeModal === 'lock'} onClose={() => setActiveModal(null)} userId={user?.id || ''} />
     </DashboardLayout>
   );
 }
