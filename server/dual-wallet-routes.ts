@@ -372,40 +372,34 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
 
       } else if (fromWalletType === 'FGPW' && toWalletType === 'LGPW') {
         // ── UNLOCK: FGPW → LGPW (lock-centric model) ───────────────────
-        // Find the ONE lock to close — by lockId if provided, else oldest Active
-
-        let targetBatch: { id: string; originalGrams: string; remainingGrams: string } | null = null;
-
-        if (lockId) {
-          const [found] = await tx
-            .select({ id: fpgwBatches.id, originalGrams: fpgwBatches.originalGrams, remainingGrams: fpgwBatches.remainingGrams })
-            .from(fpgwBatches)
-            .where(and(
-              eq(fpgwBatches.id, lockId),
-              eq(fpgwBatches.userId, userId),
-              eq(fpgwBatches.status, 'Active')
-            ));
-          targetBatch = found ?? null;
-        } else {
-          const [oldest] = await tx
-            .select({ id: fpgwBatches.id, originalGrams: fpgwBatches.originalGrams, remainingGrams: fpgwBatches.remainingGrams })
-            .from(fpgwBatches)
-            .where(and(
-              eq(fpgwBatches.userId, userId),
-              eq(fpgwBatches.status, 'Active'),
-              gt(fpgwBatches.remainingGrams, '0')
-            ))
-            .orderBy(asc(fpgwBatches.createdAt))
-            .limit(1);
-          targetBatch = oldest ?? null;
+        // Lock-centric unlock: lockId is REQUIRED (enforced at route level; reject generic unlocks)
+        if (!lockId) {
+          return res.status(400).json({ message: 'lockId is required for unlock. Use the Unlock button next to each active lock.' });
         }
+
+        const [found] = await tx
+          .select({
+            id: fpgwBatches.id,
+            originalGrams: fpgwBatches.originalGrams,
+            remainingGrams: fpgwBatches.remainingGrams,
+            lockedPriceUsd: fpgwBatches.lockedPriceUsd
+          })
+          .from(fpgwBatches)
+          .where(and(
+            eq(fpgwBatches.id, lockId),
+            eq(fpgwBatches.userId, userId),
+            eq(fpgwBatches.status, 'Active')
+          ));
+
+        const targetBatch = found ?? null;
 
         if (!targetBatch) {
-          throw new Error('No active lock found to unlock');
+          throw new Error('No active lock found with the specified lockId');
         }
 
-        // Use the batch's exact original gram count (lock-centric: close the whole lock)
+        // Lock-centric: always unlock the full original gram count for this lock
         const batchGrams = parseFloat(targetBatch.originalGrams);
+        const batchLockedPrice = parseFloat(targetBatch.lockedPriceUsd);
 
         // 1. Mark the single batch as Consumed atomically
         await tx
@@ -466,14 +460,15 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           .orderBy(desc(cashSafetyLedger.createdAt))
           .limit(1);
         const currentCashBalanceUnlock = parseFloat(lastCashEntryUnlock?.balance || '0');
-        const usdAmountUnlock = batchGrams * currentGoldPrice;
+        // Use the batch's locked price (not live price) to exactly reverse the LOCK credit
+        const usdAmountUnlock = batchGrams * batchLockedPrice;
         await tx.insert(cashSafetyLedger).values({
           entryType: 'FPGW_UNLOCK',
           amountUsd: usdAmountUnlock.toFixed(2),
           direction: 'debit',
           runningBalanceUsd: Math.max(0, currentCashBalanceUnlock - usdAmountUnlock).toFixed(2),
           userId,
-          notes: `User unlocked ${batchGrams.toFixed(6)}g to market price ($${currentGoldPrice.toFixed(2)}/g)`
+          notes: `User unlocked ${batchGrams.toFixed(6)}g (locked at $${batchLockedPrice.toFixed(2)}/g) → LGPW`
         });
 
         // 6. Vault ledger entry

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDualWalletBalance, useInternalTransfer, useFpgwLocks } from '@/hooks/useDualWallet';
@@ -45,10 +44,11 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       setShowTransferModal(true);
     },
     openUnlockDialog: () => {
-      setTransferDirection('FGPW_to_LGPW');
-      setTransferAmount('');
-      setAgreedToTerms(false);
-      setShowTransferModal(true);
+      // Unlock is lock-centric: use the Unlock button on each active lock row
+      toast({
+        title: 'How to Unlock',
+        description: 'Tap the "Unlock" button next to each active lock in the FPGW section to unlock it.',
+      });
     }
   }));
 
@@ -177,12 +177,12 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               size="sm" 
               variant="outline"
               className="text-xs sm:text-sm border-purple-300 text-purple-700 hover:bg-purple-50"
-              onClick={() => { setTransferDirection('FGPW_to_LGPW'); setTransferAmount(''); setAgreedToTerms(false); setShowTransferModal(true); }}
+              onClick={() => toast({ title: 'How to Unlock', description: 'Use the "Unlock" button next to each active lock in the FPGW section below.' })}
               data-testid="btn-unlock-gold-price"
             >
               <Unlock className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Unlock to LGPW</span>
-              <span className="sm:hidden">Unlock</span>
+              <span className="hidden sm:inline">How to Unlock</span>
+              <span className="sm:hidden">Unlock?</span>
             </Button>
           )}
           {onTransferFromVault && (
@@ -391,54 +391,24 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       <Dialog open={showTransferModal} onOpenChange={(open) => { setShowTransferModal(open); if (!open) { setAgreedToTerms(false); setTransferAmount(''); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {isLocking ? 'Lock Gold at Current Price (LGPW → FPGW)' : 'Unlock Gold to Live Price (FPGW → LGPW)'}
-            </DialogTitle>
+            <DialogTitle>Lock Gold at Current Price (LGPW → FPGW)</DialogTitle>
             <DialogDescription>
-              {isLocking
-                ? 'Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today\'s price.'
-                : 'Move gold from your Fixed Price Wallet (FPGW) back to your Live Gold Price Wallet (LGPW). Your gold will be valued at the live market price again.'}
+              Move gold from your Live Gold Price Wallet (LGPW) into a Fixed Price Wallet (FPGW) to lock the USD value at today's price.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-5 py-4">
-            <div className="space-y-3">
-              <Label>Operation</Label>
-              <RadioGroup 
-                value={transferDirection} 
-                onValueChange={(v) => { setTransferDirection(v as 'LGPW_to_FGPW' | 'FGPW_to_LGPW'); setTransferAmount(''); }}
-              >
-                <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${transferDirection === 'LGPW_to_FGPW' ? 'border-amber-400 bg-amber-50' : 'hover:bg-amber-50'}`}>
-                  <RadioGroupItem value="LGPW_to_FGPW" id="mpgw-to-fpgw" />
-                  <Label htmlFor="mpgw-to-fpgw" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-amber-700">LGPW</span>
-                      <span className="mx-1 text-muted-foreground">→</span>
-                      <span className="font-semibold text-purple-700">FPGW</span>
-                      <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Lock Price</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Lock your gold's USD value at the current market price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
-                    </p>
-                    <p className="text-xs text-muted-foreground">Available LGPW: {balance.mpgw.availableGrams.toFixed(4)} g</p>
-                  </Label>
-                </div>
-                <div className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${transferDirection === 'FGPW_to_LGPW' ? 'border-purple-400 bg-purple-50' : 'hover:bg-purple-50'} ${balance.fpgw.availableGrams <= 0.000001 ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <RadioGroupItem value="FGPW_to_LGPW" id="fpgw-to-mpgw" disabled={balance.fpgw.availableGrams <= 0.000001} />
-                  <Label htmlFor="fpgw-to-mpgw" className={`flex-1 ${balance.fpgw.availableGrams <= 0.000001 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-purple-700">FPGW</span>
-                      <span className="mx-1 text-muted-foreground">→</span>
-                      <span className="font-semibold text-amber-700">LGPW</span>
-                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Unlock Price</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Return gold to market price valuation. You receive the same gram count back.
-                    </p>
-                    <p className="text-xs text-muted-foreground">Available FPGW: {balance.fpgw.availableGrams.toFixed(4)} g</p>
-                  </Label>
-                </div>
-              </RadioGroup>
+            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-amber-700">LGPW</span>
+                <span className="mx-1 text-muted-foreground">→</span>
+                <span className="font-semibold text-purple-700">FPGW</span>
+                <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Lock Price</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lock price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong> · Available: {balance.mpgw.availableGrams.toFixed(4)} g
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">To unlock, use the <strong>Unlock</strong> button next to each active lock in the FPGW section.</p>
             </div>
             
             <div className="space-y-2">
@@ -507,7 +477,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                 <p className="text-xs text-muted-foreground">
                   {isLocking
                     ? 'I understand that by locking, my gold\'s USD value is frozen at the current price and will not benefit from future gold price increases while in FPGW.'
-                    : 'I understand that by unlocking, my gold will be valued at the live market price and the locked USD protection will be removed.'}
+                    : 'I understand the lock terms.'}
                 </p>
               </div>
             </div>
@@ -520,7 +490,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             <Button 
               onClick={handleTransfer}
               disabled={internalTransfer.isPending || !transferAmount || parseFloat(transferAmount) <= 0 || parseFloat(transferAmount) > maxTransferAmount || !agreedToTerms}
-              className={isLocking ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'}
+              className="bg-amber-600 hover:bg-amber-700"
               data-testid="btn-confirm-transfer"
             >
               {internalTransfer.isPending ? (
@@ -528,15 +498,10 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
-              ) : isLocking ? (
+              ) : (
                 <>
                   <Lock className="w-4 h-4 mr-2" />
                   Lock Gold Price
-                </>
-              ) : (
-                <>
-                  <Unlock className="w-4 h-4 mr-2" />
-                  Unlock to LGPW
                 </>
               )}
             </Button>

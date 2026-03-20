@@ -301,7 +301,7 @@ export default function MobileDashboard() {
                   <Database className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">FGPW</h3>
+                  <h3 className="font-bold text-white text-sm">FPGW</h3>
                   <p className="text-[10px] text-amber-100">Fixed Gold Price</p>
                 </div>
               </div>
@@ -314,7 +314,7 @@ export default function MobileDashboard() {
                 {formatNumber(totals.fpgwAvailableGrams || 0, 4)}g
               </p>
               <p className="text-xs text-amber-100 mt-0.5">
-                {totals.fpgwWeightedAvgPriceUsd ? `Cost: $${formatNumber(totals.fpgwWeightedAvgPriceUsd, 2)}/g` : 'No holdings'}
+                {totals.fpgwAvailableGrams > 0 ? 'Price-locked grams' : 'No active locks'}
               </p>
             </div>
             
