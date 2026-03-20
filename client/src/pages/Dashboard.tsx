@@ -670,7 +670,7 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                {(totals.activeBnslPlans || 0) > 0 ? (
+                {bnslPlans.length > 0 ? (
                   <Link href="/bnsl">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
