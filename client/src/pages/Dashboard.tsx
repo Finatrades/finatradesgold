@@ -111,7 +111,7 @@ function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBr
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[11px] text-gray-400 font-medium">Total</span>
           <span className="text-[22px] font-bold text-gray-900 leading-tight">
-            {showBalance ? `$${formatNumber(total)}` : hiddenValue}
+            {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
           </span>
           {hasData && (
             <span className="text-[10px] text-gray-400 mt-0.5">
@@ -159,7 +159,7 @@ function PortfolioDonutCard({ walletGoldValue, vaultGoldValue, bnslValue, finaBr
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, goldPrice, isLoading } = useDashboardData();
+  const { totals, goldPrice, finaBridge, isLoading } = useDashboardData();
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const isMobile = useIsMobile();
@@ -238,8 +238,8 @@ export default function Dashboard() {
   const walletGoldValue = (totals.walletGoldGrams || 0) * goldPrice;
   const vaultGoldValue = (totals.vaultGoldGrams || 0) * goldPrice;
   const bnslValue = (totals.bnslLockedGrams || 0) * goldPrice;
-  const finacardValue = totals.finacardValueUsd || 0;
-  const finaBridgeValue = (totals as any).finaBridge?.usdValue || 0;
+  const finacardValue = (totals as any).finacardValueUsd || 0;
+  const finaBridgeValue = finaBridge?.usdValue || 0;
 
   const chartData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
@@ -540,27 +540,25 @@ export default function Dashboard() {
                 </div>
               </div>
               <p className="text-[28px] font-bold tracking-tight" data-testid="text-earnings">
-                {showBalance ? `$${formatNumber(totals.bnslTotalProfit || walletGoldValue * 0.05)}` : hiddenValue}
+                {showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
               </p>
               <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3 h-3 text-white/80" />
-                <span className="text-[11px] text-white/80 font-medium">↑ 7% This month</span>
+                <span className="text-[11px] text-white/70 font-medium">Paid BNSL margin earnings</span>
               </div>
             </motion.div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="card-total-spending">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[13px] text-gray-500 font-medium">Gold Spent</span>
+                <span className="text-[13px] text-gray-500 font-medium">FinaCard Balance</span>
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <ArrowUpRight className="w-4 h-4 text-gray-500" />
+                  <CreditCard className="w-4 h-4 text-gray-500" />
                 </div>
               </div>
               <p className="text-[24px] font-bold text-gray-900" data-testid="text-spending">
-                {showBalance ? `$${formatNumber(finacardValue || walletGoldValue * 0.03)}` : hiddenValue}
+                {showBalance ? `$${formatNumber(finacardValue)}` : hiddenValue}
               </p>
               <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3 h-3 text-green-500" />
-                <span className="text-[11px] text-green-600 font-medium">↑ 5% This month</span>
+                <span className="text-[11px] text-gray-400 font-medium">Gold loaded on card</span>
               </div>
             </div>
 
@@ -568,22 +566,16 @@ export default function Dashboard() {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" data-testid="card-vault-value">
                 <span className="text-[12px] text-gray-500 font-medium">Vault Value</span>
                 <p className="text-[18px] font-bold text-gray-900 mt-2">
-                  {showBalance ? `$${formatNumber(vaultGoldValue || walletGoldValue * 0.4)}` : hiddenValue}
+                  {showBalance ? `$${formatNumber(vaultGoldValue)}` : hiddenValue}
                 </p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="w-3 h-3 text-green-500" />
-                  <span className="text-[10px] text-green-600 font-medium">↑ 8% This month</span>
-                </div>
+                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.vaultGoldGrams || 0, 3)}g stored</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" data-testid="card-bnsl-value">
                 <span className="text-[12px] text-gray-500 font-medium">BNSL Value</span>
                 <p className="text-[18px] font-bold text-gray-900 mt-2">
-                  {showBalance ? `$${formatNumber(bnslValue || walletGoldValue * 0.15)}` : hiddenValue}
+                  {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
                 </p>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="w-3 h-3 text-green-500" />
-                  <span className="text-[10px] text-green-600 font-medium">↑ 4% This month</span>
-                </div>
+                <p className="text-[10px] text-gray-400 mt-1">{formatNumber(totals.bnslLockedGrams || 0, 3)}g locked</p>
               </div>
             </div>
           </div>
