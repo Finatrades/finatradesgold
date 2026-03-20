@@ -681,13 +681,13 @@ export default function Dashboard() {
               <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-certificates">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[14px] font-bold text-gray-900">Certificates</h3>
-                  <Link href="/certificates">
+                  <Link href="/finavault">
                     <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
                   </Link>
                 </div>
                 <div className="space-y-2.5">
                   {(certificates.recent || []).slice(0, 5).map((cert, i) => (
-                    <Link key={cert.id} href="/certificates">
+                    <Link key={cert.id} href="/finavault">
                     <motion.div
                       className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-purple-50/40 rounded-xl px-1 transition-colors"
                       initial={{ opacity: 0, x: -8 }}
