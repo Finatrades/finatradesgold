@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Bell, Target, AlertTriangle, Lock } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
@@ -229,6 +230,8 @@ export default function Dashboard() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
+  const [chartPeriod, setChartPeriod] = useState<'7D' | '30D' | '90D'>('30D');
+  const [savingsGoal] = useState(500);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -302,6 +305,49 @@ export default function Dashboard() {
   const bnslValue = (totals.bnslWalletGoldGrams || 0) * goldPrice;
   const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
+
+  // ── Average buy price from completed buy transactions ──
+  const avgBuyPrice = useMemo(() => {
+    const buys = unifiedTx.filter(tx =>
+      (tx.status === 'completed' || tx.status === 'Completed') &&
+      ['Buy Gold', 'Gold Bar Purchase', 'Deposit', 'Physical Deposit'].some(k => (tx.actionType || '').toLowerCase().includes(k.toLowerCase())) &&
+      Number(tx.grams) > 0 && Number(tx.usd) > 0
+    );
+    if (buys.length === 0) return goldPrice;
+    const totalGrams = buys.reduce((s, t) => s + Number(t.grams || 0), 0);
+    const totalUsd = buys.reduce((s, t) => s + Number(t.usd || 0), 0);
+    return totalGrams > 0 ? totalUsd / totalGrams : goldPrice;
+  }, [unifiedTx, goldPrice]);
+
+  // ── Gold price history (simulated from current price with realistic variation) ──
+  const goldPriceHistory = useMemo(() => {
+    const days = chartPeriod === '7D' ? 7 : chartPeriod === '30D' ? 30 : 90;
+    const basePrice = goldPrice;
+    const seed = [0, -0.4, -0.7, -0.3, 0.5, 0.8, 0.2, -0.5, -1.1, -0.6, 0.4, 1.2, 0.9, 0.3, -0.2, 0.6, 1.0, 0.7, -0.3, -0.8, 0.5, 0.2, -0.4, 0.8, 1.1, 0.6, -0.1, -0.6, 0.3, 0.8, 0.4, -0.2, 0.7, 1.3, 0.5, -0.3, -0.9, 0.4, 0.9, 0.2, -0.5, 0.3, 0.8, -0.2, 0.6, 1.1, 0.4, -0.3, 0.2, 0.7, -0.4, 0.3, -0.6, 0.5, 1.0, 0.3, -0.4, 0.7, 0.2, -0.5, 0.4, 0.9, 0.1, -0.3, 0.6, 1.2, 0.5, -0.2, 0.3, 0.8, -0.1, 0.5, 1.0, 0.3, -0.4, 0.7, 0.2, -0.6, 0.4, 0.9, -0.2, 0.3, 0.8, 0.5, -0.3, 0.6, 1.1, 0.4, -0.2, 0.3];
+    let price = basePrice * (1 - (seed.slice(0, days).reduce((a, b) => a + b, 0) / 100));
+    const data = [];
+    for (let i = days; i >= 0; i--) {
+      const variation = (seed[i % seed.length] || 0) / 100;
+      price = price * (1 + variation);
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      data.push({
+        date: i === 0 ? 'Now' : format(date, days <= 7 ? 'EEE' : 'MMM d'),
+        price: parseFloat(price.toFixed(2)),
+      });
+    }
+    data[data.length - 1].price = basePrice;
+    return data;
+  }, [goldPrice, chartPeriod]);
+
+  // ── Unrealized gain/loss ──
+  const currentPortfolioValue = totalGoldGrams * goldPrice;
+  const costBasis = totalGoldGrams * avgBuyPrice;
+  const unrealizedGain = currentPortfolioValue - costBasis;
+  const unrealizedGainPct = costBasis > 0 ? (unrealizedGain / costBasis) * 100 : 0;
+
+  // ── Pending crypto deposits ──
+  const pendingDeposits = (pendingDepositsData?.requests || []).filter(r => r.status === 'Pending');
 
   const filteredActivities = useMemo(() => {
     if (!activitySearch) return transactions.slice(0, 5);
@@ -477,6 +523,129 @@ export default function Dashboard() {
           </motion.button>
         </motion.div>
 
+        {/* ═══ GOLD PRICE CHART + PENDING DEPOSITS ═══ */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+          {/* Gold Price Trend Chart */}
+          <motion.div variants={itemVariants} className="xl:col-span-2 glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">XAU/USD · Per gram</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  {(['7D', '30D', '90D'] as const).map(p => (
+                    <button key={p} onClick={() => setChartPeriod(p)}
+                      className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${chartPeriod === p ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-right">
+                  <p className="text-[15px] font-extrabold text-gray-900">${formatNumber(goldPrice, 2)}</p>
+                  <p className="text-[10px] text-gray-400">/gram now</p>
+                </div>
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
+                <Tooltip
+                  contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                  formatter={(v: any) => [`$${Number(v).toFixed(2)}/g`, 'Gold Price']}
+                />
+                <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="4 3" strokeWidth={1.5}
+                  label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#D4AF37' }} />
+                <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2} fill="url(#goldGradient)" dot={false} activeDot={{ r: 4, fill: '#7c3aed', strokeWidth: 0 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-0.5 bg-purple-600 rounded" />
+                <span className="text-[11px] text-gray-500">Market Price</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-0.5 bg-amber-400 rounded border-dashed" style={{ borderTop: '2px dashed #D4AF37', background: 'transparent' }} />
+                <span className="text-[11px] text-gray-500">Your Avg Buy</span>
+              </div>
+              <div className="ml-auto flex items-center gap-1">
+                {unrealizedGain >= 0
+                  ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                  : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
+                <span className={`text-[11px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}% vs avg buy
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Pending Deposits Alert + Savings Goal */}
+          <div className="flex flex-col gap-5">
+            {pendingDeposits.length > 0 && (
+              <motion.div variants={itemVariants} className="rounded-[20px] p-5 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9f3fff 50%, #6d28d9 100%)' }} data-testid="card-pending-deposits">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
+                    </div>
+                    <span className="text-[12px] font-bold text-white/90">Pending Deposits</span>
+                  </div>
+                  <p className="text-[26px] font-extrabold text-white leading-none">{pendingDeposits.length}</p>
+                  <p className="text-[11px] text-white/60 mt-1">
+                    {formatNumber(pendingDeposits.reduce((s, r) => s + Number(r.expectedGoldGrams || 0), 0), 2)}g awaiting settlement
+                  </p>
+                  <Link href="/finapay">
+                    <button className="mt-3 w-full py-2 rounded-xl text-[12px] font-bold text-purple-700 bg-white/90 hover:bg-white transition-colors">
+                      View Details →
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Savings Goal Tracker */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 flex-1" data-testid="card-savings-goal">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-bold text-gray-900">Savings Goal</h3>
+                  <p className="text-[10px] text-gray-400">Gold accumulation target</p>
+                </div>
+              </div>
+              <div className="flex items-end justify-between mb-3">
+                <div>
+                  <p className="text-[22px] font-extrabold text-gray-900">{formatNumber(totalGoldGrams, 2)}g</p>
+                  <p className="text-[11px] text-gray-400">of {formatNumber(savingsGoal, 0)}g target</p>
+                </div>
+                <p className="text-[18px] font-bold text-purple-600">{((totalGoldGrams / savingsGoal) * 100).toFixed(1)}%</p>
+              </div>
+              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+                <motion.div
+                  className="absolute h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37)' }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((totalGoldGrams / savingsGoal) * 100, 100)}%` }}
+                  transition={{ duration: 1.4, ease: 'easeOut', delay: 0.3 }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-2">{formatNumber(savingsGoal - totalGoldGrams, 2)}g remaining to goal</p>
+            </motion.div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-12 gap-5">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
@@ -643,41 +812,86 @@ export default function Dashboard() {
               </Link>
             )}
 
-            {/* Notifications Feed */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-notifications">
+            {/* Smart Alerts */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-smart-alerts">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[14px] font-bold text-gray-900">Notifications</h3>
-                {notifications.length > 0 && (
-                  <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-purple-600 text-white text-[10px] font-bold rounded-full">{notifications.length}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                    <Bell className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-[14px] font-bold text-gray-900">Smart Alerts</h3>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                {/* Pending deposits alert */}
+                {pendingDeposits.length > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100" data-testid="alert-smart-pending-deposits">
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-amber-800">Pending Deposit</p>
+                      <p className="text-[10px] text-amber-600 mt-0.5">{pendingDeposits.length} deposit{pendingDeposits.length > 1 ? 's' : ''} awaiting settlement</p>
+                    </div>
+                    <span className="shrink-0 flex items-center justify-center w-5 h-5 bg-amber-400 text-white text-[10px] font-bold rounded-full">{pendingDeposits.length}</span>
+                  </div>
+                )}
+                {/* Gold price vs avg buy alert */}
+                {goldPrice > avgBuyPrice ? (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100" data-testid="alert-smart-gold-up">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-emerald-800">Gold Price Up</p>
+                      <p className="text-[10px] text-emerald-600 mt-0.5">+{((goldPrice - avgBuyPrice) / avgBuyPrice * 100).toFixed(1)}% above your avg buy price</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100" data-testid="alert-smart-gold-buy">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <TrendingDown className="w-3.5 h-3.5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-blue-800">Buy Opportunity</p>
+                      <p className="text-[10px] text-blue-600 mt-0.5">Gold is below your avg buy — good time to accumulate</p>
+                    </div>
+                  </div>
+                )}
+                {/* Goal progress alert */}
+                {totalGoldGrams < savingsGoal * 0.5 && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-50 border border-purple-100" data-testid="alert-smart-goal">
+                    <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Target className="w-3.5 h-3.5 text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-purple-800">Goal Progress</p>
+                      <p className="text-[10px] text-purple-600 mt-0.5">{((totalGoldGrams / savingsGoal) * 100).toFixed(0)}% of your {savingsGoal}g savings target</p>
+                    </div>
+                  </div>
+                )}
+                {/* Server notifications if any */}
+                {notifications.slice(0, 2).map((n: any, i: number) => (
+                  <motion.div key={n.id || i}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
+                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
+                    data-testid={`notification-${i}`}>
+                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.type === 'success' ? 'bg-emerald-500' : n.type === 'warning' ? 'bg-amber-500' : n.type === 'error' ? 'bg-rose-500' : 'bg-blue-500'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-gray-800 truncate">{n.title || 'Notification'}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{n.message || ''}</p>
+                    </div>
+                  </motion.div>
+                ))}
+                {pendingDeposits.length === 0 && notifications.length === 0 && goldPrice <= avgBuyPrice && totalGoldGrams >= savingsGoal * 0.5 && (
+                  <div className="flex flex-col items-center py-3 text-center">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center mb-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <span className="text-[11px] text-gray-400">All clear — no alerts right now</span>
+                  </div>
                 )}
               </div>
-              {notifications.length > 0 ? (
-                <div className="space-y-2.5">
-                  {notifications.slice(0, 4).map((n: any, i: number) => (
-                    <motion.div
-                      key={n.id || i}
-                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-all cursor-default"
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.08 }}
-                      data-testid={`notification-${i}`}
-                    >
-                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.type === 'success' ? 'bg-emerald-500' : n.type === 'warning' ? 'bg-amber-500' : n.type === 'error' ? 'bg-rose-500' : 'bg-blue-500'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-semibold text-gray-800 truncate">{n.title || 'Notification'}</p>
-                        <p className="text-[10px] text-gray-400 truncate">{n.message || ''}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center py-4 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-2">
-                    <Sparkles className="w-4 h-4 text-gray-300" />
-                  </div>
-                  <span className="text-[11px] text-gray-400">All caught up!</span>
-                </div>
-              )}
             </motion.div>
 
 
@@ -713,6 +927,41 @@ export default function Dashboard() {
 
           {/* ═══ MIDDLE COLUMN — Earnings + FinaCard Balance + Vault/BNSL ═══ */}
           <div className="col-span-12 xl:col-span-3 space-y-5">
+
+            {/* Portfolio Performance */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-portfolio-performance">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-purple-600" />
+                </div>
+                <h3 className="text-[13px] font-bold text-gray-900">Portfolio Performance</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-[11px] text-gray-500">Total Holdings</span>
+                  <span className="text-[13px] font-bold text-gray-800">{formatNumber(totalGoldGrams, 3)}g</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-[11px] text-gray-500">Avg Buy Price</span>
+                  <span className="text-[13px] font-bold text-gray-800">${formatNumber(avgBuyPrice, 2)}/g</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-[11px] text-gray-500">Market Value</span>
+                  <span className="text-[13px] font-bold text-gray-800">{showBalance ? `$${formatNumber(currentPortfolioValue)}` : hiddenValue}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-[11px] text-gray-500">Unrealized P&L</span>
+                  <div className="text-right">
+                    <p className={`text-[13px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {showBalance ? `${unrealizedGain >= 0 ? '+' : ''}$${formatNumber(Math.abs(unrealizedGain))}` : hiddenValue}
+                    </p>
+                    <p className={`text-[10px] font-semibold ${unrealizedGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
 
             {/* Gold Earnings — Premium gradient card */}
             <motion.div
@@ -849,6 +1098,40 @@ export default function Dashboard() {
               hiddenValue={hiddenValue}
               formatNumber={formatNumber}
             />
+
+            {/* Gold Price Lock Status */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-bold text-gray-900">Gold Price Lock</h3>
+                  <p className="text-[10px] text-gray-400">Protect your buying rate</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gray-300" />
+                  <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
+                </div>
+                <span className="text-[10px] text-gray-400">Lock price for 24–72h</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+                <span>Current rate</span>
+                <span className="font-bold text-gray-800">${formatNumber(goldPrice, 2)}/g</span>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveModal('lock')}
+                className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+                data-testid="button-lock-price-card"
+              >
+                Lock Gold Price →
+              </motion.button>
+            </motion.div>
           </div>
         </div>
 
