@@ -213,7 +213,11 @@ const itemVariants = {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { totals, goldPrice, finaBridge, isLoading, bnslPlans, certificates, notifications } = useDashboardData();
+  const dashData = useDashboardData();
+  const { totals, goldPrice, finaBridge, isLoading } = dashData;
+  const bnslPlans = dashData.bnslPlans || [];
+  const certificates = dashData.certificates;
+  const notifications = dashData.notifications || [];
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const isMobile = useIsMobile();
