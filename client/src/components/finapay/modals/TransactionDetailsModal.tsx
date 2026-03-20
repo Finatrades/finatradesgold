@@ -24,8 +24,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   const isDeposit = transaction.type === 'Deposit' || transaction.description?.includes('Bank Deposit');
   const calculatedFee = isDeposit && !transaction.feeUsd ? transaction.amountUsd * 0.005 : (transaction.feeUsd || 0);
   
-  // Get the gold grams - prefer stored value, fallback to calculation
-  const displayGoldGrams = transaction.amountGrams || (goldPrice > 0 ? transaction.amountUsd / goldPrice : 0);
+  const displayGoldGrams = Number(transaction.amountGrams) || (goldPrice > 0 ? transaction.amountUsd / goldPrice : 0);
 
   const formatDescription = (description: string | undefined | null): string | null => {
     if (!description) return null;
