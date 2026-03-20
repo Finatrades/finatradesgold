@@ -40,10 +40,10 @@ function getGreeting(): string {
 }
 
 const RING_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', lightColor: 'rgba(138,43,226,0.10)' },
-  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', lightColor: 'rgba(212,175,55,0.10)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', lightColor: 'rgba(59,130,246,0.10)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', lightColor: 'rgba(16,185,129,0.10)' },
+  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', bg: 'rgba(138,43,226,0.10)' },
+  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', bg: 'rgba(212,175,55,0.10)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
 ];
 
 interface PortfolioChartsProps {
@@ -57,7 +57,7 @@ interface PortfolioChartsProps {
   formatNumber: (n: number | null | undefined, d?: number) => string;
 }
 
-function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
+function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, finaBridgeValue, totalPortfolioValue, showBalance, hiddenValue, formatNumber }: PortfolioChartsProps) {
   const modules = useMemo(() => [
     { ...RING_MODULES[0], value: walletGoldValue },
     { ...RING_MODULES[1], value: finacardGoldValue },
@@ -67,19 +67,19 @@ function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fi
 
   const total = modules.reduce((s, d) => s + d.value, 0);
 
-  const cx = 300;
-  const cy = 195;
-  const ringThickness = 20;
-  const ringGap = 5;
-  const innermost = 50;
+  const size = 180;
+  const cx = size / 2;
+  const cy = size / 2;
+  const ringW = 14;
+  const gap = 4;
+  const innerR = 28;
 
   const rings = useMemo(() => modules.map((mod, idx) => {
-    const r = innermost + idx * (ringThickness + ringGap);
+    const r = innerR + idx * (ringW + gap);
     const pct = total > 0 ? mod.value / total : 0;
-    const circumference = Math.PI * r;
-    const filledLen = pct * circumference;
-    const labelY = 170 - idx * 42;
-    return { ...mod, r, pct, circumference, filledLen, labelY, idx };
+    const circ = 2 * Math.PI * r;
+    const filled = pct * circ;
+    return { ...mod, r, pct, circ, filled, idx };
   }), [modules, total]);
 
   return (
@@ -90,7 +90,7 @@ function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fi
       className="glass-card-elevated rounded-[20px] p-5 h-full glow-border-hover"
       data-testid="card-portfolio-chart"
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-[15px] font-bold text-gray-900">Portfolio Allocation</h3>
           <p className="text-[11px] text-gray-400 mt-0.5">Gold distribution across modules</p>
@@ -103,89 +103,81 @@ function SemiCircleRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fi
         </div>
       </div>
 
-      <svg viewBox="0 0 460 210" className="w-full" preserveAspectRatio="xMidYMid meet">
-
-        {[...rings].reverse().map((ring) => (
-          <g key={ring.key}>
-            <circle
-              cx={cx}
-              cy={cy}
-              r={ring.r}
-              fill="none"
-              stroke={ring.lightColor}
-              strokeWidth={ringThickness}
-              strokeDasharray={`${ring.circumference} ${ring.circumference}`}
-              strokeDashoffset={0}
-              strokeLinecap="round"
-              transform={`rotate(180 ${cx} ${cy})`}
-            />
-
-            <circle
-              cx={cx}
-              cy={cy}
-              r={ring.r}
-              fill="none"
-              stroke={ring.color}
-              strokeWidth={ringThickness}
-              strokeDasharray={`${ring.filledLen} ${ring.circumference}`}
-              strokeDashoffset={0}
-              strokeLinecap="round"
-              transform={`rotate(180 ${cx} ${cy})`}
-              opacity={ring.pct > 0 ? 1 : 0}
-            >
-              <animate
-                attributeName="stroke-dashoffset"
-                from={`${ring.circumference}`}
-                to="0"
-                dur="1.2s"
-                begin={`${0.3 + ring.idx * 0.15}s`}
-                fill="freeze"
-                calcMode="spline"
-                keySplines="0.4 0 0.2 1"
-                keyTimes="0;1"
+      <div className="flex items-center justify-center mb-4">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {[...rings].reverse().map((ring) => (
+            <g key={ring.key}>
+              <circle
+                cx={cx} cy={cy} r={ring.r}
+                fill="none"
+                stroke={ring.bg}
+                strokeWidth={ringW}
               />
-            </circle>
-          </g>
-        ))}
-
-        <circle cx={cx} cy={cy} r={innermost - 14} fill="white" />
-        <circle cx={cx} cy={cy} r={innermost - 14} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1.5} />
-        <text x={cx} y={cy - 5} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.05em' }}>TOTAL</text>
-        <text x={cx} y={cy + 9} textAnchor="middle" fill="#111827" style={{ fontSize: 12, fontWeight: 800 }}>
-          {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
-        </text>
-
-        {rings.map((ring) => {
-          const arcMidAngle = Math.PI - (ring.pct * Math.PI * 0.5);
-          const dotOnRingX = cx + ring.r * Math.cos(arcMidAngle);
-          const dotOnRingY = cy - ring.r * Math.sin(arcMidAngle);
-          const elbowX = 128;
-          const labelEndX = 4;
-
-          return (
-            <g key={`label-${ring.key}`}>
-              <line x1={dotOnRingX} y1={dotOnRingY} x2={elbowX} y2={ring.labelY} stroke={ring.color} strokeWidth={0.8} strokeOpacity={0.35} />
-              <line x1={elbowX} y1={ring.labelY} x2={labelEndX + 110} y2={ring.labelY} stroke={ring.color} strokeWidth={0.8} strokeOpacity={0.35} />
-
-              <rect x={labelEndX} y={ring.labelY - 15} width={108} height={30} rx={7} fill={ring.lightColor} stroke={ring.color} strokeWidth={0.5} strokeOpacity={0.2} />
-              <text x={labelEndX + 8} y={ring.labelY - 1} fill={ring.color} style={{ fontSize: 9.5, fontWeight: 700 }}>{ring.label}</text>
-              <text x={labelEndX + 8} y={ring.labelY + 10} fill="#6b7280" style={{ fontSize: 8, fontWeight: 600 }}>
-                {showBalance ? `$${formatNumber(ring.value)}` : '****'} · {(ring.pct * 100).toFixed(0)}%
-              </text>
-
-              <circle cx={dotOnRingX} cy={dotOnRingY} r={2.5} fill="white" stroke={ring.color} strokeWidth={1.5} />
+              {ring.pct > 0 && (
+                <circle
+                  cx={cx} cy={cy} r={ring.r}
+                  fill="none"
+                  stroke={ring.color}
+                  strokeWidth={ringW}
+                  strokeLinecap="round"
+                  strokeDasharray={`${ring.filled} ${ring.circ}`}
+                  strokeDashoffset={ring.circ}
+                  transform={`rotate(-90 ${cx} ${cy})`}
+                  style={{ animation: `ring-fill-${ring.idx} 1.2s ${0.3 + ring.idx * 0.12}s ease-out forwards` }}
+                />
+              )}
             </g>
+          ))}
+          <circle cx={cx} cy={cy} r={innerR - 8} fill="white" />
+          <circle cx={cx} cy={cy} r={innerR - 8} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1} />
+          <text x={cx} y={cy - 3} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 6.5, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
+          <text x={cx} y={cy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 10, fontWeight: 800 }}>
+            {showBalance ? `$${formatNumber(totalPortfolioValue, 0)}` : '••••'}
+          </text>
+        </svg>
+      </div>
+
+      <style>{`
+        ${rings.map(r => `
+          @keyframes ring-fill-${r.idx} {
+            from { stroke-dashoffset: ${r.circ}; }
+            to { stroke-dashoffset: ${r.circ - r.filled}; }
+          }
+        `).join('')}
+      `}</style>
+
+      <div className="space-y-3">
+        {modules.map((item, idx) => {
+          const pct = total > 0 ? (item.value / total) * 100 : 0;
+          return (
+            <div key={item.key} className="flex items-center gap-3 group" data-testid={`progress-${item.key}`}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: item.bg }}>
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[12px] font-semibold text-gray-700">{item.label}</span>
+                  <span className="text-[12px] font-bold text-gray-900">
+                    {showBalance ? `$${formatNumber(item.value)}` : '••••'}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: item.color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
+                  />
+                </div>
+              </div>
+              <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
+                {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
+              </span>
+            </div>
           );
         })}
-
-        {rings.map((ring) => (
-          <g key={`num-${ring.key}`}>
-            <text x={cx + ring.r} y={cy + 16} textAnchor="middle" fill="#d1d5db" style={{ fontSize: 8, fontWeight: 700 }}>
-              {String(ring.idx + 1).padStart(2, '0')}
-            </text>
-          </g>
-        ))}
-      </svg>
+      </div>
     </motion.div>
   );
 }
@@ -686,7 +678,7 @@ export default function Dashboard() {
               </motion.div>
             </Link>
 
-            <SemiCircleRingChart
+            <PortfolioRingChart
               walletGoldValue={walletGoldValue}
               finacardGoldValue={finacardGoldValue}
               bnslValue={bnslValue}
