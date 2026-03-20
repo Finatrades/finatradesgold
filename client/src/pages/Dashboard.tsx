@@ -497,7 +497,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
                       <Sparkles className="w-4 h-4 text-amber-300" />
                     </div>
-                    <span className="text-[13px] text-white/70 font-medium">Total Portfolio</span>
+                    <span className="text-[13px] text-white/70 font-medium">Wallet Balance</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setBalanceVisible(!balanceVisible)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
