@@ -65,7 +65,8 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   doc.text("PARTICIPANT DETAILS", margin + 5, y + 8);
   
   doc.setFont("helvetica", "normal");
-  doc.text(`Name: ${user?.name || 'Valued Client'}`, margin + 5, y + 15);
+  const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Valued Client';
+  doc.text(`Name: ${userName}`, margin + 5, y + 15);
   doc.text(`Email: ${user?.email || 'N/A'}`, margin + 5, y + 20);
   y += 35;
 
