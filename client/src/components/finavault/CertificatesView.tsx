@@ -129,7 +129,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
     
     // Gold Wallet Type Badge
     if (certificate.goldWalletType) {
-      const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Market Price Gold' : 'FGPW - Fixed Price Gold';
+      const walletLabel = certificate.goldWalletType === 'LGPW' ? 'LGPW - Live Gold Price' : 'FGPW - Fixed Price Gold';
       doc.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
       doc.roundedRect(pageWidth / 2 - 35, y - 4, 70, 9, 2, 2, 'F');
       doc.setTextColor(20, 10, 30);
@@ -156,29 +156,38 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
     
     // Details grid
     const detailsY = y;
-    const colWidth = contentWidth / 4;
     
     // Column headers
     doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('GOLD WEIGHT', margin + colWidth * 0.5, detailsY, { align: 'center' });
-    doc.text('PURITY', margin + colWidth * 1.5, detailsY, { align: 'center' });
-    doc.text('VALUE (USD)', margin + colWidth * 2.5, detailsY, { align: 'center' });
-    doc.text(certificate.type === 'Conversion' ? 'LOCKED PRICE' : 'STORAGE REF', margin + colWidth * 3.5, detailsY, { align: 'center' });
+    const pdfCol4Label = certificate.type === 'Physical Storage'
+      ? 'STORAGE REF'
+      : certificate.goldPriceUsdPerGram ? 'GOLD PRICE' : null;
+    const pdfCol4Val = certificate.type === 'Physical Storage'
+      ? (certificate.wingoldStorageRef || 'N/A')
+      : certificate.goldPriceUsdPerGram
+      ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g`
+      : null;
+    const numCols = pdfCol4Label ? 4 : 3;
+    const colW = contentWidth / numCols;
+
+    doc.text('GOLD WEIGHT', margin + colW * 0.5, detailsY, { align: 'center' });
+    doc.text('PURITY', margin + colW * 1.5, detailsY, { align: 'center' });
+    doc.text('VALUE (USD)', margin + colW * 2.5, detailsY, { align: 'center' });
+    if (pdfCol4Label) doc.text(pdfCol4Label, margin + colW * 3.5, detailsY, { align: 'center' });
     
     // Column values
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${goldGrams.toFixed(4)}g`, margin + colWidth * 0.5, detailsY + 10, { align: 'center' });
-    doc.text('999.9', margin + colWidth * 1.5, detailsY + 10, { align: 'center' });
-    doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + colWidth * 2.5, detailsY + 10, { align: 'center' });
-    doc.setFontSize(14);
-    const col4Value = certificate.type === 'Conversion'
-      ? (certificate.goldPriceUsdPerGram ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g` : 'N/A')
-      : (certificate.wingoldStorageRef || 'N/A');
-    doc.text(col4Value, margin + colWidth * 3.5, detailsY + 10, { align: 'center' });
+    doc.text(`${goldGrams.toFixed(4)}g`, margin + colW * 0.5, detailsY + 10, { align: 'center' });
+    doc.text('999.9', margin + colW * 1.5, detailsY + 10, { align: 'center' });
+    doc.text(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + colW * 2.5, detailsY + 10, { align: 'center' });
+    if (pdfCol4Val) {
+      doc.setFontSize(14);
+      doc.text(pdfCol4Val, margin + colW * 3.5, detailsY + 10, { align: 'center' });
+    }
     y = detailsY + 25;
     
     // Separator line
@@ -429,7 +438,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                       ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
                       : 'border-amber-500 text-amber-400 bg-amber-500/10'
                   }`}>
-                    {certificate.goldWalletType === 'FGPW' ? '🔒 FGPW - Fixed Price Gold' : '📈 LGPW - Market Price Gold'}
+                    {certificate.goldWalletType === 'FGPW' ? '🔒 FGPW - Fixed Price Gold' : '📈 LGPW - Live Gold Price'}
                   </Badge>
                   <p className="text-xs text-white/50 max-w-xs text-center">
                     {certificate.goldWalletType === 'FGPW' 
@@ -483,41 +492,45 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
               )}
             </p>
 
-            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 border-y py-6 my-6 ${
-              isDigitalOwnership ? 'border-[#D4AF37]/20' : 'border-[#C0C0C0]/20'
-            }`}>
-              <div>
-                <p className={`text-xs uppercase tracking-wider mb-1 ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Gold Weight</p>
-                <p className="text-xl font-bold text-white">{goldGrams.toFixed(4)}g</p>
-              </div>
-              <div>
-                <p className={`text-xs uppercase tracking-wider mb-1 ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Purity</p>
-                <p className="text-xl font-bold text-white">999.9</p>
-              </div>
-              <div>
-                <p className={`text-xs uppercase tracking-wider mb-1 ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Value (USD)</p>
-                <p className="text-xl font-bold text-white">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-              <div>
-                <p className={`text-xs uppercase tracking-wider mb-1 ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>{certificate.type === 'Conversion' ? 'Locked Price' : 'Storage Ref'}</p>
-                <p className="text-xl font-bold text-white">
-                  {certificate.type === 'Conversion'
-                    ? certificate.goldPriceUsdPerGram
-                      ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g`
-                      : 'N/A'
-                    : <span className="text-sm font-mono">{certificate.wingoldStorageRef || 'N/A'}</span>
-                  }
-                </p>
-              </div>
-            </div>
+            {(() => {
+              const col4Label = certificate.type === 'Physical Storage'
+                ? 'Storage Ref'
+                : certificate.type === 'Conversion' || certificate.goldPriceUsdPerGram
+                ? 'Gold Price'
+                : null;
+              const col4Value = certificate.type === 'Physical Storage'
+                ? certificate.wingoldStorageRef || 'N/A'
+                : certificate.goldPriceUsdPerGram
+                ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g`
+                : null;
+              const labelClass = `text-xs uppercase tracking-wider mb-1 ${isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'}`;
+              return (
+                <div className={`grid gap-4 border-y py-6 my-6 ${
+                  col4Label ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'
+                } ${isDigitalOwnership ? 'border-[#D4AF37]/20' : 'border-[#C0C0C0]/20'}`}>
+                  <div>
+                    <p className={labelClass}>Gold Weight</p>
+                    <p className="text-xl font-bold text-white">{goldGrams.toFixed(4)}g</p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Purity</p>
+                    <p className="text-xl font-bold text-white">999.9</p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Value (USD)</p>
+                    <p className="text-xl font-bold text-white">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
+                  {col4Label && (
+                    <div>
+                      <p className={labelClass}>{col4Label}</p>
+                      <p className={`font-bold text-white ${certificate.type === 'Physical Storage' ? 'text-sm font-mono' : 'text-xl'}`}>
+                        {col4Value}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-8 mt-8">
               <div className="text-center">
