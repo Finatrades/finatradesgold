@@ -372,22 +372,6 @@ export default function Dashboard() {
     ).slice(0, 5);
   }, [transactions, activitySearch]);
 
-  const monthlySpend = useMemo(() => {
-    const now = new Date();
-    const outgoingTypes = ['sell', 'withdraw', 'send', 'transfer', 'payment', 'spend', 'fee'];
-    return transactions
-      .filter(tx => {
-        if (!tx.createdAt) return false;
-        const d = new Date(tx.createdAt);
-        const isThisMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        const isOutgoing = outgoingTypes.some(t => (tx.type || '').toLowerCase().includes(t));
-        return isThisMonth && isOutgoing;
-      })
-      .reduce((sum, tx) => sum + Math.abs(parseFloat(tx.amountUsd || '0')), 0);
-  }, [transactions]);
-
-  const MONTHLY_LIMIT = 50000;
-  const progressPercent = Math.max(Math.min((monthlySpend / MONTHLY_LIMIT) * 100, 100), monthlySpend > 0 ? 2 : 0.5);
 
   const getTransactionAmount = (tx: { amountUsd: string | null; amountGold: string | null }) => {
     const goldAmt = parseFloat(tx.amountGold || '0');
@@ -650,25 +634,51 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Monthly Usage Bar */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-spending-limit">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[14px] font-bold text-gray-900">Monthly Usage</h3>
-                <span className="text-[11px] font-bold text-gray-400">{progressPercent.toFixed(0)}%</span>
-              </div>
-              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-                <motion.div
-                  className="absolute h-full rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #8A2BE2, #a855f7, #c084fc)' }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                />
-                <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
-              </div>
-              <div className="flex justify-between mt-2.5">
-                <span className="text-[12px] text-gray-500">This month</span>
-                <span className="text-[12px] font-bold text-gray-700">${formatNumber(monthlySpend)} <span className="text-gray-400 font-medium">/ $50k</span></span>
+            {/* Quick Join BNSL Plan */}
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
+              <div className="absolute inset-0 holo-shimmer" />
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
+                        <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      </div>
+                      <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
+                    </div>
+                    <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
+                  </div>
+                  <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
+                    <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-4">
+                  {[
+                    { icon: '✦', text: 'Earn margin yield on locked gold' },
+                    { icon: '✦', text: 'Fixed rate for plan duration' },
+                    { icon: '✦', text: 'Flexible 3 – 12 month terms' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-amber-300 text-[10px]">{item.icon}</span>
+                      <span className="text-[11px] text-white/75">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link href="/bnsl">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
+                    data-testid="button-quick-join-bnsl"
+                  >
+                    {(totals.activeBnslPlans || 0) > 0 ? 'Manage My Plans' : 'Join Plan Now'}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </motion.button>
+                </Link>
               </div>
             </motion.div>
 
