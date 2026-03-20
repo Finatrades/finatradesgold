@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock, Globe } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
@@ -348,6 +348,18 @@ export default function Dashboard() {
   const costBasis = totalGoldGrams * avgBuyPrice;
   const unrealizedGain = currentPortfolioValue - costBasis;
   const unrealizedGainPct = costBasis > 0 ? (unrealizedGain / costBasis) * 100 : 0;
+
+  // ── Multi-currency gold value (approximate mid-market rates) ──
+  const currencies = [
+    { code: 'USD', name: 'US Dollar',        symbol: '$',  flag: '🇺🇸', rate: 1 },
+    { code: 'EUR', name: 'Euro',             symbol: '€',  flag: '🇪🇺', rate: 0.921 },
+    { code: 'GBP', name: 'British Pound',    symbol: '£',  flag: '🇬🇧', rate: 0.792 },
+    { code: 'AED', name: 'UAE Dirham',       symbol: 'د.إ',flag: '🇦🇪', rate: 3.673 },
+    { code: 'SAR', name: 'Saudi Riyal',      symbol: '﷼',  flag: '🇸🇦', rate: 3.75 },
+    { code: 'PKR', name: 'Pakistani Rupee',  symbol: '₨',  flag: '🇵🇰', rate: 278.5 },
+    { code: 'INR', name: 'Indian Rupee',     symbol: '₹',  flag: '🇮🇳', rate: 83.4 },
+    { code: 'CNY', name: 'Chinese Yuan',     symbol: '¥',  flag: '🇨🇳', rate: 7.24 },
+  ];
 
   // ── Pending crypto deposits ──
   const pendingDeposits = (pendingDepositsData?.requests || []).filter(r => r.status === 'Pending');
@@ -837,6 +849,43 @@ export default function Dashboard() {
                 </p>
                 <p className="text-[9px] text-gray-400 mt-0.5 font-medium">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g</p>
               </div>
+            </motion.div>
+
+            {/* Multi-Currency Wallets */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-multi-currency">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-bold text-gray-900">Multi-Currency Wallets</h3>
+                  <p className="text-[10px] text-gray-400">Your gold value in world currencies</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {currencies.map(({ code, name, symbol, flag, rate }) => {
+                  const value = currentPortfolioValue * rate;
+                  const isLarge = value >= 10000;
+                  const formatted = isLarge
+                    ? formatNumber(Math.round(value))
+                    : formatNumber(value, 2);
+                  return (
+                    <div key={code} className="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50 hover:bg-purple-50/60 transition-colors" data-testid={`currency-${code.toLowerCase()}`}>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[16px] leading-none">{flag}</span>
+                        <div>
+                          <p className="text-[11px] font-bold text-gray-800 leading-none">{code}</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">{name}</p>
+                        </div>
+                      </div>
+                      <p className="text-[12px] font-extrabold text-gray-900">
+                        {showBalance ? `${symbol}${formatted}` : '••••'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-gray-300 mt-3 text-center">Indicative rates · not for trading</p>
             </motion.div>
 
             {/* Gold Price Lock Status */}
