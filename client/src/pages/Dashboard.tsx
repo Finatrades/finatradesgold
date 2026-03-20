@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Bell, Target, AlertTriangle, Lock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, BarChart3, Landmark, Lock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
@@ -693,89 +693,6 @@ export default function Dashboard() {
               </Link>
             )}
 
-            {/* Smart Alerts */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5 glow-border-hover" data-testid="card-smart-alerts">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                    <Bell className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <h3 className="text-[14px] font-bold text-gray-900">Smart Alerts</h3>
-                </div>
-              </div>
-              <div className="space-y-2.5">
-                {/* Pending deposits alert */}
-                {pendingDeposits.length > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100" data-testid="alert-smart-pending-deposits">
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-amber-800">Pending Deposit</p>
-                      <p className="text-[10px] text-amber-600 mt-0.5">{pendingDeposits.length} deposit{pendingDeposits.length > 1 ? 's' : ''} awaiting settlement</p>
-                    </div>
-                    <span className="shrink-0 flex items-center justify-center w-5 h-5 bg-amber-400 text-white text-[10px] font-bold rounded-full">{pendingDeposits.length}</span>
-                  </div>
-                )}
-                {/* Gold price vs avg buy alert */}
-                {goldPrice > avgBuyPrice ? (
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100" data-testid="alert-smart-gold-up">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-emerald-800">Gold Price Up</p>
-                      <p className="text-[10px] text-emerald-600 mt-0.5">+{((goldPrice - avgBuyPrice) / avgBuyPrice * 100).toFixed(1)}% above your avg buy price</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100" data-testid="alert-smart-gold-buy">
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <TrendingDown className="w-3.5 h-3.5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-blue-800">Buy Opportunity</p>
-                      <p className="text-[10px] text-blue-600 mt-0.5">Gold is below your avg buy — good time to accumulate</p>
-                    </div>
-                  </div>
-                )}
-                {/* Goal progress alert */}
-                {totalGoldGrams < savingsGoal * 0.5 && (
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-50 border border-purple-100" data-testid="alert-smart-goal">
-                    <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <Target className="w-3.5 h-3.5 text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-bold text-purple-800">Goal Progress</p>
-                      <p className="text-[10px] text-purple-600 mt-0.5">{((totalGoldGrams / savingsGoal) * 100).toFixed(0)}% of your {savingsGoal}g savings target</p>
-                    </div>
-                  </div>
-                )}
-                {/* Server notifications if any */}
-                {notifications.slice(0, 2).map((n: any, i: number) => (
-                  <motion.div key={n.id || i}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
-                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
-                    data-testid={`notification-${i}`}>
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.type === 'success' ? 'bg-emerald-500' : n.type === 'warning' ? 'bg-amber-500' : n.type === 'error' ? 'bg-rose-500' : 'bg-blue-500'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-gray-800 truncate">{n.title || 'Notification'}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{n.message || ''}</p>
-                    </div>
-                  </motion.div>
-                ))}
-                {pendingDeposits.length === 0 && notifications.length === 0 && goldPrice <= avgBuyPrice && totalGoldGrams >= savingsGoal * 0.5 && (
-                  <div className="flex flex-col items-center py-3 text-center">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center mb-2">
-                      <Sparkles className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <span className="text-[11px] text-gray-400">All clear — no alerts right now</span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-
             {/* FinaBridge Trade Stats */}
             {isBusinessUser && finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
               <Link href="/finabridge">
@@ -874,67 +791,10 @@ export default function Dashboard() {
               formatNumber={formatNumber}
             />
 
-            {pendingDeposits.length > 0 && (
-              <motion.div variants={itemVariants} className="rounded-[20px] p-5 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9f3fff 50%, #6d28d9 100%)' }} data-testid="card-pending-deposits">
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
-                    </div>
-                    <span className="text-[12px] font-bold text-white/90">Pending Deposits</span>
-                  </div>
-                  <p className="text-[26px] font-extrabold text-white leading-none">{pendingDeposits.length}</p>
-                  <p className="text-[11px] text-white/60 mt-1">
-                    {formatNumber(pendingDeposits.reduce((s, r) => s + Number(r.expectedGoldGrams || 0), 0), 2)}g awaiting settlement
-                  </p>
-                  <Link href="/finapay">
-                    <button className="mt-3 w-full py-2 rounded-xl text-[12px] font-bold text-purple-700 bg-white/90 hover:bg-white transition-colors">
-                      View Details →
-                    </button>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
           </div>
 
           {/* ═══ RIGHT COLUMN — Stats + Gold Price Lock ═══ */}
           <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
-
-            {/* Portfolio Performance */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-portfolio-performance">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-purple-600" />
-                </div>
-                <h3 className="text-[13px] font-bold text-gray-900">Portfolio Performance</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-[11px] text-gray-500">Total Holdings</span>
-                  <span className="text-[13px] font-bold text-gray-800">{formatNumber(totalGoldGrams, 3)}g</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-[11px] text-gray-500">Avg Buy Price</span>
-                  <span className="text-[13px] font-bold text-gray-800">${formatNumber(avgBuyPrice, 2)}/g</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-[11px] text-gray-500">Market Value</span>
-                  <span className="text-[13px] font-bold text-gray-800">{showBalance ? `$${formatNumber(currentPortfolioValue)}` : hiddenValue}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-[11px] text-gray-500">Unrealized P&L</span>
-                  <div className="text-right">
-                    <p className={`text-[13px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {showBalance ? `${unrealizedGain >= 0 ? '+' : ''}$${formatNumber(Math.abs(unrealizedGain))}` : hiddenValue}
-                    </p>
-                    <p className={`text-[10px] font-semibold ${unrealizedGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
 
             {/* Gold Earnings */}
             <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 text-white overflow-hidden" style={{ background: 'linear-gradient(135deg, #7c3aed, #8A2BE2, #a855f7)' }} data-testid="card-total-earnings">
