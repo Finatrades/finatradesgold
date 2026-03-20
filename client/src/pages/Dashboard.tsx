@@ -67,12 +67,12 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
 
   const total = modules.reduce((s, d) => s + d.value, 0);
 
-  const size = 180;
+  const size = 240;
   const cx = size / 2;
   const cy = size / 2;
-  const ringW = 14;
-  const gap = 4;
-  const innerR = 28;
+  const ringW = 8;
+  const gap = 6;
+  const innerR = 40;
 
   const rings = useMemo(() => modules.map((mod, idx) => {
     const r = innerR + idx * (ringW + gap);
@@ -134,10 +134,10 @@ function PortfolioRingChart({ walletGoldValue, finacardGoldValue, bnslValue, fin
               )}
             </g>
           ))}
-          <circle cx={cx} cy={cy} r={innerR - 8} fill="white" />
-          <circle cx={cx} cy={cy} r={innerR - 8} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1} />
-          <text x={cx} y={cy - 3} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 6.5, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
-          <text x={cx} y={cy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 10, fontWeight: 800 }}>
+          <circle cx={cx} cy={cy} r={innerR - 10} fill="white" />
+          <circle cx={cx} cy={cy} r={innerR - 10} fill="none" stroke="rgba(138,43,226,0.06)" strokeWidth={1.5} />
+          <text x={cx} y={cy - 5} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
+          <text x={cx} y={cy + 9} textAnchor="middle" fill="#111827" style={{ fontSize: 13, fontWeight: 800 }}>
             {showBalance ? `$${formatNumber(totalPortfolioValue, 0)}` : '••••'}
           </text>
         </svg>
