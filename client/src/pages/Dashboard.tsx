@@ -41,10 +41,10 @@ function getGreeting(): string {
 }
 
 const RING_MODULES = [
-  { key: 'finapay',    label: 'FinaPay',    color: '#8A2BE2', bg: 'rgba(138,43,226,0.10)' },
-  { key: 'finacard',   label: 'FinaCard',   color: '#D4AF37', bg: 'rgba(212,175,55,0.10)' },
-  { key: 'bnsl',       label: 'BNSL',       color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
-  { key: 'finabridge', label: 'FinaBridge', color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
+  { key: 'finapay',    label: 'FinaPay',    color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
+  { key: 'finacard',   label: 'FinaCard',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  { key: 'bnsl',       label: 'BNSL',       color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+  { key: 'finabridge', label: 'FinaBridge', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
 ];
 
 interface PortfolioChartsProps {
