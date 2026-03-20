@@ -199,8 +199,9 @@ export default function QuickBnslModal({
       queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['bnsl-plans'] });
       onOpenChange(false);
-    } catch (err: any) {
-      toast({ title: 'Enrollment Failed', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Enrollment failed';
+      toast({ title: 'Enrollment Failed', description: errMsg, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
