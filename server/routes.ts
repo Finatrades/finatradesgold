@@ -11701,8 +11701,8 @@ export async function registerRoutes(
         planData.userId = sessionUserId;
       }
       
-      // Validate BNSL amount limits using PARSED data
-      const amountUsd = parseFloat(planData.totalMarginComponentUsd || planData.saleValue || "0");
+      // Validate BNSL amount limits using the gold sale value (base price), not the margin
+      const amountUsd = parseFloat(planData.basePriceComponentUsd || planData.totalSaleProceedsUsd || planData.saleValue || "0");
       if (isNaN(amountUsd) || amountUsd <= 0) {
         return res.status(400).json({ message: "Invalid BNSL amount" });
       }
