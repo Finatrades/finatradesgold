@@ -179,6 +179,21 @@ const internalTransferSchema = z.object({
   notes: z.string().optional()
 });
 
+async function safeAuditStep(
+  flowInstanceId: string,
+  flowType: FlowType,
+  stepKey: string,
+  result: 'PASS' | 'FAIL',
+  payload?: any,
+  options?: any
+): Promise<void> {
+  try {
+    await workflowAuditService.recordStep(flowInstanceId, flowType, stepKey, result, payload, options);
+  } catch (auditErr: any) {
+    console.warn(`[WorkflowAudit] Non-critical audit step "${stepKey}" failed (transaction continues):`, auditErr?.message || auditErr);
+  }
+}
+
 async function handleDualWalletTransfer(req: Request, res: Response) {
   try {
     const parsed = internalTransferSchema.parse(req.body);
@@ -192,11 +207,17 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
     const flowType: FlowType = fromWalletType === 'LGPW' 
       ? 'INTERNAL_TRANSFER_LGPW_TO_FGPW' 
       : 'INTERNAL_TRANSFER_FGPW_TO_LGPW';
-    const flowInstanceId = await workflowAuditService.startFlow(flowType, userId, {
-      goldGrams,
-      fromWalletType,
-      toWalletType,
-    });
+    let flowInstanceId = '';
+    try {
+      flowInstanceId = await workflowAuditService.startFlow(flowType, userId, {
+        goldGrams,
+        fromWalletType,
+        toWalletType,
+      });
+    } catch (auditErr: any) {
+      console.warn('[WorkflowAudit] startFlow failed (continuing without audit):', auditErr?.message);
+      flowInstanceId = `fallback-${Date.now()}`;
+    }
 
     const validateStepKey = fromWalletType === 'LGPW' 
       ? 'validate_user_balance_mpgw' 
@@ -204,7 +225,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
     
     const validation = await validateInternalTransfer(userId, goldGrams, fromWalletType, toWalletType);
     
-    await workflowAuditService.recordStep(
+    await safeAuditStep(
       flowInstanceId, flowType, validateStepKey,
       validation.valid ? 'PASS' : 'FAIL',
       { availableGrams: validation.availableGrams, requestedGrams: goldGrams },
@@ -212,7 +233,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
     );
     
     if (!validation.valid) {
-      await workflowAuditService.completeFlow(flowInstanceId);
+      try { await workflowAuditService.completeFlow(flowInstanceId); } catch {}
       return res.status(400).json({ error: validation.error });
     }
 
@@ -240,7 +261,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         const actualTxId = insertedTx.id;
         generatedTxId = actualTxId;
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'create_pending_txn',
           'PASS',
           { transactionId: actualTxId, goldGrams },
@@ -265,7 +286,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           notes: notes || `LGPW to FGPW conversion at $${currentGoldPrice.toFixed(2)}/g`
         });
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'fpgw_batch_created',
           'PASS',
           { goldGrams, lockedPriceUsd: currentGoldPrice },
@@ -285,14 +306,14 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           notes: `LGPW → FGPW: Debit ${goldGrams.toFixed(6)}g from LGPW, Credit ${goldGrams.toFixed(6)}g to FGPW`
         }).returning({ id: vaultLedgerEntries.id });
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'ledger_post_reclass_mpgw_to_fpgw',
           'PASS',
           { ledgerEntryId: ledgerEntry.id },
           { userId, transactionId: actualTxId, ledgerEntryId: ledgerEntry.id }
         );
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
           { newMpgwGrams: preTransferBalance.mpgw.availableGrams - goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams + goldGrams },
@@ -421,7 +442,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           physicalReclassRemaining -= reclassAmount;
         }
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
           { conversionCertNumber: certNumber, digitalOwnershipCertNumber: digitalCertNumber, parentCertId, physicalReclassCount: physicalStorageCerts.length },
@@ -435,7 +456,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           throw new Error(consumption.error || 'FGPW consumption failed');
         }
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'fpgw_batches_consumed',
           'PASS',
           { totalGramsConsumed: consumption.totalGramsConsumed, batchesConsumed: (consumption as any).batchesConsumed?.length || 0 },
@@ -475,7 +496,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         const actualTxIdFpgw = insertedTxFpgw.id;
         generatedTxId = actualTxIdFpgw;
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'create_pending_txn',
           'PASS',
           { transactionId: actualTxIdFpgw, goldGrams },
@@ -495,14 +516,14 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           notes: `Converted ${goldGrams.toFixed(6)}g from FGPW to LGPW (FGPW cost: $${consumption.weightedValueUsd.toFixed(2)}, market value: $${(goldGrams * currentGoldPrice).toFixed(2)})`
         }).returning({ id: vaultLedgerEntries.id });
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'ledger_post_reclass_fpgw_to_mpgw',
           'PASS',
           { ledgerEntryId: ledgerEntryFpgw.id },
           { userId, transactionId: actualTxIdFpgw, ledgerEntryId: ledgerEntryFpgw.id }
         );
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'balances_updated',
           'PASS',
           { newMpgwGrams: preTransferBalance.mpgw.availableGrams + goldGrams, newFpgwGrams: preTransferBalance.fpgw.availableGrams - goldGrams },
@@ -630,7 +651,7 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
           physicalReclassRemainingFpgw -= reclassAmount;
         }
         
-        await workflowAuditService.recordStep(
+        await safeAuditStep(
           flowInstanceId, flowType, 'certificate_issued',
           'PASS',
           { certificateNumber: certNumberFpgw, digitalOwnershipCertNumber: digitalCertNumberMpgw, parentCertId: parentCertIdFpgw, physicalReclassCount: physicalStorageCertsFpgw.length },
@@ -646,15 +667,20 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
       data: { goldGrams, timestamp: now.toISOString() }
     });
     
-    await workflowAuditService.recordStep(
+    await safeAuditStep(
       flowInstanceId, flowType, 'notify_user',
       'PASS',
       { goldGrams, fromWalletType, toWalletType },
       { userId, transactionId: generatedTxId }
     );
     
-    const auditResult = await workflowAuditService.completeFlow(flowInstanceId, generatedTxId);
-    console.log(`[WorkflowAudit] ${flowType} completed: ${auditResult.overallResult}`);
+    let auditResult = { overallResult: 'PASS' };
+    try {
+      auditResult = await workflowAuditService.completeFlow(flowInstanceId, generatedTxId);
+      console.log(`[WorkflowAudit] ${flowType} completed: ${auditResult.overallResult}`);
+    } catch (auditErr: any) {
+      console.warn('[WorkflowAudit] completeFlow failed (non-critical):', auditErr?.message);
+    }
 
     // Update the FGPW ownership summary to sync with batches
     await updateFpgwOwnershipSummary(userId);
