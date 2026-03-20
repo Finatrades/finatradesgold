@@ -526,165 +526,6 @@ export default function Dashboard() {
           </motion.button>
         </motion.div>
 
-        {/* ═══ GOLD PRICE CHART + PENDING DEPOSITS ═══ */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-          {/* Gold Price Trend Chart */}
-          <motion.div variants={itemVariants} className="xl:col-span-2 glass-card-elevated rounded-[20px] p-5 self-start" data-testid="card-gold-price-chart">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
-                <p className="text-[11px] text-gray-400 mt-0.5">XAU/USD · Per gram</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                  {(['7D', '30D', '90D'] as const).map(p => (
-                    <button key={p} onClick={() => setChartPeriod(p)}
-                      className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${chartPeriod === p ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-                <div className="text-right">
-                  <p className="text-[15px] font-extrabold text-gray-900">${formatNumber(goldPrice, 2)}</p>
-                  <p className="text-[10px] text-gray-400">/gram now</p>
-                </div>
-              </div>
-            </div>
-
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-                <Tooltip
-                  contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-                  formatter={(v: any) => [`$${Number(v).toFixed(2)}/g`, 'Gold Price']}
-                />
-                <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="4 3" strokeWidth={1.5}
-                  label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#D4AF37' }} />
-                <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2} fill="url(#goldGradient)" dot={false} activeDot={{ r: 4, fill: '#7c3aed', strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-0.5 bg-purple-600 rounded" />
-                <span className="text-[11px] text-gray-500">Market Price</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-0.5 bg-amber-400 rounded border-dashed" style={{ borderTop: '2px dashed #D4AF37', background: 'transparent' }} />
-                <span className="text-[11px] text-gray-500">Your Avg Buy</span>
-              </div>
-              <div className="ml-auto flex items-center gap-1">
-                {unrealizedGain >= 0
-                  ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                  : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
-                <span className={`text-[11px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}% vs avg buy
-                </span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right column — Gold Card + Portfolio Ring Chart + Pending Deposits */}
-          <div className="flex flex-col gap-5">
-            {/* FinaCard — Premium dark card with holographic effect */}
-            <Link href="/finacard">
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ scale: 1.015, y: -4 }}
-                transition={{ duration: 0.35 }}
-                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
-                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
-                data-testid="card-dashboard-finacard"
-              >
-                <div className="absolute inset-0 holo-shimmer" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
-                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
-                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
-
-                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
-                      <CreditCard className="w-3 h-3 text-white/60" />
-                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
-                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
-                      </div>
-                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
-                    </div>
-                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
-                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
-                          {user?.firstName || ''} {user?.lastName || ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
-                        <p className="text-white/90 text-sm font-extrabold">
-                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
-                        </p>
-                        <p className="text-white/30 text-[9px] font-medium">
-                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-
-            <PortfolioRingChart
-              walletGoldGrams={totals.walletGoldGrams || 0}
-              finacardGoldGrams={totals.finacardGoldGrams || 0}
-              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
-              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
-              totalGoldGrams={totalGoldGrams}
-              showBalance={showBalance}
-              hiddenValue={hiddenValue}
-              formatNumber={formatNumber}
-            />
-
-            {pendingDeposits.length > 0 && (
-              <motion.div variants={itemVariants} className="rounded-[20px] p-5 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9f3fff 50%, #6d28d9 100%)' }} data-testid="card-pending-deposits">
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
-                    </div>
-                    <span className="text-[12px] font-bold text-white/90">Pending Deposits</span>
-                  </div>
-                  <p className="text-[26px] font-extrabold text-white leading-none">{pendingDeposits.length}</p>
-                  <p className="text-[11px] text-white/60 mt-1">
-                    {formatNumber(pendingDeposits.reduce((s, r) => s + Number(r.expectedGoldGrams || 0), 0), 2)}g awaiting settlement
-                  </p>
-                  <Link href="/finapay">
-                    <button className="mt-3 w-full py-2 rounded-xl text-[12px] font-bold text-purple-700 bg-white/90 hover:bg-white transition-colors">
-                      View Details →
-                    </button>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </div>
 
         <div className="grid grid-cols-12 gap-5">
 
@@ -965,8 +806,100 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* ═══ MIDDLE COLUMN — Earnings + FinaCard Balance + Vault/BNSL ═══ */}
-          <div className="col-span-12 xl:col-span-3 space-y-5">
+          {/* ═══ CENTRE COLUMN — FinaCard + Portfolio Ring + Pending ═══ */}
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
+
+            {/* FinaCard — Premium dark card with holographic effect */}
+            <Link href="/finacard">
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ scale: 1.015, y: -4 }}
+                transition={{ duration: 0.35 }}
+                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
+                data-testid="card-dashboard-finacard"
+              >
+                <div className="absolute inset-0 holo-shimmer" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
+                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
+                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5">
+                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
+                      <CreditCard className="w-3 h-3 text-white/60" />
+                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
+                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
+                      </div>
+                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
+                    </div>
+                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
+                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
+                          {user?.firstName || ''} {user?.lastName || ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
+                        <p className="text-white/90 text-sm font-extrabold">
+                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
+                        </p>
+                        <p className="text-white/30 text-[9px] font-medium">
+                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+
+            <PortfolioRingChart
+              walletGoldGrams={totals.walletGoldGrams || 0}
+              finacardGoldGrams={totals.finacardGoldGrams || 0}
+              bnslGoldGrams={totals.bnslWalletGoldGrams || 0}
+              finaBridgeGoldGrams={finaBridge?.goldGrams || 0}
+              totalGoldGrams={totalGoldGrams}
+              showBalance={showBalance}
+              hiddenValue={hiddenValue}
+              formatNumber={formatNumber}
+            />
+
+            {pendingDeposits.length > 0 && (
+              <motion.div variants={itemVariants} className="rounded-[20px] p-5 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9f3fff 50%, #6d28d9 100%)' }} data-testid="card-pending-deposits">
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
+                    </div>
+                    <span className="text-[12px] font-bold text-white/90">Pending Deposits</span>
+                  </div>
+                  <p className="text-[26px] font-extrabold text-white leading-none">{pendingDeposits.length}</p>
+                  <p className="text-[11px] text-white/60 mt-1">
+                    {formatNumber(pendingDeposits.reduce((s, r) => s + Number(r.expectedGoldGrams || 0), 0), 2)}g awaiting settlement
+                  </p>
+                  <Link href="/finapay">
+                    <button className="mt-3 w-full py-2 rounded-xl text-[12px] font-bold text-purple-700 bg-white/90 hover:bg-white transition-colors">
+                      View Details →
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* ═══ RIGHT COLUMN — Stats + Gold Price Lock ═══ */}
+          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
 
             {/* Portfolio Performance */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-portfolio-performance">
@@ -1003,75 +936,49 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Gold Earnings — Premium gradient card */}
-            <motion.div
-              variants={itemVariants}
-              className="relative rounded-[20px] p-5 text-white overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #8A2BE2, #a855f7)' }}
-              data-testid="card-total-earnings"
-            >
+            {/* Gold Earnings */}
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 text-white overflow-hidden" style={{ background: 'linear-gradient(135deg, #7c3aed, #8A2BE2, #a855f7)' }} data-testid="card-total-earnings">
               <div className="absolute inset-0 holo-shimmer" />
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-3">
                   <span className="text-[12px] text-white/80 font-semibold tracking-wide">Gold Earnings</span>
-                  <div className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                  <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
                     <TrendingUp className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <p className="text-[28px] font-extrabold tracking-tight leading-none" data-testid="text-earnings">
+                <p className="text-[24px] font-extrabold tracking-tight leading-none" data-testid="text-earnings">
                   {showBalance ? `$${formatNumber(totals.bnslTotalProfit || 0)}` : hiddenValue}
                 </p>
-                <p className="text-[11px] text-white/60 font-medium mt-2">Paid BNSL margin earnings</p>
+                <p className="text-[10px] text-white/60 font-medium mt-1">Paid BNSL margin earnings</p>
               </div>
-            </motion.div>
-
-            {/* FinaCard Balance */}
-            <motion.div
-              variants={itemVariants}
-              className="glass-card-elevated rounded-[20px] p-5 glow-border-hover"
-              data-testid="card-total-spending"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[13px] text-gray-500 font-semibold">FinaCard Balance</span>
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-purple-600" />
-                </div>
-              </div>
-              <p className="text-[26px] font-extrabold text-gray-900" data-testid="text-spending">
-                {showBalance ? `$${formatNumber(finacardValue)}` : hiddenValue}
-              </p>
-              <p className="text-[11px] text-gray-400 font-medium mt-1">Gold loaded on card</p>
             </motion.div>
 
             {/* Vault + BNSL Grid */}
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
-              <div className="glass-card-elevated rounded-[20px] p-4 glow-border-hover group" data-testid="card-vault-value">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Landmark className="w-4 h-4 text-amber-600" />
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+              <div className="glass-card-elevated rounded-[18px] p-3.5 glow-border-hover group" data-testid="card-vault-value">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                  <Landmark className="w-3.5 h-3.5 text-amber-600" />
                 </div>
-                <span className="text-[11px] text-gray-500 font-semibold">FinaVault</span>
-                <p className="text-[18px] font-extrabold text-gray-900 mt-1">
+                <span className="text-[10px] text-gray-500 font-semibold">FinaVault</span>
+                <p className="text-[15px] font-extrabold text-gray-900 mt-0.5">
                   {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.walletGoldGrams || 0, 3)}g secured</p>
+                <p className="text-[9px] text-gray-400 mt-0.5 font-medium">{formatNumber(totals.walletGoldGrams || 0, 3)}g</p>
               </div>
-              <div className="glass-card-elevated rounded-[20px] p-4 glow-border-hover group" data-testid="card-bnsl-value">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
+              <div className="glass-card-elevated rounded-[18px] p-3.5 glow-border-hover group" data-testid="card-bnsl-value">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
                 </div>
-                <span className="text-[11px] text-gray-500 font-semibold">BNSL Value</span>
-                <p className="text-[18px] font-extrabold text-gray-900 mt-1">
+                <span className="text-[10px] text-gray-500 font-semibold">BNSL Value</span>
+                <p className="text-[15px] font-extrabold text-gray-900 mt-0.5">
                   {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g in BNSL</p>
+                <p className="text-[9px] text-gray-400 mt-0.5 font-medium">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g</p>
               </div>
             </motion.div>
-          </div>
 
-          {/* ═══ RIGHT COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
               <div className="flex items-center gap-2 mb-3">
@@ -1124,6 +1031,67 @@ export default function Dashboard() {
             </motion.div>
           </div>
         </div>
+
+        {/* ═══ GOLD PRICE TREND CHART (full-width, bottom) ═══ */}
+        <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">XAU/USD · Per gram</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                {(['7D', '30D', '90D'] as const).map(p => (
+                  <button key={p} onClick={() => setChartPeriod(p)}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${chartPeriod === p ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div className="text-right">
+                <p className="text-[15px] font-extrabold text-gray-900">${formatNumber(goldPrice, 2)}</p>
+                <p className="text-[10px] text-gray-400">/gram now</p>
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
+              <Tooltip
+                contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                formatter={(v: any) => [`$${Number(v).toFixed(2)}/g`, 'Gold Price']}
+              />
+              <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="4 3" strokeWidth={1.5}
+                label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#D4AF37' }} />
+              <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2} fill="url(#goldGradient)" dot={false} activeDot={{ r: 4, fill: '#7c3aed', strokeWidth: 0 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-0.5 bg-purple-600 rounded" />
+              <span className="text-[11px] text-gray-500">Market Price</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-0.5 bg-amber-400 rounded border-dashed" style={{ borderTop: '2px dashed #D4AF37', background: 'transparent' }} />
+              <span className="text-[11px] text-gray-500">Your Avg Buy</span>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              {unrealizedGain >= 0
+                ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
+              <span className={`text-[11px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}% vs avg buy
+              </span>
+            </div>
+          </div>
+        </motion.div>
 
         {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
