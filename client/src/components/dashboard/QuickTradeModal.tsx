@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,8 @@ import {
   Loader2, ChevronRight, ChevronLeft, CheckCircle2,
   Globe, Package, ArrowLeftRight, MapPin, Calendar,
   DollarSign, Weight, Ship, Landmark, Lock, Unlock,
-  Shield, Info, Anchor
+  Shield, Info, Anchor, Users, Building2, Mail,
+  Phone, Clock, AlertTriangle, Wallet
 } from 'lucide-react';
 
 const INCOTERMS = ['FOB', 'CIF', 'CFR', 'EXW', 'DDP', 'DAP', 'FCA', 'CPT'] as const;
@@ -26,7 +27,7 @@ interface QuickTradeModalProps {
   currentGoldPrice: number;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }: QuickTradeModalProps) {
   const { user } = useAuth();
@@ -40,6 +41,10 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
   const [isDone, setIsDone] = useState(false);
   const [createdTradeRef, setCreatedTradeRef] = useState('');
 
+  // FinaBridge wallet balance
+  const [finabridgeBalance, setFinabridgeBalance] = useState<number>(-1);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
   // Step 1 — Goods & Finance
   const [goodsName, setGoodsName] = useState('');
   const [description, setDescription] = useState('');
@@ -48,7 +53,17 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
   const [tradeValueUsd, setTradeValueUsd] = useState('');
   const [isPriceLocked, setIsPriceLocked] = useState(false);
 
-  // Step 2 — Logistics
+  // Step 2 — Exporter Preference
+  const [suggestExporter, setSuggestExporter] = useState(true);
+  const [exporterCompanyName, setExporterCompanyName] = useState('');
+  const [exporterContactName, setExporterContactName] = useState('');
+  const [exporterEmail, setExporterEmail] = useState('');
+  const [exporterPhone, setExporterPhone] = useState('');
+  const [proposedQuotePrice, setProposedQuotePrice] = useState('');
+  const [proposedTimelineDays, setProposedTimelineDays] = useState('');
+  const [proposalNotes, setProposalNotes] = useState('');
+
+  // Step 3 — Logistics
   const [modeOfTransport, setModeOfTransport] = useState('Sea');
   const [incoterms, setIncoterms] = useState('FOB');
   const [portOfLoading, setPortOfLoading] = useState('');
@@ -57,21 +72,58 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
   const [paymentTerms, setPaymentTerms] = useState('');
 
   const tradeValueNum = parseFloat(tradeValueUsd) || 0;
-  const priceToUse = isPriceLocked ? goldPrice : goldPrice;
-  const settlementGrams = tradeValueNum > 0 ? tradeValueNum / priceToUse : 0;
+  const settlementGrams = tradeValueNum > 0 ? tradeValueNum / goldPrice : 0;
 
-  const step1Valid = goodsName.trim().length >= 2 && tradeValueNum >= 100;
+  const hasEnoughBalance = finabridgeBalance < 0 || settlementGrams === 0 || settlementGrams <= finabridgeBalance;
+  const step1Valid = goodsName.trim().length >= 2 && tradeValueNum >= 100 && hasEnoughBalance;
+
+  const step2Valid = suggestExporter || (
+    exporterCompanyName.trim().length > 0 &&
+    exporterEmail.trim().length > 0 &&
+    parseFloat(proposedQuotePrice) > 0 &&
+    parseInt(proposedTimelineDays) > 0
+  );
+
+  // Fetch FinaBridge wallet balance when modal opens
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    let cancelled = false;
+    setBalanceLoading(true);
+    apiRequest('GET', `/api/finabridge/wallet/${user.id}`)
+      .then(async (res: any) => {
+        if (cancelled) return;
+        const data = await res.json?.() ?? res;
+        const available = parseFloat(data?.wallet?.availableGoldGrams ?? data?.availableGoldGrams ?? '0');
+        setFinabridgeBalance(isNaN(available) ? 0 : available);
+      })
+      .catch(() => {
+        if (!cancelled) setFinabridgeBalance(0);
+      })
+      .finally(() => {
+        if (!cancelled) setBalanceLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, user?.id]);
 
   function resetForm() {
     setStep(1);
     setIsDone(false);
     setCreatedTradeRef('');
+    setFinabridgeBalance(-1);
     setGoodsName('');
     setDescription('');
     setQuantity('');
     setQuantityUnit('units');
     setTradeValueUsd('');
     setIsPriceLocked(false);
+    setSuggestExporter(true);
+    setExporterCompanyName('');
+    setExporterContactName('');
+    setExporterEmail('');
+    setExporterPhone('');
+    setProposedQuotePrice('');
+    setProposedTimelineDays('');
+    setProposalNotes('');
     setModeOfTransport('Sea');
     setIncoterms('FOB');
     setPortOfLoading('');
@@ -89,7 +141,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
     if (!user?.id) return;
     setIsSubmitting(true);
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         importerUserId: user.id,
         goodsName: goodsName.trim(),
         description: description.trim() || undefined,
@@ -106,9 +158,19 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
         destination: destination.trim() || undefined,
         expectedShipDate: expectedShipDate || undefined,
         financeType: 'FinaBridge Finance',
-        suggestExporter: true,
+        suggestExporter,
         status: 'Open',
       };
+
+      if (!suggestExporter) {
+        payload.exporterCompanyName = exporterCompanyName.trim();
+        payload.exporterContactName = exporterContactName.trim() || undefined;
+        payload.exporterEmail = exporterEmail.trim();
+        payload.exporterPhone = exporterPhone.trim() || undefined;
+        payload.proposedQuotePrice = proposedQuotePrice;
+        payload.proposedTimelineDays = proposedTimelineDays;
+        payload.proposalNotes = proposalNotes.trim() || undefined;
+      }
 
       const res = await apiRequest('POST', '/api/finabridge/importer/requests', payload);
       const data = await res.json?.() ?? res;
@@ -150,13 +212,13 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
               </div>
             </div>
             {!isDone && (
-              <span className="text-[10px] text-blue-200/70 font-semibold">Step {step} of 3</span>
+              <span className="text-[10px] text-blue-200/70 font-semibold">Step {step} of 4</span>
             )}
           </div>
 
           {!isDone && (
             <div className="relative z-10 flex gap-1.5 mt-4">
-              {[1, 2, 3].map(s => (
+              {[1, 2, 3, 4].map(s => (
                 <div
                   key={s}
                   className={`h-1 flex-1 rounded-full transition-all ${s <= step ? 'bg-blue-300' : 'bg-white/20'}`}
@@ -167,7 +229,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
         </div>
 
         {/* ── Body ── */}
-        <div className="p-5 bg-white max-h-[75vh] overflow-y-auto">
+        <div className="p-5 bg-white max-h-[70vh] overflow-y-auto">
 
           {/* DONE */}
           {isDone && (
@@ -306,14 +368,51 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   </div>
                 </div>
 
-                {/* Settlement preview */}
+                {/* Settlement preview + FinaBridge wallet balance */}
                 {tradeValueNum >= 100 && (
-                  <div className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 mt-1">
-                    <Weight className="w-3 h-3 text-blue-600" />
-                    <span className="text-[11px] text-blue-700 font-semibold">
-                      Settlement: <span className="font-extrabold">{settlementGrams.toFixed(3)}g</span> gold
-                      <span className="text-blue-400 font-normal ml-1">@ ${goldPrice.toFixed(2)}/g</span>
-                    </span>
+                  <div className="space-y-1.5 mt-1">
+                    {/* Settlement pill */}
+                    <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${
+                      !hasEnoughBalance
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-blue-50 border-blue-100'
+                    }`}>
+                      <Weight className={`w-3 h-3 ${!hasEnoughBalance ? 'text-red-500' : 'text-blue-600'}`} />
+                      <span className={`text-[11px] font-semibold ${!hasEnoughBalance ? 'text-red-700' : 'text-blue-700'}`}>
+                        Settlement: <span className="font-extrabold">{settlementGrams.toFixed(3)}g</span> gold
+                        <span className={`font-normal ml-1 ${!hasEnoughBalance ? 'text-red-400' : 'text-blue-400'}`}>@ ${goldPrice.toFixed(2)}/g</span>
+                      </span>
+                    </div>
+
+                    {/* FinaBridge balance line */}
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <Wallet className="w-3 h-3 text-slate-400" />
+                      <span className="text-[10px] text-slate-500">FinaBridge Wallet:</span>
+                      {balanceLoading ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                      ) : (
+                        <span className={`text-[11px] font-bold ${
+                          finabridgeBalance < 0 ? 'text-slate-500' :
+                          !hasEnoughBalance ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {finabridgeBalance < 0 ? '—' : `${finabridgeBalance.toFixed(4)}g available`}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Insufficient balance warning */}
+                    {!hasEnoughBalance && (
+                      <div className="flex items-start gap-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                        <div className="text-[10px] text-red-700">
+                          <p className="font-bold">Insufficient FinaBridge balance</p>
+                          <p className="mt-0.5">
+                            Need <strong>{settlementGrams.toFixed(3)}g</strong>, have <strong>{finabridgeBalance.toFixed(4)}g</strong>.
+                            {' '}<a href="/finabridge" className="underline font-semibold">Top up FinaBridge wallet</a> first.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -324,13 +423,166 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 className="w-full bg-blue-700 hover:bg-blue-800 text-[13px] h-10 font-bold"
                 data-testid="button-trade-step1-next"
               >
-                Next: Logistics <ChevronRight className="w-4 h-4 ml-1" />
+                Next: Exporter <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           )}
 
-          {/* ── STEP 2: Logistics & Payment ── */}
+          {/* ── STEP 2: Exporter Preference ── */}
           {!isDone && step === 2 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-0.5">
+                <Users className="w-4 h-4 text-blue-700" />
+                <h3 className="font-bold text-slate-800 text-[13px]">Exporter Preference</h3>
+              </div>
+
+              {/* Toggle */}
+              <div className={`p-3 rounded-xl border-2 transition-all ${suggestExporter ? 'border-blue-200 bg-blue-50/60' : 'border-slate-200 bg-slate-50'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className={`w-4 h-4 ${suggestExporter ? 'text-blue-600' : 'text-slate-500'}`} />
+                    <div>
+                      <p className="text-[12px] font-bold text-slate-800">Let Finatrades find exporters</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {suggestExporter
+                          ? 'Finatrades will match your request with verified exporters.'
+                          : "I'll provide my own exporter details below."}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={suggestExporter}
+                    onCheckedChange={setSuggestExporter}
+                    data-testid="switch-suggest-exporter"
+                  />
+                </div>
+              </div>
+
+              {/* Manual exporter fields */}
+              {!suggestExporter && (
+                <div className="space-y-3 p-3 rounded-xl border border-purple-200 bg-purple-50/40">
+                  <p className="text-[11px] font-bold text-purple-800 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> My Exporter Details
+                  </p>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-slate-600">Company Name *</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                      <Input
+                        placeholder="e.g. ABC Trading Ltd."
+                        value={exporterCompanyName}
+                        onChange={e => setExporterCompanyName(e.target.value)}
+                        className="pl-7 text-[13px] h-9"
+                        data-testid="input-exporter-company"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-semibold text-slate-600">Contact Name</Label>
+                      <Input
+                        placeholder="John Smith"
+                        value={exporterContactName}
+                        onChange={e => setExporterContactName(e.target.value)}
+                        className="text-[13px] h-9"
+                        data-testid="input-exporter-contact"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-semibold text-slate-600">Phone</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <Input
+                          placeholder="+1 234 567"
+                          value={exporterPhone}
+                          onChange={e => setExporterPhone(e.target.value)}
+                          className="pl-7 text-[13px] h-9"
+                          data-testid="input-exporter-phone"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-slate-600">Email *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                      <Input
+                        type="email"
+                        placeholder="exporter@company.com"
+                        value={exporterEmail}
+                        onChange={e => setExporterEmail(e.target.value)}
+                        className="pl-7 text-[13px] h-9"
+                        data-testid="input-exporter-email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-semibold text-slate-600">Quote Price (USD) *</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={proposedQuotePrice}
+                          onChange={e => setProposedQuotePrice(e.target.value)}
+                          className="pl-7 text-[13px] h-9"
+                          data-testid="input-quote-price"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-semibold text-slate-600">Timeline (Days) *</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <Input
+                          type="number"
+                          placeholder="30"
+                          value={proposedTimelineDays}
+                          onChange={e => setProposedTimelineDays(e.target.value)}
+                          className="pl-7 text-[13px] h-9"
+                          data-testid="input-timeline-days"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-slate-600">Notes / Terms <span className="text-slate-400 font-normal">(optional)</span></Label>
+                    <textarea
+                      placeholder="Additional terms or notes..."
+                      value={proposalNotes}
+                      onChange={e => setProposalNotes(e.target.value)}
+                      rows={2}
+                      className="w-full text-[13px] rounded-md border border-input bg-background px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      data-testid="input-proposal-notes"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-[12px] h-10" data-testid="button-trade-step2-back">
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back
+                </Button>
+                <Button
+                  onClick={() => setStep(3)}
+                  disabled={!step2Valid}
+                  className="flex-1 bg-blue-700 hover:bg-blue-800 text-[13px] h-10 font-bold"
+                  data-testid="button-trade-step2-next"
+                >
+                  Next: Logistics <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Logistics & Payment ── */}
+          {!isDone && step === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Ship className="w-4 h-4 text-blue-700" />
@@ -425,13 +677,13 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-[12px] h-10" data-testid="button-trade-step2-back">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 text-[12px] h-10" data-testid="button-trade-step3-back">
                   <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back
                 </Button>
                 <Button
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(4)}
                   className="flex-1 bg-blue-700 hover:bg-blue-800 text-[13px] h-10 font-bold"
-                  data-testid="button-trade-step2-next"
+                  data-testid="button-trade-step3-next"
                 >
                   Review <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -439,8 +691,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
             </div>
           )}
 
-          {/* ── STEP 3: Review & Submit ── */}
-          {!isDone && step === 3 && (
+          {/* ── STEP 4: Review & Submit ── */}
+          {!isDone && step === 4 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Landmark className="w-4 h-4 text-blue-700" />
@@ -465,6 +717,20 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   {paymentTerms && <ReviewRow label="Payment" value={paymentTerms} />}
                 </div>
 
+                <div className="pb-1.5 mb-1.5 border-b border-blue-100">
+                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Exporter</p>
+                  {suggestExporter ? (
+                    <ReviewRow label="Finding" value="Finatrades will suggest exporters" />
+                  ) : (
+                    <>
+                      <ReviewRow label="Company" value={exporterCompanyName} />
+                      <ReviewRow label="Email" value={exporterEmail} />
+                      {proposedQuotePrice && <ReviewRow label="Quote" value={`$${parseFloat(proposedQuotePrice).toLocaleString()}`} />}
+                      {proposedTimelineDays && <ReviewRow label="Timeline" value={`${proposedTimelineDays} days`} />}
+                    </>
+                  )}
+                </div>
+
                 <div>
                   <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Logistics</p>
                   <ReviewRow label="Transport" value={modeOfTransport} />
@@ -478,12 +744,13 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
               <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
                 <Globe className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-amber-700">
-                  This request will be <strong>Open to Exporters</strong> immediately. Finatrades will suggest matching exporters for your trade.
+                  This request will be <strong>Open to Exporters</strong> immediately.
+                  {suggestExporter ? ' Finatrades will suggest matching exporters.' : ' Your specified exporter will be contacted.'}
                 </p>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 text-[12px] h-10" data-testid="button-trade-step3-back">
+                <Button variant="outline" onClick={() => setStep(3)} className="flex-1 text-[12px] h-10" data-testid="button-trade-step4-back">
                   <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Back
                 </Button>
                 <Button

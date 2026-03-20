@@ -13693,6 +13693,22 @@ export async function registerRoutes(
         });
       }
       
+      // Balance check: when submitting as Open, verify FinaBridge wallet has enough gold
+      if (requestData.status === 'Open') {
+        const settlementGrams = parseFloat(requestData.settlementGoldGrams || '0');
+        if (settlementGrams > 0) {
+          const fbWallet = await storage.getOrCreateFinabridgeWallet(requestData.importerUserId);
+          const available = parseFloat(fbWallet?.availableGoldGrams || '0');
+          if (settlementGrams > available) {
+            return res.status(400).json({
+              message: `Insufficient FinaBridge wallet balance. Trade requires ${settlementGrams.toFixed(4)}g gold but your FinaBridge wallet only has ${available.toFixed(4)}g available. Please fund your FinaBridge wallet first.`,
+              required: settlementGrams,
+              available,
+            });
+          }
+        }
+      }
+      
       const tradeRequest = await storage.createTradeRequest(requestData);
       
       await storage.createAuditLog({
