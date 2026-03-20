@@ -421,6 +421,58 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
+        <motion.div variants={itemVariants} className="flex flex-wrap gap-2.5" data-testid="quick-actions">
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
+              data-testid="button-add-funds">
+              <Plus className="w-3.5 h-3.5" /> Add Funds
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200"
+              data-testid="button-buy-gold">
+              <Package className="w-3.5 h-3.5" /> Buy Gold Bar
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200"
+              data-testid="button-sell-gold">
+              <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 hover:shadow-md hover:shadow-orange-100/50 transition-all duration-200"
+              data-testid="button-withdraw-gold">
+              <ArrowUpRight className="w-3.5 h-3.5" /> Withdraw Gold
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:shadow-md hover:shadow-blue-100/50 transition-all duration-200"
+              data-testid="button-send-gold">
+              <Send className="w-3.5 h-3.5" /> Send Gold
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 hover:shadow-md hover:shadow-cyan-100/50 transition-all duration-200"
+              data-testid="button-request-gold">
+              <ArrowDownLeft className="w-3.5 h-3.5" /> Request Gold
+            </motion.button>
+          </Link>
+          <Link href="/finapay">
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200"
+              data-testid="button-lock-gold">
+              <Shield className="w-3.5 h-3.5" /> Lock Gold Price
+            </motion.button>
+          </Link>
+        </motion.div>
+
         <div className="grid grid-cols-12 gap-5">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
