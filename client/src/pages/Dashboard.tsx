@@ -638,7 +638,8 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Quick Join BNSL Plan */}
+            {/* Quick Join BNSL Plan — hide once any plan is active */}
+            {totals.activeBnslPlans === 0 && (
             <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
               <div className="absolute inset-0 holo-shimmer" />
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
@@ -698,6 +699,7 @@ export default function Dashboard() {
                 )}
               </div>
             </motion.div>
+            )}
 
             {/* BNSL Yield Summary */}
             {totals.activeBnslPlans > 0 && (
