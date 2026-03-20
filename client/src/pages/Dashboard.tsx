@@ -516,14 +516,14 @@ export default function Dashboard() {
                   transition={{ duration: 0.6, delay: 0.2 }}
                   data-testid="text-total-balance"
                 >
-                  {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
                 </motion.p>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-400/20">
                     <TrendingUp className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totalGoldGrams, 2)}g</span>
+                    <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
                   </div>
-                  <span className="text-white/40 text-[11px]">total gold held</span>
+                  <span className="text-white/40 text-[11px]">available in wallet</span>
                 </div>
 
                 <div className="flex gap-3 mt-6">
