@@ -644,7 +644,7 @@ export default function Dashboard() {
                 <div className="relative z-10 p-5 h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2.5">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-7 brightness-0 invert" />
+                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
                     </div>
                     <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
                       <CreditCard className="w-3 h-3 text-white/60" />
