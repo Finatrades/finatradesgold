@@ -25,6 +25,8 @@ import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import LockGoldPriceModal from '@/components/finapay/modals/LockGoldPriceModal';
+import TransactionDetailsModal from '@/components/finapay/modals/TransactionDetailsModal';
+import type { Transaction } from '@/types/finapay';
 
 interface UserPreferences {
   showBalance: boolean;
@@ -220,6 +222,7 @@ export default function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activitySearch, setActivitySearch] = useState('');
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -788,11 +791,21 @@ export default function Dashboard() {
                 {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => (
                   <motion.tr
                     key={tx.id}
-                    className="border-t border-gray-50/60 hover:bg-purple-50/30 transition-all duration-200 group cursor-default"
+                    className="border-t border-gray-50/60 hover:bg-purple-50/30 transition-all duration-200 group cursor-pointer"
                     data-testid={`row-activity-${i}`}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: i * 0.06 }}
+                    onClick={() => setSelectedTransaction({
+                      id: tx.id,
+                      type: tx.type,
+                      amountGrams: tx.amountGold ?? undefined,
+                      amountUsd: tx.amountUsd ?? 0,
+                      timestamp: tx.createdAt ?? '',
+                      referenceId: tx.id,
+                      status: tx.status,
+                      description: tx.description,
+                    })}
                   >
                     <td className="py-4 px-6 relative">
                       <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-purple-500 opacity-0 group-hover:opacity-100 transition-all duration-300" />
@@ -874,6 +887,12 @@ export default function Dashboard() {
         onConfirm={() => setActiveModal(null)}
       />
       <LockGoldPriceModal isOpen={activeModal === 'lock'} onClose={() => setActiveModal(null)} userId={user?.id || ''} />
+      <TransactionDetailsModal
+        isOpen={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+        goldPrice={goldPrice}
+      />
     </DashboardLayout>
   );
 }
