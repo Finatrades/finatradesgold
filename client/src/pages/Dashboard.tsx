@@ -879,7 +879,7 @@ export default function Dashboard() {
                 return (
                   <motion.div
                     key={tx.id}
-                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
+                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-100/60 hover:shadow-sm transition-all duration-200 cursor-pointer group"
                     data-testid={`row-activity-${i}`}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -944,7 +944,7 @@ export default function Dashboard() {
               {certificates && (certificates.recent || []).length > 0 ? (certificates.recent || []).slice(0, 5).map((cert, i) => (
                 <Link key={cert.id} href="/finavault">
                   <motion.div
-                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-50/30 transition-all duration-200 cursor-pointer group"
+                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-100/60 hover:shadow-sm transition-all duration-200 cursor-pointer group"
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.06 }}
