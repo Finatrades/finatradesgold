@@ -13917,10 +13917,14 @@ export async function registerRoutes(
   app.get("/api/finabridge/exporter/open-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getOpenTradeRequests();
-      
+
+      // Self-bid guard: exclude requests created by this user as importer
+      const ownUserId = req.params.userId;
+      const eligibleRequests = requests.filter(r => r.importerUserId !== ownUserId);
+
       // Filter out importer PII - only include tradeRefId and trade details
       const sanitizedRequests = await Promise.all(
-        requests.map(async (request) => {
+        eligibleRequests.map(async (request) => {
           const importer = await storage.getUser(request.importerUserId);
           return {
             id: request.id,
@@ -14025,7 +14029,12 @@ export async function registerRoutes(
       if (request.status !== 'Open' && request.status !== 'Proposal Review') {
         return res.status(400).json({ message: "Trade request is not accepting proposals" });
       }
-      
+
+      // Self-bid guard: exporter cannot bid on their own import request
+      if (request.importerUserId === proposalData.exporterUserId) {
+        return res.status(400).json({ message: "You cannot submit a proposal on your own trade request" });
+      }
+
       // Check if exporter already submitted a proposal
       const existingProposals = await storage.getExporterProposals(proposalData.exporterUserId);
       const alreadySubmitted = existingProposals.some(p => p.tradeRequestId === proposalData.tradeRequestId);
