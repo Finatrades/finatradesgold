@@ -739,8 +739,7 @@ export default function VaultActivityList() {
     });
   
   // Combine and sort by date (newest first)
-  // Note: certificateActivities intentionally excluded — certificate records should only appear in the Certificates tab
-  const allActivities = [...filteredTxs, ...bankDepositActivities, ...cryptoDepositActivities, ...ledgerActivities]
+  const allActivities = [...filteredTxs, ...certificateActivities, ...bankDepositActivities, ...cryptoDepositActivities, ...ledgerActivities]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredTransactions = allActivities.filter(tx => {

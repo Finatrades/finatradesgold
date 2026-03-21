@@ -775,9 +775,8 @@ export default function CertificatesView() {
   const [showSupersededOwnership, setShowSupersededOwnership] = useState(false);
 
   const OWNERSHIP_TYPES = ['Digital Ownership', 'Physical Storage'];
-  const EXCLUDED_ACTIVITY_TYPES = ['Conversion'];
   const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
-  const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type) && !EXCLUDED_ACTIVITY_TYPES.includes(c.type));
+  const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
 
   // "Current" = Active leaf nodes in the ownership lineage chain.
   // A cert is a leaf if no other Active cert lists it as a parent (i.e. it hasn't been superseded).
