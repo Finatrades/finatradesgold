@@ -508,38 +508,19 @@ export default function Dashboard() {
                     const maxGrams = 500;
                     const clampedGrams = Math.min(arcGrams, maxGrams);
                     const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
-                    const r = 68;
+                    const r = 54;
                     const cx = 76;
-                    const cy = 76;
+                    const cy = 62;
                     const circumference = Math.PI * r;
                     const filled = pct * circumference;
-                    const empty = circumference - filled;
                     const startX = cx - r;
                     const startY = cy;
                     const endX = cx + r;
                     const endY = cy;
+                    const arcD = `M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`;
                     return (
                       <div className="flex-shrink-0 ml-4 flex flex-col items-center">
-                        <svg width="152" height="84" viewBox="0 0 152 84" fill="none">
-                          {/* Track */}
-                          <path
-                            d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
-                            stroke="rgba(255,255,255,0.22)"
-                            strokeWidth="11"
-                            strokeLinecap="round"
-                            fill="none"
-                          />
-                          {/* Filled arc */}
-                          {pct > 0 && (
-                            <path
-                              d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
-                              stroke="url(#goldArc)"
-                              strokeWidth="11"
-                              strokeLinecap="round"
-                              strokeDasharray={`${filled} ${empty}`}
-                              fill="none"
-                            />
-                          )}
+                        <svg width="152" height="76" viewBox="0 0 152 76" fill="none">
                           <defs>
                             <linearGradient id="goldArc" x1="0" y1="0" x2="1" y2="0">
                               <stop offset="0%" stopColor="#F59E0B" />
@@ -547,11 +528,31 @@ export default function Dashboard() {
                               <stop offset="100%" stopColor="#FCD34D" />
                             </linearGradient>
                           </defs>
-                          {/* Grams label — masked when balance hidden */}
-                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#FFD700">
+                          {/* Track */}
+                          <path
+                            d={arcD}
+                            stroke="rgba(255,255,255,0.22)"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                            fill="none"
+                          />
+                          {/* Filled arc — dashoffset technique avoids phantom repeat artifacts */}
+                          {pct > 0 && (
+                            <path
+                              d={arcD}
+                              stroke="url(#goldArc)"
+                              strokeWidth="10"
+                              strokeLinecap="round"
+                              strokeDasharray={`${circumference}`}
+                              strokeDashoffset={circumference - filled}
+                              fill="none"
+                            />
+                          )}
+                          {/* Grams label */}
+                          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="#FFD700">
                             {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
-                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.65)">
+                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9.5" fill="rgba(255,255,255,0.65)">
                             Total Gold
                           </text>
                         </svg>
