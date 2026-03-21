@@ -71,18 +71,16 @@ export default function FinaPay() {
       window.history.replaceState({}, '', '/finapay');
     }
 
-    if (section === 'transfers') {
+    if (section === 'transfers' || section === 'requests' || section === 'deposits') {
+      const anchorMap: Record<string, string> = {
+        transfers: 'finapay-pending-incoming',
+        requests: 'finapay-pending-requests',
+        deposits: 'finapay-pending-transfers',
+      };
+      const anchorId = anchorMap[section] ?? 'finapay-pending-transfers';
       setTimeout(() => {
-        const el = document.getElementById('finapay-pending-transfers');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 150);
-      window.history.replaceState({}, '', '/finapay');
-    }
-
-    if (section === 'requests' || section === 'deposits') {
-      setTimeout(() => {
-        const el = document.getElementById('finapay-pending-transfers');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const target = document.getElementById(anchorId) ?? document.getElementById('finapay-pending-transfers');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 150);
       window.history.replaceState({}, '', '/finapay');
     }

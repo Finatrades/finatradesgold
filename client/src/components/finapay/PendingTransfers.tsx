@@ -539,7 +539,7 @@ export default function PendingTransfers() {
       </CardHeader>
       <CardContent className="space-y-4">
         {incomingTransfers.length > 0 && (
-          <div className="space-y-3">
+          <div id="finapay-pending-incoming" className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">
               Incoming - Action Required
             </p>
@@ -781,7 +781,7 @@ export default function PendingTransfers() {
         )}
 
         {receivedRequests.length > 0 && (
-          <div className="space-y-3">
+          <div id="finapay-pending-requests" className="space-y-3">
             <p className="text-sm font-medium text-purple-700 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Payment Requests - Action Required
