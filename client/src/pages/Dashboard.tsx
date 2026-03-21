@@ -523,20 +523,20 @@ export default function Dashboard() {
                         <svg width="152" height="76" viewBox="0 0 152 76" fill="none">
                           <defs>
                             <linearGradient id="goldArc" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#F59E0B" />
-                              <stop offset="50%" stopColor="#FFD700" />
-                              <stop offset="100%" stopColor="#FCD34D" />
+                              <stop offset="0%" stopColor="#B8860B" />
+                              <stop offset="50%" stopColor="#D4AF37" />
+                              <stop offset="100%" stopColor="#F59E0B" />
                             </linearGradient>
                           </defs>
-                          {/* Track */}
+                          {/* Track — purple tint, visible on light card */}
                           <path
                             d={arcD}
-                            stroke="rgba(255,255,255,0.22)"
+                            stroke="rgba(124,58,237,0.12)"
                             strokeWidth="10"
                             strokeLinecap="round"
                             fill="none"
                           />
-                          {/* Filled arc — dashoffset technique avoids phantom repeat artifacts */}
+                          {/* Filled arc */}
                           {pct > 0 && (
                             <path
                               d={arcD}
@@ -548,16 +548,16 @@ export default function Dashboard() {
                               fill="none"
                             />
                           )}
-                          {/* Grams label */}
-                          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="#FFD700">
+                          {/* Grams label — dark amber on light card */}
+                          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="#92400e">
                             {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
-                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9.5" fill="rgba(255,255,255,0.65)">
+                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9.5" fill="#9ca3af">
                             Total Gold
                           </text>
                         </svg>
                         <div className="flex items-center gap-1 mt-1">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(180,130,20,0.30)', color: '#92400e' }}>
                             🥇 GOLD
                           </div>
                         </div>
