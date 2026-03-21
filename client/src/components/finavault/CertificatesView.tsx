@@ -652,15 +652,29 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             
             <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
               {isBnslLock ? (
-                <>This certifies that <strong>{goldGrams.toFixed(4)}g</strong> of gold is locked in a BNSL savings plan, accumulating returns until the maturity date.</>
+                <>
+                  You have placed <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of your gold into a savings plan. Your gold is safely set aside and earning returns. It will be released back to your wallet — with profit — when the plan reaches its maturity date.
+                </>
+              ) : isConversion && certificate.toGoldWalletType === 'FGPW' ? (
+                <>
+                  You have locked the price of <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of your gold. This means your gold's value will not fall if the gold market price drops — your position is protected at the price recorded here. You can remove this protection at any time.
+                </>
               ) : isConversion ? (
-                <>This certifies the {certificate.toGoldWalletType === 'FGPW' ? 'activation of price protection' : 'removal of price protection'} for <strong>{goldGrams.toFixed(4)}g</strong> of gold in the Finatrades ledger.</>
+                <>
+                  You have released the price lock on <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of gold. Your gold now follows the live market price — its value will rise and fall with the global gold market. You can re-activate price protection at any time.
+                </>
               ) : isTransfer ? (
-                <>This certifies the transfer of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold between Finatrades users.</>
+                <>
+                  This records the movement of <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of fine gold{certificate.fromUserName ? <> from <strong>{certificate.fromUserName}</strong></> : ''}{certificate.toUserName ? <> to <strong>{certificate.toUserName}</strong></> : ''}. The gold has been fully transferred and is now recorded under the recipient's ownership in the Finatrades ledger.
+                </>
               ) : isPhysicalStorage ? (
-                <>This certifies that <strong>{goldGrams.toFixed(4)}g</strong> of physical gold is securely stored at <strong>{certificate.vaultLocation}</strong> under custody of <strong>{certificate.issuer}</strong>.</>
+                <>
+                  Your <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of gold exists as real, physical gold in a secure, insured vault at <strong>{certificate.vaultLocation || 'a certified partner vault'}</strong>. It is held in your name by <strong>{certificate.issuer}</strong>. You may request physical delivery or sell it at any time through your Finatrades account.
+                </>
               ) : (
-                <>This certifies that the holder is the beneficial owner of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold, secured and recorded in the Finatrades digital ledger.</>
+                <>
+                  You are the legal owner of <strong style={{ color: certTheme.accentMid }}>{goldGrams.toFixed(4)}g</strong> of fine gold (999.9 purity). Finatrades has recorded your ownership in its official digital ledger and the gold is held in a secure vault on your behalf. You may sell it, transfer it to another user, or request physical delivery at any time.
+                </>
               )}
             </p>
 
