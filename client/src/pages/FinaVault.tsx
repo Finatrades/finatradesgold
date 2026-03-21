@@ -1105,14 +1105,20 @@ export default function FinaVault() {
     });
   };
 
-  // Check query params for initial tab - open deposit tab
+  // Check query params for initial tab - open deposit tab or my-deposits tab
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
     const highlight = searchParams.get('highlight');
-    
+    const section = searchParams.get('section');
+
     if (tabParam === 'new-request' || highlight === 'deposit') {
       setActiveTab('deposit-gold');
+    }
+
+    if (section === 'physical') {
+      setActiveTab('my-deposits');
+      window.history.replaceState({}, '', '/finavault');
     }
   }, []);
 

@@ -55,18 +55,41 @@ export default function FinaPay() {
   const [depositCallbackDetails, setDepositCallbackDetails] = useState<{ amount?: string; orderRef?: string } | null>(null);
   const [highlightSection, setHighlightSection] = useState(false);
 
-  // Handle highlight from dashboard navigation
+  // Handle highlight and section deep-links from dashboard navigation
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const highlight = params.get('highlight');
+    const section = params.get('section');
+
     if (highlight === 'buy') {
       setHighlightSection(true);
       setTimeout(() => {
         const walletSection = document.getElementById('finapay-wallet-section');
-        if (walletSection) {
-          walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        if (walletSection) walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
+      setTimeout(() => setHighlightSection(false), 1500);
+      window.history.replaceState({}, '', '/finapay');
+    }
+
+    if (section === 'transfers') {
+      setTimeout(() => {
+        const el = document.getElementById('finapay-pending-transfers');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+      window.history.replaceState({}, '', '/finapay');
+    }
+
+    if (section === 'requests') {
+      setActiveModal('request');
+      window.history.replaceState({}, '', '/finapay');
+    }
+
+    if (section === 'deposits') {
+      setHighlightSection(true);
+      setTimeout(() => {
+        const walletSection = document.getElementById('finapay-wallet-section');
+        if (walletSection) walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
       setTimeout(() => setHighlightSection(false), 1500);
       window.history.replaceState({}, '', '/finapay');
     }
@@ -531,7 +554,9 @@ export default function FinaPay() {
         )}
 
         {/* Pending Transfers */}
-        <PendingTransfers />
+        <div id="finapay-pending-transfers">
+          <PendingTransfers />
+        </div>
 
         {/* Transaction History */}
         <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
