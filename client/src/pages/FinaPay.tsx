@@ -480,7 +480,10 @@ export default function FinaPay() {
                 <div className="p-2 bg-purple-100 rounded-lg shrink-0">
                   <WalletIcon className="w-5 h-5 text-fuchsia-600" />
                 </div>
-                <h2 className="text-lg font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'Digital Gold Payments')}</h2>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'Digital Gold Payments')}</h2>
+                  <p className="text-xs text-muted-foreground">Send, receive and trade digital gold</p>
+                </div>
               </div>
 
               <div className="flex flex-col flex-1 gap-4">
