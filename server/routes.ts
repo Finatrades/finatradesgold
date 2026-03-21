@@ -9168,9 +9168,9 @@ export async function registerRoutes(
         plans.forEach(p => { bnslPlanMap[p.id] = p as BnslPlanRow; });
       }
 
-      // Enrich TLC (Trade Lock) certificates with trade case data
+      // Enrich TLC (Trade Lock + Trade Release) certificates with trade case data
       const tlcCaseIds = allCertificates
-        .filter(c => c.type === 'Trade Lock' && c.tradeCaseId)
+        .filter(c => (c.type === 'Trade Lock' || c.type === 'Trade Release') && c.tradeCaseId)
         .map(c => c.tradeCaseId as string);
 
       type TradeCaseRow = {
@@ -9197,7 +9197,7 @@ export async function registerRoutes(
         if (cert.type === 'BNSL Lock' && cert.bnslPlanId && bnslPlanMap[cert.bnslPlanId]) {
           return { ...cert, bnslPlan: bnslPlanMap[cert.bnslPlanId] };
         }
-        if (cert.type === 'Trade Lock' && cert.tradeCaseId && tradeCaseMap[cert.tradeCaseId]) {
+        if ((cert.type === 'Trade Lock' || cert.type === 'Trade Release') && cert.tradeCaseId && tradeCaseMap[cert.tradeCaseId]) {
           return { ...cert, tradeCase: tradeCaseMap[cert.tradeCaseId] };
         }
         return cert;
