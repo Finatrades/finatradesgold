@@ -562,8 +562,8 @@ export default function FinaVaultManagement() {
                                         <ShieldCheck className="w-3 h-3" /> KYC Match
                                       </span>
                                     ) : (
-                                      <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 w-fit">
-                                        <ShieldAlert className="w-3 h-3" /> Name Mismatch
+                                      <span className="flex items-center gap-1 text-[10px] text-red-700 bg-red-50 px-1.5 py-0.5 rounded-full border border-red-200 w-fit">
+                                        <ShieldAlert className="w-3 h-3" /> ✗ Name Mismatch
                                       </span>
                                     );
                                   })()}
@@ -960,8 +960,8 @@ export default function FinaVaultManagement() {
                               <ShieldCheck className="w-3 h-3" /> KYC Name Match
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                              <ShieldAlert className="w-3 h-3" /> Name Mismatch — KYC: {kwKycName}
+                            <span className="flex items-center gap-1 text-xs text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                              <ShieldAlert className="w-3 h-3" /> ✗ Name Mismatch — KYC: {kwKycName}
                             </span>
                           );
                         })()}

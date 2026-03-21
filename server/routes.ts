@@ -9962,15 +9962,18 @@ export async function registerRoutes(
         resolvedSwiftCode = bankAccount.swiftCode || null;
         resolvedBankCountry = bankAccount.bankCountry || null;
 
-        // Enforce KYC name match for bank transfers against verified DB account name
+        // Enforce KYC name match for bank transfers — hard-fail if KYC record or name unavailable
         const kycRecord = await storage.getKycSubmission(userId);
-        if (kycRecord) {
-          const kycFullName: string = kycRecord.fullName || '';
-          if (kycFullName && resolvedAccountName.trim().toLowerCase() !== kycFullName.trim().toLowerCase()) {
-            return res.status(400).json({ 
-              message: `Account holder name "${resolvedAccountName}" does not match your KYC name "${kycFullName}". Bank withdrawals require an exact KYC name match.` 
-            });
-          }
+        const kycFullName: string = (kycRecord?.fullName || '').trim();
+        if (!kycFullName) {
+          return res.status(400).json({ 
+            message: "Your KYC full name could not be verified. Bank withdrawals require an approved KYC with a valid full name." 
+          });
+        }
+        if (resolvedAccountName.trim().toLowerCase() !== kycFullName.toLowerCase()) {
+          return res.status(400).json({ 
+            message: `Account holder name "${resolvedAccountName}" does not match your KYC name "${kycFullName}". Bank withdrawals require an exact KYC name match.` 
+          });
         }
       } else if (withdrawalMethod === 'Crypto') {
         if (!cryptoNetwork || !cryptoCurrency || !walletAddress || !walletAddress.trim()) {
