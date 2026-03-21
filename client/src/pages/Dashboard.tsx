@@ -454,9 +454,9 @@ export default function Dashboard() {
                     const maxGrams = 500;
                     const clampedGrams = Math.min(arcGrams, maxGrams);
                     const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
-                    const r = 44;
-                    const cx = 52;
-                    const cy = 52;
+                    const r = 68;
+                    const cx = 76;
+                    const cy = 76;
                     const circumference = Math.PI * r;
                     const filled = pct * circumference;
                     const empty = circumference - filled;
@@ -466,12 +466,12 @@ export default function Dashboard() {
                     const endY = cy;
                     return (
                       <div className="flex-shrink-0 ml-4 flex flex-col items-center">
-                        <svg width="104" height="62" viewBox="0 0 104 62" fill="none">
+                        <svg width="152" height="84" viewBox="0 0 152 84" fill="none">
                           {/* Track */}
                           <path
                             d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
                             stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="7"
+                            strokeWidth="10"
                             strokeLinecap="round"
                             fill="none"
                           />
@@ -480,7 +480,7 @@ export default function Dashboard() {
                             <path
                               d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
                               stroke="url(#goldArc)"
-                              strokeWidth="7"
+                              strokeWidth="10"
                               strokeLinecap="round"
                               strokeDasharray={`${filled} ${empty}`}
                               fill="none"
@@ -493,15 +493,15 @@ export default function Dashboard() {
                             </linearGradient>
                           </defs>
                           {/* Grams label — masked when balance hidden */}
-                          <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#FFD700">
+                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#FFD700">
                             {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
-                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7.5" fill="rgba(255,255,255,0.5)">
+                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.5)">
                             Total Gold
                           </text>
                         </svg>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
+                        <div className="flex items-center gap-1 mt-1">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
                             🥇 GOLD
                           </div>
                         </div>
