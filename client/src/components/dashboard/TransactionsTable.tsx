@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowLeftRight, Calendar } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, RefreshCw, ShieldCheck, Calendar } from 'lucide-react';
 import { Link } from 'wouter';
 import { format } from 'date-fns';
 
@@ -41,7 +41,9 @@ const getStatusBadge = (status: string) => {
 };
 
 const isSwapType = (description: string | null) => {
-  return description?.includes('LGPW to FGPW') || description?.includes('FGPW to LGPW');
+  return description?.includes('LGPW to FGPW') || description?.includes('FGPW to LGPW') ||
+         description?.includes('LGPW → FGPW') || description?.includes('FGPW → LGPW') ||
+         description?.includes('LGPW → FPGW') || description?.includes('FPGW → LGPW');
 };
 
 const isDebitType = (type: string, description: string | null) => {
@@ -57,8 +59,22 @@ const isCreditType = (type: string, description: string | null) => {
          description?.includes('Crypto deposit');
 };
 
+const isPriceProtectionSwap = (description: string | null) => {
+  return description?.includes('LGPW to FGPW') || description?.includes('FGPW to LGPW') ||
+         description?.includes('LGPW To FGPW') || description?.includes('FGPW To LGPW') ||
+         description?.includes('LGPW → FGPW') || description?.includes('FGPW → LGPW') ||
+         description?.includes('LGPW → FPGW') || description?.includes('FPGW → LGPW');
+};
+
+const isActivatingProtection = (description: string | null) => {
+  return description?.includes('LGPW to FGPW') || description?.includes('LGPW To FGPW') ||
+         description?.includes('LGPW → FGPW') || description?.includes('LGPW → FPGW');
+};
+
 const getTransactionLabel = (type: string, description: string | null) => {
-  if (isSwapType(description)) return 'Swap Gold';
+  if (isPriceProtectionSwap(description)) {
+    return 'Price Protection';
+  }
   if (description?.includes('Crypto deposit')) return 'Buy Gold';
   if (description?.includes('FinaVault') || description?.includes('physical gold')) return 'Deposit';
   if (description?.includes('BNSL')) return 'Lock Gold';
@@ -162,6 +178,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
             const goldAmount = parseFloat(tx.amountGold || '0');
             const usdAmount = parseFloat(tx.amountUsd || '0') || goldAmount * goldPrice;
             const isSwap = isSwapType(tx.description);
+            const isPpSwap = isPriceProtectionSwap(tx.description);
             const isCredit = isCreditType(tx.type, tx.description);
             const isDebit = isDebitType(tx.type, tx.description);
             
@@ -172,10 +189,10 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 data-testid={`transaction-row-${tx.id}`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  isSwap ? 'bg-violet-100' : isCredit ? 'bg-green-100' : 'bg-gray-100'
+                  isPpSwap ? 'bg-green-100' : isCredit ? 'bg-green-100' : 'bg-gray-100'
                 }`}>
-                  {isSwap ? (
-                    <ArrowLeftRight className="w-4 h-4 text-violet-600" />
+                  {isPpSwap ? (
+                    <ShieldCheck className="w-4 h-4 text-green-600" />
                   ) : isCredit ? (
                     <ArrowDownLeft className="w-4 h-4 text-green-600" />
                   ) : (
@@ -195,7 +212,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 <div className="text-right shrink-0">
                   {goldAmount > 0 ? (
                     <p className={`text-[14px] font-semibold ${
-                      isSwap ? 'text-violet-600' : isCredit ? 'text-green-600' : 'text-gray-900'
+                      isPpSwap ? 'text-gray-500' : isCredit ? 'text-green-600' : 'text-gray-900'
                     }`}>
                       {isCredit ? '+' : isDebit ? '-' : ''}{goldAmount.toFixed(2)}g
                     </p>

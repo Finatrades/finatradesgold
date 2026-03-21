@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ShieldCheck, ShieldOff, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,10 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
     return map;
   }, [ledgerEntries]);
   
-  const getIcon = (type: string, asset: string = 'USD', isSwap: boolean = false) => {
-    if (isSwap) return <ArrowLeftRight className="w-4 h-4" />;
+  const getIcon = (type: string, asset: string = 'USD', isSwap: boolean = false, isMpgwToFpgw: boolean = false, isFpgwToMpgw: boolean = false) => {
+    if (isMpgwToFpgw) return <ShieldCheck className="w-4 h-4" />;
+    if (isFpgwToMpgw) return <ShieldOff className="w-4 h-4" />;
+    if (isSwap) return <ShieldCheck className="w-4 h-4" />;
     switch (type) {
       case 'Buy': return <ShoppingCart className="w-4 h-4" />;
       case 'Deposit': return <ArrowDownLeft className="w-4 h-4" />;
@@ -85,8 +87,10 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
     }
   };
 
-  const getColor = (type: string, isSwap: boolean = false) => {
-    if (isSwap) return 'bg-purple-500/10 text-purple-600';
+  const getColor = (type: string, isSwap: boolean = false, isMpgwToFpgw: boolean = false, isFpgwToMpgw: boolean = false) => {
+    if (isMpgwToFpgw) return 'bg-green-500/10 text-green-600';
+    if (isFpgwToMpgw) return 'bg-gray-500/10 text-gray-500';
+    if (isSwap) return 'bg-green-500/10 text-green-600';
     switch (type) {
       case 'Buy': return 'bg-green-500/10 text-green-500';
       case 'Deposit': return 'bg-green-500/10 text-green-500';
@@ -110,14 +114,14 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
 
   const getTransactionSubtitle = (tx: Transaction, isMpgwToFpgw: boolean, isFpgwToMpgw: boolean, isSwap: boolean): string => {
     if (isMpgwToFpgw) {
-      const price = (tx as any).goldPriceUsdPerGram ? `Locked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : 'Moved to Fixed Price Wallet';
-      const cert = (tx as any).certificates?.find((c: any) => c.type === 'Conversion');
-      return cert ? `${price} · ${cert.certificateNumber}` : price;
+      const grams = tx.amountGrams?.toFixed(4) ?? '?';
+      const price = (tx as any).goldPriceUsdPerGram ? ` · Locked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : '';
+      return `Your total gold is unchanged · ${grams}g now price-protected${price}`;
     }
     if (isFpgwToMpgw) {
-      const price = (tx as any).goldPriceUsdPerGram ? `Unlocked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : 'Returned to Live Price Wallet';
-      const cert = (tx as any).certificates?.find((c: any) => c.type === 'Conversion');
-      return cert ? `${price} · ${cert.certificateNumber}` : price;
+      const grams = tx.amountGrams?.toFixed(4) ?? '?';
+      const price = (tx as any).goldPriceUsdPerGram ? ` · Unlocked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : '';
+      return `Your total gold is unchanged · ${grams}g now at market price${price}`;
     }
     if (tx.type === 'Send') {
       try {
@@ -236,8 +240,16 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
   const txWithBalances = useMemo(() => {
     let runningBalance = 0;
     return filteredTransactions.map(tx => {
-      const isMpgwToFpgw = tx.type === 'Lock Gold Price (LGPW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
-      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → LGPW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
+      const isMpgwToFpgw = tx.type === 'Lock Gold Price (LGPW → FPGW)' || (tx.type === 'Swap' && (
+        tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW') ||
+        tx.description?.includes('LGPW → FGPW') || tx.description?.includes('LGPW → FPGW') ||
+        tx.description?.toLowerCase().includes('price protection') && tx.description?.toLowerCase().includes('activat')
+      ));
+      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → LGPW)' || (tx.type === 'Swap' && (
+        tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') ||
+        tx.description?.includes('FGPW → LGPW') || tx.description?.includes('FPGW → LGPW') ||
+        tx.description?.includes('FGPW to LGPW unlock')
+      ));
       const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
       const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
       const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
@@ -366,8 +378,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                           data-testid={`transaction-card-${tx.id}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap)}`}>
-                              {getIcon(tx.type, tx.assetType, isSwap)}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap, isMpgwToFpgw, isFpgwToMpgw)}`}>
+                              {getIcon(tx.type, tx.assetType, isSwap, isMpgwToFpgw, isFpgwToMpgw)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
@@ -378,8 +390,10 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                   </p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                  {isSwap ? (
-                                    <p className="font-semibold text-amber-600 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
+                                  {(isMpgwToFpgw || isFpgwToMpgw) ? (
+                                    <p className="font-semibold text-gray-500 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
+                                  ) : isSwap ? (
+                                    <p className="font-semibold text-gray-500 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
                                   ) : isCredit ? (
                                     <p className="font-semibold text-green-600 text-sm">+{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
                                   ) : isDebit ? (
@@ -469,8 +483,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap)}`}>
-                                {getIcon(tx.type, tx.assetType, isSwap)}
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getColor(tx.type, isSwap, isMpgwToFpgw, isFpgwToMpgw)}`}>
+                                {getIcon(tx.type, tx.assetType, isSwap, isMpgwToFpgw, isFpgwToMpgw)}
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
@@ -486,13 +500,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                             </div>
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {isSwap ? (
-                              <div>
-                                <span className="text-amber-600 font-medium">
-                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
-                                </span>
-                                <div className="text-xs text-muted-foreground">{isMpgwToFpgw ? 'from LGPW' : isFpgwToMpgw ? 'from FPGW' : 'from LGPW'}</div>
-                              </div>
+                            {(isMpgwToFpgw || isFpgwToMpgw) ? (
+                              <span className="text-muted-foreground">—</span>
                             ) : isDebit ? (
                               <div>
                                 <span className="text-red-600 font-medium">
@@ -507,13 +516,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                             )}
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {isSwap ? (
-                              <div>
-                                <span className="text-green-600 font-medium">
-                                  {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
-                                </span>
-                                <div className="text-xs text-muted-foreground">{isMpgwToFpgw ? 'to FPGW' : isFpgwToMpgw ? 'to LGPW' : 'to FGPW'}</div>
-                              </div>
+                            {(isMpgwToFpgw || isFpgwToMpgw) ? (
+                              <span className="text-muted-foreground">—</span>
                             ) : isCredit ? (
                               <div>
                                 <span className="text-green-600 font-medium">
@@ -528,7 +532,18 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                             )}
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {currentBalance !== null ? (
+                            {(isMpgwToFpgw || isFpgwToMpgw) && currentBalance !== null ? (
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  {(currentBalance / goldPrice).toFixed(4)} g
+                                </span>
+                                <div className="text-xs text-gray-400">(unchanged)</div>
+                              </div>
+                            ) : (isMpgwToFpgw || isFpgwToMpgw) ? (
+                              <div>
+                                <span className="text-gray-400 font-medium text-sm">unchanged</span>
+                              </div>
+                            ) : currentBalance !== null ? (
                               <div>
                                 <span className="font-medium text-foreground">
                                   {(currentBalance / goldPrice).toFixed(4)} g

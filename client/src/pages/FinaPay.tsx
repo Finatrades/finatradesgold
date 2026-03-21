@@ -182,14 +182,20 @@ export default function FinaPay() {
     const desc = tx.description || '';
     const sourceModule = tx.sourceModule || '';
     const isDualWalletSwap = rawType === 'Swap' && sourceModule === 'dual-wallet';
-    const isLockAction = isDualWalletSwap && (desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW') || desc.startsWith('LGPW to FGPW'));
-    const isUnlockAction = isDualWalletSwap && (desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW') || desc.includes('FGPW to LGPW unlock'));
+    const isLockAction = isDualWalletSwap && (
+      desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW') || desc.startsWith('LGPW to FGPW') ||
+      desc.includes('LGPW → FGPW') || desc.includes('LGPW → FPGW')
+    );
+    const isUnlockAction = isDualWalletSwap && (
+      desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW') || desc.includes('FGPW to LGPW unlock') ||
+      desc.includes('FGPW → LGPW') || desc.includes('FPGW → LGPW')
+    );
     
     let displayType: string;
     if (isLockAction) {
-      displayType = 'Lock Gold Price (LGPW → FPGW)';
+      displayType = 'Swap';
     } else if (isUnlockAction) {
-      displayType = 'Unlock Gold Price (FPGW → LGPW)';
+      displayType = 'Swap';
     } else {
       displayType = getTransactionLabel(rawType);
     }

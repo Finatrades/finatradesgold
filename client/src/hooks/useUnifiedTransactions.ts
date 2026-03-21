@@ -45,6 +45,7 @@ export interface UnifiedTransactionsResult {
 
 export const getActionLabel = (actionType: string, module?: string, description?: string | null): string => {
   const action = actionType?.toUpperCase() || '';
+  const desc = description || '';
   
   if (action === 'DEPOSIT_PHYSICAL_GOLD') {
     return 'Deposit Physical Gold';
@@ -72,6 +73,9 @@ export const getActionLabel = (actionType: string, module?: string, description?
   }
   if (action === 'TRANSFER') {
     return 'Transfer';
+  }
+  if (action === 'SWAP') {
+    return 'Price Protection';
   }
   
   return actionType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());

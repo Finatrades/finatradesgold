@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Wallet, Lock, TrendingUp, AlertTriangle, ShieldCheck, Info, Unlock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wallet, Lock, AlertTriangle, ShieldCheck, ShieldOff, Info, Unlock, ChevronDown, ChevronUp, Clock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDualWalletBalance, useInternalTransfer, useFpgwLocks } from '@/hooks/useDualWallet';
 import GoldBackedDisclosure from '@/components/common/GoldBackedDisclosure';
+import { PriceProtectionBatches } from '@/components/finapay/PriceProtectionBatches';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -35,7 +36,6 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>(initialDirection || 'LGPW_to_FGPW');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState<{ id: string; goldGrams: number; lockedPriceUsd: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -47,7 +47,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
     openUnlockDialog: () => {
       toast({
         title: 'How to Unlock',
-        description: 'Tap the "Unlock" button next to each active price protection lock below.',
+        description: 'Tap the "Remove Protection" button next to each active price protection lock below.',
       });
     }
   }));
@@ -135,13 +135,17 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
   const lgpwPct = totalGrams > 0 ? (lgpwGrams / totalGrams) * 100 : 100;
   const fpgwPct = totalGrams > 0 ? (fpgwGrams / totalGrams) * 100 : 0;
 
+  const pendingGrams = balance.mpgw.pendingGrams + balance.fpgw.pendingGrams;
   const hasBnslLocked = (balance.mpgw.lockedBnslGrams + balance.fpgw.lockedBnslGrams) > 0;
   const hasTradeLocked = (balance.mpgw.reservedTradeGrams + balance.fpgw.reservedTradeGrams) > 0;
   const totalBnsl = balance.mpgw.lockedBnslGrams + balance.fpgw.lockedBnslGrams;
   const totalTrade = balance.mpgw.reservedTradeGrams + balance.fpgw.reservedTradeGrams;
 
+  const availableToUse = balance.total.availableGrams ?? (totalGrams - totalBnsl - totalTrade - pendingGrams);
+
   return (
     <TooltipProvider>
+    <div className="space-y-4">
     <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden" data-testid="dual-wallet-card">
 
       {/* Header */}
@@ -153,18 +157,18 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Gold Wallet</h2>
-              <p className="text-xs text-muted-foreground">Live market + price-protected holdings</p>
+              <p className="text-xs text-muted-foreground">One pool of gold, two protection modes</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="outline"
-              className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+              className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50"
               onClick={() => { setTransferAmount(''); setAgreedToTerms(false); setShowTransferModal(true); }}
               data-testid="btn-lock-gold-price"
             >
-              <Lock className="w-4 h-4 mr-1 sm:mr-2" />
+              <ShieldCheck className="w-4 h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Activate Price Protection</span>
               <span className="sm:hidden">Lock Price</span>
             </Button>
@@ -183,9 +187,9 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
         </div>
       </div>
 
-      {/* Total Balance */}
+      {/* Unified Total Balance */}
       <div className="px-6 py-5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Total Gold Holdings</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Your Gold</p>
         <div className="flex items-end gap-4 flex-wrap">
           <p className="text-4xl font-bold text-amber-600" data-testid="total-gold">
             {totalGrams.toFixed(4)}<span className="text-xl ml-1 font-semibold">g</span>
@@ -198,6 +202,17 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
           </div>
         </div>
 
+        {/* Pending Gold Line */}
+        {pendingGrams > 0 && (
+          <div className="mt-3 flex items-center gap-2 text-amber-600 text-sm" data-testid="pending-gold-line">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span className="font-medium">{pendingGrams.toFixed(4)}g awaiting verification</span>
+            <a href="/finapay?section=deposits" className="text-xs underline text-amber-500 flex items-center gap-0.5">
+              View <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+
         {/* Proportional Split Bar */}
         {totalGrams > 0 && (
           <div className="mt-4 space-y-2">
@@ -206,113 +221,52 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                 <div
                   className="bg-amber-400 rounded-l-full transition-all duration-500"
                   style={{ width: `${lgpwPct}%` }}
-                  title={`Live Price: ${lgpwGrams.toFixed(4)}g`}
+                  title={`At market price: ${lgpwGrams.toFixed(4)}g`}
                 />
               )}
               {fpgwPct > 0.5 && (
                 <div
                   className="bg-indigo-400 rounded-r-full transition-all duration-500"
                   style={{ width: `${fpgwPct}%` }}
-                  title={`Price Protected: ${fpgwGrams.toFixed(4)}g`}
+                  title={`Price protected: ${fpgwGrams.toFixed(4)}g`}
                 />
               )}
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-                Live Price ({lgpwPct.toFixed(0)}%)
+                {lgpwGrams.toFixed(4)}g at market price
               </span>
               {fpgwGrams > 0 && (
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block" />
-                  Price Protected ({fpgwPct.toFixed(0)}%)
+                  {fpgwGrams.toFixed(4)}g price-protected
                 </span>
               )}
             </div>
           </div>
         )}
-      </div>
 
-      {/* Quick Breakdown */}
-      <div className="px-6 pb-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
-            <p className="text-[10px] text-amber-700 font-semibold uppercase tracking-wide mb-0.5">Available</p>
-            <p className="text-base font-bold text-amber-700" data-testid="mpgw-available">{balance.mpgw.availableGrams.toFixed(4)}g</p>
-            <p className="text-[10px] text-amber-500">≈ ${(balance.mpgw.availableGrams * balance.goldPricePerGram).toFixed(2)}</p>
+        {/* Available to use */}
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-foreground" data-testid="available-to-use">
+              {availableToUse.toFixed(4)}g available to send/trade
+            </span>
+            <span className="text-xs text-muted-foreground">
+              ≈ ${(availableToUse * balance.goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
-          <div className={`p-3 rounded-xl border ${fpgwGrams > 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-gray-50 border-gray-100'}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5 flex items-center gap-1" style={{ color: fpgwGrams > 0 ? '#4338ca' : '#9ca3af' }}>
-              <ShieldCheck className="w-3 h-3" /> Price Protected
+          {(hasBnslLocked || hasTradeLocked) && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {hasBnslLocked && `${totalBnsl.toFixed(4)}g in BNSL`}
+              {hasBnslLocked && hasTradeLocked && ' · '}
+              {hasTradeLocked && `${totalTrade.toFixed(4)}g in trades`}
+              {' '}excluded
             </p>
-            <p className="text-base font-bold" style={{ color: fpgwGrams > 0 ? '#4338ca' : '#9ca3af' }} data-testid="fpgw-available">{fpgwGrams.toFixed(4)}g</p>
-            <p className="text-[10px]" style={{ color: fpgwGrams > 0 ? '#6366f1' : '#9ca3af' }}>
-              {fpgwGrams > 0 ? `≈ $${balance.fpgwValueUsd.toFixed(2)}` : 'None active'}
-            </p>
-          </div>
-          {hasBnslLocked && (
-            <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
-              <p className="text-[10px] text-purple-700 font-semibold uppercase tracking-wide mb-0.5 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> BNSL Locked
-              </p>
-              <p className="text-base font-bold text-purple-700" data-testid="total-bnsl-locked">{totalBnsl.toFixed(4)}g</p>
-              <p className="text-[10px] text-purple-400">Earning returns</p>
-            </div>
-          )}
-          {hasTradeLocked && (
-            <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-              <p className="text-[10px] text-blue-700 font-semibold uppercase tracking-wide mb-0.5 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> Trade Reserved
-              </p>
-              <p className="text-base font-bold text-blue-700" data-testid="total-trade-reserved">{totalTrade.toFixed(4)}g</p>
-              <p className="text-[10px] text-blue-400">In active trade</p>
-            </div>
           )}
         </div>
       </div>
-
-      {/* Price Protection Locks */}
-      {activeLocks.length > 0 && (
-        <div className="px-6 pb-4">
-          <div className="border border-indigo-100 rounded-xl overflow-hidden">
-            <button
-              className="w-full flex items-center justify-between px-4 py-3 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-              onClick={() => setShowBreakdown(!showBreakdown)}
-              data-testid="btn-toggle-locks"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
-                <ShieldCheck className="w-4 h-4" />
-                Price Protection Active — {activeLocks.length} lock{activeLocks.length !== 1 ? 's' : ''}
-              </span>
-              {showBreakdown ? <ChevronUp className="w-4 h-4 text-indigo-500" /> : <ChevronDown className="w-4 h-4 text-indigo-500" />}
-            </button>
-            {showBreakdown && (
-              <div className="divide-y divide-indigo-50">
-                {activeLocks.map((lock) => (
-                  <div key={lock.id} className="flex items-center justify-between px-4 py-3 bg-white" data-testid={`lock-row-${lock.id}`}>
-                    <div>
-                      <p className="text-sm font-semibold text-indigo-700">{lock.goldGrams.toFixed(4)} g</p>
-                      <p className="text-xs text-indigo-500">
-                        Locked @ ${lock.lockedPriceUsd.toFixed(2)}/g = ${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-3 text-[11px] border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                      onClick={() => setRemoveConfirm({ id: lock.id, goldGrams: lock.goldGrams, lockedPriceUsd: lock.lockedPriceUsd })}
-                      disabled={internalTransfer.isPending}
-                      data-testid={`button-unlock-lock-${lock.id}`}
-                    >
-                      <Unlock className="w-3 h-3 mr-1" /> Remove Protection
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Explainer & Disclosure */}
       <div className="px-6 pb-6">
@@ -433,7 +387,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-700">
-              <Unlock className="w-5 h-5" />
+              <ShieldOff className="w-5 h-5" />
               Remove Price Protection?
             </DialogTitle>
             <DialogDescription>
@@ -470,7 +424,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                 <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-orange-700 leading-relaxed">
                   Once removed, your <span className="font-semibold">{removeConfirm.goldGrams.toFixed(4)} g</span> will
-                  be moved back to your <span className="font-semibold">Live Price Wallet</span> and valued at the
+                  be moved back to your <span className="font-semibold">at-market-price</span> balance and valued at the
                   current live market rate of <span className="font-semibold">${(balance?.goldPricePerGram ?? 0).toFixed(2)}/g</span>.
                   The original locked price of <span className="font-semibold">${removeConfirm.lockedPriceUsd.toFixed(2)}/g</span> will
                   no longer apply. This action cannot be undone.
@@ -501,12 +455,22 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               {internalTransfer.isPending ? (
                 <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Processing…</>
               ) : (
-                <><Unlock className="w-4 h-4 mr-1" /> Confirm Remove</>
+                <><ShieldOff className="w-4 h-4 mr-1" /> Confirm Remove</>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+
+    {/* Price Protection Section — delegated to PriceProtectionBatches component */}
+    <PriceProtectionBatches
+      activeLocks={activeLocks}
+      balance={balance}
+      fpgwGrams={fpgwGrams}
+      isTransferPending={internalTransfer.isPending}
+      onRemoveLock={(lock) => setRemoveConfirm(lock)}
+    />
     </div>
     </TooltipProvider>
   );
