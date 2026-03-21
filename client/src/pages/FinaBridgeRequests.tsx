@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import { useLocation } from 'wouter';
-import { FileText, PlusCircle, Eye, Loader2, Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, PlusCircle, Eye, Loader2, Package, Clock, CheckCircle, XCircle, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,11 @@ export default function FinaBridgeRequests() {
   const { accountType } = useAccountType();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
+  const [role, setRole] = useState<'importer' | 'exporter'>(() =>
+    user?.finabridgeRole === 'exporter' ? 'exporter' : 'importer'
+  );
+
   const [loading, setLoading] = useState(true);
   const [myRequests, setMyRequests] = useState<TradeRequest[]>([]);
   const [openRequests, setOpenRequests] = useState<TradeRequest[]>([]);
@@ -64,7 +68,7 @@ export default function FinaBridgeRequests() {
       const openReqData = await openReqRes.json();
       setMyRequests(myReqData.requests || []);
       setOpenRequests(openReqData.requests || []);
-    } catch (err) {
+    } catch (err: unknown) {
       toast({ title: 'Error', description: 'Failed to load trade requests', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -103,34 +107,67 @@ export default function FinaBridgeRequests() {
     }
   };
 
-  if (accountType !== 'business') {
-    return null;
-  }
+  const safeOpenRequests = openRequests.filter(r => r.importerUserId !== user?.id);
 
+  if (accountType !== 'business') return null;
   if (!user) return null;
+
+  const showToggle = user.finabridgeRole === 'both';
+  const activeRole = showToggle ? role : (user.finabridgeRole === 'exporter' ? 'exporter' : 'importer');
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
               <FileText className="w-8 h-8 text-[#D4AF37]" />
               Trade Requests
             </h1>
-            <p className="text-muted-foreground">Manage your import trade requests and view available opportunities.</p>
+            <p className="text-muted-foreground">
+              {activeRole === 'importer'
+                ? 'Manage your import trade requests.'
+                : 'Browse open trade requests and submit proposals.'}
+            </p>
           </div>
-          <Button 
-            onClick={() => setLocation('/finabridge')}
-            className="bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] text-[#0D001E] hover:opacity-90"
-            data-testid="button-new-request"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" />
-            New Request
-          </Button>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {showToggle && (
+              <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
+                <Button
+                  variant={activeRole === 'importer' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setRole('importer')}
+                  data-testid="button-role-importer"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Importer
+                </Button>
+                <Button
+                  variant={activeRole === 'exporter' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setRole('exporter')}
+                  data-testid="button-role-exporter"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Exporter
+                </Button>
+              </div>
+            )}
+            {activeRole === 'importer' && (
+              <Button
+                onClick={() => setLocation('/finabridge')}
+                className="bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] text-[#0D001E] hover:opacity-90"
+                data-testid="button-new-request"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                New Request
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        {activeRole === 'importer' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -152,7 +189,7 @@ export default function FinaBridgeRequests() {
               ) : (
                 <div className="space-y-3">
                   {myRequests.map((request) => (
-                    <div 
+                    <div
                       key={request.id}
                       className="p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
                       onClick={() => setSelectedRequest(request)}
@@ -182,12 +219,14 @@ export default function FinaBridgeRequests() {
               )}
             </CardContent>
           </Card>
+        )}
 
+        {activeRole === 'exporter' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Eye className="w-5 h-5 text-[#D4AF37]" />
-                Open Requests (Exporter View)
+                Open Requests
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -195,7 +234,7 @@ export default function FinaBridgeRequests() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
                 </div>
-              ) : openRequests.length === 0 ? (
+              ) : safeOpenRequests.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No open requests available</p>
@@ -203,8 +242,8 @@ export default function FinaBridgeRequests() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {openRequests.map((request) => (
-                    <div 
+                  {safeOpenRequests.map((request) => (
+                    <div
                       key={request.id}
                       className="p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
                       onClick={() => setSelectedRequest(request)}
@@ -217,7 +256,16 @@ export default function FinaBridgeRequests() {
                             {request.destination && `To: ${request.destination}`}
                           </p>
                         </div>
-                        <Button size="sm" variant="outline" className="text-xs">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs shrink-0"
+                          data-testid={`button-submit-proposal-${request.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocation(`/finabridge?tab=exporter&requestId=${request.id}`);
+                          }}
+                        >
                           Submit Proposal
                         </Button>
                       </div>
@@ -235,7 +283,7 @@ export default function FinaBridgeRequests() {
               )}
             </CardContent>
           </Card>
-        </div>
+        )}
 
         <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
           <DialogContent className="max-w-lg">
