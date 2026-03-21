@@ -818,7 +818,7 @@ export default function VaultActivityList() {
     if (tx.type === 'Swap') {
       if (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')) return 'Price Protection Activated';
       if (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW')) return 'Price Protection Removed';
-      return 'Wallet Conversion';
+      return 'Gold Wallet Transfer';
     }
     if (tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')) {
       return 'Deposit Physical Gold';
@@ -829,6 +829,17 @@ export default function VaultActivityList() {
     if (tx.type === 'Vault Deposit' && tx.description === 'Gold Purchase') {
       return 'Acquire Gold';
     }
+    if (tx.type === 'Vault Deposit') return 'Gold Credited to Vault';
+    if (tx.type === 'Deposit') {
+      const bnslCert = tx.certificates.find(c => c.type === 'BNSL Lock');
+      if (bnslCert || tx.description?.toLowerCase().includes('bnsl')) return 'Gold Locked – BNSL Plan';
+      return 'Gold Credited to Vault';
+    }
+    if (tx.type === 'Buy') return 'Buy Gold';
+    if (tx.type === 'Sell') return 'Sell Gold';
+    if (tx.type === 'Send') return 'Send Gold';
+    if (tx.type === 'Receive') return 'Receive Gold';
+    if (tx.type === 'Withdrawal') return 'Cash Out';
     return tx.type;
   };
 
@@ -836,9 +847,10 @@ export default function VaultActivityList() {
     if (tx.type === 'Swap') {
       const toFGPW = tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW');
       const toLGPW = tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW');
-      const priceStr = tx.goldPriceUsdPerGram ? ` · $${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g locked` : '';
-      if (toFGPW) return `Price Protection Activated${priceStr}`;
-      if (toLGPW) return `Price Protection Removed${priceStr}`;
+      const price = tx.goldPriceUsdPerGram ? `$${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g` : null;
+      if (toFGPW) return price ? `Price locked at ${price}` : 'Gold moved to Fixed Price Wallet';
+      if (toLGPW) return price ? `Moved to Live Price Wallet · ${price}` : 'Gold returned to Live Price Wallet';
+      return tx.description || 'Gold transferred between wallets';
     }
     if (tx.recipientEmail) return `To: ${tx.recipientEmail}`;
     if (tx.senderEmail) return `From: ${tx.senderEmail}`;
@@ -880,10 +892,10 @@ export default function VaultActivityList() {
                 {tx.goldWalletType}
               </Badge>
             )}
-            {tx.certificates.length > 0 && (
+            {tx.type !== 'Swap' && tx.certificates.filter(c => c.type !== 'Conversion').length > 0 && (
               <Badge variant="outline" className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30">
                 <Award className="w-3 h-3 mr-1" />
-                {tx.certificates.length} Cert
+                {tx.certificates.filter(c => c.type !== 'Conversion').length} Cert
               </Badge>
             )}
           </div>
