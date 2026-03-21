@@ -585,8 +585,8 @@ export default function Dashboard() {
 
           </div>
 
-          {/* ═══ CENTRE COLUMN — Gold Price Lock + BNSL ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
+          {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6" data-testid="card-price-lock-status">
@@ -643,7 +643,7 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
+          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
 
             {/* FinaCard — Premium dark card with holographic effect */}
             <Link href="/finacard">
