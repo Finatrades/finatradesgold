@@ -709,7 +709,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
             >
               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-6 h-6 text-blue-600" />
+                <Building className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex-1 text-left">
                 <p className="font-semibold text-foreground">Bank Transfer</p>
