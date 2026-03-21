@@ -97,7 +97,7 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
     },
     {
       key: 'physical',
-      label: 'Physical gold awaiting vault inspection',
+      label: 'Physical Gold Deposit — awaiting vault inspection',
       count: physicalPendingCount,
       href: '/finavault?section=physical',
     },

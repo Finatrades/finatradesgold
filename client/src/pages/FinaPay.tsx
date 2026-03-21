@@ -75,7 +75,7 @@ export default function FinaPay() {
       const anchorMap: Record<string, string> = {
         transfers: 'finapay-pending-incoming',
         requests: 'finapay-pending-requests',
-        deposits: 'finapay-pending-transfers',
+        deposits: 'finapay-pending-deposits',
       };
       const anchorId = anchorMap[section] ?? 'finapay-pending-transfers';
       setTimeout(() => {

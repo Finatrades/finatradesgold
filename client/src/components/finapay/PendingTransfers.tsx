@@ -717,7 +717,7 @@ export default function PendingTransfers() {
         )}
 
         {pendingDeposits.length > 0 && (
-          <div className="space-y-3">
+          <div id="finapay-pending-deposits" className="space-y-3">
             <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
               <ArrowDownLeft className="w-4 h-4" />
               Add Funds - Awaiting Approval
