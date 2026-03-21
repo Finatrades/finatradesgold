@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { useBranding } from '@/context/BrandingContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,8 +68,7 @@ export interface CertificateDetailModalProps {
 
 export function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   const { toast } = useToast();
-  const { settings: brandingSettings } = useBranding();
-  const logoUrl = brandingSettings?.logoUrl || 'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png';
+  const logoUrl = '/finatrades-logo-purple.png';
   const [isGenerating, setIsGenerating] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
   
