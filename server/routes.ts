@@ -9907,27 +9907,40 @@ export async function registerRoutes(
       }
 
       // Validate withdrawal method specific fields
+      let resolvedBankName = bankName;
+      let resolvedAccountName = accountName;
+      let resolvedAccountNumber = accountNumber;
+      let resolvedIban = iban;
+      let resolvedSwiftCode = swiftCode;
+      let resolvedBankCountry = bankCountry;
+
       if (withdrawalMethod === 'Bank Transfer') {
-        if (!bankName || !accountName || !accountNumber) {
-          return res.status(400).json({ message: "Bank details required for bank transfer" });
+        // bankAccountId is required — no free-text bank details allowed
+        if (!bankAccountId) {
+          return res.status(400).json({ message: "A verified saved bank account is required for bank transfers." });
         }
-        // Verify the bank account is verified and belongs to this user
-        if (bankAccountId) {
-          const bankAccount = await storage.getUserBankAccount(bankAccountId);
-          if (!bankAccount || bankAccount.userId !== userId) {
-            return res.status(400).json({ message: "Invalid bank account. Please select a verified bank account." });
-          }
-          if (!bankAccount.verifiedAt) {
-            return res.status(400).json({ message: "Bank account must be verified before withdrawing. Please complete bank account verification first." });
-          }
+        const bankAccount = await storage.getUserBankAccount(bankAccountId);
+        if (!bankAccount || bankAccount.userId !== userId) {
+          return res.status(400).json({ message: "Invalid bank account. Please select a verified bank account." });
         }
-        // Enforce KYC name match for bank transfers
+        if (!bankAccount.verifiedAt) {
+          return res.status(400).json({ message: "Bank account must be verified before withdrawing. Please complete bank account verification first." });
+        }
+        // Derive bank details from verified DB record (ignore client-supplied values)
+        resolvedBankName = bankAccount.bankName;
+        resolvedAccountName = bankAccount.accountHolderName;
+        resolvedAccountNumber = bankAccount.accountNumber;
+        resolvedIban = bankAccount.iban || null;
+        resolvedSwiftCode = bankAccount.swiftCode || null;
+        resolvedBankCountry = bankAccount.bankCountry || null;
+
+        // Enforce KYC name match for bank transfers against verified DB account name
         const kycRecord = await storage.getKycSubmission(userId);
         if (kycRecord) {
           const kycFullName: string = kycRecord.fullName || '';
-          if (kycFullName && accountName.trim().toLowerCase() !== kycFullName.toLowerCase()) {
+          if (kycFullName && resolvedAccountName.trim().toLowerCase() !== kycFullName.trim().toLowerCase()) {
             return res.status(400).json({ 
-              message: `Account holder name "${accountName}" does not match your KYC name "${kycFullName}". Bank withdrawals require an exact KYC name match.` 
+              message: `Account holder name "${resolvedAccountName}" does not match your KYC name "${kycFullName}". Bank withdrawals require an exact KYC name match.` 
             });
           }
         }
@@ -9955,12 +9968,12 @@ export async function registerRoutes(
         goldPriceUsdPerGram: goldPriceUsdPerGram.toString(),
         totalValueUsd: totalValueUsd.toFixed(2),
         withdrawalMethod,
-        bankName: bankName || null,
-        accountName: accountName || null,
-        accountNumber: accountNumber || null,
-        iban: iban || null,
-        swiftCode: swiftCode || null,
-        bankCountry: bankCountry || null,
+        bankName: resolvedBankName || null,
+        accountName: resolvedAccountName || null,
+        accountNumber: resolvedAccountNumber || null,
+        iban: resolvedIban || null,
+        swiftCode: resolvedSwiftCode || null,
+        bankCountry: resolvedBankCountry || null,
         cryptoNetwork: cryptoNetwork || null,
         cryptoCurrency: cryptoCurrency || null,
         walletAddress: walletAddress || null,
