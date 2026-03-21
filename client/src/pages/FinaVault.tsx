@@ -894,9 +894,24 @@ export default function FinaVault() {
   const finaBridgeAvailableGrams = ownership ? safeParseFloat(ownership.finaBridgeAvailableGrams) : 0;
   
   // Dual-wallet breakdown (LGPW/FGPW)
-  const mpgwAvailableGrams = ownership ? safeParseFloat(ownership.mpgwAvailableGrams) : 0;
+  // NOTE: mpgwAvailableGrams from vault_ownership_summary can drift out of sync when
+  // cross-module transfers (BNSL, FinaBridge) don't update it. Use the actual wallet
+  // goldGrams as the authoritative "Available to Spend" value.
+  const actualWalletGrams = safeParseFloat(walletData?.wallet?.goldGrams);
+  const mpgwAvailableGrams = actualWalletGrams > 0
+    ? actualWalletGrams
+    : (ownership ? safeParseFloat(ownership.mpgwAvailableGrams) : 0);
   const fpgwAvailableGrams = ownership ? safeParseFloat(ownership.fpgwAvailableGrams) : 0;
-  
+
+  // Build a corrected ownership object so GoldOverviewCard shows accurate figures.
+  // mpgwAvailableGrams is overridden with the real wallet balance.
+  // totalGoldGrams is corrected to wallet + locked BNSL (the actual platform total).
+  const correctedOwnership = ownership ? {
+    ...ownership,
+    mpgwAvailableGrams: mpgwAvailableGrams.toFixed(6),
+    totalGoldGrams: (mpgwAvailableGrams + fpgwAvailableGrams + bnslLockedGrams + finabridgeLockedGrams).toFixed(6),
+  } : ownership;
+
   // USD balance from wallet
   const usdBalance = safeParseFloat(walletData?.wallet?.usdBalance);
   
@@ -1308,7 +1323,7 @@ export default function FinaVault() {
 
         {/* Gold Overview Card — 5-tile breakdown */}
         {hasVaultActivity && (
-          <GoldOverviewCard ownership={ownership} goldPricePerGram={goldPricePerGram} />
+          <GoldOverviewCard ownership={correctedOwnership} goldPricePerGram={goldPricePerGram} />
         )}
 
         {/* Main Content */}
