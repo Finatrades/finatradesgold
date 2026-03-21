@@ -56,8 +56,8 @@ export default function PendingItemsStrip() {
             </div>
             <span className="text-[13px] font-bold text-gray-800">Pending Actions</span>
             <span
-              className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold text-white"
-              style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)' }}
+              className="fin-badge ml-1 text-white"
+              style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', minWidth: '20px', height: '20px', padding: '0 6px', fontSize: '11px' }}
               data-testid="badge-pending-total"
             >
               {total > 99 ? '99+' : total}
@@ -84,8 +84,8 @@ export default function PendingItemsStrip() {
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <span
-                      className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-amber-800"
-                      style={{ background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.25)' }}
+                      className="fin-badge text-amber-800"
+                      style={{ background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.25)', minWidth: '20px', height: '20px', padding: '0 6px', fontSize: '11px' }}
                       data-testid={`badge-count-${item.key}`}
                     >
                       {item.count}

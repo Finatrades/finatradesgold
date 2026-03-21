@@ -81,25 +81,25 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
       key: 'transfers',
       label: 'Transfers awaiting your response',
       count: incomingCount,
-      href: '/finapay',
+      href: '/finapay?section=transfers',
     },
     {
       key: 'payments',
-      label: 'Payment requests to fulfil',
+      label: 'Payment requests to review',
       count: paymentRequestCount,
-      href: '/finapay',
+      href: '/finapay?section=requests',
     },
     {
       key: 'deposits',
       label: 'Deposits pending verification',
       count: depositPendingCount,
-      href: '/finapay',
+      href: '/finapay?section=deposits',
     },
     {
       key: 'physical',
-      label: 'Physical gold — awaiting vault inspection',
+      label: 'Physical gold awaiting vault inspection',
       count: physicalPendingCount,
-      href: '/finavault',
+      href: '/finavault?section=physical',
     },
   ];
 
