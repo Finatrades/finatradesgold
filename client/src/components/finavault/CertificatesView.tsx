@@ -698,7 +698,14 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                 }`} style={{ borderColor: certTheme.border }}>
                   <div>
                     <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>Gold Weight</p>
-                    <p className="text-xl font-bold text-white">{goldGrams.toFixed(4)}g</p>
+                    {certificate.remainingGrams && Math.abs(parseFloat(certificate.remainingGrams) - parseFloat(certificate.goldGrams)) > 0.0001 ? (
+                      <div>
+                        <p className="text-xl font-bold text-white">{parseFloat(certificate.remainingGrams).toFixed(4)}g</p>
+                        <p className="text-xs text-white/40 mt-0.5">of {goldGrams.toFixed(4)}g original</p>
+                      </div>
+                    ) : (
+                      <p className="text-xl font-bold text-white">{goldGrams.toFixed(4)}g</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>Purity</p>

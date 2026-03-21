@@ -1610,6 +1610,45 @@ export async function registerRoutes(
     });
   }, 60000); // Clean every minute
 
+  // Certificate Ledger: Backfill remaining_grams on startup (one-time)
+  (async () => {
+    try {
+      const { backfillRemainingGrams } = await import('./cert-ledger-service');
+      const updated = await backfillRemainingGrams(storage);
+      if (updated > 0) {
+        console.log(`[CertLedger] Startup backfill: ${updated} certificates updated with remaining_grams`);
+      }
+    } catch (error) {
+      console.error('[CertLedger] Startup backfill failed:', error);
+    }
+  })();
+
+  // Certificate Ledger: Daily reconciliation (every 24 hours)
+  setInterval(async () => {
+    try {
+      console.log('[CertLedger] Running daily cert-wallet reconciliation...');
+      const { reconcileUserPosition } = await import('./cert-ledger-service');
+      const allUsers = await storage.getAllUsers();
+      let mismatches = 0;
+      
+      for (const user of allUsers) {
+        const wallet = await storage.getWallet(user.id);
+        if (!wallet) continue;
+        const walletGrams = parseFloat(wallet.goldGrams || '0');
+        if (walletGrams <= 0) continue;
+        
+        const result = await reconcileUserPosition(storage, user.id, walletGrams);
+        if (!result.match) {
+          mismatches++;
+        }
+      }
+      
+      console.log(`[CertLedger] Reconciliation complete: ${mismatches} mismatches found across ${allUsers.length} users`);
+    } catch (error) {
+      console.error('[CertLedger] Daily reconciliation failed:', error);
+    }
+  }, 24 * 60 * 60 * 1000);
+
   // BNSL Auto-Processing: Check for due payouts daily (runs every 6 hours)
   setInterval(async () => {
     try {
@@ -11403,6 +11442,15 @@ export async function registerRoutes(
         createdBy: 'system',
       });
       
+      const { deductFromCerts } = await import('./cert-ledger-service');
+      await deductFromCerts(storage, {
+        userId,
+        gramsToDeduct: amountGrams,
+        reason: 'BNSL_TRANSFER',
+        transactionId: transferTx.id,
+        notes: `BNSL transfer: ${amountGrams.toFixed(4)}g moved to BNSL wallet`,
+      });
+      
       // Get updated wallets
       const updatedFinapay = await storage.getWallet(userId);
       const updatedBnsl = await storage.getOrCreateBnslWallet(userId);
@@ -11507,6 +11555,15 @@ export async function registerRoutes(
         transactionId: transferTx.id,
         notes: `Transferred ${amountGrams.toFixed(4)}g from BNSL Wallet to FinaPay`,
         createdBy: 'system',
+      });
+      
+      const { restoreToCert } = await import('./cert-ledger-service');
+      await restoreToCert(storage, {
+        userId,
+        gramsToRestore: amountGrams,
+        reason: 'BNSL_EARLY_TERMINATION',
+        transactionId: transferTx.id,
+        notes: `BNSL withdrawal: ${amountGrams.toFixed(4)}g returned to FinaPay`,
       });
       
       // Get updated wallets
@@ -14528,7 +14585,7 @@ export async function registerRoutes(
       });
       
       // Create transaction record
-      await storage.createTransaction({
+      const fbFundTx = await storage.createTransaction({
         userId: req.params.userId,
         type: 'Withdrawal',
         status: 'Completed',
@@ -14550,6 +14607,15 @@ export async function registerRoutes(
         fromStatus: 'Available',
         toStatus: 'Available',
         notes: `Transferred ${amount.toFixed(4)}g from FinaPay to FinaBridge Wallet`,
+      });
+      
+      const { deductFromCerts } = await import('./cert-ledger-service');
+      await deductFromCerts(storage, {
+        userId: req.params.userId,
+        gramsToDeduct: amount,
+        reason: 'FINABRIDGE_FUND',
+        transactionId: fbFundTx.id,
+        notes: `FinaBridge fund: ${amount.toFixed(4)}g moved to FinaBridge wallet`,
       });
       
       res.json({ 
@@ -14606,7 +14672,7 @@ export async function registerRoutes(
       
       // Create transaction record
       const usdValue = amount * goldPrice;
-      await storage.createTransaction({
+      const fbWithdrawTx = await storage.createTransaction({
         userId: req.params.userId,
         type: 'Receive',
         status: 'Completed',
@@ -14630,6 +14696,15 @@ export async function registerRoutes(
         fromStatus: 'Available',
         toStatus: 'Available',
         notes: `Transferred ${amount.toFixed(4)}g from FinaBridge Wallet to FinaPay`,
+      });
+      
+      const { restoreToCert: restoreFB } = await import('./cert-ledger-service');
+      await restoreFB(storage, {
+        userId: req.params.userId,
+        gramsToRestore: amount,
+        reason: 'FINABRIDGE_RELEASE',
+        transactionId: fbWithdrawTx.id,
+        notes: `FinaBridge withdrawal: ${amount.toFixed(4)}g returned to FinaPay`,
       });
       
       // Emit real-time sync event
@@ -17327,6 +17402,15 @@ export async function registerRoutes(
           goldWalletType: 'LGPW',
         });
         
+        const { deductFromCerts: deductInvite } = await import('./cert-ledger-service');
+        await deductInvite(storage, {
+          userId: sender.id,
+          gramsToDeduct: goldAmount,
+          reason: 'P2P_SEND',
+          transactionId: senderTx.id,
+          notes: `P2P invitation send: ${goldAmount.toFixed(4)}g to ${recipientIdentifier}`,
+        });
+        
         // Record ledger entry
         const { vaultLedgerService } = await import('./vault-ledger-service');
         await vaultLedgerService.recordLedgerEntry({
@@ -17455,8 +17539,8 @@ export async function registerRoutes(
       // Create sender transaction (pending)
       // For FGPW: amountGold = FGPW grams sent, description includes receiver LGPW grams
       const txDescription = sourceWalletType === 'FGPW' && fgpwConversionResult
-        ? `Pending FGPW transfer to ${recipient.firstName} ${recipient.lastName} (${goldAmount.toFixed(4)}g FGPW @ ${(fgpwConversionResult.weightedValueUsd / goldAmount).toFixed(2)}/g = ${fgpwConversionResult.weightedValueUsd.toFixed(2)} -> ${receiverGoldGrams.toFixed(4)}g LGPW @ ${goldPrice.toFixed(2)}/g)`
-        : memo || `Pending transfer to ${recipient.firstName} ${recipient.lastName}`;
+        ? `Pending FGPW transfer to ${recipient!.firstName} ${recipient!.lastName} (${goldAmount.toFixed(4)}g FGPW @ ${(fgpwConversionResult.weightedValueUsd / goldAmount).toFixed(2)}/g = ${fgpwConversionResult.weightedValueUsd.toFixed(2)} -> ${receiverGoldGrams.toFixed(4)}g LGPW @ ${goldPrice.toFixed(2)}/g)`
+        : memo || `Pending transfer to ${recipient!.firstName} ${recipient!.lastName}`;
       
       const senderTx = await storage.createTransaction({
         userId: sender.id,
@@ -17486,9 +17570,20 @@ export async function registerRoutes(
         toStatus: 'Pending_Deposit',
         transactionId: senderTx.id,
         counterpartyUserId: recipient.id,
-        notes: `Pending gold transfer to ${recipient.firstName} ${recipient.lastName} (awaiting acceptance)`,
+        notes: `Pending gold transfer to ${recipient!.firstName} ${recipient!.lastName} (awaiting acceptance)`,
         createdBy: 'system',
       });
+      
+      if (sourceWalletType === 'LGPW') {
+        const { deductFromCerts: deductP2P } = await import('./cert-ledger-service');
+        await deductP2P(storage, {
+          userId: sender.id,
+          gramsToDeduct: goldAmount,
+          reason: 'P2P_SEND',
+          transactionId: senderTx.id,
+          notes: `P2P send: ${goldAmount.toFixed(4)}g to ${recipient!.firstName} ${recipient!.lastName}`,
+        });
+      }
       
       // Create pending peer transfer
       const pendingTransfer = await storage.createPeerTransfer({
@@ -18644,6 +18739,13 @@ export async function registerRoutes(
         notes: `Transfer rejected by ${recipient?.firstName || 'recipient'}${reason ? `: ${reason}` : ''}`,
         createdBy: 'system',
       });
+
+      try {
+        const { restoreToCert } = await import('./cert-ledger-service');
+        await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer rejected by ${recipient?.firstName || 'recipient'}`);
+      } catch (certErr) {
+        console.error('[CertLedger] Failed to restore certs on transfer rejection:', certErr);
+      }
       
       // Update transfer status
       await storage.updatePeerTransfer(transfer.id, {

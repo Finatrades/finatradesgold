@@ -139,7 +139,9 @@ import {
   type KycSubmissionVersion, type InsertKycSubmissionVersion,
   type KycSectionReview, type InsertKycSectionReview,
   type KycReasonCode, type InsertKycReasonCode,
-  type KycDecisionRecord, type InsertKycDecisionRecord
+  type KycDecisionRecord, type InsertKycDecisionRecord,
+  certificateEvents,
+  type CertificateEvent, type InsertCertificateEvent,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -500,6 +502,10 @@ export interface IStorage {
   getAllCertificates(): Promise<Certificate[]>;
   updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
   generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
+  getSpendableCertsByUser(userId: string): Promise<Certificate[]>;
+  createCertificateEvent(event: InsertCertificateEvent): Promise<CertificateEvent>;
+  getActiveDOCGramsByUser(userId: string): Promise<number>;
+  getCertificateEventsByCertId(certificateId: string): Promise<CertificateEvent[]>;
   
   // FinaPay - Platform Bank Accounts
   getPlatformBankAccount(id: string): Promise<PlatformBankAccount | undefined>;
@@ -1969,6 +1975,50 @@ export class DatabaseStorage implements IStorage {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     return `${prefix}-${timestamp}-${random}`;
+  }
+
+  async getSpendableCertsByUser(userId: string): Promise<Certificate[]> {
+    return await db.select().from(certificates).where(
+      and(
+        eq(certificates.userId, userId),
+        eq(certificates.status, 'Active'),
+        or(
+          eq(certificates.type, 'Digital Ownership'),
+          eq(certificates.type, 'Physical Storage')
+        ),
+        or(
+          sql`${certificates.remainingGrams} IS NULL`,
+          gt(certificates.remainingGrams, '0')
+        )
+      )
+    ).orderBy(certificates.issuedAt);
+  }
+
+  async createCertificateEvent(event: InsertCertificateEvent): Promise<CertificateEvent> {
+    const [created] = await db.insert(certificateEvents).values(event).returning();
+    return created;
+  }
+
+  async getActiveDOCGramsByUser(userId: string): Promise<number> {
+    const result = await db.select({
+      total: sql<string>`COALESCE(SUM(COALESCE(${certificates.remainingGrams}, ${certificates.goldGrams})), 0)`
+    }).from(certificates).where(
+      and(
+        eq(certificates.userId, userId),
+        eq(certificates.status, 'Active'),
+        or(
+          eq(certificates.type, 'Digital Ownership'),
+          eq(certificates.type, 'Physical Storage')
+        )
+      )
+    );
+    return parseFloat(result[0]?.total || '0');
+  }
+
+  async getCertificateEventsByCertId(certificateId: string): Promise<CertificateEvent[]> {
+    return await db.select().from(certificateEvents)
+      .where(eq(certificateEvents.certificateId, certificateId))
+      .orderBy(desc(certificateEvents.createdAt));
   }
 
   // Allocations (Physical Gold Tracking)
