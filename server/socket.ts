@@ -63,6 +63,22 @@ export function emitLedgerEventToUsers(userIds: string[], event: {
   userIds.forEach(userId => emitLedgerEvent(userId, event));
 }
 
+// Emit a new in-app notification in real-time to a specific user
+export function emitNotification(userId: string, notification: {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  link?: string | null;
+  read: boolean;
+  createdAt: string;
+}) {
+  if (ioInstance) {
+    ioInstance.to(userId).emit('notification:new', notification);
+    console.log(`[Socket] Emitted notification:new to user ${userId}: ${notification.title}`);
+  }
+}
+
 export function setupSocketIO(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {

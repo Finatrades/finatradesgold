@@ -13,7 +13,7 @@ import { io, Socket } from 'socket.io-client';
 import { 
   Send, Paperclip, ArrowLeft, MessageCircle, Users, 
   FileText, Image, Download, Loader2, Check, CheckCheck,
-  Shield, Lock, AlertTriangle, XCircle
+  Shield, Lock, AlertTriangle, XCircle, Video
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -755,6 +755,18 @@ Version 1.0 - Effective Date: January 2025
                   Close Room
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                title="Video conferencing — coming soon"
+                data-testid="button-video-call-coming-soon"
+                className="opacity-60 cursor-not-allowed"
+              >
+                <Video className="w-4 h-4 mr-1" />
+                Video Call
+                <Badge variant="secondary" className="ml-1 text-xs py-0 px-1">Soon</Badge>
+              </Button>
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 <span>{onlineUsers.length + 1} online</span>

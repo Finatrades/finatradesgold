@@ -84,7 +84,7 @@ import PDFDocument from "pdfkit";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { emitLedgerEvent, emitLedgerEventToUsers, getIO } from "./socket";
+import { emitLedgerEvent, emitLedgerEventToUsers, emitNotification, getIO } from "./socket";
 import {
   createBackup,
   listBackups,
@@ -534,6 +534,44 @@ function requirePermission(...requiredPermissions: string[]) {
     } catch (error) {
       console.error('[RBAC] Permission check failed:', error);
       return res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+}
+
+// Middleware to enforce 2FA verification on sensitive financial operations
+// Must be used AFTER ensureAuthenticated. Returns 403 with code mfa_required if the user
+// has MFA enabled but hasn't provided a valid OTP token in this request.
+function requireMfaVerification() {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.session?.userId;
+    if (!userId) return next(); // handled by ensureAuthenticated
+
+    try {
+      const user = await storage.getUser(userId);
+      // Only enforce MFA check if the user has it enabled
+      if (!user || !user.mfaEnabled) return next();
+
+      const mfaToken = req.headers['x-mfa-token'] as string | undefined;
+      if (!mfaToken) {
+        return res.status(403).json({ 
+          code: 'mfa_required',
+          message: 'Two-factor authentication is required for this operation. Please provide your authenticator code.'
+        });
+      }
+
+      // Verify the TOTP code
+      if (!user.mfaSecret) {
+        return res.status(403).json({ code: 'mfa_required', message: 'MFA setup incomplete.' });
+      }
+      const isValid = authenticator.verify({ token: mfaToken, secret: user.mfaSecret });
+      if (!isValid) {
+        return res.status(403).json({ code: 'mfa_invalid', message: 'Invalid authenticator code. Please try again.' });
+      }
+
+      next();
+    } catch (err) {
+      console.error('[MFA] Verification error:', err);
+      next(); // Fail open to not block legitimate users on transient errors
     }
   };
 }
@@ -4373,6 +4411,57 @@ export async function registerRoutes(
         lastChecked: new Date().toISOString(),
         details: 'Socket.IO server active'
       });
+
+      // Check SMTP Connectivity
+      const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+      const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+      const smtpStart = Date.now();
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const net = require('net');
+          const conn = net.createConnection({ host: smtpHost, port: smtpPort, timeout: 5000 });
+          conn.once('connect', () => { conn.destroy(); resolve(); });
+          conn.once('error', reject);
+          conn.once('timeout', () => { conn.destroy(); reject(new Error('SMTP connection timed out')); });
+        });
+        checks.push({
+          name: 'Email (SMTP)',
+          status: 'healthy',
+          responseTime: Date.now() - smtpStart,
+          lastChecked: new Date().toISOString(),
+          details: `Connected to ${smtpHost}:${smtpPort}`
+        });
+      } catch (smtpErr) {
+        checks.push({
+          name: 'Email (SMTP)',
+          status: 'degraded',
+          responseTime: Date.now() - smtpStart,
+          lastChecked: new Date().toISOString(),
+          details: `SMTP unreachable: ${smtpHost}:${smtpPort}`
+        });
+      }
+
+      // Check Gold Price API
+      try {
+        const goldStatus = await getGoldPriceStatus();
+        const cachedUntil = goldStatus.cachedUntil;
+        const isStale = !cachedUntil || cachedUntil < new Date();
+        checks.push({
+          name: 'Gold Price API',
+          status: goldStatus.configured ? (isStale ? 'degraded' : 'healthy') : 'degraded',
+          lastChecked: new Date().toISOString(),
+          details: goldStatus.configured
+            ? `Provider: ${goldStatus.provider} | Cache expires: ${cachedUntil ? cachedUntil.toISOString() : 'N/A'} | API calls today: ${goldStatus.apiUsage?.callsToday ?? 0}`
+            : 'Gold API not configured (using fallback price)'
+        });
+      } catch (goldErr) {
+        checks.push({
+          name: 'Gold Price API',
+          status: 'degraded',
+          lastChecked: new Date().toISOString(),
+          details: 'Gold price API check failed'
+        });
+      }
       
       // Get recent errors from system logs
       let recentErrorCount = 0;
@@ -5579,6 +5668,9 @@ export async function registerRoutes(
             });
 
             WingoldUserSyncService.onKycApproved(submission.userId).catch(err => console.error("[WingoldSync] KYC approval sync failed:", err));
+            import('./push-notifications').then(({ sendFinancialPushNotification }) => {
+              sendFinancialPushNotification(submission.userId, 'kyc_approved', {}).catch(err => console.error('[Push] KYC approved notification failed:', err));
+            });
 
             credentialIssuer.issueKycCredential(user).then(credential => {
               console.log("[VC] Verifiable credential issued on KYC approval for user:", submission.userId, "credentialId:", credential?.credentialId);
@@ -5602,6 +5694,10 @@ export async function registerRoutes(
               type: 'error',
               link: '/kyc',
               read: false,
+            });
+
+            import('./push-notifications').then(({ sendFinancialPushNotification }) => {
+              sendFinancialPushNotification(submission.userId, 'kyc_rejected', { reason: rejectionSummary }).catch(err => console.error('[Push] KYC rejected notification failed:', err));
             });
 
             WingoldUserSyncService.onKycRejected(submission.userId).catch(err => console.error("[WingoldSync] KYC rejection sync failed:", err));
@@ -8607,7 +8703,7 @@ export async function registerRoutes(
         }
       }
       
-      // Send gold sale email for Sell transactions
+      // Send gold sale email and push notification for Sell transactions
       if (transaction.type === 'Sell') {
         const sellUser = await storage.getUser(transaction.userId);
         if (sellUser?.email) {
@@ -8620,6 +8716,11 @@ export async function registerRoutes(
             amount_usd: usdAmount.toFixed(2),
             gold_price: goldPricePerGram.toFixed(2),
           }).catch(err => console.error('[Email] Gold sale notification failed:', err));
+          const { sendFinancialPushNotification } = await import('./push-notifications');
+          sendFinancialPushNotification(transaction.userId, 'gold_sold', {
+            goldGrams: goldAmount.toFixed(4),
+            amountUsd: usdAmount.toFixed(2),
+          }).catch(err => console.error('[Push] Gold sale notification failed:', err));
         }
       }
       
@@ -9919,7 +10020,7 @@ export async function registerRoutes(
   });
 
   // Create vault withdrawal request (user submission)
-  app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, requirePinVerificationForSession('withdraw_funds'), async (req, res) => {
+  app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, requireMfaVerification(), requirePinVerificationForSession('withdraw_funds'), async (req, res) => {
     try {
       // Always derive userId from the authenticated session — never trust the body
       const userId = req.session.userId!;
@@ -10161,39 +10262,30 @@ export async function registerRoutes(
           const totalValue = parseFloat(request.totalValueUsd);
           
           if (status === 'Completed') {
-            await sendEmail({
-              to: user.email,
-              subject: 'Withdrawal Completed - FinaVault',
-              html: `
-                <h2>Withdrawal Completed Successfully</h2>
-                <p>Dear ${user.firstName || 'Valued Customer'},</p>
-                <p>Your withdrawal request has been processed and completed.</p>
-                <table style="border-collapse: collapse; margin: 20px 0;">
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Gold Amount:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${goldGrams.toFixed(4)} grams</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Value:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">$${totalValue.toFixed(2)} USD</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Withdrawal Method:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.withdrawalMethod}</td></tr>
-                  ${transactionReference ? `<tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Transaction Ref:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${transactionReference}</td></tr>` : ''}
-                </table>
-                <p>Thank you for using Finatrades!</p>
-              `,
+            sendEmail(user.email, EMAIL_TEMPLATES.WITHDRAWAL_COMPLETED, {
+              user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Customer',
+              reference_number: request.referenceNumber,
+              gold_amount: goldGrams.toFixed(4),
+              total_value: totalValue.toFixed(2),
+              withdrawal_method: request.withdrawalMethod,
+              transaction_reference: transactionReference || 'N/A',
+            }, { userId: request.userId, recipientName: user.firstName || undefined }).catch(err => console.error('[Email] Withdrawal completed notification failed:', err));
+            // In-app notification
+            await storage.createNotification({
+              userId: request.userId,
+              title: 'Withdrawal Completed',
+              message: `Your withdrawal of ${goldGrams.toFixed(4)}g (ref: ${request.referenceNumber}) has been processed successfully.`,
+              type: 'success',
+              link: '/finavault',
             });
           } else if (status === 'Rejected') {
-            await sendEmail({
-              to: user.email,
-              subject: 'Withdrawal Request Update - FinaVault',
-              html: `
-                <h2>Withdrawal Request Update</h2>
-                <p>Dear ${user.firstName || 'Valued Customer'},</p>
-                <p>We regret to inform you that your withdrawal request could not be processed.</p>
-                <table style="border-collapse: collapse; margin: 20px 0;">
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Amount:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${goldGrams.toFixed(4)} grams ($${totalValue.toFixed(2)})</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reason:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${rejectionReason || 'Please contact support for details'}</td></tr>
-                </table>
-                <p>Your gold remains in your FinaPay wallet. If you have questions, please contact our support team.</p>
-              `,
-            });
+            sendEmail(user.email, EMAIL_TEMPLATES.TRANSACTION_FAILED, {
+              user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Customer',
+              transaction_type: 'Withdrawal',
+              reference_number: request.referenceNumber,
+              amount: `${goldGrams.toFixed(4)}g ($${totalValue.toFixed(2)})`,
+              reason: rejectionReason || 'Please contact support for details',
+            }, { userId: request.userId, recipientName: user.firstName || undefined }).catch(err => console.error('[Email] Withdrawal rejected notification failed:', err));
             // Create in-app notification
             await storage.createNotification({
               userId: request.userId,
@@ -12499,6 +12591,12 @@ export async function registerRoutes(
           type: 'bnsl',
           link: '/bnsl',
         });
+        import('./push-notifications').then(({ sendFinancialPushNotification }) => {
+          sendFinancialPushNotification(plan.userId, 'bnsl_payment_received', {
+            amountUsd: monetaryAmount.toFixed(2),
+            contractId: plan.contractId,
+          }).catch(err => console.error('[Push] BNSL payment received notification failed:', err));
+        });
       }
       
       res.json({ 
@@ -12638,6 +12736,11 @@ export async function registerRoutes(
           message: `Your BNSL plan '${plan.contractId}' has matured — ${totalReturnGrams.toFixed(4)}g (including return) credited to your wallet!`,
           type: 'bnsl',
           link: '/bnsl',
+        });
+        import('./push-notifications').then(({ sendFinancialPushNotification }) => {
+          sendFinancialPushNotification(plan.userId, 'bnsl_plan_completed', {
+            contractId: plan.contractId,
+          }).catch(err => console.error('[Push] BNSL plan completed notification failed:', err));
         });
       }
       
@@ -12802,6 +12905,27 @@ export async function registerRoutes(
         action: 'early_termination_settled',
         data: { goldGrams: finalGoldGrams, planId: plan.id, netValueUsd },
       });
+      
+      // Send email and in-app notification to user
+      const bnslUser = await storage.getUser(plan.userId);
+      if (bnslUser?.email) {
+        sendEmail(bnslUser.email, EMAIL_TEMPLATES.BNSL_EARLY_EXIT, {
+          user_name: `${bnslUser.firstName || ''} ${bnslUser.lastName || ''}`.trim() || 'Valued Customer',
+          contract_id: plan.contractId,
+          gold_credited: finalGoldGrams.toFixed(4),
+          net_value_usd: netValueUsd.toFixed(2),
+          market_price: price.toFixed(2),
+          admin_fee_usd: adminFeeUsd.toFixed(2),
+          penalty_usd: penaltyUsd.toFixed(2),
+        }, { userId: plan.userId, recipientName: bnslUser.firstName || undefined }).catch(err => console.error('[Email] BNSL early termination email failed:', err));
+        await storage.createNotification({
+          userId: plan.userId,
+          title: 'BNSL Early Termination Settled',
+          message: `Your BNSL plan ${plan.contractId} has been settled. ${finalGoldGrams.toFixed(4)}g gold has been credited to your FinaPay wallet.`,
+          type: 'success',
+          link: '/bnsl',
+        });
+      }
       
       res.json({ 
         success: true, 
@@ -13457,7 +13581,7 @@ export async function registerRoutes(
   });
   
   // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
-  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
+  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requireMfaVerification(), requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
     try {
       const { userId, amountUsd, ...bankDetails } = req.body;
       
@@ -14128,6 +14252,17 @@ export async function registerRoutes(
           link: `/finabridge/deals/${dealRoom.id}`,
           read: false,
         });
+        // Email to exporter
+        const exporterUser = await storage.getUser(proposal.exporterUserId);
+        if (exporterUser?.email) {
+          sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_ACCEPTED, {
+            user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
+            importer_name: importerName,
+            trade_ref: request.tradeRefId,
+            trade_value: parseFloat(request.tradeValueUsd).toLocaleString(),
+            deal_room_url: `/finabridge/deals/${dealRoom.id}`,
+          }, { userId: proposal.exporterUserId, recipientName: exporterUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge proposal accepted email failed:', err));
+        }
       } catch (e) { console.error('[Notification] Failed to create proposal accepted notification:', e); }
       
       res.json({ settlementHold, dealRoom, message: "Proposal accepted, gold locked, and deal room created" });
@@ -14337,6 +14472,17 @@ export async function registerRoutes(
         type: 'info',
         link: '/admin/finabridge',
       });
+
+      // Notify importer via email that a new proposal has been submitted
+      const importerUser = await storage.getUser(request.importerUserId);
+      if (importerUser?.email) {
+        sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_NEW_PROPOSAL, {
+          user_name: `${importerUser.firstName || ''} ${importerUser.lastName || ''}`.trim() || 'Valued Client',
+          exporter_name: exporterUser?.companyName || `${exporterUser?.firstName || ''} ${exporterUser?.lastName || ''}`.trim() || 'An Exporter',
+          trade_ref: request.tradeRefId,
+          quote_price: parseFloat(proposalData.quotePrice).toLocaleString(),
+        }, { userId: request.importerUserId, recipientName: importerUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge new proposal email failed:', err));
+      }
       
       res.json({ proposal });
     } catch (error) {
@@ -25366,7 +25512,7 @@ export async function registerRoutes(
         link: '/admin/finapay/buy-gold',
       });
       
-      // Send gold purchase email
+      // Send gold purchase email and push notification
       if (buyGoldUser?.email) {
         sendEmail(buyGoldUser.email, EMAIL_TEMPLATES.GOLD_PURCHASE, {
           user_name: `${buyGoldUser.firstName} ${buyGoldUser.lastName}`,
@@ -25374,6 +25520,11 @@ export async function registerRoutes(
           amount_usd: finalAmountUsd.toFixed(2),
           gold_price: goldPrice.toFixed(2),
         }).catch(err => console.error('[Email] Gold purchase notification failed:', err));
+        const { sendFinancialPushNotification } = await import('./push-notifications');
+        sendFinancialPushNotification(request.userId, 'gold_purchased', {
+          goldGrams: finalGoldGrams.toFixed(4),
+          amountUsd: finalAmountUsd.toFixed(2),
+        }).catch(err => console.error('[Push] Gold purchase notification failed:', err));
       }
       
       // Emit real-time updates
@@ -25484,6 +25635,18 @@ export async function registerRoutes(
         read: false,
       });
 
+      // Emit real-time WebSocket event so the client doesn't have to poll
+      if (userId && notification) {
+        emitNotification(userId, {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          link: notification.link,
+          read: notification.read,
+          createdAt: notification.createdAt instanceof Date ? notification.createdAt.toISOString() : String(notification.createdAt),
+        });
+      }
 
       res.json({ notification });
     } catch (error) {
@@ -26072,6 +26235,61 @@ export async function registerRoutes(
 
 
   // Send test email to verify template design
+  // Get all email templates (for template management UI)
+  app.get("/api/admin/email-templates", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const templates = await storage.getAllTemplates();
+      const emailTemplates = templates.filter(t => t.type === 'email');
+      res.json({ templates: emailTemplates });
+    } catch (error) {
+      console.error("Failed to get email templates:", error);
+      res.status(500).json({ message: "Failed to get email templates" });
+    }
+  });
+
+  // Get single email template by ID
+  app.get("/api/admin/email-templates/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const templates = await storage.getAllTemplates();
+      const template = templates.find(t => t.id === req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json({ template });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get template" });
+    }
+  });
+
+  // Update email template subject and/or body
+  app.patch("/api/admin/email-templates/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
+    try {
+      const { subject, body } = req.body;
+      if (!subject && !body) {
+        return res.status(400).json({ message: "At least one of subject or body must be provided" });
+      }
+      const updates: Record<string, any> = {};
+      if (subject) updates.subject = subject;
+      if (body) updates.body = body;
+      const updated = await storage.updateTemplate(req.params.id, updates);
+      if (!updated) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      await storage.createAuditLog({
+        entityType: "email_template",
+        entityId: req.params.id,
+        actionType: "update",
+        actor: req.session?.userId || 'admin',
+        actorRole: "admin",
+        details: `Email template updated: ${updated.name}`,
+      });
+      res.json({ template: updated, message: "Template updated successfully" });
+    } catch (error) {
+      console.error("Failed to update email template:", error);
+      res.status(500).json({ message: "Failed to update template" });
+    }
+  });
+
   app.post("/api/admin/email-test", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { email, templateType } = req.body;

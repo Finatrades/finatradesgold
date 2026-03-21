@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { useSocket } from './SocketContext';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'transaction';
 
@@ -35,6 +36,7 @@ export const useNotifications = () => {
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -61,11 +63,42 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user?.id]);
 
+  // Initial fetch on login
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    if (user?.id) {
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+    }
+  }, [user?.id, fetchNotifications]);
+
+  // Subscribe to real-time notification:new events via Socket.io
+  useEffect(() => {
+    if (!socket || !user?.id) return;
+
+    const handleNewNotification = (notification: any) => {
+      const mapped: Notification = {
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type as NotificationType,
+        timestamp: notification.createdAt,
+        read: notification.read ?? false,
+        link: notification.link,
+      };
+      setNotifications(prev => {
+        // Avoid duplicates
+        if (prev.some(n => n.id === mapped.id)) return prev;
+        return [mapped, ...prev];
+      });
+    };
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+    };
+  }, [socket, user?.id]);
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     if (!user?.id) {
@@ -96,7 +129,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         }),
       });
       if (response.ok) {
-        await fetchNotifications();
+        // Socket will push the new notification — no need to re-fetch
       }
     } catch (error) {
       console.error('Failed to add notification:', error);

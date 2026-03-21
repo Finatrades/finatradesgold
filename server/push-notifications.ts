@@ -21,6 +21,116 @@ export type TradePushEvent =
   | 'document_uploaded'
   | 'deal_room_message';
 
+export type FinancialPushEvent =
+  | 'gold_purchased'
+  | 'gold_sold'
+  | 'gold_transferred_sent'
+  | 'gold_transferred_received'
+  | 'withdrawal_requested'
+  | 'withdrawal_completed'
+  | 'withdrawal_rejected'
+  | 'kyc_approved'
+  | 'kyc_rejected'
+  | 'kyc_changes_requested'
+  | 'bnsl_payment_received'
+  | 'bnsl_payment_overdue'
+  | 'bnsl_plan_completed'
+  | 'bnsl_early_exit_settled'
+  | 'deposit_received';
+
+const FINANCIAL_PUSH_MESSAGES: Record<FinancialPushEvent, (data: Record<string, string>) => PushNotificationPayload> = {
+  gold_purchased: (data) => ({
+    title: 'Gold Purchase Confirmed',
+    body: `You successfully purchased ${data.goldGrams}g of gold for $${data.amountUsd}`,
+    data,
+    link: '/finapay',
+  }),
+  gold_sold: (data) => ({
+    title: 'Gold Sale Confirmed',
+    body: `You sold ${data.goldGrams}g of gold for $${data.amountUsd}`,
+    data,
+    link: '/finapay',
+  }),
+  gold_transferred_sent: (data) => ({
+    title: 'Gold Transfer Sent',
+    body: `You sent ${data.goldGrams}g gold to ${data.recipientName || 'recipient'}`,
+    data,
+    link: '/finapay',
+  }),
+  gold_transferred_received: (data) => ({
+    title: 'Gold Transfer Received',
+    body: `You received ${data.goldGrams}g gold from ${data.senderName || 'sender'}`,
+    data,
+    link: '/finapay',
+  }),
+  withdrawal_requested: (data) => ({
+    title: 'Withdrawal Request Submitted',
+    body: `Your withdrawal of ${data.goldGrams}g gold ($${data.amountUsd}) is under review`,
+    data,
+    link: '/finavault',
+  }),
+  withdrawal_completed: (data) => ({
+    title: 'Withdrawal Completed',
+    body: `Your withdrawal of ${data.goldGrams}g gold has been processed successfully`,
+    data,
+    link: '/finavault',
+  }),
+  withdrawal_rejected: (data) => ({
+    title: 'Withdrawal Rejected',
+    body: `Your withdrawal request ${data.referenceNumber} was not approved. ${data.reason ? `Reason: ${data.reason}` : ''}`,
+    data,
+    link: '/finavault',
+  }),
+  kyc_approved: (data) => ({
+    title: 'KYC Approved',
+    body: 'Your identity verification has been approved. All platform features are now unlocked.',
+    data,
+    link: '/profile',
+  }),
+  kyc_rejected: (data) => ({
+    title: 'KYC Rejected',
+    body: `Your KYC submission was rejected. ${data.reason ? `Reason: ${data.reason}` : 'Please resubmit your documents.'}`,
+    data,
+    link: '/kyc',
+  }),
+  kyc_changes_requested: (data) => ({
+    title: 'KYC Changes Requested',
+    body: 'Additional information is required for your KYC verification. Please review and update.',
+    data,
+    link: '/kyc',
+  }),
+  bnsl_payment_received: (data) => ({
+    title: 'BNSL Payment Received',
+    body: `Your BNSL margin payment of $${data.amountUsd} for plan ${data.contractId} was received`,
+    data,
+    link: '/bnsl',
+  }),
+  bnsl_payment_overdue: (data) => ({
+    title: 'BNSL Payment Overdue',
+    body: `Your BNSL payment of $${data.amountUsd} for plan ${data.contractId} is overdue. Please pay promptly.`,
+    data,
+    link: '/bnsl',
+  }),
+  bnsl_plan_completed: (data) => ({
+    title: 'BNSL Plan Completed',
+    body: `Congratulations! Your BNSL plan ${data.contractId} is complete. Your gold is now available.`,
+    data,
+    link: '/bnsl',
+  }),
+  bnsl_early_exit_settled: (data) => ({
+    title: 'BNSL Early Exit Settled',
+    body: `Your BNSL plan ${data.contractId} early termination has been settled. ${data.goldGrams}g credited.`,
+    data,
+    link: '/bnsl',
+  }),
+  deposit_received: (data) => ({
+    title: 'Deposit Received',
+    body: `Your deposit of $${data.amountUsd} has been received and is being processed`,
+    data,
+    link: '/finapay',
+  }),
+};
+
 const TRADE_PUSH_MESSAGES: Record<TradePushEvent, (data: Record<string, string>) => PushNotificationPayload> = {
   new_proposal: (data) => ({
     title: 'New Trade Proposal',
@@ -226,4 +336,19 @@ export async function sendBulkTradePushNotifications(
   }
 
   return { totalSent, totalTokens };
+}
+
+export async function sendFinancialPushNotification(
+  userId: string,
+  event: FinancialPushEvent,
+  data: Record<string, string>
+): Promise<{ sent: boolean; tokens: number }> {
+  const payloadGenerator = FINANCIAL_PUSH_MESSAGES[event];
+  if (!payloadGenerator) {
+    console.error(`[Push] Unknown financial event: ${event}`);
+    return { sent: false, tokens: 0 };
+  }
+
+  const payload = payloadGenerator(data);
+  return sendPushNotification(userId, payload);
 }
