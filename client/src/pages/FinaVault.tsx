@@ -10,6 +10,7 @@ import RequestDetails from '@/components/finavault/RequestDetails';
 import CashOutForm from '@/components/finavault/CashOutForm';
 import VaultActivityList from '@/components/finavault/VaultActivityList';
 import CertificatesView from '@/components/finavault/CertificatesView';
+import GoldOverviewCard from '@/components/finavault/GoldOverviewCard';
 import { DepositRequest, DepositRequestStatus } from '@/types/finavault';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -1305,88 +1306,9 @@ export default function FinaVault() {
           </div>
         )}
 
-        {/* FinaVault Wallet Card - Only show when user has vault activity */}
+        {/* Gold Overview Card — 5-tile breakdown */}
         {hasVaultActivity && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Database className="w-4 h-4 text-purple-600" />
-            Vault Balance
-          </h3>
-
-          {/* Stat Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Available Balance */}
-            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-available-balance">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
-                  <Database className="w-3 h-3 text-green-600" />
-                </div>
-                <span className="text-xs text-muted-foreground">Available</span>
-              </div>
-              <p className="text-lg font-bold text-green-600">{availableGold.toFixed(4)}g</p>
-              <p className="text-xs text-muted-foreground">≈ ${availableGoldValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-            </div>
-
-            {/* Locked in BNSL */}
-            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-bnsl-locked">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Clock className="w-3 h-3 text-purple-600" />
-                </div>
-                <span className="text-xs text-muted-foreground">BNSL</span>
-              </div>
-              <p className="text-lg font-bold text-purple-600">{bnslLockedGrams.toFixed(4)}g</p>
-              <p className="text-xs text-muted-foreground">≈ ${(bnslLockedGrams * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-            </div>
-
-            {/* Locked in Trade Finance */}
-            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-trade-locked">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Briefcase className="w-3 h-3 text-blue-600" />
-                </div>
-                <span className="text-xs text-muted-foreground">Trades</span>
-              </div>
-              <p className="text-lg font-bold text-blue-600">{finabridgeLockedGrams.toFixed(4)}g</p>
-              <p className="text-xs text-muted-foreground">≈ ${(finabridgeLockedGrams * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-            </div>
-
-            {/* Total Value */}
-            <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm" data-testid="card-total-value">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <TrendingUp className="w-3 h-3 text-gray-600" />
-                </div>
-                <span className="text-xs text-muted-foreground">Total</span>
-              </div>
-              <p className="text-lg font-bold">{totalVaultGold.toFixed(4)}g</p>
-              <p className="text-xs text-muted-foreground">≈ ${(totalVaultGold * goldPricePerGram).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-            </div>
-          </div>
-
-          {/* Dual-Wallet Breakdown (LGPW/FGPW) */}
-          {(mpgwAvailableGrams > 0 || fpgwAvailableGrams > 0) && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-xs text-muted-foreground mb-2">Wallet Type</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-amber-50 rounded-lg p-2 border border-amber-100" data-testid="card-mpgw-balance">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                    <span className="text-[10px] font-medium text-amber-700">LGPW</span>
-                  </div>
-                  <p className="text-sm font-bold text-amber-600">{mpgwAvailableGrams.toFixed(4)}g</p>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-2 border border-blue-100" data-testid="card-fpgw-balance">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                    <span className="text-[10px] font-medium text-blue-700">FGPW</span>
-                  </div>
-                  <p className="text-sm font-bold text-blue-600">{fpgwAvailableGrams.toFixed(4)}g</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          <GoldOverviewCard ownership={ownership} goldPricePerGram={goldPricePerGram} />
         )}
 
         {/* Main Content */}

@@ -9137,7 +9137,56 @@ export async function registerRoutes(
     try {
       const allCertificates = await storage.getUserCertificates(req.params.userId);
       const activeCertificates = await storage.getUserActiveCertificates(req.params.userId);
-      res.json({ certificates: allCertificates, activeCertificates });
+
+      // Enrich BLC (BNSL Lock) certificates with plan data
+      const blcPlanIds = allCertificates
+        .filter(c => c.type === 'BNSL Lock' && c.bnslPlanId)
+        .map(c => c.bnslPlanId as string);
+
+      let bnslPlanMap: Record<string, any> = {};
+      if (blcPlanIds.length > 0) {
+        const plans = await db.select({
+          id: bnslPlansTable.id,
+          templateName: bnslPlansTable.templateName,
+          tenorMonths: bnslPlansTable.tenorMonths,
+          agreedMarginAnnualPercent: bnslPlansTable.agreedMarginAnnualPercent,
+          maturityDate: bnslPlansTable.maturityDate,
+          goldSoldGrams: bnslPlansTable.goldSoldGrams,
+          totalMarginComponentUsd: bnslPlansTable.totalMarginComponentUsd,
+          status: bnslPlansTable.status,
+        }).from(bnslPlansTable).where(inArray(bnslPlansTable.id, blcPlanIds));
+        plans.forEach(p => { bnslPlanMap[p.id] = p; });
+      }
+
+      // Enrich TLC (Trade Lock) certificates with trade case data
+      const tlcCaseIds = allCertificates
+        .filter(c => c.type === 'Trade Lock' && c.tradeCaseId)
+        .map(c => c.tradeCaseId as string);
+
+      let tradeCaseMap: Record<string, any> = {};
+      if (tlcCaseIds.length > 0) {
+        const cases = await db.select({
+          id: tradeCases.id,
+          caseNumber: tradeCases.caseNumber,
+          commodityType: tradeCases.commodityType,
+          companyName: tradeCases.companyName,
+          status: tradeCases.status,
+        }).from(tradeCases).where(inArray(tradeCases.id, tlcCaseIds));
+        cases.forEach(c => { tradeCaseMap[c.id] = c; });
+      }
+
+      // Merge enrichment data
+      const enrichedCertificates = allCertificates.map(cert => {
+        if (cert.type === 'BNSL Lock' && cert.bnslPlanId && bnslPlanMap[cert.bnslPlanId]) {
+          return { ...cert, bnslPlan: bnslPlanMap[cert.bnslPlanId] };
+        }
+        if (cert.type === 'Trade Lock' && cert.tradeCaseId && tradeCaseMap[cert.tradeCaseId]) {
+          return { ...cert, tradeCase: tradeCaseMap[cert.tradeCaseId] };
+        }
+        return cert;
+      });
+
+      res.json({ certificates: enrichedCertificates, activeCertificates });
     } catch (error) {
       res.status(400).json({ message: "Failed to get certificates" });
     }

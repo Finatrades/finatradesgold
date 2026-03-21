@@ -11,6 +11,25 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
+interface BnslPlanSummary {
+  id: string;
+  templateName: string | null;
+  tenorMonths: number;
+  agreedMarginAnnualPercent: string;
+  maturityDate: string;
+  goldSoldGrams: string;
+  totalMarginComponentUsd: string;
+  status: string;
+}
+
+interface TradeCaseSummary {
+  id: string;
+  caseNumber: string;
+  commodityType: string;
+  companyName: string;
+  status: string;
+}
+
 interface Certificate {
   id: string;
   certificateNumber: string;
@@ -18,7 +37,7 @@ interface Certificate {
   transactionId: string | null;
   vaultHoldingId: string | null;
   type: string;
-  status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred';
+  status: 'Active' | 'Updated' | 'Cancelled' | 'Transferred' | 'Locked' | 'Released' | 'Superseded';
   goldGrams: string;
   remainingGrams: string | null;
   goldPriceUsdPerGram: string | null;
@@ -37,6 +56,8 @@ interface Certificate {
   expiresAt: string | null;
   cancelledAt: string | null;
   parentCertificateId: string | null;
+  bnslPlan?: BnslPlanSummary;
+  tradeCase?: TradeCaseSummary;
 }
 
 export interface CertificateDetailModalProps {
@@ -428,6 +449,12 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             {/* BLC maturity panel */}
             {isBnslLock && (
               <div className="mt-4 mx-auto max-w-sm rounded-xl border p-4 text-left space-y-2" style={{ borderColor: certTheme.border, backgroundColor: `${certTheme.accent}10` }}>
+                {certificate.bnslPlan?.templateName && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Plan</span>
+                    <span className="font-semibold text-right" style={{ color: certTheme.accentMid }}>{certificate.bnslPlan.templateName}</span>
+                  </div>
+                )}
                 {certificate.goldPriceUsdPerGram && (
                   <div className="flex justify-between text-sm">
                     <span className="text-white/50">Lock Price</span>
@@ -436,7 +463,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                 )}
                 {maturityFormatted && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Maturity Date</span>
+                    <span className="text-white/50">Matures On</span>
                     <span className="font-semibold" style={{ color: certTheme.accentMid }}>{maturityFormatted}</span>
                   </div>
                 )}
@@ -445,6 +472,23 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                     <span className="text-white/50">Days Remaining</span>
                     <span className="font-bold" style={{ color: daysToMaturity <= 30 ? '#f87171' : certTheme.accentMid }}>
                       {daysToMaturity === 0 ? 'Matured' : `${daysToMaturity} days`}
+                    </span>
+                  </div>
+                )}
+                {certificate.bnslPlan?.agreedMarginAnnualPercent && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Annual Return</span>
+                    <span className="font-semibold" style={{ color: '#4ade80' }}>
+                      +{parseFloat(certificate.bnslPlan.agreedMarginAnnualPercent).toFixed(1)}% p.a.
+                      {certificate.bnslPlan.tenorMonths && ` (${certificate.bnslPlan.tenorMonths}mo plan)`}
+                    </span>
+                  </div>
+                )}
+                {certificate.bnslPlan?.totalMarginComponentUsd && (
+                  <div className="flex justify-between text-sm border-t pt-2" style={{ borderColor: certTheme.border }}>
+                    <span className="text-white/50">Expected Return</span>
+                    <span className="font-bold" style={{ color: '#4ade80' }}>
+                      +${parseFloat(certificate.bnslPlan.totalMarginComponentUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                     </span>
                   </div>
                 )}
@@ -665,9 +709,24 @@ export default function CertificatesView() {
   const certificates: Certificate[] = data?.certificates || [];
   const activeCertificates: Certificate[] = data?.activeCertificates || [];
 
+  const [showSupersededOwnership, setShowSupersededOwnership] = useState(false);
+
   const OWNERSHIP_TYPES = ['Digital Ownership', 'Physical Storage'];
   const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
   const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
+
+  // Identify the single "Current" cert per ownership type
+  const currentOwnershipIds = new Set<string>();
+  (['Digital Ownership', 'Physical Storage'] as const).forEach(type => {
+    const activesOfType = ownershipCerts
+      .filter(c => c.type === type && c.status === 'Active')
+      .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+    if (activesOfType[0]) currentOwnershipIds.add(activesOfType[0].id);
+  });
+
+  // Split ownership certs into current and historical
+  const currentOwnershipCerts = ownershipCerts.filter(c => currentOwnershipIds.has(c.id));
+  const historicalOwnershipCerts = ownershipCerts.filter(c => !currentOwnershipIds.has(c.id));
 
   const openCertificate = (cert: Certificate) => {
     setSelectedCertificate(cert);
@@ -811,11 +870,23 @@ export default function CertificatesView() {
     );
   }
 
-  const renderCertRow = (cert: Certificate) => {
+  const statusBadge = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === 'active') return <Badge className="text-[10px] bg-green-600 text-white border-0">Active</Badge>;
+    if (s === 'locked') return <Badge className="text-[10px] bg-amber-500 text-white border-0">Locked</Badge>;
+    if (s === 'released') return <Badge variant="secondary" className="text-[10px] bg-gray-200 text-gray-600 border-0">Released</Badge>;
+    if (s === 'transferred') return <Badge className="text-[10px] bg-blue-500 text-white border-0">Transferred</Badge>;
+    if (s === 'superseded' || s === 'updated') return <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-600 border-0">Superseded</Badge>;
+    if (s === 'cancelled') return <Badge variant="secondary" className="text-[10px] bg-gray-200 text-gray-500 border-0">Cancelled</Badge>;
+    return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
+  };
+
+  const renderCertRow = (cert: Certificate, isCurrent?: boolean) => {
     const isStorage = cert.type === 'Physical Storage';
     const isBnsl = cert.type === 'BNSL Lock';
     const isConv = cert.type === 'Conversion';
     const isTrans = cert.type === 'Transfer';
+    const isTrade = cert.type === 'Trade Lock' || cert.type === 'Trade Release';
     const goldGrams = parseFloat(cert.remainingGrams || cert.goldGrams || '0');
     const originalGrams = parseFloat(cert.goldGrams || '0');
     const hasPartialSurrender = goldGrams < originalGrams;
@@ -829,17 +900,22 @@ export default function CertificatesView() {
       : cert.type === 'Trade Release' ? 'Trade Release'
       : cert.type;
 
-    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-gray-100' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : 'bg-purple-100';
-    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-gray-500' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : 'text-fuchsia-600';
-    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-gray-600' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : 'text-fuchsia-600';
+    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-gray-100' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : isTrade ? 'bg-teal-100' : 'bg-purple-100';
+    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-gray-500' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-600' : 'text-fuchsia-600';
+    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-gray-600' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-700' : 'text-fuchsia-600';
 
     const expiresAt = cert.expiresAt ? new Date(cert.expiresAt) : null;
     const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
 
+    const planName = cert.bnslPlan?.templateName;
+    const expectedReturn = cert.bnslPlan?.totalMarginComponentUsd
+      ? `+$${parseFloat(cert.bnslPlan.totalMarginComponentUsd).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD return`
+      : null;
+
     return (
       <div
         key={cert.id}
-        className={`p-4 rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4 ${cert.status !== 'Active' ? 'opacity-60 bg-gray-50' : 'bg-white'}`}
+        className={`p-4 rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4 ${isCurrent ? 'bg-white border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-white' : 'opacity-70 bg-gray-50'}`}
         onClick={() => openCertificate(cert)}
         data-testid={`certificate-card-${cert.id}`}
       >
@@ -852,9 +928,10 @@ export default function CertificatesView() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`font-semibold text-sm ${labelColor}`}>{label}</span>
-            <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-[10px] ${cert.status === 'Active' ? 'bg-green-600' : ''}`}>
-              {cert.status}
-            </Badge>
+            {statusBadge(cert.status)}
+            {isCurrent && (
+              <Badge className="text-[10px] bg-purple-100 text-purple-700 border border-purple-300">Current</Badge>
+            )}
             {isBnsl && daysLeft !== null && daysLeft <= 30 && (
               <Badge variant="outline" className="text-[10px] border-orange-400 text-orange-600 bg-orange-50">
                 {daysLeft === 0 ? 'Matured' : `${daysLeft}d left`}
@@ -868,10 +945,16 @@ export default function CertificatesView() {
           ) : (
             <p className="text-muted-foreground text-xs truncate mt-0.5">{cert.certificateNumber}</p>
           )}
+          {isBnsl && planName && (
+            <p className="text-xs text-indigo-600 mt-0.5 font-medium">{planName}{expectedReturn && <span className="text-green-600 ml-2">{expectedReturn}</span>}</p>
+          )}
           {isBnsl && expiresAt && (
-            <p className="text-xs text-indigo-500 mt-0.5">
+            <p className="text-xs text-indigo-400 mt-0.5">
               Matures {expiresAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
+          )}
+          {isTrade && cert.tradeCase && (
+            <p className="text-xs text-teal-600 mt-0.5">Case #{cert.tradeCase.caseNumber} · {cert.tradeCase.commodityType}</p>
           )}
         </div>
         <div className="text-right shrink-0">
@@ -944,7 +1027,20 @@ export default function CertificatesView() {
             </div>
           ) : (
             <div className="space-y-2">
-              {ownershipCerts.map(renderCertRow)}
+              {currentOwnershipCerts.map(cert => renderCertRow(cert, true))}
+              {historicalOwnershipCerts.length > 0 && (
+                <>
+                  <button
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-gray-700 transition-colors"
+                    onClick={() => setShowSupersededOwnership(v => !v)}
+                    data-testid="btn-toggle-ownership-history"
+                  >
+                    {showSupersededOwnership ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {showSupersededOwnership ? 'Hide' : 'Show'} previous versions ({historicalOwnershipCerts.length})
+                  </button>
+                  {showSupersededOwnership && historicalOwnershipCerts.map(cert => renderCertRow(cert, false))}
+                </>
+              )}
             </div>
           )}
         </CardContent>
