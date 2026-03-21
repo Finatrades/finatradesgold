@@ -911,7 +911,11 @@ export default function VaultActivityList() {
               <p className="font-bold text-amber-600">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               {tx.goldPriceUsdPerGram && (
                 <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
-                  <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
+                  {(tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')) ? (
+                    <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
+                  ) : (
+                    <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs mr-1">Rate</span>
+                  )}
                   ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
                 </p>
               )}
