@@ -76,9 +76,20 @@ export default function Dashboard() {
   const dashData = useDashboardData();
   const { totals, goldPrice, finaBridge, isLoading } = dashData;
   const bnslPlans = dashData.bnslPlans || [];
-  const certificates = dashData.certificates;
   const notifications = dashData.notifications || [];
-  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
+  // FinaPay transactions only for the Recent Transactions widget
+  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 5, module: 'finapay' });
+  // Direct certificate fetch from the certificates model
+  const { data: certsData } = useQuery<{ certificates: any[] }>({
+    queryKey: ['certificates-dashboard', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/certificates/${user?.id}`, { credentials: 'include' });
+      if (!res.ok) return { certificates: [] };
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 30000,
+  });
   const { data: fpgwLocksData } = useFpgwLocks(user?.id);
   const activeFpgwLocks = fpgwLocksData?.locks ?? [];
   const { showOnboarding, completeOnboarding } = useOnboarding();
@@ -253,6 +264,12 @@ export default function Dashboard() {
       t.id?.toLowerCase().includes(activitySearch.toLowerCase())
     ).slice(0, 5);
   }, [transactions, activitySearch]);
+
+  const recentCertsList = useMemo(() => {
+    return [...(certsData?.certificates || [])]
+      .sort((a, b) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
+      .slice(0, 5);
+  }, [certsData]);
 
 
   const getTransactionAmount = (tx: { amountUsd: string | null; amountGold: string | null }) => {
@@ -1659,7 +1676,7 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="px-4 pb-4 space-y-1">
-              {certificates && (certificates.recent || []).length > 0 ? (certificates.recent || []).slice(0, 5).map((cert, i) => (
+              {recentCertsList.length > 0 ? recentCertsList.map((cert, i) => (
                   <motion.div
                     key={cert.id}
                     className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-100/60 hover:shadow-sm transition-all duration-200 cursor-pointer group"
