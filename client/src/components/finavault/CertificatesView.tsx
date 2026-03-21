@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer, ChevronDown, ChevronUp, Info, Lock } from 'lucide-react';
+import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer, ChevronDown, ChevronUp, Info, Lock, Link2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -810,6 +810,24 @@ export default function CertificatesView() {
   const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
   const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
 
+  // Build pairing map: link Digital Ownership ↔ BNSL Lock certs issued within 2 seconds with same gold_grams
+  const linkedCertMap = new Map<string, Certificate>(); // certId → linked cert
+  const bnslLockCerts = certificates.filter(c => c.type === 'BNSL Lock');
+  const digitalOwnershipCerts = certificates.filter(c => c.type === 'Digital Ownership');
+  for (const blc of bnslLockCerts) {
+    const blcTime = new Date(blc.issuedAt).getTime();
+    const blcGrams = parseFloat(blc.goldGrams || '0');
+    const matched = digitalOwnershipCerts.find(doc => {
+      const docTime = new Date(doc.issuedAt).getTime();
+      const docGrams = parseFloat(doc.goldGrams || '0');
+      return Math.abs(blcTime - docTime) < 2000 && Math.abs(blcGrams - docGrams) < 0.0001;
+    });
+    if (matched) {
+      linkedCertMap.set(blc.id, matched);
+      linkedCertMap.set(matched.id, blc);
+    }
+  }
+
   // "Current" = Active leaf nodes in the ownership lineage chain.
   // A cert is a leaf if no other Active cert lists it as a parent (i.e. it hasn't been superseded).
   const activeOwnershipParentIds = new Set(
@@ -978,6 +996,7 @@ export default function CertificatesView() {
   };
 
   const renderCertRow = (cert: Certificate, isCurrent?: boolean, compact?: boolean) => {
+    const linkedCert = linkedCertMap.get(cert.id);
     const isStorage = cert.type === 'Physical Storage';
     const isBnsl = cert.type === 'BNSL Lock';
     const isConv = cert.type === 'Conversion';
@@ -1051,6 +1070,25 @@ export default function CertificatesView() {
           )}
           {isTrade && cert.tradeCase && (
             <p className="text-xs text-teal-600 mt-0.5">Case #{cert.tradeCase.caseNumber} · {cert.tradeCase.commodityType}</p>
+          )}
+          {/* Linked cert relationship badge */}
+          {linkedCert && (
+            <button
+              className="flex items-center gap-1 mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full border w-fit transition-colors hover:opacity-80"
+              style={
+                isBnsl
+                  ? { color: '#7c3aed', borderColor: '#c4b5fd', backgroundColor: '#f5f3ff' }
+                  : { color: '#4f46e5', borderColor: '#a5b4fc', backgroundColor: '#eef2ff' }
+              }
+              onClick={e => { e.stopPropagation(); openCertificate(linkedCert); }}
+              data-testid={`link-related-cert-${linkedCert.id}`}
+              title={`View linked ${linkedCert.type} certificate`}
+            >
+              <Link2 className="w-2.5 h-2.5 shrink-0" />
+              {isBnsl
+                ? `Ownership Cert: ${linkedCert.certificateNumber}`
+                : `BNSL Lock: ${linkedCert.certificateNumber}`}
+            </button>
           )}
         </div>
         <div className="text-right shrink-0">
