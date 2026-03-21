@@ -1080,17 +1080,11 @@ export async function registerRoutes(
 
       // Process certificates for summary
       const activeCerts = (certificates || []).filter((c: any) => c.status === 'Active');
-      // Dashboard widget shows only ownership-type certificates (Digital Ownership, Physical Storage).
-      // Activity records (Conversion, BNSL Lock, Transfer, Trade Lock, Trade Release) belong to the full CertificatesView page only.
-      const OWNERSHIP_CERT_TYPES = ['Digital Ownership', 'Physical Storage'];
-      const ownershipCerts = (certificates || []).filter((c: any) => OWNERSHIP_CERT_TYPES.includes(c.type));
-      const recentCerts = ownershipCerts.length > 0
-        ? [...ownershipCerts]
-            .sort((a: any, b: any) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
-            .slice(0, 5)
-        : [...(certificates || [])]
-            .sort((a: any, b: any) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
-            .slice(0, 5);
+      // Dashboard widget shows the 5 most recently issued certificates of any type,
+      // so users see the certs that reflect their latest activity (swaps, locks, ownership transfers, etc.)
+      const recentCerts = [...(certificates || [])]
+        .sort((a: any, b: any) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
+        .slice(0, 5);
 
       // Get latest transaction ID for sync versioning (authoritative source)
       const latestTransaction = allTransactions.find((t: any) => t.status === 'Completed');

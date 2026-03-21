@@ -245,8 +245,10 @@ export default function Dashboard() {
   const pendingDeposits = (pendingDepositsData?.requests || []).filter(r => r.status === 'Pending');
 
   const filteredActivities = useMemo(() => {
-    if (!activitySearch) return transactions.slice(0, 5);
-    return transactions.filter(t => 
+    const EXCLUDED_TYPES = ['Swap'];
+    const nonSwap = transactions.filter(t => !EXCLUDED_TYPES.includes(t.type));
+    if (!activitySearch) return nonSwap.slice(0, 5);
+    return nonSwap.filter(t => 
       t.type?.toLowerCase().includes(activitySearch.toLowerCase()) ||
       t.id?.toLowerCase().includes(activitySearch.toLowerCase())
     ).slice(0, 5);
