@@ -448,9 +448,9 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Right: Gold ARC gauge — wallet + finacard + bnsl only */}
+                  {/* Right: Gold ARC gauge — wallet grams only (matches balance shown) */}
                   {(() => {
-                    const arcGrams = (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0) + (totals.bnslWalletGoldGrams || 0);
+                    const arcGrams = totals.walletGoldGrams || 0;
                     const maxGrams = 500;
                     const clampedGrams = Math.min(arcGrams, maxGrams);
                     const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
