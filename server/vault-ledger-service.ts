@@ -743,11 +743,9 @@ export class VaultLedgerService {
     const [bnslWallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
     const [bridgeWallet] = await db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId));
     
-    // Get existing ownership summary to preserve LGPW/FGPW split
+    // Get existing ownership summary to preserve FGPW (price-locked) split only
     const [existingSummary] = await db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId));
     
-    // Preserve the existing LGPW and FGPW values if they exist
-    const mpgwAvailableGrams = parseFloat(existingSummary?.mpgwAvailableGrams || '0');
     const fpgwAvailableGrams = parseFloat(existingSummary?.fpgwAvailableGrams || '0');
     const fpgwPendingGrams = parseFloat(existingSummary?.fpgwPendingGrams || '0');
     const fpgwLockedBnslGrams = parseFloat(existingSummary?.fpgwLockedBnslGrams || '0');
@@ -755,6 +753,9 @@ export class VaultLedgerService {
     const fpgwWeightedAvgPriceUsd = existingSummary?.fpgwWeightedAvgPriceUsd || null;
 
     const finaPayGrams = parseFloat(wallet?.goldGrams || '0');
+    // Derive LGPW (market-price) portion from actual wallet minus FGPW (price-locked) portion.
+    // This prevents drift from cross-module transfers that update the wallet but not this summary.
+    const mpgwAvailableGrams = Math.max(0, finaPayGrams - fpgwAvailableGrams - fpgwPendingGrams);
     const bnslAvailable = parseFloat(bnslWallet?.availableGoldGrams || '0');
     const bnslLocked = parseFloat(bnslWallet?.lockedGoldGrams || '0');
     const bridgeAvailable = parseFloat(bridgeWallet?.availableGoldGrams || '0');
