@@ -407,31 +407,32 @@ export default function Dashboard() {
             {/* Hero Balance Card */}
             <motion.div
               variants={itemVariants}
-              className="relative rounded-[24px] overflow-hidden"
+              className="relative rounded-[28px] overflow-hidden glass-hero card-3d"
               data-testid="card-total-balance"
             >
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #1e0a3c 0%, #3b1278 40%, #1a0a4a 70%, #0d0620 100%)' }} />
-              <div className="absolute inset-0 mesh-gradient opacity-20" />
-              <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, #9f3fff, transparent)', transform: 'translate(35%, -35%)' }} />
-              <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #D4AF37, transparent)', transform: 'translate(-20%, 25%)' }} />
-              <div className="absolute top-1/2 left-1/2 w-80 h-40 opacity-10" style={{ background: 'radial-gradient(ellipse, #bf7fff, transparent)', transform: 'translate(-50%, -50%)' }} />
-              <div className="holo-shimmer absolute inset-0" />
+              {/* Light mesh orbs */}
+              <div className="absolute inset-0 mesh-light pointer-events-none" />
+              <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(-20%, 25%)' }} />
+              {/* Top accent stripe */}
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
 
               <div className="relative z-10 p-7">
                 <div className="flex items-start justify-between mb-2">
                   {/* Left: balance info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                        <Sparkles className="w-4 h-4 text-amber-300" />
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.18)' }}>
+                        <Sparkles className="w-4 h-4 text-purple-600" />
                       </div>
-                      <span className="text-[13px] text-white/70 font-medium">Wallet Balance</span>
-                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
-                        {balanceVisible ? <Eye className="w-4 h-4 text-white/50" /> : <EyeOff className="w-4 h-4 text-white/50" />}
+                      <span className="text-[13px] text-gray-500 font-semibold tracking-wide">Wallet Balance</span>
+                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-purple-50 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
+                        {balanceVisible ? <Eye className="w-4 h-4 text-gray-400" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
                       </button>
                     </div>
                     <motion.p
-                      className="text-[36px] font-extrabold text-white tracking-tight leading-none"
+                      className="text-[38px] font-extrabold tracking-tight leading-none"
+                      style={{ background: 'linear-gradient(135deg, #5b21b6, #7c3aed, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.6, delay: 0.2 }}
@@ -439,12 +440,12 @@ export default function Dashboard() {
                     >
                       {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
                     </motion.p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-400/20">
-                        <TrendingUp className="w-3 h-3 text-emerald-400" />
-                        <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
+                    <div className="flex items-center gap-2 mt-2.5">
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.20)' }}>
+                        <TrendingUp className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-700 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
                       </div>
-                      <span className="text-white/40 text-[11px]">available in wallet</span>
+                      <span className="text-gray-400 text-[11px] font-medium">available in wallet</span>
                     </div>
                   </div>
 
@@ -493,10 +494,10 @@ export default function Dashboard() {
                             </linearGradient>
                           </defs>
                           {/* Grams label — masked when balance hidden */}
-                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#FFD700">
+                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#B8860B">
                             {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
-                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.5)">
+                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(71,85,105,0.75)">
                             Total Gold
                           </text>
                         </svg>
@@ -511,11 +512,11 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <button onClick={() => setActiveModal('deposit')} className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:shadow-[0_0_24px_rgba(159,63,255,0.5)] hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #9f3fff 0%, #7c3aed 50%, #6d28d9 100%)', border: '1px solid rgba(255,255,255,0.15)' }} data-testid="button-add-funds">
+                  <button onClick={() => setActiveModal('deposit')} className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%)', boxShadow: '0 4px 20px rgba(124,58,237,0.30), 0 1px 0 rgba(255,255,255,0.15) inset' }} data-testid="button-add-funds">
                     <Plus className="w-4 h-4" />
                     Add Funds
                   </button>
-                  <button onClick={() => setShowTransferModal(true)} className="flex-1 flex items-center justify-center gap-2 text-white/90 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:bg-white/20 hover:shadow-lg active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(12px)' }} data-testid="button-int-transfer">
+                  <button onClick={() => setShowTransferModal(true)} className="flex-1 flex items-center justify-center gap-2 text-purple-700 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'rgba(124,58,237,0.08)', border: '1.5px solid rgba(124,58,237,0.22)', backdropFilter: 'blur(12px)' }} data-testid="button-int-transfer">
                     <Send className="w-4 h-4" />
                     Int. Transfer
                   </button>
@@ -524,7 +525,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Gold Wallet Conversion Card */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6">
+            <motion.div variants={itemVariants} className="glass-card-elevated card-3d-subtle rounded-[20px] p-6">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -759,22 +760,25 @@ export default function Dashboard() {
             </Link>
 
             {/* Referral Card */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} data-testid="card-referral">
-              <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #a855f7, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden glass-indigo card-3d-subtle" data-testid="card-referral">
+              <div className="absolute inset-0 mesh-indigo pointer-events-none" />
+              <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08), transparent)', transform: 'translate(-20%, 25%)' }} />
+              {/* Top accent */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)' }} />
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
-                      <Gift className="w-4 h-4 text-amber-300" />
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))', border: '1px solid rgba(99,102,241,0.20)' }}>
+                      <Gift className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-[12px] font-bold text-white">Refer & Earn</p>
-                      <p className="text-[9px] text-white/50">Invite friends, earn rewards</p>
+                      <p className="text-[12px] font-bold text-gray-800">Refer & Earn</p>
+                      <p className="text-[9px] text-gray-400 font-medium">Invite friends, earn rewards</p>
                     </div>
                   </div>
                   <Link href="/referrals">
-                    <button className="text-[10px] text-purple-300 hover:text-white transition-colors font-semibold flex items-center gap-0.5" data-testid="link-referral-full">
+                    <button className="text-[10px] text-indigo-600 hover:text-indigo-800 transition-colors font-bold flex items-center gap-0.5" data-testid="link-referral-full">
                       View all <ChevronRight className="w-3 h-3" />
                     </button>
                   </Link>
@@ -782,9 +786,9 @@ export default function Dashboard() {
                 {referralData?.referralCode ? (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0 bg-white/10 rounded-xl px-3 py-2.5 border border-white/10">
-                        <p className="text-[9px] text-white/50 mb-0.5">Your referral code</p>
-                        <p className="text-[13px] font-extrabold text-white tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
+                      <div className="flex-1 min-w-0 rounded-xl px-3 py-2.5" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.14)' }}>
+                        <p className="text-[9px] text-gray-400 font-medium mb-0.5">Your referral code</p>
+                        <p className="text-[13px] font-extrabold text-indigo-800 tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
                       </div>
                       <button
                         onClick={async () => {
@@ -793,34 +797,35 @@ export default function Dashboard() {
                           setCopiedRef(true);
                           setTimeout(() => setCopiedRef(false), 2000);
                         }}
-                        className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors shrink-0"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0"
+                        style={{ background: 'rgba(99,102,241,0.09)', border: '1px solid rgba(99,102,241,0.18)' }}
                         data-testid="button-copy-referral"
                       >
-                        {copiedRef ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-white/70" />}
+                        {copiedRef ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-indigo-500" />}
                       </button>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex-1 bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
+                      <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.10)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <Users className="w-3 h-3 text-purple-400" />
-                          <p className="text-[9px] text-white/50">Referred</p>
+                          <Users className="w-3 h-3 text-indigo-500" />
+                          <p className="text-[9px] text-gray-400 font-medium">Referred</p>
                         </div>
-                        <p className="text-[16px] font-extrabold text-white">{referralData.stats?.totalReferrals ?? 0}</p>
+                        <p className="text-[16px] font-extrabold text-indigo-800">{referralData.stats?.totalReferrals ?? 0}</p>
                       </div>
-                      <div className="flex-1 bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
+                      <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.12)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <p className="text-[9px] text-white/50">Earned</p>
+                          <TrendingUp className="w-3 h-3 text-emerald-600" />
+                          <p className="text-[9px] text-gray-400 font-medium">Earned</p>
                         </div>
-                        <p className="text-[16px] font-extrabold text-white">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
+                        <p className="text-[16px] font-extrabold text-emerald-700">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-2">
-                    <p className="text-[11px] text-white/40">No referral code yet</p>
+                    <p className="text-[11px] text-gray-400">No referral code yet</p>
                     <Link href="/referrals">
-                      <button className="mt-2 px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition-colors">
+                      <button className="mt-2 px-4 py-1.5 rounded-xl text-white text-[11px] font-bold transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                         Get your code
                       </button>
                     </Link>
@@ -851,23 +856,25 @@ export default function Dashboard() {
 
               {/* ── BNSL card — Quick Join or Yield Summary ── */}
               {totals.activeBnslPlans === 0 ? (
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
-                  <div className="absolute inset-0 holo-shimmer" />
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
+                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden h-full glass-teal card-3d-subtle" data-testid="card-quick-bnsl">
+                  <div className="absolute inset-0 mesh-teal pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
+                  <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(0,0)' }} />
+                  {/* Top accent */}
+                  <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
-                            <Zap className="w-3.5 h-3.5 text-amber-300" />
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(13,148,136,0.14), rgba(16,185,129,0.08))', border: '1px solid rgba(13,148,136,0.22)' }}>
+                            <Zap className="w-3.5 h-3.5 text-teal-600" />
                           </div>
-                          <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
+                          <p className="text-[13px] font-extrabold text-gray-800">Gold Yield Plan</p>
                         </div>
-                        <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
+                        <p className="text-[10px] text-gray-500 font-medium">Earn passive income on your gold</p>
                       </div>
-                      <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
-                        <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
+                      <div className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
+                        <span className="text-[11px] font-extrabold text-amber-700">Up to 8%</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 mb-4 flex-1">
@@ -877,8 +884,8 @@ export default function Dashboard() {
                         { icon: '✦', text: 'Flexible 3 – 12 month terms' },
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <span className="text-amber-300 text-[10px]">{item.icon}</span>
-                          <span className="text-[11px] text-white/75">{item.text}</span>
+                          <span className="text-teal-500 text-[10px]">{item.icon}</span>
+                          <span className="text-[11px] text-gray-600 font-medium">{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -897,70 +904,72 @@ export default function Dashboard() {
                 </motion.div>
               ) : (
                 <Link href="/bnsl">
-                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
-                    <div className="absolute inset-0 holo-shimmer" />
-                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-teal card-3d-subtle" data-testid="card-bnsl-summary">
+                    <div className="absolute inset-0 mesh-teal pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
+                    {/* Top accent */}
+                    <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
                     <div className="relative z-10 h-full flex flex-col">
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
-                          <Zap className="w-3 h-3 text-amber-300" />
-                          <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
+                        <span className="text-[12px] text-teal-800 font-bold tracking-wide">BNSL Yield Plans</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(13,148,136,0.10)', border: '1px solid rgba(13,148,136,0.20)' }}>
+                          <Zap className="w-3 h-3 text-teal-600" />
+                          <span className="text-[10px] font-bold text-teal-700">{totals.activeBnslPlans || 0} Active</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 mb-4">
                         <div className="relative flex-shrink-0 flex flex-col items-center">
                           <svg width="76" height="44" viewBox="0 0 76 44">
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="6" strokeLinecap="round" />
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#fcd34d" strokeWidth="6" strokeLinecap="round"
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(13,148,136,0.18)" strokeWidth="6" strokeLinecap="round" />
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#D4AF37" strokeWidth="6" strokeLinecap="round"
                               strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
                               strokeDashoffset="0"
                             />
                           </svg>
                           <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
-                            <span className="text-[13px] font-extrabold text-white leading-none">{Math.round(bnslPlanProgress)}%</span>
-                            <span className="text-[8px] text-white/50 font-medium leading-none mt-0.5">complete</span>
+                            <span className="text-[13px] font-extrabold text-teal-800 leading-none">{Math.round(bnslPlanProgress)}%</span>
+                            <span className="text-[8px] text-gray-400 font-medium leading-none mt-0.5">complete</span>
                           </div>
                         </div>
                         <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
                           <div>
-                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Locked Gold</span>
-                            <p className="text-[15px] font-extrabold text-white leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Locked Gold</span>
+                            <p className="text-[15px] font-extrabold text-gray-800 leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Total Earned</span>
-                            <p className="text-[15px] font-extrabold text-amber-300 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Total Earned</span>
+                            <p className="text-[15px] font-extrabold text-amber-700 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Yield Rate</span>
-                            <p className="text-[13px] font-bold text-emerald-300 leading-tight">
+                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Yield Rate</span>
+                            <p className="text-[13px] font-bold text-emerald-700 leading-tight">
                               {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
                             </p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Next Payout</span>
-                            <p className="text-[13px] font-bold text-white leading-tight">{bnslDaysToNextPayout}d</p>
+                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Next Payout</span>
+                            <p className="text-[13px] font-bold text-gray-800 leading-tight">{bnslDaysToNextPayout}d</p>
                           </div>
                         </div>
                       </div>
                       <div className="mb-3 flex-1">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-white/60 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
-                          <span className="text-[10px] text-amber-200 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
+                          <span className="text-[10px] text-gray-500 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
+                          <span className="text-[10px] text-amber-700 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
                         </div>
-                        <div className="w-full h-2 bg-white/15 rounded-full overflow-hidden">
+                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.12)' }}>
                           <motion.div
                             className="h-full rounded-full"
-                            style={{ background: 'linear-gradient(90deg, #fbbf24, #fcd34d)' }}
+                            style={{ background: 'linear-gradient(90deg, #0d9488, #D4AF37)' }}
                             initial={{ width: 0 }}
                             animate={{ width: `${bnslQuarterProgress}%` }}
                             transition={{ duration: 1, ease: 'easeOut' }}
                           />
                         </div>
-                        <p className="text-[9px] text-white/40 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
+                        <p className="text-[9px] text-gray-400 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
                       </div>
-                      <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
-                        <span className="text-[11px] font-medium">View plans</span>
+                      <div className="flex items-center gap-1.5 text-teal-600 group-hover:text-teal-800 transition-colors">
+                        <span className="text-[11px] font-semibold">View plans</span>
                         <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
@@ -970,23 +979,26 @@ export default function Dashboard() {
 
               {/* ── FinaBridge Quick Trade Card ── */}
               <motion.div variants={itemVariants} data-testid="card-quick-trade" className="h-full">
-                <div className="relative rounded-[20px] p-5 overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0f2057 0%, #1e3a8a 55%, #1e40af 100%)' }}>
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 15% 85%, #60a5fa 0%, transparent 55%), radial-gradient(circle at 85% 15%, #3b82f6 0%, transparent 55%)' }} />
+                <div className="relative rounded-[20px] p-5 overflow-hidden h-full glass-indigo card-3d-subtle">
+                  <div className="absolute inset-0 mesh-indigo pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
+                  {/* Top accent */}
+                  <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6)' }} />
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-blue-400/20 flex items-center justify-center border border-blue-400/30">
-                          <ArrowLeftRight className="w-4 h-4 text-blue-300" />
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(99,102,241,0.08))', border: '1px solid rgba(59,130,246,0.20)' }}>
+                          <ArrowLeftRight className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-white font-extrabold text-[14px] leading-tight">Trade Finance</h3>
-                          <p className="text-blue-300/80 text-[10px]">FinaBridge Platform</p>
+                          <h3 className="text-gray-800 font-extrabold text-[14px] leading-tight">Trade Finance</h3>
+                          <p className="text-blue-500 text-[10px] font-medium">FinaBridge Platform</p>
                         </div>
                       </div>
                       {finaBridge.activeCases > 0 && (
                         <div className="text-right">
-                          <span className="text-[22px] font-extrabold text-white leading-none">{finaBridge.activeCases}</span>
-                          <p className="text-[10px] text-blue-300/80 leading-tight">active trades</p>
+                          <span className="text-[22px] font-extrabold text-blue-700 leading-none">{finaBridge.activeCases}</span>
+                          <p className="text-[10px] text-gray-400 leading-tight">active trades</p>
                         </div>
                       )}
                     </div>
@@ -997,7 +1009,7 @@ export default function Dashboard() {
                           'Global buyer-seller matching network',
                           'Secure gold escrow & deal room',
                         ].map(txt => (
-                          <li key={txt} className="flex items-center gap-2 text-[11px] text-blue-100/90">
+                          <li key={txt} className="flex items-center gap-2 text-[11px] text-gray-600">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                             {txt}
                           </li>
@@ -1005,13 +1017,13 @@ export default function Dashboard() {
                       </ul>
                     ) : (
                       <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
-                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
-                          <p className="text-[10px] text-blue-300/80">Volume</p>
-                          <p className="text-[14px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
+                        <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                          <p className="text-[10px] text-gray-400 font-medium">Volume</p>
+                          <p className="text-[14px] font-extrabold text-blue-800">${formatNumber(finaBridge.tradeVolume)}</p>
                         </div>
-                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
-                          <p className="text-[10px] text-blue-300/80">Gold Locked</p>
-                          <p className="text-[14px] font-extrabold text-white">{formatNumber(finaBridge.goldGrams)}g</p>
+                        <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                          <p className="text-[10px] text-gray-400 font-medium">Gold Locked</p>
+                          <p className="text-[14px] font-extrabold text-blue-800">{formatNumber(finaBridge.goldGrams)}g</p>
                         </div>
                       </div>
                     )}
@@ -1019,8 +1031,8 @@ export default function Dashboard() {
                       {finaBridge.activeCases === 0 ? (
                         <button
                           onClick={() => setShowTradeModal(true)}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
-                          style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
+                          style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 3px 14px rgba(59,130,246,0.28)' }}
                           data-testid="button-quick-trade-create"
                         >
                           <Landmark className="w-3.5 h-3.5" />
@@ -1029,8 +1041,8 @@ export default function Dashboard() {
                       ) : (
                         <Link href="/finabridge" className="flex-1">
                           <button
-                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
-                            style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
+                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
+                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 3px 14px rgba(59,130,246,0.28)' }}
                             data-testid="button-quick-trade-view"
                           >
                             <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -1040,7 +1052,8 @@ export default function Dashboard() {
                       )}
                       <Link href="/finabridge">
                         <button
-                          className="flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold text-blue-300 border border-blue-700/50 hover:border-blue-500 transition-all"
+                          className="flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold text-blue-600 transition-all hover:scale-[1.02]"
+                          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.18)' }}
                           data-testid="button-quick-trade-manage"
                         >
                           Manage

@@ -686,6 +686,94 @@ input[type="number"] {
   width: 100% !important;
 }
 
+/* ============================================
+   3D CARD HOVER — CSS perspective tilt
+   ============================================ */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.45s ease;
+  will-change: transform;
+}
+.card-3d:hover {
+  transform: perspective(900px) rotateX(-3deg) rotateY(3deg) translateY(-6px) scale(1.005);
+  box-shadow:
+    16px 24px 64px rgba(124, 58, 237, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.card-3d-subtle:hover {
+  transform: perspective(900px) rotateX(-1.5deg) rotateY(1.5deg) translateY(-4px) scale(1.003);
+  box-shadow:
+    8px 16px 48px rgba(124, 58, 237, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+   INSTITUTIONAL GLASS CARD VARIANTS
+   ============================================ */
+
+/* Hero / Wallet balance — light violet mesh glass */
+.glass-hero {
+  background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(248,244,255,0.94) 50%, rgba(255,253,255,0.96) 100%);
+  backdrop-filter: blur(40px) saturate(220%) brightness(1.04);
+  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.04);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  box-shadow:
+    0 12px 56px rgba(124, 58, 237, 0.10),
+    0 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(124, 58, 237, 0.06);
+}
+
+/* Institutional blue glass — referral, bridge */
+.glass-indigo {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(239,246,255,0.92) 50%, rgba(238,242,255,0.95) 100%);
+  backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
+  border: 1px solid rgba(99, 102, 241, 0.14);
+  box-shadow:
+    0 10px 48px rgba(99, 102, 241, 0.09),
+    0 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(99, 102, 241, 0.06);
+}
+
+/* Institutional teal glass — BNSL, yield */
+.glass-teal {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,253,250,0.92) 50%, rgba(236,253,245,0.95) 100%);
+  backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
+  border: 1px solid rgba(13, 148, 136, 0.14);
+  box-shadow:
+    0 10px 48px rgba(13, 148, 136, 0.09),
+    0 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(13, 148, 136, 0.06);
+}
+
+/* Animated mesh background for light hero cards */
+.mesh-light {
+  background-image:
+    radial-gradient(at 10% 20%, rgba(139,92,246,0.07) 0%, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(212,175,55,0.07) 0%, transparent 50%),
+    radial-gradient(at 50% 5%, rgba(168,85,247,0.05) 0%, transparent 55%),
+    radial-gradient(at 80% 10%, rgba(99,102,241,0.05) 0%, transparent 45%);
+}
+
+/* Mesh for teal cards */
+.mesh-teal {
+  background-image:
+    radial-gradient(at 10% 20%, rgba(13,148,136,0.08) 0%, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(212,175,55,0.06) 0%, transparent 50%),
+    radial-gradient(at 50% 5%, rgba(5,150,105,0.05) 0%, transparent 55%);
+}
+
+/* Mesh for indigo/referral cards */
+.mesh-indigo {
+  background-image:
+    radial-gradient(at 10% 20%, rgba(99,102,241,0.08) 0%, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%),
+    radial-gradient(at 60% 5%, rgba(168,85,247,0.05) 0%, transparent 55%);
+}
+
 /* ===== MOBILE APP-LIKE ENHANCEMENTS ===== */
 
 /* Safe Area Support for Notch Devices */
