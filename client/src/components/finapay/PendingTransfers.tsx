@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
   ArrowDownLeft,
@@ -29,6 +30,7 @@ import {
   Timer,
   Paperclip,
   Download,
+  ChevronDown,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -96,6 +98,7 @@ interface DepositRequest {
 export default function PendingTransfers() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(true);
   const [selectedTransfer, setSelectedTransfer] =
     useState<PendingTransfer | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<GoldRequest | null>(
@@ -525,7 +528,11 @@ export default function PendingTransfers() {
 
   return (
     <Card className="border-amber-200 bg-amber-50/50">
-      <CardHeader className="pb-3">
+      <CardHeader
+        className="pb-3 cursor-pointer select-none"
+        onClick={() => setIsOpen((o) => !o)}
+        data-testid="pending-items-header"
+      >
         <CardTitle className="text-lg font-bold flex items-center gap-2 text-amber-700">
           <Clock className="w-5 h-5" />
           Pending Items
@@ -535,8 +542,25 @@ export default function PendingTransfers() {
           >
             {totalPendingItems}
           </Badge>
+          <motion.div
+            className="ml-auto"
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <ChevronDown className="w-5 h-5 text-amber-600" />
+          </motion.div>
         </CardTitle>
       </CardHeader>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            key="pending-content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: "hidden" }}
+          >
       <CardContent className="space-y-4">
         {incomingTransfers.length > 0 && (
           <div id="finapay-pending-incoming" className="space-y-3">
@@ -897,6 +921,9 @@ export default function PendingTransfers() {
           </div>
         )}
       </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Dialog
         open={(!!selectedTransfer || !!selectedRequest) && !!actionType}
