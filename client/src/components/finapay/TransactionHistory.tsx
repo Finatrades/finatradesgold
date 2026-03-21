@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types/finapay';
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, ShoppingCart, Banknote, RefreshCcw, History, Filter, Download, Search, MoreHorizontal, DollarSign, FileText, FileSpreadsheet, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,10 +29,16 @@ interface TransactionHistoryProps {
   ledgerEntries?: LedgerEntry[];
 }
 
+const PAGE_SIZE = 10;
+
 export default function TransactionHistory({ transactions, goldPrice = 85, ledgerEntries = [] }: TransactionHistoryProps) {
   const [filter, setFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Reset to page 1 whenever filter changes
+  useEffect(() => { setCurrentPage(1); }, [filter]);
   
   const toggleExpanded = (id: string) => {
     setExpandedRows(prev => {
@@ -154,6 +160,28 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
     ? combinedTransactions 
     : combinedTransactions.filter(t => t.type === filter);
 
+  // Pre-compute running balances for ALL filtered transactions so pagination doesn't break balance calc
+  const txWithBalances = useMemo(() => {
+    let runningBalance = 0;
+    return filteredTransactions.map(tx => {
+      const isMpgwToFpgw = tx.type === 'Lock Gold Price (LGPW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
+      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → LGPW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
+      const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
+      const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
+      const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
+      const isCompleted = tx.status?.toLowerCase() === 'completed';
+      if (isCompleted) {
+        if (isCredit) runningBalance += tx.amountUsd;
+        else if (isDebit) runningBalance -= tx.amountUsd;
+      }
+      return { tx, isSwap, isDebit, isCredit, isMpgwToFpgw, isFpgwToMpgw, balance: isCompleted ? runningBalance : null };
+    });
+  }, [filteredTransactions]);
+
+  const totalPages = Math.max(1, Math.ceil(txWithBalances.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTx = txWithBalances.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+
   return (
     <>
       <Card className="bg-white shadow-sm border border-border h-full flex flex-col">
@@ -243,23 +271,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
               <div>
                 {/* Mobile Card Layout */}
                 <div className="md:hidden divide-y divide-border">
-                  {(() => {
-                    let runningBalance = 0;
-                    return filteredTransactions.map((tx, index) => {
-                      const isMpgwToFpgw = tx.type === 'Lock Gold Price (LGPW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
-                      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → LGPW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
-                      const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
-                      const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
-                      const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
-                      const isCompleted = tx.status?.toLowerCase() === 'completed';
-                      
-                      // Only include COMPLETED transactions in running balance
-                      if (isCompleted) {
-                        if (isCredit) runningBalance += tx.amountUsd;
-                        else if (isDebit) runningBalance -= tx.amountUsd;
-                      }
-                      const currentBalance = isCompleted ? runningBalance : null;
-                      
+                  {paginatedTx.map(({ tx, isSwap, isDebit, isCredit, isMpgwToFpgw, isFpgwToMpgw, balance: currentBalance }, index) => {
                       const transactionLabel = isMpgwToFpgw
                         ? 'Price Protection Activated'
                         : isFpgwToMpgw
@@ -324,8 +336,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                           </div>
                         </div>
                       );
-                    });
-                  })()}
+                    })}
                 </div>
 
                 {/* Desktop Table - Hidden on mobile */}
@@ -343,21 +354,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {(() => {
-                      let runningBalance = 0;
-                      return filteredTransactions.map((tx, index) => {
-                      const isMpgwToFpgw = tx.type === 'Lock Gold Price (LGPW → FPGW)' || (tx.type === 'Swap' && (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')));
-                      const isFpgwToMpgw = tx.type === 'Unlock Gold Price (FPGW → LGPW)' || (tx.type === 'Swap' && (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW') || tx.description?.includes('FGPW to LGPW unlock')));
-                      const isSwap = tx.type === 'Swap' || isMpgwToFpgw || isFpgwToMpgw;
-                      const isDebit = !isSwap && (tx.type === 'Send' || tx.type === 'Sell' || tx.type === 'Withdrawal');
-                      const isCredit = !isSwap && (tx.type === 'Receive' || tx.type === 'Buy' || tx.type === 'Deposit');
-                      const isCompleted = tx.status?.toLowerCase() === 'completed';
-                      
-                      if (isCompleted) {
-                        if (isCredit) runningBalance += tx.amountUsd;
-                        else if (isDebit) runningBalance -= tx.amountUsd;
-                      }
-                      const currentBalance = isCompleted ? runningBalance : null;
+                    {paginatedTx.map(({ tx, isSwap, isDebit, isCredit, isMpgwToFpgw, isFpgwToMpgw, balance: currentBalance }, index) => {
                       
                       const transactionLabel = isMpgwToFpgw
                         ? 'Price Protection Activated'
@@ -537,13 +534,79 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                         })}
                         </React.Fragment>
                       );
-                    });
-                    })()}
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </ScrollArea>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background">
+              <p className="text-xs text-muted-foreground">
+                Showing {((safeCurrentPage - 1) * PAGE_SIZE) + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, txWithBalances.length)} of {txWithBalances.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                  data-testid="page-first"
+                >
+                  <ChevronLeft className="h-3 w-3" /><ChevronLeft className="h-3 w-3 -ml-2" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  data-testid="page-prev"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const start = Math.max(1, Math.min(safeCurrentPage - 2, totalPages - 4));
+                  const page = start + i;
+                  return page <= totalPages ? (
+                    <Button
+                      key={page}
+                      variant={page === safeCurrentPage ? 'default' : 'outline'}
+                      size="icon"
+                      className={`h-7 w-7 text-xs ${page === safeCurrentPage ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                      data-testid={`page-${page}`}
+                    >
+                      {page}
+                    </Button>
+                  ) : null;
+                })}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  data-testid="page-next"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  data-testid="page-last"
+                >
+                  <ChevronRight className="h-3 w-3" /><ChevronRight className="h-3 w-3 -ml-2" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
