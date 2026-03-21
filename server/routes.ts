@@ -1679,9 +1679,9 @@ export async function registerRoutes(
             await storage.createNotification({
               userId: plan.userId,
               title: 'BNSL Plan Has Matured',
-              message: `Your BNSL plan (${plan.contractId}) has reached its maturity date and is now pending final settlement. Our team will process it shortly.`,
-              type: 'info',
-              link: '/finavault',
+              message: `Your BNSL plan '${plan.contractId}' has reached its maturity date and is now pending final settlement. Our team will process it shortly.`,
+              type: 'bnsl',
+              link: '/bnsl',
               read: false,
             });
           } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
@@ -8651,7 +8651,8 @@ export async function registerRoutes(
             userId: depositReq.userId,
             title: 'Deposit Request Rejected',
             message: `Your deposit request (${depositReq.referenceNumber}) has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
-            type: 'warning',
+            type: 'transaction',
+            link: '/finapay',
             read: false,
           });
           
@@ -8732,7 +8733,8 @@ export async function registerRoutes(
               userId: cryptoReq.userId,
               title: 'Crypto Deposit Rejected',
               message: `Your crypto deposit has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
-              type: 'warning',
+              type: 'transaction',
+              link: '/finapay',
               read: false,
             });
             
@@ -12537,10 +12539,11 @@ export async function registerRoutes(
         });
         
         // Create bell notification
+        const totalReturnGrams = goldGramsToCredit + parseFloat(plan.paidMarginGrams || '0');
         await storage.createNotification({
           userId: plan.userId,
-          title: 'BNSL Plan Completed',
-          message: `Your BNSL plan ${plan.contractId} has matured! ${goldGramsToCredit.toFixed(4)}g has been credited to your wallet.`,
+          title: 'BNSL Plan Matured',
+          message: `Your BNSL plan '${plan.contractId}' has matured — ${totalReturnGrams.toFixed(4)}g (including return) credited to your wallet!`,
           type: 'bnsl',
           link: '/bnsl',
         });
@@ -14021,6 +14024,20 @@ export async function registerRoutes(
         status: 'active',
       });
       
+      // Notify exporter that their proposal was accepted
+      try {
+        const importerUser = await storage.getUser(request.importerUserId);
+        const importerName = importerUser ? `${importerUser.firstName} ${importerUser.lastName}`.trim() || importerUser.companyName || 'Importer' : 'Importer';
+        await storage.createNotification({
+          userId: proposal.exporterUserId,
+          title: 'Trade Proposal Accepted',
+          message: `Your trade proposal was accepted by ${importerName} — deal room is open`,
+          type: 'trade',
+          link: `/finabridge/deals/${dealRoom.id}`,
+          read: false,
+        });
+      } catch (e) { console.error('[Notification] Failed to create proposal accepted notification:', e); }
+      
       res.json({ settlementHold, dealRoom, message: "Proposal accepted, gold locked, and deal room created" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
@@ -14040,6 +14057,21 @@ export async function registerRoutes(
       
       // Remove from forwarded proposals
       await storage.removeForwardedProposal(proposal.id);
+      
+      // Notify exporter that importer declined their proposal
+      try {
+        const tradeReq = await storage.getTradeRequest(proposal.tradeRequestId);
+        if (tradeReq) {
+          await storage.createNotification({
+            userId: proposal.exporterUserId,
+            title: 'Trade Proposal Declined',
+            message: `Your trade proposal for trade ${tradeReq.tradeRefId} was not selected by the importer`,
+            type: 'trade',
+            link: '/finabridge',
+            read: false,
+          });
+        }
+      } catch (e) { console.error('[Notification] Failed to create importer decline notification:', e); }
       
       res.json({ message: "Proposal declined successfully" });
     } catch (error) {
@@ -14363,6 +14395,22 @@ export async function registerRoutes(
       }
       
       const updated = await storage.updateTradeProposal(req.params.id, { status: 'Rejected' });
+      
+      // Notify exporter that their proposal was declined
+      try {
+        const tradeReq = await storage.getTradeRequest(proposal.tradeRequestId);
+        if (tradeReq) {
+          await storage.createNotification({
+            userId: proposal.exporterUserId,
+            title: 'Trade Proposal Declined',
+            message: `Your trade proposal for trade ${tradeReq.tradeRefId} has been declined`,
+            type: 'trade',
+            link: '/finabridge',
+            read: false,
+          });
+        }
+      } catch (e) { console.error('[Notification] Failed to create proposal rejected notification:', e); }
+      
       res.json({ proposal: updated });
     } catch (error) {
       res.status(400).json({ message: "Failed to reject proposal" });
@@ -14431,6 +14479,21 @@ export async function registerRoutes(
       
       // Update request status
       await storage.updateTradeRequest(req.params.requestId, { status: 'Awaiting Importer' });
+      
+      // Notify importer that proposals are ready for review
+      try {
+        const importerRequest = await storage.getTradeRequest(req.params.requestId);
+        if (importerRequest) {
+          await storage.createNotification({
+            userId: importerRequest.importerUserId,
+            title: 'New Trade Proposals Ready for Review',
+            message: `You have ${proposalIds.length} new trade proposal${proposalIds.length > 1 ? 's' : ''} to review for trade ${importerRequest.tradeRefId} — review now`,
+            type: 'trade',
+            link: '/finabridge',
+            read: false,
+          });
+        }
+      } catch (e) { console.error('[Notification] Failed to create proposal forwarded notification:', e); }
       
       res.json({ message: `${proposalIds.length} proposals forwarded to importer` });
     } catch (error) {
@@ -14793,6 +14856,16 @@ export async function registerRoutes(
       // Update trade request status
       await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
       
+      // Notify both parties that the deal is completed
+      try {
+        const completedTradeRef = tradeRequest?.tradeRefId || req.params.id;
+        const completedDealRoom = await storage.getDealRoomByTradeRequest(hold.tradeRequestId);
+        const completedDealLink = completedDealRoom ? `/finabridge/deals/${completedDealRoom.id}` : '/finabridge';
+        const completedMsg = `Trade deal ${completedTradeRef} has been completed successfully`;
+        await storage.createNotification({ userId: hold.importerUserId, title: 'Trade Deal Completed', message: completedMsg, type: 'trade', link: completedDealLink, read: false });
+        await storage.createNotification({ userId: hold.exporterUserId, title: 'Trade Deal Completed', message: completedMsg, type: 'trade', link: completedDealLink, read: false });
+      } catch (e) { console.error('[Notification] Failed to create deal completed notification:', e); }
+      
       // Generate Trade Release Certificates for both importer and exporter (non-blocking)
       const releasedGoldAmount = lockedAmount;
       const releasePrice = tradeValue > 0 ? tradeValue / releasedGoldAmount : 0;
@@ -15081,6 +15154,20 @@ export async function registerRoutes(
         details: `Dispute raised: ${subject}`,
       });
       
+      // Notify both parties about the dispute
+      try {
+        const disputeDealLink = dealRoomId ? `/finabridge/deals/${dealRoomId}` : '/finabridge';
+        const disputeMsg = `A dispute has been raised on trade ${tradeRequest.tradeRefId}: "${subject}"`;
+        // Notify importer
+        await storage.createNotification({ userId: tradeRequest.importerUserId, title: 'Trade Dispute Raised', message: disputeMsg, type: 'trade', link: disputeDealLink, read: false });
+        // Notify exporter — find them via accepted proposals
+        const disputeProposals = await storage.getRequestProposals(tradeRequestId);
+        const acceptedProp = disputeProposals.find(p => p.status === 'Accepted');
+        if (acceptedProp) {
+          await storage.createNotification({ userId: acceptedProp.exporterUserId, title: 'Trade Dispute Raised', message: disputeMsg, type: 'trade', link: disputeDealLink, read: false });
+        }
+      } catch (e) { console.error('[Notification] Failed to create dispute raised notification:', e); }
+      
       res.json({ dispute, message: "Dispute submitted successfully" });
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to raise dispute" });
@@ -15327,6 +15414,23 @@ export async function registerRoutes(
           actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null, originPort, destinationPort, currentLocation, customsStatus, notes,
           updatedAt: new Date()
         }).where(eq(tradeShipments.id, existing.id)).returning();
+        
+        // Notify both parties of shipment update
+        try {
+          const tradeReq = await storage.getTradeRequest(tradeRequestId);
+          if (tradeReq) {
+            const dealRoomForShipment = await storage.getDealRoomByTradeRequest(tradeRequestId);
+            const dealLink = dealRoomForShipment ? `/finabridge/deals/${dealRoomForShipment.id}` : '/finabridge';
+            const shipmentMsg = `Shipment status updated on deal ${tradeReq.tradeRefId}${status ? ` — now: ${status}` : ''}`;
+            await storage.createNotification({ userId: tradeReq.importerUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            const acceptedProposals = await storage.getRequestProposals(tradeRequestId);
+            const acceptedProposal = acceptedProposals.find(p => p.status === 'Accepted');
+            if (acceptedProposal) {
+              await storage.createNotification({ userId: acceptedProposal.exporterUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            }
+          }
+        } catch (e) { console.error('[Notification] Failed to create shipment update notification:', e); }
+        
         res.json({ shipment: updated });
       } else {
         const [shipment] = await db.insert(tradeShipments).values({
@@ -15335,6 +15439,23 @@ export async function registerRoutes(
           estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate) : null, actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null,
           originPort, destinationPort, currentLocation, customsStatus, notes
         }).returning();
+        
+        // Notify both parties of new shipment tracking
+        try {
+          const tradeReq = await storage.getTradeRequest(tradeRequestId);
+          if (tradeReq) {
+            const dealRoomForShipment = dealRoomId ? await storage.getDealRoom(dealRoomId) : await storage.getDealRoomByTradeRequest(tradeRequestId);
+            const dealLink = dealRoomForShipment ? `/finabridge/deals/${dealRoomForShipment.id}` : '/finabridge';
+            const shipmentMsg = `Shipment status updated on deal ${tradeReq.tradeRefId}`;
+            await storage.createNotification({ userId: tradeReq.importerUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            const allProposals = await storage.getRequestProposals(tradeRequestId);
+            const acceptedProposal = allProposals.find(p => p.status === 'Accepted');
+            if (acceptedProposal) {
+              await storage.createNotification({ userId: acceptedProposal.exporterUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            }
+          }
+        } catch (e) { console.error('[Notification] Failed to create new shipment notification:', e); }
+        
         res.json({ shipment });
       }
     } catch (error) {

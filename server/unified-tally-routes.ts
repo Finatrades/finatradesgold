@@ -767,12 +767,16 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
 
     // Bell notification for deposit approval
     try {
+      const depositAmountFormatted = amountUsd > 0 ? `AED ${(amountUsd * 3.67).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null;
+      const approvalMsg = depositAmountFormatted
+        ? `Your deposit of ${depositAmountFormatted} has been approved — ${parsedAllocation.toFixed(4)}g gold added to your wallet`
+        : `Your deposit has been approved — ${parsedAllocation.toFixed(4)}g gold added to your wallet`;
       await storage.createNotification({
         userId,
         title: 'Deposit Approved — Gold Credited',
-        message: `Your deposit has been approved. ${parsedAllocation.toFixed(4)}g of gold has been credited to your ${dbWalletType} wallet.`,
-        type: 'success',
-        link: '/finavault',
+        message: approvalMsg,
+        type: 'transaction',
+        link: '/finapay',
         read: false,
       });
     } catch (e) { console.error('[Notification] Failed to create deposit approval notification:', e); }
@@ -1441,6 +1445,21 @@ router.post('/:txnId/reject', async (req: Request, res: Response) => {
       triggeredBy: (req as any).user?.id,
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
     });
+
+    // Bell notification for deposit rejection
+    try {
+      const rejectionMsg = rejectionReason
+        ? `Your deposit has been rejected. Reason: ${rejectionReason}`
+        : 'Your deposit has been rejected. Please contact support for details.';
+      await storage.createNotification({
+        userId: transaction.userId,
+        title: 'Deposit Rejected',
+        message: rejectionMsg,
+        type: 'transaction',
+        link: '/finapay',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create tally reject notification:', e); }
 
     res.json(updated);
   } catch (error: any) {
