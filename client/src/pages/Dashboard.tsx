@@ -491,204 +491,10 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Quick Join BNSL Plan — hide once any plan is active */}
-            {totals.activeBnslPlans === 0 && (
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
-              <div className="absolute inset-0 holo-shimmer" />
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
-                        <Zap className="w-3.5 h-3.5 text-amber-300" />
-                      </div>
-                      <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
-                    </div>
-                    <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
-                  </div>
-                  <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
-                    <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 mb-4">
-                  {[
-                    { icon: '✦', text: 'Earn margin yield on locked gold' },
-                    { icon: '✦', text: 'Fixed rate for plan duration' },
-                    { icon: '✦', text: 'Flexible 3 – 12 month terms' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-amber-300 text-[10px]">{item.icon}</span>
-                      <span className="text-[11px] text-white/75">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {bnslPlans.length > 0 ? (
-                  <Link href="/bnsl">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
-                      data-testid="button-quick-join-bnsl"
-                    >
-                      Manage My Plans
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </Link>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowBnslModal(true)}
-                    className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
-                    data-testid="button-quick-join-bnsl"
-                  >
-                    Join Plan Now
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
-            )}
-
-            {/* BNSL Yield Summary */}
-            {totals.activeBnslPlans > 0 && (
-              <Link href="/bnsl">
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
-                  <div className="absolute inset-0 holo-shimmer" />
-                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
-                        <Zap className="w-3 h-3 text-amber-300" />
-                        <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Locked Gold</span>
-                        <p className="text-[16px] font-extrabold text-white">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Total Earned</span>
-                        <p className="text-[16px] font-extrabold text-amber-300">${formatNumber(totals.bnslTotalProfit || 0)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
-                      <span className="text-[11px] font-medium">View plans</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            )}
-
           </div>
 
-          {/* ═══ CENTRE COLUMN — Stats + Referral + Gold Price Lock ═══ */}
+          {/* ═══ CENTRE COLUMN — Gold Price Lock + BNSL ═══ */}
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
-
-            {/* Vault + BNSL Grid */}
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
-              <div className="glass-card-elevated rounded-[18px] p-3.5 glow-border-hover group" data-testid="card-vault-value">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                  <Landmark className="w-3.5 h-3.5 text-amber-600" />
-                </div>
-                <span className="text-[10px] text-gray-500 font-semibold">FinaVault</span>
-                <p className="text-[15px] font-extrabold text-gray-900 mt-0.5">
-                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5 font-medium">{formatNumber(totals.walletGoldGrams || 0, 3)}g</p>
-              </div>
-              <div className="glass-card-elevated rounded-[18px] p-3.5 glow-border-hover group" data-testid="card-bnsl-value">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <span className="text-[10px] text-gray-500 font-semibold">BNSL Value</span>
-                <p className="text-[15px] font-extrabold text-gray-900 mt-0.5">
-                  {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5 font-medium">{formatNumber(totals.bnslWalletGoldGrams || 0, 3)}g</p>
-              </div>
-            </motion.div>
-
-            {/* Referral Card — horizontal layout */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} data-testid="card-referral">
-              <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #a855f7, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
-                      <Gift className="w-4 h-4 text-amber-300" />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-white">Refer & Earn</p>
-                      <p className="text-[9px] text-white/50">Invite friends, earn rewards</p>
-                    </div>
-                  </div>
-                  <Link href="/referrals">
-                    <button className="text-[10px] text-purple-300 hover:text-white transition-colors font-semibold flex items-center gap-0.5" data-testid="link-referral-full">
-                      View all <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </Link>
-                </div>
-
-                {referralData?.referralCode ? (
-                  <div className="flex items-stretch gap-3">
-                    {/* Left: code + copy */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="flex-1 min-w-0 bg-white/10 rounded-xl px-3 py-2.5 border border-white/10">
-                        <p className="text-[9px] text-white/50 mb-0.5">Your referral code</p>
-                        <p className="text-[13px] font-extrabold text-white tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
-                          await navigator.clipboard.writeText(link);
-                          setCopiedRef(true);
-                          setTimeout(() => setCopiedRef(false), 2000);
-                        }}
-                        className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors shrink-0"
-                        data-testid="button-copy-referral"
-                      >
-                        {copiedRef ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-white/70" />}
-                      </button>
-                    </div>
-                    {/* Right: stats */}
-                    <div className="flex gap-2 shrink-0">
-                      <div className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
-                        <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <Users className="w-3 h-3 text-purple-400" />
-                          <p className="text-[9px] text-white/50">Referred</p>
-                        </div>
-                        <p className="text-[16px] font-extrabold text-white">{referralData.stats?.totalReferrals ?? 0}</p>
-                      </div>
-                      <div className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
-                        <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <p className="text-[9px] text-white/50">Earned</p>
-                        </div>
-                        <p className="text-[16px] font-extrabold text-white">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-2">
-                    <p className="text-[11px] text-white/40">No referral code yet</p>
-                    <Link href="/referrals">
-                      <button className="mt-2 px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition-colors">
-                        Get your code
-                      </button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </motion.div>
 
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
@@ -740,9 +546,91 @@ export default function Dashboard() {
                 Lock Gold Price →
               </motion.button>
             </motion.div>
+
+            {/* Quick Join BNSL Plan — hide once any plan is active */}
+            {totals.activeBnslPlans === 0 && (
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
+              <div className="absolute inset-0 holo-shimmer" />
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
+                        <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      </div>
+                      <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
+                    </div>
+                    <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
+                  </div>
+                  <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
+                    <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 mb-4">
+                  {[
+                    { icon: '✦', text: 'Earn margin yield on locked gold' },
+                    { icon: '✦', text: 'Fixed rate for plan duration' },
+                    { icon: '✦', text: 'Flexible 3 – 12 month terms' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-amber-300 text-[10px]">{item.icon}</span>
+                      <span className="text-[11px] text-white/75">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+                {bnslPlans.length > 0 ? (
+                  <Link href="/bnsl">
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                      Manage My Plans <ChevronRight className="w-3.5 h-3.5" />
+                    </motion.button>
+                  </Link>
+                ) : (
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                    Join Plan Now <ChevronRight className="w-3.5 h-3.5" />
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+            )}
+
+            {/* BNSL Yield Summary */}
+            {totals.activeBnslPlans > 0 && (
+              <Link href="/bnsl">
+                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
+                  <div className="absolute inset-0 holo-shimmer" />
+                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
+                        <Zap className="w-3 h-3 text-amber-300" />
+                        <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] text-white/50 font-medium">Locked Gold</span>
+                        <p className="text-[16px] font-extrabold text-white">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-white/50 font-medium">Total Earned</span>
+                        <p className="text-[16px] font-extrabold text-amber-300">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
+                      <span className="text-[11px] font-medium">View plans</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            )}
+
           </div>
 
-          {/* ═══ RIGHT COLUMN — FinaCard + Portfolio Ring ═══ */}
+          {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
           <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
 
             {/* FinaCard — Premium dark card with holographic effect */}
@@ -798,6 +686,77 @@ export default function Dashboard() {
                 </div>
               </motion.div>
             </Link>
+
+            {/* Referral Card */}
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} data-testid="card-referral">
+              <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #a855f7, transparent)', transform: 'translate(30%, -30%)' }} />
+              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
+                      <Gift className="w-4 h-4 text-amber-300" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-white">Refer & Earn</p>
+                      <p className="text-[9px] text-white/50">Invite friends, earn rewards</p>
+                    </div>
+                  </div>
+                  <Link href="/referrals">
+                    <button className="text-[10px] text-purple-300 hover:text-white transition-colors font-semibold flex items-center gap-0.5" data-testid="link-referral-full">
+                      View all <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </Link>
+                </div>
+                {referralData?.referralCode ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0 bg-white/10 rounded-xl px-3 py-2.5 border border-white/10">
+                        <p className="text-[9px] text-white/50 mb-0.5">Your referral code</p>
+                        <p className="text-[13px] font-extrabold text-white tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
+                          await navigator.clipboard.writeText(link);
+                          setCopiedRef(true);
+                          setTimeout(() => setCopiedRef(false), 2000);
+                        }}
+                        className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors shrink-0"
+                        data-testid="button-copy-referral"
+                      >
+                        {copiedRef ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-white/70" />}
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
+                        <div className="flex items-center gap-1 mb-0.5 justify-center">
+                          <Users className="w-3 h-3 text-purple-400" />
+                          <p className="text-[9px] text-white/50">Referred</p>
+                        </div>
+                        <p className="text-[16px] font-extrabold text-white">{referralData.stats?.totalReferrals ?? 0}</p>
+                      </div>
+                      <div className="flex-1 bg-white/5 rounded-xl px-3 py-2.5 border border-white/5 text-center">
+                        <div className="flex items-center gap-1 mb-0.5 justify-center">
+                          <TrendingUp className="w-3 h-3 text-emerald-400" />
+                          <p className="text-[9px] text-white/50">Earned</p>
+                        </div>
+                        <p className="text-[16px] font-extrabold text-white">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-2">
+                    <p className="text-[11px] text-white/40">No referral code yet</p>
+                    <Link href="/referrals">
+                      <button className="mt-2 px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition-colors">
+                        Get your code
+                      </button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
 
           </div>
         </div>
