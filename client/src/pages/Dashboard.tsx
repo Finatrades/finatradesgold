@@ -34,6 +34,7 @@ import QuickTradeModal from '@/components/dashboard/QuickTradeModal';
 import InternalTransferModal from '@/components/dashboard/InternalTransferModal';
 import PhysicalGoldDeposit from '@/pages/PhysicalGoldDeposit';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import PendingItemsStrip from '@/components/dashboard/PendingItemsStrip';
 import type { Transaction } from '@/types/finapay';
 
 interface UserPreferences {
@@ -530,6 +531,11 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Pending Actions Strip — hidden when count is zero */}
+            <motion.div variants={itemVariants}>
+              <PendingItemsStrip />
             </motion.div>
 
             {/* Gold Wallet Conversion Card */}
