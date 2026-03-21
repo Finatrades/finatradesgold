@@ -24,7 +24,7 @@ import { motion } from 'framer-motion';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
-import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
+import WithdrawGoldModal from '@/components/finapay/modals/WithdrawGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import LockGoldPriceModal from '@/components/finapay/modals/LockGoldPriceModal';
@@ -1774,7 +1774,7 @@ export default function Dashboard() {
         spreadPercent={1.5}
         onConfirm={() => setActiveModal(null)}
       />
-      <WithdrawalModal isOpen={activeModal === 'withdraw'} onClose={() => setActiveModal(null)} />
+      <WithdrawGoldModal isOpen={activeModal === 'withdraw'} onClose={() => setActiveModal(null)} />
       <SendGoldModal
         isOpen={activeModal === 'send'}
         onClose={() => setActiveModal(null)}
