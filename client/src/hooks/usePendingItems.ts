@@ -79,7 +79,7 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
   const rawItems: PendingItem[] = [
     {
       key: 'transfers',
-      label: 'Transfers awaiting your response',
+      label: 'Transfers awaiting response',
       count: incomingCount,
       href: '/finapay?section=transfers',
     },
