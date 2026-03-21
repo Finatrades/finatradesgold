@@ -178,6 +178,23 @@ export default function Dashboard() {
   const finacardValue = totals.finacardValueUsd || 0;
   const finaBridgeValue = finaBridge?.usdValue || 0;
 
+  // ── BNSL arc-chart / quarterly-payout analytics ──
+  const firstActivePlan = bnslPlans.find((p: { status: string }) => p.status === 'Active') || bnslPlans[0] || null;
+  const bnslPlanProgress = firstActivePlan
+    ? Math.min(100, Math.max(0, ((Date.now() - new Date(firstActivePlan.startDate).getTime()) / (new Date(firstActivePlan.maturityDate).getTime() - new Date(firstActivePlan.startDate).getTime())) * 100))
+    : 0;
+  const bnslDaysSinceStart = firstActivePlan
+    ? Math.floor((Date.now() - new Date(firstActivePlan.startDate).getTime()) / 86400000)
+    : 0;
+  const bnslDaysIntoQuarter = bnslDaysSinceStart % 90;
+  const bnslDaysToNextPayout = 90 - bnslDaysIntoQuarter;
+  const bnslQuarterProgress = (bnslDaysIntoQuarter / 90) * 100;
+  const bnslCurrentQuarter = Math.floor(bnslDaysSinceStart / 90) + 1;
+  const bnslQuarterlyPayout = firstActivePlan ? parseFloat(firstActivePlan.quarterlyMarginUsd || '0') : 0;
+  // SVG arc constants: radius 30, path length = π × 30 ≈ 94.25
+  const ARC_LEN = 94.25;
+  const bnslArcDash = (bnslPlanProgress / 100) * ARC_LEN;
+
   // ── Average buy price from completed buy transactions ──
   const avgBuyPrice = useMemo(() => {
     const buys = unifiedTx.filter(tx =>
@@ -602,24 +619,77 @@ export default function Dashboard() {
                   <div className="absolute inset-0 holo-shimmer" />
                   <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-3">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
                       <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
                         <Zap className="w-3 h-3 text-amber-300" />
                         <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Locked Gold</span>
-                        <p className="text-[16px] font-extrabold text-white">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+
+                    {/* Arc chart + stats row */}
+                    <div className="flex items-center gap-4 mb-4">
+                      {/* Semicircle arc progress */}
+                      <div className="relative flex-shrink-0 flex flex-col items-center">
+                        <svg width="76" height="44" viewBox="0 0 76 44">
+                          {/* Track */}
+                          <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="6" strokeLinecap="round" />
+                          {/* Progress */}
+                          <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#fcd34d" strokeWidth="6" strokeLinecap="round"
+                            strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
+                            strokeDashoffset="0"
+                          />
+                        </svg>
+                        <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
+                          <span className="text-[13px] font-extrabold text-white leading-none">{Math.round(bnslPlanProgress)}%</span>
+                          <span className="text-[8px] text-white/50 font-medium leading-none mt-0.5">complete</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Total Earned</span>
-                        <p className="text-[16px] font-extrabold text-amber-300">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+
+                      {/* Stats */}
+                      <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
+                        <div>
+                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Locked Gold</span>
+                          <p className="text-[15px] font-extrabold text-white leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Total Earned</span>
+                          <p className="text-[15px] font-extrabold text-amber-300 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Yield Rate</span>
+                          <p className="text-[13px] font-bold text-emerald-300 leading-tight">
+                            {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Next Payout</span>
+                          <p className="text-[13px] font-bold text-white leading-tight">{bnslDaysToNextPayout}d</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
+
+                    {/* Quarterly payout progress bar */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] text-white/60 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
+                        <span className="text-[10px] text-amber-200 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
+                      </div>
+                      <div className="w-full h-2 bg-white/15 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: 'linear-gradient(90deg, #fbbf24, #fcd34d)' }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${bnslQuarterProgress}%` }}
+                          transition={{ duration: 1, ease: 'easeOut' }}
+                        />
+                      </div>
+                      <p className="text-[9px] text-white/40 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
                       <span className="text-[11px] font-medium">View plans</span>
                       <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
