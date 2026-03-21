@@ -639,7 +639,7 @@ export default function Dashboard() {
                 variants={itemVariants}
                 whileHover={{ scale: 1.015, y: -4 }}
                 transition={{ duration: 0.35 }}
-                className="relative w-full aspect-[1.85/1] rounded-[22px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
+                className="relative w-full aspect-[1.586/1] rounded-[20px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
                 style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
                 data-testid="card-dashboard-finacard"
               >
