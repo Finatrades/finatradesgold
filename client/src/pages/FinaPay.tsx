@@ -79,18 +79,11 @@ export default function FinaPay() {
       window.history.replaceState({}, '', '/finapay');
     }
 
-    if (section === 'requests') {
-      setActiveModal('request');
-      window.history.replaceState({}, '', '/finapay');
-    }
-
-    if (section === 'deposits') {
-      setHighlightSection(true);
+    if (section === 'requests' || section === 'deposits') {
       setTimeout(() => {
-        const walletSection = document.getElementById('finapay-wallet-section');
-        if (walletSection) walletSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const el = document.getElementById('finapay-pending-transfers');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 150);
-      setTimeout(() => setHighlightSection(false), 1500);
       window.history.replaceState({}, '', '/finapay');
     }
   }, [searchString]);
