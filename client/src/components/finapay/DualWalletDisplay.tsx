@@ -36,6 +36,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
   const [transferDirection] = useState<'LGPW_to_FGPW' | 'FGPW_to_LGPW'>(initialDirection || 'LGPW_to_FGPW');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState<{ id: string; goldGrams: number; lockedPriceUsd: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
     openLockDialog: () => {
@@ -299,7 +300,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                       size="sm"
                       variant="outline"
                       className="h-7 px-3 text-[11px] border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                      onClick={() => handleUnlockLock(lock.id, lock.goldGrams)}
+                      onClick={() => setRemoveConfirm({ id: lock.id, goldGrams: lock.goldGrams, lockedPriceUsd: lock.lockedPriceUsd })}
                       disabled={internalTransfer.isPending}
                       data-testid={`button-unlock-lock-${lock.id}`}
                     >
@@ -421,6 +422,86 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
               ) : (
                 <><ShieldCheck className="w-4 h-4 mr-2" />Activate Price Protection</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Protection Confirmation Dialog */}
+      <Dialog open={!!removeConfirm} onOpenChange={(open) => { if (!open) setRemoveConfirm(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700">
+              <Unlock className="w-5 h-5" />
+              Remove Price Protection?
+            </DialogTitle>
+            <DialogDescription>
+              Please review what will happen before confirming.
+            </DialogDescription>
+          </DialogHeader>
+
+          {removeConfirm && (
+            <div className="space-y-4 py-2">
+              {/* What changes */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-700 font-medium">Gold amount</span>
+                  <span className="font-bold text-amber-900">{removeConfirm.goldGrams.toFixed(4)} g</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-700 font-medium">Your locked price</span>
+                  <span className="font-bold text-amber-900">${removeConfirm.lockedPriceUsd.toFixed(2)}/g</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-amber-200 pt-2">
+                  <span className="text-amber-700 font-medium">Live market price</span>
+                  <span className="font-bold text-amber-900">${(balance?.goldPricePerGram ?? 0).toFixed(2)}/g</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-amber-200 pt-2">
+                  <span className="text-amber-700 font-semibold">Value after removal</span>
+                  <span className="font-bold text-lg text-amber-900">
+                    ${(removeConfirm.goldGrams * (balance?.goldPricePerGram ?? 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Warning notice */}
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-orange-700 leading-relaxed">
+                  Once removed, your <span className="font-semibold">{removeConfirm.goldGrams.toFixed(4)} g</span> will
+                  be moved back to your <span className="font-semibold">Live Price Wallet</span> and valued at the
+                  current live market rate of <span className="font-semibold">${(balance?.goldPricePerGram ?? 0).toFixed(2)}/g</span>.
+                  The original locked price of <span className="font-semibold">${removeConfirm.lockedPriceUsd.toFixed(2)}/g</span> will
+                  no longer apply. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setRemoveConfirm(null)}
+              data-testid="btn-cancel-remove-protection"
+            >
+              Keep Protection
+            </Button>
+            <Button
+              variant="destructive"
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              disabled={internalTransfer.isPending}
+              onClick={async () => {
+                if (!removeConfirm) return;
+                await handleUnlockLock(removeConfirm.id, removeConfirm.goldGrams);
+                setRemoveConfirm(null);
+              }}
+              data-testid="btn-confirm-remove-protection"
+            >
+              {internalTransfer.isPending ? (
+                <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Processing…</>
+              ) : (
+                <><Unlock className="w-4 h-4 mr-1" /> Confirm Remove</>
               )}
             </Button>
           </DialogFooter>
