@@ -9143,7 +9143,17 @@ export async function registerRoutes(
         .filter(c => c.type === 'BNSL Lock' && c.bnslPlanId)
         .map(c => c.bnslPlanId as string);
 
-      let bnslPlanMap: Record<string, any> = {};
+      type BnslPlanRow = {
+        id: string;
+        templateName: string | null;
+        tenorMonths: number;
+        agreedMarginAnnualPercent: string;
+        maturityDate: string;
+        goldSoldGrams: string;
+        totalMarginComponentUsd: string;
+        status: string;
+      };
+      const bnslPlanMap: Record<string, BnslPlanRow> = {};
       if (blcPlanIds.length > 0) {
         const plans = await db.select({
           id: bnslPlansTable.id,
@@ -9155,7 +9165,7 @@ export async function registerRoutes(
           totalMarginComponentUsd: bnslPlansTable.totalMarginComponentUsd,
           status: bnslPlansTable.status,
         }).from(bnslPlansTable).where(inArray(bnslPlansTable.id, blcPlanIds));
-        plans.forEach(p => { bnslPlanMap[p.id] = p; });
+        plans.forEach(p => { bnslPlanMap[p.id] = p as BnslPlanRow; });
       }
 
       // Enrich TLC (Trade Lock) certificates with trade case data
@@ -9163,7 +9173,14 @@ export async function registerRoutes(
         .filter(c => c.type === 'Trade Lock' && c.tradeCaseId)
         .map(c => c.tradeCaseId as string);
 
-      let tradeCaseMap: Record<string, any> = {};
+      type TradeCaseRow = {
+        id: string;
+        caseNumber: string;
+        commodityType: string;
+        companyName: string;
+        status: string;
+      };
+      const tradeCaseMap: Record<string, TradeCaseRow> = {};
       if (tlcCaseIds.length > 0) {
         const cases = await db.select({
           id: tradeCases.id,
@@ -9172,7 +9189,7 @@ export async function registerRoutes(
           companyName: tradeCases.companyName,
           status: tradeCases.status,
         }).from(tradeCases).where(inArray(tradeCases.id, tlcCaseIds));
-        cases.forEach(c => { tradeCaseMap[c.id] = c; });
+        cases.forEach(c => { tradeCaseMap[c.id] = c as TradeCaseRow; });
       }
 
       // Merge enrichment data
