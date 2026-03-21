@@ -714,25 +714,32 @@ export default function Dashboard() {
               <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
 
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
-                    <Vault className="w-4 h-4 text-amber-700" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
+                      <Vault className="w-4 h-4 text-amber-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-gray-900">Deposit Physical Gold</h3>
+                      <p className="text-[12px] text-gray-400">Submit physical gold to vault</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold text-gray-900">Sell Your Gold</h3>
-                    <p className="text-[12px] text-gray-400">Submit physical gold to vault</p>
-                  </div>
+                  <Link href="/physical-gold-deposit">
+                    <button className="text-[11px] font-semibold text-amber-700 hover:text-amber-900 px-2.5 py-1 rounded-lg hover:bg-amber-50 border border-amber-200/60 transition-all" data-testid="link-deposit-gold-view-all">
+                      View all
+                    </button>
+                  </Link>
                 </div>
 
-                {/* Live spot price + wallet grams */}
+                {/* Live spot price + vault balance */}
                 <div className="grid grid-cols-2 gap-2.5 mb-4">
                   <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
                     <p className="label-caps text-amber-700/70">Spot Price</p>
                     <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">${formatNumber(goldPrice, 2)}<span className="text-[11px] font-semibold text-amber-600">/g</span></p>
                   </div>
                   <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
-                    <p className="label-caps text-amber-700/70">Your Wallet</p>
-                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">{formatNumber(totals.walletGoldGrams || 0, 3)}<span className="text-[11px] font-semibold text-amber-600">g</span></p>
+                    <p className="label-caps text-amber-700/70">Gold Vault Balance</p>
+                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">{formatNumber(totals.vaultGoldGrams || 0, 3)}<span className="text-[11px] font-semibold text-amber-600">g</span></p>
                   </div>
                 </div>
 
@@ -746,19 +753,12 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setDepositGoldModalOpen(true)}
-                  className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all mb-2"
+                  className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
                   style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', boxShadow: '0 4px 16px rgba(217,119,6,0.25)' }}
                   data-testid="button-deposit-gold-card"
                 >
                   Deposit Gold →
                 </motion.button>
-
-                {/* Secondary link */}
-                <Link href="/physical-gold-deposit">
-                  <button className="w-full py-2 rounded-xl text-[12px] font-semibold text-amber-700 border border-amber-200 hover:bg-amber-50 transition-all" data-testid="link-deposit-gold-full">
-                    View all deposits
-                  </button>
-                </Link>
               </div>
             </motion.div>
 
