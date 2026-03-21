@@ -446,7 +446,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Wallet Cards */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5">
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[13px] text-gray-500 font-semibold">Multi-Currency Wallets</span>
                 <span className="text-[11px] text-gray-400 font-medium">3 active</span>
@@ -494,10 +494,10 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ CENTRE COLUMN — Gold Price Lock + BNSL ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
+          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
 
             {/* Gold Price Lock Status */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-price-lock-status">
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6" data-testid="card-price-lock-status">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
                   <Lock className="w-4 h-4 text-purple-600" />
@@ -549,7 +549,7 @@ export default function Dashboard() {
 
             {/* Quick Join BNSL Plan — hide once any plan is active */}
             {totals.activeBnslPlans === 0 && (
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
               <div className="absolute inset-0 holo-shimmer" />
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
@@ -598,7 +598,7 @@ export default function Dashboard() {
             {/* BNSL Yield Summary */}
             {totals.activeBnslPlans > 0 && (
               <Link href="/bnsl">
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
+                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
                   <div className="absolute inset-0 holo-shimmer" />
                   <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
                   <div className="relative z-10">
@@ -631,7 +631,7 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
             {/* FinaCard — Premium dark card with holographic effect */}
             <Link href="/finacard">
@@ -647,7 +647,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
                 <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
                 <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
-                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2.5">
                       <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
@@ -688,7 +688,7 @@ export default function Dashboard() {
             </Link>
 
             {/* Referral Card */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} data-testid="card-referral">
+            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} data-testid="card-referral">
               <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #a855f7, transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full opacity-10 bg-amber-400 blur-xl" />
               <div className="relative z-10">
