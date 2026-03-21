@@ -81,68 +81,102 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   const handleDownloadReceipt = () => {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
-    
-    pdf.setFillColor(249, 115, 22);
-    pdf.rect(0, 0, pageWidth, 35, 'F');
+
+    // Header — Finatrades brand purple
+    pdf.setFillColor(74, 0, 130);
+    pdf.rect(0, 0, pageWidth, 38, 'F');
+    pdf.setFillColor(212, 175, 55); // gold accent bar
+    pdf.rect(0, 38, pageWidth, 3, 'F');
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(22);
-    pdf.text('FINATRADES', pageWidth / 2, 20, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.text('Transaction Receipt', pageWidth / 2, 28, { align: 'center' });
-    
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('FINATRADES', pageWidth / 2, 18, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Official Transaction Receipt', pageWidth / 2, 30, { align: 'center' });
+
+    // Amount display
     pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(16);
-    
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
     const goldAmount = transaction.amountGrams ? Number(transaction.amountGrams).toFixed(4) : '0.0000';
     const usdAmount = transaction.amountUsd ? Number(transaction.amountUsd).toFixed(2) : '0.00';
-    const amount = transaction.assetType === 'GOLD' 
-      ? goldAmount + ' g' 
-      : 'USD ' + usdAmount;
-    const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+ ' : '- ';
-    pdf.text(prefix + amount, pageWidth / 2, 55, { align: 'center' });
-    
-    if (transaction.assetType === 'GOLD') {
-      pdf.setFontSize(10);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text('USD ' + usdAmount, pageWidth / 2, 63, { align: 'center' });
+    let amountDisplay: string;
+    let amountColor: [number, number, number];
+    if (isConversion) {
+      amountDisplay = goldAmount + ' g';
+      amountColor = [212, 175, 55];
+    } else if (transaction.assetType === 'GOLD') {
+      const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+ ' : '- ';
+      amountDisplay = prefix + goldAmount + ' g';
+      amountColor = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit')
+        ? [34, 139, 34] : [220, 20, 60];
+    } else {
+      const prefix = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit') ? '+ ' : '- ';
+      amountDisplay = prefix + 'USD ' + usdAmount;
+      amountColor = (transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit')
+        ? [34, 139, 34] : [220, 20, 60];
     }
-    
-    pdf.setDrawColor(230, 230, 230);
-    pdf.line(20, 75, pageWidth - 20, 75);
-    
+    pdf.setTextColor(...amountColor);
+    pdf.text(amountDisplay, pageWidth / 2, 62, { align: 'center' });
+    if (transaction.assetType === 'GOLD' && !isConversion) {
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('USD equivalent: ' + usdAmount, pageWidth / 2, 71, { align: 'center' });
+    }
+
+    pdf.setDrawColor(220, 220, 220);
+    pdf.line(20, 80, pageWidth - 20, 80);
+
+    // Fields
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(10);
-    let yPos = 90;
+    let yPos = 95;
     const addRow = (label: string, value: string) => {
-      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(120, 120, 120);
       pdf.text(label, 25, yPos);
-      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(30, 30, 30);
       const safeValue = String(value).replace(/[^\x00-\x7F]/g, '');
       pdf.text(safeValue, pageWidth - 25, yPos, { align: 'right' });
-      yPos += 12;
+      pdf.setDrawColor(240, 240, 240);
+      pdf.line(25, yPos + 3, pageWidth - 25, yPos + 3);
+      yPos += 13;
     };
-    
-    const pdfTxType = (transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer'))
+
+    const pdfTxType = isActivating ? 'Price Protection Activated'
+      : isRemoving ? 'Price Protection Removed'
+      : (transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer'))
       ? 'Bank Deposit'
       : transaction.type + ' ' + (transaction.assetType === 'GOLD' ? 'Gold' : 'USD');
+
     addRow('Transaction Type', pdfTxType);
     addRow('Status', transaction.status);
     addRow('Reference ID', transaction.referenceId);
     addRow('Date & Time', new Date(transaction.timestamp).toLocaleString());
-    if (displayDescription) {
-      addRow('Description', displayDescription.substring(0, 40));
+    if (isConversion) {
+      addRow('Direction', isActivating ? 'Live Price -> Price Protection' : 'Price Protection -> Live Price');
+      addRow('Gold Moved', goldAmount + ' g');
     }
-    addRow(isDeposit ? 'Deposit Fee (0.5%)' : 'Network Fee', 'USD ' + calculatedFee.toFixed(2));
-    
-    pdf.line(20, yPos + 5, pageWidth - 20, yPos + 5);
-    
-    pdf.setFontSize(9);
+    if (displayDescription && !isConversion) {
+      addRow('Description', displayDescription.substring(0, 45));
+    }
+    addRow(isConversion ? 'Fee' : isDeposit ? 'Deposit Fee (0.5%)' : 'Network Fee',
+      isConversion ? 'No fee' : 'USD ' + calculatedFee.toFixed(2));
+
+    // Footer
+    pdf.setFillColor(248, 248, 248);
+    pdf.rect(0, 268, pageWidth, 30, 'F');
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(150, 150, 150);
-    pdf.text('Thank you for using Finatrades', pageWidth / 2, 280, { align: 'center' });
-    pdf.text(new Date().toLocaleDateString(), pageWidth / 2, 287, { align: 'center' });
-    
+    pdf.text('This receipt is electronically generated and verified by Finatrades.', pageWidth / 2, 278, { align: 'center' });
+    pdf.text('Finatrades Finance SA  |  finatrades.com', pageWidth / 2, 284, { align: 'center' });
+    pdf.text(new Date().toLocaleDateString(), pageWidth / 2, 290, { align: 'center' });
+
     pdf.save('finatrades-receipt-' + transaction.referenceId + '.pdf');
-    
     toast({ title: 'Receipt Downloaded', description: 'Your transaction receipt has been saved as PDF' });
   };
 

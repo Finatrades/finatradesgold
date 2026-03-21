@@ -815,8 +815,10 @@ export default function VaultActivityList() {
 
   // Helper to get display name for transaction type
   const getDisplayName = (tx: VaultTransaction): string => {
-    if (tx.type === 'Swap' || tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW')) {
-      return 'Swap Gold';
+    if (tx.type === 'Swap') {
+      if (tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')) return 'Price Protection Activated';
+      if (tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW')) return 'Price Protection Removed';
+      return 'Wallet Conversion';
     }
     if (tx.description?.includes('Physical Gold Deposit') || tx.description?.includes('FinaVault')) {
       return 'Deposit Physical Gold';

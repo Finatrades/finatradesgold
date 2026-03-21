@@ -406,127 +406,159 @@ export function exportToCSV(transactions: ExportTransaction[], filename: string 
   URL.revokeObjectURL(link.href);
 }
 
+function getCleanTxLabel(tx: ExportTransaction): string {
+  const desc = tx.description || '';
+  if (tx.type === 'Swap') {
+    if (desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW')) return 'Price Protection Activated';
+    if (desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW')) return 'Price Protection Removed';
+    return 'Wallet Conversion';
+  }
+  if (desc.includes('Bank Deposit') || desc.includes('Bank Transfer')) return 'Bank Deposit';
+  if (desc.includes('FinaVault') || desc.includes('physical gold')) return 'Physical Gold Deposit';
+  if (tx.type === 'Deposit' || tx.type === 'Buy') return 'Acquire Gold';
+  return tx.type;
+}
+
+function isConversionTx(tx: ExportTransaction): boolean {
+  return tx.type === 'Swap';
+}
+
 export function exportToPDF(transactions: ExportTransaction[], title: string = 'Transaction History') {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
-  let yPos = 20;
-  
-  doc.setFontSize(18);
+  let yPos = 15;
+
+  // Branded header
+  doc.setFillColor(74, 0, 130);
+  doc.rect(0, 0, pageWidth, 28, 'F');
+  doc.setFillColor(212, 175, 55);
+  doc.rect(0, 28, pageWidth, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text(title, margin, yPos);
-  yPos += 8;
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, margin, yPos);
-  doc.text(`Total Transactions: ${transactions.length}`, pageWidth - margin - 50, yPos);
-  yPos += 15;
-  
-  const colWidths = [35, 25, 25, 30, 30, 35];
-  const headers = ['Date', 'Type', 'Asset', 'Gold (g)', 'USD ($)', 'Status'];
-  
-  doc.setFillColor(245, 245, 245);
-  doc.rect(margin, yPos - 5, pageWidth - margin * 2, 8, 'F');
+  doc.text('FINATRADES', margin, 13);
   doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(title, margin, 23);
+  doc.setTextColor(200, 200, 200);
+  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth - margin - 70, 13);
+  doc.text(`${transactions.length} transactions`, pageWidth - margin - 70, 23);
+
+  yPos = 42;
+  doc.setTextColor(40);
+
+  // Table header
+  const colWidths = [32, 48, 28, 28, 24];
+  const headers = ['Date', 'Type', 'Gold (g)', 'USD ($)', 'Status'];
+
+  doc.setFillColor(245, 245, 248);
+  doc.rect(margin, yPos - 5, pageWidth - margin * 2, 8, 'F');
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(60);
-  
+  doc.setTextColor(80);
+
   let xPos = margin;
   headers.forEach((header, i) => {
     doc.text(header, xPos + 2, yPos);
     xPos += colWidths[i];
   });
   yPos += 10;
-  
+
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(40);
-  
+
   transactions.forEach((tx, index) => {
-    if (yPos > 270) {
+    if (yPos > 268) {
       doc.addPage();
       yPos = 20;
     }
-    
+
     if (index % 2 === 0) {
-      doc.setFillColor(252, 252, 252);
+      doc.setFillColor(250, 250, 252);
       doc.rect(margin, yPos - 4, pageWidth - margin * 2, 7, 'F');
     }
-    
+
     const date = tx.createdAt || tx.timestamp;
     const formattedDate = date ? format(new Date(date), 'MM/dd/yy HH:mm') : '';
     const goldAmount = tx.amountGold ? parseFloat(String(tx.amountGold)).toFixed(4) : '-';
     const usdAmount = tx.amountUsd ? parseFloat(String(tx.amountUsd)).toFixed(2) : '-';
-    
+    const label = getCleanTxLabel(tx);
+    const isConv = isConversionTx(tx);
+
     xPos = margin;
     doc.setFontSize(8);
-    
+    doc.setTextColor(40);
+
     doc.text(formattedDate, xPos + 2, yPos);
     xPos += colWidths[0];
-    
-    doc.text(tx.type, xPos + 2, yPos);
+
+    // Type label — colour-coded
+    if (isConv) doc.setTextColor(180, 120, 0);
+    else if (tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit') doc.setTextColor(34, 100, 34);
+    else if (tx.type === 'Send' || tx.type === 'Sell') doc.setTextColor(150, 20, 20);
+    else doc.setTextColor(40);
+    const labelTrunc = label.length > 26 ? label.substring(0, 24) + '..' : label;
+    doc.text(labelTrunc, xPos + 2, yPos);
+    doc.setTextColor(40);
     xPos += colWidths[1];
-    
-    doc.text(tx.assetType || 'USD', xPos + 2, yPos);
+
+    doc.text(isConv ? goldAmount + ' (moved)' : goldAmount, xPos + 2, yPos);
     xPos += colWidths[2];
-    
-    doc.text(goldAmount, xPos + 2, yPos);
+
+    doc.text(isConv ? '-' : usdAmount, xPos + 2, yPos);
     xPos += colWidths[3];
-    
-    doc.text(usdAmount, xPos + 2, yPos);
-    xPos += colWidths[4];
-    
-    if (tx.status === 'Completed') {
-      doc.setTextColor(34, 139, 34);
-    } else if (tx.status === 'Pending') {
-      doc.setTextColor(218, 165, 32);
-    } else if (tx.status === 'Failed') {
-      doc.setTextColor(220, 20, 60);
-    }
+
+    if (tx.status === 'Completed') doc.setTextColor(34, 139, 34);
+    else if (tx.status === 'Pending') doc.setTextColor(180, 130, 0);
+    else if (tx.status === 'Failed') doc.setTextColor(200, 20, 20);
+    else doc.setTextColor(100);
     doc.text(tx.status, xPos + 2, yPos);
     doc.setTextColor(40);
-    
+
     yPos += 7;
   });
-  
-  yPos += 10;
-  doc.setDrawColor(200);
+
+  // Summary
+  yPos += 8;
+  if (yPos > 255) { doc.addPage(); yPos = 20; }
+  doc.setDrawColor(200, 200, 200);
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 8;
-  
-  const totalGold = transactions.reduce((sum, tx) => {
-    const gold = tx.amountGold ? parseFloat(String(tx.amountGold)) : 0;
-    return sum + (tx.type === 'Buy' || tx.type === 'Receive' ? gold : -gold);
-  }, 0);
-  
-  const totalUsd = transactions.reduce((sum, tx) => {
-    const usd = tx.amountUsd ? parseFloat(String(tx.amountUsd)) : 0;
-    return sum + (tx.type === 'Sell' || tx.type === 'Receive' ? usd : -usd);
-  }, 0);
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Summary:', margin, yPos);
-  yPos += 6;
-  doc.setFont('helvetica', 'normal');
+
+  const creditTx = transactions.filter(tx => !isConversionTx(tx) && (tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit'));
+  const debitTx = transactions.filter(tx => !isConversionTx(tx) && (tx.type === 'Send' || tx.type === 'Sell'));
+  const totalGoldIn = creditTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
+  const totalGoldOut = debitTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
+  const conversions = transactions.filter(isConversionTx).length;
+
   doc.setFontSize(9);
-  doc.text(`Net Gold Movement: ${totalGold >= 0 ? '+' : ''}${totalGold.toFixed(4)}g`, margin, yPos);
-  yPos += 5;
-  doc.text(`Net USD Movement: ${totalUsd >= 0 ? '+' : ''}$${totalUsd.toFixed(2)}`, margin, yPos);
-  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40);
+  doc.text('Summary', margin, yPos);
+  yPos += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(34, 139, 34);
+  doc.text(`Gold In: +${totalGoldIn.toFixed(4)}g`, margin, yPos);
+  doc.setTextColor(200, 20, 20);
+  doc.text(`Gold Out: -${totalGoldOut.toFixed(4)}g`, margin + 55, yPos);
+  doc.setTextColor(180, 120, 0);
+  doc.text(`Wallet Conversions: ${conversions}`, margin + 115, yPos);
+
+  // Footer
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(150);
+    doc.setFontSize(7);
+    doc.setTextColor(160);
     doc.text(
-      `Finatrades - Page ${i} of ${pageCount}`,
+      `Finatrades Finance SA  |  Confidential  |  Page ${i} of ${pageCount}`,
       pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
+      doc.internal.pageSize.getHeight() - 8,
       { align: 'center' }
     );
   }
-  
-  doc.save(`transactions_${format(new Date(), 'yyyyMMdd_HHmmss')}.pdf`);
+
+  doc.save(`finatrades_transactions_${format(new Date(), 'yyyyMMdd_HHmmss')}.pdf`);
 }
