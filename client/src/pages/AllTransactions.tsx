@@ -44,15 +44,22 @@ interface Totals {
 // Helper to convert action types to user-friendly display labels
 const getActionLabel = (actionType: string, module: string, description?: string | null): string => {
   const action = actionType?.toUpperCase() || '';
-  // Physical gold deposits from FinaVault
-  if (action === 'DEPOSIT_PHYSICAL_GOLD') {
-    return 'Deposit Physical Gold';
+  const desc = description || '';
+  if (action === 'DEPOSIT_PHYSICAL_GOLD') return 'Physical Gold Deposit';
+  if (action === 'ADD_FUNDS') return 'Gold Credited';
+  if (action === 'SEND') return 'Send Gold';
+  if (action === 'RECEIVE') return 'Receive Gold';
+  if (action === 'BUY' || action === 'BUY_GOLD_BAR') return 'Buy Gold';
+  if (action === 'SELL') return 'Sell Gold';
+  if (action === 'LOCK') return 'Gold Locked';
+  if (action === 'UNLOCK') return 'Gold Unlocked';
+  if (action === 'WITHDRAWAL') return 'Cash Out';
+  // Swap direction-aware
+  if (action === 'SWAP' || actionType === 'Swap') {
+    if (desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW')) return 'Price Protection Activated';
+    if (desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW')) return 'Price Protection Removed';
+    return 'Gold Wallet Transfer';
   }
-  // ADD_FUNDS via bank/card/crypto should be "Acquire Gold"
-  if (action === 'ADD_FUNDS') {
-    return 'Acquire Gold';
-  }
-  // Default: convert underscores to spaces and title case
   return actionType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
@@ -387,7 +394,11 @@ export default function AllTransactions() {
                 {(() => {
                   let runningBalance = 0;
                   return filteredTransactions.map((tx) => {
-                  const isSwap = tx.description?.includes('LGPW to FGPW') || tx.description?.includes('FGPW to LGPW');
+                  const isToFGPW = tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW');
+                  const isToLGPW = tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW');
+                  const isSwap = isToFGPW || isToLGPW;
+                  const swapDebitWallet = isToFGPW ? 'from LGPW' : 'from FGPW';
+                  const swapCreditWallet = isToFGPW ? 'to FGPW' : 'to LGPW';
                   const isDebit = !isSwap && ['SEND', 'Send', 'WITHDRAW', 'Withdrawal', 'SELL', 'Sell', 'LOCK'].includes(tx.actionType);
                   const isCredit = !isSwap && (['ADD_FUNDS', 'Deposit', 'RECEIVE', 'Receive', 'BUY', 'Buy', 'UNLOCK'].includes(tx.actionType) ||
                                    tx.actionType === 'ADD_FUNDS' ||
@@ -429,7 +440,7 @@ export default function AllTransactions() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <p className="font-semibold text-foreground text-sm truncate">
-                                {isSwap ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
+                                {getActionLabel(tx.actionType, tx.module, tx.description)}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {format(new Date(tx.createdAt), 'MMM dd, yyyy')} · {format(new Date(tx.createdAt), 'hh:mm a')}
@@ -494,15 +505,17 @@ export default function AllTransactions() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1">
                             <p className="font-semibold text-foreground truncate">
-                              {isSwap ? 'Swap Gold' : getActionLabel(tx.actionType, tx.module)}
+                              {getActionLabel(tx.actionType, tx.module, tx.description)}
                             </p>
                             {expandedRows.has(tx.id) ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
-                            {isSwap 
-                              ? `LGPW to FGPW conversion: ${goldAmount.toFixed(2)}g` 
+                            {isToFGPW
+                              ? `Moved from Live Price Wallet to Fixed Price`
+                              : isToLGPW
+                              ? `Moved from Fixed Price to Live Price Wallet`
                               : tx.description?.includes('Crypto deposit')
-                                ? `Crypto deposit - $${usdAmount.toFixed(2)} (${goldAmount.toFixed(2)}g)`
+                                ? `Crypto deposit — $${usdAmount.toFixed(2)} (${goldAmount.toFixed(4)}g)`
                                 : tx.description || tx.referenceId || '-'}
                           </p>
                         </div>
@@ -513,7 +526,7 @@ export default function AllTransactions() {
                         {isSwap ? (
                           <>
                             <p className="font-semibold text-amber-600">{goldAmount.toFixed(4)} g</p>
-                            <p className="text-xs text-muted-foreground">from LGPW</p>
+                            <p className="text-xs text-muted-foreground">{swapDebitWallet}</p>
                           </>
                         ) : isDebit && goldAmount > 0 ? (
                           <>
@@ -532,7 +545,7 @@ export default function AllTransactions() {
                         {isSwap ? (
                           <>
                             <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
-                            <p className="text-xs text-muted-foreground">to FGPW</p>
+                            <p className="text-xs text-muted-foreground">{swapCreditWallet}</p>
                           </>
                         ) : isCredit && goldAmount > 0 ? (
                           <>
@@ -583,65 +596,77 @@ export default function AllTransactions() {
                     {/* Expanded Details Row */}
                     {expandedRows.has(tx.id) && (
                       <div className="px-4 pb-4 pt-0 bg-muted/30 border-t border-dashed">
-                        {/* Special display for LGPW to FGPW conversions */}
-                        {tx.description?.includes('LGPW to FGPW') ? (
+                        {/* Special display for Swap (Price Protection) transactions */}
+                        {isSwap ? (
                           <div className="space-y-3 mt-2">
-                            {/* Full Reference ID */}
-                            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
+                            {/* Reference + Header */}
+                            <div className={`p-3 rounded-lg border ${isToFGPW ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <ArrowLeftRight className={`w-4 h-4 ${isToFGPW ? 'text-amber-600' : 'text-blue-600'}`} />
+                                <span className={`font-semibold text-sm ${isToFGPW ? 'text-amber-700' : 'text-blue-700'}`}>
+                                  {isToFGPW ? 'Price Protection Activated' : 'Price Protection Removed'}
+                                </span>
+                                <Badge className={`text-xs ${isToFGPW ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                  {isToFGPW ? 'LGPW → FGPW' : 'FGPW → LGPW'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Reference ID</p>
                               <p className="text-xs sm:text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>
                               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-xs sm:text-sm">
                                 <span className="text-muted-foreground">Date & Time:</span>
                                 <span className="font-medium">{format(new Date(tx.createdAt), 'MM/dd/yyyy, h:mm:ss a')}</span>
                               </div>
                             </div>
-                            
-                            {/* Sell Gold from LGPW */}
+
+                            {/* Debit (source wallet) */}
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                               <div className="flex items-center gap-2 mb-2">
                                 <ArrowUpRight className="w-4 h-4 text-red-600" />
-                                <span className="font-semibold text-red-700">Sell Gold (from LGPW)</span>
+                                <span className="font-semibold text-red-700">
+                                  {isToFGPW ? 'Removed from Live Price Wallet (LGPW)' : 'Removed from Fixed Price Wallet (FGPW)'}
+                                </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
-                                  <p className="font-semibold text-red-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
+                                  <p className="font-semibold text-red-600">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Market Price</p>
+                                  <p className="text-xs text-muted-foreground">{isToFGPW ? 'Market Price' : 'Protected Price'}</p>
                                   <p className="font-semibold">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Value</p>
+                                  <p className="text-xs text-muted-foreground">Value at Removal</p>
                                   <p className="font-semibold">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
                                 </div>
                               </div>
                             </div>
-                            
-                            {/* Credit Gold to FGPW */}
+
+                            {/* Credit (destination wallet) */}
                             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 mb-2">
                                 <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                                <span className="font-semibold text-green-700 text-sm">Credit Gold (to FGPW)</span>
-                                <Badge className="bg-amber-100 text-amber-700 text-xs">Digital Gold Lock</Badge>
+                                <span className="font-semibold text-green-700">
+                                  {isToFGPW ? 'Credited to Fixed Price Wallet (FGPW)' : 'Returned to Live Price Wallet (LGPW)'}
+                                </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
-                                  <p className="font-semibold text-green-600">{tx.grams ? parseFloat(tx.grams).toFixed(6) : '0'}g</p>
+                                  <p className="font-semibold text-green-600">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Locked Price</p>
+                                  <p className="text-xs text-muted-foreground">{isToFGPW ? 'Protected Price' : 'Market Price'}</p>
                                   <p className="font-semibold text-amber-600">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Locked Value</p>
+                                  <p className="text-xs text-muted-foreground">{isToFGPW ? 'Protected Value' : 'Market Value'}</p>
                                   <p className="font-semibold text-amber-600">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
                                 </div>
                               </div>
-                              <p className="text-xs text-green-600 mt-2">
-                                Digital Ownership Certificate generated for this lock
-                              </p>
+                              {isToFGPW && (
+                                <p className="text-xs text-amber-600 mt-2">Gold locked at ${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g — protected from market fluctuation.</p>
+                              )}
                             </div>
                           </div>
                         ) : (
