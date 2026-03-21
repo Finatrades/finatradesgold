@@ -587,122 +587,6 @@ export default function Dashboard() {
               </Link>
             )}
 
-            {/* FinaBridge Quick Trade Card */}
-            {isBusinessUser && (
-              <motion.div variants={itemVariants} data-testid="card-quick-trade">
-                <div className="relative rounded-[20px] p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f2057 0%, #1e3a8a 55%, #1e40af 100%)' }}>
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 15% 85%, #60a5fa 0%, transparent 55%), radial-gradient(circle at 85% 15%, #3b82f6 0%, transparent 55%)' }} />
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-blue-400/20 flex items-center justify-center border border-blue-400/30">
-                          <ArrowLeftRight className="w-4 h-4 text-blue-300" />
-                        </div>
-                        <div>
-                          <h3 className="text-white font-extrabold text-[14px] leading-tight">Trade Finance</h3>
-                          <p className="text-blue-300/80 text-[10px]">FinaBridge Platform</p>
-                        </div>
-                      </div>
-                      {finaBridge.activeCases > 0 && (
-                        <div className="text-right">
-                          <span className="text-[22px] font-extrabold text-white leading-none">{finaBridge.activeCases}</span>
-                          <p className="text-[10px] text-blue-300/80 leading-tight">active trades</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {finaBridge.activeCases === 0 ? (
-                      <ul className="space-y-1.5 mb-4">
-                        {[
-                          'Settle international trades in physical gold',
-                          'Global buyer-seller matching network',
-                          'Secure gold escrow & deal room',
-                        ].map(txt => (
-                          <li key={txt} className="flex items-center gap-2 text-[11px] text-blue-100/90">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                            {txt}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
-                          <p className="text-[10px] text-blue-300/80">Volume</p>
-                          <p className="text-[14px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
-                        </div>
-                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
-                          <p className="text-[10px] text-blue-300/80">Gold Locked</p>
-                          <p className="text-[14px] font-extrabold text-white">{formatNumber(finaBridge.goldGrams)}g</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      {finaBridge.activeCases === 0 ? (
-                        <button
-                          onClick={() => setShowTradeModal(true)}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
-                          style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
-                          data-testid="button-quick-trade-create"
-                        >
-                          <Landmark className="w-3.5 h-3.5" />
-                          Create Trade
-                        </button>
-                      ) : (
-                        <Link href="/finabridge" className="flex-1">
-                          <button
-                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
-                            style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
-                            data-testid="button-quick-trade-view"
-                          >
-                            <ArrowLeftRight className="w-3.5 h-3.5" />
-                            View My Trades
-                          </button>
-                        </Link>
-                      )}
-                      <Link href="/finabridge">
-                        <button
-                          className="flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold text-blue-300 border border-blue-700/50 hover:border-blue-500 transition-all"
-                          data-testid="button-quick-trade-manage"
-                        >
-                          Manage
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* FinaBridge Trade Stats */}
-            {isBusinessUser && finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
-              <Link href="/finabridge">
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)' }} data-testid="card-finabridge-summary">
-                  <div className="absolute inset-0 holo-shimmer" />
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[12px] text-white/80 font-semibold tracking-wide">FinaBridge</span>
-                      <Landmark className="w-4 h-4 text-white/60" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Active Cases</span>
-                        <p className="text-[20px] font-extrabold text-white">{finaBridge.activeCases}</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-white/50 font-medium">Trade Volume</span>
-                        <p className="text-[16px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
-                      <span className="text-[11px] font-medium">View trades</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            )}
           </div>
 
           {/* ═══ CENTRE COLUMN — Stats + Referral + Gold Price Lock ═══ */}
@@ -917,6 +801,144 @@ export default function Dashboard() {
 
           </div>
         </div>
+
+        {/* ═══ ZONE 2 — BUSINESS MODULES (business users only) ═══ */}
+        {isBusinessUser && (
+          <motion.section variants={itemVariants}>
+            {/* Section label */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-blue-600/10 border border-blue-200 flex items-center justify-center">
+                  <Landmark className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">Business Modules</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+
+            {/* Cards row */}
+            <div className={`grid gap-5 ${finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+
+              {/* FinaBridge Quick Trade Card */}
+              <motion.div variants={itemVariants} data-testid="card-quick-trade">
+                <div className="relative rounded-[20px] p-5 overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0f2057 0%, #1e3a8a 55%, #1e40af 100%)' }}>
+                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 15% 85%, #60a5fa 0%, transparent 55%), radial-gradient(circle at 85% 15%, #3b82f6 0%, transparent 55%)' }} />
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-blue-400/20 flex items-center justify-center border border-blue-400/30">
+                          <ArrowLeftRight className="w-4 h-4 text-blue-300" />
+                        </div>
+                        <div>
+                          <h3 className="text-white font-extrabold text-[14px] leading-tight">Trade Finance</h3>
+                          <p className="text-blue-300/80 text-[10px]">FinaBridge Platform</p>
+                        </div>
+                      </div>
+                      {finaBridge.activeCases > 0 && (
+                        <div className="text-right">
+                          <span className="text-[22px] font-extrabold text-white leading-none">{finaBridge.activeCases}</span>
+                          <p className="text-[10px] text-blue-300/80 leading-tight">active trades</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {finaBridge.activeCases === 0 ? (
+                      <ul className="space-y-1.5 mb-4">
+                        {[
+                          'Settle international trades in physical gold',
+                          'Global buyer-seller matching network',
+                          'Secure gold escrow & deal room',
+                        ].map(txt => (
+                          <li key={txt} className="flex items-center gap-2 text-[11px] text-blue-100/90">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                            {txt}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
+                          <p className="text-[10px] text-blue-300/80">Volume</p>
+                          <p className="text-[14px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
+                        </div>
+                        <div className="bg-white/10 rounded-lg px-2.5 py-2">
+                          <p className="text-[10px] text-blue-300/80">Gold Locked</p>
+                          <p className="text-[14px] font-extrabold text-white">{formatNumber(finaBridge.goldGrams)}g</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {finaBridge.activeCases === 0 ? (
+                        <button
+                          onClick={() => setShowTradeModal(true)}
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
+                          style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
+                          data-testid="button-quick-trade-create"
+                        >
+                          <Landmark className="w-3.5 h-3.5" />
+                          Create Trade
+                        </button>
+                      ) : (
+                        <Link href="/finabridge" className="flex-1">
+                          <button
+                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-blue-900 transition-all hover:scale-[1.02] active:scale-95"
+                            style={{ background: 'linear-gradient(90deg, #bfdbfe, #93c5fd)' }}
+                            data-testid="button-quick-trade-view"
+                          >
+                            <ArrowLeftRight className="w-3.5 h-3.5" />
+                            View My Trades
+                          </button>
+                        </Link>
+                      )}
+                      <Link href="/finabridge">
+                        <button
+                          className="flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold text-blue-300 border border-blue-700/50 hover:border-blue-500 transition-all"
+                          data-testid="button-quick-trade-manage"
+                        >
+                          Manage
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* FinaBridge Trade Stats — only when user has active trades or volume */}
+              {finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
+                <Link href="/finabridge">
+                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group h-full" style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)' }} data-testid="card-finabridge-summary">
+                    <div className="absolute inset-0 holo-shimmer" />
+                    <div className="relative z-10 h-full flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[12px] text-white/80 font-semibold tracking-wide">FinaBridge</span>
+                          <Landmark className="w-4 h-4 text-white/60" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-[10px] text-white/50 font-medium">Active Cases</span>
+                            <p className="text-[20px] font-extrabold text-white">{finaBridge.activeCases}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-white/50 font-medium">Trade Volume</span>
+                            <p className="text-[16px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
+                        <span className="text-[11px] font-medium">View trades</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              )}
+
+            </div>
+          </motion.section>
+        )}
 
         {/* ═══ WALLET BREAKDOWN CARDS (2-panel) ═══ */}
         {(() => {
