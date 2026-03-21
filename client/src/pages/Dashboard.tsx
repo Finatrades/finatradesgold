@@ -639,139 +639,6 @@ export default function Dashboard() {
               </motion.button>
             </motion.div>
 
-            {/* Quick Join BNSL Plan — hide once any plan is active */}
-            {totals.activeBnslPlans === 0 && (
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
-              <div className="absolute inset-0 holo-shimmer" />
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
-                        <Zap className="w-3.5 h-3.5 text-amber-300" />
-                      </div>
-                      <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
-                    </div>
-                    <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
-                  </div>
-                  <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
-                    <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
-                  </div>
-                </div>
-                <div className="space-y-1.5 mb-4">
-                  {[
-                    { icon: '✦', text: 'Earn margin yield on locked gold' },
-                    { icon: '✦', text: 'Fixed rate for plan duration' },
-                    { icon: '✦', text: 'Flexible 3 – 12 month terms' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-amber-300 text-[10px]">{item.icon}</span>
-                      <span className="text-[11px] text-white/75">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-                {bnslPlans.length > 0 ? (
-                  <Link href="/bnsl">
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
-                      Manage My Plans <ChevronRight className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </Link>
-                ) : (
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
-                    Join Plan Now <ChevronRight className="w-3.5 h-3.5" />
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
-            )}
-
-            {/* BNSL Yield Summary */}
-            {totals.activeBnslPlans > 0 && (
-              <Link href="/bnsl">
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
-                  <div className="absolute inset-0 holo-shimmer" />
-                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="relative z-10">
-
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
-                        <Zap className="w-3 h-3 text-amber-300" />
-                        <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
-                      </div>
-                    </div>
-
-                    {/* Arc chart + stats row */}
-                    <div className="flex items-center gap-4 mb-4">
-                      {/* Semicircle arc progress */}
-                      <div className="relative flex-shrink-0 flex flex-col items-center">
-                        <svg width="76" height="44" viewBox="0 0 76 44">
-                          {/* Track */}
-                          <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="6" strokeLinecap="round" />
-                          {/* Progress */}
-                          <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#fcd34d" strokeWidth="6" strokeLinecap="round"
-                            strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
-                            strokeDashoffset="0"
-                          />
-                        </svg>
-                        <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
-                          <span className="text-[13px] font-extrabold text-white leading-none">{Math.round(bnslPlanProgress)}%</span>
-                          <span className="text-[8px] text-white/50 font-medium leading-none mt-0.5">complete</span>
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
-                        <div>
-                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Locked Gold</span>
-                          <p className="text-[15px] font-extrabold text-white leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Total Earned</span>
-                          <p className="text-[15px] font-extrabold text-amber-300 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Yield Rate</span>
-                          <p className="text-[13px] font-bold text-emerald-300 leading-tight">
-                            {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Next Payout</span>
-                          <p className="text-[13px] font-bold text-white leading-tight">{bnslDaysToNextPayout}d</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quarterly payout progress bar */}
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-white/60 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
-                        <span className="text-[10px] text-amber-200 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
-                      </div>
-                      <div className="w-full h-2 bg-white/15 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full"
-                          style={{ background: 'linear-gradient(90deg, #fbbf24, #fcd34d)' }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${bnslQuarterProgress}%` }}
-                          transition={{ duration: 1, ease: 'easeOut' }}
-                        />
-                      </div>
-                      <p className="text-[9px] text-white/40 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
-                      <span className="text-[11px] font-medium">View plans</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            )}
 
           </div>
 
@@ -920,14 +787,133 @@ export default function Dashboard() {
               <div className="flex-1 h-px bg-gray-100" />
             </div>
 
-            {/* Cards row */}
-            <div className={`grid gap-5 ${finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            {/* Cards row — BNSL (left) + FinaBridge Quick Trade (right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
-              {/* FinaBridge Quick Trade Card */}
-              <motion.div variants={itemVariants} data-testid="card-quick-trade">
+              {/* ── BNSL card — Quick Join or Yield Summary ── */}
+              {totals.activeBnslPlans === 0 ? (
+                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #0891b2 100%)' }} data-testid="card-quick-bnsl">
+                  <div className="absolute inset-0 holo-shimmer" />
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                  <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full opacity-10 bg-amber-300 blur-2xl" />
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
+                            <Zap className="w-3.5 h-3.5 text-amber-300" />
+                          </div>
+                          <p className="text-[13px] font-extrabold text-white">Gold Yield Plan</p>
+                        </div>
+                        <p className="text-[10px] text-white/60">Earn passive income on your gold</p>
+                      </div>
+                      <div className="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30">
+                        <span className="text-[11px] font-extrabold text-amber-300">Up to 8%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 mb-4 flex-1">
+                      {[
+                        { icon: '✦', text: 'Earn margin yield on locked gold' },
+                        { icon: '✦', text: 'Fixed rate for plan duration' },
+                        { icon: '✦', text: 'Flexible 3 – 12 month terms' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-amber-300 text-[10px]">{item.icon}</span>
+                          <span className="text-[11px] text-white/75">{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {bnslPlans.length > 0 ? (
+                      <Link href="/bnsl">
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                          Manage My Plans <ChevronRight className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </Link>
+                    ) : (
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                        Join Plan Now <ChevronRight className="w-3.5 h-3.5" />
+                      </motion.button>
+                    )}
+                  </div>
+                </motion.div>
+              ) : (
+                <Link href="/bnsl">
+                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full" style={{ background: 'linear-gradient(135deg, #0f766e, #0d9488, #14b8a6)' }} data-testid="card-bnsl-summary">
+                    <div className="absolute inset-0 holo-shimmer" />
+                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                    <div className="relative z-10 h-full flex flex-col">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[12px] text-white/80 font-semibold tracking-wide">BNSL Yield Plans</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full border border-white/10">
+                          <Zap className="w-3 h-3 text-amber-300" />
+                          <span className="text-[10px] font-bold text-white">{totals.activeBnslPlans || 0} Active</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="relative flex-shrink-0 flex flex-col items-center">
+                          <svg width="76" height="44" viewBox="0 0 76 44">
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="6" strokeLinecap="round" />
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#fcd34d" strokeWidth="6" strokeLinecap="round"
+                              strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
+                              strokeDashoffset="0"
+                            />
+                          </svg>
+                          <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
+                            <span className="text-[13px] font-extrabold text-white leading-none">{Math.round(bnslPlanProgress)}%</span>
+                            <span className="text-[8px] text-white/50 font-medium leading-none mt-0.5">complete</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
+                          <div>
+                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Locked Gold</span>
+                            <p className="text-[15px] font-extrabold text-white leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Total Earned</span>
+                            <p className="text-[15px] font-extrabold text-amber-300 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Yield Rate</span>
+                            <p className="text-[13px] font-bold text-emerald-300 leading-tight">
+                              {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-white/50 font-medium uppercase tracking-wider">Next Payout</span>
+                            <p className="text-[13px] font-bold text-white leading-tight">{bnslDaysToNextPayout}d</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mb-3 flex-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] text-white/60 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
+                          <span className="text-[10px] text-amber-200 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
+                        </div>
+                        <div className="w-full h-2 bg-white/15 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: 'linear-gradient(90deg, #fbbf24, #fcd34d)' }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${bnslQuarterProgress}%` }}
+                            transition={{ duration: 1, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <p className="text-[9px] text-white/40 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
+                        <span className="text-[11px] font-medium">View plans</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              )}
+
+              {/* ── FinaBridge Quick Trade Card ── */}
+              <motion.div variants={itemVariants} data-testid="card-quick-trade" className="h-full">
                 <div className="relative rounded-[20px] p-5 overflow-hidden h-full" style={{ background: 'linear-gradient(135deg, #0f2057 0%, #1e3a8a 55%, #1e40af 100%)' }}>
                   <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 15% 85%, #60a5fa 0%, transparent 55%), radial-gradient(circle at 85% 15%, #3b82f6 0%, transparent 55%)' }} />
-                  <div className="relative z-10">
+                  <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-xl bg-blue-400/20 flex items-center justify-center border border-blue-400/30">
@@ -945,9 +931,8 @@ export default function Dashboard() {
                         </div>
                       )}
                     </div>
-
                     {finaBridge.activeCases === 0 ? (
-                      <ul className="space-y-1.5 mb-4">
+                      <ul className="space-y-1.5 mb-4 flex-1">
                         {[
                           'Settle international trades in physical gold',
                           'Global buyer-seller matching network',
@@ -960,7 +945,7 @@ export default function Dashboard() {
                         ))}
                       </ul>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
                         <div className="bg-white/10 rounded-lg px-2.5 py-2">
                           <p className="text-[10px] text-blue-300/80">Volume</p>
                           <p className="text-[14px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
@@ -971,8 +956,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     )}
-
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-auto">
                       {finaBridge.activeCases === 0 ? (
                         <button
                           onClick={() => setShowTradeModal(true)}
@@ -1009,38 +993,42 @@ export default function Dashboard() {
                 </div>
               </motion.div>
 
-              {/* FinaBridge Trade Stats — only when user has active trades or volume */}
-              {finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
-                <Link href="/finabridge">
-                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group h-full" style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)' }} data-testid="card-finabridge-summary">
-                    <div className="absolute inset-0 holo-shimmer" />
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[12px] text-white/80 font-semibold tracking-wide">FinaBridge</span>
-                          <Landmark className="w-4 h-4 text-white/60" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <span className="text-[10px] text-white/50 font-medium">Active Cases</span>
-                            <p className="text-[20px] font-extrabold text-white">{finaBridge.activeCases}</p>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-white/50 font-medium">Trade Volume</span>
-                            <p className="text-[16px] font-extrabold text-white">${formatNumber(finaBridge.tradeVolume)}</p>
-                          </div>
-                        </div>
+            </div>
+
+            {/* FinaBridge Trade Stats — full-width below, only when active trades */}
+            {finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
+              <Link href="/finabridge">
+                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)' }} data-testid="card-finabridge-summary">
+                  <div className="absolute inset-0 holo-shimmer" />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[12px] text-white/80 font-semibold tracking-wide">FinaBridge</span>
+                        <Landmark className="w-4 h-4 text-white/60" />
                       </div>
-                      <div className="flex items-center gap-1.5 mt-3 text-white/60 group-hover:text-white transition-colors">
-                        <span className="text-[11px] font-medium">View trades</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      <div className="flex items-center gap-8">
+                        <div>
+                          <span className="text-[10px] text-white/50 font-medium">Active Cases</span>
+                          <p className="text-[24px] font-extrabold text-white leading-none">{finaBridge.activeCases}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-white/50 font-medium">Trade Volume</span>
+                          <p className="text-[20px] font-extrabold text-white leading-none">${formatNumber(finaBridge.tradeVolume)}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-white/50 font-medium">Gold Escrowed</span>
+                          <p className="text-[20px] font-extrabold text-white leading-none">{formatNumber(finaBridge.goldGrams)}g</p>
+                        </div>
                       </div>
                     </div>
-                  </motion.div>
-                </Link>
-              )}
-
-            </div>
+                    <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
+                      <span className="text-[12px] font-medium">View trades</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            )}
           </motion.section>
         )}
 
