@@ -9,6 +9,15 @@ Finatrades is a gold-backed digital financial platform offering integrated servi
 Preferred communication style: Simple, everyday language.
 System Reports Email: System@finatrades.com. All system-generated reports (security audits, CSRF reports, compliance reports, etc.) should be sent to this email address.
 
+## Branding Requirements (MANDATORY)
+
+**Finatrades Logo — Center-Top Placement Rule:**
+Every Certificate (Digital Ownership, Physical Storage, Conversion, and any future cert types), every Document (PDF exports, reports, statements), and every Email template MUST display the Finatrades logo prominently at the center-top. This is a non-negotiable brand standard.
+- Logo placement: horizontally centered, top of the document/certificate/email body
+- Apply to: all certificate modal views, PDF/print renderings, email HTML templates, regulatory reports, account statements, and any other document output
+- Use the official Finatrades brand mark with brand purple (#8A2BE2) and gold (#D4AF37) color scheme
+- When implementing any new certificate, document, or email feature, always include the logo header as the first design step
+
 ## System Architecture
 
 The platform employs a client-server architecture with a React frontend and an Express Node.js backend, utilizing PostgreSQL for data persistence.
