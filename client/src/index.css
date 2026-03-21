@@ -163,7 +163,72 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--brand-font-family);
+    /* Inter optical-size axis for crisp rendering at all sizes */
+    font-optical-sizing: auto;
+    /* Improve text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Proportional number spacing by default */
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+}
+
+/* ============================================
+   FINTECH TYPOGRAPHY UTILITIES
+   ============================================ */
+
+/* Tabular (monospace-width) numerals — use on all financial numbers */
+.num {
+  font-feature-settings: 'tnum' 1, 'ss01' 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Large hero numbers — 32-40px range */
+.num-hero {
+  font-feature-settings: 'tnum' 1, 'ss01' 1, 'cv05' 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Standard metric numbers — 16-24px */
+.num-metric {
+  font-feature-settings: 'tnum' 1, 'ss01' 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Labels above numbers (like "Total Earned") */
+.label-caps {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* Financial badge — compact pill for amounts */
+.fin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 button:focus:not(:focus-visible) {

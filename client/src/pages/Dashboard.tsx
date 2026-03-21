@@ -341,17 +341,17 @@ export default function Dashboard() {
 
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
-            <h1 className="text-[28px] font-bold tracking-tight" data-testid="text-welcome">
-              <span className="text-gray-900">{getGreeting()}, </span>
+            <h1 className="text-[30px] font-bold" style={{ letterSpacing: '-0.025em', lineHeight: '1.15' }} data-testid="text-welcome">
+              <span className="text-gray-800">{getGreeting()}, </span>
               <span className="gradient-text-purple font-extrabold">{userName}</span>
             </h1>
-            <p className="text-gray-500 text-[14px] mt-1">Your gold portfolio at a glance</p>
+            <p className="text-gray-400 text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
           </div>
           <motion.div
             whileHover={{ scale: 1.03 }}
             className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/60 shadow-sm cursor-default"
           >
-            <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">ID</span>
+            <span className="text-[12px] text-gray-400 uppercase tracking-widest font-bold">ID</span>
             <span className="text-sm font-bold text-gray-800 font-mono tracking-wide">{finatradesId}</span>
             <button onClick={copyFinatradesId} className="p-1.5 hover:bg-purple-50 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
               {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
@@ -431,7 +431,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                     <motion.p
-                      className="text-[38px] font-extrabold tracking-tight leading-none"
+                      className="text-[38px] font-extrabold leading-none num-hero"
                       style={{ background: 'linear-gradient(135deg, #5b21b6, #7c3aed, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -502,7 +502,7 @@ export default function Dashboard() {
                           </text>
                         </svg>
                         <div className="flex items-center gap-1 mt-1">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
                             🥇 GOLD
                           </div>
                         </div>
@@ -530,20 +530,20 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <span className="text-[13px] text-gray-700 font-bold">Gold Wallet</span>
-                  <span className="text-[10px] text-gray-400 font-medium ml-1.5">Conversion</span>
+                  <span className="text-[12px] text-gray-400 font-medium ml-1.5">Conversion</span>
                 </div>
                 {/* Currency ↔ Weight toggle */}
                 <div className="flex items-center bg-gray-100 rounded-xl p-0.5 gap-0.5">
                   <button
                     onClick={() => setWalletView('currency')}
-                    className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold transition-all ${walletView === 'currency' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`px-2.5 py-1 rounded-[10px] text-[12px] font-bold transition-all ${walletView === 'currency' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
                     data-testid="toggle-wallet-currency"
                   >
                     $ Currency
                   </button>
                   <button
                     onClick={() => setWalletView('weight')}
-                    className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold transition-all ${walletView === 'weight' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`px-2.5 py-1 rounded-[10px] text-[12px] font-bold transition-all ${walletView === 'weight' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
                     data-testid="toggle-wallet-weight"
                   >
                     ⚖ Weight
@@ -561,8 +561,8 @@ export default function Dashboard() {
                         <span className="text-[11px]">🇺🇸</span>
                         <span className="text-[11px] font-bold text-blue-700">USD</span>
                       </div>
-                      <p className="text-[15px] font-extrabold text-blue-900">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
-                      <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
+                      <p className="text-[15px] font-extrabold text-blue-900 num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
+                      <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
                   </motion.div>
                   <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-amber-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
@@ -572,11 +572,11 @@ export default function Dashboard() {
                         <span className="text-[11px]">🇦🇪</span>
                         <span className="text-[11px] font-bold text-amber-700">AED</span>
                       </div>
-                      <p className="text-[15px] font-extrabold text-amber-900 flex items-center gap-[3px]">
+                      <p className="text-[15px] font-extrabold text-amber-900 num-metric flex items-center gap-[3px]">
                         <DirhamSymbol size="0.95em" />
                         {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
                       </p>
-                      <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
+                      <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
                   </motion.div>
                   <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-indigo-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
@@ -586,8 +586,8 @@ export default function Dashboard() {
                         <span className="text-[11px]">🇪🇺</span>
                         <span className="text-[11px] font-bold text-indigo-700">EUR</span>
                       </div>
-                      <p className="text-[15px] font-extrabold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                      <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
+                      <p className="text-[15px] font-extrabold text-indigo-900 num-metric">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                      <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
                   </motion.div>
                 </div>
@@ -596,12 +596,12 @@ export default function Dashboard() {
                 <>
                   {/* Unit sub-toggle */}
                   <div className="flex items-center gap-1.5 mb-3">
-                    <span className="text-[10px] text-gray-400 font-medium mr-0.5">Unit:</span>
+                    <span className="text-[12px] text-gray-400 font-medium mr-0.5">Unit:</span>
                     {(['g', 'oz', 'kg'] as const).map(unit => (
                       <button
                         key={unit}
                         onClick={() => setWeightUnit(unit)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${weightUnit === unit ? 'bg-amber-500 text-white border-amber-500' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-amber-300'}`}
+                        className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all border ${weightUnit === unit ? 'bg-amber-500 text-white border-amber-500' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-amber-300'}`}
                         data-testid={`toggle-unit-${unit}`}
                       >
                         {unit === 'g' ? 'Gram' : unit === 'oz' ? 'Ounce' : 'Kilogram'}
@@ -628,12 +628,12 @@ export default function Dashboard() {
                           <div className="relative z-10">
                             <div className="flex items-center gap-1 mb-2">
                               <span className="text-[11px]">{icon}</span>
-                              <span className={`text-[10px] font-bold ${color.sub}`}>{label}</span>
+                              <span className={`text-[12px] font-bold ${color.sub}`}>{label}</span>
                             </div>
                             <p className={`text-[14px] font-extrabold ${color.text} leading-tight`}>
                               {showBalance ? `${formatNumber(converted, weightUnit === 'kg' ? 4 : 3)}` : '••••'}
                             </p>
-                            <p className={`text-[9px] font-bold ${color.sub} mt-0.5`}>{suffix}</p>
+                            <p className={`text-[11px] font-bold ${color.sub} mt-0.5`}>{suffix}</p>
                           </div>
                         </motion.div>
                       );
@@ -656,7 +656,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold text-gray-900">Gold Price Lock</h3>
-                  <p className="text-[10px] text-gray-400">Protect your buying rate</p>
+                  <p className="text-[12px] text-gray-400">Protect your buying rate</p>
                 </div>
               </div>
               {activeFpgwLocks.length > 0 ? (
@@ -667,7 +667,7 @@ export default function Dashboard() {
                         <div className="w-2 h-2 rounded-full bg-purple-500" />
                         <div>
                           <span className="text-[11px] font-bold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
-                          <span className="text-[10px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+                          <span className="text-[12px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
                         </div>
                       </div>
                       <span className="text-[11px] font-bold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -680,12 +680,12 @@ export default function Dashboard() {
                     <div className="w-2 h-2 rounded-full bg-gray-300" />
                     <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
                   </div>
-                  <span className="text-[10px] text-gray-400">Lock price for 24–72h</span>
+                  <span className="text-[12px] text-gray-400">Lock price for 24–72h</span>
                 </div>
               )}
-              <div className="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+              <div className="flex items-center justify-between text-[12px] text-gray-500 mb-3 font-medium">
                 <span>Current rate</span>
-                <span className="font-bold text-gray-800">${formatNumber(goldPrice, 2)}/g</span>
+                <span className="font-bold text-gray-800 num-metric">${formatNumber(goldPrice, 2)}/g</span>
               </div>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -726,7 +726,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
                       <CreditCard className="w-3 h-3 text-white/60" />
-                      <span className="text-white/60 text-[10px] font-bold">GOLD CARD</span>
+                      <span className="text-white/60 text-[12px] font-bold">GOLD CARD</span>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -739,17 +739,17 @@ export default function Dashboard() {
                     <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
                     <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
+                        <p className="text-[11px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
                         <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
                           {user?.firstName || ''} {user?.lastName || ''}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[8px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
+                        <p className="text-[11px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
                         <p className="text-white/90 text-sm font-extrabold">
                           {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
                         </p>
-                        <p className="text-white/30 text-[9px] font-medium">
+                        <p className="text-white/30 text-[11px] font-medium">
                           {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
                         </p>
                       </div>
@@ -774,11 +774,11 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="text-[12px] font-bold text-gray-800">Refer & Earn</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Invite friends, earn rewards</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Invite friends, earn rewards</p>
                     </div>
                   </div>
                   <Link href="/referrals">
-                    <button className="text-[10px] text-indigo-600 hover:text-indigo-800 transition-colors font-bold flex items-center gap-0.5" data-testid="link-referral-full">
+                    <button className="text-[12px] text-indigo-600 hover:text-indigo-800 transition-colors font-bold flex items-center gap-0.5" data-testid="link-referral-full">
                       View all <ChevronRight className="w-3 h-3" />
                     </button>
                   </Link>
@@ -787,7 +787,7 @@ export default function Dashboard() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 min-w-0 rounded-xl px-3 py-2.5" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.14)' }}>
-                        <p className="text-[9px] text-gray-400 font-medium mb-0.5">Your referral code</p>
+                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">Your referral code</p>
                         <p className="text-[13px] font-extrabold text-indigo-800 tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
                       </div>
                       <button
@@ -808,14 +808,14 @@ export default function Dashboard() {
                       <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.10)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
                           <Users className="w-3 h-3 text-indigo-500" />
-                          <p className="text-[9px] text-gray-400 font-medium">Referred</p>
+                          <p className="text-[11px] text-gray-400 font-medium">Referred</p>
                         </div>
                         <p className="text-[16px] font-extrabold text-indigo-800">{referralData.stats?.totalReferrals ?? 0}</p>
                       </div>
                       <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.12)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
                           <TrendingUp className="w-3 h-3 text-emerald-600" />
-                          <p className="text-[9px] text-gray-400 font-medium">Earned</p>
+                          <p className="text-[11px] text-gray-400 font-medium">Earned</p>
                         </div>
                         <p className="text-[16px] font-extrabold text-emerald-700">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
                       </div>
@@ -871,7 +871,7 @@ export default function Dashboard() {
                           </div>
                           <p className="text-[13px] font-extrabold text-gray-800">Gold Yield Plan</p>
                         </div>
-                        <p className="text-[10px] text-gray-500 font-medium">Earn passive income on your gold</p>
+                        <p className="text-[12px] text-gray-500 font-medium">Earn passive income on your gold</p>
                       </div>
                       <div className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
                         <span className="text-[11px] font-extrabold text-amber-700">Up to 8%</span>
@@ -884,7 +884,7 @@ export default function Dashboard() {
                         { icon: '✦', text: 'Flexible 3 – 12 month terms' },
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <span className="text-teal-500 text-[10px]">{item.icon}</span>
+                          <span className="text-teal-500 text-[12px]">{item.icon}</span>
                           <span className="text-[11px] text-gray-600 font-medium">{item.text}</span>
                         </div>
                       ))}
@@ -914,7 +914,7 @@ export default function Dashboard() {
                         <span className="text-[12px] text-teal-800 font-bold tracking-wide">BNSL Yield Plans</span>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(13,148,136,0.10)', border: '1px solid rgba(13,148,136,0.20)' }}>
                           <Zap className="w-3 h-3 text-teal-600" />
-                          <span className="text-[10px] font-bold text-teal-700">{totals.activeBnslPlans || 0} Active</span>
+                          <span className="text-[12px] font-bold text-teal-700">{totals.activeBnslPlans || 0} Active</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 mb-4">
@@ -928,34 +928,34 @@ export default function Dashboard() {
                           </svg>
                           <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
                             <span className="text-[13px] font-extrabold text-teal-800 leading-none">{Math.round(bnslPlanProgress)}%</span>
-                            <span className="text-[8px] text-gray-400 font-medium leading-none mt-0.5">complete</span>
+                            <span className="text-[11px] text-gray-400 font-medium leading-none mt-0.5">complete</span>
                           </div>
                         </div>
                         <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
                           <div>
-                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Locked Gold</span>
-                            <p className="text-[15px] font-extrabold text-gray-800 leading-tight">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                            <span className="label-caps">Locked Gold</span>
+                            <p className="text-[15px] font-extrabold text-gray-800 leading-tight num-metric mt-0.5">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Total Earned</span>
-                            <p className="text-[15px] font-extrabold text-amber-700 leading-tight">${formatNumber(totals.bnslTotalProfit || 0)}</p>
+                            <span className="label-caps">Total Earned</span>
+                            <p className="text-[15px] font-extrabold text-amber-700 leading-tight num-metric mt-0.5">${formatNumber(totals.bnslTotalProfit || 0)}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Yield Rate</span>
-                            <p className="text-[13px] font-bold text-emerald-700 leading-tight">
+                            <span className="label-caps">Yield Rate</span>
+                            <p className="text-[13px] font-bold text-emerald-700 leading-tight num-metric mt-0.5">
                               {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
                             </p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Next Payout</span>
-                            <p className="text-[13px] font-bold text-gray-800 leading-tight">{bnslDaysToNextPayout}d</p>
+                            <span className="label-caps">Next Payout</span>
+                            <p className="text-[13px] font-bold text-gray-800 leading-tight num-metric mt-0.5">{bnslDaysToNextPayout}d</p>
                           </div>
                         </div>
                       </div>
                       <div className="mb-3 flex-1">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-gray-500 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
-                          <span className="text-[10px] text-amber-700 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
+                          <span className="text-[12px] text-gray-500 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
+                          <span className="text-[12px] text-amber-700 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
                         </div>
                         <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.12)' }}>
                           <motion.div
@@ -966,7 +966,7 @@ export default function Dashboard() {
                             transition={{ duration: 1, ease: 'easeOut' }}
                           />
                         </div>
-                        <p className="text-[9px] text-gray-400 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
+                        <p className="text-[11px] text-gray-400 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
                       </div>
                       <div className="flex items-center gap-1.5 text-teal-600 group-hover:text-teal-800 transition-colors">
                         <span className="text-[11px] font-semibold">View plans</span>
@@ -992,13 +992,13 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="text-gray-800 font-extrabold text-[14px] leading-tight">Trade Finance</h3>
-                          <p className="text-blue-500 text-[10px] font-medium">FinaBridge Platform</p>
+                          <p className="text-blue-500 text-[12px] font-medium">FinaBridge Platform</p>
                         </div>
                       </div>
                       {finaBridge.activeCases > 0 && (
                         <div className="text-right">
                           <span className="text-[22px] font-extrabold text-blue-700 leading-none">{finaBridge.activeCases}</span>
-                          <p className="text-[10px] text-gray-400 leading-tight">active trades</p>
+                          <p className="text-[12px] text-gray-400 leading-tight">active trades</p>
                         </div>
                       )}
                     </div>
@@ -1018,11 +1018,11 @@ export default function Dashboard() {
                     ) : (
                       <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
                         <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[10px] text-gray-400 font-medium">Volume</p>
+                          <p className="text-[12px] text-gray-400 font-medium">Volume</p>
                           <p className="text-[14px] font-extrabold text-blue-800">${formatNumber(finaBridge.tradeVolume)}</p>
                         </div>
                         <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[10px] text-gray-400 font-medium">Gold Locked</p>
+                          <p className="text-[12px] text-gray-400 font-medium">Gold Locked</p>
                           <p className="text-[14px] font-extrabold text-blue-800">{formatNumber(finaBridge.goldGrams)}g</p>
                         </div>
                       </div>
@@ -1080,15 +1080,15 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center gap-8">
                         <div>
-                          <span className="text-[10px] text-white/50 font-medium">Active Cases</span>
+                          <span className="text-[12px] text-white/50 font-medium">Active Cases</span>
                           <p className="text-[24px] font-extrabold text-white leading-none">{finaBridge.activeCases}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-white/50 font-medium">Trade Volume</span>
+                          <span className="text-[12px] text-white/50 font-medium">Trade Volume</span>
                           <p className="text-[20px] font-extrabold text-white leading-none">${formatNumber(finaBridge.tradeVolume)}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-white/50 font-medium">Gold Escrowed</span>
+                          <span className="text-[12px] text-white/50 font-medium">Gold Escrowed</span>
                           <p className="text-[20px] font-extrabold text-white leading-none">{formatNumber(finaBridge.goldGrams)}g</p>
                         </div>
                       </div>
@@ -1297,10 +1297,10 @@ export default function Dashboard() {
                                 />
                               </div>
                               {row.sublabels.length > 0 && (
-                                <p className="text-[10px] text-gray-400 mt-0.5">{row.sublabels.join(' · ')}</p>
+                                <p className="text-[12px] text-gray-400 mt-0.5">{row.sublabels.join(' · ')}</p>
                               )}
                               {row.extra && (
-                                <p className="text-[10px] font-medium mt-0.5" style={{ color: row.color }}>{row.extra}</p>
+                                <p className="text-[12px] font-medium mt-0.5" style={{ color: row.color }}>{row.extra}</p>
                               )}
                             </div>
                             <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
@@ -1416,7 +1416,7 @@ export default function Dashboard() {
                                 />
                               </div>
                               {!isZero && (
-                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                <p className="text-[12px] text-gray-400 mt-0.5">
                                   {showBalance ? `$${formatNumber(row.usd)}` : ''}
                                 </p>
                               )}
@@ -1453,7 +1453,7 @@ export default function Dashboard() {
               </div>
               <div className="text-right">
                 <p className="text-[15px] font-extrabold text-gray-900">${formatNumber(goldPrice, 2)}</p>
-                <p className="text-[10px] text-gray-400">/gram now</p>
+                <p className="text-[12px] text-gray-400">/gram now</p>
               </div>
             </div>
           </div>
@@ -1556,7 +1556,7 @@ export default function Dashboard() {
                       {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : 'text-gray-800'}`}>{grams}</p>}
                       {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${statusColor}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${statusColor}`}>
                       {tx.status}
                     </span>
                   </motion.div>
@@ -1616,7 +1616,7 @@ export default function Dashboard() {
                     <div className="text-right shrink-0">
                       <p className="text-[13px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                    <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
                       {cert.status === 'Active' || cert.status === 'ACTIVE' ? 'Active' : cert.status}
                     </span>
                   </motion.div>
