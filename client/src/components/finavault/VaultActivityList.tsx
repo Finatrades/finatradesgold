@@ -11,6 +11,7 @@ import { RefreshCw, Search, TrendingUp, ArrowUpRight, ArrowDownLeft, ArrowLeftRi
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { jsPDF } from 'jspdf';
 
 interface VaultTransaction {
   id: string;
@@ -471,13 +472,13 @@ export default function VaultActivityList() {
   const getStatusBadge = (status: string, rejectionReason?: string | null) => {
     switch (status) {
       case 'Completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs px-2.5 py-1 rounded-full font-medium">Completed</Badge>;
       case 'Pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2.5 py-1 rounded-full font-medium">Pending</Badge>;
       case 'Cancelled':
         return (
           <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+            <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
             {rejectionReason && (
               <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
             )}
@@ -486,14 +487,14 @@ export default function VaultActivityList() {
       case 'Rejected':
         return (
           <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+            <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
             {rejectionReason && (
               <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
             )}
           </div>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs px-2.5 py-1 rounded-full font-medium">{status}</Badge>;
     }
   };
 
@@ -848,15 +849,76 @@ export default function VaultActivityList() {
       const toFGPW = tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW');
       const toLGPW = tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW');
       const price = tx.goldPriceUsdPerGram ? `$${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g` : null;
-      if (toFGPW) return price ? `Price locked at ${price}` : 'Gold moved to Fixed Price Wallet';
-      if (toLGPW) return price ? `Moved to Live Price Wallet · ${price}` : 'Gold returned to Live Price Wallet';
+      const convCert = tx.certificates.find(c => c.type === 'Conversion');
+      if (toFGPW) {
+        const parts: string[] = [];
+        if (price) parts.push(`Locked at ${price}`);
+        if (convCert) parts.push(`${convCert.certificateNumber} issued`);
+        return parts.length > 0 ? parts.join(' · ') : 'Gold moved to Fixed Price Wallet';
+      }
+      if (toLGPW) {
+        const parts: string[] = [];
+        if (price) parts.push(`Unlocked at ${price}`);
+        if (convCert) parts.push(`${convCert.certificateNumber} issued`);
+        return parts.length > 0 ? parts.join(' · ') : 'Gold returned to Live Price Wallet';
+      }
       return tx.description || 'Gold transferred between wallets';
     }
-    if (tx.recipientEmail) return `To: ${tx.recipientEmail}`;
-    if (tx.senderEmail) return `From: ${tx.senderEmail}`;
+
+    // Send
+    if (tx.type === 'Send') {
+      const parts: string[] = [];
+      if (tx.recipientEmail) parts.push(`To: ${tx.recipientEmail}`);
+      if (tx.referenceId) parts.push(`Ref: ${tx.referenceId}`);
+      return parts.length > 0 ? parts.join(' · ') : 'Sent Gold';
+    }
+
+    // Receive
+    if (tx.type === 'Receive') {
+      const parts: string[] = [];
+      if (tx.senderEmail) parts.push(`From: ${tx.senderEmail}`);
+      if (tx.referenceId) parts.push(`Ref: ${tx.referenceId}`);
+      return parts.length > 0 ? parts.join(' · ') : 'Received Gold';
+    }
+
+    // BNSL Lock (Deposit with BNSL cert)
     const bnslCert = tx.certificates.find(c => c.type === 'BNSL Lock');
-    if (bnslCert) return `BNSL Plan · ${bnslCert.certificateNumber}`;
-    if (tx.certificates.length > 0) return tx.certificates[0].certificateNumber;
+    if (bnslCert) {
+      const parts: string[] = [];
+      parts.push(`${bnslCert.certificateNumber} issued`);
+      return parts.join(' · ');
+    }
+
+    // Vault Deposit (physical)
+    if (tx.type === 'Vault Deposit') {
+      const pscCert = tx.certificates.find(c => c.type === 'Physical Storage');
+      const docCert = tx.certificates.find(c => c.type === 'Digital Ownership');
+      const parts: string[] = [];
+      if (tx.description?.toLowerCase().includes('dropoff') || tx.description?.toLowerCase().includes('personal')) parts.push('Method: Personal Dropoff');
+      if (pscCert) parts.push(`${pscCert.certificateNumber} issued`);
+      else if (docCert) parts.push(`${docCert.certificateNumber} issued`);
+      return parts.length > 0 ? parts.join(' · ') : tx.description || 'Vault deposit';
+    }
+
+    // Buy Gold
+    if (tx.type === 'Buy') {
+      const docCert = tx.certificates.find(c => c.type === 'Digital Ownership');
+      const parts: string[] = [];
+      if (tx.referenceId) parts.push(`Ref: ${tx.referenceId}`);
+      if (docCert) parts.push(`${docCert.certificateNumber} issued`);
+      return parts.length > 0 ? parts.join(' · ') : 'Gold acquired';
+    }
+
+    // Bank Deposit
+    if (tx.type === 'Bank Deposit') {
+      const parts: string[] = [];
+      if (tx.description) parts.push(tx.description);
+      if (tx.referenceId) parts.push(`Ref: ${tx.referenceId}`);
+      return parts.length > 0 ? parts.join(' · ') : 'Bank deposit';
+    }
+
+    // Generic fallback
+    if (tx.certificates.length > 0) return `${tx.certificates[0].certificateNumber}`;
     return tx.description || new Date(tx.createdAt).toLocaleDateString();
   };
 
@@ -1052,100 +1114,244 @@ export default function VaultActivityList() {
       </CardContent>
 
       <Dialog open={!!selectedTx} onOpenChange={() => setSelectedTx(null)}>
-        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Transaction Details</DialogTitle>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0">
+          <DialogHeader className="p-0">
+            <DialogTitle className="sr-only">Transaction Details</DialogTitle>
+            <DialogDescription className="sr-only">View detailed information about this vault transaction</DialogDescription>
           </DialogHeader>
           {selectedTx && (() => {
             const isToFGPW = selectedTx.type === 'Swap' && (selectedTx.description?.includes('LGPW to FGPW') || selectedTx.description?.includes('LGPW To FGPW'));
             const isToLGPW = selectedTx.type === 'Swap' && (selectedTx.description?.includes('FGPW to LGPW') || selectedTx.description?.includes('FGPW To LGPW'));
+            const isConversion = isToFGPW || isToLGPW;
             const price = selectedTx.goldPriceUsdPerGram ? `$${parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2)}/g` : null;
-            const grams = selectedTx.amountGold ? `${parseFloat(selectedTx.amountGold).toFixed(4)}g` : null;
+            const grams = selectedTx.amountGold ? parseFloat(selectedTx.amountGold).toFixed(4) : '0';
+            const usdVal = selectedTx.amountUsd ? parseFloat(selectedTx.amountUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+            const isBnslTx = selectedTx.type === 'Deposit' && (selectedTx.description?.toLowerCase().includes('bnsl'));
+            const bnslCert = selectedTx.certificates.find(c => c.type === 'BNSL Lock');
+            const pscCert = selectedTx.certificates.find(c => c.type === 'Physical Storage');
+            const docCert = selectedTx.certificates.find(c => c.type === 'Digital Ownership');
+            const convCert = selectedTx.certificates.find(c => c.type === 'Conversion');
+            const isSend = selectedTx.type === 'Send';
+            const isReceive = selectedTx.type === 'Receive';
+            const isVaultDeposit = selectedTx.type === 'Vault Deposit';
+            const isBuy = selectedTx.type === 'Buy';
+            const isBankDeposit = selectedTx.type === 'Bank Deposit';
 
-            const humanDescription = (() => {
-              if (isToFGPW) return `Your ${grams} of gold has been moved into the Fixed Price Wallet. The price has been locked at ${price}. This protects your gold's USD value from market fluctuations.`;
-              if (isToLGPW) return `Your ${grams} of gold has been returned to the Live Price Wallet. Price protection has been removed. The gold is now valued at the live market rate.`;
-              if (selectedTx.type === 'Deposit' && selectedTx.description?.toLowerCase().includes('bnsl')) {
-                return `Gold locked into a BNSL savings plan. The gold is secured and will earn returns over the plan tenure.`;
-              }
-              if (selectedTx.type === 'Buy' || (selectedTx.type === 'Vault Deposit' && selectedTx.description === 'Gold Purchase')) {
-                return `Gold purchased and credited to your vault at ${price ?? 'the current market rate'}.`;
-              }
-              if (selectedTx.type === 'Sell') return `Gold sold at ${price ?? 'the current market rate'} and proceeds settled.`;
-              if (selectedTx.type === 'Send') return `Gold sent to ${selectedTx.recipientEmail || 'another user'} from your vault.`;
-              if (selectedTx.type === 'Receive') return `Gold received from ${selectedTx.senderEmail || 'another user'} into your vault.`;
-              if (selectedTx.type === 'Withdrawal') return `Gold withdrawn from your vault as a cash settlement.`;
-              if (selectedTx.description?.includes('Physical Gold Deposit') || selectedTx.description?.includes('FinaVault')) {
-                return `Physical gold deposited and registered in your vault. Both a Digital Ownership and Physical Storage certificate have been issued.`;
-              }
-              return selectedTx.description || null;
-            })();
+            const isCredit = isGoldIncoming(selectedTx.type);
+            const amountSign = isConversion ? '' : isCredit ? '+' : '-';
+            const amountClass = isConversion ? 'text-amber-600' : isCredit ? 'text-green-600' : 'text-red-600';
 
-            const goldPriceLabel = isToFGPW ? 'Protected Price' : isToLGPW ? 'Market Price at Removal' : selectedTx.type === 'Buy' ? 'Purchase Price' : selectedTx.type === 'Sell' ? 'Sale Price' : 'Gold Price';
+            const vaultSectionCard = (title: string, children: React.ReactNode) => (
+              <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/50 border-b border-border">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+                </div>
+                <div className="px-4 py-1">{children}</div>
+              </div>
+            );
+
+            const vaultInfoRow = (label: string, value: React.ReactNode) => (
+              <div className="flex justify-between items-start gap-4 py-2 border-b border-border/50 last:border-0">
+                <span className="text-muted-foreground text-sm shrink-0">{label}</span>
+                <span className="text-sm font-medium text-right">{value}</span>
+              </div>
+            );
+
+            const handleDownloadVaultReceipt = () => {
+              const pdf = new jsPDF();
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const margin = 20;
+              pdf.setFillColor(74, 0, 130);
+              pdf.rect(0, 0, pageWidth, 38, 'F');
+              pdf.setFillColor(212, 175, 55);
+              pdf.rect(0, 38, pageWidth, 3, 'F');
+              pdf.setTextColor(255, 255, 255);
+              pdf.setFontSize(20);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text('FINATRADES', pageWidth / 2, 18, { align: 'center' });
+              pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'normal');
+              const receiptTitle = isBnslTx ? 'BNSL Lock Receipt'
+                : isToFGPW ? 'Price Protection Activated Receipt'
+                : isToLGPW ? 'Price Protection Removed Receipt'
+                : isSend ? 'Gold Send Receipt'
+                : isReceive ? 'Gold Receive Receipt'
+                : isVaultDeposit ? 'Physical Gold Deposit Receipt'
+                : isBuy || isBankDeposit ? 'Gold Purchase Receipt'
+                : 'Vault Transaction Receipt';
+              pdf.text(receiptTitle, pageWidth / 2, 30, { align: 'center' });
+              pdf.setTextColor(0, 0, 0);
+              pdf.setFontSize(22);
+              pdf.setFont('helvetica', 'bold');
+              const amountDisplay = isConversion ? `${grams} g (converted)` : `${isCredit ? '+ ' : '- '}${grams} g`;
+              const [r, g2, b] = isConversion ? [212, 175, 55] : isCredit ? [34, 139, 34] : [220, 20, 60];
+              pdf.setTextColor(r, g2, b);
+              pdf.text(amountDisplay, pageWidth / 2, 60, { align: 'center' });
+              pdf.setFontSize(10);
+              pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(100, 100, 100);
+              pdf.text(`USD equivalent: $${usdVal}`, pageWidth / 2, 69, { align: 'center' });
+              pdf.setDrawColor(220, 220, 220);
+              pdf.line(margin, 78, pageWidth - margin, 78);
+              let yPos = 92;
+              const addRow = (label: string, value: string) => {
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(120, 120, 120);
+                pdf.text(label, margin, yPos);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(30, 30, 30);
+                pdf.text(String(value).replace(/[^\x00-\x7F]/g, ''), pageWidth - margin, yPos, { align: 'right' });
+                pdf.setDrawColor(240, 240, 240);
+                pdf.line(margin, yPos + 3, pageWidth - margin, yPos + 3);
+                yPos += 13;
+              };
+              addRow('Transaction Type', getDisplayName(selectedTx));
+              addRow('Status', selectedTx.status);
+              addRow('Reference ID', selectedTx.referenceId || selectedTx.id.slice(0, 16) + '...');
+              addRow('Date', new Date(selectedTx.createdAt).toLocaleString());
+              addRow('Gold Amount', `${grams} g`);
+              addRow('USD Value', `$${usdVal}`);
+              if (price) addRow(isToFGPW ? 'Protected Price' : isToLGPW ? 'Market Price at Removal' : 'Gold Price', price);
+              if (isBnslTx && bnslCert) addRow('BNSL Certificate', bnslCert.certificateNumber);
+              if (isVaultDeposit && pscCert) addRow('Storage Certificate', pscCert.certificateNumber);
+              if (isVaultDeposit && docCert) addRow('Ownership Certificate', docCert.certificateNumber);
+              if ((isBuy || isBankDeposit) && docCert) addRow('Ownership Certificate', docCert.certificateNumber);
+              if (isConversion && convCert) addRow('Conversion Certificate', convCert.certificateNumber);
+              if (isSend && selectedTx.recipientEmail) addRow('Sent To', selectedTx.recipientEmail);
+              if (isReceive && selectedTx.senderEmail) addRow('Received From', selectedTx.senderEmail);
+              pdf.setFillColor(248, 248, 248);
+              pdf.rect(0, 268, pageWidth, 30, 'F');
+              pdf.setFontSize(8);
+              pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(150, 150, 150);
+              pdf.text('This receipt is electronically generated and verified by Finatrades.', pageWidth / 2, 278, { align: 'center' });
+              pdf.text('Finatrades Finance SA  |  finatrades.com', pageWidth / 2, 284, { align: 'center' });
+              pdf.text(new Date().toLocaleDateString(), pageWidth / 2, 290, { align: 'center' });
+              pdf.save('finatrades-vault-receipt-' + (selectedTx.referenceId || selectedTx.id.slice(0, 8)) + '.pdf');
+            };
+
+            const openCertificateModal = (cert: typeof bnslCert) => {
+              if (cert) setViewingCerts([cert]);
+            };
 
             return (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="col-span-2">
-                  <p className="text-muted-foreground text-xs mb-1">Transaction Type</p>
-                  <p className="font-semibold text-base">{getDisplayName(selectedTx)}</p>
+            <div>
+              {/* Header */}
+              <div className="flex flex-col items-center pt-8 pb-4 px-6 text-center space-y-3">
+                <div className={`p-4 rounded-full border-2 ${getTypeColor(selectedTx.type)}`}>
+                  {getTypeIcon(selectedTx.type)}
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Status</p>
-                  {getStatusBadge(selectedTx.status, selectedTx.rejectionReason)}
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">{getDisplayName(selectedTx)}</p>
+                  <h2 className={`text-3xl font-bold ${amountClass}`}>
+                    {amountSign}{grams}g
+                  </h2>
+                  {selectedTx.amountUsd && (
+                    <p className="text-sm text-muted-foreground mt-1">≈ ${usdVal} USD</p>
+                  )}
+                  <div className="flex justify-center mt-3">
+                    {getStatusBadge(selectedTx.status, selectedTx.rejectionReason)}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Reference ID</p>
-                  <p className="font-mono text-xs break-all">{selectedTx.referenceId || selectedTx.id.slice(0, 16) + '…'}</p>
-                </div>
-                {selectedTx.rejectionReason && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Rejection Reason</p>
-                    <p className="text-red-600">{selectedTx.rejectionReason}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-muted-foreground">Gold Amount</p>
-                  <p className="font-bold">{selectedTx.amountGold ? parseFloat(selectedTx.amountGold).toFixed(4) : '0'}g</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">USD Equivalent</p>
-                  <p className="font-bold">${selectedTx.amountUsd ? parseFloat(selectedTx.amountUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</p>
-                </div>
-                {selectedTx.goldPriceUsdPerGram && (
-                  <div>
-                    <p className="text-muted-foreground">{goldPriceLabel}</p>
-                    <p>${parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2)}/g</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-muted-foreground">Date & Time</p>
-                  <p>{new Date(selectedTx.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                </div>
-                {selectedTx.completedAt && (
-                  <div>
-                    <p className="text-muted-foreground">Completed At</p>
-                    <p>{new Date(selectedTx.completedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                  </div>
-                )}
-                {selectedTx.recipientEmail && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Sent To</p>
-                    <p>{selectedTx.recipientEmail}</p>
-                  </div>
-                )}
-                {selectedTx.senderEmail && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Received From</p>
-                    <p>{selectedTx.senderEmail}</p>
-                  </div>
-                )}
-                {humanDescription && (
-                  <div className="col-span-2 bg-muted/40 rounded-lg p-3 border border-border">
-                    <p className="text-muted-foreground text-xs mb-1">What happened</p>
-                    <p className="text-sm leading-relaxed">{humanDescription}</p>
-                  </div>
-                )}
+              </div>
+
+              <div className="px-4 pb-6 space-y-3">
+                {/* BNSL Lock Details */}
+                {isBnslTx && vaultSectionCard('Lock Details', <>
+                  {vaultInfoRow('Gold Locked', `${grams} g`)}
+                  {vaultInfoRow('USD Value', `$${usdVal}`)}
+                  {bnslCert && vaultInfoRow('Certificate', (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{bnslCert.certificateNumber}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openCertificateModal(bnslCert)}>
+                        <Eye className="w-3 h-3 mr-1" />View
+                      </Button>
+                    </div>
+                  ))}
+                </>)}
+
+                {/* Send/Receive - Counterparty */}
+                {(isSend || isReceive) && vaultSectionCard('Counterparty', <>
+                  {isSend && selectedTx.recipientEmail && vaultInfoRow('Sent To', selectedTx.recipientEmail)}
+                  {isReceive && selectedTx.senderEmail && vaultInfoRow('Received From', selectedTx.senderEmail)}
+                  {vaultInfoRow('Gold Amount', `${grams} g`)}
+                  {vaultInfoRow('USD Value', `$${usdVal}`)}
+                </>)}
+
+                {/* Vault Deposit */}
+                {isVaultDeposit && vaultSectionCard('Deposit Details', <>
+                  {vaultInfoRow('Gold Amount', `${grams} g`)}
+                  {selectedTx.goldPriceUsdPerGram && vaultInfoRow('Gold Price', price!)}
+                  {pscCert && vaultInfoRow('Storage Cert', (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{pscCert.certificateNumber}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openCertificateModal(pscCert)}>
+                        <Eye className="w-3 h-3 mr-1" />View
+                      </Button>
+                    </div>
+                  ))}
+                  {docCert && vaultInfoRow('Ownership Cert', (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{docCert.certificateNumber}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openCertificateModal(docCert)}>
+                        <Eye className="w-3 h-3 mr-1" />View
+                      </Button>
+                    </div>
+                  ))}
+                </>)}
+
+                {/* Buy Gold / Bank Deposit */}
+                {(isBuy || isBankDeposit) && !isBnslTx && vaultSectionCard('Purchase Details', <>
+                  {vaultInfoRow('Gold Credited', `${grams} g`)}
+                  {vaultInfoRow('Amount Paid', `$${usdVal}`)}
+                  {price && vaultInfoRow('Gold Price', price)}
+                  {selectedTx.referenceId && vaultInfoRow('Reference', selectedTx.referenceId)}
+                  {docCert && vaultInfoRow('Certificate', (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{docCert.certificateNumber}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openCertificateModal(docCert)}>
+                        <Eye className="w-3 h-3 mr-1" />View
+                      </Button>
+                    </div>
+                  ))}
+                </>)}
+
+                {/* Price Conversion */}
+                {isConversion && vaultSectionCard('Conversion Details', <>
+                  {vaultInfoRow('From Wallet', isToFGPW ? 'Live Gold Price (LGPW)' : 'Fixed Price Gold (FPGW)')}
+                  {vaultInfoRow('To Wallet', isToFGPW ? 'Fixed Price Gold (FPGW)' : 'Live Gold Price (LGPW)')}
+                  {vaultInfoRow('Gold Converted', `${grams} g`)}
+                  {price && vaultInfoRow(isToFGPW ? 'Locked Price' : 'Unlocked Price', price)}
+                  {convCert && vaultInfoRow('Certificate', (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{convCert.certificateNumber}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openCertificateModal(convCert)}>
+                        <Eye className="w-3 h-3 mr-1" />View
+                      </Button>
+                    </div>
+                  ))}
+                </>)}
+
+                {/* Standard Details (always shown) */}
+                {vaultSectionCard('Details', <>
+                  {vaultInfoRow('Date & Time', new Date(selectedTx.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }))}
+                  {vaultInfoRow('Reference ID', (
+                    <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{selectedTx.referenceId || selectedTx.id.slice(0, 16) + '…'}</span>
+                  ))}
+                  {selectedTx.rejectionReason && vaultInfoRow('Rejection Reason', (
+                    <span className="text-red-600 text-xs">{selectedTx.rejectionReason}</span>
+                  ))}
+                </>)}
+
+                {/* Download button */}
+                <Button
+                  className="w-full mt-2"
+                  variant="outline"
+                  onClick={handleDownloadVaultReceipt}
+                  data-testid="button-download-vault-receipt"
+                >
+                  <Download className="w-4 h-4 mr-2" /> Download Receipt PDF
+                </Button>
               </div>
             </div>
             );

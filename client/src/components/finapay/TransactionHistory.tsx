@@ -100,12 +100,84 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
 
   const getStatusColor = (status: string) => {
      switch(status) {
-       case 'Completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
-       case 'Pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-       case 'Failed': return 'bg-red-500/10 text-red-500 border-red-500/20';
+       case 'Completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
+       case 'Pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+       case 'Failed': return 'bg-red-500/10 text-red-600 border-red-500/20';
        case 'Declined': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
        default: return 'bg-white/5 text-white/60';
      }
+  };
+
+  const getTransactionSubtitle = (tx: Transaction, isMpgwToFpgw: boolean, isFpgwToMpgw: boolean, isSwap: boolean): string => {
+    if (isMpgwToFpgw) {
+      const price = (tx as any).goldPriceUsdPerGram ? `Locked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : 'Moved to Fixed Price Wallet';
+      const cert = (tx as any).certificates?.find((c: any) => c.type === 'Conversion');
+      return cert ? `${price} · ${cert.certificateNumber}` : price;
+    }
+    if (isFpgwToMpgw) {
+      const price = (tx as any).goldPriceUsdPerGram ? `Unlocked at $${parseFloat((tx as any).goldPriceUsdPerGram).toFixed(2)}/g` : 'Returned to Live Price Wallet';
+      const cert = (tx as any).certificates?.find((c: any) => c.type === 'Conversion');
+      return cert ? `${price} · ${cert.certificateNumber}` : price;
+    }
+    if (tx.type === 'Send') {
+      try {
+        const parsed = tx.description ? JSON.parse(tx.description) : null;
+        const name = parsed?.recipientName || parsed?.toName;
+        const company = parsed?.companyName || parsed?.company;
+        const ref = tx.referenceId;
+        if (name) return `To: ${name}${company ? ` (${company})` : ''}${ref ? ` · Ref: ${ref}` : ''}`;
+      } catch {}
+      return tx.description ? `To: ${tx.description}` : tx.referenceId ? `Ref: ${tx.referenceId}` : 'Sent Gold';
+    }
+    if (tx.type === 'Receive') {
+      try {
+        const parsed = tx.description ? JSON.parse(tx.description) : null;
+        const name = parsed?.senderName || parsed?.fromName;
+        const ref = tx.referenceId;
+        if (name) return `From: ${name}${ref ? ` · Ref: ${ref}` : ''}`;
+      } catch {}
+      return tx.description ? `From: ${tx.description}` : tx.referenceId ? `Ref: ${tx.referenceId}` : 'Received Gold';
+    }
+    if (tx.type === 'Buy' || (tx.description?.includes('Bank Deposit') || tx.description?.includes('Bank Transfer'))) {
+      try {
+        const parsed = tx.description ? JSON.parse(tx.description) : null;
+        const bank = parsed?.bankName || parsed?.bank;
+        const ref = tx.referenceId;
+        const cert = (tx as any).certificates?.find((c: any) => c.type === 'Digital Ownership');
+        let parts: string[] = [];
+        if (bank) parts.push(`via ${bank}`);
+        if (ref) parts.push(`Ref: ${ref}`);
+        if (cert) parts.push(`${cert.certificateNumber} issued`);
+        return parts.length > 0 ? parts.join(' · ') : tx.description || tx.referenceId || '';
+      } catch {}
+      return tx.referenceId ? `Ref: ${tx.referenceId}` : tx.description || '';
+    }
+    if (tx.type === 'Deposit') {
+      if (tx.description?.toLowerCase().includes('bnsl')) {
+        try {
+          const parsed = tx.description ? JSON.parse(tx.description) : null;
+          const plan = parsed?.planName || parsed?.templateName;
+          const maturity = parsed?.maturityDate ? `Matures ${formatShortDate(parsed.maturityDate)}` : null;
+          const cert = (tx as any).certificates?.find((c: any) => c.type === 'BNSL Lock');
+          let parts: string[] = [];
+          if (plan) parts.push(`Plan: ${plan}`);
+          if (maturity) parts.push(maturity);
+          if (cert) parts.push(`${cert.certificateNumber} issued`);
+          return parts.length > 0 ? parts.join(' · ') : 'BNSL Gold Lock';
+        } catch {}
+        return 'BNSL Gold Lock';
+      }
+      return tx.description || tx.referenceId || '';
+    }
+    return tx.description || tx.referenceId || '';
+  };
+
+  const formatShortDate = (dateStr: string): string => {
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
   };
 
   // Get transaction IDs that already exist
@@ -284,13 +356,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                         ? 'Acquire Gold' 
                         : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
 
-                      const mobileSubtitle = isMpgwToFpgw
-                        ? 'From Live Price Wallet'
-                        : isFpgwToMpgw
-                        ? 'From Price Protection Wallet'
-                        : tx.type === 'Send' ? (tx.description || 'Sent Gold')
-                        : tx.type === 'Receive' ? (tx.description || 'Received Gold')
-                        : tx.description || tx.referenceId || '';
+                      const mobileSubtitle = getTransactionSubtitle(tx, isMpgwToFpgw, isFpgwToMpgw, isSwap);
                       
                       return (
                         <div 
@@ -327,7 +393,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 </div>
                               </div>
                               <div className="flex items-center justify-between mt-2">
-                                <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
+                                <Badge variant="outline" className={`text-xs h-6 px-2.5 font-medium rounded-full ${getStatusColor(tx.status)}`}>
                                   {tx.status}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">Bal: {currentBalance !== null ? `${(currentBalance / goldPrice).toFixed(4)}g` : '--'}</span>
@@ -368,13 +434,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                         ? 'Acquire Gold' 
                         : `${tx.type} ${tx.assetType === 'GOLD' || (tx.amountGrams && tx.amountGrams > 0) ? 'Gold' : 'USD'}`;
 
-                      const desktopSubtitle = isMpgwToFpgw
-                        ? 'Moved from Live Price Wallet'
-                        : isFpgwToMpgw
-                        ? 'Moved from Price Protection Wallet'
-                        : tx.type === 'Send' ? (tx.description || 'Sent Gold')
-                        : tx.type === 'Receive' ? (tx.description || 'Received Gold')
-                        : tx.description || tx.referenceId || '';
+                      const desktopSubtitle = getTransactionSubtitle(tx, isMpgwToFpgw, isFpgwToMpgw, isSwap);
                       
                       const ledgerChildren = ledgerByTxId.get(tx.id) || [];
                       const hasLedgerChildren = ledgerChildren.length > 1;
@@ -481,7 +541,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex justify-center">
-                              <Badge variant="outline" className={`text-[10px] h-5 px-2 font-normal ${getStatusColor(tx.status)}`}>
+                              <Badge variant="outline" className={`text-xs h-6 px-2.5 font-medium rounded-full ${getStatusColor(tx.status)}`}>
                                 {tx.status}
                               </Badge>
                             </div>
