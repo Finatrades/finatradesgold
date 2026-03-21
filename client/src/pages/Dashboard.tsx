@@ -77,8 +77,7 @@ export default function Dashboard() {
   const { totals, goldPrice, finaBridge, isLoading } = dashData;
   const bnslPlans = dashData.bnslPlans || [];
   const notifications = dashData.notifications || [];
-  // FinaPay transactions only for the Recent Transactions widget
-  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 5, module: 'finapay' });
+  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   // Direct certificate fetch from the certificates model
   const { data: certsData } = useQuery<{ certificates: any[] }>({
     queryKey: ['certificates-dashboard', user?.id],
@@ -270,12 +269,13 @@ export default function Dashboard() {
   };
 
   const filteredActivities = useMemo(() => {
-    if (!activitySearch) return transactions.slice(0, 5);
+    if (!activitySearch) return transactions.slice(0, 10);
     return transactions.filter(t =>
       getTxDisplayName(t).toLowerCase().includes(activitySearch.toLowerCase()) ||
       t.type?.toLowerCase().includes(activitySearch.toLowerCase()) ||
-      t.id?.toLowerCase().includes(activitySearch.toLowerCase())
-    ).slice(0, 5);
+      t.id?.toLowerCase().includes(activitySearch.toLowerCase()) ||
+      t.sourceModule?.toLowerCase().includes(activitySearch.toLowerCase())
+    ).slice(0, 10);
   }, [transactions, activitySearch]);
 
   const recentCertsList = useMemo(() => {
@@ -316,9 +316,16 @@ export default function Dashboard() {
     );
   }
 
-  const getActivityIcon = (type: string) => {
+  const getActivityIcon = (type: string, module?: string) => {
     const t = type?.toLowerCase() || '';
-    if (t.includes('buy') || t.includes('deposit') || t.includes('add')) {
+    const m = module?.toLowerCase() || '';
+    if (m === 'bnsl' || t.includes('bnsl') || t.includes('margin')) {
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center"><Lock className="w-4 h-4 text-amber-600" /></div>;
+    }
+    if (m === 'finabridge' || t.includes('bridge') || t.includes('trade')) {
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center"><Landmark className="w-4 h-4 text-indigo-600" /></div>;
+    }
+    if (t.includes('buy') || t.includes('deposit') || t.includes('add') || t.includes('receive') || t.includes('credit')) {
       return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center"><ArrowDownLeft className="w-4 h-4 text-emerald-600" /></div>;
     }
     if (t.includes('sell') || t.includes('withdraw')) {
@@ -326,6 +333,9 @@ export default function Dashboard() {
     }
     if (t.includes('send') || t.includes('transfer')) {
       return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center"><Send className="w-4 h-4 text-blue-600" /></div>;
+    }
+    if (t.includes('swap') || t.includes('price protection')) {
+      return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 flex items-center justify-center"><ArrowLeftRight className="w-4 h-4 text-violet-600" /></div>;
     }
     if (t.includes('card')) {
       return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center"><CreditCard className="w-4 h-4 text-purple-600" /></div>;
@@ -1618,8 +1628,8 @@ export default function Dashboard() {
 
             <div className="px-4 pb-4 space-y-1">
               {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
-                const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit';
-                const isNeutral = tx.type === 'Swap';
+                const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Gold Credited' || tx.type === 'Refund' || tx.type === 'BNSL Payout' || tx.type === 'Trade Profit';
+                const isNeutral = tx.type === 'Swap' || tx.type === 'Price Protection Activated' || tx.type === 'Price Protection Removed';
                 const grams = tx.amountGold ? `${isPositive ? '+' : isNeutral ? '' : ''}${Number(tx.amountGold).toFixed(4)}g` : null;
                 const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
                 const displayName = getTxDisplayName(tx);
@@ -1648,12 +1658,13 @@ export default function Dashboard() {
                     })}
                   >
                     <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-purple-50 border border-purple-100 group-hover:scale-105 transition-transform">
-                      {getActivityIcon(tx.type)}
+                      {getActivityIcon(tx.type, tx.sourceModule)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-gray-800 truncate">{displayName}</p>
                       <p className="text-[11px] text-gray-400">
                         {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
+                        {tx.sourceModule && <span className="ml-1.5 text-[10px] text-purple-400 font-medium uppercase">{tx.sourceModule}</span>}
                       </p>
                     </div>
                     <div className="text-right shrink-0">

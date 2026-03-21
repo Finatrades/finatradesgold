@@ -22,7 +22,7 @@ function formatNumber(num: number | null | undefined, decimals = 2): string {
 export default function MobileDashboard() {
   const { user } = useAuth();
   const { totals, goldPrice, goldPriceSource, isLoading, refetch } = useDashboardData();
-  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 5 });
+  const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
   const [, setLocation] = useLocation();
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
