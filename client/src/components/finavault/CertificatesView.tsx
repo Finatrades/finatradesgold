@@ -547,6 +547,14 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                     {new Date(certificate.issuedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
+                {certificate.type === 'Trade Lock' && certificate.expiresAt && (
+                  <div className="flex justify-between text-sm border-t pt-2" style={{ borderColor: certTheme.border }}>
+                    <span className="text-white/50">Est. Release</span>
+                    <span className="font-semibold" style={{ color: '#4ade80' }}>
+                      {new Date(certificate.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -770,10 +778,19 @@ export default function CertificatesView() {
   const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
   const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
 
-  // All Active ownership certs are "Current" — any gold batch that is still active counts.
-  // Non-Active (Superseded, Cancelled, Updated) are historical.
-  const currentOwnershipCerts = ownershipCerts.filter(c => c.status === 'Active');
-  const historicalOwnershipCerts = ownershipCerts.filter(c => c.status !== 'Active');
+  // "Current" = Active leaf nodes in the ownership lineage chain.
+  // A cert is a leaf if no other Active cert lists it as a parent (i.e. it hasn't been superseded).
+  const activeOwnershipParentIds = new Set(
+    ownershipCerts
+      .filter(c => c.status === 'Active' && c.parentCertificateId)
+      .map(c => c.parentCertificateId as string)
+  );
+  const currentOwnershipCerts = ownershipCerts.filter(
+    c => c.status === 'Active' && !activeOwnershipParentIds.has(c.id)
+  );
+  const historicalOwnershipCerts = ownershipCerts.filter(
+    c => c.status !== 'Active' || activeOwnershipParentIds.has(c.id)
+  );
 
   const openCertificate = (cert: Certificate) => {
     setSelectedCertificate(cert);
@@ -928,7 +945,7 @@ export default function CertificatesView() {
     return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
   };
 
-  const renderCertRow = (cert: Certificate, isCurrent?: boolean) => {
+  const renderCertRow = (cert: Certificate, isCurrent?: boolean, compact?: boolean) => {
     const isStorage = cert.type === 'Physical Storage';
     const isBnsl = cert.type === 'BNSL Lock';
     const isConv = cert.type === 'Conversion';
@@ -962,19 +979,19 @@ export default function CertificatesView() {
     return (
       <div
         key={cert.id}
-        className={`p-4 rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4 ${isCurrent ? 'bg-white border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-white' : 'opacity-70 bg-gray-50'}`}
+        className={`${compact ? 'p-3' : 'p-4'} rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-3 ${isCurrent ? 'bg-white border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-white' : 'opacity-70 bg-gray-50'} ${compact ? 'border-gray-100' : ''}`}
         onClick={() => openCertificate(cert)}
         data-testid={`certificate-card-${cert.id}`}
       >
-        <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
-          {isBnsl ? <Lock className={`w-5 h-5 ${iconColor}`} /> :
-           isStorage ? <Box className={`w-5 h-5 ${iconColor}`} /> :
-           isTrans ? <Send className={`w-5 h-5 ${iconColor}`} /> :
-           <Award className={`w-5 h-5 ${iconColor}`} />}
+        <div className={`${compact ? 'w-8 h-8' : 'w-11 h-11'} rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+          {isBnsl ? <Lock className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} /> :
+           isStorage ? <Box className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} /> :
+           isTrans ? <Send className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} /> :
+           <Award className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`font-semibold text-sm ${labelColor}`}>{label}</span>
+            <span className={`font-semibold ${compact ? 'text-xs' : 'text-sm'} ${compact ? 'text-gray-600' : labelColor}`}>{label}</span>
             {statusBadge(cert.status)}
             {isCurrent && (
               <Badge className="text-[10px] bg-purple-100 text-purple-700 border border-purple-300">Current</Badge>
@@ -1110,8 +1127,8 @@ export default function CertificatesView() {
               <p className="text-sm text-muted-foreground">No activity records yet. Records are created when you lock gold, activate price protection, or transfer gold.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {activityRecords.map(renderCertRow)}
+            <div className="space-y-1.5">
+              {activityRecords.map(cert => renderCertRow(cert, false, true))}
             </div>
           )}
         </CardContent>
