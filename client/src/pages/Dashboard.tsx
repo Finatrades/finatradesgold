@@ -32,6 +32,8 @@ import TransactionDetailsModal from '@/components/finapay/modals/TransactionDeta
 import QuickBnslModal from '@/components/dashboard/QuickBnslModal';
 import QuickTradeModal from '@/components/dashboard/QuickTradeModal';
 import InternalTransferModal from '@/components/dashboard/InternalTransferModal';
+import PhysicalGoldDeposit from '@/pages/PhysicalGoldDeposit';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { Transaction } from '@/types/finapay';
 
 interface UserPreferences {
@@ -94,6 +96,7 @@ export default function Dashboard() {
   const [showBnslModal, setShowBnslModal] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -361,11 +364,6 @@ export default function Dashboard() {
 
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2.5" data-testid="quick-actions">
           <span className="text-[15px] font-bold text-gray-900 whitespace-nowrap">Quick Access :</span>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('deposit')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
-            data-testid="button-add-funds">
-            <Plus className="w-3.5 h-3.5" /> Add Funds
-          </motion.button>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200"
             data-testid="button-buy-gold">
@@ -395,6 +393,16 @@ export default function Dashboard() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200"
             data-testid="button-lock-gold">
             <Shield className="w-3.5 h-3.5" /> Lock Gold Price
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
+            data-testid="button-deposit-gold-quick">
+            <Vault className="w-3.5 h-3.5" /> Deposit Gold
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 hover:shadow-md hover:shadow-indigo-100/50 transition-all duration-200"
+            data-testid="button-create-trade-quick">
+            <Landmark className="w-3.5 h-3.5" /> Create Trade
           </motion.button>
         </motion.div>
 
@@ -699,6 +707,60 @@ export default function Dashboard() {
               </motion.button>
             </motion.div>
 
+            {/* ── Deposit Gold for Sale Card ── */}
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-deposit-gold-sale">
+              {/* Subtle gold mesh accent */}
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.10) 0%, transparent 65%)' }} />
+              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
+                    <Vault className="w-4 h-4 text-amber-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-[13px] font-bold text-gray-900">Sell Your Gold</h3>
+                    <p className="text-[12px] text-gray-400">Submit physical gold to vault</p>
+                  </div>
+                </div>
+
+                {/* Live spot price + wallet grams */}
+                <div className="grid grid-cols-2 gap-2.5 mb-4">
+                  <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
+                    <p className="label-caps text-amber-700/70">Spot Price</p>
+                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">${formatNumber(goldPrice, 2)}<span className="text-[11px] font-semibold text-amber-600">/g</span></p>
+                  </div>
+                  <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
+                    <p className="label-caps text-amber-700/70">Your Wallet</p>
+                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">{formatNumber(totals.walletGoldGrams || 0, 3)}<span className="text-[11px] font-semibold text-amber-600">g</span></p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-[12px] text-gray-500 mb-4 leading-relaxed">
+                  Deposit physical gold bars, coins, or raw gold into our secure vault. Receive digital gold credits upon verification.
+                </p>
+
+                {/* Primary CTA */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setDepositGoldModalOpen(true)}
+                  className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all mb-2"
+                  style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', boxShadow: '0 4px 16px rgba(217,119,6,0.25)' }}
+                  data-testid="button-deposit-gold-card"
+                >
+                  Deposit Gold →
+                </motion.button>
+
+                {/* Secondary link */}
+                <Link href="/physical-gold-deposit">
+                  <button className="w-full py-2 rounded-xl text-[12px] font-semibold text-amber-700 border border-amber-200 hover:bg-amber-50 transition-all" data-testid="link-deposit-gold-full">
+                    View all deposits
+                  </button>
+                </Link>
+              </div>
+            </motion.div>
 
           </div>
 
@@ -1696,6 +1758,14 @@ export default function Dashboard() {
         currentGoldPrice={goldPrice}
         isBusinessUser={isBusinessUser}
       />
+
+      {/* Deposit Gold Modal — embeds PhysicalGoldDeposit form */}
+      <Dialog open={depositGoldModalOpen} onOpenChange={setDepositGoldModalOpen}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[88vh] overflow-y-auto p-6 rounded-2xl">
+          <PhysicalGoldDeposit embedded={true} onSuccess={() => setDepositGoldModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
     </DashboardLayout>
   );
 }
