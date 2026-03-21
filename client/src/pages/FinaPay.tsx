@@ -361,7 +361,10 @@ export default function FinaPay() {
               data-testid="button-withdraw-gold"
             >
               <ArrowUpRight className="w-4 h-4 mr-1.5" />
-              Withdraw Gold
+              <span className="flex flex-col items-start leading-tight">
+                <span>Withdraw Gold</span>
+                {isKycApproved && <span className="text-[10px] opacity-75 font-normal">{goldGrams.toFixed(4)} g available</span>}
+              </span>
               {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
             </button>
 

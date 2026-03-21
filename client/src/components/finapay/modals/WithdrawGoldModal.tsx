@@ -4,15 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Bitcoin, AlertTriangle, CheckCircle2, Loader2, ArrowUpRight, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
+import { Building2, Bitcoin, AlertTriangle, CheckCircle2, Loader2, ArrowUpRight, ShieldCheck, ShieldAlert, Info, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTransactionPin } from '@/components/TransactionPinPrompt';
 import { useDualWalletBalance } from '@/hooks/useDualWallet';
 import { useFees, FEE_KEYS } from '@/context/FeeContext';
+
+interface BankAccount {
+  id: string;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  iban?: string | null;
+  swiftCode?: string | null;
+  bankCountry?: string | null;
+  label?: string | null;
+  isPrimary?: boolean;
+  status?: string;
+}
 
 interface WithdrawGoldModalProps {
   isOpen: boolean;
@@ -37,13 +49,8 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
   const [inputMode, setInputMode] = useState<'grams' | 'usd'>('grams');
   const [inputValue, setInputValue] = useState('');
 
-  // Bank fields
-  const [bankName, setBankName] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [iban, setIban] = useState('');
-  const [swiftCode, setSwiftCode] = useState('');
-  const [bankCountry, setBankCountry] = useState('');
+  // Bank: selected saved account
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState('');
 
   // Crypto fields
   const [cryptoNetwork, setCryptoNetwork] = useState('');
@@ -80,9 +87,24 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
 
   const kycFullName: string = kycData?.fullName || kycData?.submission?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
 
-  // KYC name match check
-  const kycNameMatch = accountName.trim().length > 0 &&
-    accountName.trim().toLowerCase() === kycFullName.toLowerCase();
+  // Saved bank accounts
+  const { data: bankAccountsData, isLoading: bankAccountsLoading } = useQuery({
+    queryKey: ['bank-accounts'],
+    queryFn: async () => {
+      const res = await fetch('/api/user/bank-accounts', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load bank accounts');
+      return res.json() as Promise<BankAccount[]>;
+    },
+    enabled: !!user?.id && isOpen && tab === 'bank',
+  });
+
+  const bankAccounts: BankAccount[] = Array.isArray(bankAccountsData) ? bankAccountsData.filter(a => a.status !== 'Inactive') : [];
+  const selectedBankAccount = bankAccounts.find(a => a.id === selectedBankAccountId) || null;
+
+  // KYC name match for selected bank account
+  const kycNameMatch = selectedBankAccount
+    ? selectedBankAccount.accountHolderName.trim().toLowerCase() === kycFullName.toLowerCase()
+    : false;
 
   // Reset on open
   useEffect(() => {
@@ -91,12 +113,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
       setTab('bank');
       setInputMode('grams');
       setInputValue('');
-      setBankName('');
-      setAccountName('');
-      setAccountNumber('');
-      setIban('');
-      setSwiftCode('');
-      setBankCountry('');
+      setSelectedBankAccountId('');
       setCryptoNetwork('');
       setCryptoCurrency('');
       setWalletAddress('');
@@ -111,9 +128,9 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
     if (grams > availableGrams) return `Insufficient balance. You have ${availableGrams.toFixed(4)}g available.`;
 
     if (tab === 'bank') {
-      if (!bankName.trim()) return 'Please enter the bank name.';
-      if (!accountName.trim()) return 'Please enter the account holder name.';
-      if (!accountNumber.trim()) return 'Please enter the account number.';
+      if (!selectedBankAccountId) return 'Please select a saved bank account.';
+      if (!selectedBankAccount) return 'Selected bank account not found.';
+      if (!kycNameMatch) return `The account holder name "${selectedBankAccount.accountHolderName}" does not match your KYC name "${kycFullName}". Bank withdrawals require KYC name verification.`;
     } else {
       if (!cryptoNetwork) return 'Please select a crypto network.';
       if (!cryptoCurrency) return 'Please select a crypto currency.';
@@ -152,20 +169,20 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
       if (pinToken) headers['x-pin-token'] = pinToken;
 
       const body: Record<string, any> = {
-        userId: user.id,
         goldGrams: grams.toFixed(6),
         goldPriceUsdPerGram: goldPricePerGram.toFixed(4),
         withdrawalMethod: tab === 'bank' ? 'Bank Transfer' : 'Crypto',
         notes: notes || undefined,
       };
 
-      if (tab === 'bank') {
-        body.bankName = bankName;
-        body.accountName = accountName;
-        body.accountNumber = accountNumber;
-        body.iban = iban || undefined;
-        body.swiftCode = swiftCode || undefined;
-        body.bankCountry = bankCountry || undefined;
+      if (tab === 'bank' && selectedBankAccount) {
+        body.bankAccountId = selectedBankAccount.id;
+        body.bankName = selectedBankAccount.bankName;
+        body.accountName = selectedBankAccount.accountHolderName;
+        body.accountNumber = selectedBankAccount.accountNumber;
+        body.iban = selectedBankAccount.iban || undefined;
+        body.swiftCode = selectedBankAccount.swiftCode || undefined;
+        body.bankCountry = selectedBankAccount.bankCountry || undefined;
       } else {
         body.cryptoNetwork = cryptoNetwork;
         body.cryptoCurrency = cryptoCurrency;
@@ -262,36 +279,30 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                   <span className="text-muted-foreground">Method</span>
                   <span className="font-medium">{tab === 'bank' ? 'Bank Transfer' : 'Crypto'}</span>
                 </div>
-                {tab === 'bank' && (
+                {tab === 'bank' && selectedBankAccount && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Bank</span>
-                      <span className="font-medium">{bankName}</span>
+                      <span className="font-medium">{selectedBankAccount.bankName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Account Name</span>
-                      <span className="font-medium">{accountName}</span>
+                      <span className="font-medium">{selectedBankAccount.accountHolderName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Account No.</span>
-                      <span className="font-medium font-mono">{accountNumber}</span>
+                      <span className="font-medium font-mono">{selectedBankAccount.accountNumber}</span>
                     </div>
-                    {iban && (
+                    {selectedBankAccount.iban && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">IBAN</span>
-                        <span className="font-medium font-mono">{iban}</span>
+                        <span className="font-medium font-mono">{selectedBankAccount.iban}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2 mt-1">
-                      {kycNameMatch ? (
-                        <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                          <ShieldCheck className="w-3 h-3" /> KYC Name Match
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                          <ShieldAlert className="w-3 h-3" /> Name Mismatch with KYC
-                        </span>
-                      )}
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                        <ShieldCheck className="w-3 h-3" /> KYC Name Verified
+                      </span>
                     </div>
                   </>
                 )}
@@ -313,14 +324,6 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                 )}
               </div>
             </div>
-            {tab === 'bank' && !kycNameMatch && (
-              <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  The account holder name does not match your KYC name (<strong>{kycFullName}</strong>). Your request will still be submitted but may require additional verification.
-                </span>
-              </div>
-            )}
             {tab === 'crypto' && (
               <div className="flex gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -354,7 +357,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
             {/* Balance info */}
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Available Balance</p>
+                <p className="text-xs text-muted-foreground">Available Gold Balance</p>
                 <p className="text-lg font-bold text-orange-700">
                   {balanceLoading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${availableGrams.toFixed(4)} g`}
                 </p>
@@ -431,49 +434,85 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
               </TabsList>
 
               <TabsContent value="bank" className="space-y-3 mt-4">
-                <div className="space-y-2">
-                  <Label>Bank Name <span className="text-red-500">*</span></Label>
-                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Emirates NBD" data-testid="input-bank-name" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Account Holder Name <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    placeholder="Full name as per bank"
-                    data-testid="input-account-name"
-                  />
-                  {accountName.trim().length > 0 && (
-                    <p className={`text-xs flex items-center gap-1 ${kycNameMatch ? 'text-green-600' : 'text-amber-600'}`}>
-                      {kycNameMatch
-                        ? <><ShieldCheck className="w-3 h-3" /> Matches your KYC name</>
-                        : <><ShieldAlert className="w-3 h-3" /> Does not match KYC name ({kycFullName})</>
-                      }
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Account Number <span className="text-red-500">*</span></Label>
-                  <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Account number" data-testid="input-account-number" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>IBAN <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                    <Input value={iban} onChange={(e) => setIban(e.target.value)} placeholder="IBAN" data-testid="input-iban" />
+                {bankAccountsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading bank accounts...
                   </div>
-                  <div className="space-y-2">
-                    <Label>SWIFT / BIC <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                    <Input value={swiftCode} onChange={(e) => setSwiftCode(e.target.value)} placeholder="SWIFT code" data-testid="input-swift" />
+                ) : bankAccounts.length === 0 ? (
+                  <div className="text-center py-4 space-y-3">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
+                      <Building2 className="w-8 h-8 text-muted-foreground/40" />
+                      <p>No verified bank accounts found.</p>
+                      <p className="text-xs">Add a bank account in your profile settings before withdrawing.</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => { handleClose(); window.location.href = '/profile?tab=bank'; }}
+                    >
+                      <PlusCircle className="w-4 h-4" /> Add Bank Account
+                    </Button>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Bank Country <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                  <Input value={bankCountry} onChange={(e) => setBankCountry(e.target.value)} placeholder="e.g. UAE" data-testid="input-bank-country" />
-                </div>
-                <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
-                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>The account holder name must match your KYC-verified name for AML compliance. Mismatches may cause delays.</span>
-                </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Select Bank Account <span className="text-red-500">*</span></Label>
+                      <Select value={selectedBankAccountId} onValueChange={setSelectedBankAccountId}>
+                        <SelectTrigger data-testid="select-bank-account">
+                          <SelectValue placeholder="Choose a saved bank account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bankAccounts.map((acct) => (
+                            <SelectItem key={acct.id} value={acct.id}>
+                              <span className="flex flex-col">
+                                <span className="font-medium">{acct.label || acct.bankName}</span>
+                                <span className="text-xs text-muted-foreground">{acct.accountHolderName} · ···{acct.accountNumber.slice(-4)}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedBankAccount && (
+                      <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{selectedBankAccount.bankName}</span>
+                          {kycNameMatch ? (
+                            <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                              <ShieldCheck className="w-3 h-3" /> KYC Match
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                              <ShieldAlert className="w-3 h-3" /> Name Mismatch
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          <span>Account Holder</span><span className="text-foreground">{selectedBankAccount.accountHolderName}</span>
+                          <span>Account No.</span><span className="text-foreground font-mono">{selectedBankAccount.accountNumber}</span>
+                          {selectedBankAccount.iban && <><span>IBAN</span><span className="text-foreground font-mono">{selectedBankAccount.iban}</span></>}
+                          {selectedBankAccount.swiftCode && <><span>SWIFT</span><span className="text-foreground font-mono">{selectedBankAccount.swiftCode}</span></>}
+                          {selectedBankAccount.bankCountry && <><span>Country</span><span className="text-foreground">{selectedBankAccount.bankCountry}</span></>}
+                        </div>
+                        {!kycNameMatch && (
+                          <div className="flex gap-2 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 mt-1">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>
+                              Account holder name <strong>"{selectedBankAccount.accountHolderName}"</strong> does not match your KYC name <strong>"{kycFullName}"</strong>. Bank withdrawals require an exact name match for AML compliance. Please use an account registered under your KYC name.
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
+                      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>Bank withdrawals require the account holder name to exactly match your KYC-verified name for AML compliance.</span>
+                    </div>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="crypto" className="space-y-3 mt-4">
@@ -508,53 +547,51 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                   <Input
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
-                    placeholder="0x... or wallet address"
+                    placeholder="0x... or destination address"
                     className="font-mono text-sm"
                     data-testid="input-wallet-address"
                   />
                 </div>
-                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                  <div>
-                    <p className="font-semibold mb-1">User Liability Disclaimer</p>
-                    <p>Crypto withdrawals are executed at your sole risk. Finatrades accepts no responsibility for lost funds due to incorrect wallet addresses, wrong networks, or unsupported tokens. Always double-check your wallet address and network before submitting.</p>
-                  </div>
+                <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    Crypto withdrawals are irreversible. Ensure the address and network are correct. Finatrades is not liable for lost funds due to incorrect wallet addresses or network selections.
+                  </span>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    id="liability-accept"
                     checked={liabilityAccepted}
                     onChange={(e) => setLiabilityAccepted(e.target.checked)}
-                    className="rounded"
+                    className="w-4 h-4 accent-orange-500"
                     data-testid="checkbox-liability"
                   />
-                  <span className="text-xs text-muted-foreground">
-                    I understand and accept full liability for this crypto withdrawal.
-                  </span>
-                </label>
+                  <label htmlFor="liability-accept" className="text-xs text-muted-foreground cursor-pointer">
+                    I understand and accept sole responsibility for this crypto withdrawal
+                  </label>
+                </div>
               </TabsContent>
             </Tabs>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Additional Notes (optional)</Label>
-              <Textarea
+              <Label className="text-sm text-muted-foreground">Notes <span className="text-xs">(optional)</span></Label>
+              <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any special instructions..."
-                rows={2}
-                className="text-sm"
-                data-testid="input-withdraw-notes"
+                placeholder="Any additional instructions..."
+                className="w-full min-h-[60px] text-sm border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+                data-testid="input-notes"
               />
             </div>
 
             <Button
               className="w-full bg-orange-500 hover:bg-orange-600 text-white"
               onClick={handleProceed}
-              disabled={balanceLoading}
+              disabled={submitting || (tab === 'bank' && selectedBankAccount !== null && !kycNameMatch)}
               data-testid="button-proceed-withdraw"
             >
-              <ArrowUpRight className="w-4 h-4 mr-2" />
               Review Withdrawal
             </Button>
           </div>

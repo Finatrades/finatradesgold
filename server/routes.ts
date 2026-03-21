@@ -9893,13 +9893,16 @@ export async function registerRoutes(
   // Create vault withdrawal request (user submission)
   app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, async (req, res) => {
     try {
+      // Always derive userId from the authenticated session — never trust the body
+      const userId = req.session.userId!;
+
       const { 
-        userId, goldGrams, goldPriceUsdPerGram, withdrawalMethod,
+        goldGrams, goldPriceUsdPerGram, withdrawalMethod,
         bankName, accountName, accountNumber, iban, swiftCode, bankCountry,
         cryptoNetwork, cryptoCurrency, walletAddress, notes
       } = req.body;
       
-      if (!userId || !goldGrams || !goldPriceUsdPerGram || !withdrawalMethod) {
+      if (!goldGrams || !goldPriceUsdPerGram || !withdrawalMethod) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -9907,6 +9910,16 @@ export async function registerRoutes(
       if (withdrawalMethod === 'Bank Transfer') {
         if (!bankName || !accountName || !accountNumber) {
           return res.status(400).json({ message: "Bank details required for bank transfer" });
+        }
+        // Enforce KYC name match for bank transfers
+        const kycRecord = await storage.getKycSubmission(userId);
+        if (kycRecord) {
+          const kycFullName: string = kycRecord.fullName || '';
+          if (kycFullName && accountName.trim().toLowerCase() !== kycFullName.toLowerCase()) {
+            return res.status(400).json({ 
+              message: `Account holder name "${accountName}" does not match your KYC name "${kycFullName}". Bank withdrawals require an exact KYC name match.` 
+            });
+          }
         }
       } else if (withdrawalMethod === 'Crypto') {
         if (!cryptoNetwork || !cryptoCurrency || !walletAddress) {
@@ -9968,8 +9981,11 @@ export async function registerRoutes(
       const requests = await storage.getAllVaultWithdrawalRequests();
       
       const enrichedRequests = await Promise.all(requests.map(async (request) => {
-        const user = await storage.getUser(request.userId);
-        return { ...request, user };
+        const [user, kyc] = await Promise.all([
+          storage.getUser(request.userId),
+          storage.getKycSubmission(request.userId),
+        ]);
+        return { ...request, user, kycFullName: kyc?.fullName || null };
       }));
       
       res.json({ requests: enrichedRequests });
@@ -9984,8 +10000,11 @@ export async function registerRoutes(
       const requests = await storage.getPendingVaultWithdrawalRequests();
       
       const enrichedRequests = await Promise.all(requests.map(async (request) => {
-        const user = await storage.getUser(request.userId);
-        return { ...request, user };
+        const [user, kyc] = await Promise.all([
+          storage.getUser(request.userId),
+          storage.getKycSubmission(request.userId),
+        ]);
+        return { ...request, user, kycFullName: kyc?.fullName || null };
       }));
       
       res.json({ requests: enrichedRequests });
