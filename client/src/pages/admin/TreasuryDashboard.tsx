@@ -312,14 +312,15 @@ export default function TreasuryDashboard() {
                   data={depositsByMethodData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
+                  innerRadius={62}
                   outerRadius={90}
-                  paddingAngle={5}
+                  paddingAngle={4}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                  labelLine={false}
                 >
                   {depositsByMethodData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />

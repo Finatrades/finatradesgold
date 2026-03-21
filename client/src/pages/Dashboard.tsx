@@ -524,8 +524,8 @@ export default function Dashboard() {
                           {/* Track */}
                           <path
                             d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
-                            stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="10"
+                            stroke="rgba(255,255,255,0.22)"
+                            strokeWidth="11"
                             strokeLinecap="round"
                             fill="none"
                           />
@@ -534,7 +534,7 @@ export default function Dashboard() {
                             <path
                               d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
                               stroke="url(#goldArc)"
-                              strokeWidth="10"
+                              strokeWidth="11"
                               strokeLinecap="round"
                               strokeDasharray={`${filled} ${empty}`}
                               fill="none"
@@ -542,15 +542,16 @@ export default function Dashboard() {
                           )}
                           <defs>
                             <linearGradient id="goldArc" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#D4AF37" />
-                              <stop offset="100%" stopColor="#FFD700" />
+                              <stop offset="0%" stopColor="#F59E0B" />
+                              <stop offset="50%" stopColor="#FFD700" />
+                              <stop offset="100%" stopColor="#FCD34D" />
                             </linearGradient>
                           </defs>
                           {/* Grams label — masked when balance hidden */}
-                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#B8860B">
+                          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="16" fontWeight="800" fill="#FFD700">
                             {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
-                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(71,85,105,0.75)">
+                          <text x={cx} y={cy + 11} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.65)">
                             Total Gold
                           </text>
                         </svg>
@@ -1032,8 +1033,8 @@ export default function Dashboard() {
                       <div className="flex items-center gap-4 mb-4">
                         <div className="relative flex-shrink-0 flex flex-col items-center">
                           <svg width="76" height="44" viewBox="0 0 76 44">
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(13,148,136,0.18)" strokeWidth="6" strokeLinecap="round" />
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#D4AF37" strokeWidth="6" strokeLinecap="round"
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(13,148,136,0.30)" strokeWidth="7" strokeLinecap="round" />
+                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#D4AF37" strokeWidth="7" strokeLinecap="round"
                               strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
                               strokeDashoffset="0"
                             />
@@ -1242,7 +1243,7 @@ export default function Dashboard() {
               key: 'mpgw',
               label: 'FinaPay Live (MPGW)',
               color: '#7c3aed',
-              bg: 'rgba(124,58,237,0.10)',
+              bg: 'rgba(124,58,237,0.18)',
               grams: mpgwAvail,
               usd: mpgwAvail * goldPrice,
               sublabels: [
@@ -1255,7 +1256,7 @@ export default function Dashboard() {
               key: 'fpgw',
               label: 'FinaPay Fixed / Hedged (FPGW)',
               color: '#f59e0b',
-              bg: 'rgba(245,158,11,0.10)',
+              bg: 'rgba(245,158,11,0.18)',
               grams: fpgwAvail,
               usd: fpgwAvail * goldPrice,
               sublabels: [
@@ -1268,7 +1269,7 @@ export default function Dashboard() {
               key: 'bnsl-wallet',
               label: 'BNSL Wallet',
               color: '#06b6d4',
-              bg: 'rgba(6,182,212,0.10)',
+              bg: 'rgba(6,182,212,0.18)',
               grams: bnslWallet,
               usd: bnslWallet * goldPrice,
               sublabels: [],
@@ -1278,7 +1279,7 @@ export default function Dashboard() {
               key: 'finabridge',
               label: 'Finabridge Wallet',
               color: '#22c55e',
-              bg: 'rgba(34,197,94,0.10)',
+              bg: 'rgba(34,197,94,0.18)',
               grams: finabridgeGrams,
               usd: finabridgeGrams * goldPrice,
               sublabels: [],
@@ -1291,7 +1292,7 @@ export default function Dashboard() {
               key: 'bnsl-locked',
               label: 'BNSL Plan Locked',
               color: '#06b6d4',
-              bg: 'rgba(6,182,212,0.10)',
+              bg: 'rgba(6,182,212,0.18)',
               grams: bnslLocked,
               usd: bnslLocked * goldPrice,
             },
@@ -1299,7 +1300,7 @@ export default function Dashboard() {
               key: 'trade-settled',
               label: 'Trades Settled (Locked)',
               color: '#7c3aed',
-              bg: 'rgba(124,58,237,0.10)',
+              bg: 'rgba(124,58,237,0.18)',
               grams: tradeSettled,
               usd: tradeSettled * goldPrice,
             },
@@ -1366,7 +1367,7 @@ export default function Dashboard() {
                           </g>
                         ))}
                         <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="white" />
-                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="none" stroke="rgba(124,58,237,0.06)" strokeWidth={1.5} />
+                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="none" stroke="rgba(124,58,237,0.18)" strokeWidth={2} />
                         <text x={wCx} y={wCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
                         <text x={wCx} y={wCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
                           {showBalance ? `${formatNumber(walletTotal, 2)}g` : '••••'}
@@ -1485,7 +1486,7 @@ export default function Dashboard() {
                           </g>
                         ))}
                         <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="white" />
-                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="none" stroke="rgba(6,182,212,0.06)" strokeWidth={1.5} />
+                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="none" stroke="rgba(6,182,212,0.20)" strokeWidth={2} />
                         <text x={lCx} y={lCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>LOCKED</text>
                         <text x={lCx} y={lCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
                           {showBalance ? `${formatNumber(lockedTotal, 2)}g` : '••••'}

@@ -242,13 +242,15 @@ export default function RiskExposure() {
                       ]}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={55}
+                      outerRadius={95}
+                      paddingAngle={4}
                       dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                      labelLine={false}
                     >
                       {COLORS.map((color, index) => (
-                        <Cell key={`cell-${index}`} fill={color} />
+                        <Cell key={`cell-${index}`} fill={color} strokeWidth={0} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
