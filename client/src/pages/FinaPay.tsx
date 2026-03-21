@@ -16,11 +16,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import TransactionHistory from '@/components/finapay/TransactionHistory';
 import PendingTransfers from '@/components/finapay/PendingTransfers';
 
-import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
-import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
+import WithdrawGoldModal from '@/components/finapay/modals/WithdrawGoldModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 
 import DualWalletDisplay, { type DualWalletDisplayHandle } from "@/components/finapay/DualWalletDisplay";
@@ -247,43 +246,6 @@ export default function FinaPay() {
     }
   }, [searchString]);
 
-  const handleSellConfirm = async (grams: number, payout: number, pinToken: string) => {
-    if (grams > goldGrams) {
-      toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
-      return;
-    }
-    try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'x-pin-token': pinToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          type: 'Sell',
-          userId: user?.id,
-          amountUsd: payout.toFixed(2),
-          amountGold: grams.toFixed(6),
-          description: 'Gold sale via FinaPay'
-        }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to submit sell order');
-      }
-      
-      refreshWallet();
-      refreshTransactions();
-      setActiveModal(null);
-      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted.` });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to submit sell order.", variant: "destructive" });
-    }
-  };
-
   const handleSendConfirm = async (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
     if (asset === 'USD' && amount > usdBalance) {
       toast({ title: "Insufficient USD", description: "You don't have enough USD balance.", variant: "destructive" });
@@ -390,27 +352,13 @@ export default function FinaPay() {
             </button>
 
             <button
-              onClick={() => isKycApproved ? setActiveModal('sell') : handleKycRequired()}
-              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
-                isKycApproved 
-                  ? 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-500 hover:text-white hover:border-purple-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-              }`}
-              data-testid="button-sell-gold"
-            >
-              <Coins className="w-4 h-4 mr-1.5" />
-              Sell Gold
-              {!isKycApproved && <Lock className="w-3 h-3 ml-1.5" />}
-            </button>
-
-            <button
               onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-md' 
                   : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
               }`}
-              data-testid="button-withdrawals"
+              data-testid="button-withdraw-gold"
             >
               <ArrowUpRight className="w-4 h-4 mr-1.5" />
               Withdraw Gold
@@ -635,14 +583,6 @@ export default function FinaPay() {
         </div>
 
         {/* Modals */}
-        <SellGoldModal 
-          isOpen={activeModal === 'sell'} 
-          onClose={handleModalClose}
-          goldPrice={currentGoldPriceUsdPerGram}
-          walletBalance={goldGrams}
-          spreadPercent={settings.sellSpreadPercent}
-          onConfirm={handleSellConfirm}
-        />
         <SendGoldModal 
           isOpen={activeModal === 'send'} 
           onClose={handleModalClose}
@@ -659,10 +599,9 @@ export default function FinaPay() {
           isOpen={activeModal === 'deposit'} 
           onClose={handleModalClose}
         />
-        <WithdrawalModal 
+        <WithdrawGoldModal 
           isOpen={activeModal === 'withdraw'} 
           onClose={handleModalClose}
-          walletBalance={usdBalance}
         />
         <BuyGoldBarModal
           isOpen={activeModal === 'buyWingold'}

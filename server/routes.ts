@@ -97,6 +97,7 @@ import {
   getBackupAuditLogs
 } from "./backup-service";
 import { getBalanceSummary, validateSpend, type GoldWalletType } from "./spend-guard";
+import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
@@ -10026,7 +10027,7 @@ export async function registerRoutes(
           });
 
           // Create transaction record
-          await storage.createTransaction({
+          const withdrawalTx = await storage.createTransaction({
             userId: request.userId,
             type: 'Withdrawal',
             status: 'Completed',
@@ -10037,6 +10038,19 @@ export async function registerRoutes(
             sourceModule: 'finavault',
             referenceId: request.referenceNumber,
           });
+
+          // Surrender certificates proportionally (cert ledger)
+          try {
+            await deductFromCerts(storage, {
+              userId: request.userId,
+              gramsToDeduct: goldGrams,
+              reason: 'SELL',
+              transactionId: withdrawalTx.id,
+              notes: `Withdrawal approved: ${request.referenceNumber} via ${request.withdrawalMethod}`,
+            });
+          } catch (certErr) {
+            console.error('[VaultWithdrawal] Cert surrender failed (non-blocking):', certErr);
+          }
           
           // Emit real-time sync event for auto-update
           emitLedgerEvent(request.userId, {

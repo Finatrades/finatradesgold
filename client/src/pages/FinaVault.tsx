@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DepositList from '@/components/finavault/DepositList';
 import RequestDetails from '@/components/finavault/RequestDetails';
-import CashOutForm from '@/components/finavault/CashOutForm';
+import WithdrawGoldModal from '@/components/finapay/modals/WithdrawGoldModal';
 import VaultActivityList from '@/components/finavault/VaultActivityList';
 import CertificatesView from '@/components/finavault/CertificatesView';
 import GoldOverviewCard from '@/components/finavault/GoldOverviewCard';
@@ -688,6 +688,7 @@ export default function FinaVault() {
   const [activeTab, setActiveTab] = useState(() => {
     return user?.kycStatus === 'Approved' ? 'vault-activity' : 'terms';
   });
+  const [withdrawGoldOpen, setWithdrawGoldOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
   const [expandedLedgerRows, setExpandedLedgerRows] = useState<Set<string>>(new Set());
 
@@ -1229,17 +1230,14 @@ export default function FinaVault() {
                   toast({ title: "KYC Required", description: "Please complete your identity verification to access this feature.", variant: "destructive" });
                   return;
                 }
-                setActiveTab('cash-out');
+                setWithdrawGoldOpen(true);
               }}
               disabled={user?.kycStatus !== 'Approved'}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                activeTab === 'cash-out' 
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
-                  : 'bg-white border border-orange-200 text-orange-700 hover:bg-orange-50'
-              } disabled:opacity-50`}
+              className="rounded-full px-4 py-2 text-sm font-medium transition-all bg-white border border-orange-200 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 disabled:opacity-50"
+              data-testid="button-withdraw-gold-vault"
             >
               <Banknote className="w-4 h-4 mr-1.5" />
-              Cash Out
+              Withdraw Gold
             </Button>
           </div>
 
@@ -1380,11 +1378,6 @@ export default function FinaVault() {
                 </TabsContent>
 
                 
-                <TabsContent value="cash-out">
-                  <CashOutForm vaultBalance={totalVaultGold} />
-                </TabsContent>
-
-
                 <TabsContent value="ownership-ledger" className="mt-0">
                   <div className="space-y-6">
                     {/* Wallet Breakdown */}
@@ -1738,6 +1731,11 @@ export default function FinaVault() {
         </AnimatePresence>
 
       </div>
+
+      <WithdrawGoldModal
+        isOpen={withdrawGoldOpen}
+        onClose={() => setWithdrawGoldOpen(false)}
+      />
     </DashboardLayout>
   );
 }

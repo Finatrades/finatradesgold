@@ -15,7 +15,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { 
   Package, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle, XCircle, 
-  Search, RefreshCw, Loader2, Eye, FileText, Building, Bitcoin, AlertCircle
+  Search, RefreshCw, Loader2, Eye, FileText, Building, Bitcoin, AlertCircle,
+  ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
@@ -415,7 +416,10 @@ export default function FinaVaultManagement() {
               </TabsTrigger>
               <TabsTrigger value="withdrawals" className="flex items-center gap-2">
                 <ArrowUpCircle className="w-4 h-4" />
-                Withdrawal Requests
+                <span>
+                  Withdrawal Requests
+                  <span className="hidden sm:inline text-[10px] font-normal ml-1 opacity-70">— Unified Payment Manager</span>
+                </span>
                 {pendingWithdrawals.length > 0 && (
                   <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center ml-1">
                     {pendingWithdrawals.length}
@@ -540,13 +544,28 @@ export default function FinaVaultManagement() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                {withdrawal.withdrawalMethod === 'Bank Transfer' ? (
-                                  <Building className="w-4 h-4 text-blue-600" />
-                                ) : (
-                                  <Bitcoin className="w-4 h-4 text-purple-600" />
-                                )}
-                                <span>{withdrawal.withdrawalMethod}</span>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  {withdrawal.withdrawalMethod === 'Bank Transfer' ? (
+                                    <Building className="w-4 h-4 text-blue-600" />
+                                  ) : (
+                                    <Bitcoin className="w-4 h-4 text-purple-600" />
+                                  )}
+                                  <span>{withdrawal.withdrawalMethod}</span>
+                                </div>
+                                {withdrawal.withdrawalMethod === 'Bank Transfer' && withdrawal.accountName && (() => {
+                                    const uName = `${withdrawal.user?.firstName || ''} ${withdrawal.user?.lastName || ''}`.trim();
+                                    const match = withdrawal.accountName.toLowerCase() === uName.toLowerCase();
+                                    return match ? (
+                                      <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-200 w-fit">
+                                        <ShieldCheck className="w-3 h-3" /> KYC Match
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 w-fit">
+                                        <ShieldAlert className="w-3 h-3" /> Name Mismatch
+                                      </span>
+                                    );
+                                  })()}
                               </div>
                             </TableCell>
                             <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
@@ -930,7 +949,22 @@ export default function FinaVaultManagement() {
 
                 {selectedWithdrawal.withdrawalMethod === 'Bank Transfer' ? (
                   <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                    <p className="font-medium text-sm">Bank Details</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">Bank Details</p>
+                      {selectedWithdrawal.accountName && (() => {
+                          const kwUserName = `${selectedWithdrawal.user?.firstName || ''} ${selectedWithdrawal.user?.lastName || ''}`.trim();
+                          const kwMatch = selectedWithdrawal.accountName.toLowerCase() === kwUserName.toLowerCase();
+                          return kwMatch ? (
+                            <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                              <ShieldCheck className="w-3 h-3" /> KYC Name Match
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              <ShieldAlert className="w-3 h-3" /> Name Mismatch — KYC: {kwUserName}
+                            </span>
+                          );
+                        })()}
+                    </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <span className="text-muted-foreground">Bank:</span>
                       <span>{selectedWithdrawal.bankName}</span>
