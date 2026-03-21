@@ -9945,7 +9945,7 @@ export async function registerRoutes(
           }
         }
       } else if (withdrawalMethod === 'Crypto') {
-        if (!cryptoNetwork || !cryptoCurrency || !walletAddress) {
+        if (!cryptoNetwork || !cryptoCurrency || !walletAddress || !walletAddress.trim()) {
           return res.status(400).json({ message: "Crypto details required for crypto withdrawal" });
         }
       }

@@ -555,8 +555,8 @@ export default function FinaVaultManagement() {
                                   <span>{withdrawal.withdrawalMethod}</span>
                                 </div>
                                 {withdrawal.withdrawalMethod === 'Bank Transfer' && withdrawal.accountName && (() => {
-                                    const kycName = withdrawal.kycFullName || `${withdrawal.user?.firstName || ''} ${withdrawal.user?.lastName || ''}`.trim();
-                                    const match = withdrawal.accountName.toLowerCase() === kycName.toLowerCase();
+                                    const kycName = (withdrawal.kycFullName || `${withdrawal.user?.firstName || ''} ${withdrawal.user?.lastName || ''}`.trim()).trim();
+                                    const match = withdrawal.accountName.trim().toLowerCase() === kycName.toLowerCase();
                                     return match ? (
                                       <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-200 w-fit">
                                         <ShieldCheck className="w-3 h-3" /> KYC Match
@@ -953,8 +953,8 @@ export default function FinaVaultManagement() {
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-sm">Bank Details</p>
                       {selectedWithdrawal.accountName && (() => {
-                          const kwKycName = selectedWithdrawal.kycFullName || `${selectedWithdrawal.user?.firstName || ''} ${selectedWithdrawal.user?.lastName || ''}`.trim();
-                          const kwMatch = selectedWithdrawal.accountName.toLowerCase() === kwKycName.toLowerCase();
+                          const kwKycName = (selectedWithdrawal.kycFullName || `${selectedWithdrawal.user?.firstName || ''} ${selectedWithdrawal.user?.lastName || ''}`.trim()).trim();
+                          const kwMatch = selectedWithdrawal.accountName.trim().toLowerCase() === kwKycName.toLowerCase();
                           return kwMatch ? (
                             <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
                               <ShieldCheck className="w-3 h-3" /> KYC Name Match
