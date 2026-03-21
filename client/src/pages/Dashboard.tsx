@@ -1672,9 +1672,8 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-gray-800 truncate">
-                        {cert.type === 'DIGITAL_OWNERSHIP' ? 'Digital Ownership'
-                          : cert.type === 'PHYSICAL_STORAGE' ? 'Physical Storage'
-                          : cert.type === 'CONVERSION' ? 'Conversion'
+                        {cert.type === 'DIGITAL_OWNERSHIP' || cert.type === 'Digital Ownership' ? 'Digital Ownership'
+                          : cert.type === 'PHYSICAL_STORAGE' || cert.type === 'Physical Storage' ? 'Physical Storage'
                           : cert.type}
                       </p>
                       <p className="text-[11px] text-gray-400">
@@ -1684,7 +1683,15 @@ export default function Dashboard() {
                     <div className="text-right shrink-0">
                       <p className="text-[13px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${
+                      cert.status === 'Active' || cert.status === 'ACTIVE'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        : cert.status === 'Locked'
+                        ? 'bg-amber-50 text-amber-600 border-amber-100'
+                        : cert.status === 'Superseded'
+                        ? 'bg-gray-100 text-gray-400 border-gray-200'
+                        : 'bg-gray-100 text-gray-500 border-gray-200'
+                    }`}>
                       {cert.status === 'Active' || cert.status === 'ACTIVE' ? 'Active' : cert.status}
                     </span>
                   </motion.div>
