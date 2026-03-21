@@ -29,6 +29,34 @@ interface QuickTradeModalProps {
 
 type Step = 1 | 2 | 3 | 4;
 
+interface TradePayload {
+  importerUserId: string;
+  goodsName: string;
+  description?: string;
+  quantity?: string;
+  tradeValueUsd: string;
+  settlementGoldGrams: string;
+  goldPriceUsdPerGram: string | null;
+  isPriceLocked: boolean;
+  currency: string;
+  paymentTerms?: string;
+  modeOfTransport: string;
+  incoterms: string;
+  portOfLoading?: string;
+  destination?: string;
+  expectedShipDate?: string;
+  financeType: string;
+  suggestExporter: boolean;
+  status: string;
+  exporterCompanyName?: string;
+  exporterContactName?: string;
+  exporterEmail?: string;
+  exporterPhone?: string;
+  proposedQuotePrice?: string;
+  proposedTimelineDays?: string;
+  proposalNotes?: string;
+}
+
 export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }: QuickTradeModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -41,9 +69,10 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
   const [isDone, setIsDone] = useState(false);
   const [createdTradeRef, setCreatedTradeRef] = useState('');
 
-  // FinaBridge wallet balance
-  const [finabridgeBalance, setFinabridgeBalance] = useState<number>(-1);
+  // FinaBridge wallet balance — null means not yet fetched/resolved
+  const [finabridgeBalance, setFinabridgeBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceFetchFailed, setBalanceFetchFailed] = useState(false);
 
   // Step 1 — Goods & Finance
   const [goodsName, setGoodsName] = useState('');
@@ -74,8 +103,17 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
   const tradeValueNum = parseFloat(tradeValueUsd) || 0;
   const settlementGrams = tradeValueNum > 0 ? tradeValueNum / goldPrice : 0;
 
-  const hasEnoughBalance = finabridgeBalance < 0 || settlementGrams === 0 || settlementGrams <= finabridgeBalance;
-  const step1Valid = goodsName.trim().length >= 2 && tradeValueNum >= 100 && hasEnoughBalance;
+  // Block Next while balance is loading; unblock on fetch failure (server will validate).
+  // When balance is known, enforce that settlement <= available.
+  const hasEnoughBalance =
+    settlementGrams === 0 ||
+    balanceFetchFailed || // couldn't load — rely on server-side enforcement
+    (finabridgeBalance !== null && settlementGrams <= finabridgeBalance);
+  const step1Valid =
+    goodsName.trim().length >= 2 &&
+    tradeValueNum >= 100 &&
+    !balanceLoading &&     // block while wallet fetch is in-flight
+    hasEnoughBalance;
 
   const step2Valid = suggestExporter || (
     exporterCompanyName.trim().length > 0 &&
@@ -89,15 +127,17 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
     if (!open || !user?.id) return;
     let cancelled = false;
     setBalanceLoading(true);
+    setBalanceFetchFailed(false);
+    setFinabridgeBalance(null);
     apiRequest('GET', `/api/finabridge/wallet/${user.id}`)
-      .then(async (res: any) => {
+      .then(async (res: Response) => {
         if (cancelled) return;
-        const data = await res.json?.() ?? res;
-        const available = parseFloat(data?.wallet?.availableGoldGrams ?? data?.availableGoldGrams ?? '0');
+        const data: { wallet?: { availableGoldGrams?: string } } = await res.json();
+        const available = parseFloat(data?.wallet?.availableGoldGrams ?? '0');
         setFinabridgeBalance(isNaN(available) ? 0 : available);
       })
       .catch(() => {
-        if (!cancelled) setFinabridgeBalance(0);
+        if (!cancelled) setBalanceFetchFailed(true);
       })
       .finally(() => {
         if (!cancelled) setBalanceLoading(false);
@@ -109,7 +149,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
     setStep(1);
     setIsDone(false);
     setCreatedTradeRef('');
-    setFinabridgeBalance(-1);
+    setFinabridgeBalance(null);
+    setBalanceFetchFailed(false);
     setGoodsName('');
     setDescription('');
     setQuantity('');
@@ -141,7 +182,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
     if (!user?.id) return;
     setIsSubmitting(true);
     try {
-      const payload: Record<string, any> = {
+      const payload: TradePayload = {
         importerUserId: user.id,
         goodsName: goodsName.trim(),
         description: description.trim() || undefined,
@@ -173,15 +214,15 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
       }
 
       const res = await apiRequest('POST', '/api/finabridge/importer/requests', payload);
-      const data = await res.json?.() ?? res;
-      setCreatedTradeRef(data?.tradeRequest?.tradeRefId || '');
+      const data: { tradeRequest?: { tradeRefId?: string } } = await res.json();
+      setCreatedTradeRef(data?.tradeRequest?.tradeRefId ?? '');
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['trade-cases'] });
       setIsDone(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Failed to create trade request',
-        description: err?.message || 'Please try again.',
+        description: err instanceof Error ? err.message : 'Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -392,10 +433,10 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                         <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
                       ) : (
                         <span className={`text-[11px] font-bold ${
-                          finabridgeBalance < 0 ? 'text-slate-500' :
+                          finabridgeBalance === null ? 'text-slate-400' :
                           !hasEnoughBalance ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {finabridgeBalance < 0 ? '—' : `${finabridgeBalance.toFixed(4)}g available`}
+                          {finabridgeBalance === null ? (balanceFetchFailed ? 'unavailable' : '—') : `${finabridgeBalance.toFixed(4)}g available`}
                         </span>
                       )}
                     </div>
@@ -407,7 +448,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                         <div className="text-[10px] text-red-700">
                           <p className="font-bold">Insufficient FinaBridge balance</p>
                           <p className="mt-0.5">
-                            Need <strong>{settlementGrams.toFixed(3)}g</strong>, have <strong>{finabridgeBalance.toFixed(4)}g</strong>.
+                            Need <strong>{settlementGrams.toFixed(3)}g</strong>
+                            {finabridgeBalance !== null && <>, have <strong>{finabridgeBalance.toFixed(4)}g</strong></>}.
                             {' '}<a href="/finabridge" className="underline font-semibold">Top up FinaBridge wallet</a> first.
                           </p>
                         </div>
