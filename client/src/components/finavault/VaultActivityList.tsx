@@ -1052,20 +1052,47 @@ export default function VaultActivityList() {
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
           </DialogHeader>
-          {selectedTx && (
+          {selectedTx && (() => {
+            const isToFGPW = selectedTx.type === 'Swap' && (selectedTx.description?.includes('LGPW to FGPW') || selectedTx.description?.includes('LGPW To FGPW'));
+            const isToLGPW = selectedTx.type === 'Swap' && (selectedTx.description?.includes('FGPW to LGPW') || selectedTx.description?.includes('FGPW To LGPW'));
+            const price = selectedTx.goldPriceUsdPerGram ? `$${parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2)}/g` : null;
+            const grams = selectedTx.amountGold ? `${parseFloat(selectedTx.amountGold).toFixed(4)}g` : null;
+
+            const humanDescription = (() => {
+              if (isToFGPW) return `Your ${grams} of gold has been moved into the Fixed Price Wallet. The price has been locked at ${price}. This protects your gold's USD value from market fluctuations.`;
+              if (isToLGPW) return `Your ${grams} of gold has been returned to the Live Price Wallet. Price protection has been removed. The gold is now valued at the live market rate.`;
+              if (selectedTx.type === 'Deposit' && selectedTx.description?.toLowerCase().includes('bnsl')) {
+                return `Gold locked into a BNSL savings plan. The gold is secured and will earn returns over the plan tenure.`;
+              }
+              if (selectedTx.type === 'Buy' || (selectedTx.type === 'Vault Deposit' && selectedTx.description === 'Gold Purchase')) {
+                return `Gold purchased and credited to your vault at ${price ?? 'the current market rate'}.`;
+              }
+              if (selectedTx.type === 'Sell') return `Gold sold at ${price ?? 'the current market rate'} and proceeds settled.`;
+              if (selectedTx.type === 'Send') return `Gold sent to ${selectedTx.recipientEmail || 'another user'} from your vault.`;
+              if (selectedTx.type === 'Receive') return `Gold received from ${selectedTx.senderEmail || 'another user'} into your vault.`;
+              if (selectedTx.type === 'Withdrawal') return `Gold withdrawn from your vault as a cash settlement.`;
+              if (selectedTx.description?.includes('Physical Gold Deposit') || selectedTx.description?.includes('FinaVault')) {
+                return `Physical gold deposited and registered in your vault. Both a Digital Ownership and Physical Storage certificate have been issued.`;
+              }
+              return selectedTx.description || null;
+            })();
+
+            const goldPriceLabel = isToFGPW ? 'Protected Price' : isToLGPW ? 'Market Price at Removal' : selectedTx.type === 'Buy' ? 'Purchase Price' : selectedTx.type === 'Sell' ? 'Sale Price' : 'Gold Price';
+
+            return (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Transaction ID</p>
-                  <p className="font-mono text-xs">{selectedTx.id}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Type</p>
-                  <Badge className={getTypeColor(selectedTx.type)}>{selectedTx.type}</Badge>
+                <div className="col-span-2">
+                  <p className="text-muted-foreground text-xs mb-1">Transaction Type</p>
+                  <p className="font-semibold text-base">{getDisplayName(selectedTx)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Status</p>
                   {getStatusBadge(selectedTx.status, selectedTx.rejectionReason)}
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Reference ID</p>
+                  <p className="font-mono text-xs break-all">{selectedTx.referenceId || selectedTx.id.slice(0, 16) + '…'}</p>
                 </div>
                 {selectedTx.rejectionReason && (
                   <div className="col-span-2">
@@ -1075,48 +1102,50 @@ export default function VaultActivityList() {
                 )}
                 <div>
                   <p className="text-muted-foreground">Gold Amount</p>
-                  <p className="font-bold">{selectedTx.amountGold ? parseFloat(selectedTx.amountGold).toFixed(6) : '0'}g</p>
+                  <p className="font-bold">{selectedTx.amountGold ? parseFloat(selectedTx.amountGold).toFixed(4) : '0'}g</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">USD Value</p>
-                  <p className="font-bold">${selectedTx.amountUsd ? parseFloat(selectedTx.amountUsd).toFixed(2) : '0.00'}</p>
+                  <p className="text-muted-foreground">USD Equivalent</p>
+                  <p className="font-bold">${selectedTx.amountUsd ? parseFloat(selectedTx.amountUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</p>
                 </div>
+                {selectedTx.goldPriceUsdPerGram && (
+                  <div>
+                    <p className="text-muted-foreground">{goldPriceLabel}</p>
+                    <p>${parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2)}/g</p>
+                  </div>
+                )}
                 <div>
-                  <p className="text-muted-foreground">Gold Price</p>
-                  <p>${selectedTx.goldPriceUsdPerGram ? parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2) : '0'}/g</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Created</p>
-                  <p>{new Date(selectedTx.createdAt).toLocaleString()}</p>
+                  <p className="text-muted-foreground">Date & Time</p>
+                  <p>{new Date(selectedTx.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </div>
                 {selectedTx.completedAt && (
                   <div>
-                    <p className="text-muted-foreground">Completed</p>
-                    <p>{new Date(selectedTx.completedAt).toLocaleString()}</p>
+                    <p className="text-muted-foreground">Completed At</p>
+                    <p>{new Date(selectedTx.completedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                   </div>
                 )}
                 {selectedTx.recipientEmail && (
                   <div className="col-span-2">
-                    <p className="text-muted-foreground">Recipient</p>
+                    <p className="text-muted-foreground">Sent To</p>
                     <p>{selectedTx.recipientEmail}</p>
                   </div>
                 )}
                 {selectedTx.senderEmail && (
                   <div className="col-span-2">
-                    <p className="text-muted-foreground">Sender</p>
+                    <p className="text-muted-foreground">Received From</p>
                     <p>{selectedTx.senderEmail}</p>
                   </div>
                 )}
-                {selectedTx.description && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Description</p>
-                    <p>{selectedTx.description}</p>
+                {humanDescription && (
+                  <div className="col-span-2 bg-muted/40 rounded-lg p-3 border border-border">
+                    <p className="text-muted-foreground text-xs mb-1">What happened</p>
+                    <p className="text-sm leading-relaxed">{humanDescription}</p>
                   </div>
                 )}
               </div>
-              
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
