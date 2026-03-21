@@ -702,7 +702,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
           <p className="text-sm font-semibold text-foreground text-center">Choose your payment method</p>
           <div className="space-y-3">
-            {/* Bank Transfer */}
+            {/* Bank Transfer — always available */}
             <button
               type="button"
               onClick={() => handleSelectMethod('bank')}
@@ -717,36 +717,40 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-            {/* Card */}
-            <button
-              type="button"
-              onClick={() => handleSelectMethod('card')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
-            >
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-semibold text-foreground">Debit / Credit Card</p>
-                <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-            {/* Crypto */}
-            <button
-              type="button"
-              onClick={() => handleSelectMethod('crypto')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
-            >
-              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <Bitcoin className="w-6 h-6 text-amber-600" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-semibold text-foreground">Cryptocurrency</p>
-                <p className="text-xs text-muted-foreground">USDT, BTC, ETH and more</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+            {/* Card — only when N-Genius is enabled */}
+            {ngeniusEnabled && (
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('card')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-foreground">Debit / Credit Card</p>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
+            {/* Crypto — only when wallets are configured */}
+            {cryptoWallets.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('crypto')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <Bitcoin className="w-6 h-6 text-amber-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-foreground">Cryptocurrency</p>
+                  <p className="text-xs text-muted-foreground">USDT, BTC, ETH and more</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </>
       )}
@@ -1640,138 +1644,24 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               </div>
             )}
             
-            {/* Payment Method Selection */}
-            {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
-              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
-              <div className="space-y-4">
-                <p className="text-sm font-semibold text-center text-foreground">Choose payment method</p>
-                
-                {/* Bank Transfer Section */}
-                {(bankAccounts.filter(a => a.status === 'Active').length > 0) && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 px-1">
-                      <Building className="w-4 h-4 text-blue-600" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank Transfer</span>
-                      <span className="text-xs text-muted-foreground">• 1-3 days • No fees</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* AED - Left */}
-                      {bankAccounts.filter(a => a.currency === 'AED' && a.status === 'Active').length > 0 && (
-                        <button
-                          onClick={() => {
-                            const minDeposit = platformSettings.minDeposit || 50;
-                            const effectiveUsd = getEffectiveUsdAmount();
-                            if (effectiveUsd < minDeposit) {
-                              toast.error(`Minimum deposit: $${minDeposit}`);
-                              return;
-                            }
-                            if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                              setAmount(effectiveUsd.toFixed(2));
-                            }
-                            const aedAccount = bankAccounts.find(a => a.currency === 'AED' && a.status === 'Active');
-                            if (aedAccount) {
-                              setPaymentMethod('bank');
-                              handleSelectAccount(aedAccount);
-                            }
-                          }}
-                          className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 transition-all"
-                          data-testid="button-method-bank-aed"
-                        >
-                          <span className="font-bold text-teal-600">AED</span>
-                          <span className="text-xs text-muted-foreground">Dirham</span>
-                        </button>
-                      )}
-                      
-                      {/* USD - Right */}
-                      {bankAccounts.filter(a => a.currency === 'USD' && a.status === 'Active').length > 0 && (
-                        <button
-                          onClick={() => {
-                            const minDeposit = platformSettings.minDeposit || 50;
-                            const effectiveUsd = getEffectiveUsdAmount();
-                            if (effectiveUsd < minDeposit) {
-                              toast.error(`Minimum deposit: $${minDeposit}`);
-                              return;
-                            }
-                            if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                              setAmount(effectiveUsd.toFixed(2));
-                            }
-                            const usdAccount = bankAccounts.find(a => a.currency === 'USD' && a.status === 'Active');
-                            if (usdAccount) {
-                              setPaymentMethod('bank');
-                              handleSelectAccount(usdAccount);
-                            }
-                          }}
-                          className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all"
-                          data-testid="button-method-bank-usd"
-                        >
-                          <span className="font-bold text-blue-600">USD</span>
-                          <span className="text-xs text-muted-foreground">Dollar</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Other Payment Methods */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Card Payment */}
-                  {ngeniusEnabled && (
-                    <button
-                      onClick={() => {
-                        const minDeposit = platformSettings.minDeposit || 50;
-                        const effectiveUsd = getEffectiveUsdAmount();
-                        if (effectiveUsd < minDeposit) {
-                          toast.error(`Minimum deposit: $${minDeposit}`);
-                          return;
-                        }
-                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                          setAmount(effectiveUsd.toFixed(2));
-                        }
-                        setPaymentMethod('card');
-                        handleCardPayment();
-                      }}
-                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"
-                      data-testid="button-method-card"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                        <CreditCard className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-foreground">Card</p>
-                        <p className="text-xs text-muted-foreground">Instant • 2.5%</p>
-                      </div>
-                    </button>
-                  )}
-                  
-                  {/* Crypto */}
-                  {cryptoWallets.length > 0 && (
-                    <button
-                      onClick={() => {
-                        const minDeposit = platformSettings.minDeposit || 50;
-                        const effectiveUsd = getEffectiveUsdAmount();
-                        if (effectiveUsd < minDeposit) {
-                          toast.error(`Minimum deposit: $${minDeposit}`);
-                          return;
-                        }
-                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-                          setAmount(effectiveUsd.toFixed(2));
-                        }
-                        setPaymentMethod('crypto');
-                        setStep('crypto-select-wallet');
-                      }}
-                      className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all"
-                      data-testid="button-method-crypto"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Bitcoin className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-foreground">Crypto</p>
-                        <p className="text-xs text-muted-foreground">~30 min • No fees</p>
-                      </div>
-                    </button>
-                  )}
-                </div>
+            {/* Selected method badge — read-only, method was chosen on previous screen */}
+            {paymentMethod && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                {paymentMethod === 'bank' && <Building className="w-4 h-4 text-blue-600" />}
+                {paymentMethod === 'card' && <CreditCard className="w-4 h-4 text-emerald-600" />}
+                {paymentMethod === 'crypto' && <Bitcoin className="w-4 h-4 text-amber-600" />}
+                <span className="text-sm font-medium text-foreground">
+                  {paymentMethod === 'bank' && 'Bank Transfer'}
+                  {paymentMethod === 'card' && 'Debit / Credit Card'}
+                  {paymentMethod === 'crypto' && 'Cryptocurrency'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setStep('method'); setPaymentMethod(null); }}
+                  className="ml-auto text-xs text-primary hover:underline"
+                >
+                  Change
+                </button>
               </div>
             )}
             

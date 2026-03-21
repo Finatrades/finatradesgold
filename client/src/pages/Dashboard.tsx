@@ -448,19 +448,18 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Right: Gold ARC gauge */}
+                  {/* Right: Gold ARC gauge — wallet + finacard + bnsl only */}
                   {(() => {
+                    const arcGrams = (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0) + (totals.bnslWalletGoldGrams || 0);
                     const maxGrams = 500;
-                    const clampedGrams = Math.min(totalGoldGrams, maxGrams);
+                    const clampedGrams = Math.min(arcGrams, maxGrams);
                     const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
-                    // Semicircle arc: cx=52 cy=52 r=44, from 180° to 0° (left to right)
                     const r = 44;
                     const cx = 52;
                     const cy = 52;
-                    const circumference = Math.PI * r; // half-circle arc length
+                    const circumference = Math.PI * r;
                     const filled = pct * circumference;
                     const empty = circumference - filled;
-                    // Arc path: start at left (180°) sweep to right (0°)
                     const startX = cx - r;
                     const startY = cy;
                     const endX = cx + r;
@@ -476,7 +475,7 @@ export default function Dashboard() {
                             strokeLinecap="round"
                             fill="none"
                           />
-                          {/* Filled arc (amber/gold gradient via stroke trick) */}
+                          {/* Filled arc */}
                           {pct > 0 && (
                             <path
                               d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
@@ -493,12 +492,12 @@ export default function Dashboard() {
                               <stop offset="100%" stopColor="#FFD700" />
                             </linearGradient>
                           </defs>
-                          {/* Center label */}
+                          {/* Grams label — masked when balance hidden */}
                           <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#FFD700">
-                            {formatNumber(totalGoldGrams, 2)}g
+                            {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
                           </text>
                           <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7.5" fill="rgba(255,255,255,0.5)">
-                            of {maxGrams}g
+                            Total Gold
                           </text>
                         </svg>
                         <div className="flex items-center gap-1 mt-0.5">
