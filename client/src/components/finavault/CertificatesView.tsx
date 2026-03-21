@@ -419,7 +419,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
               <img
                 src={logoUrl}
                 alt="Finatrades"
-                className="h-7 w-auto object-contain"
+                className="h-36 w-auto object-contain"
                 style={{ filter: 'brightness(0) invert(1)', opacity: 0.85 }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
