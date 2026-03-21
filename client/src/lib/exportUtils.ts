@@ -1,6 +1,28 @@
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 
+async function loadLogoBase64(): Promise<string | null> {
+  // Try the local public logo first, fall back to R2 CDN
+  const sources = [
+    `${window.location.origin}/finatrades-logo-purple.png`,
+    'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png',
+  ];
+  for (const url of sources) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      const b64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      if (b64) return b64;
+    } catch { continue; }
+  }
+  return null;
+}
+
 export interface FinancialReportData {
   overview?: {
     totalRevenue: number;
@@ -408,154 +430,298 @@ export function exportToCSV(transactions: ExportTransaction[], filename: string 
 
 function getCleanTxLabel(tx: ExportTransaction): string {
   const desc = tx.description || '';
-  if (tx.type === 'Swap') {
-    if (desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW')) return 'Price Protection Activated';
-    if (desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW')) return 'Price Protection Removed';
+  const type = tx.type || '';
+  // Conversion / price protection — check both type and description
+  const isLgpwToFgpw = desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW') ||
+    type.toLowerCase().includes('lock gold') || type.toLowerCase().includes('lgpw to fgpw');
+  const isFgpwToLgpw = desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW') ||
+    type.toLowerCase().includes('unlock gold') || type.toLowerCase().includes('fgpw to lgpw');
+  if (type === 'Swap' || isLgpwToFgpw || isFgpwToLgpw) {
+    if (isLgpwToFgpw) return 'Price Protection Activated';
+    if (isFgpwToLgpw) return 'Price Protection Removed';
     return 'Wallet Conversion';
   }
   if (desc.includes('Bank Deposit') || desc.includes('Bank Transfer')) return 'Bank Deposit';
   if (desc.includes('FinaVault') || desc.includes('physical gold')) return 'Physical Gold Deposit';
-  if (tx.type === 'Deposit' || tx.type === 'Buy') return 'Acquire Gold';
-  return tx.type;
+  if (type === 'Deposit' || type === 'Buy' || type === 'Acquire Gold') return 'Acquire Gold';
+  if (type === 'FinaCard Return') return 'FinaCard Return';
+  if (type === 'FinaCard Fund') return 'FinaCard Fund';
+  if (type === 'Withdrawal') return 'Withdrawal';
+  if (type === 'Send') return 'Send Gold';
+  if (type === 'Receive') return 'Receive Gold';
+  return type;
 }
 
 function isConversionTx(tx: ExportTransaction): boolean {
-  return tx.type === 'Swap';
+  const type = tx.type || '';
+  const desc = tx.description || '';
+  return type === 'Swap' ||
+    type.toLowerCase().includes('lock gold') ||
+    type.toLowerCase().includes('unlock gold') ||
+    desc.includes('LGPW to FGPW') || desc.includes('LGPW To FGPW') ||
+    desc.includes('FGPW to LGPW') || desc.includes('FGPW To LGPW');
 }
 
-export function exportToPDF(transactions: ExportTransaction[], title: string = 'Transaction History') {
-  const doc = new jsPDF();
+export async function exportToPDF(transactions: ExportTransaction[], title: string = 'Transaction History') {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
-  let yPos = 15;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const headerH = 44; // purple band (22) + gold line (2) + white sub-header (18) + separator (2)
 
-  // Branded header
-  doc.setFillColor(74, 0, 130);
-  doc.rect(0, 0, pageWidth, 28, 'F');
-  doc.setFillColor(212, 175, 55);
-  doc.rect(0, 28, pageWidth, 2, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('FINATRADES', margin, 13);
-  doc.setFontSize(9);
+  // Load logo
+  const logoBase64 = await loadLogoBase64();
+
+  const drawHeader = (pageNum: number, totalPages: number) => {
+    // ── Purple top band ──────────────────────────────────────
+    doc.setFillColor(74, 0, 130);
+    doc.rect(0, 0, pageWidth, 22, 'F');
+    // Gold accent bar
+    doc.setFillColor(212, 175, 55);
+    doc.rect(0, 22, pageWidth, 2, 'F');
+
+    // White "FINATRADES" text on purple
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FINATRADES', margin, 14);
+
+    // Right side on purple band — title + page info
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text(title, pageWidth - margin, 11, { align: 'right' });
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(210, 185, 255);
+    doc.text(`Page ${pageNum} of ${totalPages}  |  ${transactions.length} records`, pageWidth - margin, 18, { align: 'right' });
+
+    // ── White sub-header with logo ───────────────────────────
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 24, pageWidth, 18, 'F');
+
+    if (logoBase64) {
+      try {
+        // Logo on white background — purple logo is visible
+        doc.addImage(logoBase64, 'PNG', margin, 26, 42, 12);
+      } catch {
+        // fallback text if image fails
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(74, 0, 130);
+        doc.text('FINATRADES', margin, 35);
+      }
+    } else {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(74, 0, 130);
+      doc.text('FINATRADES', margin, 35);
+    }
+
+    // Generated date on the right of sub-header
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageWidth - margin, 30, { align: 'right' });
+    doc.text('Confidential  |  Finatrades Finance SA', pageWidth - margin, 37, { align: 'right' });
+
+    // Separator line
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.3);
+    doc.line(margin, 42, pageWidth - margin, 42);
+    doc.setLineWidth(0.1);
+  };
+
+  // ── Table setup ──────────────────────────────────────────
+  // Columns: Date | Type | Reference | Gold (g) | USD ($) | Status
+  const cols = {
+    date:   { x: margin,      w: 28 },
+    type:   { x: margin + 28, w: 56 },
+    ref:    { x: margin + 84, w: 28 },
+    gold:   { x: margin + 112,w: 26 },
+    usd:    { x: margin + 138,w: 26 },
+    status: { x: margin + 164,w: 24 },
+  };
+  const tableHeaders = ['Date', 'Type', 'Reference', 'Gold (g)', 'USD ($)', 'Status'];
+  const colKeys = ['date', 'type', 'ref', 'gold', 'usd', 'status'] as const;
+
+  let yPos = headerH + 12;
+  let currentPage = 1;
+
+  // Estimate total pages (rough)
+  const rowH = 7;
+  const rowsPerPage = Math.floor((pageHeight - headerH - 40) / rowH);
+  const totalPages = Math.ceil(transactions.length / rowsPerPage) + 1;
+
+  drawHeader(currentPage, totalPages);
+
+  const drawTableHeader = () => {
+    doc.setFillColor(245, 244, 252);
+    doc.rect(margin, yPos - 5, pageWidth - margin * 2, 7.5, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(74, 0, 130);
+    colKeys.forEach((key, i) => {
+      const col = cols[key];
+      const isRight = key === 'gold' || key === 'usd' || key === 'status';
+      if (isRight) {
+        doc.text(tableHeaders[i], col.x + col.w - 1, yPos, { align: 'right' });
+      } else {
+        doc.text(tableHeaders[i], col.x + 1, yPos);
+      }
+    });
+    yPos += 8;
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.3);
+    doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+    doc.setLineWidth(0.1);
+  };
+
+  drawTableHeader();
+
   doc.setFont('helvetica', 'normal');
-  doc.text(title, margin, 23);
-  doc.setTextColor(200, 200, 200);
-  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth - margin - 70, 13);
-  doc.text(`${transactions.length} transactions`, pageWidth - margin - 70, 23);
-
-  yPos = 42;
-  doc.setTextColor(40);
-
-  // Table header
-  const colWidths = [32, 48, 28, 28, 24];
-  const headers = ['Date', 'Type', 'Gold (g)', 'USD ($)', 'Status'];
-
-  doc.setFillColor(245, 245, 248);
-  doc.rect(margin, yPos - 5, pageWidth - margin * 2, 8, 'F');
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(80);
-
-  let xPos = margin;
-  headers.forEach((header, i) => {
-    doc.text(header, xPos + 2, yPos);
-    xPos += colWidths[i];
-  });
-  yPos += 10;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(40);
 
   transactions.forEach((tx, index) => {
-    if (yPos > 268) {
+    // Page break
+    if (yPos > pageHeight - 28) {
+      // Footer on current page
+      doc.setFontSize(7);
+      doc.setTextColor(160);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Finatrades Finance SA  ·  Confidential  ·  finatrades.com', pageWidth / 2, pageHeight - 8, { align: 'center' });
+
       doc.addPage();
-      yPos = 20;
+      currentPage++;
+      yPos = headerH + 12;
+      drawHeader(currentPage, totalPages);
+      drawTableHeader();
     }
 
-    if (index % 2 === 0) {
-      doc.setFillColor(250, 250, 252);
-      doc.rect(margin, yPos - 4, pageWidth - margin * 2, 7, 'F');
-    }
-
-    const date = tx.createdAt || tx.timestamp;
-    const formattedDate = date ? format(new Date(date), 'MM/dd/yy HH:mm') : '';
-    const goldAmount = tx.amountGold ? parseFloat(String(tx.amountGold)).toFixed(4) : '-';
-    const usdAmount = tx.amountUsd ? parseFloat(String(tx.amountUsd)).toFixed(2) : '-';
-    const label = getCleanTxLabel(tx);
     const isConv = isConversionTx(tx);
+    const label = getCleanTxLabel(tx);
+    const date = tx.createdAt || tx.timestamp;
+    const formattedDate = date ? format(new Date(date), 'dd/MM/yy HH:mm') : '';
+    const goldAmount = tx.amountGold ? parseFloat(String(tx.amountGold)).toFixed(4) : '-';
+    const usdAmount = (!isConv && tx.amountUsd) ? parseFloat(String(tx.amountUsd)).toFixed(2) : '-';
+    const refId = tx.referenceId ? String(tx.referenceId).substring(0, 10) : tx.id?.substring(0, 8) || '-';
 
-    xPos = margin;
-    doc.setFontSize(8);
-    doc.setTextColor(40);
+    // Alternating row bg
+    if (index % 2 === 0) {
+      doc.setFillColor(251, 250, 255);
+      doc.rect(margin, yPos - 4.5, pageWidth - margin * 2, rowH, 'F');
+    }
 
-    doc.text(formattedDate, xPos + 2, yPos);
-    xPos += colWidths[0];
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
 
-    // Type label — colour-coded
-    if (isConv) doc.setTextColor(180, 120, 0);
-    else if (tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit') doc.setTextColor(34, 100, 34);
-    else if (tx.type === 'Send' || tx.type === 'Sell') doc.setTextColor(150, 20, 20);
-    else doc.setTextColor(40);
-    const labelTrunc = label.length > 26 ? label.substring(0, 24) + '..' : label;
-    doc.text(labelTrunc, xPos + 2, yPos);
-    doc.setTextColor(40);
-    xPos += colWidths[1];
+    // Date
+    doc.setFont('helvetica', 'normal');
+    doc.text(formattedDate, cols.date.x + 1, yPos);
 
-    doc.text(isConv ? goldAmount + ' (moved)' : goldAmount, xPos + 2, yPos);
-    xPos += colWidths[2];
+    // Type label — colour coded
+    if (isConv) {
+      doc.setTextColor(120, 75, 0);
+      doc.setFont('helvetica', 'bold');
+    } else if (['Buy', 'Receive', 'Deposit', 'Acquire Gold'].includes(tx.type || '')) {
+      doc.setTextColor(22, 101, 52);
+      doc.setFont('helvetica', 'normal');
+    } else if (['Send', 'Sell', 'Withdrawal'].includes(tx.type || '')) {
+      doc.setTextColor(153, 27, 27);
+      doc.setFont('helvetica', 'normal');
+    } else {
+      doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'normal');
+    }
+    const labelFit = label.length > 30 ? label.substring(0, 28) + '..' : label;
+    doc.text(labelFit, cols.type.x + 1, yPos);
 
-    doc.text(isConv ? '-' : usdAmount, xPos + 2, yPos);
-    xPos += colWidths[3];
+    // Reference
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(refId, cols.ref.x + 1, yPos);
 
-    if (tx.status === 'Completed') doc.setTextColor(34, 139, 34);
-    else if (tx.status === 'Pending') doc.setTextColor(180, 130, 0);
-    else if (tx.status === 'Failed') doc.setTextColor(200, 20, 20);
+    // Gold
+    doc.setTextColor(60, 60, 60);
+    doc.text(isConv ? goldAmount + 'g' : goldAmount, cols.gold.x + cols.gold.w - 1, yPos, { align: 'right' });
+
+    // USD
+    doc.text(usdAmount, cols.usd.x + cols.usd.w - 1, yPos, { align: 'right' });
+
+    // Status
+    if (tx.status === 'Completed') doc.setTextColor(22, 101, 52);
+    else if (tx.status === 'Pending') doc.setTextColor(133, 100, 4);
+    else if (tx.status === 'Failed') doc.setTextColor(153, 27, 27);
     else doc.setTextColor(100);
-    doc.text(tx.status, xPos + 2, yPos);
-    doc.setTextColor(40);
+    doc.setFont('helvetica', 'bold');
+    doc.text(tx.status || '-', cols.status.x + cols.status.w - 1, yPos, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60);
 
-    yPos += 7;
+    yPos += rowH;
   });
 
-  // Summary
-  yPos += 8;
-  if (yPos > 255) { doc.addPage(); yPos = 20; }
-  doc.setDrawColor(200, 200, 200);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 8;
-
-  const creditTx = transactions.filter(tx => !isConversionTx(tx) && (tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit'));
-  const debitTx = transactions.filter(tx => !isConversionTx(tx) && (tx.type === 'Send' || tx.type === 'Sell'));
-  const totalGoldIn = creditTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
-  const totalGoldOut = debitTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
-  const conversions = transactions.filter(isConversionTx).length;
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(40);
-  doc.text('Summary', margin, yPos);
-  yPos += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(34, 139, 34);
-  doc.text(`Gold In: +${totalGoldIn.toFixed(4)}g`, margin, yPos);
-  doc.setTextColor(200, 20, 20);
-  doc.text(`Gold Out: -${totalGoldOut.toFixed(4)}g`, margin + 55, yPos);
-  doc.setTextColor(180, 120, 0);
-  doc.text(`Wallet Conversions: ${conversions}`, margin + 115, yPos);
-
-  // Footer
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
+  // ── Summary ─────────────────────────────────────────────
+  yPos += 6;
+  if (yPos > pageHeight - 36) {
     doc.setFontSize(7);
     doc.setTextColor(160);
+    doc.text('Finatrades Finance SA  ·  Confidential  ·  finatrades.com', pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.addPage();
+    currentPage++;
+    yPos = headerH + 14;
+    drawHeader(currentPage, totalPages);
+  }
+
+  doc.setDrawColor(212, 175, 55);
+  doc.setLineWidth(0.5);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  doc.setLineWidth(0.1);
+  yPos += 7;
+
+  const creditTx = transactions.filter(tx => !isConversionTx(tx) &&
+    ['Buy', 'Receive', 'Deposit', 'Acquire Gold'].includes(tx.type || ''));
+  const debitTx = transactions.filter(tx => !isConversionTx(tx) &&
+    ['Send', 'Sell', 'Withdrawal'].includes(tx.type || ''));
+  const totalGoldIn = creditTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
+  const totalGoldOut = debitTx.reduce((s, tx) => s + (tx.amountGold ? parseFloat(String(tx.amountGold)) : 0), 0);
+  const convCount = transactions.filter(isConversionTx).length;
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(74, 0, 130);
+  doc.text('Summary', margin, yPos);
+  yPos += 7;
+
+  // Summary cards
+  const cardW = (pageWidth - margin * 2 - 10) / 3;
+  [[`Gold In`, `+${totalGoldIn.toFixed(4)}g`, [22, 101, 52]],
+   [`Gold Out`, `-${totalGoldOut.toFixed(4)}g`, [153, 27, 27]],
+   [`Wallet Conversions`, `${convCount}`, [120, 75, 0]]
+  ].forEach(([label, value, color], i) => {
+    const cx = margin + (cardW + 5) * i;
+    doc.setFillColor(248, 246, 255);
+    doc.roundedRect(cx, yPos - 4, cardW, 14, 2, 2, 'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(label as string, cx + 4, yPos + 1);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...(color as [number, number, number]));
+    doc.text(value as string, cx + 4, yPos + 8);
+  });
+
+  // ── Final footer on last page ────────────────────────────
+  const totalPagesActual = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPagesActual; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160);
     doc.text(
-      `Finatrades Finance SA  |  Confidential  |  Page ${i} of ${pageCount}`,
+      'Finatrades Finance SA  ·  Confidential  ·  finatrades.com',
       pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 8,
+      pageHeight - 8,
       { align: 'center' }
     );
   }

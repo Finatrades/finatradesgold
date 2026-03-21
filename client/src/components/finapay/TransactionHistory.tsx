@@ -213,7 +213,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                    </DropdownMenuItem>
                    <DropdownMenuSeparator />
                    <DropdownMenuItem 
-                     onClick={() => exportToPDF(filteredTransactions.map(tx => ({
+                     onClick={async () => exportToPDF(filteredTransactions.map(tx => ({
                        id: tx.id,
                        type: tx.type,
                        status: tx.status,
