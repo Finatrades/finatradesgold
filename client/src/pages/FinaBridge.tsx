@@ -11,7 +11,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   BarChart3, PlusCircle, Briefcase, Loader2, RefreshCw, 
   ArrowLeftRight, Package, Send, Eye, Check, X, Wallet,
-  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle, Info, Download, CheckCircle, Lock, Unlock
+  CreditCard, Truck, Ship, Plane, Train, Shield, FileText, MessageCircle, Info, Download, CheckCircle, Lock, Unlock,
+  Search, SlidersHorizontal, AlertCircle, ChevronRight, Bell
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -438,6 +439,13 @@ export default function FinaBridge() {
   const [showEditProposalDialog, setShowEditProposalDialog] = useState(false);
   const [viewingProposal, setViewingProposal] = useState<TradeProposal | null>(null);
   const [showProposalDetailsDialog, setShowProposalDetailsDialog] = useState(false);
+
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterTransport, setFilterTransport] = useState('All');
+  const [filterIncoterms, setFilterIncoterms] = useState('All');
+  const [filterValueMin, setFilterValueMin] = useState('');
+  const [filterValueMax, setFilterValueMax] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   const [proposalForm, setProposalForm] = useState({
     quotePrice: '',
@@ -837,6 +845,70 @@ export default function FinaBridge() {
     }
   };
 
+  const LIFECYCLE_STAGES = [
+    { key: 'Draft',             label: 'Draft',      hint: 'Submit to go live' },
+    { key: 'Open',              label: 'Open',       hint: 'Exporters can view & bid' },
+    { key: 'Proposal Review',   label: 'Reviewing',  hint: 'Admin is reviewing bids' },
+    { key: 'Awaiting Importer', label: 'Your Review',hint: 'Proposals forwarded to you' },
+    { key: 'Active Trade',      label: 'Active',     hint: 'Trade in progress' },
+    { key: 'Completed',         label: 'Settled',    hint: 'Gold transferred' },
+  ];
+
+  const getLifecycleIndex = (status: string) => {
+    if (status === 'Cancelled') return -1;
+    return LIFECYCLE_STAGES.findIndex(s => s.key === status);
+  };
+
+  const LifecycleStepper = ({ status }: { status: string }) => {
+    if (status === 'Cancelled') {
+      return (
+        <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-xs text-red-500">
+          <X className="w-3.5 h-3.5" />
+          <span className="font-medium">This trade request has been cancelled.</span>
+        </div>
+      );
+    }
+    const current = getLifecycleIndex(status);
+    return (
+      <div className="mt-3 pt-3 border-t border-border">
+        <div className="flex items-center gap-0 overflow-x-auto pb-1 scrollbar-none">
+          {LIFECYCLE_STAGES.map((stage, idx) => {
+            const isCompleted = idx < current;
+            const isActive = idx === current;
+            return (
+              <React.Fragment key={stage.key}>
+                <div className="flex flex-col items-center min-w-[60px] group">
+                  <div title={stage.hint} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
+                    isCompleted
+                      ? 'bg-green-500 border-green-500 text-white'
+                      : isActive
+                      ? 'bg-primary border-primary text-white ring-2 ring-primary/20'
+                      : 'bg-white border-gray-200 text-gray-300'
+                  }`}>
+                    {isCompleted ? <Check className="w-3 h-3" /> : <span>{idx + 1}</span>}
+                  </div>
+                  <span className={`text-[9px] mt-1 font-medium leading-tight text-center max-w-[56px] ${
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-gray-300'
+                  }`}>
+                    {stage.label}
+                  </span>
+                </div>
+                {idx < LIFECYCLE_STAGES.length - 1 && (
+                  <div className={`flex-1 h-0.5 min-w-[8px] mx-0.5 mb-4 transition-colors ${
+                    idx < current ? 'bg-green-400' : 'bg-gray-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        {current >= 0 && (
+          <p className="text-[10px] text-muted-foreground mt-1">{LIFECYCLE_STAGES[current]?.hint}</p>
+        )}
+      </div>
+    );
+  };
+
   const isMobile = useIsMobile();
 
   if (!user) return null;
@@ -848,6 +920,19 @@ export default function FinaBridge() {
       </DashboardLayout>
     );
   }
+
+  const filteredRequests = openRequests.filter(r => {
+    if (filterSearch) {
+      const q = filterSearch.toLowerCase();
+      if (!r.goodsName.toLowerCase().includes(q) && !(r.description || '').toLowerCase().includes(q)) return false;
+    }
+    if (filterTransport !== 'All' && r.modeOfTransport !== filterTransport) return false;
+    if (filterIncoterms !== 'All' && r.incoterms !== filterIncoterms) return false;
+    const val = parseFloat(r.tradeValueUsd);
+    if (filterValueMin && val < parseFloat(filterValueMin)) return false;
+    if (filterValueMax && val > parseFloat(filterValueMax)) return false;
+    return true;
+  });
 
   return (
     <DashboardLayout>
@@ -1028,6 +1113,21 @@ export default function FinaBridge() {
           <GoldBackedDisclosure className="mt-4" />
         </div>
 
+        {role === 'importer' && wallet && parseFloat(wallet.availableGoldGrams) === 0 && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl" data-testid="banner-low-balance">
+            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">Fund your FinaBridge wallet first</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Your FinaBridge wallet has a zero balance. Transfer gold from your FinaPay wallet before creating a trade request — the settlement amount will be locked in escrow when you accept an exporter's proposal.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100 flex-shrink-0" onClick={() => setShowFundDialog(true)} data-testid="button-banner-fund">
+              <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" /> Fund Now
+            </Button>
+          </div>
+        )}
+
         {role === 'importer' ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-muted border border-border p-1 mb-6 w-full md:w-auto flex">
@@ -1070,16 +1170,26 @@ export default function FinaBridge() {
               ) : (
                 <div className="space-y-4">
                   {myRequests.map((request) => (
-                    <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
+                    <Card key={request.id} className={`bg-white border transition-colors ${request.status === 'Awaiting Importer' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'hover:border-secondary/50'}`} data-testid={`card-request-${request.id}`}>
                       <CardContent className="p-4">
+                        {request.status === 'Awaiting Importer' && (
+                          <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-indigo-50 border border-indigo-200 rounded-lg" data-testid={`banner-awaiting-${request.id}`}>
+                            <Bell className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
+                            <p className="text-xs font-semibold text-indigo-700">Action required — proposals have been forwarded to you for review.</p>
+                            <Button size="sm" variant="link" className="text-indigo-700 p-0 h-auto text-xs ml-auto font-semibold" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }}>
+                              Review now <ChevronRight className="w-3 h-3 ml-0.5" />
+                            </Button>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-2 bg-secondary/10 rounded-lg">
-                              <Package className="w-5 h-5 text-primary" />
+                            <div className={`p-2 rounded-lg ${request.status === 'Active Trade' ? 'bg-green-100' : 'bg-secondary/10'}`}>
+                              <Package className={`w-5 h-5 ${request.status === 'Active Trade' ? 'text-green-600' : 'text-primary'}`} />
                             </div>
                             <div>
                               <h3 className="font-bold">{request.tradeRefId}</h3>
                               <p className="text-sm text-muted-foreground">{request.goodsName}</p>
+                              <p className="text-xs text-muted-foreground">Posted {new Date(request.createdAt).toLocaleDateString()}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -1097,17 +1207,18 @@ export default function FinaBridge() {
                               {request.status}
                             </span>
                             {request.status === 'Draft' && (
-                              <Button size="sm" onClick={() => handleSubmitRequest(request.id)} disabled={submitting}>
+                              <Button size="sm" onClick={() => handleSubmitRequest(request.id)} disabled={submitting} data-testid={`button-submit-${request.id}`}>
                                 Submit
                               </Button>
                             )}
                             {request.status === 'Awaiting Importer' && (
-                              <Button size="sm" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }}>
+                              <Button size="sm" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }} data-testid={`button-view-proposals-${request.id}`}>
                                 View Proposals
                               </Button>
                             )}
                           </div>
                         </div>
+                        <LifecycleStepper status={request.status} />
                       </CardContent>
                     </Card>
                   ))}
@@ -1868,6 +1979,78 @@ export default function FinaBridge() {
             </TabsList>
 
             <TabsContent value="requests" className="mt-0">
+              {!loading && openRequests.length > 0 && (
+                <div className="mb-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={filterSearch}
+                        onChange={(e) => setFilterSearch(e.target.value)}
+                        placeholder="Search by commodity name or description..."
+                        className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        data-testid="input-filter-search"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="flex-shrink-0 gap-2"
+                      data-testid="button-toggle-filters"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      Filters
+                      {(filterTransport !== 'All' || filterIncoterms !== 'All' || filterValueMin || filterValueMax) && (
+                        <span className="w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">
+                          {[filterTransport !== 'All', filterIncoterms !== 'All', !!filterValueMin, !!filterValueMax].filter(Boolean).length}
+                        </span>
+                      )}
+                    </Button>
+                    {(filterSearch || filterTransport !== 'All' || filterIncoterms !== 'All' || filterValueMin || filterValueMax) && (
+                      <Button variant="ghost" size="sm" onClick={() => { setFilterSearch(''); setFilterTransport('All'); setFilterIncoterms('All'); setFilterValueMin(''); setFilterValueMax(''); }} data-testid="button-clear-filters">
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  {showFilters && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 border rounded-lg" data-testid="panel-filters">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Transport Mode</label>
+                        <select value={filterTransport} onChange={(e) => setFilterTransport(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="select-filter-transport">
+                          <option value="All">All Modes</option>
+                          <option value="Sea">Sea</option>
+                          <option value="Air">Air</option>
+                          <option value="Land">Land</option>
+                          <option value="Rail">Rail</option>
+                          <option value="Multimodal">Multimodal</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Incoterms</label>
+                        <select value={filterIncoterms} onChange={(e) => setFilterIncoterms(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="select-filter-incoterms">
+                          <option value="All">All Incoterms</option>
+                          <option value="FOB">FOB</option>
+                          <option value="CIF">CIF</option>
+                          <option value="EXW">EXW</option>
+                          <option value="DAP">DAP</option>
+                          <option value="DDP">DDP</option>
+                          <option value="CFR">CFR</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Min Value (USD)</label>
+                        <input type="number" value={filterValueMin} onChange={(e) => setFilterValueMin(e.target.value)} placeholder="e.g. 10000" className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="input-filter-min" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Max Value (USD)</label>
+                        <input type="number" value={filterValueMax} onChange={(e) => setFilterValueMax(e.target.value)} placeholder="e.g. 500000" className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="input-filter-max" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {loading ? (
                 <Card className="bg-white border">
                   <CardContent className="p-12 text-center">
@@ -1875,17 +2058,19 @@ export default function FinaBridge() {
                     <p className="mt-4 text-muted-foreground">Loading open trade requests...</p>
                   </CardContent>
                 </Card>
-              ) : openRequests.length === 0 ? (
+              ) : filteredRequests.length === 0 ? (
                 <Card className="bg-white border">
                   <CardContent className="p-12 text-center">
                     <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                    <h3 className="text-lg font-bold mb-2">No Open Trade Requests</h3>
-                    <p className="text-muted-foreground">Check back later for new trade opportunities.</p>
+                    <h3 className="text-lg font-bold mb-2">{openRequests.length === 0 ? 'No Open Trade Requests' : 'No Results'}</h3>
+                    <p className="text-muted-foreground">{openRequests.length === 0 ? 'Check back later for new trade opportunities.' : 'Try adjusting your filters to see more requests.'}</p>
+                    {openRequests.length > 0 && <Button variant="outline" size="sm" className="mt-3" onClick={() => { setFilterSearch(''); setFilterTransport('All'); setFilterIncoterms('All'); setFilterValueMin(''); setFilterValueMax(''); }}>Clear Filters</Button>}
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {openRequests.map((request) => (
+                  <p className="text-xs text-muted-foreground" data-testid="text-results-count">Showing {filteredRequests.length} of {openRequests.length} open request{openRequests.length !== 1 ? 's' : ''}</p>
+                  {filteredRequests.map((request) => (
                     <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
