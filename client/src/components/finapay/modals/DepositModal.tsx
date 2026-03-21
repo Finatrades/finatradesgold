@@ -71,7 +71,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   const { refreshTransactions } = useFinaPay();
   const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<Step>('amount');
+  const [step, setStep] = useState<Step>('method');
   const [cardFormKey, setCardFormKey] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
