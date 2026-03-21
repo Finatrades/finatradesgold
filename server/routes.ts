@@ -9934,6 +9934,15 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      const parsedGoldGrams = parseFloat(goldGrams);
+      const parsedGoldPrice = parseFloat(goldPriceUsdPerGram);
+      if (!isFinite(parsedGoldGrams) || parsedGoldGrams <= 0) {
+        return res.status(400).json({ message: "Gold grams must be a positive number." });
+      }
+      if (!isFinite(parsedGoldPrice) || parsedGoldPrice <= 0) {
+        return res.status(400).json({ message: "Gold price must be a positive number." });
+      }
+
       // Validate withdrawal method specific fields
       let resolvedBankName = bankName;
       let resolvedAccountName = accountName;

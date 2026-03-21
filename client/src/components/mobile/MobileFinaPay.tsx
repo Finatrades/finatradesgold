@@ -2,22 +2,21 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useFinaPay } from '@/context/FinaPayContext';
-import { usePlatform } from '@/context/PlatformContext';
+
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { 
-  Wallet, RefreshCw, Loader2, ShoppingCart, Send, 
-  ArrowDownLeft, Plus, Coins, Eye, EyeOff, 
-  ChevronRight, TrendingUp, ArrowUpRight
+  Wallet, RefreshCw, ShoppingCart, Send, 
+  ArrowDownLeft, Plus, Eye, EyeOff, 
+  ChevronRight, ArrowUpRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 
-import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
+import WithdrawGoldModal from '@/components/finapay/modals/WithdrawGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
 import DepositModal from '@/components/finapay/modals/DepositModal';
-import WithdrawalModal from '@/components/finapay/modals/WithdrawalModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 
 const parseNumericValue = (value: any): number => {
@@ -31,17 +30,15 @@ export default function MobileFinaPay() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { settings } = usePlatform();
   
   const [showBalance, setShowBalance] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [showBuyModal, setShowBuyModal] = useState(false);
-  const [showSellModal, setShowSellModal] = useState(false);
+  const [showWithdrawGoldModal, setShowWithdrawGoldModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   
   const isKycApproved = user?.kycStatus === 'Approved';
   
@@ -84,42 +81,6 @@ export default function MobileFinaPay() {
     description: tx.description || ''
   }));
 
-  const handleSellConfirm = async (grams: number, payout: number, pinToken: string) => {
-    if (grams > goldGrams) {
-      toast({ title: "Insufficient Gold", description: "You don't have enough gold to sell.", variant: "destructive" });
-      return;
-    }
-    try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'x-pin-token': pinToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          type: 'Sell',
-          userId: user?.id,
-          amountUsd: payout.toFixed(2),
-          amountGold: grams.toFixed(6),
-          description: 'Gold sale via FinaPay'
-        }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to submit sell order');
-      }
-      
-      handleRefresh();
-      setShowSellModal(false);
-      toast({ title: "Sell Order Submitted", description: `Your order to sell ${grams.toFixed(4)}g has been submitted.` });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to submit sell order.", variant: "destructive" });
-    }
-  };
-
   const handleSendConfirm = async (recipient: string, amount: number, asset: 'USD' | 'GOLD') => {
     setShowSendModal(false);
     handleRefresh();
@@ -133,10 +94,9 @@ export default function MobileFinaPay() {
   const quickActions = [
     { icon: Plus, label: 'Add', gradient: 'from-green-500 to-emerald-600', action: () => isKycApproved ? setShowDepositModal(true) : handleKycRequired() },
     { icon: ShoppingCart, label: 'Buy', gradient: 'from-purple-500 to-violet-600', action: () => isKycApproved ? setShowBuyModal(true) : handleKycRequired() },
-    { icon: Coins, label: 'Sell', gradient: 'from-amber-500 to-orange-600', action: () => isKycApproved ? setShowSellModal(true) : handleKycRequired() },
     { icon: Send, label: 'Send', gradient: 'from-blue-500 to-indigo-600', action: () => isKycApproved ? setShowSendModal(true) : handleKycRequired() },
     { icon: ArrowDownLeft, label: 'Request', gradient: 'from-pink-500 to-rose-600', action: () => isKycApproved ? setShowRequestModal(true) : handleKycRequired() },
-    { icon: ArrowUpRight, label: 'Withdraw', gradient: 'from-slate-500 to-gray-600', action: () => isKycApproved ? setShowWithdrawalModal(true) : handleKycRequired() },
+    { icon: ArrowUpRight, label: 'Withdraw', gradient: 'from-amber-500 to-orange-600', action: () => isKycApproved ? setShowWithdrawGoldModal(true) : handleKycRequired() },
   ];
 
   return (
@@ -418,13 +378,12 @@ export default function MobileFinaPay() {
       </motion.div>
 
       {/* Modals */}
-      <SellGoldModal
-        isOpen={showSellModal}
-        onClose={() => setShowSellModal(false)}
-        goldPrice={currentGoldPriceUsdPerGram}
-        walletBalance={goldGrams}
-        spreadPercent={settings?.sellSpreadPercent || 1}
-        onConfirm={handleSellConfirm}
+      <WithdrawGoldModal
+        isOpen={showWithdrawGoldModal}
+        onClose={() => {
+          setShowWithdrawGoldModal(false);
+          handleRefresh();
+        }}
       />
       <SendGoldModal
         isOpen={showSendModal}
@@ -444,14 +403,6 @@ export default function MobileFinaPay() {
           setShowDepositModal(false);
           handleRefresh();
         }}
-      />
-      <WithdrawalModal
-        isOpen={showWithdrawalModal}
-        onClose={() => {
-          setShowWithdrawalModal(false);
-          handleRefresh();
-        }}
-        walletBalance={usdBalance}
       />
       <BuyGoldBarModal
         isOpen={showBuyModal}
