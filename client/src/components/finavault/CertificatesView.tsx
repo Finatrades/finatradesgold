@@ -455,6 +455,12 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                     <span className="font-semibold text-right" style={{ color: certTheme.accentMid }}>{certificate.bnslPlan.templateName}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Locked On</span>
+                  <span className="font-semibold" style={{ color: certTheme.accentMid }}>
+                    {new Date(certificate.issuedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
                 {certificate.goldPriceUsdPerGram && (
                   <div className="flex justify-between text-sm">
                     <span className="text-white/50">Lock Price</span>
@@ -484,14 +490,63 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                     </span>
                   </div>
                 )}
-                {certificate.bnslPlan?.totalMarginComponentUsd && (
-                  <div className="flex justify-between text-sm border-t pt-2" style={{ borderColor: certTheme.border }}>
-                    <span className="text-white/50">Expected Return</span>
-                    <span className="font-bold" style={{ color: '#4ade80' }}>
-                      +${parseFloat(certificate.bnslPlan.totalMarginComponentUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                    </span>
+                {(() => {
+                  const plan = certificate.bnslPlan;
+                  if (!plan?.goldSoldGrams || !plan?.agreedMarginAnnualPercent || !plan?.tenorMonths) return null;
+                  const returnGrams = parseFloat(plan.goldSoldGrams) * (parseFloat(plan.agreedMarginAnnualPercent) / 100) * (plan.tenorMonths / 12);
+                  const returnUsd = plan.totalMarginComponentUsd ? parseFloat(plan.totalMarginComponentUsd) : 0;
+                  return (
+                    <div className="flex justify-between text-sm border-t pt-2" style={{ borderColor: certTheme.border }}>
+                      <span className="text-white/50">Expected Return</span>
+                      <div className="text-right">
+                        <span className="font-bold block" style={{ color: '#4ade80' }}>
+                          +{returnGrams.toFixed(4)}g gold
+                        </span>
+                        {returnUsd > 0 && (
+                          <span className="text-xs" style={{ color: '#86efac' }}>
+                            ≈ +${returnUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* TLC trade context panel */}
+            {(certificate.type === 'Trade Lock' || certificate.type === 'Trade Release') && (
+              <div className="mt-4 mx-auto max-w-sm rounded-xl border p-4 text-left space-y-2" style={{ borderColor: certTheme.border, backgroundColor: `${certTheme.accent}10` }}>
+                {certificate.tradeCase?.caseNumber && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Case #</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>{certificate.tradeCase.caseNumber}</span>
                   </div>
                 )}
+                {certificate.tradeCase?.commodityType && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Commodity</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>{certificate.tradeCase.commodityType}</span>
+                  </div>
+                )}
+                {certificate.tradeCase?.companyName && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Counterparty</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>{certificate.tradeCase.companyName}</span>
+                  </div>
+                )}
+                {certificate.tradeCase?.status && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Case Status</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>{certificate.tradeCase.status}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">{certificate.type === 'Trade Lock' ? 'Reserved On' : 'Released On'}</span>
+                  <span className="font-semibold" style={{ color: certTheme.accentMid }}>
+                    {new Date(certificate.issuedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -715,18 +770,10 @@ export default function CertificatesView() {
   const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
   const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
 
-  // Identify the single "Current" cert per ownership type
-  const currentOwnershipIds = new Set<string>();
-  (['Digital Ownership', 'Physical Storage'] as const).forEach(type => {
-    const activesOfType = ownershipCerts
-      .filter(c => c.type === type && c.status === 'Active')
-      .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
-    if (activesOfType[0]) currentOwnershipIds.add(activesOfType[0].id);
-  });
-
-  // Split ownership certs into current and historical
-  const currentOwnershipCerts = ownershipCerts.filter(c => currentOwnershipIds.has(c.id));
-  const historicalOwnershipCerts = ownershipCerts.filter(c => !currentOwnershipIds.has(c.id));
+  // All Active ownership certs are "Current" — any gold batch that is still active counts.
+  // Non-Active (Superseded, Cancelled, Updated) are historical.
+  const currentOwnershipCerts = ownershipCerts.filter(c => c.status === 'Active');
+  const historicalOwnershipCerts = ownershipCerts.filter(c => c.status !== 'Active');
 
   const openCertificate = (cert: Certificate) => {
     setSelectedCertificate(cert);
