@@ -154,22 +154,39 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
   const handleSubmit = async () => {
     if (!user) return;
 
-    let pinToken: string | null = null;
+    let pinToken: string;
     try {
-      pinToken = await requirePin();
+      pinToken = await requirePin({
+        userId: user.id,
+        action: 'withdraw_funds',
+        title: 'Authorize Withdrawal',
+        description: `Enter your 6-digit PIN to withdraw ${grams.toFixed(4)}g ($${grossUsd.toFixed(2)})`,
+      });
     } catch {
       return;
     }
 
     setSubmitting(true);
+
+    type WithdrawalBody = {
+      goldGrams: string;
+      goldPriceUsdPerGram: string;
+      withdrawalMethod: string;
+      notes?: string;
+      bankAccountId?: string;
+      cryptoNetwork?: string;
+      cryptoCurrency?: string;
+      walletAddress?: string;
+    };
+
     try {
-      const headers: Record<string, string> = {
+      const headers: { [key: string]: string } = {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
+        'x-pin-token': pinToken,
       };
-      if (pinToken) headers['x-pin-token'] = pinToken;
 
-      const body: Record<string, any> = {
+      const body: WithdrawalBody = {
         goldGrams: grams.toFixed(6),
         goldPriceUsdPerGram: goldPricePerGram.toFixed(4),
         withdrawalMethod: tab === 'bank' ? 'Bank Transfer' : 'Crypto',
@@ -178,12 +195,6 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
 
       if (tab === 'bank' && selectedBankAccount) {
         body.bankAccountId = selectedBankAccount.id;
-        body.bankName = selectedBankAccount.bankName;
-        body.accountName = selectedBankAccount.accountHolderName;
-        body.accountNumber = selectedBankAccount.accountNumber;
-        body.iban = selectedBankAccount.iban || undefined;
-        body.swiftCode = selectedBankAccount.swiftCode || undefined;
-        body.bankCountry = selectedBankAccount.bankCountry || undefined;
       } else {
         body.cryptoNetwork = cryptoNetwork;
         body.cryptoCurrency = cryptoCurrency;
@@ -197,15 +208,16 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { request?: { referenceNumber?: string }; message?: string };
       if (!res.ok) throw new Error(data.message || 'Submission failed');
 
       setReferenceNumber(data.request?.referenceNumber || '');
       setStep('submitted');
       queryClient.invalidateQueries({ queryKey: ['vault-withdrawals'] });
       queryClient.invalidateQueries({ queryKey: ['dual-wallet'] });
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to submit withdrawal request.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to submit withdrawal request.';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
