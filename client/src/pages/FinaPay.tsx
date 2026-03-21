@@ -488,71 +488,71 @@ export default function FinaPay() {
 
               <div className="flex flex-col flex-1 gap-4">
 
-                <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
                   <div className="absolute right-2 bottom-2 opacity-5">
-                    <WalletIcon className="w-20 h-20 text-purple-500" />
+                    <WalletIcon className="w-16 h-16 text-purple-500" />
                   </div>
                   <div className="relative z-10">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Balance</p>
-                    <p className="text-3xl font-bold text-foreground mb-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Available Balance</p>
+                    <p className="text-2xl font-bold text-foreground mb-1">
                       {goldGrams.toFixed(4)} g
                     </p>
-                    <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    <p className="text-xs text-muted-foreground mt-3">Gold balance. USD is approximate at current price.</p>
+                    <p className="text-xs text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2">Gold balance. USD is approximate at current price.</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                  <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
                     <div className="absolute right-2 bottom-2 opacity-5">
-                      <Lock className="w-16 h-16 text-purple-500" />
+                      <Lock className="w-12 h-12 text-purple-500" />
                     </div>
                     <div className="relative z-10">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Locked Assets</p>
-                      <p className="text-2xl font-bold text-purple-500 mb-1">0.0000 g</p>
-                      <p className="text-sm text-purple-500/70">≈ $0.00</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        <Lock className="w-3 h-3 inline mr-1" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Locked Assets</p>
+                      <p className="text-xl font-bold text-purple-500 mb-0.5">0.0000 g</p>
+                      <p className="text-xs text-purple-500/70">≈ $0.00</p>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        <Lock className="w-2.5 h-2.5 inline mr-1" />
                         In active plans &amp; trades
                       </p>
                     </div>
                   </div>
 
-                  <div className="relative p-5 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                  <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
                     <div className="absolute right-2 bottom-2 opacity-5">
-                      <TrendingUp className="w-16 h-16 text-purple-500" />
+                      <TrendingUp className="w-12 h-12 text-purple-500" />
                     </div>
                     <div className="relative z-10">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Value</p>
-                      <p className="text-2xl font-bold text-purple-500 mb-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Value</p>
+                      <p className="text-xl font-bold text-purple-500 mb-0.5">
                         {goldGrams.toFixed(4)} g
                       </p>
-                      <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Live Gold Rate */}
-                <div className="relative p-5 rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/50 to-yellow-50/20 overflow-hidden">
+                <div className="relative p-4 rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/50 to-yellow-50/20 overflow-hidden">
                   <div className="absolute right-2 bottom-2 opacity-5">
-                    <BarChart3 className="w-20 h-20 text-amber-500" />
+                    <BarChart3 className="w-16 h-16 text-amber-500" />
                   </div>
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Gold Rate</p>
                       <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                         Live
                       </span>
                     </div>
-                    <p className="text-2xl font-bold text-amber-700 mb-1">
+                    <p className="text-xl font-bold text-amber-700 mb-0.5">
                       ${currentGoldPriceUsdPerGram.toFixed(2)}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">/ g</span>
+                      <span className="text-xs font-normal text-muted-foreground ml-1">/ g</span>
                     </p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <p className="text-sm text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67).toFixed(2)}/g</p>
-                      <span className="text-muted-foreground/40 text-xs">•</span>
-                      <p className="text-sm text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67 * 31.1035).toFixed(0)}/troy oz</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67).toFixed(2)}/g</p>
+                      <span className="text-muted-foreground/40 text-[10px]">•</span>
+                      <p className="text-xs text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67 * 31.1035).toFixed(0)}/troy oz</p>
                     </div>
                   </div>
                 </div>
@@ -561,22 +561,22 @@ export default function FinaPay() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
                     <div className="absolute right-2 bottom-2 opacity-5">
-                      <CheckCircle2 className="w-14 h-14 text-green-500" />
+                      <CheckCircle2 className="w-12 h-12 text-green-500" />
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Completed Txns</p>
-                      <p className="text-2xl font-bold text-green-600" data-testid="text-completed-tx-count">{completedTxCount}</p>
-                      <p className="text-xs text-muted-foreground mt-1">All-time</p>
+                      <p className="text-xl font-bold text-green-600" data-testid="text-completed-tx-count">{completedTxCount}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">All-time</p>
                     </div>
                   </div>
                   <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
                     <div className="absolute right-2 bottom-2 opacity-5">
-                      <Coins className="w-14 h-14 text-amber-500" />
+                      <Coins className="w-12 h-12 text-amber-500" />
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Volume</p>
-                      <p className="text-2xl font-bold text-amber-700" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
-                      <p className="text-xs text-muted-foreground mt-1">Gold transacted</p>
+                      <p className="text-xl font-bold text-amber-700" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Gold transacted</p>
                     </div>
                   </div>
                 </div>
