@@ -255,18 +255,33 @@ export default function Dashboard() {
   // ── Pending crypto deposits ──
   const pendingDeposits = (pendingDepositsData?.requests || []).filter(r => r.status === 'Pending');
 
+  const getTxDisplayName = (tx: { type: string; description?: string | null }) => {
+    if (tx.type === 'Swap') {
+      const d = tx.description || '';
+      if (d.includes('LGPW to FGPW') || d.includes('LGPW To FGPW')) return 'Price Protection Activated';
+      if (d.includes('FGPW to LGPW') || d.includes('FGPW To LGPW')) return 'Price Protection Removed';
+      return 'Gold Wallet Transfer';
+    }
+    const map: Record<string, string> = {
+      Buy: 'Buy Gold', Sell: 'Sell Gold', Send: 'Send Gold', Receive: 'Receive Gold',
+      Deposit: 'Gold Credited', Withdrawal: 'Cash Out', 'Vault Deposit': 'Gold Vault Deposit',
+    };
+    return map[tx.type] ?? tx.type;
+  };
+
   const filteredActivities = useMemo(() => {
-    const EXCLUDED_TYPES = ['Swap'];
-    const nonSwap = transactions.filter(t => !EXCLUDED_TYPES.includes(t.type));
-    if (!activitySearch) return nonSwap.slice(0, 5);
-    return nonSwap.filter(t => 
+    if (!activitySearch) return transactions.slice(0, 5);
+    return transactions.filter(t =>
+      getTxDisplayName(t).toLowerCase().includes(activitySearch.toLowerCase()) ||
       t.type?.toLowerCase().includes(activitySearch.toLowerCase()) ||
       t.id?.toLowerCase().includes(activitySearch.toLowerCase())
     ).slice(0, 5);
   }, [transactions, activitySearch]);
 
   const recentCertsList = useMemo(() => {
+    const EXCLUDED_CERT_TYPES = ['Conversion'];
     return [...(certsData?.certificates || [])]
+      .filter(c => !EXCLUDED_CERT_TYPES.includes(c.type))
       .sort((a, b) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
       .slice(0, 5);
   }, [certsData]);
@@ -1604,8 +1619,10 @@ export default function Dashboard() {
             <div className="px-4 pb-4 space-y-1">
               {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
                 const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit';
-                const grams = tx.amountGold ? `${isPositive ? '+' : ''}${Number(tx.amountGold).toFixed(2)}g` : null;
+                const isNeutral = tx.type === 'Swap';
+                const grams = tx.amountGold ? `${isPositive ? '+' : isNeutral ? '' : ''}${Number(tx.amountGold).toFixed(4)}g` : null;
                 const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
+                const displayName = getTxDisplayName(tx);
                 const statusColor = tx.status === 'Completed' || tx.status === 'completed'
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                   : tx.status === 'Pending' || tx.status === 'pending'
@@ -1634,13 +1651,13 @@ export default function Dashboard() {
                       {getActivityIcon(tx.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-800 truncate">{tx.type}</p>
+                      <p className="text-[13px] font-semibold text-gray-800 truncate">{displayName}</p>
                       <p className="text-[11px] text-gray-400">
                         {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : 'text-gray-800'}`}>{grams}</p>}
+                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : isNeutral ? 'text-gray-600' : 'text-gray-800'}`}>{grams}</p>}
                       {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${statusColor}`}>
