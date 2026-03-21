@@ -217,6 +217,11 @@ export default function FinaPay() {
   // Check if user has any wallet activity (completed transactions OR positive balance OR ledger entries)
   const hasWalletActivity = transactions.some(tx => tx.status === 'Completed') || goldGrams > 0;
 
+  const completedTxCount = transactions.filter(tx => tx.status === 'Completed').length;
+  const totalGoldVolume = transactions
+    .filter(tx => tx.status === 'Completed')
+    .reduce((sum, tx) => sum + (tx.amountGrams || 0), 0);
+
   // Fetch vault ledger entries for chain-of-custody display
   const { data: ledgerData } = useQuery({
     queryKey: ['vaultLedger', user?.id],
@@ -520,6 +525,55 @@ export default function FinaPay() {
                         {goldGrams.toFixed(4)} g
                       </p>
                       <p className="text-sm text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Gold Rate */}
+                <div className="relative p-5 rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/50 to-yellow-50/20 overflow-hidden">
+                  <div className="absolute right-2 bottom-2 opacity-5">
+                    <BarChart3 className="w-20 h-20 text-amber-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Gold Rate</p>
+                      <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                        Live
+                      </span>
+                    </div>
+                    <p className="text-2xl font-bold text-amber-700 mb-1">
+                      ${currentGoldPriceUsdPerGram.toFixed(2)}
+                      <span className="text-sm font-normal text-muted-foreground ml-1">/ g</span>
+                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-sm text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67).toFixed(2)}/g</p>
+                      <span className="text-muted-foreground/40 text-xs">•</span>
+                      <p className="text-sm text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67 * 31.1035).toFixed(0)}/troy oz</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Activity Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                    <div className="absolute right-2 bottom-2 opacity-5">
+                      <CheckCircle2 className="w-14 h-14 text-green-500" />
+                    </div>
+                    <div className="relative z-10">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Completed Txns</p>
+                      <p className="text-2xl font-bold text-green-600" data-testid="text-completed-tx-count">{completedTxCount}</p>
+                      <p className="text-xs text-muted-foreground mt-1">All-time</p>
+                    </div>
+                  </div>
+                  <div className="relative p-4 rounded-xl border border-border bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+                    <div className="absolute right-2 bottom-2 opacity-5">
+                      <Coins className="w-14 h-14 text-amber-500" />
+                    </div>
+                    <div className="relative z-10">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Volume</p>
+                      <p className="text-2xl font-bold text-amber-700" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
+                      <p className="text-xs text-muted-foreground mt-1">Gold transacted</p>
                     </div>
                   </div>
                 </div>
