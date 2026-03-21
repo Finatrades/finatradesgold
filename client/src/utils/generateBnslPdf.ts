@@ -1,20 +1,43 @@
 import { jsPDF } from 'jspdf';
 import { BnslPlan } from '@/types/bnsl';
 
+const LOGO_URL = 'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png';
+
+async function loadLogoBase64(): Promise<string | null> {
+  const sources = [
+    `${window.location.origin}/finatrades-logo-purple.png`,
+    LOGO_URL,
+  ];
+  for (const url of sources) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      const b64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      if (b64) return b64;
+    } catch { continue; }
+  }
+  return null;
+}
+
 interface SignatureData {
   signatureName: string;
   signedAt: string;
 }
 
-export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signatureData?: SignatureData) => {
+export const generateBnslAgreement = async (plan: Partial<BnslPlan>, user: any, signatureData?: SignatureData) => {
+  const logoBase64 = await loadLogoBase64();
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentWidth = pageWidth - (margin * 2);
-  let y = 20;
 
-  // Helper for centered text
   const centerText = (text: string, yPos: number, fontSize = 12, isBold = false) => {
     doc.setFontSize(fontSize);
     doc.setFont("helvetica", isBold ? "bold" : "normal");
@@ -22,13 +45,11 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
     doc.text(text, (pageWidth - textWidth) / 2, yPos);
   };
 
-  // Helper for wrapped text with page break handling
   const addWrappedText = (text: string, yPos: number, fontSize = 10, isBold = false, indent = 0) => {
     doc.setFontSize(fontSize);
     doc.setFont("helvetica", isBold ? "bold" : "normal");
     const lines = doc.splitTextToSize(text, contentWidth - indent);
     
-    // Check if we need a page break
     const lineHeight = fontSize * 0.5;
     const requiredHeight = lines.length * lineHeight;
     
@@ -39,20 +60,35 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
     
     doc.text(lines, margin + indent, yPos);
     return {
-      newY: yPos + requiredHeight + 2, // Return new Y position
+      newY: yPos + requiredHeight + 2,
       addedHeight: requiredHeight + 2
     }; 
   };
 
-  // --- HEADER ---
-  centerText("Terms and Conditions for BNSL - Buy Now Sell Later Plan", y, 16, true);
-  y += 10;
-  centerText("Last Updated: [09/12/2025], V3", y, 10, false);
-  y += 10;
+  // --- BRANDED HEADER ---
+  doc.setFillColor(138, 43, 226);
+  doc.rect(0, 0, pageWidth, 22, 'F');
+
+  if (logoBase64) {
+    try { doc.addImage(logoBase64, 'PNG', margin, 3, 44, 16); } catch {}
+  }
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(255, 255, 255);
+  doc.text('FinaTrades Finance SA · Rue Robert-Céard 6, 1204 Geneva', pageWidth - margin, 13, { align: 'right' });
+
+  doc.setTextColor(0, 0, 0);
+  let y = 32;
+
+  centerText("BNSL — Buy Now Sell Later Agreement", y, 15, true);
+  y += 8;
+  centerText("Terms and Conditions · Last Updated: 09/12/2025, V3", y, 9, false);
+  y += 8;
   
-  centerText(`Plan ID: ${plan.id || 'DRAFT'}`, y, 12, false);
+  centerText(`Plan ID: ${plan.id || 'DRAFT'}`, y, 11, false);
   y += 6;
-  centerText(`Date: ${new Date().toLocaleDateString()}`, y, 12, false);
+  centerText(`Date: ${new Date().toLocaleDateString()}`, y, 11, false);
   y += 10;
 
   // --- PARTICIPANT DETAILS ---
@@ -338,6 +374,21 @@ export const generateBnslAgreement = (plan: Partial<BnslPlan>, user: any, signat
   doc.text("This document was digitally generated and accepted via the Finatrades Platform.", margin, y);
   doc.text(`Document generated: ${new Date().toISOString()}`, margin, y + 5);
   doc.text("Agreement Version: V3-2025-12-09", margin, y + 10);
+
+  // --- PER-PAGE FOOTER ---
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFillColor(138, 43, 226);
+    doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    const footerText = `FinaTrades Finance SA — Rue Robert-Céard 6, 1204 Geneva — Page ${i} of ${totalPages}`;
+    const ftw = doc.getTextWidth(footerText);
+    doc.text(footerText, (pageWidth - ftw) / 2, pageHeight - 3);
+    doc.setTextColor(0, 0, 0);
+  }
 
   return doc;
 };

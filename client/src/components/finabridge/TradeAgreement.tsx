@@ -76,8 +76,8 @@ export function TradeAgreement({
   const userHasSigned = userRole === 'importer' ? importerSigned : exporterSigned;
   const bothPartiesSigned = importerSigned && exporterSigned;
 
-  const handleDownload = () => {
-    downloadTradeAgreement(
+  const handleDownload = async () => {
+    await downloadTradeAgreement(
       {
         tradeRef,
         importerName,

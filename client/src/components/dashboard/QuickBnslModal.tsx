@@ -131,7 +131,7 @@ export default function QuickBnslModal({
     }
   };
 
-  const handleDownloadDraft = () => {
+  const handleDownloadDraft = async () => {
     if (goldGrams <= 0) {
       toast({ title: 'Enter gold amount first', variant: 'destructive' });
       return;
@@ -146,7 +146,7 @@ export default function QuickBnslModal({
       totalMarginComponentUsd: totalMarginUsd,
       quarterlyMarginUsd,
     };
-    const doc = generateBnslAgreement(draftPlan, user);
+    const doc = await generateBnslAgreement(draftPlan, user);
     doc.save(`BNSL_Agreement_Draft_${Date.now()}.pdf`);
     setHasDownloadedDraft(true);
     toast({ title: 'Draft downloaded', description: 'Review the agreement before signing.' });

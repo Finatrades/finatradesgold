@@ -143,11 +143,13 @@ export function exportFinancialReportToCSV(data: FinancialReportData, filename: 
   URL.revokeObjectURL(link.href);
 }
 
-export function exportFinancialReportToPDF(data: FinancialReportData, title: string = 'Financial Report') {
+export async function exportFinancialReportToPDF(data: FinancialReportData, title: string = 'Financial Report') {
+  const logoBase64 = await loadLogoBase64();
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
-  let yPos = 20;
+  let yPos = 15;
   
   const checkPageBreak = (requiredSpace: number = 20) => {
     if (yPos + requiredSpace > 270) {
@@ -155,23 +157,73 @@ export function exportFinancialReportToPDF(data: FinancialReportData, title: str
       yPos = 20;
     }
   };
-  
-  doc.setFontSize(20);
+
+  // --- BRANDED COVER SECTION ---
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Purple header bar
+  doc.setFillColor(138, 43, 226);
+  doc.rect(0, 0, pageWidth, 24, 'F');
+
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, 'PNG', margin, 3, 44, 18);
+    } catch {}
+  }
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(255, 255, 255);
+  doc.text('FinaTrades Finance SA — Confidential', pageWidth - margin, 14, { align: 'right' });
+
+  // Cover block
+  yPos = 35;
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(74, 0, 130);
-  doc.text('Finatrades', margin, yPos);
-  
-  doc.setFontSize(14);
-  doc.setTextColor(60);
-  doc.text(title, margin, yPos + 8);
-  yPos += 18;
-  
-  doc.setFontSize(9);
+  doc.text(title, margin, yPos);
+  yPos += 8;
+
+  doc.setDrawColor(245, 158, 11);
+  doc.setLineWidth(0.8);
+  doc.line(margin, yPos, margin + 80, yPos);
+  yPos += 6;
+
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  doc.text(`Generated: ${data.generatedAt}`, margin, yPos);
-  doc.text(`Period: ${data.dateRange}`, pageWidth - margin - 50, yPos);
-  yPos += 15;
+  doc.setTextColor(80);
+  doc.text(`Report Period:`, margin, yPos);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40);
+  doc.text(data.dateRange || '—', margin + 30, yPos);
+  yPos += 6;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80);
+  doc.text(`Generated:`, margin, yPos);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40);
+  doc.text(data.generatedAt || new Date().toLocaleString(), margin + 30, yPos);
+  yPos += 6;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80);
+  doc.text(`Issued by:`, margin, yPos);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40);
+  doc.text('FinaTrades Finance SA — Rue Robert-Céard 6, 1204 Geneva', margin + 30, yPos);
+  yPos += 6;
+
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(130);
+  doc.text('This report is confidential and intended solely for the named recipient.', margin, yPos);
+  yPos += 12;
+
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 8;
   
   if (data.overview) {
     doc.setFontSize(12);

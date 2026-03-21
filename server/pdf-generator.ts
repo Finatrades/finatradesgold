@@ -1,6 +1,19 @@
 import PDFDocument from 'pdfkit';
 import { Certificate, Invoice, User, Template } from '@shared/schema';
 
+const LOGO_CDN_URL = 'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png';
+
+async function fetchLogoBuffer(): Promise<Buffer | null> {
+  try {
+    const res = await fetch(LOGO_CDN_URL);
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch {
+    return null;
+  }
+}
+
 const FINATRADES_PURPLE = '#8A2BE2';
 const WINGOLD_GOLD = '#D4AF37';
 const BNSL_BLUE = '#3b82f6';
@@ -210,12 +223,14 @@ export interface PDFGenerationOptions {
   cmsTemplate?: Template | null;
 }
 
-export function generateCertificatePDF(
+export async function generateCertificatePDF(
   certificate: Certificate, 
   user: User,
   transferParties?: TransferParties,
   options?: PDFGenerationOptions
 ): Promise<Buffer> {
+  const logoBuffer = await fetchLogoBuffer();
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -240,6 +255,12 @@ export function generateCertificatePDF(
       const rgb = hexToRgb(config.primaryColor);
 
       doc.rect(0, 0, pageWidth, 120).fill(config.primaryColor);
+
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, margin, 15, { height: 36 });
+        } catch {}
+      }
 
       doc.fillColor('white')
          .fontSize(20)
@@ -390,11 +411,13 @@ export function generateCertificatePDF(
   });
 }
 
-export function generateInvoicePDF(
+export async function generateInvoicePDF(
   invoice: Invoice,
   user: User,
   options?: PDFGenerationOptions
 ): Promise<Buffer> {
+  const logoBuffer = await fetchLogoBuffer();
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -428,6 +451,12 @@ export function generateInvoicePDF(
       const primaryColor = cmsConfig.primaryColor || FINATRADES_PURPLE;
 
       doc.rect(0, 0, pageWidth, 100).fill(primaryColor);
+
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, margin, 18, { height: 36 });
+        } catch {}
+      }
 
       doc.fillColor('white')
          .fontSize(22)

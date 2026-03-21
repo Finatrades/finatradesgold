@@ -1,5 +1,28 @@
 import { jsPDF } from 'jspdf';
 
+const LOGO_URL = 'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png';
+
+async function loadLogoBase64(): Promise<string | null> {
+  const sources = [
+    `${window.location.origin}/finatrades-logo-purple.png`,
+    LOGO_URL,
+  ];
+  for (const url of sources) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      const b64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      if (b64) return b64;
+    } catch { continue; }
+  }
+  return null;
+}
+
 interface TradeAgreementData {
   tradeRef: string;
   importerName: string;
@@ -24,10 +47,12 @@ interface SignatureData {
   exporterSignedAt?: string;
 }
 
-export const generateTradeAgreementPdf = (
+export const generateTradeAgreementPdf = async (
   tradeData: TradeAgreementData,
   signatureData?: SignatureData
 ) => {
+  const logoBase64 = await loadLogoBase64();
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -62,16 +87,32 @@ export const generateTradeAgreementPdf = (
     }; 
   };
 
-  doc.setDrawColor(139, 92, 246);
-  doc.setFillColor(139, 92, 246);
-  doc.rect(0, 0, pageWidth, 35, 'F');
-  
+  doc.setDrawColor(138, 43, 226);
+  doc.setFillColor(138, 43, 226);
+  doc.rect(0, 0, pageWidth, 28, 'F');
+
+  if (logoBase64) {
+    try { doc.addImage(logoBase64, 'PNG', margin, 4, 44, 16); } catch {}
+  }
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(255, 255, 255);
-  centerText("FINABRIDGE TRADE AGREEMENT", 18, 18, true);
-  centerText("Gold-Backed Trade Finance Contract", 28, 11, false);
-  
+  doc.text('FinaTrades Finance SA · Rue Robert-Céard 6, 1204 Geneva', pageWidth - margin, 15, { align: 'right' });
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(15);
+  doc.setFont("helvetica", "bold");
+  const tw1 = doc.getTextWidth("FINABRIDGE TRADE AGREEMENT");
+  doc.text("FINABRIDGE TRADE AGREEMENT", (pageWidth - tw1) / 2, 20);
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  const tw2 = doc.getTextWidth("Gold-Backed Trade Finance Contract");
+  doc.text("Gold-Backed Trade Finance Contract", (pageWidth - tw2) / 2, 26);
+
   doc.setTextColor(0, 0, 0);
-  y = 45;
+  y = 38;
 
   centerText(`Trade Reference: ${tradeData.tradeRef}`, y, 12, true);
   y += 6;
@@ -261,29 +302,33 @@ export const generateTradeAgreementPdf = (
   
   y += 60;
 
-  doc.setDrawColor(139, 92, 246);
-  doc.setFillColor(139, 92, 246);
-  doc.rect(0, pageHeight - 25, pageWidth, 25, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  const footerText = "Finatrades FinaBridge - Gold-Backed Trade Finance | Powered by Wingold and Metals DMCC";
-  const footerWidth = doc.getTextWidth(footerText);
-  doc.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 12);
-  
-  doc.setFontSize(7);
-  const docIdText = `Document ID: ${tradeData.tradeRef}-AGR-${Date.now().toString(36).toUpperCase()}`;
-  const docIdWidth = doc.getTextWidth(docIdText);
-  doc.text(docIdText, (pageWidth - docIdWidth) / 2, pageHeight - 6);
+  // --- PER-PAGE FOOTER ---
+  const totalPages = doc.getNumberOfPages();
+  const docId = `${tradeData.tradeRef}-AGR-${Date.now().toString(36).toUpperCase()}`;
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(138, 43, 226);
+    doc.setFillColor(138, 43, 226);
+    doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    const ft = `FinaTrades FinaBridge — Gold-Backed Trade Finance | Rue Robert-Céard 6, 1204 Geneva | Page ${i} of ${totalPages}`;
+    const ftw = doc.getTextWidth(ft);
+    doc.text(ft, (pageWidth - ftw) / 2, pageHeight - 7);
+    const dt = `Document ID: ${docId}`;
+    const dtw = doc.getTextWidth(dt);
+    doc.text(dt, (pageWidth - dtw) / 2, pageHeight - 2);
+    doc.setTextColor(0, 0, 0);
+  }
 
   return doc;
 };
 
-export const downloadTradeAgreement = (
+export const downloadTradeAgreement = async (
   tradeData: TradeAgreementData,
   signatureData?: SignatureData
 ) => {
-  const doc = generateTradeAgreementPdf(tradeData, signatureData);
+  const doc = await generateTradeAgreementPdf(tradeData, signatureData);
   doc.save(`FinaBridge_Agreement_${tradeData.tradeRef}.pdf`);
 };

@@ -46,7 +46,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
-import { sendEmail, sendEmailDirect, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates } from "./email";
+import { sendEmail, sendEmailDirect, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates, verifyUnsubscribeToken } from "./email";
 import { 
   processTransactionDocuments, 
   resendCertificate, 
@@ -28840,6 +28840,63 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Email guide error:", error);
       res.status(500).json({ message: "Failed to send guide", error: error.message });
+    }
+  });
+
+  // ============================================
+  // EMAIL UNSUBSCRIBE (public, no auth required)
+  // ============================================
+  app.get("/api/unsubscribe", async (req: Request, res: Response) => {
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    const result = verifyUnsubscribeToken(token);
+
+    const successHtml = (email: string) => `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unsubscribed — FinaTrades</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0720;color:#e2e8f0;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.card{background:#1a0d3a;border:1px solid #4B0082;border-radius:16px;padding:48px 40px;max-width:480px;text-align:center;}
+.logo{font-size:22px;font-weight:700;color:#8A2BE2;letter-spacing:-0.5px;margin-bottom:32px;}
+h1{font-size:24px;font-weight:600;color:#fff;margin:0 0 12px;}
+p{color:#A78BFA;font-size:15px;line-height:1.6;margin:0 0 24px;}
+.email{font-size:13px;color:#6b7280;word-break:break-all;}
+a{color:#8A2BE2;text-decoration:none;}a:hover{text-decoration:underline;}
+</style></head><body><div class="card">
+<div class="logo">FinaTrades</div>
+<h1>You have been unsubscribed</h1>
+<p>You will no longer receive marketing emails from FinaTrades Finance SA.</p>
+<p class="email">${email}</p>
+<p style="font-size:13px;">You can re-enable marketing emails at any time in your <a href="/settings">account settings</a>.</p>
+</div></body></html>`;
+
+    const errorHtml = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invalid Link — FinaTrades</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0720;color:#e2e8f0;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.card{background:#1a0d3a;border:1px solid #4B0082;border-radius:16px;padding:48px 40px;max-width:480px;text-align:center;}
+.logo{font-size:22px;font-weight:700;color:#8A2BE2;letter-spacing:-0.5px;margin-bottom:32px;}
+h1{font-size:24px;font-weight:600;color:#fff;margin:0 0 12px;}
+p{color:#A78BFA;font-size:15px;line-height:1.6;margin:0;}
+a{color:#8A2BE2;text-decoration:none;}a:hover{text-decoration:underline;}
+</style></head><body><div class="card">
+<div class="logo">FinaTrades</div>
+<h1>Invalid or expired link</h1>
+<p>This unsubscribe link is invalid or has expired. Please <a href="/settings">visit your settings</a> to manage email preferences.</p>
+</div></body></html>`;
+
+    if (!result.valid || !result.email) {
+      return res.status(400).send(errorHtml);
+    }
+
+    try {
+      const user = await storage.getUserByEmail(result.email);
+      if (user) {
+        await storage.getOrCreateUserPreferences(user.id);
+        await storage.updateUserPreferences(user.id, { marketingEmails: false });
+      }
+      return res.status(200).send(successHtml(result.email));
+    } catch (err) {
+      console.error('[Unsubscribe] Failed to process unsubscribe:', err);
+      return res.status(500).send(errorHtml);
     }
   });
 

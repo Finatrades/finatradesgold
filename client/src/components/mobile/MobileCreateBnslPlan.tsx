@@ -130,7 +130,7 @@ export default function MobileCreateBnslPlan({
     }
   };
 
-  const handleDownloadDraft = () => {
+  const handleDownloadDraft = async () => {
     if (goldAmount <= 0) return;
     
     const draftPlan: Partial<BnslPlan> = {
@@ -144,7 +144,7 @@ export default function MobileCreateBnslPlan({
       quarterlyMarginUsd: quarterlyMarginUsd,
     };
 
-    const doc = generateBnslAgreement(draftPlan, user);
+    const doc = await generateBnslAgreement(draftPlan, user);
     doc.save(`BNSL_Agreement_Draft_${new Date().getTime()}.pdf`);
     setHasDownloadedDraft(true);
     toast({ title: "Draft Downloaded", description: "Review the agreement before signing." });

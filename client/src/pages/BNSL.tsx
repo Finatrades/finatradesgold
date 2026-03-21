@@ -75,7 +75,7 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
         signedAt: agreement.signedAt
       } : undefined;
       
-      const doc = generateBnslAgreement(planData, user, signatureData);
+      const doc = await generateBnslAgreement(planData, user, signatureData);
       doc.save(`BNSL-Agreement-Plan-${plan.id}.pdf`);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
@@ -544,7 +544,7 @@ export default function BNSL() {
             };
             
             // Generate signed PDF
-            const doc = generateBnslAgreement(planForPdf, userForPdf, signatureData);
+            const doc = await generateBnslAgreement(planForPdf, userForPdf, signatureData);
             const pdfBase64 = doc.output('datauristring').split(',')[1];
             
             // Send email with PDF attachment

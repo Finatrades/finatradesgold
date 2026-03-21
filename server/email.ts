@@ -4,6 +4,38 @@ import { templates, emailLogs, emailNotificationSettings, brandingSettings } fro
 import { eq } from 'drizzle-orm';
 import { lookup } from 'dns/promises';
 import net from 'net';
+import crypto from 'crypto';
+
+const UNSUBSCRIBE_HMAC_SECRET = process.env.UNSUBSCRIBE_HMAC_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[Email] WARNING: UNSUBSCRIBE_HMAC_SECRET is not set in production. Using fallback — set this env var for secure token signing.');
+  }
+  return 'finatrades-unsubscribe-secret-dev-only';
+})();
+
+export function generateUnsubscribeToken(email: string): string {
+  const ts = Math.floor(Date.now() / 1000);
+  const payload = `${email}:${ts}`;
+  const sig = crypto.createHmac('sha256', UNSUBSCRIBE_HMAC_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64url');
+}
+
+export function verifyUnsubscribeToken(token: string): { email: string; valid: boolean } {
+  try {
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return { email: '', valid: false };
+    const [email, ts, sig] = parts;
+    const payload = `${email}:${ts}`;
+    const expectedSig = crypto.createHmac('sha256', UNSUBSCRIBE_HMAC_SECRET).update(payload).digest('hex');
+    if (sig !== expectedSig) return { email: '', valid: false };
+    const tokenAge = Math.floor(Date.now() / 1000) - parseInt(ts, 10);
+    if (tokenAge > 60 * 60 * 24 * 90) return { email: '', valid: false }; // 90-day expiry
+    return { email, valid: true };
+  } catch {
+    return { email: '', valid: false };
+  }
+}
 
 // Cache branding settings to avoid repeated DB calls
 let brandingCache: { logoUrl?: string; companyName?: string; primaryColor?: string } | null = null;
@@ -225,14 +257,31 @@ function replaceVariables(template: string, data: EmailData): string {
   });
 }
 
+function buildUnsubscribeUrl(recipientEmail?: string): string {
+  const baseUrl = process.env.APP_URL ||
+    (process.env.REPLIT_DOMAINS?.split(',')[0]
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : 'https://finatrades.com');
+  const token = recipientEmail ? generateUnsubscribeToken(recipientEmail) : '';
+  return `${baseUrl}/api/unsubscribe?token=${token}`;
+}
+
 // Creative purple email template wrapper with logo header and footer
-function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }): string {
+function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }, recipientEmail?: string): string {
   const primaryColor = '#8A2BE2'; // Official Finatrades purple
   const secondaryColor = '#A78BFA'; // Light purple
   const darkPurple = '#4B0082'; // Dark purple for accents
   
-  // Styled text logo with high contrast colors for dark header background
-  const logoSection = `
+  // Logo section: use actual FinaTrades logo image when logoUrl is available, fall back to styled text
+  const logoSection = branding.logoUrl ? `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+      <tr>
+        <td align="center">
+          <img src="${branding.logoUrl}" alt="FinaTrades" width="160" style="display: block; max-width: 160px; height: auto; border: 0;" />
+        </td>
+      </tr>
+    </table>
+    <div style="font-size: 12px; color: #F59E0B; letter-spacing: 3px; margin-top: 10px; text-transform: uppercase; font-weight: 600;">Gold-Backed Digital Finance</div>` : `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
       <tr>
         <td style="padding-right: 12px; vertical-align: middle;">
@@ -360,14 +409,25 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
                       Gold-Backed Digital Finance Platform
                     </p>
                     
+                    <!-- Address -->
+                    <p style="color: rgba(255,255,255,0.6); font-size: 11px; margin: 10px 0 5px;">
+                      Finatrades Finance SA &mdash; Rue Robert-Céard 6, 1204 Geneva, Switzerland
+                    </p>
+                    
                     <!-- Contact & Links -->
                     <p style="color: rgba(255,255,255,0.5); font-size: 11px; margin: 10px 0 5px;">
                       Need help? Contact us at <a href="mailto:support@finatrades.com" style="color: ${secondaryColor}; text-decoration: none;">support@finatrades.com</a>
                     </p>
                     
+                    <!-- Unsubscribe -->
+                    <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 5px;">
+                      You are receiving this email because you have an account on the FinaTrades platform.<br/>
+                      <a href="${buildUnsubscribeUrl(recipientEmail)}" style="color: rgba(167,139,250,0.7); text-decoration: underline;">Unsubscribe</a> from marketing emails
+                    </p>
+                    
                     <!-- Legal -->
-                    <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 15px 0 0; line-height: 1.5;">
-                      This email was sent by Finatrades. Please do not reply directly to this email.<br/>
+                    <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 0; line-height: 1.5;">
+                      This email was sent by FinaTrades. Please do not reply directly to this email.<br/>
                       &copy; ${new Date().getFullYear()} Finatrades Finance SA. All rights reserved.
                     </p>
                   </td>
@@ -493,7 +553,7 @@ export async function sendEmail(
     let htmlBody = replaceVariables(template.body, enrichedData);
     
     // Add logo and branding to email
-    htmlBody = wrapEmailWithBranding(htmlBody, branding);
+    htmlBody = wrapEmailWithBranding(htmlBody, branding, to);
 
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
@@ -560,10 +620,13 @@ export async function sendEmailDirect(
   htmlBody: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    const branding = await getBrandingForEmail();
+    const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to);
+
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
       console.log(`[Email Preview] Subject: ${subject}`);
-      console.log(`[Email Preview] Body: ${htmlBody.substring(0, 200)}...`);
+      console.log(`[Email Preview] Body: ${wrappedHtml.substring(0, 200)}...`);
       console.log(`[Email] SMTP not configured - email logged only`);
       return { success: true, messageId: 'preview-mode' };
     }
@@ -572,7 +635,7 @@ export async function sendEmailDirect(
       from: SMTP_FROM,
       to,
       subject,
-      html: htmlBody,
+      html: wrappedHtml,
     });
 
     console.log(`[Email] Sent to ${to}: ${info.messageId}`);
@@ -635,7 +698,10 @@ export async function queueEmailWithTemplate(
   
   const subject = replaceVariables(template.subject, data);
   const htmlBody = replaceVariables(template.body, data);
-  
+
+  const branding = await getBrandingForEmail();
+  const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to);
+
   // Log to email_logs table if notificationType is provided (for duplicate prevention)
   if (options?.notificationType) {
     try {
@@ -655,7 +721,7 @@ export async function queueEmailWithTemplate(
     }
   }
   
-  queueEmail(to, subject, htmlBody);
+  queueEmail(to, subject, wrappedHtml);
 }
 
 export const EMAIL_TEMPLATES = {
@@ -736,31 +802,28 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Welcome Email',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Welcome to Finatrades!',
+    subject: 'Welcome to FinaTrades — Your Gold Account is Ready',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Welcome to Finatrades</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Welcome to Finatrades! Your account has been successfully created.</p>
-          <p>You can now access all our gold-backed financial services:</p>
-          <ul>
-            <li><strong>FinaPay</strong> - Digital gold wallet</li>
-            <li><strong>FinaVault</strong> - Secure gold storage</li>
-            <li><strong>BNSL</strong> - Buy Now Sell Later plans</li>
-            <li><strong>FinaBridge</strong> - Trade finance solutions</li>
-          </ul>
-          <p>Get started by completing your KYC verification to unlock all features.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">Go to Dashboard</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Welcome to <strong>FinaTrades</strong> — the gold-backed digital finance platform built for serious investors. Your account is live and ready to go.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #4B0082; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">What you can do on FinaTrades</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #374151;"><strong style="color: #8A2BE2;">FinaPay</strong> &mdash; Buy, sell, and send digital gold</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;"><strong style="color: #8A2BE2;">FinaVault</strong> &mdash; Secure allocated physical gold storage</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;"><strong style="color: #8A2BE2;">BNSL</strong> &mdash; Buy Now Sell Later structured gold plans</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;"><strong style="color: #8A2BE2;">FinaBridge</strong> &mdash; Gold-backed trade finance</td></tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">To unlock full access, complete your KYC verification — it takes fewer than 5 minutes and our compliance team reviews submissions within 1–2 business days.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px; letter-spacing: 0.5px;">Go to My Dashboard</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">Welcome aboard,<br/><strong style="color: #374151;">The FinaTrades Team</strong></p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -773,25 +836,17 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Email Verification',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Verify your Finatrades account',
+    subject: 'Your FinaTrades Verification Code',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Email Verification</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your verification code is:</p>
-          <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8B5CF6;">{{verification_code}}</span>
-          </div>
-          <p>This code expires in <strong>10 minutes</strong>.</p>
-          <p>If you didn't request this code, please ignore this email.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Use the code below to verify your email address. This code is valid for <strong>10 minutes</strong>.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border: 2px solid #8A2BE2; border-radius: 12px; padding: 30px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 12px 0;">Your Verification Code</p>
+        <span style="font-size: 40px; font-weight: 800; letter-spacing: 10px; color: #8A2BE2; font-family: 'Courier New', monospace;">{{verification_code}}</span>
       </div>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;">For your security, never share this code with anyone — FinaTrades will never ask for it. If you did not request this, you can safely ignore this email.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -804,31 +859,25 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'KYC Approved',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your KYC verification is approved!',
+    subject: 'KYC Approved — Full Access Unlocked',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">KYC Approved!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Great news! Your KYC verification has been <strong style="color: #22c55e;">approved</strong>.</p>
-          <p>You now have full access to all Finatrades services:</p>
-          <ul>
-            <li>Buy and sell gold</li>
-            <li>Send and receive gold transfers</li>
-            <li>Access FinaVault storage</li>
-            <li>Create BNSL plans</li>
-            <li>Apply for trade finance</li>
-          </ul>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);">Start Trading</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your identity verification is complete. Your account now has <strong>full access</strong> to all FinaTrades services.</p>
+
+      <div style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">You can now</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 5px 0; color: #374151;">&#10003; &nbsp; Buy and sell 24K fine gold at live market prices</td></tr>
+          <tr><td style="padding: 5px 0; color: #374151;">&#10003; &nbsp; Send and receive instant gold transfers</td></tr>
+          <tr><td style="padding: 5px 0; color: #374151;">&#10003; &nbsp; Store physical gold in FinaVault secure custody</td></tr>
+          <tr><td style="padding: 5px 0; color: #374151;">&#10003; &nbsp; Enroll in BNSL structured gold plans</td></tr>
+          <tr><td style="padding: 5px 0; color: #374151;">&#10003; &nbsp; Access FinaBridge trade finance</td></tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Start Trading Gold</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -841,25 +890,23 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'KYC Rejected',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your KYC verification requires attention',
+    subject: 'Action Required: Your KYC Verification Could Not Be Approved',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">KYC Review Required</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Unfortunately, your KYC verification could not be approved at this time.</p>
-          <p><strong>Reason:</strong> {{rejection_reason}}</p>
-          <p>Please review and resubmit your documents to continue.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Resubmit Documents</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">After reviewing your submission, our compliance team was unable to approve your KYC verification at this time. You can resubmit with the required corrections.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Reason for Rejection</p>
+        <p style="color: #374151; margin: 0; line-height: 1.6;">{{rejection_reason}}</p>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">Please review the feedback above, prepare the required documentation, and resubmit. Our team will process your updated submission promptly.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{kyc_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Resubmit Documents</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">If you believe this decision was made in error, please contact our support team at <a href="mailto:support@finatrades.com" style="color: #8A2BE2;">support@finatrades.com</a>.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -873,25 +920,21 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'KYC Changes Requested',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Action required: Updates needed for your verification',
+    subject: 'Action Required: Updates Needed for Your Verification',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Changes Requested</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Our compliance team has reviewed your verification submission and requires updates to the following sections:</p>
-          {{section_reasons}}
-          <p>Sections that have been approved will remain locked. You only need to update the items listed above.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Your Submission</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Our compliance team has reviewed your verification submission and requires a few updates before your account can be fully approved. Sections already verified will remain locked — only the items below need attention.</p>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Required Updates</p>
+        {{section_reasons}}
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">Log in to complete the updates — the process should only take a few minutes.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{kyc_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Update Your Submission</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User full name' },
@@ -905,32 +948,25 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'KYC Submission Confirmation',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your KYC verification has been submitted',
+    subject: 'KYC Submitted — Under Review',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Verification Submitted</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Thank you for submitting your {{kyc_type}} verification documents. Your submission has been received and is now under review.</p>
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <p style="margin: 0 0 10px 0; font-weight: 600; color: #166534;">What happens next?</p>
-            <ul style="margin: 0; padding-left: 20px; color: #15803d;">
-              <li>Our compliance team will review your documents</li>
-              <li>Expected processing time: {{processing_time}}</li>
-              <li>You will receive an email notification with the result</li>
-            </ul>
-          </div>
-          <p style="color: #6b7280; font-size: 13px;">If you have any questions, please contact our support team.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Go to Dashboard</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your <strong>{{kyc_type}}</strong> verification documents have been received. Our compliance team is reviewing your submission.</p>
+
+      <div style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">What happens next</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #374151;">1. &nbsp; Our compliance team reviews your documents</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;">2. &nbsp; Expected review time: <strong>{{processing_time}}</strong></td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;">3. &nbsp; You will receive an email with the decision</td></tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">No further action is required from you at this stage. We appreciate your patience.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Dashboard</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User full name' },
@@ -945,29 +981,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Gold Purchase Confirmation',
     type: 'email' as const,
     module: 'finapay',
-    subject: 'Gold Purchase Confirmed - {{gold_amount}}g',
+    subject: 'Purchase Confirmed — {{gold_amount}}g Gold',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Purchase Confirmed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold purchase has been confirmed!</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%;">
-              <tr><td>Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
-              <tr><td>Price per gram:</td><td style="text-align: right;">$\{{price_per_gram}}</td></tr>
-              <tr><td>Total Paid:</td><td style="text-align: right; font-weight: bold; color: #8A2BE2;">$\{{total_amount}}</td></tr>
-              <tr><td>Reference:</td><td style="text-align: right;">{{reference_id}}</td></tr>
-            </table>
-          </div>
-          <p>The gold has been added to your FinaPay wallet.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold purchase has been confirmed and the gold has been credited to your FinaVault.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Purchase Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 10px 0; color: #6b7280;">Gold Purchased</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #1a1a1a; font-size: 16px;">{{gold_amount}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 10px 0; color: #6b7280;">Price per Gram</td>
+            <td style="padding: 10px 0; text-align: right; color: #374151;">${'$'}{{price_per_gram}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 10px 0; color: #6b7280;">Total Paid</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{total_amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280;">Reference</td>
+            <td style="padding: 10px 0; text-align: right; color: #6b7280; font-size: 12px; font-family: monospace;">{{reference_id}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0;">Your gold is held in secure allocated custody. View your full portfolio in your FinaVault dashboard.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -983,28 +1024,20 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transfer Received',
     type: 'email' as const,
     module: 'finapay',
-    subject: 'You received {{amount}} from {{sender_name}}',
+    subject: 'You Received {{amount}} from {{sender_name}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Money Received!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>You have received a transfer!</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 24px; font-weight: bold; color: #22c55e; margin: 0;">{{amount}}</p>
-            <p style="color: #6b7280; margin: 5px 0;">from {{sender_name}}</p>
-          </div>
-          <p>The funds have been added to your wallet.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{wallet_url}}" style="background: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;"><strong>{{sender_name}}</strong> has sent you a gold transfer. It has been credited to your wallet.</p>
+
+      <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #22c55e; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Amount Received</p>
+        <p style="font-size: 36px; font-weight: 800; color: #166534; margin: 0 0 8px 0;">{{amount}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 14px;">from {{sender_name}}</p>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{wallet_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Wallet</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'Recipient\'s name' },
@@ -1019,44 +1052,28 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Platform Invitation',
     type: 'email' as const,
     module: 'auth',
-    subject: '{{sender_name}} sent you {{amount}} gold - Claim within 24 hours!',
+    subject: '{{sender_name}} Has Sent You {{amount}} in Gold — Claim in 24 Hours',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #4B0082); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">You've Received Gold!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello,</p>
-          <p><strong>{{sender_name}}</strong> has sent you <strong>{{amount}}</strong> of physical gold via Finatrades!</p>
-          
-          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0; color: #92400e;"><strong>⏰ Important:</strong> This gold is reserved for you for <strong>24 hours</strong>. Claim it before it expires!</p>
-          </div>
-          
-          <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 28px; font-weight: bold; color: #8A2BE2; margin: 0;">{{amount}}</p>
-            <p style="color: #6b7280; margin: 5px 0 0 0;">of physical gold waiting for you</p>
-          </div>
-          
-          <p>Finatrades is a gold-backed digital financial platform where you can:</p>
-          <ul style="color: #374151;">
-            <li>Own and store physical gold digitally</li>
-            <li>Send gold to anyone, anywhere</li>
-            <li>Access trade finance with gold-backed security</li>
-          </ul>
-          
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{register_url}}" style="background: linear-gradient(135deg, #8A2BE2, #A342FF); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Claim Your Gold</a>
-          </p>
-          
-          <p style="text-align: center; color: #6b7280; margin-top: 15px; font-size: 13px;">
-            After registering, your gold will be automatically credited to your wallet.
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">You have received a gold transfer.</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;"><strong>{{sender_name}}</strong> has sent you <strong>{{amount}}</strong> of physical gold through FinaTrades. Create your free account to claim it — the reservation expires in <strong>24 hours</strong>.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border: 2px solid #8A2BE2; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Gold Reserved for You</p>
+        <p style="font-size: 40px; font-weight: 800; color: #8A2BE2; margin: 0 0 8px 0;">{{amount}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 13px;">from {{sender_name}}</p>
       </div>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 14px 20px; margin: 20px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 13px;"><strong>Claim before expiry:</strong> This reservation is held for 24 hours. After that, the gold will be returned to the sender.</p>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">FinaTrades is a regulated gold-backed digital finance platform trusted by investors across the globe. Registration takes under 3 minutes.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{register_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 16px 44px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 16px;">Claim Your Gold</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 12px; text-align: center; margin: 0;">After registering, your gold will be automatically credited to your wallet.</p>
     `,
     variables: [
       { name: 'sender_name', description: 'Name of the person inviting' },
@@ -1070,25 +1087,19 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'MFA Enabled',
     type: 'email' as const,
     module: 'security',
-    subject: 'Two-Factor Authentication Enabled',
+    subject: 'Security Update — Two-Factor Authentication Enabled',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Security Update</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Two-factor authentication has been <strong style="color: #22c55e;">enabled</strong> on your account.</p>
-          <p>Your account is now more secure. You'll need your authenticator app to log in.</p>
-          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Important:</strong> Keep your backup codes safe. You'll need them if you lose access to your authenticator app.</p>
-          </div>
-          <p>If you didn't make this change, please contact support immediately.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Two-factor authentication has been successfully <strong style="color: #22c55e;">enabled</strong> on your FinaTrades account. Your account is now significantly more secure.</p>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 18px 20px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Important Security Reminder</p>
+        <p style="color: #374151; margin: 0; font-size: 14px; line-height: 1.6;">Store your backup recovery codes in a safe, offline location. You will need them if you ever lose access to your authenticator app.</p>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">From now on, every login will require a code from your authenticator app. This protects your account even if your password is ever compromised.</p>
+
+      <p style="color: #ef4444; font-size: 13px; margin: 0;">If you did not enable this feature, please contact our security team immediately at <a href="mailto:security@finatrades.com" style="color: #ef4444;">security@finatrades.com</a>.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1100,28 +1111,16 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Finatrades ID Login OTP',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Your Finatrades Login Code - {{otp_code}}',
+    subject: 'Your FinaTrades Login Code',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Login Verification</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello,</p>
-          <p>You requested to log in using your Finatrades ID. Use the code below to complete your login:</p>
-          <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0;">
-            <span style="font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">{{otp_code}}</span>
-          </div>
-          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>This code expires in 5 minutes.</strong></p>
-            <p style="margin: 5px 0 0 0; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
-          </div>
-          <p style="color: #6b7280; font-size: 14px;">For security, never share this code with anyone. Finatrades will never ask for your OTP.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">You requested to sign in to your FinaTrades account. Use the one-time code below to complete your login. This code expires in <strong>5 minutes</strong>.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border: 2px solid #8A2BE2; border-radius: 12px; padding: 30px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 12px 0;">One-Time Login Code</p>
+        <span style="font-size: 40px; font-weight: 800; letter-spacing: 10px; color: #8A2BE2; font-family: 'Courier New', monospace;">{{otp_code}}</span>
       </div>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;">For your security, never share this code with anyone — FinaTrades will never ask for it. If you did not attempt to sign in, you can safely ignore this email and your account remains secure.</p>
     `,
     variables: [
       { name: 'otp_code', description: 'One-time login code' },
@@ -1133,47 +1132,55 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Agreement Signed',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'Your BNSL Agreement - Plan {{plan_id}}',
+    subject: 'BNSL Agreement Confirmed — Plan {{plan_id}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">BNSL Agreement Confirmed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Dear {{user_name}},</p>
-          <p>Thank you for enrolling in the BNSL (Buy Now Sell Later) Plan. Your signed agreement is attached to this email for your records.</p>
-          
-          <div style="background: #f8f4fc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8A2BE2;">
-            <h3 style="margin: 0 0 15px 0; color: #6B21A8;">Plan Summary</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Plan ID:</td><td style="text-align: right; font-weight: bold;">{{plan_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Sold:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Tenure:</td><td style="text-align: right; font-weight: bold;">{{tenure_months}} months</td></tr>
-              <tr><td style="padding: 8px 0;">Margin Rate:</td><td style="text-align: right; font-weight: bold;">{{margin_rate}}% p.a.</td></tr>
-              <tr><td style="padding: 8px 0;">Base Price:</td><td style="text-align: right; font-weight: bold; color: #8A2BE2;">\${'$'}{{base_price}}</td></tr>
-              <tr><td style="padding: 8px 0;">Total Margin:</td><td style="text-align: right; font-weight: bold; color: #22c55e;">\${'$'}{{total_margin}}</td></tr>
-              <tr><td style="padding: 8px 0;">Quarterly Payout:</td><td style="text-align: right; font-weight: bold;">\${'$'}{{quarterly_payout}}</td></tr>
-            </table>
-          </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Dear {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your Buy Now Sell Later (BNSL) agreement has been signed and confirmed. Your signed agreement PDF is attached to this email — please retain it for your records.</p>
 
-          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Important:</strong> Please keep this email and the attached PDF for your records. This document confirms your irrevocable sale of gold to Wingold and Metals DMCC.</p>
-          </div>
-
-          <p><strong>Signed by:</strong> {{signature_name}}</p>
-          <p><strong>Date:</strong> {{signed_date}}</p>
-
-          <p style="margin-top: 20px;">Your quarterly margin payments will be credited to your FinaPay wallet according to the disbursement schedule outlined in your agreement.</p>
-          
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Your Plan</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-          <p style="margin-top: 10px;">If you have any questions, please contact our support team.</p>
-        </div>
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #4B0082; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Plan Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Plan ID</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #374151;">{{plan_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Sold</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #374151;">{{gold_amount}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Tenure</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{tenure_months}} months</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Annual Margin Rate</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{margin_rate}}% p.a.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Base Price</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{base_price}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ddd8fe;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Margin Earned</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #22c55e;">${'$'}{{total_margin}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Quarterly Payout</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #8A2BE2;">${'$'}{{quarterly_payout}}</td>
+          </tr>
+        </table>
       </div>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 14px 20px; margin: 20px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.6;"><strong>Important:</strong> This agreement confirms your irrevocable gold sale to Wingold and Metals DMCC. Quarterly margin payments will be credited to your FinaPay wallet per the disbursement schedule in your agreement.</p>
+      </div>
+
+      <p style="color: #374151; font-size: 14px; margin: 0 0 8px 0;"><strong>Signed by:</strong> {{signature_name}}</p>
+      <p style="color: #374151; font-size: 14px; margin: 0 0 24px 0;"><strong>Date:</strong> {{signed_date}}</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View My Plan</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1195,36 +1202,36 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Certificate Delivery',
     type: 'email' as const,
     module: 'finapay',
-    subject: 'Your Gold Certificate - {{certificate_number}}',
+    subject: 'Your Gold Ownership Certificate — {{certificate_number}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Certificate of Ownership</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Dear {{user_name}},</p>
-          <p>Congratulations on your gold purchase! Your {{certificate_type}} certificate has been generated and is attached to this email.</p>
-          
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8A2BE2;">
-            <h3 style="margin: 0 0 15px 0; color: #ea580c;">Certificate Details</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Certificate No:</td><td style="text-align: right; font-weight: bold;">{{certificate_number}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right; font-weight: bold;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Type:</td><td style="text-align: right; font-weight: bold;">{{certificate_type}}</td></tr>
-              <tr><td style="padding: 8px 0;">Issue Date:</td><td style="text-align: right; font-weight: bold;">{{issue_date}}</td></tr>
-            </table>
-          </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Dear {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your <strong>{{certificate_type}}</strong> certificate has been issued and is attached to this email as a PDF. This document serves as official proof of your gold ownership held in allocated custody at Wingold and Metals DMCC, Dubai.</p>
 
-          <p>This certificate serves as proof of your gold ownership stored at Wingold and Metals DMCC, Dubai.</p>
-          
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{vault_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in FinaVault</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Certificate Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #6b7280;">Certificate Number</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{certificate_number}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">{{gold_amount}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #6b7280;">Certificate Type</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{certificate_type}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Issue Date</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{issue_date}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{vault_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View in FinaVault</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1241,31 +1248,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Invoice Delivery',
     type: 'email' as const,
     module: 'finapay',
-    subject: 'Invoice {{invoice_number}} - Gold Purchase',
+    subject: 'Invoice {{invoice_number}} — Gold Purchase',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Invoice</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Dear {{user_name}},</p>
-          <p>Please find attached your invoice for the recent gold purchase.</p>
-          
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Invoice No:</td><td style="text-align: right; font-weight: bold;">{{invoice_number}}</td></tr>
-              <tr><td style="padding: 8px 0;">Date:</td><td style="text-align: right;">{{invoice_date}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Amount:</td><td style="text-align: right;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb; margin-top: 10px;"><strong>Total Amount:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #8A2BE2;">{{total_amount}}</td></tr>
-            </table>
-          </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Dear {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Thank you for your purchase. Your invoice is attached to this email as a PDF for your records.</p>
 
-          <p>Thank you for your purchase!</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Invoice Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Invoice Number</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{invoice_number}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Date</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{invoice_date}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Purchased</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{gold_amount}}g</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #374151; font-weight: 700;">Total Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #8A2BE2; font-size: 16px;">{{total_amount}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">For any questions about this invoice, please contact <a href="mailto:support@finatrades.com" style="color: #8A2BE2;">support@finatrades.com</a>.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1281,40 +1291,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Document Expiry Reminder',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your {{document_type}} is expiring soon - Action Required',
+    subject: 'Action Required: Your {{document_type}} Expires in {{days_remaining}} Days',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Document Expiry Notice</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>This is a friendly reminder that your <strong>{{document_type}}</strong> is <strong>expiring on {{expiry_date}}</strong>.</p>
-          
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0;"><strong>Document:</strong> {{document_type}}</p>
-            <p style="margin: 8px 0 0 0;"><strong>Days remaining:</strong> {{days_remaining}} days</p>
-          </div>
-          
-          <p>To continue using Finatrades services without interruption, please update your KYC documents before the expiry date.</p>
-          
-          <p><strong>What you need to do:</strong></p>
-          <ol>
-            <li>Obtain a new valid document</li>
-            <li>Log in to your Finatrades account</li>
-            <li>Go to Settings → KYC Verification</li>
-            <li>Upload your new document</li>
-          </ol>
-          
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{kyc_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Update Documents</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>If you have already renewed your documents, please disregard this message.</p>
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your <strong>{{document_type}}</strong> on file is expiring on <strong>{{expiry_date}}</strong> — in <strong>{{days_remaining}} days</strong>. To continue using all FinaTrades services without interruption, please upload a renewed document before the expiry date.</p>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">What to do</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #374151;">1. &nbsp; Obtain a new, valid {{document_type}}</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;">2. &nbsp; Log in to your FinaTrades account</td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;">3. &nbsp; Go to <strong>Settings &rarr; KYC Verification</strong></td></tr>
+          <tr><td style="padding: 6px 0; color: #374151;">4. &nbsp; Upload the renewed document</td></tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{kyc_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Update Documents Now</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">If you have already renewed your documents, you can disregard this message.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1331,25 +1327,16 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Password Reset',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Reset your Finatrades password',
+    subject: 'Reset Your FinaTrades Password',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Password Reset</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We received a request to reset your password. Click the button below to create a new password:</p>
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="{{reset_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Reset Password</a>
-          </p>
-          <p>This link expires in <strong>1 hour</strong>.</p>
-          <p>If you didn't request this, please ignore this email or contact support if you're concerned.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
-      </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">We received a request to reset the password for your FinaTrades account. Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{reset_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Reset My Password</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;">If you did not request a password reset, you can safely ignore this email — your password has not been changed. If you are concerned about your account security, please contact us at <a href="mailto:security@finatrades.com" style="color: #8A2BE2;">security@finatrades.com</a>.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1362,26 +1349,18 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Password Changed',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Your Finatrades password was changed',
+    subject: 'Your FinaTrades Password Has Been Changed',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Password Changed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your password was successfully changed on {{change_date}}.</p>
-          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0;"><strong>If you didn't make this change</strong>, please reset your password immediately and contact our support team.</p>
-          </div>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{security_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Review Security Settings</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your FinaTrades account password was successfully changed on <strong>{{change_date}}</strong>.</p>
+
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 16px 20px; margin: 24px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;"><strong>Did not make this change?</strong> Reset your password immediately and contact our security team at <a href="mailto:security@finatrades.com" style="color: #92400e;">security@finatrades.com</a>.</p>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{security_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Review Security Settings</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1395,32 +1374,38 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'New Device Login',
     type: 'email' as const,
     module: 'auth',
-    subject: 'New login to your Finatrades account',
+    subject: 'New Sign-In to Your FinaTrades Account',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">New Login Detected</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We detected a new login to your account:</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; color: #6b7280;">Device:</td><td style="text-align: right;">{{device_info}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">Location:</td><td style="text-align: right;">{{location}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">Time:</td><td style="text-align: right;">{{login_time}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">IP Address:</td><td style="text-align: right;">{{ip_address}}</td></tr>
-            </table>
-          </div>
-          <p>If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{security_url}}" style="background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Secure My Account</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">We detected a new sign-in to your FinaTrades account. If this was you, no action is needed.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Sign-In Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Device</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{device_info}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Location</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{location}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Time</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{login_time}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">IP Address</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151; font-family: monospace;">{{ip_address}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">Do not recognise this activity? Secure your account immediately by changing your password and enabling two-factor authentication.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{security_url}}" style="background: #ef4444; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Secure My Account</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1437,27 +1422,20 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Account Locked',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Your Finatrades account has been locked',
+    subject: 'Your FinaTrades Account Has Been Temporarily Locked',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Account Locked</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your account has been temporarily locked due to <strong>{{lock_reason}}</strong>.</p>
-          <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <p style="margin: 0;">Your account will be unlocked after {{unlock_time}}.</p>
-          </div>
-          <p>If you believe this was a mistake, please contact our support team.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{support_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your FinaTrades account has been temporarily locked due to <strong>{{lock_reason}}</strong>.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 16px 20px; margin: 24px 0;">
+        <p style="color: #991b1b; margin: 0; font-size: 14px; line-height: 1.6;">Your account will be automatically unlocked after <strong>{{unlock_time}}</strong>. No further action is required on your part if you recognise this activity.</p>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">If you believe this was applied in error, please contact our support team and we will assist you promptly.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{support_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Contact Support</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1472,33 +1450,35 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Suspicious Activity Alert',
     type: 'email' as const,
     module: 'auth',
-    subject: 'Suspicious activity detected on your Finatrades account',
+    subject: 'Security Alert: Suspicious Activity on Your FinaTrades Account',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Security Alert</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We detected suspicious activity on your account:</p>
-          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <p style="margin: 0;"><strong>Activity:</strong> {{activity_description}}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Time:</strong> {{activity_time}}</p>
-          </div>
-          <p><strong>Recommended actions:</strong></p>
-          <ol>
-            <li>Change your password immediately</li>
-            <li>Enable two-factor authentication</li>
-            <li>Review your recent transactions</li>
-          </ol>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{security_url}}" style="background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Secure My Account</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Our security systems have detected unusual activity on your FinaTrades account. Please review the details below and take immediate action if you do not recognise this activity.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Suspicious Activity Detected</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 8px 0; color: #6b7280;">Activity</td>
+            <td style="padding: 8px 0; text-align: right; color: #374151;">{{activity_description}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Detected at</td>
+            <td style="padding: 8px 0; text-align: right; color: #374151;">{{activity_time}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; font-weight: 700; margin: 0 0 12px 0;">Recommended immediate actions:</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px 0;">
+        <tr><td style="padding: 6px 0; color: #374151;">1. &nbsp; Change your password immediately</td></tr>
+        <tr><td style="padding: 6px 0; color: #374151;">2. &nbsp; Enable two-factor authentication if not already active</td></tr>
+        <tr><td style="padding: 6px 0; color: #374151;">3. &nbsp; Review your recent transactions and account activity</td></tr>
+      </table>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{security_url}}" style="background: #ef4444; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Secure My Account Now</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1514,27 +1494,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Gold Sale Confirmation',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Gold sale confirmed - {{gold_amount}}g',
+    subject: 'Sale Confirmed — {{gold_amount}}g Gold',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Gold Sale Confirmed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold sale has been successfully processed.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Reference:</td><td style="text-align: right; font-weight: bold;">{{reference_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Sold:</td><td style="text-align: right;">{{gold_amount}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Price per gram:</td><td style="text-align: right;">${'$'}{{price_per_gram}}</td></tr>
-              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb;"><strong>Total Received:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold; color: #22c55e;">${'$'}{{total_amount}}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold sale has been completed and the proceeds have been credited to your wallet.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Sale Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{reference_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Sold</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{gold_amount}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Price per Gram</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{price_per_gram}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #374151; font-weight: 700;">Total Received</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #22c55e; font-size: 16px;">${'$'}{{total_amount}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -1551,65 +1535,78 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Card Payment Receipt',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Card Payment Receipt - ${{amount}} | Certificate {{certificate_number}}',
+    subject: 'Payment Receipt — ${{amount}} Gold Purchase',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Receipt</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Card Transaction Successful</p>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Dear {{user_name}},</p>
-          <p>Your card payment has been successfully processed. Below are the transaction details and your gold ownership certificate.</p>
-          
-          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-            <h3 style="margin: 0 0 15px 0; color: #16a34a;">Transaction Summary</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; color: #6b7280;">Transaction ID:</td><td style="text-align: right; font-weight: bold;">{{reference_id}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">Date & Time:</td><td style="text-align: right; font-weight: bold;">{{transaction_date}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">Payment Method:</td><td style="text-align: right; font-weight: bold;">Card ending {{card_last4}}</td></tr>
-              <tr><td style="padding: 8px 0; color: #6b7280;">Amount Paid:</td><td style="text-align: right; font-weight: bold; font-size: 18px; color: #22c55e;">\${{amount}} USD</td></tr>
-            </table>
-          </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Dear {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your card payment has been successfully processed and your gold has been added to your wallet. Please retain this receipt for your records.</p>
 
-          <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #f59e0b;">
-            <div style="text-align: center; margin-bottom: 15px;">
-              <span style="font-size: 12px; color: #92400e; text-transform: uppercase; letter-spacing: 2px;">Certificate of Gold Ownership</span>
-            </div>
-            <h2 style="margin: 0 0 20px 0; color: #92400e; text-align: center; font-size: 20px;">Digital Gold Certificate</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Certificate Number:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">{{certificate_number}}</td></tr>
-              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Gold Amount:</td><td style="text-align: right; font-weight: bold; color: #92400e; font-size: 18px; border-bottom: 1px dashed #d97706;">{{gold_grams}}g</td></tr>
-              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Gold Price:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">\${{gold_price}}/gram</td></tr>
-              <tr><td style="padding: 10px 0; color: #78350f; border-bottom: 1px dashed #d97706;">Storage Location:</td><td style="text-align: right; font-weight: bold; color: #92400e; border-bottom: 1px dashed #d97706;">Dubai, UAE</td></tr>
-              <tr><td style="padding: 10px 0; color: #78350f;">Custodian:</td><td style="text-align: right; font-weight: bold; color: #92400e;">Wingold & Metals DMCC</td></tr>
-            </table>
-            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #d97706;">
-              <p style="font-size: 11px; color: #92400e; margin: 0;">This certificate confirms your ownership of physical gold securely stored in insured vaults.</p>
-            </div>
-          </div>
-
-          <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h4 style="margin: 0 0 10px 0; color: #374151;">Your Updated Wallet Balance</h4>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 5px 0; color: #6b7280;">Total Gold Holdings:</td><td style="text-align: right; font-weight: bold;">{{total_gold_grams}}g</td></tr>
-              <tr><td style="padding: 5px 0; color: #6b7280;">Estimated Value:</td><td style="text-align: right; font-weight: bold;">\${{total_value_usd}} USD</td></tr>
-            </table>
-          </div>
-
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{dashboard_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View in Dashboard</a>
-          </p>
-          
-          <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
-            If you did not authorize this transaction, please contact our support team immediately.
-          </p>
-        </div>
-        <div style="padding: 20px; background: #1f2937; text-align: center; color: #9ca3af; font-size: 12px;">
-          <p style="margin: 0 0 10px 0;">Finatrades - Gold-Backed Digital Finance</p>
-          <p style="margin: 0; font-size: 10px;">This is an automated receipt. Please keep this email for your records.</p>
-        </div>
+      <div style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Transaction Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Transaction ID</td>
+            <td style="padding: 9px 0; text-align: right; font-family: monospace; color: #374151;">{{reference_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Date &amp; Time</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{transaction_date}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Payment Method</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">Card ending {{card_last4}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #374151; font-weight: 700;">Amount Paid</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #22c55e; font-size: 18px;">${'$'}{{amount}} USD</td>
+          </tr>
+        </table>
       </div>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-size: 11px; color: #92400e; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0; text-align: center;">Certificate of Gold Ownership</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px dashed #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Certificate Number</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e; font-family: monospace;">{{certificate_number}}</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Gold Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 18px;">{{gold_grams}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Price per Gram</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e;">${'$'}{{gold_price}}</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Storage Location</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e;">Dubai, UAE</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #78350f;">Custodian</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #92400e;">Wingold &amp; Metals DMCC</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 10px 0; font-size: 13px;">Updated Wallet Balance</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 7px 0; color: #6b7280;">Total Gold Holdings</td>
+            <td style="padding: 7px 0; text-align: right; font-weight: 600; color: #374151;">{{total_gold_grams}}g</td>
+          </tr>
+          <tr>
+            <td style="padding: 7px 0; color: #6b7280;">Estimated Value</td>
+            <td style="padding: 7px 0; text-align: right; font-weight: 600; color: #374151;">${'$'}{{total_value_usd}} USD</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Dashboard</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">If you did not authorise this transaction, please contact our security team at <a href="mailto:security@finatrades.com" style="color: #8A2BE2;">security@finatrades.com</a> immediately.</p>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
@@ -1631,24 +1628,15 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Deposit Received',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Deposit of ${{amount}} received',
+    subject: 'Deposit Confirmed — ${{amount}} Credited',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Deposit Received</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your deposit has been credited to your account.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 32px; font-weight: bold; color: #22c55e; margin: 0;">${'$'}{{amount}}</p>
-            <p style="color: #6b7280; margin: 10px 0 0 0;">Reference: {{reference_id}}</p>
-          </div>
-          <p>Your funds are now available for trading.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your deposit has been received and credited to your FinaTrades account. Funds are now available for trading.</p>
+
+      <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #22c55e; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Amount Deposited</p>
+        <p style="font-size: 40px; font-weight: 800; color: #166534; margin: 0 0 8px 0;">${'$'}{{amount}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 13px; font-family: monospace;">Ref: {{reference_id}}</p>
       </div>
     `,
     variables: [
@@ -1663,24 +1651,15 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Deposit Processing',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Your deposit of ${{amount}} is being processed',
+    subject: 'Deposit of ${{amount}} Is Being Processed',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Deposit Processing</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We've received your deposit request and it's currently being processed.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 32px; font-weight: bold; color: #1d4ed8; margin: 0;">${'$'}{{amount}}</p>
-            <p style="color: #6b7280; margin: 10px 0 0 0;">Estimated completion: {{estimated_time}}</p>
-          </div>
-          <p>You'll receive another email once your deposit has been credited.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">We have received your deposit of <strong>${'$'}{{amount}}</strong> and it is currently being processed. You will receive another notification once the funds are credited to your account.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0; text-align: center;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Deposit Amount</p>
+        <p style="font-size: 36px; font-weight: 800; color: #374151; margin: 0 0 12px 0;">${'$'}{{amount}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 14px;">Estimated completion: <strong>{{estimated_time}}</strong></p>
       </div>
     `,
     variables: [
@@ -1695,29 +1674,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Withdrawal Requested',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Withdrawal request for ${{amount}} received',
+    subject: 'Withdrawal Request Received — ${{amount}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Withdrawal Requested</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your withdrawal request has been submitted and is pending review.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right; font-weight: bold;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Method:</td><td style="text-align: right;">{{withdrawal_method}}</td></tr>
-              <tr><td style="padding: 8px 0;">Reference:</td><td style="text-align: right;">{{reference_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right;"><span style="color: #f59e0b;">Pending</span></td></tr>
-            </table>
-          </div>
-          <p>Processing typically takes 1-3 business days. You'll receive updates via email.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your withdrawal request has been submitted successfully and is pending review. Processing typically takes <strong>1–3 business days</strong>.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Withdrawal Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{amount}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Method</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{withdrawal_method}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Reference</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151; font-family: monospace;">{{reference_id}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #F59E0B;">Pending Review</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0;">You will receive email updates as your withdrawal progresses.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1732,26 +1716,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Withdrawal Processing',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Your withdrawal of ${{amount}} is being processed',
+    subject: 'Withdrawal of ${{amount}} Is Being Processed',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Withdrawal Processing</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your withdrawal has been approved and is now being processed.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right; font-weight: bold;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right;"><span style="color: #3b82f6;">Processing</span></td></tr>
-              <tr><td style="padding: 8px 0;">Expected arrival:</td><td style="text-align: right;">{{estimated_time}}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your withdrawal has been approved and is now being sent. Funds are expected to arrive in your account within the timeframe below.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{amount}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #8A2BE2;">Processing</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Expected Arrival</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{estimated_time}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -1766,24 +1750,15 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Withdrawal Completed',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Your withdrawal of ${{amount}} is complete',
+    subject: 'Withdrawal Complete — ${{amount}} Sent',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Withdrawal Complete</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your withdrawal has been successfully processed and sent to your account.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 32px; font-weight: bold; color: #22c55e; margin: 0;">${'$'}{{amount}}</p>
-            <p style="color: #6b7280; margin: 10px 0 0 0;">Reference: {{reference_id}}</p>
-          </div>
-          <p>The funds should appear in your bank account within 1-2 business days.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your withdrawal has been successfully processed and dispatched to your bank account. Funds typically appear within <strong>1–2 business days</strong>, depending on your bank.</p>
+
+      <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #22c55e; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Amount Withdrawn</p>
+        <p style="font-size: 40px; font-weight: 800; color: #166534; margin: 0 0 8px 0;">${'$'}{{amount}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 13px; font-family: monospace;">Ref: {{reference_id}}</p>
       </div>
     `,
     variables: [
@@ -1798,29 +1773,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transaction Failed',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Transaction failed - Action required',
+    subject: 'Transaction Failed — Action Required',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Transaction Failed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Unfortunately, your transaction could not be completed.</p>
-          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <p style="margin: 0;"><strong>Transaction:</strong> {{transaction_type}}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Amount:</strong> ${'$'}{{amount}}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Reason:</strong> {{failure_reason}}</p>
-          </div>
-          <p>Please review and try again, or contact support if the issue persists.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{support_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Contact Support</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Unfortunately, your transaction could not be completed. No funds have been debited from your account.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Failed Transaction</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 8px 0; color: #6b7280;">Transaction Type</td>
+            <td style="padding: 8px 0; text-align: right; color: #374151;">{{transaction_type}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 8px 0; color: #6b7280;">Amount</td>
+            <td style="padding: 8px 0; text-align: right; color: #374151;">${'$'}{{amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Reason</td>
+            <td style="padding: 8px 0; text-align: right; color: #ef4444;">{{failure_reason}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">Please review the details above and try again. If the issue persists, our support team is available to help.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{support_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Contact Support</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1836,29 +1816,20 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Low Balance Alert',
     type: 'email' as const,
     module: 'transactions',
-    subject: 'Low balance alert - Your wallet balance is low',
+    subject: 'Low Balance Alert — Your FinaTrades Wallet',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Low Balance Alert</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your wallet balance has fallen below your alert threshold.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="color: #6b7280; margin: 0;">Current Balance</p>
-            <p style="font-size: 32px; font-weight: bold; color: #f59e0b; margin: 5px 0;">${'$'}{{current_balance}}</p>
-            <p style="color: #6b7280; margin: 0;">Threshold: ${'$'}{{threshold}}</p>
-          </div>
-          <p>Consider adding funds to continue trading without interruption.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{deposit_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Add Funds</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your wallet balance has fallen below your alert threshold. Consider topping up to ensure uninterrupted access to trading.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Current Balance</p>
+        <p style="font-size: 40px; font-weight: 800; color: #92400e; margin: 0 0 8px 0;">${'$'}{{current_balance}}</p>
+        <p style="color: #6b7280; margin: 0; font-size: 13px;">Alert threshold: ${'$'}{{threshold}}</p>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{deposit_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Add Funds</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -1874,27 +1845,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transfer Sent',
     type: 'email' as const,
     module: 'p2p',
-    subject: 'You sent {{gold_amount}}g gold to {{recipient_name}}',
+    subject: 'Transfer Confirmed — {{gold_amount}}g Gold Sent',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Transfer Sent</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold transfer has been initiated.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">To:</td><td style="text-align: right; font-weight: bold;">{{recipient_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right;">{{gold_amount}}g gold</td></tr>
-              <tr><td style="padding: 8px 0;">Value:</td><td style="text-align: right;">${'$'}{{usd_value}}</td></tr>
-              <tr><td style="padding: 8px 0;">Reference:</td><td style="text-align: right;">{{reference_id}}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold transfer has been successfully sent to <strong>{{recipient_name}}</strong>.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Transfer Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Recipient</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">{{recipient_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Transferred</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B;">{{gold_amount}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Approximate Value</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{usd_value}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Reference</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151; font-family: monospace;">{{reference_id}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -1911,27 +1886,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transfer Pending',
     type: 'email' as const,
     module: 'p2p',
-    subject: 'Gold transfer pending - {{gold_amount}}g',
+    subject: 'Gold Transfer Pending — {{gold_amount}}g',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Transfer Pending</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold transfer is being processed and awaiting confirmation.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">To:</td><td style="text-align: right;">{{recipient_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right;">{{gold_amount}}g gold</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right;"><span style="color: #3b82f6;">Pending</span></td></tr>
-            </table>
-          </div>
-          <p>You'll receive a confirmation email once the transfer is complete.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold transfer is being processed and awaiting final confirmation. You will receive a follow-up email once complete.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Recipient</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{recipient_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B;">{{gold_amount}}g</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #8A2BE2;">Pending</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -1946,26 +1920,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transfer Completed',
     type: 'email' as const,
     module: 'p2p',
-    subject: 'Transfer completed - {{gold_amount}}g gold',
+    subject: 'Transfer Complete — {{gold_amount}}g Gold Delivered',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Transfer Complete</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold transfer has been successfully completed.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">To:</td><td style="text-align: right; font-weight: bold;">{{recipient_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right;">{{gold_amount}}g gold</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right;"><span style="color: #22c55e;">Completed</span></td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold transfer has been completed successfully and the gold has been credited to <strong>{{recipient_name}}</strong>'s wallet.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Recipient</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">{{recipient_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Transferred</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B;">{{gold_amount}}g</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #22c55e;">Completed</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -1980,28 +1954,29 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Transfer Cancelled',
     type: 'email' as const,
     module: 'p2p',
-    subject: 'Transfer cancelled - {{gold_amount}}g gold',
+    subject: 'Transfer Cancelled — Gold Returned to Wallet',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #6b7280, #4b5563); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Transfer Cancelled</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your gold transfer has been cancelled.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">To:</td><td style="text-align: right;">{{recipient_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right;">{{gold_amount}}g gold</td></tr>
-              <tr><td style="padding: 8px 0;">Reason:</td><td style="text-align: right;">{{cancellation_reason}}</td></tr>
-            </table>
-          </div>
-          <p>The gold has been returned to your wallet.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your gold transfer has been cancelled and the gold has been returned to your wallet.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Intended Recipient</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{recipient_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Amount</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{gold_amount}}g</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Reason</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{cancellation_reason}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0;">Your balance has been fully restored. If you have questions, please contact our support team.</p>
     `,
     variables: [
       { name: 'user_name', description: 'Sender\'s name' },
@@ -2017,30 +1992,32 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Payment Reminder',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'Payment reminder - ${{amount}} due on {{due_date}}',
+    subject: 'Payment Reminder — ${{amount}} Due on {{due_date}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Reminder</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>This is a friendly reminder that your BNSL payment is due soon.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Plan:</td><td style="text-align: right; font-weight: bold;">{{plan_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount Due:</td><td style="text-align: right; font-weight: bold; color: #f59e0b;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Due Date:</td><td style="text-align: right;">{{due_date}}</td></tr>
-            </table>
-          </div>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{payment_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Make Payment</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">This is a friendly reminder that your Buy Now, Save Later (BNSL) payment is due soon. Keeping your plan on track ensures continued progress toward full gold ownership.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Payment Due</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Plan</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e;">{{plan_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Amount Due</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 18px;">${'$'}{{amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #78350f;">Due Date</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e;">{{due_date}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{payment_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Make Payment</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -2056,27 +2033,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Payment Received',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'Payment received - ${{amount}} for {{plan_name}}',
+    subject: 'BNSL Payment Confirmed — ${{amount}} Received',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Received</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your BNSL payment has been successfully processed.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Plan:</td><td style="text-align: right;">{{plan_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount Paid:</td><td style="text-align: right; font-weight: bold; color: #22c55e;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Remaining Balance:</td><td style="text-align: right;">${'$'}{{remaining_balance}}</td></tr>
-              <tr><td style="padding: 8px 0;">Next Payment:</td><td style="text-align: right;">{{next_due_date}}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your BNSL instalment payment has been received and applied to your plan. You are one step closer to full gold ownership.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Payment Confirmation</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Plan</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{plan_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Amount Paid</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #22c55e; font-size: 18px;">${'$'}{{amount}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Remaining Balance</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{remaining_balance}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Next Payment Due</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{next_due_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2093,31 +2074,36 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Payment Overdue',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'URGENT: Payment overdue - ${{amount}} for {{plan_name}}',
+    subject: 'Urgent: BNSL Payment Overdue — Action Required',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Payment Overdue</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your BNSL payment is <strong>overdue</strong>. Please make payment immediately to avoid penalties.</p>
-          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Plan:</td><td style="text-align: right;">{{plan_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount Overdue:</td><td style="text-align: right; font-weight: bold; color: #ef4444;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Days Overdue:</td><td style="text-align: right;">{{days_overdue}} days</td></tr>
-              <tr><td style="padding: 8px 0;">Late Fee:</td><td style="text-align: right;">${'$'}{{late_fee}}</td></tr>
-            </table>
-          </div>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{payment_url}}" style="background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Pay Now</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your BNSL payment is overdue. Please settle the outstanding balance immediately to avoid late fees and protect your gold ownership progress.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Overdue Payment</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 9px 0; color: #6b7280;">Plan</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{plan_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 9px 0; color: #6b7280;">Amount Overdue</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #ef4444; font-size: 18px;">${'$'}{{amount}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 9px 0; color: #6b7280;">Days Overdue</td>
+            <td style="padding: 9px 0; text-align: right; color: #ef4444;">{{days_overdue}} days</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Late Fee</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{late_fee}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{payment_url}}" style="background: #ef4444; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Pay Now</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -2134,31 +2120,24 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Plan Completed',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'Congratulations! Your BNSL plan is complete',
+    subject: 'Congratulations — Your BNSL Plan Is Complete!',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Plan Completed!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Congratulations! You have successfully completed your BNSL plan.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 24px; font-weight: bold; color: #22c55e; margin: 0;">{{gold_amount}}g Gold</p>
-            <p style="color: #6b7280; margin: 10px 0 0 0;">Now fully owned!</p>
-          </div>
-          <p>Your gold has been transferred to your FinaVault. You can now:</p>
-          <ul>
-            <li>Hold it in your vault</li>
-            <li>Sell at market price</li>
-            <li>Transfer to another user</li>
-            <li>Request physical delivery</li>
-          </ul>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Congratulations — you have successfully completed your Buy Now, Save Later plan and are now the proud full owner of your gold.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #F59E0B; border-radius: 10px; padding: 30px 24px; margin: 24px 0; text-align: center;">
+        <p style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Now Fully Owned</p>
+        <p style="font-size: 44px; font-weight: 800; color: #92400e; margin: 0 0 4px 0;">{{gold_amount}}g</p>
+        <p style="font-size: 16px; color: #78350f; margin: 0;">Physical Gold — Secured in Vault</p>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 12px 0;">Your gold is now in your FinaVault and fully available. You can choose to:</p>
+      <ul style="color: #374151; line-height: 2; padding-left: 20px; margin: 0 0 24px 0;">
+        <li>Hold it in your vault as a store of value</li>
+        <li>Sell at the current market price</li>
+        <li>Transfer to another FinaTrades user</li>
+        <li>Request physical delivery to your address</li>
+      </ul>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -2171,27 +2150,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'BNSL Early Exit',
     type: 'email' as const,
     module: 'bnsl',
-    subject: 'BNSL Plan Early Exit Confirmation',
+    subject: 'BNSL Early Exit Confirmed',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Early Exit Processed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your early exit from the BNSL plan has been processed.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Plan:</td><td style="text-align: right;">{{plan_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount Paid:</td><td style="text-align: right;">${'$'}{{amount_paid}}</td></tr>
-              <tr><td style="padding: 8px 0;">Exit Penalty:</td><td style="text-align: right; color: #ef4444;">${'$'}{{penalty_amount}}</td></tr>
-              <tr><td style="padding: 8px 0; border-top: 1px solid #e5e7eb;"><strong>Gold Received:</strong></td><td style="text-align: right; border-top: 1px solid #e5e7eb; font-weight: bold;">{{gold_received}}g</td></tr>
-            </table>
-          </div>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your early exit from the BNSL plan has been processed. The proportional gold earned to date has been transferred to your FinaVault, less the applicable early exit fee.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Exit Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Plan</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{plan_name}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Paid</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{amount_paid}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Early Exit Fee</td>
+            <td style="padding: 9px 0; text-align: right; color: #ef4444;">${'$'}{{penalty_amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #374151; font-weight: 700;">Gold Received</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B; font-size: 16px;">{{gold_received}}g</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2209,28 +2192,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Case Created',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade case created - {{case_id}}',
+    subject: 'Trade Finance Case Opened — {{case_id}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Trade Case Created</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your trade finance case has been successfully created.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Case ID:</td><td style="text-align: right; font-weight: bold;">{{case_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Type:</td><td style="text-align: right;">{{case_type}}</td></tr>
-              <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right;">${'$'}{{amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right;"><span style="color: #3b82f6;">Pending Review</span></td></tr>
-            </table>
-          </div>
-          <p>Our team will review your case and update you on the next steps.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your trade finance case has been successfully submitted and is now under review by our trade specialists. You will receive updates as your case progresses.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Case Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Case ID</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{case_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Type</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{case_type}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Amount</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #8A2BE2;">Pending Review</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2246,27 +2232,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Case Status Update',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade case {{case_id}} - Status update',
+    subject: 'Trade Case {{case_id}} — Status Updated',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Status Update</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your trade case status has been updated.</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Case ID:</td><td style="text-align: right; font-weight: bold;">{{case_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">New Status:</td><td style="text-align: right; font-weight: bold; color: #3b82f6;">{{new_status}}</td></tr>
-              <tr><td style="padding: 8px 0;">Updated:</td><td style="text-align: right;">{{update_date}}</td></tr>
-            </table>
-          </div>
-          <p><strong>Notes:</strong> {{status_notes}}</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">There has been an update to your trade finance case. Please review the latest status below.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Case ID</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{case_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">New Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #8A2BE2;">{{new_status}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Updated</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{update_date}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background: #f9fafb; border-left: 4px solid #8A2BE2; border-radius: 4px; padding: 16px 20px; margin: 0;">
+        <p style="font-weight: 600; color: #374151; margin: 0 0 4px 0; font-size: 13px;">Notes from our team</p>
+        <p style="color: #374151; margin: 0; line-height: 1.7;">{{status_notes}}</p>
       </div>
     `,
     variables: [
@@ -2283,29 +2273,20 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Document Request',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Documents required for trade case {{case_id}}',
+    subject: 'Documents Required — Trade Case {{case_id}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Documents Required</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We need additional documents to proceed with your trade case.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0 0 10px 0;"><strong>Case ID:</strong> {{case_id}}</p>
-            <p style="margin: 0;"><strong>Required Documents:</strong></p>
-            <p style="margin: 10px 0 0 0;">{{required_documents}}</p>
-          </div>
-          <p>Please upload the documents as soon as possible to avoid delays.</p>
-          <p style="text-align: center; margin-top: 30px;">
-            <a href="{{upload_url}}" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Upload Documents</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">To proceed with your trade finance case, we require additional documentation. Please upload the requested documents at your earliest convenience to avoid delays in processing.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 4px solid #F59E0B; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Case ID: {{case_id}}</p>
+        <p style="font-weight: 600; color: #374151; margin: 0 0 8px 0;">Documents Required:</p>
+        <p style="color: #374151; margin: 0; line-height: 1.7;">{{required_documents}}</p>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{upload_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Upload Documents</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -2320,27 +2301,27 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Case Approved',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade case {{case_id}} approved!',
+    subject: 'Trade Case Approved — {{case_id}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Case Approved!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Great news! Your trade finance case has been approved.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Case ID:</td><td style="text-align: right; font-weight: bold;">{{case_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Credit Limit:</td><td style="text-align: right; font-weight: bold; color: #22c55e;">${'$'}{{credit_limit}}</td></tr>
-              <tr><td style="padding: 8px 0;">Valid Until:</td><td style="text-align: right;">{{valid_until}}</td></tr>
-            </table>
-          </div>
-          <p>You can now proceed with your trade transactions.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">We are pleased to inform you that your trade finance case has been approved. You may now proceed with your trade transactions within the approved terms.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Approval Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Case ID</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{case_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Credit Limit</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #22c55e; font-size: 18px;">${'$'}{{credit_limit}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Valid Until</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{valid_until}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2356,27 +2337,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Case Completed',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade case {{case_id}} completed',
+    subject: 'Trade Case Complete — {{case_id}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Case Completed</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your trade finance case has been successfully completed.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Case ID:</td><td style="text-align: right; font-weight: bold;">{{case_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Total Value:</td><td style="text-align: right;">${'$'}{{total_value}}</td></tr>
-              <tr><td style="padding: 8px 0;">Completed:</td><td style="text-align: right;">{{completion_date}}</td></tr>
-            </table>
-          </div>
-          <p>Thank you for using FinaBridge trade finance services.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your trade finance case has been completed successfully. All settlements and documentation have been finalised. Thank you for choosing FinaBridge.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Case ID</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{case_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Value</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{total_value}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Completed</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{completion_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2393,32 +2373,36 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'New Trade Proposal Received',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'New proposal for your trade request {{trade_ref}}',
+    subject: 'New Trade Proposal Received — Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">New Trade Proposal</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>You've received a new proposal for your trade request!</p>
-          <div style="background: #f3e8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Proposed Price:</td><td style="text-align: right;">\${{proposed_price}}</td></tr>
-              <tr><td style="padding: 8px 0;">Delivery Terms:</td><td style="text-align: right;">{{delivery_terms}}</td></tr>
-              <tr><td style="padding: 8px 0;">Exporter:</td><td style="text-align: right;">{{exporter_name}}</td></tr>
-            </table>
-          </div>
-          <p>Review this proposal in your FinaBridge dashboard to accept or negotiate.</p>
-          <p style="text-align: center; margin-top: 20px;">
-            <a href="{{dashboard_url}}" style="background: #8b5cf6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Proposal</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">You have received a new proposal from an exporter for your trade request. Review the terms below and respond via your FinaBridge dashboard.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Proposal Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Proposed Price</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{proposed_price}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Delivery Terms</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{delivery_terms}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Exporter</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{exporter_name}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Proposal</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
@@ -2435,31 +2419,32 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Proposal Accepted',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Your proposal has been accepted - {{trade_ref}}',
+    subject: 'Proposal Accepted — Trade Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Proposal Accepted!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Great news! Your trade proposal has been accepted by the importer.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Trade Value:</td><td style="text-align: right;">\${{trade_value}}</td></tr>
-              <tr><td style="padding: 8px 0;">Settlement Gold:</td><td style="text-align: right;">{{gold_grams}}g</td></tr>
-            </table>
-          </div>
-          <p>A Deal Room has been created for this trade. Visit your dashboard to proceed with the next steps.</p>
-          <p style="text-align: center; margin-top: 20px;">
-            <a href="{{dashboard_url}}" style="background: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Go to Deal Room</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your trade proposal has been accepted by the importer. A secure Deal Room has been created for this transaction. Please log in to your dashboard to proceed with the next steps.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Deal Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Value</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Settlement Gold</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B;">{{gold_grams}}g</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Go to Deal Room</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
@@ -2475,31 +2460,36 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Shipment Status Update',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Shipment update for {{trade_ref}} - {{shipment_status}}',
+    subject: 'Shipment Update — Trade Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Shipment Update</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>There's an update on your trade shipment.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Status:</td><td style="text-align: right; color: #1d4ed8; font-weight: bold;">{{shipment_status}}</td></tr>
-              <tr><td style="padding: 8px 0;">Tracking Number:</td><td style="text-align: right;">{{tracking_number}}</td></tr>
-              <tr><td style="padding: 8px 0;">Location:</td><td style="text-align: right;">{{current_location}}</td></tr>
-            </table>
-          </div>
-          <p style="text-align: center; margin-top: 20px;">
-            <a href="{{dashboard_url}}" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Track Shipment</a>
-          </p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">There is an update on the shipment for your trade. Please review the latest tracking information below.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Shipment Details</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Status</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #8A2BE2;">{{shipment_status}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Tracking Number</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151; font-family: monospace;">{{tracking_number}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Current Location</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{current_location}}</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Track Shipment</a>
+      </p>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
@@ -2516,28 +2506,30 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Settlement Gold Locked',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Gold locked for trade {{trade_ref}}',
+    subject: 'Settlement Gold Locked in Escrow — Trade Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Settlement Gold Locked</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Gold has been locked in escrow for your trade.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Locked:</td><td style="text-align: right; font-weight: bold;">{{gold_grams}}g</td></tr>
-              <tr><td style="padding: 8px 0;">USD Value:</td><td style="text-align: right;">\${{usd_value}}</td></tr>
-              <tr><td style="padding: 8px 0;">Lock Expires:</td><td style="text-align: right;">{{expiry_date}}</td></tr>
-            </table>
-          </div>
-          <p>This gold will be held securely until shipment is confirmed or the trade is completed.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The settlement gold for your trade has been securely locked in escrow. It will be held until shipment confirmation or trade completion.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Gold Locked</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 18px;">{{gold_grams}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">USD Value</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e;">${'$'}{{usd_value}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #78350f;">Lock Expires</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e;">{{expiry_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2554,28 +2546,30 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Settlement Gold Released',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Gold released for trade {{trade_ref}}',
+    subject: 'Settlement Gold Released — Trade Complete',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Gold Released!</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>The settlement gold for your trade has been released to the exporter.</p>
-          <div style="background: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Gold Released:</td><td style="text-align: right; font-weight: bold;">{{gold_grams}}g</td></tr>
-              <tr><td style="padding: 8px 0;">USD Value:</td><td style="text-align: right;">\${{usd_value}}</td></tr>
-              <tr><td style="padding: 8px 0;">Released To:</td><td style="text-align: right;">{{exporter_name}}</td></tr>
-            </table>
-          </div>
-          <p>Your trade has been successfully completed. Thank you for using FinaBridge!</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The settlement gold has been released from escrow and transferred to the exporter. Your trade is now complete. Thank you for using FinaBridge.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">Gold Released</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #F59E0B; font-size: 18px;">{{gold_grams}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;">
+            <td style="padding: 9px 0; color: #6b7280;">USD Value</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{usd_value}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Released To</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{exporter_name}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2593,24 +2587,17 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'KYC Pending Review',
     type: 'email' as const,
     module: 'kyc',
-    subject: 'Your KYC submission is under review',
+    subject: 'Your Identity Verification Is Under Review',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">KYC Under Review</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Thank you for submitting your KYC documents. Your application is currently under review.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="color: #3b82f6; font-weight: bold; margin: 0;">Estimated review time: 1-2 business days</p>
-          </div>
-          <p>We'll notify you via email once the review is complete.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Thank you for submitting your identity verification documents. Our compliance team is currently reviewing your application and we will notify you of the outcome within the timeframe below.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0; text-align: center;">
+        <p style="font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Estimated Review Time</p>
+        <p style="font-size: 22px; font-weight: 800; color: #374151; margin: 0;">1–2 Business Days</p>
       </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0;">You will receive a confirmation email once your verification is complete. If you have any questions, please contact our support team.</p>
     `,
     variables: [
       { name: 'user_name', description: 'User\'s full name' },
@@ -2623,27 +2610,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Case Rejected',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade case {{trade_ref}} has been rejected',
+    subject: 'Trade Case Unsuccessful — Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Trade Case Rejected</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>We regret to inform you that your trade case has been rejected.</p>
-          <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Rejection Reason:</td><td style="text-align: right;">{{rejection_reason}}</td></tr>
-              <tr><td style="padding: 8px 0;">Rejected On:</td><td style="text-align: right;">{{rejection_date}}</td></tr>
-            </table>
-          </div>
-          <p>If you have questions about this decision, please contact our support team.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">We regret to inform you that your trade finance application was unsuccessful. Please review the details below. If you believe this decision is in error or wish to discuss your options, our team is here to help.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #fecaca;">
+            <td style="padding: 9px 0; color: #6b7280;">Reason</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{rejection_reason}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Date</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{rejection_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2660,28 +2646,30 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Document Uploaded',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'New document uploaded for trade {{trade_ref}}',
+    subject: 'New Document Uploaded — Trade Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Document Uploaded</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>A new document has been uploaded for your trade case.</p>
-          <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Document Type:</td><td style="text-align: right;">{{document_type}}</td></tr>
-              <tr><td style="padding: 8px 0;">Uploaded By:</td><td style="text-align: right;">{{uploaded_by}}</td></tr>
-              <tr><td style="padding: 8px 0;">Upload Date:</td><td style="text-align: right;">{{upload_date}}</td></tr>
-            </table>
-          </div>
-          <p>Log in to your account to view the document.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">A new document has been uploaded to your trade case. Please log in to review the document at your earliest convenience.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Document Type</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{document_type}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Uploaded By</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{uploaded_by}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Upload Date</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{upload_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2699,27 +2687,26 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Trade Proposal Declined',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Trade proposal for {{trade_ref}} has been declined',
+    subject: 'Trade Proposal Declined — Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Proposal Declined</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>The trade proposal you submitted has been declined.</p>
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Proposal Amount:</td><td style="text-align: right;">\${{proposal_amount}}</td></tr>
-              <tr><td style="padding: 8px 0;">Declined Reason:</td><td style="text-align: right;">{{decline_reason}}</td></tr>
-            </table>
-          </div>
-          <p>You may submit a revised proposal if you wish to continue with this trade.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The importer has declined your trade proposal. You may submit a revised proposal if you wish to continue with this trade request.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Proposal Amount</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">${'$'}{{proposal_amount}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Reason</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{decline_reason}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2736,28 +2723,30 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Deal Room Created',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: 'Deal room created for trade {{trade_ref}}',
+    subject: 'Deal Room Created — Trade Ref {{trade_ref}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Deal Room Created</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>A secure deal room has been created for your trade negotiation.</p>
-          <div style="background: #f3e8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Trade Reference:</td><td style="text-align: right; font-weight: bold;">{{trade_ref}}</td></tr>
-              <tr><td style="padding: 8px 0;">Deal Room ID:</td><td style="text-align: right;">{{deal_room_id}}</td></tr>
-              <tr><td style="padding: 8px 0;">Counterparty:</td><td style="text-align: right;">{{counterparty_name}}</td></tr>
-              <tr><td style="padding: 8px 0;">Created:</td><td style="text-align: right;">{{created_date}}</td></tr>
-            </table>
-          </div>
-          <p>Access your deal room to communicate securely with your counterparty and manage trade documents.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades FinaBridge - Trade Finance Solutions</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">A secure Deal Room has been set up for your trade negotiation. You can now communicate directly with your counterparty, share documents, and manage trade milestones — all in one secure environment.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Trade Reference</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Deal Room ID</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151; font-family: monospace;">{{deal_room_id}}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Counterparty</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{counterparty_name}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Created</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{created_date}}</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2775,29 +2764,31 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Monthly Account Statement',
     type: 'email' as const,
     module: 'account',
-    subject: 'Your {{month}} {{year}} Account Statement',
+    subject: 'Your {{month}} {{year}} Account Statement Is Ready',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #8A2BE2, #6B21A8); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Monthly Statement</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your account statement for {{month}} {{year}} is now available.</p>
-          <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #c2410c; margin-top: 0;">Account Summary</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Opening Balance:</td><td style="text-align: right;">{{opening_gold}}g (\${{opening_usd}})</td></tr>
-              <tr><td style="padding: 8px 0;">Closing Balance:</td><td style="text-align: right; font-weight: bold;">{{closing_gold}}g (\${{closing_usd}})</td></tr>
-              <tr><td style="padding: 8px 0;">Total Transactions:</td><td style="text-align: right;">{{total_transactions}}</td></tr>
-              <tr><td style="padding: 8px 0;">Net Change:</td><td style="text-align: right;">{{net_change_gold}}g</td></tr>
-            </table>
-          </div>
-          <p>Your detailed statement is attached to this email.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your FinaTrades account statement for <strong>{{month}} {{year}}</strong> is now available. A full detailed statement is attached to this email.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 14px 0; font-weight: 700;">Account Summary — {{month}} {{year}}</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Opening Balance</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{opening_gold}}g (${`$`}{{opening_usd}})</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Closing Balance</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">{{closing_gold}}g (${`$`}{{closing_usd}})</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Transactions</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{total_transactions}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Net Change</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{net_change_gold}}g</td>
+          </tr>
+        </table>
       </div>
     `,
     variables: [
@@ -2819,31 +2810,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'Annual Tax Statement',
     type: 'email' as const,
     module: 'account',
-    subject: 'Your {{year}} Annual Tax Statement',
+    subject: 'Your {{year}} Annual Tax Statement Is Ready',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #059669, #047857); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Annual Tax Statement</h1>
-        </div>
-        <div style="padding: 30px; background: #ffffff;">
-          <p>Hello {{user_name}},</p>
-          <p>Your annual tax statement for the year {{year}} is now available.</p>
-          <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #047857; margin-top: 0;">Annual Summary</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0;">Total Gold Purchased:</td><td style="text-align: right;">{{total_purchases_gold}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Total Gold Sold:</td><td style="text-align: right;">{{total_sales_gold}}g</td></tr>
-              <tr><td style="padding: 8px 0;">Realized Gains/Losses:</td><td style="text-align: right; font-weight: bold;">\${{realized_gains}}</td></tr>
-              <tr><td style="padding: 8px 0;">Year-End Holdings:</td><td style="text-align: right;">{{year_end_gold}}g</td></tr>
-            </table>
-          </div>
-          <p style="color: #6b7280; font-size: 14px;"><em>Note: This statement is for informational purposes only. Please consult your tax advisor for filing requirements.</em></p>
-          <p>Your detailed tax statement is attached to this email.</p>
-        </div>
-        <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-        </div>
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your FinaTrades annual tax statement for the year <strong>{{year}}</strong> is now available. Your detailed statement is attached to this email for your records and tax filing purposes.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 14px 0; font-weight: 700;">Annual Summary — {{year}}</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Gold Purchased</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{total_purchases_gold}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Total Gold Sold</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{total_sales_gold}}g</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 9px 0; color: #6b7280;">Realized Gains / Losses</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #374151;">${`$`}{{realized_gains}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #6b7280;">Year-End Holdings</td>
+            <td style="padding: 9px 0; text-align: right; color: #374151;">{{year_end_gold}}g</td>
+          </tr>
+        </table>
       </div>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;"><em>This statement is provided for informational purposes only. Please consult your tax advisor regarding your specific filing obligations.</em></p>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
@@ -3127,56 +3121,45 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     module: 'finapay',
     subject: 'Invoice #{{invoice_number}} - Gold Purchase',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #ffffff; border: 1px solid #e5e7eb;">
-        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px;">
-          <div>
-            <h1 style="color: #8A2BE2; font-size: 28px; margin: 0;">INVOICE</h1>
-            <p style="color: #6b7280; margin: 5px 0;">{{invoice_number}}</p>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-weight: bold; color: #1f2937;">Finatrades</div>
-            <p style="color: #6b7280; margin: 5px 0; font-size: 14px;">Gold-Backed Digital Finance</p>
-          </div>
-        </div>
-        <div style="margin-bottom: 30px;">
-          <div style="background: #f9fafb; padding: 15px; border-radius: 8px;">
-            <p style="margin: 0 0 5px 0;"><strong>Bill To:</strong></p>
-            <p style="margin: 0; color: #1f2937;">{{customer_name}}</p>
-            <p style="margin: 0; color: #6b7280;">{{customer_email}}</p>
-          </div>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-          <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb;">Description</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Quantity</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Price</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">999.9 Fine Gold</td>
-              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">{{gold_amount}}g</td>
-              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${'$'}{{price_per_gram}}/g</td>
-              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${'$'}{{subtotal}}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold;">Fees:</td>
-              <td style="padding: 12px; text-align: right;">${'$'}{{fees}}</td>
-            </tr>
-            <tr style="background: #fef3c7;">
-              <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px;">Total:</td>
-              <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; color: #8A2BE2;">${'$'}{{total}}</td>
-            </tr>
-          </tfoot>
-        </table>
-        <div style="text-align: center; color: #6b7280; font-size: 12px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-          <p>Thank you for your purchase. | Invoice Date: {{invoice_date}}</p>
-        </div>
-      </div>
+<h2 style="color:#8A2BE2;margin:0 0 4px;">Invoice #{{invoice_number}}</h2>
+<p style="color:#6b7280;margin:0 0 24px;font-size:14px;">Invoice Date: {{invoice_date}}</p>
+
+<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:16px 20px;margin:0 0 24px;">
+  <p style="margin:0 0 4px;font-size:13px;color:#A78BFA;">Bill To</p>
+  <p style="margin:0;font-weight:600;">{{customer_name}}</p>
+  <p style="margin:0;color:#9ca3af;font-size:14px;">{{customer_email}}</p>
+</div>
+
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+  <thead>
+    <tr style="border-bottom:1px solid rgba(167,139,250,0.3);">
+      <th style="padding:10px 0;text-align:left;color:#A78BFA;font-size:13px;font-weight:600;">Description</th>
+      <th style="padding:10px 0;text-align:right;color:#A78BFA;font-size:13px;font-weight:600;">Qty</th>
+      <th style="padding:10px 0;text-align:right;color:#A78BFA;font-size:13px;font-weight:600;">Price</th>
+      <th style="padding:10px 0;text-align:right;color:#A78BFA;font-size:13px;font-weight:600;">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:12px 0;">999.9 Fine Gold</td>
+      <td style="padding:12px 0;text-align:right;">{{gold_amount}}g</td>
+      <td style="padding:12px 0;text-align:right;">\${{price_per_gram}}/g</td>
+      <td style="padding:12px 0;text-align:right;">\${{subtotal}}</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3" style="padding:10px 0;text-align:right;color:#9ca3af;font-size:14px;">Fees:</td>
+      <td style="padding:10px 0;text-align:right;color:#9ca3af;font-size:14px;">\${{fees}}</td>
+    </tr>
+    <tr style="border-top:2px solid #8A2BE2;">
+      <td colspan="3" style="padding:14px 0;text-align:right;font-weight:700;font-size:16px;">Total:</td>
+      <td style="padding:14px 0;text-align:right;font-weight:700;font-size:18px;color:#A78BFA;">\${{total}}</td>
+    </tr>
+  </tfoot>
+</table>
+
+<p style="color:#9ca3af;font-size:13px;margin:0;">Thank you for your purchase. Your invoice is attached to this email as a PDF.</p>
     `,
     variables: [
       { name: 'invoice_number', description: 'Invoice number' },
@@ -3199,37 +3182,30 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     module: 'finapay',
     subject: 'Monthly Statement - {{statement_month}} {{statement_year}}',
     body: `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #ffffff;">
-        <div style="border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
-          <h1 style="color: #1e40af; font-size: 24px; margin: 0;">ACCOUNT STATEMENT</h1>
-          <p style="color: #6b7280; margin: 5px 0;">{{statement_month}} {{statement_year}}</p>
-        </div>
-        <div style="margin-bottom: 30px;">
-          <p><strong>Account Holder:</strong> {{account_holder}}</p>
-          <p><strong>Account ID:</strong> {{account_id}}</p>
-          <p><strong>Statement Period:</strong> {{period_start}} - {{period_end}}</p>
-        </div>
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-          <h3 style="color: #1e40af; margin: 0 0 15px 0;">Account Summary</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0;">Opening Balance:</td><td style="text-align: right;">${'$'}{{opening_balance}}</td></tr>
-            <tr><td style="padding: 8px 0;">Total Deposits:</td><td style="text-align: right; color: #16a34a;">+${'$'}{{total_deposits}}</td></tr>
-            <tr><td style="padding: 8px 0;">Total Withdrawals:</td><td style="text-align: right; color: #dc2626;">-${'$'}{{total_withdrawals}}</td></tr>
-            <tr style="font-weight: bold; border-top: 2px solid #1e40af;"><td style="padding: 12px 0;">Closing Balance:</td><td style="text-align: right; font-size: 18px;">${'$'}{{closing_balance}}</td></tr>
-          </table>
-        </div>
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #1e40af;">Gold Holdings</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0;">Gold Balance:</td><td style="text-align: right; font-weight: bold;">{{gold_balance}} grams</td></tr>
-            <tr><td style="padding: 8px 0;">Gold Value (USD):</td><td style="text-align: right;">${'$'}{{gold_value_usd}}</td></tr>
-          </table>
-        </div>
-        <div style="text-align: center; color: #6b7280; font-size: 12px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-          <p>Finatrades - Gold-Backed Digital Finance</p>
-          <p>Generated on: {{generated_date}}</p>
-        </div>
-      </div>
+<h2 style="color:#A78BFA;margin:0 0 4px;">Account Statement</h2>
+<p style="color:#9ca3af;margin:0 0 24px;font-size:14px;">{{statement_month}} {{statement_year}}</p>
+
+<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:16px 20px;margin:0 0 24px;">
+  <p style="margin:0 0 6px;font-size:14px;"><span style="color:#A78BFA;">Account Holder:</span> {{account_holder}}</p>
+  <p style="margin:0 0 6px;font-size:14px;"><span style="color:#A78BFA;">Account ID:</span> {{account_id}}</p>
+  <p style="margin:0;font-size:14px;"><span style="color:#A78BFA;">Statement Period:</span> {{period_start}} – {{period_end}}</p>
+</div>
+
+<h3 style="color:#A78BFA;font-size:15px;margin:0 0 12px;">Account Summary</h3>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0;color:#9ca3af;font-size:14px;">Opening Balance</td><td style="text-align:right;font-size:14px;">\${{opening_balance}}</td></tr>
+  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0;color:#9ca3af;font-size:14px;">Total Deposits</td><td style="text-align:right;color:#10b981;font-size:14px;">+\${{total_deposits}}</td></tr>
+  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0;color:#9ca3af;font-size:14px;">Total Withdrawals</td><td style="text-align:right;color:#ef4444;font-size:14px;">–\${{total_withdrawals}}</td></tr>
+  <tr style="border-top:2px solid #8A2BE2;"><td style="padding:12px 0;font-weight:700;">Closing Balance</td><td style="text-align:right;font-weight:700;font-size:18px;color:#A78BFA;">\${{closing_balance}}</td></tr>
+</table>
+
+<h3 style="color:#A78BFA;font-size:15px;margin:0 0 12px;">Gold Holdings</h3>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0;color:#9ca3af;font-size:14px;">Gold Balance</td><td style="text-align:right;font-weight:600;">{{gold_balance}} g</td></tr>
+  <tr><td style="padding:8px 0;color:#9ca3af;font-size:14px;">Gold Value (USD)</td><td style="text-align:right;">\${{gold_value_usd}}</td></tr>
+</table>
+
+<p style="color:#9ca3af;font-size:13px;margin:0;">Generated on {{generated_date}}. Your full statement PDF is attached to this email.</p>
     `,
     variables: [
       { name: 'statement_month', description: 'Statement month' },
@@ -3267,6 +3243,16 @@ export async function seedEmailTemplates(): Promise<void> {
           status: template.status,
         });
         console.log(`[Email] Seeded template: ${template.slug}`);
+      } else {
+        await db.update(templates)
+          .set({
+            name: template.name,
+            subject: template.subject,
+            body: template.body,
+            variables: template.variables,
+            status: template.status,
+          })
+          .where(eq(templates.slug, template.slug));
       }
     }
     console.log('[Email] Template seeding complete');
@@ -3320,6 +3306,9 @@ export async function sendEmailWithAttachment(
       htmlBody = dataOrHtmlBody;
     }
     
+    const branding = await getBrandingForEmail();
+    const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to);
+
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);
       console.log(`[Email Preview] Subject: ${subject}`);
@@ -3332,7 +3321,7 @@ export async function sendEmailWithAttachment(
       from: SMTP_FROM,
       to,
       subject,
-      html: htmlBody,
+      html: wrappedHtml,
       attachments: attachmentsArray.map(a => ({
         filename: a.filename,
         content: a.content,
