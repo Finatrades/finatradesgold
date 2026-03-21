@@ -81,6 +81,8 @@ export default function Dashboard() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const isMobile = useIsMobile();
   
+  const [walletView, setWalletView] = useState<'currency' | 'weight'>('currency');
+  const [weightUnit, setWeightUnit] = useState<'g' | 'oz' | 'kg'>('g');
   const [copiedId, setCopiedId] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activitySearch, setActivitySearch] = useState('');
@@ -462,50 +464,123 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Wallet Cards */}
+            {/* Gold Wallet Conversion Card */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6">
+              {/* Header row */}
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[13px] text-gray-500 font-semibold">Multi-Currency Wallets</span>
-                <span className="text-[11px] text-gray-400 font-medium">3 active</span>
+                <div>
+                  <span className="text-[13px] text-gray-700 font-bold">Gold Wallet</span>
+                  <span className="text-[10px] text-gray-400 font-medium ml-1.5">Conversion</span>
+                </div>
+                {/* Currency ↔ Weight toggle */}
+                <div className="flex items-center bg-gray-100 rounded-xl p-0.5 gap-0.5">
+                  <button
+                    onClick={() => setWalletView('currency')}
+                    className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold transition-all ${walletView === 'currency' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                    data-testid="toggle-wallet-currency"
+                  >
+                    $ Currency
+                  </button>
+                  <button
+                    onClick={() => setWalletView('weight')}
+                    className={`px-2.5 py-1 rounded-[10px] text-[10px] font-bold transition-all ${walletView === 'weight' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                    data-testid="toggle-wallet-weight"
+                  >
+                    ⚖ Weight
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-blue-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
-                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-blue-400/10 blur-xl" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-[11px]">🇺🇸</span>
-                      <span className="text-[11px] font-bold text-blue-700">USD</span>
+
+              {walletView === 'currency' ? (
+                /* ── Currency mode ── */
+                <div className="grid grid-cols-3 gap-3">
+                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-blue-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
+                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-blue-400/10 blur-xl" />
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-[11px]">🇺🇸</span>
+                        <span className="text-[11px] font-bold text-blue-700">USD</span>
+                      </div>
+                      <p className="text-[15px] font-extrabold text-blue-900">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
+                      <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
-                    <p className="text-[15px] font-extrabold text-blue-900">${showBalance ? formatNumber(walletGoldValue) : '••••'}</p>
-                    <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
-                  </div>
-                </motion.div>
-                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-amber-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
-                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-400/10 blur-xl" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-[11px]">🇦🇪</span>
-                      <span className="text-[11px] font-bold text-amber-700">AED</span>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-amber-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
+                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-400/10 blur-xl" />
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-[11px]">🇦🇪</span>
+                        <span className="text-[11px] font-bold text-amber-700">AED</span>
+                      </div>
+                      <p className="text-[15px] font-extrabold text-amber-900 flex items-center gap-[3px]">
+                        <DirhamSymbol size="0.95em" />
+                        {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
+                      </p>
+                      <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
-                    <p className="text-[15px] font-extrabold text-amber-900 flex items-center gap-[3px]">
-                      <DirhamSymbol size="0.95em" />
-                      {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
-                    </p>
-                    <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
-                  </div>
-                </motion.div>
-                <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-indigo-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
-                  <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-indigo-400/10 blur-xl" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-[11px]">🇪🇺</span>
-                      <span className="text-[11px] font-bold text-indigo-700">EUR</span>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-indigo-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
+                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-indigo-400/10 blur-xl" />
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-[11px]">🇪🇺</span>
+                        <span className="text-[11px] font-bold text-indigo-700">EUR</span>
+                      </div>
+                      <p className="text-[15px] font-extrabold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                      <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
                     </div>
-                    <p className="text-[15px] font-extrabold text-indigo-900">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                    <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[9px] px-1.5 py-0 font-bold">Active</Badge>
+                  </motion.div>
+                </div>
+              ) : (
+                /* ── Weight mode ── */
+                <>
+                  {/* Unit sub-toggle */}
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <span className="text-[10px] text-gray-400 font-medium mr-0.5">Unit:</span>
+                    {(['g', 'oz', 'kg'] as const).map(unit => (
+                      <button
+                        key={unit}
+                        onClick={() => setWeightUnit(unit)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${weightUnit === unit ? 'bg-amber-500 text-white border-amber-500' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-amber-300'}`}
+                        data-testid={`toggle-unit-${unit}`}
+                      >
+                        {unit === 'g' ? 'Gram' : unit === 'oz' ? 'Ounce' : 'Kilogram'}
+                      </button>
+                    ))}
                   </div>
-                </motion.div>
-              </div>
+                  {/* Weight tiles */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Wallet Gold', icon: '🥇', color: { bg: 'linear-gradient(135deg, #fef9c3, #fef08a)', border: 'border-yellow-200/60', text: 'text-yellow-800', sub: 'text-yellow-700' } },
+                      { label: 'FinaCard', icon: '💳', color: { bg: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: 'border-emerald-100/60', text: 'text-emerald-900', sub: 'text-emerald-700' } },
+                      { label: 'Total', icon: '📊', color: { bg: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: 'border-indigo-100/60', text: 'text-indigo-900', sub: 'text-indigo-700' } },
+                    ].map(({ label, icon, color }) => {
+                      const grams = label === 'Wallet Gold' ? (totals.walletGoldGrams || 0)
+                        : label === 'FinaCard' ? (totals.finacardGoldGrams || 0)
+                        : (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0);
+                      const converted = weightUnit === 'g' ? grams
+                        : weightUnit === 'oz' ? grams / 31.1035
+                        : grams / 1000;
+                      const suffix = weightUnit;
+                      return (
+                        <motion.div key={label} whileHover={{ y: -3 }} className={`rounded-2xl p-3.5 relative border ${color.border} hover:shadow-lg transition-all cursor-default overflow-hidden`} style={{ background: color.bg }}>
+                          <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-20 blur-xl bg-yellow-400" />
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-1 mb-2">
+                              <span className="text-[11px]">{icon}</span>
+                              <span className={`text-[10px] font-bold ${color.sub}`}>{label}</span>
+                            </div>
+                            <p className={`text-[14px] font-extrabold ${color.text} leading-tight`}>
+                              {showBalance ? `${formatNumber(converted, weightUnit === 'kg' ? 4 : 3)}` : '••••'}
+                            </p>
+                            <p className={`text-[9px] font-bold ${color.sub} mt-0.5`}>{suffix}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </motion.div>
 
           </div>
