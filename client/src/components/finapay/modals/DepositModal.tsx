@@ -249,7 +249,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const resetForm = () => {
-    setStep('amount');
+    setStep('method');
     setPaymentMethod(null);
     setSelectedAccount(null);
     setAmount('');
@@ -457,24 +457,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   const handleSelectMethod = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    if (method === 'bank') {
-      setStep('select');
-    } else if (method === 'card') {
-      // Amount already entered in first step, go directly to payment
-      // Sync USD amount from gold input if needed
-      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-        const usdValue = getEffectiveUsdAmount();
-        setAmount(usdValue.toFixed(2));
-      }
-      handleCardPayment();
-    } else if (method === 'crypto') {
-      // Amount already entered, go to crypto wallet selection
-      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
-        const usdValue = getEffectiveUsdAmount();
-        setAmount(usdValue.toFixed(2));
-      }
-      setStep('crypto-select-wallet');
-    }
+    setStep('amount');
   };
   
   const handleAmountContinue = () => {
@@ -491,7 +474,14 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
       setAmount(effectiveUsd.toFixed(2));
     }
     
-    setStep('method');
+    // Navigate downstream based on pre-selected method
+    if (paymentMethod === 'bank') {
+      setStep('select');
+    } else if (paymentMethod === 'card') {
+      handleCardPayment();
+    } else if (paymentMethod === 'crypto') {
+      setStep('crypto-select-wallet');
+    }
   };
 
   const handleSelectAccount = (account: PlatformBankAccount) => {
@@ -635,10 +625,13 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   };
 
   const handleBack = () => {
-    if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details' || step === 'card-embedded' || step === 'crypto-address') {
-      // Go back to combined amount+method step
-      setStep('amount');
+    if (step === 'method') {
+      handleClose();
+    } else if (step === 'amount') {
+      setStep('method');
       setPaymentMethod(null);
+    } else if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details' || step === 'card-embedded' || step === 'crypto-address') {
+      setStep('amount');
       setSelectedAccount(null);
       setSelectedCryptoWallet(null);
       setTransactionHash('');
@@ -688,17 +681,93 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   // Mobile content for MobileFullScreenPage
   const mobileContent = (
     <div className="space-y-6">
-      {step === 'amount' && (
+      {step === 'method' && (
         <>
-          {/* Progress Stepper */}
-          <div className="flex items-center justify-center gap-3 mb-4">
+          {/* Progress Stepper — Method (active) → Amount → Confirm */}
+          <div className="flex items-center justify-center gap-2 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold">1</div>
-              <span className="text-sm font-medium text-foreground">Setup</span>
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+              <span className="text-sm font-medium text-foreground">Method</span>
             </div>
-            <div className="w-12 h-0.5 bg-muted"></div>
+            <div className="w-8 h-0.5 bg-muted"></div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+              <span className="text-sm font-medium text-muted-foreground">Amount</span>
+            </div>
+            <div className="w-8 h-0.5 bg-muted"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+              <span className="text-sm font-medium text-muted-foreground">Confirm</span>
+            </div>
+          </div>
+          <p className="text-sm font-semibold text-foreground text-center">Choose your payment method</p>
+          <div className="space-y-3">
+            {/* Bank Transfer */}
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('bank')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-foreground">Bank Transfer</p>
+                <p className="text-xs text-muted-foreground">Wire / SWIFT / Local bank</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {/* Card */}
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('card')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-foreground">Debit / Credit Card</p>
+                <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {/* Crypto */}
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('crypto')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 hover:border-primary hover:bg-primary/5 transition-all"
+            >
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Bitcoin className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-foreground">Cryptocurrency</p>
+                <p className="text-xs text-muted-foreground">USDT, BTC, ETH and more</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+        </>
+      )}
+      {step === 'amount' && (
+        <>
+          {/* Progress Stepper — Method ✓ → Amount (active) → Confirm */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                <Check className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium text-primary">Method</span>
+            </div>
+            <div className="w-8 h-0.5 bg-primary"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+              <span className="text-sm font-medium text-foreground">Amount</span>
+            </div>
+            <div className="w-8 h-0.5 bg-muted"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
               <span className="text-sm font-medium text-muted-foreground">Confirm</span>
             </div>
           </div>
@@ -1245,6 +1314,29 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
   // Mobile footer button
   const mobileFooterButton = (
     <>
+      {step === 'amount' && (
+        <div className="flex gap-3 w-full">
+          <Button 
+            variant="outline"
+            onClick={handleBack}
+            className="flex-1 h-14 rounded-xl font-semibold"
+          >
+            Back
+          </Button>
+          <Button 
+            onClick={handleAmountContinue}
+            disabled={
+              inputMode === 'gold'
+                ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                : !amount || parseFloat(amount) < (platformSettings.minDeposit || 50)
+            }
+            className="flex-[2] h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+          >
+            <ArrowRight className="w-4 h-4 mr-2" />
+            Continue
+          </Button>
+        </div>
+      )}
       {step === 'details' && (
         <Button 
           onClick={() => {
@@ -1340,15 +1432,22 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
         {step === 'amount' ? (
           <div className="space-y-6 py-4">
-            {/* Progress Stepper - 2 Steps Only */}
-            <div className="flex items-center justify-center gap-3 mb-6">
+            {/* Progress Stepper — Method ✓ → Amount → Confirm */}
+            <div className="flex items-center justify-center gap-2 mb-6">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
-                <span className="text-sm font-medium text-foreground hidden sm:inline">Setup</span>
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Method</span>
               </div>
-              <div className="w-12 h-0.5 bg-muted"></div>
+              <div className="w-8 h-0.5 bg-primary"></div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
                 <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
               </div>
             </div>
@@ -1745,51 +1844,21 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
         ) : step === 'method' ? (
           <div className="space-y-6 py-4">
-            {/* Progress Stepper */}
+            {/* Progress Stepper — Method → Amount → Confirm */}
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                  <Check className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-medium text-primary hidden sm:inline">Amount</span>
-              </div>
-              <div className="w-8 h-0.5 bg-primary"></div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
                 <span className="text-sm font-medium text-foreground hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Amount</span>
               </div>
               <div className="w-8 h-0.5 bg-muted"></div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
                 <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
-              </div>
-            </div>
-
-            {/* Amount Summary Card */}
-            <div className="bg-gradient-to-r from-primary/5 to-purple-50 rounded-xl p-4 border border-primary/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Coins className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Deposit Amount</p>
-                    <p className="text-lg font-bold text-foreground">
-                      {inputMode === 'gold' ? `${parseFloat(goldAmount || '0').toFixed(4)}g gold` : `$${parseFloat(amount || '0').toFixed(2)} USD`}
-                    </p>
-                  </div>
-                </div>
-                {goldPrice && (
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">≈ Equivalent</p>
-                    <p className="text-sm font-semibold text-primary">
-                      {inputMode === 'gold' 
-                        ? `$${(parseFloat(goldAmount || '0') * goldPrice.pricePerGram).toFixed(2)} USD`
-                        : `${(parseFloat(amount || '0') / goldPrice.pricePerGram).toFixed(4)}g gold`
-                      }
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -2974,7 +3043,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         <DialogFooter>
           {step === 'amount' && (
             <>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
               <Button 
                 onClick={handleAmountContinue}
                 disabled={

@@ -418,37 +418,97 @@ export default function Dashboard() {
               <div className="holo-shimmer absolute inset-0" />
 
               <div className="relative z-10 p-7">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                      <Sparkles className="w-4 h-4 text-amber-300" />
+                <div className="flex items-start justify-between mb-2">
+                  {/* Left: balance info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                      </div>
+                      <span className="text-[13px] text-white/70 font-medium">Wallet Balance</span>
+                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
+                        {balanceVisible ? <Eye className="w-4 h-4 text-white/50" /> : <EyeOff className="w-4 h-4 text-white/50" />}
+                      </button>
                     </div>
-                    <span className="text-[13px] text-white/70 font-medium">Wallet Balance</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setBalanceVisible(!balanceVisible)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
-                      {balanceVisible ? <Eye className="w-4 h-4 text-white/50" /> : <EyeOff className="w-4 h-4 text-white/50" />}
-                    </button>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
-                      <span>🥇</span> GOLD
+                    <motion.p
+                      className="text-[36px] font-extrabold text-white tracking-tight leading-none"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
+                      data-testid="text-total-balance"
+                    >
+                      {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
+                    </motion.p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-400/20">
+                        <TrendingUp className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
+                      </div>
+                      <span className="text-white/40 text-[11px]">available in wallet</span>
                     </div>
                   </div>
-                </div>
-                <motion.p
-                  className="text-[36px] font-extrabold text-white tracking-tight leading-none mt-3"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  data-testid="text-total-balance"
-                >
-                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
-                </motion.p>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full border border-emerald-400/20">
-                    <TrendingUp className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-300 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
-                  </div>
-                  <span className="text-white/40 text-[11px]">available in wallet</span>
+
+                  {/* Right: Gold ARC gauge */}
+                  {(() => {
+                    const maxGrams = 500;
+                    const clampedGrams = Math.min(totalGoldGrams, maxGrams);
+                    const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
+                    // Semicircle arc: cx=52 cy=52 r=44, from 180° to 0° (left to right)
+                    const r = 44;
+                    const cx = 52;
+                    const cy = 52;
+                    const circumference = Math.PI * r; // half-circle arc length
+                    const filled = pct * circumference;
+                    const empty = circumference - filled;
+                    // Arc path: start at left (180°) sweep to right (0°)
+                    const startX = cx - r;
+                    const startY = cy;
+                    const endX = cx + r;
+                    const endY = cy;
+                    return (
+                      <div className="flex-shrink-0 ml-4 flex flex-col items-center">
+                        <svg width="104" height="62" viewBox="0 0 104 62" fill="none">
+                          {/* Track */}
+                          <path
+                            d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
+                            stroke="rgba(255,255,255,0.12)"
+                            strokeWidth="7"
+                            strokeLinecap="round"
+                            fill="none"
+                          />
+                          {/* Filled arc (amber/gold gradient via stroke trick) */}
+                          {pct > 0 && (
+                            <path
+                              d={`M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`}
+                              stroke="url(#goldArc)"
+                              strokeWidth="7"
+                              strokeLinecap="round"
+                              strokeDasharray={`${filled} ${empty}`}
+                              fill="none"
+                            />
+                          )}
+                          <defs>
+                            <linearGradient id="goldArc" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#D4AF37" />
+                              <stop offset="100%" stopColor="#FFD700" />
+                            </linearGradient>
+                          </defs>
+                          {/* Center label */}
+                          <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#FFD700">
+                            {formatNumber(totalGoldGrams, 2)}g
+                          </text>
+                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7.5" fill="rgba(255,255,255,0.5)">
+                            of {maxGrams}g
+                          </text>
+                        </svg>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(255,215,0,0.15))', border: '1px solid rgba(212,175,55,0.35)', color: '#f5c842' }}>
+                            🥇 GOLD
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex gap-3 mt-6">
