@@ -13978,6 +13978,26 @@ export async function registerRoutes(
     }
   });
   
+  // Get exporter's KYC profile for proposal form auto-fill
+  app.get("/api/finabridge/exporter/kyc-profile/:userId", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const [user, kyc] = await Promise.all([
+        storage.getUser(userId),
+        storage.getFinatradesCorporateKyc(userId),
+      ]);
+      return res.json({
+        companyName: kyc?.companyName || user?.companyName || '',
+        registrationNumber: kyc?.registrationNumber || '',
+        contactPerson: kyc?.tradingContactName || (user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : ''),
+        contactEmail: kyc?.tradingContactEmail || user?.email || '',
+        contactPhone: kyc?.tradingContactPhone || user?.phoneNumber || '',
+      });
+    } catch (err: unknown) {
+      res.status(400).json({ message: "Failed to load KYC profile" });
+    }
+  });
+
   // Get importer's received forwarded proposals
   app.get("/api/finabridge/importer/forwarded-proposals/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {

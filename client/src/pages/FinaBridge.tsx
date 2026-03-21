@@ -95,6 +95,14 @@ interface FinabridgeWallet {
   lockedGoldGrams: string;
 }
 
+interface KycProfile {
+  companyName: string;
+  registrationNumber: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+}
+
 interface FinabridgeAgreement {
   id: string;
   userId: string;
@@ -383,6 +391,7 @@ export default function FinaBridge() {
   const [forwardedProposals, setForwardedProposals] = useState<TradeProposal[]>([]);
   const [wallet, setWallet] = useState<FinabridgeWallet | null>(null);
   const [mainWallet, setMainWallet] = useState<{ goldGrams: string } | null>(null);
+  const [kycProfile, setKycProfile] = useState<KycProfile | null>(null);
   
   const [selectedRequest, setSelectedRequest] = useState<TradeRequest | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
@@ -499,26 +508,37 @@ export default function FinaBridge() {
     if (!user) return;
     setLoading(true);
     try {
-      const [openRes, proposalsRes, walletRes] = await Promise.all([
+      const [openRes, proposalsRes, walletRes, kycRes] = await Promise.all([
         apiRequest('GET', `/api/finabridge/exporter/open-requests/${user.id}`),
         apiRequest('GET', `/api/finabridge/exporter/proposals/${user.id}`),
         apiRequest('GET', `/api/finabridge/wallet/${user.id}`),
+        apiRequest('GET', `/api/finabridge/exporter/kyc-profile/${user.id}`),
       ]);
       const openData = await openRes.json();
       const proposalsData = await proposalsRes.json();
       const walletData = await walletRes.json();
+      const kycData: KycProfile = kycRes.ok ? await kycRes.json() : { companyName: '', registrationNumber: '', contactPerson: '', contactEmail: '', contactPhone: '' };
       setOpenRequests(openData.requests || []);
       const activeProposals = (proposalsData.proposals || []).filter(
         (p: TradeProposal) => !['Completed', 'Cancelled'].includes(p.tradeRequest?.status || '')
       );
       setMyProposals(activeProposals);
       setWallet(walletData.wallet);
+      setKycProfile(kycData);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load exporter data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
+
+  const getContactDefaults = () => ({
+    companyName: kycProfile?.companyName || '',
+    companyRegistration: kycProfile?.registrationNumber || '',
+    contactPerson: kycProfile?.contactPerson || '',
+    contactEmail: kycProfile?.contactEmail || '',
+    contactPhone: kycProfile?.contactPhone || '',
+  });
 
   const fetchForwardedProposals = async (requestId: string) => {
     try {
@@ -689,11 +709,7 @@ export default function FinaBridge() {
         estimatedDeliveryDate: '',
         insuranceIncluded: false,
         certificationsAvailable: '',
-        companyName: '',
-        companyRegistration: '',
-        contactPerson: '',
-        contactEmail: '',
-        contactPhone: '',
+        ...getContactDefaults(),
         notes: '' 
       });
       setProposalFiles([]);
@@ -744,11 +760,7 @@ export default function FinaBridge() {
         estimatedDeliveryDate: '',
         insuranceIncluded: false,
         certificationsAvailable: '',
-        companyName: '',
-        companyRegistration: '',
-        contactPerson: '',
-        contactEmail: '',
-        contactPhone: '',
+        ...getContactDefaults(),
         notes: '' 
       });
       fetchExporterData();
@@ -2186,7 +2198,7 @@ export default function FinaBridge() {
                             <span>Posted: {new Date(request.createdAt).toLocaleDateString()}</span>
                           </div>
                           <Button
-                            onClick={() => { setSelectedRequest(request); setShowProposalDialog(true); }}
+                            onClick={() => { setSelectedRequest(request); setProposalForm(prev => ({ ...prev, ...getContactDefaults() })); setShowProposalDialog(true); }}
                             data-testid={`button-submit-proposal-${request.id}`}
                           >
                             Submit Proposal
