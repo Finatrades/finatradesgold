@@ -1,135 +1,19 @@
-import { useAuth } from '@/context/AuthContext';
-import { apiRequest } from '@/lib/queryClient';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ArrowDownLeft, DollarSign, Package, ChevronRight, Send } from 'lucide-react';
+import { Clock, ArrowDownLeft, DollarSign, Package, ChevronRight } from 'lucide-react';
+import { usePendingItems } from '@/hooks/usePendingItems';
 
-interface PendingCategory {
-  key: string;
-  label: string;
-  count: number;
-  href: string;
-  icon: React.ReactNode;
-}
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  transfers: <ArrowDownLeft className="w-3.5 h-3.5 text-amber-700" />,
+  payments:  <DollarSign   className="w-3.5 h-3.5 text-amber-700" />,
+  deposits:  <Clock        className="w-3.5 h-3.5 text-amber-700" />,
+  physical:  <Package      className="w-3.5 h-3.5 text-amber-700" />,
+};
 
 export default function PendingItemsStrip() {
-  const { user } = useAuth();
+  const { items, total } = usePendingItems();
 
-  const { data: incomingData } = useQuery({
-    queryKey: ['pendingTransfers', 'incoming', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { transfers: [] };
-      const res = await apiRequest('GET', `/api/finapay/pending/incoming/${user.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    staleTime: 20000,
-  });
-
-  const { data: outgoingData } = useQuery({
-    queryKey: ['pendingTransfers', 'outgoing', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { transfers: [] };
-      const res = await apiRequest('GET', `/api/finapay/pending/outgoing/${user.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    staleTime: 20000,
-  });
-
-  const { data: requestsData } = useQuery({
-    queryKey: ['paymentRequests', 'received', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { requests: [] };
-      const res = await apiRequest('GET', `/api/finapay/requests/received/${user.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    staleTime: 20000,
-  });
-
-  const { data: depositRequestsData } = useQuery({
-    queryKey: ['depositRequests', 'pending', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { requests: [] };
-      const res = await apiRequest('GET', `/api/deposit-requests/${user.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    staleTime: 20000,
-  });
-
-  const { data: physicalDepositsData } = useQuery({
-    queryKey: ['physical-deposits', user?.id],
-    queryFn: async () => {
-      const res = await fetch('/api/physical-deposits/deposits');
-      if (!res.ok) return { deposits: [] };
-      return res.json();
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    staleTime: 20000,
-  });
-
-  const incomingCount = (incomingData?.transfers || []).length;
-  const outgoingCount = (outgoingData?.transfers || []).length;
-  const paymentRequestCount = (requestsData?.requests || []).filter(
-    (r: { status: string }) => r.status === 'Pending'
-  ).length;
-  const depositPendingCount = (depositRequestsData?.requests || []).filter(
-    (d: { status: string }) => d.status === 'Pending'
-  ).length;
-  const physicalPendingCount = (physicalDepositsData?.deposits || []).filter(
-    (d: { status: string }) =>
-      ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT'].includes(d.status)
-  ).length;
-
-  const categories: PendingCategory[] = [
-    {
-      key: 'incoming',
-      label: 'Transfers awaiting your response',
-      count: incomingCount,
-      href: '/finapay',
-      icon: <ArrowDownLeft className="w-3.5 h-3.5 text-amber-700" />,
-    },
-    {
-      key: 'outgoing',
-      label: 'Sent transfers awaiting acceptance',
-      count: outgoingCount,
-      href: '/finapay',
-      icon: <Send className="w-3.5 h-3.5 text-amber-700" />,
-    },
-    {
-      key: 'requests',
-      label: 'Payment requests to review',
-      count: paymentRequestCount,
-      href: '/finapay',
-      icon: <DollarSign className="w-3.5 h-3.5 text-amber-700" />,
-    },
-    {
-      key: 'deposits',
-      label: 'Deposits pending verification',
-      count: depositPendingCount,
-      href: '/finapay',
-      icon: <Clock className="w-3.5 h-3.5 text-amber-700" />,
-    },
-    {
-      key: 'physical',
-      label: 'Physical gold deposits in progress',
-      count: physicalPendingCount,
-      href: '/finavault',
-      icon: <Package className="w-3.5 h-3.5 text-amber-700" />,
-    },
-  ].filter(c => c.count > 0);
-
-  const totalCount = categories.reduce((sum, c) => sum + c.count, 0);
-
-  if (totalCount === 0) return null;
+  if (total === 0) return null;
 
   return (
     <AnimatePresence>
@@ -176,39 +60,37 @@ export default function PendingItemsStrip() {
               style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)' }}
               data-testid="badge-pending-total"
             >
-              {totalCount > 99 ? '99+' : totalCount}
+              {total > 99 ? '99+' : total}
             </span>
           </div>
 
           {/* Category rows */}
           <div className="space-y-1.5">
-            {categories.map((cat) => (
-              <Link key={cat.key} href={cat.href}>
+            {items.map((item) => (
+              <Link key={item.key} href={item.href}>
                 <div
                   className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-amber-50/70 transition-all cursor-pointer group"
                   style={{ border: '1px solid rgba(251,191,36,0.15)' }}
-                  data-testid={`pending-row-${cat.key}`}
+                  data-testid={`pending-row-${item.key}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(251,191,36,0.12)' }}
                     >
-                      {cat.icon}
+                      {CATEGORY_ICONS[item.key] ?? <Clock className="w-3.5 h-3.5 text-amber-700" />}
                     </div>
-                    <span className="text-[12px] font-medium text-gray-700 truncate">{cat.label}</span>
+                    <span className="text-[12px] font-medium text-gray-700 truncate">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <span
                       className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-amber-800"
                       style={{ background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.25)' }}
-                      data-testid={`badge-count-${cat.key}`}
+                      data-testid={`badge-count-${item.key}`}
                     >
-                      {cat.count}
+                      {item.count}
                     </span>
-                    <ChevronRight
-                      className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-0.5 transition-transform"
-                    />
+                    <ChevronRight className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
               </Link>
