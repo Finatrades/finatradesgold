@@ -49,18 +49,6 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
     staleTime: STALE_TIME,
   });
 
-  const { data: physicalDepositsData } = useQuery({
-    queryKey: ['physical-deposits', userId],
-    queryFn: async () => {
-      const res = await fetch('/api/physical-deposits/deposits');
-      if (!res.ok) return { deposits: [] };
-      return res.json();
-    },
-    enabled: !!userId,
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: STALE_TIME,
-  });
-
   const incomingCount = (incomingData?.transfers || []).length;
 
   const paymentRequestCount = (requestsData?.requests || []).filter(
@@ -69,11 +57,6 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
 
   const depositPendingCount = (depositRequestsData?.requests || []).filter(
     (d: { status: string }) => d.status === 'Pending'
-  ).length;
-
-  const physicalPendingCount = (physicalDepositsData?.deposits || []).filter(
-    (d: { status: string }) =>
-      ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION'].includes(d.status)
   ).length;
 
   const rawItems: PendingItem[] = [
@@ -94,12 +77,6 @@ export function usePendingItems(): { items: PendingItem[]; total: number } {
       label: 'Deposits pending verification',
       count: depositPendingCount,
       href: '/finapay?section=deposits',
-    },
-    {
-      key: 'physical',
-      label: 'Physical Gold Deposit — awaiting vault inspection',
-      count: physicalPendingCount,
-      href: '/finavault?section=physical',
     },
   ];
 

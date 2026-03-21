@@ -1,13 +1,12 @@
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ArrowDownLeft, DollarSign, Package, ChevronRight } from 'lucide-react';
+import { Clock, ArrowDownLeft, DollarSign, ChevronRight } from 'lucide-react';
 import { usePendingItems } from '@/hooks/usePendingItems';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   transfers: <ArrowDownLeft className="w-3.5 h-3.5 text-amber-700" />,
   payments:  <DollarSign   className="w-3.5 h-3.5 text-amber-700" />,
   deposits:  <Clock        className="w-3.5 h-3.5 text-amber-700" />,
-  physical:  <Package      className="w-3.5 h-3.5 text-amber-700" />,
 };
 
 export default function PendingItemsStrip() {
