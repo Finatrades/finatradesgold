@@ -419,7 +419,7 @@ export default function FinaVaultManagement() {
                 <ArrowUpCircle className="w-4 h-4" />
                 <span>
                   Withdrawal Requests
-                  <span className="hidden sm:inline text-[10px] font-normal ml-1 opacity-70">— Unified Payment Manager</span>
+                  <span className="text-[10px] font-normal ml-1 opacity-70">— Unified Payment Manager</span>
                 </span>
                 {pendingWithdrawals.length > 0 && (
                   <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center ml-1">

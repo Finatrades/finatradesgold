@@ -9898,7 +9898,7 @@ export async function registerRoutes(
 
       const { 
         goldGrams, goldPriceUsdPerGram, withdrawalMethod,
-        bankName, accountName, accountNumber, iban, swiftCode, bankCountry,
+        bankAccountId, bankName, accountName, accountNumber, iban, swiftCode, bankCountry,
         cryptoNetwork, cryptoCurrency, walletAddress, notes
       } = req.body;
       
@@ -9910,6 +9910,16 @@ export async function registerRoutes(
       if (withdrawalMethod === 'Bank Transfer') {
         if (!bankName || !accountName || !accountNumber) {
           return res.status(400).json({ message: "Bank details required for bank transfer" });
+        }
+        // Verify the bank account is verified and belongs to this user
+        if (bankAccountId) {
+          const bankAccount = await storage.getUserBankAccount(bankAccountId);
+          if (!bankAccount || bankAccount.userId !== userId) {
+            return res.status(400).json({ message: "Invalid bank account. Please select a verified bank account." });
+          }
+          if (!bankAccount.verifiedAt) {
+            return res.status(400).json({ message: "Bank account must be verified before withdrawing. Please complete bank account verification first." });
+          }
         }
         // Enforce KYC name match for bank transfers
         const kycRecord = await storage.getKycSubmission(userId);
@@ -10058,18 +10068,14 @@ export async function registerRoutes(
             referenceId: request.referenceNumber,
           });
 
-          // Surrender certificates proportionally (cert ledger)
-          try {
-            await deductFromCerts(storage, {
-              userId: request.userId,
-              gramsToDeduct: goldGrams,
-              reason: 'SELL',
-              transactionId: withdrawalTx.id,
-              notes: `Withdrawal approved: ${request.referenceNumber} via ${request.withdrawalMethod}`,
-            });
-          } catch (certErr) {
-            console.error('[VaultWithdrawal] Cert surrender failed (non-blocking):', certErr);
-          }
+          // Surrender certificates proportionally (cert ledger) — blocking: failure aborts approval
+          await deductFromCerts(storage, {
+            userId: request.userId,
+            gramsToDeduct: goldGrams,
+            reason: 'SELL',
+            transactionId: withdrawalTx.id,
+            notes: `Withdrawal approved: ${request.referenceNumber} via ${request.withdrawalMethod}`,
+          });
           
           // Emit real-time sync event for auto-update
           emitLedgerEvent(request.userId, {

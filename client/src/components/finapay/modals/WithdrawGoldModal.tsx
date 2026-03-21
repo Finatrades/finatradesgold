@@ -24,6 +24,7 @@ interface BankAccount {
   label?: string | null;
   isPrimary?: boolean;
   status?: string;
+  verifiedAt?: string | null;
 }
 
 interface WithdrawGoldModalProps {
@@ -98,7 +99,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
     enabled: !!user?.id && isOpen && tab === 'bank',
   });
 
-  const bankAccounts: BankAccount[] = Array.isArray(bankAccountsData) ? bankAccountsData.filter(a => a.status !== 'Inactive') : [];
+  const bankAccounts: BankAccount[] = Array.isArray(bankAccountsData) ? bankAccountsData.filter(a => a.status !== 'Inactive' && !!a.verifiedAt) : [];
   const selectedBankAccount = bankAccounts.find(a => a.id === selectedBankAccountId) || null;
 
   // KYC name match for selected bank account
@@ -442,8 +443,8 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                   <div className="text-center py-4 space-y-3">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
                       <Building2 className="w-8 h-8 text-muted-foreground/40" />
-                      <p>No verified bank accounts found.</p>
-                      <p className="text-xs">Add a bank account in your profile settings before withdrawing.</p>
+                      <p className="font-medium">No verified bank accounts</p>
+                      <p className="text-xs text-center">Bank withdrawals require a verified bank account. Add and verify a bank account in your profile before withdrawing.</p>
                     </div>
                     <Button
                       variant="outline"
@@ -451,7 +452,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                       className="gap-2"
                       onClick={() => { handleClose(); window.location.href = '/profile?tab=bank'; }}
                     >
-                      <PlusCircle className="w-4 h-4" /> Add Bank Account
+                      <PlusCircle className="w-4 h-4" /> Manage Bank Accounts
                     </Button>
                   </div>
                 ) : (
