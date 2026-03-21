@@ -730,6 +730,34 @@ async function validatePinToken(token: string | undefined, action: string): Prom
   return { valid: true, userId: pinToken.userId };
 }
 
+// Session-bound PIN verification — always uses session.userId, never trusts body/params
+// Use this on endpoints where userId is derived from the session (no body userId)
+function requirePinVerificationForSession(action: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const pinToken = req.headers['x-pin-token'] as string | undefined;
+    const userId = req.session?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const transactionPin = await storage.getTransactionPin(userId);
+    if (!transactionPin) {
+      return next();
+    }
+
+    const result = await validatePinToken(pinToken, action);
+    if (!result.valid) {
+      return res.status(403).json({ message: result.error, requiresPin: true, action });
+    }
+    if (result.userId !== userId) {
+      return res.status(403).json({ message: 'PIN verification user mismatch', requiresPin: true, action });
+    }
+
+    next();
+  };
+}
+
 // Middleware to require PIN verification for sensitive transactions
 function requirePinVerification(action: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -9891,7 +9919,7 @@ export async function registerRoutes(
   });
 
   // Create vault withdrawal request (user submission)
-  app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, requirePinVerification('withdraw_funds'), async (req, res) => {
+  app.post("/api/vault/withdrawal", ensureAuthenticated, requireKycApproved, requirePinVerificationForSession('withdraw_funds'), async (req, res) => {
     try {
       // Always derive userId from the authenticated session — never trust the body
       const userId = req.session.userId!;
