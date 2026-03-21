@@ -765,6 +765,18 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       return tallyRecord;
     });
 
+    // Bell notification for deposit approval
+    try {
+      await storage.createNotification({
+        userId,
+        title: 'Deposit Approved — Gold Credited',
+        message: `Your deposit has been approved. ${parsedAllocation.toFixed(4)}g of gold has been credited to your ${dbWalletType} wallet.`,
+        type: 'success',
+        link: '/finavault',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create deposit approval notification:', e); }
+
     // Get updated holdings for response
     const holdingsSnapshot = await storage.getUserHoldingsSnapshot(userId);
 

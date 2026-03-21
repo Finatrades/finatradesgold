@@ -635,6 +635,18 @@ router.post('/admin/deposits/:id/review', requireAdmin(), async (req: Request, r
     // Real-time WebSocket notification
     emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'UNDER_REVIEW');
 
+    // Bell notification
+    try {
+      await storage.createNotification({
+        userId: deposit.userId,
+        title: 'Physical Deposit Under Review',
+        message: `Your physical gold deposit (${deposit.referenceNumber}) is now under review by our team.`,
+        type: 'info',
+        link: '/finavault?section=physical',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create UNDER_REVIEW notification:', e); }
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error reviewing deposit:', error);
@@ -678,6 +690,18 @@ router.post('/admin/deposits/:id/receive', requireAdmin(), async (req: Request, 
     
     // Real-time WebSocket notification
     emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'RECEIVED');
+
+    // Bell notification
+    try {
+      await storage.createNotification({
+        userId: deposit.userId,
+        title: 'Gold Deposit Received at Vault',
+        message: `Your physical gold deposit (${deposit.referenceNumber}) has been received at the vault and is awaiting inspection.`,
+        type: 'info',
+        link: '/finavault?section=physical',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create RECEIVED notification:', e); }
 
     res.json({ success: true });
   } catch (error) {
@@ -792,6 +816,18 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
         proposedFees: totalFees,
         purityResult: data.purityResult,
       });
+
+      // Bell notification
+      try {
+        await storage.createNotification({
+          userId: deposit.userId,
+          title: 'Gold Deposit: Offer Ready for Review',
+          message: `Inspection complete on your physical deposit (${deposit.referenceNumber}). An offer of ${parseFloat(data.creditedGrams).toFixed(4)}g has been made — please review and respond.`,
+          type: 'info',
+          link: '/finavault?section=physical',
+          read: false,
+        });
+      } catch (e) { console.error('[Notification] Failed to create NEGOTIATION notification:', e); }
     } else {
       // Send email notification about inspection completion
       await sendPhysicalDepositStatusEmail(deposit.userId, deposit.referenceNumber, 'INSPECTION');
@@ -801,6 +837,18 @@ router.post('/admin/deposits/:id/inspect', requireAdmin(), async (req: Request, 
         creditedGrams: data.creditedGrams,
         purityResult: data.purityResult,
       });
+
+      // Bell notification
+      try {
+        await storage.createNotification({
+          userId: deposit.userId,
+          title: 'Gold Deposit Inspection Complete',
+          message: `Your physical deposit (${deposit.referenceNumber}) has been inspected. Verified: ${parseFloat(data.creditedGrams).toFixed(4)}g at ${data.purityResult} purity.`,
+          type: 'info',
+          link: '/finavault?section=physical',
+          read: false,
+        });
+      } catch (e) { console.error('[Notification] Failed to create INSPECTION notification:', e); }
     }
 
     res.json({ success: true, inspectionId: inspection.id, newStatus });
@@ -883,6 +931,18 @@ router.post('/admin/deposits/:id/offer', requireAdmin(), async (req: Request, re
       proposedFees: parsed.data.proposedFees,
       usdOffer: parsed.data.usdOffer,
     });
+
+    // Bell notification
+    try {
+      await storage.createNotification({
+        userId: deposit.userId,
+        title: 'New Offer on Your Gold Deposit',
+        message: `An updated offer has been made on your physical deposit (${deposit.referenceNumber}): ${parsed.data.proposedGrams.toFixed(4)}g. Please review and respond.`,
+        type: 'info',
+        link: '/finavault?section=physical',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create OFFER notification:', e); }
 
     res.json({ success: true });
   } catch (error) {
@@ -1211,6 +1271,18 @@ router.post('/admin/deposits/:id/approve', requireAdmin(), async (req: Request, 
       message: `${creditedGrams.toFixed(4)}g gold credited to your wallet`,
     });
 
+    // Bell notification
+    try {
+      await storage.createNotification({
+        userId: deposit.userId,
+        title: 'Physical Gold Deposit Approved & Credited',
+        message: `Your physical deposit (${deposit.referenceNumber}) has been approved. ${creditedGrams.toFixed(4)}g of gold has been credited to your wallet.`,
+        type: 'success',
+        link: '/finavault',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create APPROVED notification:', e); }
+
     res.json({
       success: true,
       creditedGrams,
@@ -1334,6 +1406,18 @@ router.post('/admin/deposits/:id/reject', requireAdmin(), async (req: Request, r
     emitPhysicalDepositUpdate(deposit.userId, deposit.id, deposit.referenceNumber, 'REJECTED', {
       reason: parsed.data.reason,
     });
+
+    // Bell notification
+    try {
+      await storage.createNotification({
+        userId: deposit.userId,
+        title: 'Physical Deposit Rejected',
+        message: `Your physical deposit (${deposit.referenceNumber}) was rejected. Reason: ${parsed.data.reason}`,
+        type: 'warning',
+        link: '/finavault?section=physical',
+        read: false,
+      });
+    } catch (e) { console.error('[Notification] Failed to create REJECTED notification:', e); }
 
     res.json({ success: true });
   } catch (error) {

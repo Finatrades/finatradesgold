@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer } from 'lucide-react';
+import { Award, Box, ShieldCheck, Download, FileText, ChevronRight, ArrowRight, Send, Printer, ChevronDown, ChevronUp, Info, Lock } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -53,12 +52,30 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
   
   if (!certificate) return null;
 
-  const isDigitalOwnership = certificate.type === 'Digital Ownership' || certificate.type === 'BNSL Lock' || certificate.type === 'Trade Lock' || certificate.type === 'Trade Release' || certificate.type === 'Conversion' || certificate.type === 'Transfer';
+  const isBnslLock = certificate.type === 'BNSL Lock';
+  const isPhysicalStorage = certificate.type === 'Physical Storage';
+  const isDigitalOwnership = !isPhysicalStorage; // All non-physical use dark cert style
+  const isOwnershipCert = certificate.type === 'Digital Ownership' || isPhysicalStorage;
+  const isConversion = certificate.type === 'Conversion';
+  const isTransfer = certificate.type === 'Transfer';
+
   const issueDate = new Date(certificate.issuedAt).toLocaleDateString('en-US', { 
     day: 'numeric', 
     month: 'long', 
     year: 'numeric' 
   });
+
+  // BLC: days remaining to maturity
+  const maturityDate = certificate.expiresAt ? new Date(certificate.expiresAt) : null;
+  const daysToMaturity = maturityDate ? Math.max(0, Math.ceil((maturityDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+  const maturityFormatted = maturityDate ? maturityDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+
+  // Cert theme: indigo for BLC, gold for ownership/activity, silver for physical
+  const certTheme = isBnslLock
+    ? { accent: '#6366f1', accentMid: '#818cf8', border: 'rgba(99,102,241,0.4)', borderHover: 'rgba(99,102,241,0.6)', bg: '#0d0a2e' }
+    : isPhysicalStorage
+    ? { accent: '#C0C0C0', accentMid: '#d4d4d4', border: 'rgba(192,192,192,0.3)', borderHover: 'rgba(192,192,192,0.5)', bg: '#0D0515' }
+    : { accent: '#D4AF37', accentMid: '#e8c84a', border: 'rgba(212,175,55,0.3)', borderHover: 'rgba(212,175,55,0.5)', bg: '#0D0515' };
   const originalGrams = parseFloat(certificate.goldGrams || '0');
   const remainingGrams = parseFloat(certificate.remainingGrams || certificate.goldGrams || '0');
   const goldGrams = remainingGrams; // Use remaining grams for display
@@ -358,18 +375,16 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] bg-[#0D0515] border-white/10 p-0 overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] border-white/10 p-0 overflow-y-auto" style={{ backgroundColor: certTheme.bg }}>
         {/* Certificate content for capture - ref attached here */}
         <div 
           ref={certificateRef}
-          className={`relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl ${
-          isDigitalOwnership 
-            ? 'border-[#D4AF37]/30' 
-            : 'border-[#C0C0C0]/30'
-        }`}>
+          className="relative p-8 md:p-12 border-8 border-double m-2 shadow-2xl"
+          style={{ borderColor: certTheme.border, backgroundColor: certTheme.bg }}
+        >
           
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-            {isDigitalOwnership ? (
+            {isBnslLock ? <Lock className="w-96 h-96" /> : isDigitalOwnership ? (
               <Award className="w-96 h-96" />
             ) : (
               <Box className="w-96 h-96" />
@@ -378,27 +393,64 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
 
           <div className="text-center space-y-4 mb-10 relative z-10">
             <div className="flex justify-center mb-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${
-                isDigitalOwnership 
-                  ? 'bg-[#D4AF37]/10 border-[#D4AF37]' 
-                  : 'bg-[#C0C0C0]/10 border-[#C0C0C0]'
-              }`}>
-                {isDigitalOwnership ? (
-                  <ShieldCheck className="w-8 h-8 text-[#D4AF37]" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center border"
+                style={{ backgroundColor: `${certTheme.accent}15`, borderColor: certTheme.accent }}
+              >
+                {isBnslLock ? (
+                  <Lock className="w-8 h-8" style={{ color: certTheme.accent }} />
+                ) : isDigitalOwnership ? (
+                  <ShieldCheck className="w-8 h-8" style={{ color: certTheme.accent }} />
                 ) : (
-                  <Box className="w-8 h-8 text-[#C0C0C0]" />
+                  <Box className="w-8 h-8" style={{ color: certTheme.accent }} />
                 )}
               </div>
             </div>
-            <h2 className={`text-3xl md:text-4xl font-serif tracking-wider uppercase ${
-              isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-            }`}>
-              Certificate
+            <h2 className="text-3xl md:text-4xl font-serif tracking-wider uppercase" style={{ color: certTheme.accent }}>
+              {isBnslLock ? 'BNSL Lock' : 'Certificate'}
             </h2>
             <h3 className="text-lg text-white/80 font-serif tracking-widest uppercase">
-              {isDigitalOwnership ? 'of Digital Ownership' : 'of Physical Storage'}
+              {isBnslLock
+                ? 'BNSL Lock Certificate'
+                : certificate.type === 'Trade Lock'
+                ? 'Trade Lock Record'
+                : certificate.type === 'Trade Release'
+                ? 'Trade Release Record'
+                : certificate.type === 'Conversion'
+                ? (certificate.toGoldWalletType === 'FGPW' ? 'Price Protection Activated' : 'Price Protection Removed')
+                : certificate.type === 'Transfer'
+                ? 'Gold Transfer Record'
+                : isPhysicalStorage
+                ? 'of Physical Storage'
+                : 'of Digital Ownership'}
             </h3>
             <p className="text-white/40 text-sm font-mono">{certificate.certificateNumber}</p>
+
+            {/* BLC maturity panel */}
+            {isBnslLock && (
+              <div className="mt-4 mx-auto max-w-sm rounded-xl border p-4 text-left space-y-2" style={{ borderColor: certTheme.border, backgroundColor: `${certTheme.accent}10` }}>
+                {certificate.goldPriceUsdPerGram && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Lock Price</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g</span>
+                  </div>
+                )}
+                {maturityFormatted && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Maturity Date</span>
+                    <span className="font-semibold" style={{ color: certTheme.accentMid }}>{maturityFormatted}</span>
+                  </div>
+                )}
+                {daysToMaturity !== null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Days Remaining</span>
+                    <span className="font-bold" style={{ color: daysToMaturity <= 30 ? '#f87171' : certTheme.accentMid }}>
+                      {daysToMaturity === 0 ? 'Matured' : `${daysToMaturity} days`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col items-center gap-3">
               <Badge variant={certificate.status === 'Active' ? 'default' : 'secondary'} className={
                 certificate.status === 'Active' ? 'bg-green-600' : ''
@@ -406,7 +458,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                 {certificate.status}
               </Badge>
               
-              {certificate.type === 'Conversion' && certificate.fromGoldWalletType && certificate.toGoldWalletType ? (
+              {isConversion && certificate.fromGoldWalletType && certificate.toGoldWalletType ? (
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`px-3 py-1 ${
@@ -463,15 +515,15 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
 
           <div className="space-y-6 text-center relative z-10">
             {/* Show transfer parties for Transfer certificates */}
-            {certificate.type === 'Transfer' && (certificate.fromUserName || certificate.toUserName) && (
-              <div className="bg-white/5 border border-[#D4AF37]/20 rounded-lg p-4 mb-4">
-                <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-3">Transfer of Ownership</p>
+            {isTransfer && (certificate.fromUserName || certificate.toUserName) && (
+              <div className="bg-white/5 rounded-lg p-4 mb-4 border" style={{ borderColor: certTheme.border }}>
+                <p className="text-xs uppercase tracking-wider mb-3" style={{ color: certTheme.accent }}>Transfer of Ownership</p>
                 <div className="flex items-center justify-center gap-4">
                   <div className="text-right">
                     <p className="text-xs text-white/50 mb-1">From</p>
                     <p className="font-semibold text-white">{certificate.fromUserName || 'Unknown'}</p>
                   </div>
-                  <div className="text-[#D4AF37] text-xl">→</div>
+                  <div className="text-xl" style={{ color: certTheme.accent }}>→</div>
                   <div className="text-left">
                     <p className="text-xs text-white/50 mb-1">To</p>
                     <p className="font-semibold text-white">{certificate.toUserName || 'Unknown'}</p>
@@ -481,49 +533,53 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             )}
             
             <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-              {certificate.type === 'Conversion' ? (
-                <>This certifies the conversion of <strong>{goldGrams.toFixed(4)}g</strong> of gold between wallet types in the Finatrades ledger.</>
-              ) : certificate.type === 'Transfer' ? (
+              {isBnslLock ? (
+                <>This certifies that <strong>{goldGrams.toFixed(4)}g</strong> of gold is locked in a BNSL savings plan, accumulating returns until the maturity date.</>
+              ) : isConversion ? (
+                <>This certifies the {certificate.toGoldWalletType === 'FGPW' ? 'activation of price protection' : 'removal of price protection'} for <strong>{goldGrams.toFixed(4)}g</strong> of gold in the Finatrades ledger.</>
+              ) : isTransfer ? (
                 <>This certifies the transfer of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold between Finatrades users.</>
-              ) : isDigitalOwnership ? (
-                <>This certifies that the holder is the beneficial owner of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold, secured and recorded in the Finatrades digital ledger.</>
-              ) : (
+              ) : isPhysicalStorage ? (
                 <>This certifies that <strong>{goldGrams.toFixed(4)}g</strong> of physical gold is securely stored at <strong>{certificate.vaultLocation}</strong> under custody of <strong>{certificate.issuer}</strong>.</>
+              ) : (
+                <>This certifies that the holder is the beneficial owner of <strong>{goldGrams.toFixed(4)}g</strong> of fine gold, secured and recorded in the Finatrades digital ledger.</>
               )}
             </p>
 
             {(() => {
-              const col4Label = certificate.type === 'Physical Storage'
+              const col4Label = isPhysicalStorage
                 ? 'Storage Ref'
-                : certificate.type === 'Conversion' || certificate.goldPriceUsdPerGram
-                ? 'Gold Price'
+                : (isConversion || isBnslLock || certificate.goldPriceUsdPerGram)
+                ? (isBnslLock ? 'Maturity' : 'Gold Price')
                 : null;
-              const col4Value = certificate.type === 'Physical Storage'
+              const col4Value = isPhysicalStorage
                 ? certificate.wingoldStorageRef || 'N/A'
+                : isBnslLock
+                ? (maturityFormatted || 'N/A')
                 : certificate.goldPriceUsdPerGram
                 ? `$${parseFloat(certificate.goldPriceUsdPerGram).toFixed(2)}/g`
                 : null;
-              const labelClass = `text-xs uppercase tracking-wider mb-1 ${isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'}`;
+              const labelStyle = { color: certTheme.accent };
               return (
                 <div className={`grid gap-4 border-y py-6 my-6 ${
                   col4Label ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'
-                } ${isDigitalOwnership ? 'border-[#D4AF37]/20' : 'border-[#C0C0C0]/20'}`}>
+                }`} style={{ borderColor: certTheme.border }}>
                   <div>
-                    <p className={labelClass}>Gold Weight</p>
+                    <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>Gold Weight</p>
                     <p className="text-xl font-bold text-white">{goldGrams.toFixed(4)}g</p>
                   </div>
                   <div>
-                    <p className={labelClass}>Purity</p>
+                    <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>Purity</p>
                     <p className="text-xl font-bold text-white">999.9</p>
                   </div>
                   <div>
-                    <p className={labelClass}>Value (USD)</p>
+                    <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>Value (USD)</p>
                     <p className="text-xl font-bold text-white">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                   {col4Label && (
                     <div>
-                      <p className={labelClass}>{col4Label}</p>
-                      <p className={`font-bold text-white ${certificate.type === 'Physical Storage' ? 'text-sm font-mono' : 'text-xl'}`}>
+                      <p className="text-xs uppercase tracking-wider mb-1" style={labelStyle}>{col4Label}</p>
+                      <p className={`font-bold text-white ${isPhysicalStorage ? 'text-sm font-mono' : isBnslLock ? 'text-sm' : 'text-xl'}`}>
                         {col4Value}
                       </p>
                     </div>
@@ -535,21 +591,13 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             <div className="grid grid-cols-2 gap-8 mt-8">
               <div className="text-center">
                 <p className="text-white font-medium mb-1">{issueDate}</p>
-                <Separator className={`w-32 mb-1 mx-auto ${
-                  isDigitalOwnership ? 'bg-[#D4AF37]/40' : 'bg-[#C0C0C0]/40'
-                }`} />
-                <p className={`text-xs uppercase tracking-wider ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Date of Issue</p>
+                <Separator className="w-32 mb-1 mx-auto" style={{ backgroundColor: `${certTheme.accent}50` }} />
+                <p className="text-xs uppercase tracking-wider" style={{ color: certTheme.accent }}>Date of Issue</p>
               </div>
               <div className="text-center">
                 <p className="text-white font-medium mb-1">{certificate.issuer}</p>
-                <Separator className={`w-32 mb-1 mx-auto ${
-                  isDigitalOwnership ? 'bg-[#D4AF37]/40' : 'bg-[#C0C0C0]/40'
-                }`} />
-                <p className={`text-xs uppercase tracking-wider ${
-                  isDigitalOwnership ? 'text-[#D4AF37]' : 'text-[#C0C0C0]'
-                }`}>Issuing Authority</p>
+                <Separator className="w-32 mb-1 mx-auto" style={{ backgroundColor: `${certTheme.accent}50` }} />
+                <p className="text-xs uppercase tracking-wider" style={{ color: certTheme.accent }}>Issuing Authority</p>
               </div>
             </div>
 
@@ -563,7 +611,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
         </div>
         
         {/* Buttons outside ref so they don't appear in PDF */}
-        <div className="flex justify-center gap-4 pb-6 bg-[#0D0515]">
+        <div className="flex justify-center gap-4 pb-6" style={{ backgroundColor: certTheme.bg }}>
           <Button 
             variant="outline" 
             size="sm" 
@@ -597,8 +645,8 @@ export default function CertificatesView() {
   const { toast } = useToast();
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'digital' | 'storage' | 'transfer'>('active');
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['certificates', user?.id],
@@ -617,13 +665,9 @@ export default function CertificatesView() {
   const certificates: Certificate[] = data?.certificates || [];
   const activeCertificates: Certificate[] = data?.activeCertificates || [];
 
-  const filteredCertificates = certificates.filter(cert => {
-    if (filter === 'active') return cert.status === 'Active';
-    if (filter === 'digital') return cert.type === 'Digital Ownership' || cert.type === 'BNSL Lock' || cert.type === 'Trade Lock' || cert.type === 'Trade Release' || cert.type === 'Conversion';
-    if (filter === 'storage') return cert.type === 'Physical Storage';
-    if (filter === 'transfer') return cert.type === 'Transfer';
-    return true;
-  });
+  const OWNERSHIP_TYPES = ['Digital Ownership', 'Physical Storage'];
+  const ownershipCerts = certificates.filter(c => OWNERSHIP_TYPES.includes(c.type));
+  const activityRecords = certificates.filter(c => !OWNERSHIP_TYPES.includes(c.type));
 
   const openCertificate = (cert: Certificate) => {
     setSelectedCertificate(cert);
@@ -767,14 +811,113 @@ export default function CertificatesView() {
     );
   }
 
+  const renderCertRow = (cert: Certificate) => {
+    const isStorage = cert.type === 'Physical Storage';
+    const isBnsl = cert.type === 'BNSL Lock';
+    const isConv = cert.type === 'Conversion';
+    const isTrans = cert.type === 'Transfer';
+    const goldGrams = parseFloat(cert.remainingGrams || cert.goldGrams || '0');
+    const originalGrams = parseFloat(cert.goldGrams || '0');
+    const hasPartialSurrender = goldGrams < originalGrams;
+    const totalValue = parseFloat(cert.totalValueUsd || '0');
+
+    const label = isConv && cert.toGoldWalletType
+      ? (cert.toGoldWalletType === 'FGPW' ? 'Price Protection Activated' : 'Price Protection Removed')
+      : isBnsl ? 'BNSL Lock Certificate'
+      : isTrans ? 'Gold Transfer'
+      : cert.type === 'Trade Lock' ? 'Trade Lock'
+      : cert.type === 'Trade Release' ? 'Trade Release'
+      : cert.type;
+
+    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-gray-100' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : 'bg-purple-100';
+    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-gray-500' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : 'text-fuchsia-600';
+    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-gray-600' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : 'text-fuchsia-600';
+
+    const expiresAt = cert.expiresAt ? new Date(cert.expiresAt) : null;
+    const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+
+    return (
+      <div
+        key={cert.id}
+        className={`p-4 rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4 ${cert.status !== 'Active' ? 'opacity-60 bg-gray-50' : 'bg-white'}`}
+        onClick={() => openCertificate(cert)}
+        data-testid={`certificate-card-${cert.id}`}
+      >
+        <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+          {isBnsl ? <Lock className={`w-5 h-5 ${iconColor}`} /> :
+           isStorage ? <Box className={`w-5 h-5 ${iconColor}`} /> :
+           isTrans ? <Send className={`w-5 h-5 ${iconColor}`} /> :
+           <Award className={`w-5 h-5 ${iconColor}`} />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`font-semibold text-sm ${labelColor}`}>{label}</span>
+            <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-[10px] ${cert.status === 'Active' ? 'bg-green-600' : ''}`}>
+              {cert.status}
+            </Badge>
+            {isBnsl && daysLeft !== null && daysLeft <= 30 && (
+              <Badge variant="outline" className="text-[10px] border-orange-400 text-orange-600 bg-orange-50">
+                {daysLeft === 0 ? 'Matured' : `${daysLeft}d left`}
+              </Badge>
+            )}
+          </div>
+          {isTrans && (cert.fromUserName || cert.toUserName) ? (
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
+              {cert.fromUserName || 'Unknown'} <ArrowRight className="w-3 h-3 inline" /> {cert.toUserName || 'Unknown'}
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-xs truncate mt-0.5">{cert.certificateNumber}</p>
+          )}
+          {isBnsl && expiresAt && (
+            <p className="text-xs text-indigo-500 mt-0.5">
+              Matures {expiresAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          <p className="font-bold text-sm text-foreground">{goldGrams.toFixed(4)}g</p>
+          {hasPartialSurrender && <p className="text-amber-500 text-[10px]">of {originalGrams.toFixed(4)}g</p>}
+          <p className="text-muted-foreground text-xs">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6" data-testid="certificates-view">
+
+      {/* Plain-English Explainer */}
+      <div className="bg-white border border-border rounded-2xl overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+          onClick={() => setShowExplainer(!showExplainer)}
+          data-testid="btn-toggle-explainer"
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Info className="w-4 h-4 text-amber-500" />
+            What are certificates and why do I have them?
+          </span>
+          {showExplainer ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </button>
+        {showExplainer && (
+          <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed space-y-3 border-t border-border pt-4">
+            <p><strong className="text-foreground">Ownership Certificates</strong> are permanent proof that you own gold. Every time you buy or deposit gold, you receive a <em>Digital Ownership Certificate</em> (your right to the gold) and a <em>Physical Storage Certificate</em> (confirming your gold sits in a real vault).</p>
+            <p><strong className="text-foreground">Activity Records</strong> are receipts for actions you take on your gold — locking it in a BNSL savings plan, activating price protection, sending gold to another user, or engaging in a trade. They are not proof of current ownership but form an auditable history of every movement.</p>
+            <p>Certificates can be downloaded as PDFs and are legally verifiable through the Finatrades platform.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Section 1: Ownership Certificates */}
       <Card className="bg-white border">
-        <CardHeader className="border-b">
+        <CardHeader className="border-b pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">My Certificates</CardTitle>
-              <p className="text-muted-foreground text-sm">View your Digital Ownership and Physical Storage certificates</p>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-purple-600" /> Ownership Certificates
+              </CardTitle>
+              <p className="text-muted-foreground text-xs mt-0.5">Proof of gold ownership — Digital and Physical</p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -793,138 +936,48 @@ export default function CertificatesView() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-            <TabsList className="bg-muted mb-6 flex-wrap">
-              <TabsTrigger value="active" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
-                Active
-              </TabsTrigger>
-              <TabsTrigger value="digital" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
-                Digital Ownership
-              </TabsTrigger>
-              <TabsTrigger value="storage" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white">
-                Physical Storage
-              </TabsTrigger>
-              <TabsTrigger value="transfer" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-                Transfers
-              </TabsTrigger>
-              <TabsTrigger value="all" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
-                All History
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {filteredCertificates.length === 0 ? (
-            <div className="p-12 text-center">
-              <FileText className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-lg font-bold mb-2">No Certificates Found</h3>
-              <p className="text-muted-foreground">
-                Certificates are issued when you buy, receive, or deposit gold.
-              </p>
+        <CardContent className="p-4">
+          {ownershipCerts.length === 0 ? (
+            <div className="p-10 text-center">
+              <ShieldCheck className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No ownership certificates yet. They are issued when you buy or deposit gold.</p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {filteredCertificates.map((cert) => {
-                const isDigital = cert.type !== 'Physical Storage';
-                const isTransfer = cert.type === 'Transfer';
-                const originalGrams = parseFloat(cert.goldGrams || '0');
-                const remainingGrams = parseFloat(cert.remainingGrams || cert.goldGrams || '0');
-                const goldGrams = remainingGrams;
-                const hasPartialSurrender = remainingGrams < originalGrams;
-                const totalValue = parseFloat(cert.totalValueUsd || '0');
-                
-                return (
-                  <div 
-                    key={cert.id} 
-                    className={`p-4 rounded-xl border bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors flex items-center gap-4 ${
-                      cert.status !== 'Active' ? 'opacity-60' : ''
-                    }`}
-                    onClick={() => openCertificate(cert)}
-                    data-testid={`certificate-card-${cert.id}`}
-                  >
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      isTransfer ? 'bg-orange-100' : isDigital ? 'bg-purple-100' : 'bg-gray-200'
-                    }`}>
-                      {isTransfer ? (
-                        <Send className="w-6 h-6 text-orange-600" />
-                      ) : isDigital ? (
-                        <Award className="w-6 h-6 text-fuchsia-600" />
-                      ) : (
-                        <Box className="w-6 h-6 text-gray-500" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-semibold ${isTransfer ? 'text-orange-600' : isDigital ? 'text-fuchsia-600' : 'text-gray-600'}`}>
-                          {cert.type}
-                        </span>
-                        <Badge variant={cert.status === 'Active' ? 'default' : 'secondary'} className={`text-xs ${
-                          cert.status === 'Active' ? 'bg-green-600' : ''
-                        }`}>
-                          {cert.status}
-                        </Badge>
-                        {cert.type === 'Conversion' && cert.fromGoldWalletType && cert.toGoldWalletType ? (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className={`text-xs ${
-                              cert.fromGoldWalletType === 'FGPW' 
-                                ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                                : 'border-amber-500 text-amber-600 bg-amber-50'
-                            }`}>
-                              {cert.fromGoldWalletType === 'FGPW' ? '🔒' : '📈'}
-                            </Badge>
-                            <ArrowRight className="w-3 h-3 text-gray-400" />
-                            <Badge variant="outline" className={`text-xs ${
-                              cert.toGoldWalletType === 'FGPW' 
-                                ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                                : 'border-amber-500 text-amber-600 bg-amber-50'
-                            }`}>
-                              {cert.toGoldWalletType === 'FGPW' ? '🔒' : '📈'}
-                            </Badge>
-                          </div>
-                        ) : cert.goldWalletType ? (
-                          <Badge variant="outline" className={`text-xs ${
-                            cert.goldWalletType === 'FGPW' 
-                              ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                              : 'border-amber-500 text-amber-600 bg-amber-50'
-                          }`}>
-                            {cert.goldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      {isTransfer && (cert.fromUserName || cert.toUserName) ? (
-                        <p className="text-sm truncate">
-                          <span className="text-muted-foreground">{cert.fromUserName || 'Unknown'}</span>
-                          <ArrowRight className="w-3 h-3 inline mx-1 text-orange-500" />
-                          <span className="text-muted-foreground">{cert.toUserName || 'Unknown'}</span>
-                        </p>
-                      ) : (
-                        <p className="text-muted-foreground text-sm truncate">{cert.certificateNumber}</p>
-                      )}
-                      <p className="text-muted-foreground/70 text-xs">Issued by {cert.issuer}</p>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="font-bold text-foreground">{goldGrams.toFixed(4)}g</p>
-                      {hasPartialSurrender && (
-                        <p className="text-amber-500 text-xs">of {originalGrams.toFixed(4)}g</p>
-                      )}
-                      <p className="text-muted-foreground text-sm">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    </div>
-                    
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                );
-              })}
+            <div className="space-y-2">
+              {ownershipCerts.map(renderCertRow)}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <CertificateDetailModal 
-        certificate={selectedCertificate} 
-        open={modalOpen} 
-        onOpenChange={setModalOpen} 
+      {/* Section 2: Activity Records */}
+      <Card className="bg-white border">
+        <CardHeader className="border-b pb-4">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gray-500" /> Activity Records
+            </CardTitle>
+            <p className="text-muted-foreground text-xs mt-0.5">BNSL locks, price protection, transfers, and trade activity</p>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {activityRecords.length === 0 ? (
+            <div className="p-10 text-center">
+              <FileText className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No activity records yet. Records are created when you lock gold, activate price protection, or transfer gold.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activityRecords.map(renderCertRow)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <CertificateDetailModal
+        certificate={selectedCertificate}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
       />
     </div>
   );

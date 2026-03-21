@@ -830,6 +830,22 @@ export default function VaultActivityList() {
     return tx.type;
   };
 
+  const getTxSubtitle = (tx: VaultTransaction): string => {
+    if (tx.type === 'Swap') {
+      const toFGPW = tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW');
+      const toLGPW = tx.description?.includes('FGPW to LGPW') || tx.description?.includes('FGPW To LGPW');
+      const priceStr = tx.goldPriceUsdPerGram ? ` · $${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g locked` : '';
+      if (toFGPW) return `Price Protection Activated${priceStr}`;
+      if (toLGPW) return `Price Protection Removed${priceStr}`;
+    }
+    if (tx.recipientEmail) return `To: ${tx.recipientEmail}`;
+    if (tx.senderEmail) return `From: ${tx.senderEmail}`;
+    const bnslCert = tx.certificates.find(c => c.type === 'BNSL Lock');
+    if (bnslCert) return `BNSL Plan · ${bnslCert.certificateNumber}`;
+    if (tx.certificates.length > 0) return tx.certificates[0].certificateNumber;
+    return tx.description || new Date(tx.createdAt).toLocaleDateString();
+  };
+
   // Render a single transaction row
   const renderTransactionRow = (tx: VaultTransaction, isNested: boolean = false) => (
     <div
@@ -869,8 +885,8 @@ export default function VaultActivityList() {
               </Badge>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">
-            {tx.description || (tx.recipientEmail ? `To: ${tx.recipientEmail}` : tx.senderEmail ? `From: ${tx.senderEmail}` : new Date(tx.createdAt).toLocaleString())}
+          <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-none mt-0.5">
+            {getTxSubtitle(tx)}
           </p>
         </div>
       </div>

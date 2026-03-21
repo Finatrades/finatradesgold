@@ -23,6 +23,9 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   // Calculate deposit fee if not provided (0.5% for bank deposits)
   const isDeposit = transaction.type === 'Deposit' || transaction.description?.includes('Bank Deposit');
   const calculatedFee = isDeposit && !transaction.feeUsd ? Number(transaction.amountUsd || 0) * 0.005 : Number(transaction.feeUsd || 0);
+  const isActivating = transaction.type === 'Swap' && (transaction.description?.includes('LGPW to FGPW') || transaction.description?.includes('LGPW To FGPW'));
+  const isRemoving = transaction.type === 'Swap' && (transaction.description?.includes('FGPW to LGPW') || transaction.description?.includes('FGPW To LGPW'));
+  const isConversion = isActivating || isRemoving;
   
   const displayGoldGrams = Number(transaction.amountGrams) || (goldPrice > 0 ? Number(transaction.amountUsd || 0) / goldPrice : 0);
 
@@ -217,8 +220,10 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Transaction Type</span>
               <span className="font-medium">
-                {transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer') 
-                  ? 'Bank Deposit' 
+                {isActivating ? 'Price Protection Activated'
+                  : isRemoving ? 'Price Protection Removed'
+                  : transaction.description?.includes('Bank Deposit') || transaction.description?.includes('Bank Transfer')
+                  ? 'Bank Deposit'
                   : `${transaction.type} ${transaction.assetType === 'GOLD' ? 'Gold' : 'USD'}`}
               </span>
             </div>
@@ -246,10 +251,24 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
                 </div>
               </>
             )}
+            {isConversion && transaction.amountGrams && Number(transaction.amountGrams) > 0 && (
+              <>
+                <Separator className="bg-border" />
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Gold Moved</span>
+                  <span className="font-medium text-amber-600">{Number(transaction.amountGrams).toFixed(4)} g</span>
+                </div>
+                <Separator className="bg-border" />
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Direction</span>
+                  <span className="font-medium">{isActivating ? 'Live Price → Price Protection' : 'Price Protection → Live Price'}</span>
+                </div>
+              </>
+            )}
              <Separator className="bg-border" />
              <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">{isDeposit ? 'Deposit Fee (0.5%)' : 'Network Fee'}</span>
-              <span className="font-medium text-muted-foreground">${calculatedFee.toFixed(2)}</span>
+              <span className="font-medium text-muted-foreground">{isConversion ? 'No fee' : `$${calculatedFee.toFixed(2)}`}</span>
             </div>
           </div>
 

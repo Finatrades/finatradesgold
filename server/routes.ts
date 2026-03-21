@@ -1633,6 +1633,17 @@ export async function registerRoutes(
           await storage.updateBnslPlan(plan.id, { status: 'Maturing' });
           plansMatured++;
           console.log(`[BNSL Auto-Process] Plan ${plan.contractId} marked as Maturing`);
+          // Bell notification
+          try {
+            await storage.createNotification({
+              userId: plan.userId,
+              title: 'BNSL Plan Has Matured',
+              message: `Your BNSL plan (${plan.contractId}) has reached its maturity date and is now pending final settlement. Our team will process it shortly.`,
+              type: 'info',
+              link: '/finavault',
+              read: false,
+            });
+          } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
         }
         
         // Check for due payouts

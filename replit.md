@@ -40,7 +40,7 @@ All deposit approvals (bank transfer, card, crypto, physical gold) must go throu
 - **MPGW → FPGW Lock**: Users can lock MPGW gold at the current market price via `POST /api/wallet/mpgw-to-fpgw` (or `/api/dual-wallet/transfer` with `fromWalletType='LGPW'`). Creates a new `fpgw_batch` record at the live gold price.
 - **FPGW → MPGW Unlock**: Users can unlock FPGW gold back to market price via `POST /api/wallet/fpgw-to-mpgw` (or `/api/dual-wallet/transfer` with `fromWalletType='FGPW'`). Consumes FIFO batches and credits MPGW.
 - Both operations create `Swap` type transactions with `sourceModule='dual-wallet'` and vault ledger entries with actions `LGPW_To_FGPW` / `FGPW_To_LGPW`.
-- Transaction history displays these as "Lock Gold Price (MPGW → FPGW)" and "Unlock Gold Price (FPGW → MPGW)" using `sourceModule` + description prefix detection.
+- Transaction history displays these as "Price Protection Activated" and "Price Protection Removed" with smart subtitles per transaction type.
 - **BNSL Wallet** = `bnsl_wallets` table — gold transferred from FinaPay for BNSL plans (available + locked sub-balances).
 - **FinaBridge** = `vault_ownership_summary.finaBridgeAvailableGrams` — gold reserved for trade finance.
 - **FinaCard** = `finacard_accounts.goldGrams` — gold backing the physical card.
