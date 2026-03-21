@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { useBranding } from '@/context/BrandingContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +69,8 @@ export interface CertificateDetailModalProps {
 
 export function CertificateDetailModal({ certificate, open, onOpenChange }: CertificateDetailModalProps) {
   const { toast } = useToast();
+  const { settings: brandingSettings } = useBranding();
+  const logoUrl = brandingSettings?.logoUrl || 'https://pub-37061337f46b4aeca26cb47a9ab5190b.r2.dev/branding/finatrades-logo-purple.png';
   const [isGenerating, setIsGenerating] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
   
@@ -413,6 +416,16 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
           </div>
 
           <div className="text-center space-y-4 mb-10 relative z-10">
+            {/* Finatrades Logo — center-top on all certificates */}
+            <div className="flex justify-center mb-2 pt-2">
+              <img
+                src={logoUrl}
+                alt="Finatrades"
+                className="h-7 w-auto object-contain"
+                style={{ filter: 'brightness(0) invert(1)', opacity: 0.85 }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center border"
                 style={{ backgroundColor: `${certTheme.accent}15`, borderColor: certTheme.accent }}
