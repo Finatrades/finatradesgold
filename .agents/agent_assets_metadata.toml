@@ -6,3 +6,9 @@ id = "lUs0WMecvBtaZdPuDacO8"
 uri = "file://.local/proposal/FinaBridge_Trade_Credit_Proposal.pdf"
 type = "pdf"
 title = "FinaBridge Trade Credit & AI-Powered Deal Room — Board Proposal (Fixed)"
+
+[[outputs]]
+id = "10MU4T3_-hNnWBsy99n6B"
+uri = "file://FinaBridge_OptionD_Chairman_Brief.pdf"
+type = "pdf"
+title = "FinaBridge Option D — Chairman Briefing Document"
