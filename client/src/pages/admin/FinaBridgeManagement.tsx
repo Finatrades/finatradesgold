@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Briefcase, CheckCircle, XCircle, TrendingUp, 
   Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle,
-  ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3, MessageCircle
+  ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3, MessageCircle,
+  ShieldCheck, ShieldAlert, Bot, User, Award, ExternalLink, FileText
 } from 'lucide-react';
 import DealRoom from '@/components/finabridge/DealRoom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -38,6 +40,23 @@ interface TradeRequest {
     companyName: string | null;
   };
   proposalCount: number;
+  // Option D fields
+  paymentInstrumentType?: string | null;
+  supportingDocumentUrl?: string | null;
+  aiVerificationStatus?: string | null;
+  aiFraudScore?: string | null;
+  aiExtractedData?: string | null;
+  aiRejectionReason?: string | null;
+  tier1Status?: string | null;
+  tier1Notes?: string | null;
+  tier1ReviewedBy?: string | null;
+  tier2Status?: string | null;
+  tier2Notes?: string | null;
+  tier2ReviewedBy?: string | null;
+  tier3Status?: string | null;
+  tier3Notes?: string | null;
+  tier3ReviewedBy?: string | null;
+  publishedToExporters?: boolean | null;
 }
 
 interface TradeProposal {
@@ -138,6 +157,18 @@ export default function FinaBridgeManagement() {
     request: TradeRequest;
   } | null>(null);
 
+  // Option D — Tier Review State
+  const [tierRequests, setTierRequests] = useState<TradeRequest[]>([]);
+  const [tierReviewLoading, setTierReviewLoading] = useState(false);
+  const [tierActionDialog, setTierActionDialog] = useState<{
+    request: TradeRequest;
+    tier: 1 | 2 | 3;
+    action: 'approve' | 'reject';
+  } | null>(null);
+  const [tierNotes, setTierNotes] = useState('');
+  const [tierActioning, setTierActioning] = useState(false);
+  const [expandedTierRequest, setExpandedTierRequest] = useState<string | null>(null);
+
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
     { key: 'trade_license', label: 'Trade License' },
@@ -181,6 +212,43 @@ export default function FinaBridgeManagement() {
       setDisclaimerUsers(data.users || []);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load disclaimer acceptances', variant: 'destructive' });
+    }
+  };
+
+  const fetchTierRequests = async () => {
+    setTierReviewLoading(true);
+    try {
+      const res = await apiRequest('GET', '/api/admin/finabridge/tier-review');
+      const data = await res.json();
+      setTierRequests(data.requests || []);
+    } catch (err) {
+      console.error('Failed to load tier review requests:', err);
+    } finally {
+      setTierReviewLoading(false);
+    }
+  };
+
+  const handleTierAction = async () => {
+    if (!tierActionDialog) return;
+    const { request, tier, action } = tierActionDialog;
+    setTierActioning(true);
+    try {
+      const endpoint = `/api/admin/finabridge/requests/${request.id}/tier${tier}-${action}`;
+      await apiRequest('POST', endpoint, { notes: tierNotes, reviewedBy: user?.firstName || undefined });
+      toast({
+        title: action === 'approve' ? 'Approved ✓' : 'Rejected',
+        description: action === 'approve'
+          ? tier === 3 ? 'Trade is now live on the exporter marketplace' : `Escalated to Tier ${tier + 1} reviewer`
+          : 'Importer has been notified',
+      });
+      setTierActionDialog(null);
+      setTierNotes('');
+      fetchTierRequests();
+      fetchRequests();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Action failed', variant: 'destructive' });
+    } finally {
+      setTierActioning(false);
     }
   };
 
@@ -234,12 +302,14 @@ export default function FinaBridgeManagement() {
     fetchDisclaimerUsers();
     fetchDealRooms();
     fetchSettlementHolds();
+    fetchTierRequests();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchRequests();
       fetchDisclaimerUsers();
       fetchDealRooms();
       fetchSettlementHolds();
+      fetchTierRequests();
     }, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
@@ -365,8 +435,27 @@ export default function FinaBridgeManagement() {
       case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
       case 'Declined': return 'bg-gray-100 text-gray-700';
+      // Option D statuses
+      case 'AI Review': return 'bg-blue-100 text-blue-800';
+      case 'AI Rejected': return 'bg-red-100 text-red-800';
+      case 'Tier 1 Review': return 'bg-amber-100 text-amber-800';
+      case 'Tier 2 Review': return 'bg-orange-100 text-orange-800';
+      case 'Tier 3 Review': return 'bg-yellow-100 text-yellow-900';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  const getFraudScoreColor = (score: string | null | undefined) => {
+    if (!score) return 'text-gray-500';
+    const n = parseFloat(score);
+    if (n <= 20) return 'text-green-600';
+    if (n <= 50) return 'text-amber-600';
+    return 'text-red-600';
+  };
+
+  const parseTierAiData = (aiExtractedData: string | null | undefined) => {
+    if (!aiExtractedData) return null;
+    try { return JSON.parse(aiExtractedData); } catch { return null; }
   };
 
   const stats = {
@@ -375,6 +464,7 @@ export default function FinaBridgeManagement() {
     awaitingImporter: requests.filter(r => r.status === 'Awaiting Importer').length,
     activeTrades: requests.filter(r => r.status === 'Active Trade').length,
     completed: requests.filter(r => r.status === 'Completed').length,
+    tierPending: tierRequests.filter(r => ['Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review', 'AI Review'].includes(r.status)).length,
   };
 
   return (
@@ -396,7 +486,7 @@ export default function FinaBridgeManagement() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold">{stats.total}</p>
@@ -427,15 +517,45 @@ export default function FinaBridgeManagement() {
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
+          <Card className={stats.tierPending > 0 ? 'border-amber-300 bg-amber-50' : ''}>
+            <CardContent className="p-4 text-center">
+              <p className={`text-2xl font-bold ${stats.tierPending > 0 ? 'text-amber-600' : 'text-gray-400'}`}>{stats.tierPending}</p>
+              <p className="text-xs text-muted-foreground">Pending Review</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="all">All Requests</TabsTrigger>
             <TabsTrigger value="review">Needs Review</TabsTrigger>
             <TabsTrigger value="active">Active Trades</TabsTrigger>
             <TabsTrigger value="dealrooms">Deal Rooms ({dealRooms.length})</TabsTrigger>
-            <TabsTrigger value="disclaimer">Disclaimer Acceptance</TabsTrigger>
+            <TabsTrigger value="tier1" className="relative">
+              Tier 1 — Macy
+              {tierRequests.filter(r => r.status === 'Tier 1 Review').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-amber-500 text-white rounded-full">
+                  {tierRequests.filter(r => r.status === 'Tier 1 Review').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="tier2" className="relative">
+              Tier 2 — Farah
+              {tierRequests.filter(r => r.status === 'Tier 2 Review').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-orange-500 text-white rounded-full">
+                  {tierRequests.filter(r => r.status === 'Tier 2 Review').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="tier3" className="relative">
+              Final — Reda
+              {tierRequests.filter(r => r.status === 'Tier 3 Review').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-yellow-600 text-white rounded-full">
+                  {tierRequests.filter(r => r.status === 'Tier 3 Review').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="disclaimer">Disclaimer</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-4">
@@ -697,6 +817,372 @@ export default function FinaBridgeManagement() {
               </Card>
             )}
           </TabsContent>
+
+          {/* ——————————————————————————————————————————————
+              OPTION D — TIER 1 REVIEW (Macy)
+          —————————————————————————————————————————————— */}
+          <TabsContent value="tier1" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <ShieldCheck className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="font-semibold text-amber-900">Tier 1 Compliance Review — Macy</p>
+                  <p className="text-sm text-amber-700">Review AI verification results and supporting documents. Approve to escalate to Farah (Tier 2) or reject to notify the importer.</p>
+                </div>
+              </div>
+
+              {tierReviewLoading ? (
+                <Card><CardContent className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 1 Review').length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No applications awaiting Tier 1 review.</p>
+                </CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 1 Review').map((request) => {
+                const aiData = parseTierAiData(request.aiExtractedData);
+                const isExpanded = expandedTierRequest === request.id;
+                return (
+                  <Card key={request.id} className="border-amber-200">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge className="bg-amber-100 text-amber-800 font-mono">{request.tradeRefId}</Badge>
+                            <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                            {request.paymentInstrumentType && (
+                              <Badge variant="outline" className="text-xs">{request.paymentInstrumentType}</Badge>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-lg">{request.goodsName}</h3>
+                          <p className="text-sm text-muted-foreground">{request.importer?.companyName || request.importer?.fullName}</p>
+                          <div className="flex gap-6 mt-2 text-sm">
+                            <span className="font-semibold">${parseFloat(request.tradeValueUsd).toLocaleString()}</span>
+                            <span className="text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {request.aiFraudScore && (
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Fraud Score</p>
+                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                {parseFloat(request.aiFraudScore).toFixed(0)}/100
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setExpandedTierRequest(isExpanded ? null : request.id)}>
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              {isExpanded ? 'Less' : 'AI Report'}
+                            </Button>
+                            {request.supportingDocumentUrl && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
+                                  <FileText className="w-4 h-4 mr-1" /> Doc
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700"
+                              onClick={() => setTierActionDialog({ request, tier: 1, action: 'approve' })}>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                            <Button size="sm" variant="destructive"
+                              onClick={() => setTierActionDialog({ request, tier: 1, action: 'reject' })}>
+                              <XCircle className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <p className="text-xs font-semibold text-blue-700 mb-1 flex items-center gap-1"><Bot className="w-3 h-3" /> AI Verification</p>
+                              <p className="text-sm text-blue-900 font-bold">{request.aiVerificationStatus || 'Pending'}</p>
+                              {request.aiRejectionReason && <p className="text-xs text-red-600 mt-1">{request.aiRejectionReason}</p>}
+                            </div>
+                            {request.aiFraudScore && (
+                              <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Fraud Risk Score</p>
+                                <p className={`text-2xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                  {parseFloat(request.aiFraudScore).toFixed(1)} / 100
+                                </p>
+                                <p className="text-xs text-gray-500">{parseFloat(request.aiFraudScore) <= 20 ? 'Low risk' : parseFloat(request.aiFraudScore) <= 50 ? 'Medium risk' : 'High risk'}</p>
+                              </div>
+                            )}
+                          </div>
+                          {aiData && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-xs font-semibold text-gray-600 mb-2">AI Extracted Document Data</p>
+                              <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-40">{JSON.stringify(aiData, null, 2)}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          {/* ——————————————————————————————————————————————
+              OPTION D — TIER 2 REVIEW (Farah)
+          —————————————————————————————————————————————— */}
+          <TabsContent value="tier2" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <ShieldCheck className="w-5 h-5 text-orange-600" />
+                <div>
+                  <p className="font-semibold text-orange-900">Tier 2 Senior Compliance Review — Farah Hashim</p>
+                  <p className="text-sm text-orange-700">These applications passed Macy's Tier 1 review. Review all documentation and Tier 1 notes before approving for Director sign-off.</p>
+                </div>
+              </div>
+
+              {tierReviewLoading ? (
+                <Card><CardContent className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 2 Review').length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No applications awaiting Tier 2 review.</p>
+                </CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 2 Review').map((request) => {
+                const aiData = parseTierAiData(request.aiExtractedData);
+                const isExpanded = expandedTierRequest === request.id;
+                return (
+                  <Card key={request.id} className="border-orange-200">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge className="bg-orange-100 text-orange-800 font-mono">{request.tradeRefId}</Badge>
+                            <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                            {request.paymentInstrumentType && <Badge variant="outline" className="text-xs">{request.paymentInstrumentType}</Badge>}
+                          </div>
+                          <h3 className="font-bold text-lg">{request.goodsName}</h3>
+                          <p className="text-sm text-muted-foreground">{request.importer?.companyName || request.importer?.fullName}</p>
+                          <div className="flex gap-6 mt-2 text-sm">
+                            <span className="font-semibold">${parseFloat(request.tradeValueUsd).toLocaleString()}</span>
+                            <span className="text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</span>
+                          </div>
+                          {request.tier1Notes && (
+                            <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                              <span className="font-semibold text-amber-800">Macy's Notes (Tier 1):</span>{' '}
+                              <span className="text-amber-700">{request.tier1Notes}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {request.aiFraudScore && (
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Fraud Score</p>
+                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                {parseFloat(request.aiFraudScore).toFixed(0)}/100
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setExpandedTierRequest(isExpanded ? null : request.id)}>
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              {isExpanded ? 'Less' : 'Full Report'}
+                            </Button>
+                            {request.supportingDocumentUrl && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
+                                  <FileText className="w-4 h-4 mr-1" /> Doc
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700"
+                              onClick={() => setTierActionDialog({ request, tier: 2, action: 'approve' })}>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Approve → Reda
+                            </Button>
+                            <Button size="sm" variant="destructive"
+                              onClick={() => setTierActionDialog({ request, tier: 2, action: 'reject' })}>
+                              <XCircle className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t space-y-3">
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                              <p className="text-xs text-green-700 font-semibold">Tier 1 (Macy)</p>
+                              <p className="text-sm font-bold text-green-800">✓ {request.tier1Status || 'Approved'}</p>
+                            </div>
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                              <p className="text-xs text-blue-700 font-semibold">AI Status</p>
+                              <p className="text-sm font-bold text-blue-800">{request.aiVerificationStatus || '—'}</p>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg text-center">
+                              <p className="text-xs text-gray-600 font-semibold">Fraud Score</p>
+                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                {request.aiFraudScore ? `${parseFloat(request.aiFraudScore).toFixed(1)}/100` : '—'}
+                              </p>
+                            </div>
+                          </div>
+                          {aiData && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-xs font-semibold text-gray-600 mb-2">AI Extracted Data</p>
+                              <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-40">{JSON.stringify(aiData, null, 2)}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          {/* ——————————————————————————————————————————————
+              OPTION D — TIER 3 / DIRECTOR FINAL APPROVAL (Reda)
+          —————————————————————————————————————————————— */}
+          <TabsContent value="tier3" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+                <Award className="w-5 h-5 text-yellow-700" />
+                <div>
+                  <p className="font-semibold text-yellow-900">Director Final Approval — Reda</p>
+                  <p className="text-sm text-yellow-700">These applications cleared both Tier 1 and Tier 2 reviews. Your approval publishes the trade to the exporter marketplace and notifies the importer.</p>
+                </div>
+              </div>
+
+              {tierReviewLoading ? (
+                <Card><CardContent className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 3 Review').length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                  <Award className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No applications awaiting Director approval.</p>
+                </CardContent></Card>
+              ) : tierRequests.filter(r => r.status === 'Tier 3 Review').map((request) => {
+                const aiData = parseTierAiData(request.aiExtractedData);
+                const isExpanded = expandedTierRequest === request.id;
+                return (
+                  <Card key={request.id} className="border-yellow-300">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge className="bg-yellow-100 text-yellow-900 font-mono">{request.tradeRefId}</Badge>
+                            <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                            {request.paymentInstrumentType && <Badge variant="outline" className="text-xs">{request.paymentInstrumentType}</Badge>}
+                          </div>
+                          <h3 className="font-bold text-lg">{request.goodsName}</h3>
+                          <p className="text-sm text-muted-foreground">{request.importer?.companyName || request.importer?.fullName}</p>
+                          <div className="flex gap-6 mt-2 text-sm">
+                            <span className="font-bold text-lg">${parseFloat(request.tradeValueUsd).toLocaleString()}</span>
+                            <span className="text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</span>
+                          </div>
+
+                          <div className="flex gap-2 mt-3">
+                            <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-xs text-green-800">
+                              ✓ Tier 1: {request.tier1ReviewedBy || 'Macy'}
+                            </div>
+                            <div className="px-2 py-1 bg-green-100 border border-green-200 rounded text-xs text-green-800">
+                              ✓ Tier 2: {request.tier2ReviewedBy || 'Farah'}
+                            </div>
+                          </div>
+
+                          {(request.tier1Notes || request.tier2Notes) && (
+                            <div className="mt-2 space-y-1">
+                              {request.tier1Notes && (
+                                <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                                  <span className="font-semibold text-amber-800">Tier 1 Notes:</span>{' '}
+                                  <span className="text-amber-700">{request.tier1Notes}</span>
+                                </div>
+                              )}
+                              {request.tier2Notes && (
+                                <div className="p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                                  <span className="font-semibold text-orange-800">Tier 2 Notes:</span>{' '}
+                                  <span className="text-orange-700">{request.tier2Notes}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {request.aiFraudScore && (
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Fraud Score</p>
+                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                {parseFloat(request.aiFraudScore).toFixed(0)}/100
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setExpandedTierRequest(isExpanded ? null : request.id)}>
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              Full Report
+                            </Button>
+                            {request.supportingDocumentUrl && (
+                              <Button size="sm" variant="outline" asChild>
+                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
+                                  <FileText className="w-4 h-4 mr-1" /> Doc
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                              onClick={() => setTierActionDialog({ request, tier: 3, action: 'approve' })}>
+                              <Award className="w-4 h-4 mr-1" /> Approve & Publish
+                            </Button>
+                            <Button size="sm" variant="destructive"
+                              onClick={() => setTierActionDialog({ request, tier: 3, action: 'reject' })}>
+                              <XCircle className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t space-y-3">
+                          <div className="grid grid-cols-4 gap-3">
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                              <p className="text-xs text-green-700 font-semibold">Tier 1</p>
+                              <p className="text-sm font-bold text-green-800">✓ Approved</p>
+                            </div>
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                              <p className="text-xs text-green-700 font-semibold">Tier 2</p>
+                              <p className="text-sm font-bold text-green-800">✓ Approved</p>
+                            </div>
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                              <p className="text-xs text-blue-700 font-semibold">AI Status</p>
+                              <p className="text-sm font-bold text-blue-800">{request.aiVerificationStatus || '—'}</p>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg text-center">
+                              <p className="text-xs text-gray-600 font-semibold">Fraud Score</p>
+                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                {request.aiFraudScore ? `${parseFloat(request.aiFraudScore).toFixed(1)}/100` : '—'}
+                              </p>
+                            </div>
+                          </div>
+                          {aiData && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-xs font-semibold text-gray-600 mb-2">AI Extracted Data</p>
+                              <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-40">{JSON.stringify(aiData, null, 2)}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
         </Tabs>
 
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1146,6 +1632,78 @@ export default function FinaBridgeManagement() {
                 onClick={handleConfirmRelease}
               >
                 Confirm Release
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tier Action Dialog — Approve or Reject */}
+        <Dialog open={!!tierActionDialog} onOpenChange={(open) => { if (!open) { setTierActionDialog(null); setTierNotes(''); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className={`flex items-center gap-2 ${tierActionDialog?.action === 'approve' ? 'text-green-700' : 'text-red-700'}`}>
+                {tierActionDialog?.action === 'approve'
+                  ? <><ShieldCheck className="w-5 h-5" /> Tier {tierActionDialog?.tier} Approval</>
+                  : <><ShieldAlert className="w-5 h-5" /> Reject Application</>
+                }
+              </DialogTitle>
+            </DialogHeader>
+
+            {tierActionDialog && (
+              <div className="space-y-4">
+                <div className="p-3 bg-gray-50 rounded-lg border text-sm space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Trade Ref:</span><span className="font-mono font-bold">{tierActionDialog.request.tradeRefId}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Importer:</span><span>{tierActionDialog.request.importer?.companyName || tierActionDialog.request.importer?.fullName}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Value:</span><span className="font-bold">${parseFloat(tierActionDialog.request.tradeValueUsd).toLocaleString()}</span></div>
+                </div>
+
+                {tierActionDialog.action === 'approve' && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                    {tierActionDialog.tier === 3
+                      ? 'This will publish the trade to the exporter marketplace and notify the importer that their trade is live.'
+                      : `This will escalate the application to Tier ${tierActionDialog.tier + 1} for review. The next reviewer will be notified by email.`
+                    }
+                  </div>
+                )}
+
+                {tierActionDialog.action === 'reject' && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                    The importer will be notified by email with the reason provided below.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {tierActionDialog.action === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason (Required)'}
+                  </label>
+                  <Textarea
+                    value={tierNotes}
+                    onChange={(e) => setTierNotes(e.target.value)}
+                    placeholder={tierActionDialog.action === 'approve'
+                      ? 'Any notes for the next reviewer...'
+                      : 'Explain why this application is being rejected...'}
+                    rows={3}
+                    data-testid="input-tier-notes"
+                  />
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { setTierActionDialog(null); setTierNotes(''); }}>
+                Cancel
+              </Button>
+              <Button
+                className={tierActionDialog?.action === 'approve' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
+                onClick={handleTierAction}
+                disabled={tierActioning || (tierActionDialog?.action === 'reject' && !tierNotes.trim())}
+                data-testid="button-tier-action-confirm"
+              >
+                {tierActioning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {tierActionDialog?.action === 'approve'
+                  ? tierActionDialog?.tier === 3 ? 'Approve & Publish Trade' : `Approve → Tier ${(tierActionDialog?.tier || 0) + 1}`
+                  : 'Reject & Notify Importer'
+                }
               </Button>
             </DialogFooter>
           </DialogContent>

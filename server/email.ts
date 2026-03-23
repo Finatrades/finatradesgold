@@ -788,6 +788,18 @@ export const EMAIL_TEMPLATES = {
   FINABRIDGE_SETTLEMENT_LOCKED: 'finabridge_settlement_locked',
   FINABRIDGE_SETTLEMENT_RELEASED: 'finabridge_settlement_released',
   FINABRIDGE_DEAL_ROOM_CREATED: 'finabridge_deal_room_created',
+
+  // FinaBridge Option D — 13-Email Notification Chain
+  FINABRIDGE_REQUEST_SUBMITTED: 'finabridge_request_submitted',       // #2  submission → admins
+  FINABRIDGE_AI_PASS_ADMIN: 'finabridge_ai_pass_admin',               // #3A AI pass → Macy action
+  FINABRIDGE_AI_REJECTED_IMPORTER: 'finabridge_ai_rejected_importer', // #3B AI fail → importer
+  FINABRIDGE_UNDER_REVIEW_IMPORTER: 'finabridge_under_review_importer', // #4  AI pass → importer FYI
+  FINABRIDGE_TIER1_APPROVED: 'finabridge_tier1_approved',             // #5  Tier1 pass → Farah action
+  FINABRIDGE_TIER2_APPROVED: 'finabridge_tier2_approved',             // #6  Tier2 pass → Reda action
+  FINABRIDGE_TRADE_LIVE: 'finabridge_trade_live',                     // #7  Reda approve → importer live
+  FINABRIDGE_TRADE_LIVE_TEAM: 'finabridge_trade_live_team',           // #7B Reda approve → team FYI
+  FINABRIDGE_SETTLEMENT_EXPORTER: 'finabridge_settlement_exporter',   // #12 settlement → exporter
+  FINABRIDGE_DEAL_ROOM_CLOSED: 'finabridge_deal_room_closed',         // #13 deal room closed → both
   
   // Documents & Certificates
   CERTIFICATE_DELIVERY: 'certificate_delivery',
@@ -2581,6 +2593,425 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     ],
     status: 'published' as const,
   },
+  // ——————————————————————————————————————————————
+  // FinaBridge Option D — 13-Email Notification Chain
+  // ——————————————————————————————————————————————
+
+  // Email #2: New submission — notify all admins
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_REQUEST_SUBMITTED,
+    name: 'FinaBridge Request Submitted (Admin Notification)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[Action Required] New FinaBridge Application — Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">A new FinaBridge trade finance application has been submitted and is pending AI document verification before entering the review pipeline.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #4B0082; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Application Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Goods</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{goods_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Instrument Type</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Submitted</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{submitted_at}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0 0 24px 0;">The AI verification engine will process the uploaded documents. You will be notified when the AI report is ready for Tier 1 review.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{admin_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Application</a>
+      </p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin full name' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer company/name' },
+      { name: 'goods_name', description: 'Goods description' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'instrument_type', description: 'Payment instrument type (LC/POL/WR)' },
+      { name: 'submitted_at', description: 'Submission timestamp' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #3A: AI verification passed — action required for Macy (Tier 1)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN,
+    name: 'FinaBridge AI Verification Passed (Admin Action)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[Tier 1 Review] AI Verified — Ref {{trade_ref}} Awaits Your Approval',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The AI document verification engine has completed its analysis of the FinaBridge application below. The documents have passed initial verification and the case is now queued for <strong>Tier 1 Review</strong>.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">AI Verification Report</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">AI Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #16a34a;">✓ Passed</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Fraud Score</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{fraud_score}} / 100</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Document Type</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;"><strong>Action Required:</strong> Please log in to the admin panel to review the full AI report and either approve or return this application for further documentation.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{admin_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Review Application Now</a>
+      </p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin full name' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'fraud_score', description: 'AI fraud score (0-100)' },
+      { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #3B: AI verification failed — notify importer
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER,
+    name: 'FinaBridge AI Verification Failed (Importer Notification)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Document Verification Issue — Trade Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Thank you for submitting your FinaBridge trade finance application. Our AI document verification system has identified one or more issues with the supporting documents you provided.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Verification Result</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #fecaca;"><td style="padding: 8px 0; color: #6b7280;">Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #dc2626;">Verification Failed</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Reason</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{rejection_reason}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 16px 0;">To proceed with your application, please re-upload clear, legible, and unaltered copies of your document(s). Ensure the document:</p>
+      <ul style="color: #374151; line-height: 1.9; margin: 0 0 24px 0; padding-left: 20px;">
+        <li>Is not expired or altered</li>
+        <li>Clearly shows all required fields (issuer, date, reference numbers)</li>
+        <li>Is in PDF or high-resolution image format</li>
+        <li>Matches the trade details on your application</li>
+      </ul>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Re-upload Documents</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">If you believe this is an error, please contact our compliance team at <a href="mailto:compliance@finatrades.com" style="color: #8A2BE2;">compliance@finatrades.com</a>.</p>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'rejection_reason', description: 'AI rejection reason' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #4: AI pass — importer "under review" confirmation
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_UNDER_REVIEW_IMPORTER,
+    name: 'FinaBridge Application Under Review (Importer)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Application Under Review — Trade Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Your FinaBridge trade finance application has been received and your documents have successfully passed our AI verification stage. Your case has now entered our <strong>compliance review pipeline</strong>.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #4B0082; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Application Status</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Goods</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{goods_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Current Stage</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #8A2BE2;">Compliance Review</td></tr>
+        </table>
+      </div>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 16px 20px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 10px 0; font-size: 13px;">Review Timeline</p>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+          <span style="color: #22c55e; font-size: 18px; margin-right: 10px;">✓</span>
+          <span style="color: #374151; font-size: 13px;">Document submission &amp; AI verification — Complete</span>
+        </div>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+          <span style="color: #8A2BE2; font-size: 18px; margin-right: 10px;">→</span>
+          <span style="color: #374151; font-size: 13px;">Tier 1 compliance review — In progress (1–2 business days)</span>
+        </div>
+        <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+          <span style="color: #d1d5db; font-size: 18px; margin-right: 10px;">○</span>
+          <span style="color: #6b7280; font-size: 13px;">Tier 2 senior compliance review</span>
+        </div>
+        <div style="display: flex; align-items: flex-start;">
+          <span style="color: #d1d5db; font-size: 18px; margin-right: 10px;">○</span>
+          <span style="color: #6b7280; font-size: 13px;">Director approval &amp; trade goes live</span>
+        </div>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">We will notify you at each stage. For questions, contact <a href="mailto:support@finatrades.com" style="color: #8A2BE2;">support@finatrades.com</a>.</p>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'goods_name', description: 'Goods description' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #5: Tier 1 approved — Farah action required
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED,
+    name: 'FinaBridge Tier 1 Approved — Tier 2 Action Required',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[Tier 2 Review] Ref {{trade_ref}} Escalated for Your Approval',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The following FinaBridge application has passed <strong>Tier 1 compliance review</strong> by {{tier1_reviewer}} and requires your senior compliance approval.</p>
+
+      <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #4B0082; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Case Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Instrument</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+          <tr style="border-bottom: 1px solid #ddd6fe;"><td style="padding: 8px 0; color: #6b7280;">Tier 1 Reviewer</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{tier1_reviewer}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Tier 1 Notes</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{tier1_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;"><strong>Action Required:</strong> Please review the full AI report, Tier 1 notes, and supporting documents, then approve or return this case.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{admin_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Review &amp; Approve</a>
+      </p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Tier 2 reviewer name (Farah)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'tier1_reviewer', description: 'Tier 1 reviewer name (Macy)' },
+      { name: 'tier1_notes', description: 'Tier 1 review notes' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #6: Tier 2 approved — Reda action required (Director)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED,
+    name: 'FinaBridge Tier 2 Approved — Director Final Approval',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[Final Approval] FinaBridge Ref {{trade_ref}} — Director Sign-Off Required',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The following FinaBridge application has cleared <strong>both Tier 1 and Tier 2 compliance review</strong> and requires your final Director approval to go live on the platform.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #78350f; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Final Approval Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 16px;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Instrument</td><td style="padding: 8px 0; text-align: right; color: #92400e;">{{instrument_type}}</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 1 (Macy)</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">✓ Approved</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 2 ({{tier2_reviewer}})</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">✓ Approved</td></tr>
+          <tr><td style="padding: 8px 0; color: #78350f;">Tier 2 Notes</td><td style="padding: 8px 0; text-align: right; color: #92400e; font-style: italic;">{{tier2_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;"><strong>Action Required:</strong> Your approval will publish this trade request to the exporter marketplace. Please review all documentation and tier notes before approving.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{admin_url}}" style="background: linear-gradient(135deg, #D4AF37, #b8860b); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Give Final Approval</a>
+      </p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Director name (Reda)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'tier2_reviewer', description: 'Tier 2 reviewer name (Farah)' },
+      { name: 'tier2_notes', description: 'Tier 2 review notes' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #7: Director approved — importer "trade is live"
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE,
+    name: 'FinaBridge Trade Request Now Live (Importer)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Your Trade Request Is Live — Exporters Can Now Respond',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Congratulations! Your FinaBridge trade finance application has been fully approved by our compliance team and is now <strong>live on the exporter marketplace</strong>. Qualified exporters can now submit proposals for your trade.</p>
+
+      <div style="background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Trade Request — Now Live</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Goods</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{goods_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #16a34a;">✓ Open — Accepting Proposals</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 16px 0;">What happens next:</p>
+      <ul style="color: #374151; line-height: 1.9; margin: 0 0 24px 0; padding-left: 20px;">
+        <li>Exporters will review your request and submit competitive proposals</li>
+        <li>Our team will review and shortlist the best proposals for you</li>
+        <li>You will be notified when proposals are ready for your review</li>
+        <li>Once you accept a proposal, gold is locked in escrow and the trade begins</li>
+      </ul>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Track My Trade Request</a>
+      </p>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'goods_name', description: 'Goods description' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #7B: Director approved — team FYI (Macy + Farah)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE_TEAM,
+    name: 'FinaBridge Trade Live — Team Notification',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[FYI] Trade Ref {{trade_ref}} Is Now Live — Approved by {{director_name}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">For your records — the following FinaBridge trade request has received final Director approval from <strong>{{director_name}}</strong> and is now live on the exporter marketplace.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Approved By</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{director_name}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Director Notes</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{director_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">No action required. This is a courtesy notification.</p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Team member name (Macy or Farah)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'director_name', description: 'Director name (Reda)' },
+      { name: 'director_notes', description: 'Director approval notes' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #12: Settlement released — exporter receives gold
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_EXPORTER,
+    name: 'Settlement Gold Received (Exporter)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Gold Settlement Received — Trade Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Excellent news! The settlement gold for your completed trade has been released from escrow and credited to your FinaBridge wallet. Your trade is now successfully concluded.</p>
+
+      <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #F59E0B; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #78350f; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Settlement Receipt</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Gold Received</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 20px;">{{gold_grams}}g</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">USD Equivalent</td><td style="padding: 8px 0; text-align: right; color: #92400e;">${'$'}{{usd_value}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #78350f;">Credited To</td><td style="padding: 8px 0; text-align: right; color: #92400e;">FinaBridge Wallet</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">The gold is now available in your FinaBridge wallet. You may withdraw it to your FinaPay account, sell it, or hold it for future trades.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #D4AF37, #b8860b); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View My Wallet</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">Thank you for trading on FinaBridge. We look forward to your next trade.<br/><strong style="color: #374151;">The FinaTrades Team</strong></p>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'gold_grams', description: 'Gold received in grams' },
+      { name: 'usd_value', description: 'USD value' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #13: Deal room closed — both parties
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CLOSED,
+    name: 'Deal Room Closed',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: 'Deal Room Closed — Trade Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">The Deal Room for trade reference <strong>{{trade_ref}}</strong> has been officially closed by the FinaBridge administration team. All communications and documents within this Deal Room have been archived.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{trade_status}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Closed By</td><td style="padding: 8px 0; text-align: right; color: #374151;">FinaBridge Administration</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Closure Notes</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{closure_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 24px 0;">You may still access archived Deal Room records from your dashboard. All certificates and trade documents remain available for download.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboard_url}}" style="background: linear-gradient(135deg, #8A2BE2, #6D28D9); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Trade Archive</a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">Thank you for using FinaBridge. If you have any questions, contact <a href="mailto:support@finatrades.com" style="color: #8A2BE2;">support@finatrades.com</a>.</p>
+    `,
+    variables: [
+      { name: 'user_name', description: "User's full name" },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'trade_status', description: 'Final trade status' },
+      { name: 'closure_notes', description: 'Admin closure notes' },
+      { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+
   // KYC Pending
   {
     slug: EMAIL_TEMPLATES.KYC_PENDING_REVIEW,

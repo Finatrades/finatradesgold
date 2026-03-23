@@ -14124,6 +14124,28 @@ export async function registerRoutes(
         type: 'info',
         link: '/admin/finabridge',
       });
+
+      // Email #2 — notify all 3 admins of new submission
+      try {
+        const adminEmails = [
+          { email: 'macy@finatrades.com', name: 'Macy' },
+          { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+          { email: 'reda@finatrades.com', name: 'Reda' },
+        ];
+        const importerName = importerUser?.companyName || `${importerUser?.firstName || ''} ${importerUser?.lastName || ''}`.trim() || 'Importer';
+        for (const admin of adminEmails) {
+          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_REQUEST_SUBMITTED, {
+            admin_name: admin.name,
+            trade_ref: request.tradeRefId,
+            importer_name: importerName,
+            goods_name: request.goodsName,
+            trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+            instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+            submitted_at: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            admin_url: '/admin/finabridge',
+          }).catch(err => console.error('[Email] FinaBridge submission admin notification failed:', err));
+        }
+      } catch (e) { console.error('[Email] Failed to send FinaBridge submission emails:', e); }
       
       res.json({ tradeRequest: updated });
     } catch (error) {
@@ -14285,6 +14307,17 @@ export async function registerRoutes(
             trade_value: parseFloat(request.tradeValueUsd).toLocaleString(),
             deal_room_url: `/finabridge/deals/${dealRoom.id}`,
           }, { userId: proposal.exporterUserId, recipientName: exporterUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge proposal accepted email failed:', err));
+        }
+
+        // Email #9 — notify importer their gold is now locked in escrow
+        if (importerUser?.email) {
+          sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_LOCKED, {
+            user_name: `${importerUser.firstName || ''} ${importerUser.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: request.tradeRefId,
+            gold_grams: parseFloat(request.settlementGoldGrams).toFixed(3),
+            usd_value: parseFloat(request.tradeValueUsd).toLocaleString(),
+            expiry_date: 'Upon trade completion',
+          }, { userId: request.importerUserId, recipientName: importerUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge gold locked importer email failed:', err));
         }
       } catch (e) { console.error('[Notification] Failed to create proposal accepted notification:', e); }
       
@@ -14762,6 +14795,360 @@ export async function registerRoutes(
     }
   });
   
+  // ——————————————————————————————————————————————
+  // OPTION D — AI VERIFICATION CALLBACK
+  // Called by the BullMQ AI worker (Task #34) when verification completes
+  // ——————————————————————————————————————————————
+
+  // Internal callback: AI verification completed
+  app.post("/api/admin/finabridge/requests/:id/ai-callback", async (req, res) => {
+    try {
+      const { aiStatus, fraudScore, extractedData, rejectionReason } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+
+      const importer = await storage.getUser(request.importerUserId);
+      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
+      const adminUrl = '/admin/finabridge';
+
+      if (aiStatus === 'Pass') {
+        // Update request to Tier 1 Review
+        await storage.updateTradeRequest(req.params.id, {
+          status: 'Tier 1 Review',
+          aiVerificationStatus: 'Pass',
+          aiFraudScore: fraudScore?.toString() || null,
+          aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
+        } as any);
+
+        // Email #3A — AI pass → Macy action required (CC Farah, Reda)
+        const adminsToNotify = [
+          { email: 'macy@finatrades.com', name: 'Macy' },
+          { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+          { email: 'reda@finatrades.com', name: 'Reda' },
+        ];
+        for (const admin of adminsToNotify) {
+          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN, {
+            admin_name: admin.name,
+            trade_ref: request.tradeRefId,
+            importer_name: importerName,
+            fraud_score: fraudScore?.toFixed(1) || '0',
+            instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+            admin_url: adminUrl,
+          }).catch(err => console.error('[Email] AI pass admin email failed:', err));
+        }
+
+        // Email #4 — importer "under review"
+        if (importer?.email) {
+          sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_UNDER_REVIEW_IMPORTER, {
+            user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: request.tradeRefId,
+            goods_name: request.goodsName,
+            trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+          }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Under review importer email failed:', err));
+        }
+
+      } else {
+        // AI failed — update request to AI Rejected
+        await storage.updateTradeRequest(req.params.id, {
+          status: 'AI Rejected',
+          aiVerificationStatus: 'Fail',
+          aiFraudScore: fraudScore?.toString() || null,
+          aiRejectionReason: rejectionReason || 'Document verification failed',
+          aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
+        } as any);
+
+        // Email #3B — AI fail → importer notification
+        if (importer?.email) {
+          sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
+            user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: request.tradeRefId,
+            rejection_reason: rejectionReason || 'Document verification could not be completed',
+            dashboard_url: '/finabridge',
+          }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] AI rejected importer email failed:', err));
+        }
+
+        // Notify all admins of AI failure
+        const failAdmins = [
+          { email: 'macy@finatrades.com', name: 'Macy' },
+          { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+        ];
+        for (const admin of failAdmins) {
+          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
+            user_name: admin.name,
+            trade_ref: request.tradeRefId,
+            rejection_reason: `[Admin copy] AI rejected ${importerName}'s application. Reason: ${rejectionReason || 'Unknown'}`,
+            dashboard_url: adminUrl,
+          }).catch(err => console.error('[Email] AI fail admin copy email failed:', err));
+        }
+      }
+
+      res.json({ message: `AI callback processed — status updated to ${aiStatus === 'Pass' ? 'Tier 1 Review' : 'AI Rejected'}` });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process AI callback" });
+    }
+  });
+
+  // ——————————————————————————————————————————————
+  // OPTION D — THREE-TIER REVIEW ROUTES
+  // Tier 1: Macy (macy@finatrades.com)
+  // Tier 2: Farah (farah@finatrades.com)
+  // Tier 3: Reda / Director (reda@finatrades.com)
+  // ——————————————————————————————————————————————
+
+  // Get all requests currently in any tier review stage (AI Review → Tier 3 Review)
+  app.get("/api/admin/finabridge/tier-review", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const allRequests = await storage.getAllTradeRequests();
+      const tierStatuses = ['AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review'];
+      const tierRequests = allRequests.filter(r => tierStatuses.includes(r.status));
+
+      const enriched = await Promise.all(tierRequests.map(async (request) => {
+        const importer = await storage.getUser(request.importerUserId);
+        return {
+          ...request,
+          importer: importer ? {
+            id: importer.id,
+            finatradesId: importer.finatradesId,
+            fullName: `${importer.firstName} ${importer.lastName}`.trim(),
+            email: importer.email,
+            companyName: importer.companyName,
+          } : null,
+        };
+      }));
+
+      res.json({ requests: enriched });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get tier review requests" });
+    }
+  });
+
+  // Tier 1 Approve (Macy → move to Tier 2 Review, notify Farah)
+  app.post("/api/admin/finabridge/requests/:id/tier1-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+      if (request.status !== 'Tier 1 Review') return res.status(400).json({ message: "Request is not in Tier 1 Review status" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'Tier 2 Review',
+        tier1Status: 'Approved',
+        tier1Notes: notes || '',
+        tier1ReviewedBy: reviewedBy || 'Macy',
+      } as any);
+
+      // Email #5 — notify Farah (Tier 2) with Macy's notes
+      const importer = await storage.getUser(request.importerUserId);
+      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
+      sendEmail('farah@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
+        admin_name: 'Farah Hashim',
+        trade_ref: request.tradeRefId,
+        importer_name: importerName,
+        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+        tier1_reviewer: reviewedBy || 'Macy',
+        tier1_notes: notes || 'No notes provided',
+        admin_url: '/admin/finabridge',
+      }).catch(err => console.error('[Email] Tier1 approve email to Farah failed:', err));
+
+      // Notify Reda as CC
+      sendEmail('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
+        admin_name: 'Reda',
+        trade_ref: request.tradeRefId,
+        importer_name: importerName,
+        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+        tier1_reviewer: reviewedBy || 'Macy',
+        tier1_notes: notes || 'No notes provided',
+        admin_url: '/admin/finabridge',
+      }).catch(err => console.error('[Email] Tier1 approve CC to Reda failed:', err));
+
+      res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
+    }
+  });
+
+  // Tier 1 Reject (Macy → return to importer or AI Rejected)
+  app.post("/api/admin/finabridge/requests/:id/tier1-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'AI Rejected',
+        tier1Status: 'Rejected',
+        tier1Notes: notes || '',
+        tier1ReviewedBy: reviewedBy || 'Macy',
+      } as any);
+
+      // Notify importer of rejection
+      const importer = await storage.getUser(request.importerUserId);
+      if (importer?.email) {
+        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
+          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+          trade_ref: request.tradeRefId,
+          rejection_reason: notes || 'Application did not meet compliance requirements',
+          dashboard_url: '/finabridge',
+        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier1 rejection importer email failed:', err));
+      }
+
+      res.json({ message: "Tier 1 rejected — importer notified" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 1" });
+    }
+  });
+
+  // Tier 2 Approve (Farah → move to Tier 3 Review, notify Reda)
+  app.post("/api/admin/finabridge/requests/:id/tier2-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+      if (request.status !== 'Tier 2 Review') return res.status(400).json({ message: "Request is not in Tier 2 Review status" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'Tier 3 Review',
+        tier2Status: 'Approved',
+        tier2Notes: notes || '',
+        tier2ReviewedBy: reviewedBy || 'Farah',
+      } as any);
+
+      // Email #6 — notify Reda (Director) for final approval
+      const importer = await storage.getUser(request.importerUserId);
+      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
+      sendEmail('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED, {
+        admin_name: 'Reda',
+        trade_ref: request.tradeRefId,
+        importer_name: importerName,
+        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+        tier2_reviewer: reviewedBy || 'Farah',
+        tier2_notes: notes || 'No notes provided',
+        admin_url: '/admin/finabridge',
+      }).catch(err => console.error('[Email] Tier2 approve email to Reda failed:', err));
+
+      res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
+    }
+  });
+
+  // Tier 2 Reject (Farah → return to importer)
+  app.post("/api/admin/finabridge/requests/:id/tier2-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'AI Rejected',
+        tier2Status: 'Rejected',
+        tier2Notes: notes || '',
+        tier2ReviewedBy: reviewedBy || 'Farah',
+      } as any);
+
+      const importer = await storage.getUser(request.importerUserId);
+      if (importer?.email) {
+        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
+          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+          trade_ref: request.tradeRefId,
+          rejection_reason: notes || 'Application did not meet senior compliance requirements',
+          dashboard_url: '/finabridge',
+        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier2 rejection importer email failed:', err));
+      }
+
+      res.json({ message: "Tier 2 rejected — importer notified" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
+    }
+  });
+
+  // Tier 3 (Director) Approve (Reda → trade goes live on exporter marketplace)
+  app.post("/api/admin/finabridge/requests/:id/tier3-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+      if (request.status !== 'Tier 3 Review') return res.status(400).json({ message: "Request is not in Tier 3 Review status" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'Open',
+        publishedToExporters: true,
+        tier3Status: 'Approved',
+        tier3Notes: notes || '',
+        tier3ReviewedBy: reviewedBy || 'Reda',
+      } as any);
+
+      const importer = await storage.getUser(request.importerUserId);
+      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
+      const directorName = reviewedBy || 'Reda';
+
+      // Email #7 — notify importer trade is now live
+      if (importer?.email) {
+        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE, {
+          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+          trade_ref: request.tradeRefId,
+          goods_name: request.goodsName,
+          trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+          dashboard_url: '/finabridge',
+        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Trade live importer email failed:', err));
+      }
+
+      // Email #7B — notify Macy and Farah (FYI)
+      const teamEmails = [
+        { email: 'macy@finatrades.com', name: 'Macy' },
+        { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+      ];
+      for (const teamMember of teamEmails) {
+        sendEmail(teamMember.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE_TEAM, {
+          admin_name: teamMember.name,
+          trade_ref: request.tradeRefId,
+          importer_name: importerName,
+          trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
+          director_name: directorName,
+          director_notes: notes || 'No notes',
+        }).catch(err => console.error('[Email] Trade live team FYI email failed:', err));
+      }
+
+      res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
+    }
+  });
+
+  // Tier 3 (Director) Reject
+  app.post("/api/admin/finabridge/requests/:id/tier3-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const { notes, reviewedBy } = req.body;
+      const request = await storage.getTradeRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Trade request not found" });
+
+      await storage.updateTradeRequest(req.params.id, {
+        status: 'AI Rejected',
+        tier3Status: 'Rejected',
+        tier3Notes: notes || '',
+        tier3ReviewedBy: reviewedBy || 'Reda',
+      } as any);
+
+      const importer = await storage.getUser(request.importerUserId);
+      if (importer?.email) {
+        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
+          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+          trade_ref: request.tradeRefId,
+          rejection_reason: notes || 'Application did not receive Director approval at this time',
+          dashboard_url: '/finabridge',
+        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier3 rejection importer email failed:', err));
+      }
+
+      res.json({ message: "Director rejected — importer notified" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
+    }
+  });
+
+  // ——————————————————————————————————————————————
   // FINABRIDGE WALLET ENDPOINTS
   
   // Get user's FinaBridge wallet - PROTECTED
@@ -15127,6 +15514,37 @@ export async function registerRoutes(
         await storage.createNotification({ userId: hold.exporterUserId, title: 'Trade Deal Completed', message: completedMsg, type: 'trade', link: completedDealLink, read: false });
       } catch (e) { console.error('[Notification] Failed to create deal completed notification:', e); }
       
+      // Emails #11 (importer) and #12 (exporter) — settlement complete
+      try {
+        const releaseImporter = await storage.getUser(hold.importerUserId);
+        const releaseExporter = await storage.getUser(hold.exporterUserId);
+        const releaseTradeRef = tradeRequest?.tradeRefId || req.params.id;
+        const releaseGoldGrams = lockedAmount.toFixed(3);
+        const releaseUsdValue = tradeValue.toLocaleString();
+
+        // Email #11 — importer trade complete
+        if (releaseImporter?.email) {
+          sendEmail(releaseImporter.email, EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_RELEASED, {
+            user_name: `${releaseImporter.firstName || ''} ${releaseImporter.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: releaseTradeRef,
+            gold_grams: releaseGoldGrams,
+            usd_value: releaseUsdValue,
+            exporter_name: releaseExporter ? `${releaseExporter.firstName || ''} ${releaseExporter.lastName || ''}`.trim() || releaseExporter.companyName || 'Exporter' : 'Exporter',
+          }, { userId: hold.importerUserId, recipientName: releaseImporter.firstName || undefined }).catch(err => console.error('[Email] FinaBridge settlement importer email failed:', err));
+        }
+
+        // Email #12 — exporter receives gold
+        if (releaseExporter?.email) {
+          sendEmail(releaseExporter.email, EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_EXPORTER, {
+            user_name: `${releaseExporter.firstName || ''} ${releaseExporter.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: releaseTradeRef,
+            gold_grams: releaseGoldGrams,
+            usd_value: releaseUsdValue,
+            dashboard_url: '/finabridge',
+          }, { userId: hold.exporterUserId, recipientName: releaseExporter.firstName || undefined }).catch(err => console.error('[Email] FinaBridge settlement exporter email failed:', err));
+        }
+      } catch (e) { console.error('[Email] Failed to send settlement release emails:', e); }
+
       // Generate Trade Release Certificates for both importer and exporter (non-blocking)
       const releasedGoldAmount = lockedAmount;
       const releasePrice = tradeValue > 0 ? tradeValue / releasedGoldAmount : 0;
@@ -16437,6 +16855,26 @@ export async function registerRoutes(
         performedBy: adminId,
         details: { closureNotes, tradeStatus: tradeRequest.status }
       });
+
+      // Email #13 — deal room closed → both importer and exporter
+      try {
+        const proposal = await storage.getTradeProposal(room.acceptedProposalId);
+        const closedImporter = await storage.getUser(room.importerUserId);
+        const closedExporter = proposal ? await storage.getUser(proposal.exporterUserId) : null;
+        const tradeRef = tradeRequest.tradeRefId;
+
+        for (const party of [closedImporter, closedExporter].filter(Boolean)) {
+          if (party?.email) {
+            sendEmail(party.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CLOSED, {
+              user_name: `${party.firstName || ''} ${party.lastName || ''}`.trim() || 'Valued Partner',
+              trade_ref: tradeRef,
+              trade_status: tradeRequest.status,
+              closure_notes: closureNotes || 'Trade successfully completed',
+              dashboard_url: '/finabridge',
+            }, { userId: party.id, recipientName: party.firstName || undefined }).catch(err => console.error('[Email] Deal room closed email failed:', err));
+          }
+        }
+      } catch (e) { console.error('[Email] Failed to send deal room closed emails:', e); }
 
       res.json({ room: closedRoom, message: "Deal room closed successfully" });
     } catch (error) {
