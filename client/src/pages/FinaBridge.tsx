@@ -400,8 +400,11 @@ export default function FinaBridge() {
   const [fundAmount, setFundAmount] = useState('');
   const [insufficientFundsError, setInsufficientFundsError] = useState<string | null>(null);
   
+  const [paymentInstrumentType, setPaymentInstrumentType] = useState('');
+  const [supportingDocument, setSupportingDocument] = useState<File | null>(null);
+  const [documentUploadError, setDocumentUploadError] = useState<string | null>(null);
+
   const [requestForm, setRequestForm] = useState({
-    financeType: 'FinaBridge Finance',
     currency: 'USD',
     paymentTerms: '',
     goodsName: '',
@@ -567,6 +570,17 @@ export default function FinaBridge() {
       return;
     }
 
+    if (!paymentInstrumentType) {
+      toast({ title: 'Missing Fields', description: 'Please select a Payment Instrument Type', variant: 'destructive' });
+      return;
+    }
+
+    const requiresDocument = ['LC', 'POL', 'WR'].includes(paymentInstrumentType);
+    if (requiresDocument && !supportingDocument) {
+      toast({ title: 'Missing Document', description: 'Please upload a supporting document for the selected payment instrument', variant: 'destructive' });
+      return;
+    }
+
     if (!requestForm.suggestExporter) {
       if (!requestForm.exporterCompanyName || !requestForm.exporterEmail || !requestForm.proposedQuotePrice || !requestForm.proposedTimelineDays) {
         toast({ title: 'Missing Exporter Details', description: 'Please fill in exporter company, email, quote price, and timeline', variant: 'destructive' });
@@ -596,6 +610,25 @@ export default function FinaBridge() {
 
     setSubmitting(true);
     try {
+      let supportingDocumentUrl: string | null = null;
+
+      if (supportingDocument) {
+        const formData = new FormData();
+        formData.append('file', supportingDocument);
+        const uploadRes = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload supporting document');
+        }
+        const uploadData = await uploadRes.json();
+        supportingDocumentUrl = uploadData.url;
+      }
+
+      const initialStatus = requiresDocument ? 'AI Review' : 'Tier 1 Review';
+
       const payload = {
         importerUserId: user.id,
         ...requestForm,
@@ -603,7 +636,9 @@ export default function FinaBridge() {
         goldPriceUsdPerGram: requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram 
           ? requestForm.goldPriceUsdPerGram 
           : null,
-        status: 'Draft',
+        paymentInstrumentType,
+        supportingDocumentUrl,
+        status: initialStatus,
       };
 
       const res = await apiRequest('POST', '/api/finabridge/importer/requests', payload);
@@ -616,8 +651,10 @@ export default function FinaBridge() {
         type: 'success'
       });
       
+      setPaymentInstrumentType('');
+      setSupportingDocument(null);
+      setDocumentUploadError(null);
       setRequestForm({
-        financeType: 'FinaBridge Finance',
         currency: 'USD',
         paymentTerms: '',
         goodsName: '',
@@ -1431,14 +1468,22 @@ export default function FinaBridge() {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label className="text-xs font-medium">Finance Type *</label>
+                          <label className="text-xs font-medium">Payment Instrument Type *</label>
                           <select
-                            value={requestForm.financeType}
-                            onChange={(e) => setRequestForm({ ...requestForm, financeType: e.target.value })}
+                            value={paymentInstrumentType}
+                            onChange={(e) => {
+                              setPaymentInstrumentType(e.target.value);
+                              setSupportingDocument(null);
+                              setDocumentUploadError(null);
+                            }}
                             className="w-full p-2 text-sm border rounded-lg bg-white"
-                            data-testid="select-finance-type"
+                            data-testid="select-payment-instrument-type"
                           >
-                            <option value="FinaBridge Finance">FinaBridge Finance</option>
+                            <option value="">— Select —</option>
+                            <option value="LC">Letter of Credit</option>
+                            <option value="POL">Purchase Order Letter</option>
+                            <option value="WR">Warehouse Receipt</option>
+                            <option value="Wallet">FinaBridge Wallet</option>
                           </select>
                         </div>
                         <div className="space-y-1">
@@ -1469,6 +1514,77 @@ export default function FinaBridge() {
                           />
                         </div>
                       </div>
+
+                      {['LC', 'POL', 'WR'].includes(paymentInstrumentType) && (
+                        <div className="mt-3 space-y-1">
+                          <label className="text-xs font-medium">
+                            Supporting Document *{' '}
+                            <span className="text-muted-foreground font-normal">(PDF, JPG, PNG — max 10MB)</span>
+                          </label>
+                          <div
+                            className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                              supportingDocument
+                                ? 'border-green-400 bg-green-50/50'
+                                : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50/60'
+                            }`}
+                            onClick={() => document.getElementById('supporting-doc-input')?.click()}
+                            data-testid="zone-document-upload"
+                          >
+                            <input
+                              id="supporting-doc-input"
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              data-testid="input-supporting-document"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setDocumentUploadError(null);
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    setDocumentUploadError('File exceeds 10MB limit');
+                                    return;
+                                  }
+                                  const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+                                  if (!allowed.includes(file.type)) {
+                                    setDocumentUploadError('Only PDF, JPG, and PNG files are allowed');
+                                    return;
+                                  }
+                                  setSupportingDocument(file);
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                            {supportingDocument ? (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-sm text-green-700">
+                                  <span>✓</span>
+                                  <span>{supportingDocument.name}</span>
+                                  <span className="text-muted-foreground">({(supportingDocument.size / 1024).toFixed(0)} KB)</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="text-xs text-red-500 hover:underline"
+                                  data-testid="button-remove-document"
+                                  onClick={(ev) => { ev.stopPropagation(); setSupportingDocument(null); }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-sm text-blue-700">Click to upload supporting document</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Required for{' '}
+                                  {paymentInstrumentType === 'LC' ? 'Letter of Credit' : paymentInstrumentType === 'POL' ? 'Purchase Order Letter' : 'Warehouse Receipt'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          {documentUploadError && (
+                            <p className="text-xs text-red-500" data-testid="error-document-upload">{documentUploadError}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-3 border rounded-lg bg-green-50/50 border-green-200">

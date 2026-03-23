@@ -14032,7 +14032,30 @@ export async function registerRoutes(
         requestData.importerId = sessionUserId;
         requestData.importerUserId = sessionUserId;
       }
-      
+
+      // Validate paymentInstrumentType
+      const allowedInstruments = ['LC', 'POL', 'WR', 'Wallet'] as const;
+      const pit = requestData.paymentInstrumentType as string | undefined;
+      if (!pit || !allowedInstruments.includes(pit as typeof allowedInstruments[number])) {
+        return res.status(400).json({ message: "paymentInstrumentType must be one of: LC, POL, WR, Wallet" });
+      }
+
+      const documentInstruments = ['LC', 'POL', 'WR'];
+      const requiresDocument = documentInstruments.includes(pit);
+
+      // Validate document presence for instrument types that require it
+      if (requiresDocument && !requestData.supportingDocumentUrl) {
+        return res.status(400).json({ message: "A supporting document URL is required for LC, POL, and WR payment instruments" });
+      }
+
+      // SECURITY: Derive initial status server-side based on paymentInstrumentType and document.
+      // Client-supplied status is ignored — business routing is enforced here.
+      if (requiresDocument) {
+        requestData.status = 'AI Review';
+      } else {
+        requestData.status = 'Tier 1 Review';
+      }
+
       // Validate FinaBridge trade case value limits using PARSED data
       const amountUsd = parseFloat(requestData.tradeValueUsd || "0");
       if (isNaN(amountUsd) || amountUsd <= 0) {

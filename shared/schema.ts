@@ -2293,7 +2293,8 @@ export type TradeDocument = typeof tradeDocuments.$inferSelect;
 // ============================================
 
 export const tradeRequestStatusEnum = pgEnum('trade_request_status', [
-  'Draft', 'Open', 'Proposal Review', 'Awaiting Importer', 'Active Trade', 'Completed', 'Cancelled'
+  'Draft', 'Open', 'Proposal Review', 'Awaiting Importer', 'Active Trade', 'Completed', 'Cancelled',
+  'AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review'
 ]);
 
 export const proposalStatusEnum = pgEnum('proposal_status', [
@@ -2334,7 +2335,31 @@ export const tradeRequests = pgTable("trade_requests", {
   deliveryDeadline: timestamp("delivery_deadline"),
   reminderSentAt: timestamp("reminder_sent_at"),
   isOverdue: boolean("is_overdue").default(false),
-  
+
+  // Payment Instrument & Document
+  paymentInstrumentType: varchar("payment_instrument_type", { length: 50 }),
+  supportingDocumentUrl: text("supporting_document_url"),
+
+  // AI Verification
+  aiVerificationStatus: varchar("ai_verification_status", { length: 50 }),
+  aiFraudScore: decimal("ai_fraud_score", { precision: 5, scale: 2 }),
+  aiExtractedData: text("ai_extracted_data"),
+  aiRejectionReason: text("ai_rejection_reason"),
+
+  // Three-Tier Review
+  tier1Status: varchar("tier1_status", { length: 50 }),
+  tier1Notes: text("tier1_notes"),
+  tier1ReviewedBy: varchar("tier1_reviewed_by", { length: 255 }),
+  tier2Status: varchar("tier2_status", { length: 50 }),
+  tier2Notes: text("tier2_notes"),
+  tier2ReviewedBy: varchar("tier2_reviewed_by", { length: 255 }),
+  tier3Status: varchar("tier3_status", { length: 50 }),
+  tier3Notes: text("tier3_notes"),
+  tier3ReviewedBy: varchar("tier3_reviewed_by", { length: 255 }),
+
+  // Publishing
+  publishedToExporters: boolean("published_to_exporters").default(false),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
