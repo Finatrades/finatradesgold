@@ -358,6 +358,7 @@ export default function FinaBridgeManagement() {
   const [tierNotes, setTierNotes] = useState('');
   const [tierActioning, setTierActioning] = useState(false);
   const [expandedTierRequest, setExpandedTierRequest] = useState<string | null>(null);
+  const [docViewRequest, setDocViewRequest] = useState<TradeRequest | null>(null);
 
   const STANDARD_DOCUMENTS = [
     { key: 'company_registration', label: 'Company Registration Certificate' },
@@ -1187,10 +1188,8 @@ export default function FinaBridgeManagement() {
                               {isExpanded ? 'Less' : 'AI Report'}
                             </Button>
                             {request.supportingDocumentUrl && (
-                              <Button size="sm" variant="outline" asChild>
-                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
-                                  <FileText className="w-4 h-4 mr-1" /> Doc
-                                </a>
+                              <Button size="sm" variant="outline" onClick={() => setDocViewRequest(request)}>
+                                <FileText className="w-4 h-4 mr-1" /> View Doc
                               </Button>
                             )}
                           </div>
@@ -1302,10 +1301,8 @@ export default function FinaBridgeManagement() {
                               {isExpanded ? 'Less' : 'Full Report'}
                             </Button>
                             {request.supportingDocumentUrl && (
-                              <Button size="sm" variant="outline" asChild>
-                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
-                                  <FileText className="w-4 h-4 mr-1" /> Doc
-                                </a>
+                              <Button size="sm" variant="outline" onClick={() => setDocViewRequest(request)}>
+                                <FileText className="w-4 h-4 mr-1" /> View Doc
                               </Button>
                             )}
                           </div>
@@ -1437,10 +1434,8 @@ export default function FinaBridgeManagement() {
                               Full Report
                             </Button>
                             {request.supportingDocumentUrl && (
-                              <Button size="sm" variant="outline" asChild>
-                                <a href={request.supportingDocumentUrl} target="_blank" rel="noopener noreferrer">
-                                  <FileText className="w-4 h-4 mr-1" /> Doc
-                                </a>
+                              <Button size="sm" variant="outline" onClick={() => setDocViewRequest(request)}>
+                                <FileText className="w-4 h-4 mr-1" /> View Doc
                               </Button>
                             )}
                           </div>
@@ -1948,6 +1943,196 @@ export default function FinaBridgeManagement() {
           </DialogContent>
         </Dialog>
 
+        {/* Document + AI Side-by-Side Panel */}
+        <Dialog open={!!docViewRequest} onOpenChange={(open) => { if (!open) setDocViewRequest(null); }}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-5 pb-3 border-b">
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Document Review — {docViewRequest?.tradeRefId}
+                {docViewRequest?.paymentInstrumentType && (
+                  <Badge variant="outline" className="ml-2 text-xs">{docViewRequest.paymentInstrumentType}</Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {docViewRequest && (
+              <div className="flex h-[75vh] overflow-hidden">
+                {/* Left: Document Viewer */}
+                <div className="w-1/2 border-r flex flex-col">
+                  <div className="px-4 py-2 bg-gray-50 border-b">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Supporting Document</p>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    {docViewRequest.supportingDocumentUrl ? (
+                      (() => {
+                        const url = docViewRequest.supportingDocumentUrl;
+                        const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('pdf');
+                        const isImage = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
+                        if (isPdf) {
+                          return (
+                            <iframe
+                              src={url}
+                              className="w-full h-full border-none"
+                              title="Supporting Document"
+                              data-testid="iframe-supporting-document"
+                            />
+                          );
+                        } else if (isImage) {
+                          return (
+                            <div className="w-full h-full overflow-auto p-4">
+                              <img
+                                src={url}
+                                alt="Supporting Document"
+                                className="max-w-full h-auto"
+                                data-testid="img-supporting-document"
+                              />
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 p-6">
+                              <FileText className="w-16 h-16 text-muted-foreground opacity-30" />
+                              <p className="text-muted-foreground text-center text-sm">Preview not available for this file type.</p>
+                              <Button asChild size="sm" variant="outline">
+                                <a href={url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-4 h-4 mr-2" /> Open Document
+                                </a>
+                              </Button>
+                            </div>
+                          );
+                        }
+                      })()
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+                        <FileText className="w-16 h-16 text-muted-foreground opacity-20" />
+                        <p className="text-muted-foreground">No document uploaded</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: AI Report + Reviewer History */}
+                <div className="w-1/2 flex flex-col overflow-hidden">
+                  <div className="px-4 py-2 bg-gray-50 border-b">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">AI Report & Review History</p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Trade Summary */}
+                    <div className="p-3 bg-gray-50 rounded-lg border text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Goods</span>
+                        <span className="font-medium">{docViewRequest.goodsName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Value</span>
+                        <span className="font-bold">${parseFloat(docViewRequest.tradeValueUsd).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Importer</span>
+                        <span>{docViewRequest.importer?.companyName || docViewRequest.importer?.fullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge className={getStatusColor(docViewRequest.status)} data-testid={`status-trade-${docViewRequest.id}`}>{docViewRequest.status}</Badge>
+                      </div>
+                    </div>
+
+                    {/* AI Verification */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                        <Bot className="w-3 h-3" /> AI Verification
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                          <p className="text-xs text-blue-600 font-medium mb-1">Status</p>
+                          <p className="text-sm font-bold text-blue-900">{docViewRequest.aiVerificationStatus || 'Pending'}</p>
+                        </div>
+                        <div className="p-3 rounded-lg border text-center" style={{ background: parseFloat(docViewRequest.aiFraudScore || '0') <= 20 ? '#f0fdf4' : parseFloat(docViewRequest.aiFraudScore || '0') <= 50 ? '#fffbeb' : '#fef2f2' }}>
+                          <p className="text-xs font-medium mb-1" style={{ color: parseFloat(docViewRequest.aiFraudScore || '0') <= 20 ? '#166534' : parseFloat(docViewRequest.aiFraudScore || '0') <= 50 ? '#92400e' : '#991b1b' }}>Fraud Score</p>
+                          <p className={`text-xl font-bold ${getFraudScoreColor(docViewRequest.aiFraudScore)}`} data-testid={`text-fraud-score-${docViewRequest.id}`}>
+                            {docViewRequest.aiFraudScore ? `${parseFloat(docViewRequest.aiFraudScore).toFixed(1)}/100` : 'N/A'}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: parseFloat(docViewRequest.aiFraudScore || '0') <= 20 ? '#166534' : parseFloat(docViewRequest.aiFraudScore || '0') <= 50 ? '#92400e' : '#991b1b' }}>
+                            {!docViewRequest.aiFraudScore ? '' : parseFloat(docViewRequest.aiFraudScore) <= 20 ? 'Low Risk' : parseFloat(docViewRequest.aiFraudScore) <= 50 ? 'Medium Risk' : 'High Risk'}
+                          </p>
+                        </div>
+                      </div>
+                      {docViewRequest.aiRejectionReason && (
+                        <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                          <span className="font-semibold">AI Flag:</span> {docViewRequest.aiRejectionReason}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* AI Extracted Fields */}
+                    {docViewRequest.aiExtractedData && (() => {
+                      const aiData = parseTierAiData(docViewRequest.aiExtractedData);
+                      if (!aiData) return null;
+                      const fields = typeof aiData === 'object' && !Array.isArray(aiData) ? aiData : null;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Extracted Fields</p>
+                          {fields ? (
+                            <div className="space-y-1">
+                              {Object.entries(fields).map(([key, val]) => (
+                                <div key={key} className="flex justify-between text-xs p-2 bg-gray-50 rounded border">
+                                  <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                                  <span className="font-medium text-right max-w-[60%] break-words">{String(val)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-32 p-2 bg-gray-50 rounded">{JSON.stringify(aiData, null, 2)}</pre>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Reviewer History — all previous tier notes stacked in order */}
+                    {(docViewRequest.tier1Notes || docViewRequest.tier2Notes || docViewRequest.tier3Notes) && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                          <User className="w-3 h-3" /> Reviewer History
+                        </p>
+                        {docViewRequest.tier1Notes && (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm" data-testid={`text-tier1-notes-${docViewRequest.id}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className="bg-amber-200 text-amber-900 text-xs">Tier 1 — Macy</Badge>
+                              <span className="text-xs text-muted-foreground">{docViewRequest.tier1ReviewedBy}</span>
+                              <Badge className={`text-xs ${docViewRequest.tier1Status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{docViewRequest.tier1Status}</Badge>
+                            </div>
+                            <p className="text-amber-800">{docViewRequest.tier1Notes}</p>
+                          </div>
+                        )}
+                        {docViewRequest.tier2Notes && (
+                          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm" data-testid={`text-tier2-notes-${docViewRequest.id}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className="bg-orange-200 text-orange-900 text-xs">Tier 2 — Farah</Badge>
+                              <span className="text-xs text-muted-foreground">{docViewRequest.tier2ReviewedBy}</span>
+                              <Badge className={`text-xs ${docViewRequest.tier2Status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{docViewRequest.tier2Status}</Badge>
+                            </div>
+                            <p className="text-orange-800">{docViewRequest.tier2Notes}</p>
+                          </div>
+                        )}
+                        {docViewRequest.tier3Notes && (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm" data-testid={`text-tier3-notes-${docViewRequest.id}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className="bg-yellow-200 text-yellow-900 text-xs">Tier 3 — Reda</Badge>
+                              <span className="text-xs text-muted-foreground">{docViewRequest.tier3ReviewedBy}</span>
+                              <Badge className={`text-xs ${docViewRequest.tier3Status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{docViewRequest.tier3Status}</Badge>
+                            </div>
+                            <p className="text-yellow-900">{docViewRequest.tier3Notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Tier Action Dialog — Approve or Reject */}
         <Dialog open={!!tierActionDialog} onOpenChange={(open) => { if (!open) { setTierActionDialog(null); setTierNotes(''); } }}>
           <DialogContent className="max-w-md">
@@ -1985,17 +2170,20 @@ export default function FinaBridgeManagement() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    {tierActionDialog.action === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason (Required)'}
+                    {tierActionDialog.action === 'approve' ? 'Approval Notes (Required)' : 'Rejection Reason (Required)'}
                   </label>
                   <Textarea
                     value={tierNotes}
                     onChange={(e) => setTierNotes(e.target.value)}
                     placeholder={tierActionDialog.action === 'approve'
-                      ? 'Any notes for the next reviewer...'
+                      ? 'Provide notes for the next reviewer before approving...'
                       : 'Explain why this application is being rejected...'}
                     rows={3}
                     data-testid="input-tier-notes"
                   />
+                  {!tierNotes.trim() && (
+                    <p className="text-xs text-muted-foreground">Notes are required before submitting this action.</p>
+                  )}
                 </div>
               </div>
             )}
@@ -2007,7 +2195,7 @@ export default function FinaBridgeManagement() {
               <Button
                 className={tierActionDialog?.action === 'approve' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
                 onClick={handleTierAction}
-                disabled={tierActioning || (tierActionDialog?.action === 'reject' && !tierNotes.trim())}
+                disabled={tierActioning || !tierNotes.trim()}
                 data-testid="button-tier-action-confirm"
               >
                 {tierActioning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

@@ -14946,6 +14946,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/requests/:id/tier1-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
       if (request.status !== 'Tier 1 Review') return res.status(400).json({ message: "Request is not in Tier 1 Review status" });
@@ -14989,15 +14990,16 @@ export async function registerRoutes(
     }
   });
 
-  // Tier 1 Reject (Macy → return to importer or AI Rejected)
+  // Tier 1 Reject (Macy → reject and notify importer)
   app.post("/api/admin/finabridge/requests/:id/tier1-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Rejection reason is required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
 
       await storage.updateTradeRequest(req.params.id, {
-        status: 'AI Rejected',
+        status: 'Rejected',
         tier1Status: 'Rejected',
         tier1Notes: notes || '',
         tier1ReviewedBy: reviewedBy || 'Macy',
@@ -15024,6 +15026,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/requests/:id/tier2-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
       if (request.status !== 'Tier 2 Review') return res.status(400).json({ message: "Request is not in Tier 2 Review status" });
@@ -15055,15 +15058,16 @@ export async function registerRoutes(
     }
   });
 
-  // Tier 2 Reject (Farah → return to importer)
+  // Tier 2 Reject (Farah → reject and notify importer)
   app.post("/api/admin/finabridge/requests/:id/tier2-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Rejection reason is required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
 
       await storage.updateTradeRequest(req.params.id, {
-        status: 'AI Rejected',
+        status: 'Rejected',
         tier2Status: 'Rejected',
         tier2Notes: notes || '',
         tier2ReviewedBy: reviewedBy || 'Farah',
@@ -15089,6 +15093,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/requests/:id/tier3-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
       if (request.status !== 'Tier 3 Review') return res.status(400).json({ message: "Request is not in Tier 3 Review status" });
@@ -15142,11 +15147,12 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/requests/:id/tier3-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
+      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Rejection reason is required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
 
       await storage.updateTradeRequest(req.params.id, {
-        status: 'AI Rejected',
+        status: 'Rejected',
         tier3Status: 'Rejected',
         tier3Notes: notes || '',
         tier3ReviewedBy: reviewedBy || 'Reda',

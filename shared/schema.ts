@@ -2301,7 +2301,7 @@ export type TradeDocument = typeof tradeDocuments.$inferSelect;
 
 export const tradeRequestStatusEnum = pgEnum('trade_request_status', [
   'Draft', 'Open', 'Proposal Review', 'Awaiting Importer', 'Active Trade', 'Completed', 'Cancelled',
-  'AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review'
+  'AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review', 'Rejected'
 ]);
 
 export const proposalStatusEnum = pgEnum('proposal_status', [
