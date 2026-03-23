@@ -483,6 +483,15 @@ app.use((req, res, next) => {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
 
+  // Initialize AI document verification worker
+  try {
+    const { initializeVerifyDocumentWorker } = await import('./jobs/verify-document.job');
+    initializeVerifyDocumentWorker();
+    console.log('[Enterprise] AI document verification worker enabled');
+  } catch (error) {
+    console.warn('[Enterprise] AI document verification worker skipped:', error);
+  }
+
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
   

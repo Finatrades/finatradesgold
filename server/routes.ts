@@ -26,7 +26,7 @@ import {
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
-  tradeRequests, tradeProposals, settlementHolds,
+  tradeRequests, tradeProposals, settlementHolds, tradeDocuments,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
   sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements, amlCases,
   depositRequests as depositRequestsTable, vaultHoldings as vaultHoldingsTable, unifiedTallyTransactions, unifiedTallyEvents,
@@ -119,6 +119,7 @@ import { WingoldUserSyncService } from "./wingold-user-sync-service";
 import { credentialIssuer } from "./services/credential-issuer";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 import { geoRestrictionMiddleware } from "./geo-restriction-middleware";
+import { queueDocumentVerification } from "./jobs/verify-document.job";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -13925,6 +13926,25 @@ export async function registerRoutes(
       const documentData = insertTradeDocumentSchema.parse(req.body);
       const document = await storage.createTradeDocument(documentData);
       res.json({ document });
+
+      // Queue AI verification if document status is AI Review
+      if (document.status === 'AI Review') {
+        try {
+          const tradeCase = await storage.getTradeCase(document.caseId);
+          queueDocumentVerification({
+            documentId: document.id,
+            documentUrl: document.documentUrl,
+            documentType: document.documentType,
+            caseId: document.caseId,
+            tradeValueUsd: tradeCase?.tradeValueUsd ?? undefined,
+            buyerName: tradeCase?.buyerName ?? null,
+            sellerName: tradeCase?.sellerName ?? null,
+            companyName: tradeCase?.companyName ?? null,
+          }).catch(err => console.error('[VerifyDoc] Failed to queue job:', err));
+        } catch (err) {
+          console.error('[VerifyDoc] Failed to queue AI verification:', err);
+        }
+      }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
     }
@@ -16297,6 +16317,61 @@ export async function registerRoutes(
   // ============================================================================
   // FINABRIDGE - TRADE ANALYTICS
   // ============================================================================
+
+  // Get trade cases with AI-verified documents - ADMIN
+  app.get("/api/admin/finabridge/ai-cases", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const allCases = await storage.getAllTradeCases();
+      const casesWithDocs = await Promise.all(
+        allCases.map(async (tc) => {
+          const docs = await storage.getCaseDocuments(tc.id);
+          const aiDocs = docs.filter(d =>
+            d.status === 'Tier 1 Review' || d.status === 'AI Rejected'
+          );
+          return { ...tc, documents: aiDocs };
+        })
+      );
+      const filteredCases = casesWithDocs.filter(tc => tc.documents && tc.documents.length > 0);
+      res.json({ cases: filteredCases });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get AI cases" });
+    }
+  });
+
+  // Get AI verification report for a trade document - ADMIN
+  app.get("/api/admin/finabridge/documents/:documentId/ai-report", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const [doc] = await db.select().from(tradeDocuments).where(eq(tradeDocuments.id, req.params.documentId));
+      if (!doc) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json({
+        documentId: doc.id,
+        documentType: doc.documentType,
+        fileName: doc.fileName,
+        documentUrl: doc.documentUrl,
+        status: doc.status,
+        aiVerificationStatus: doc.aiVerificationStatus,
+        aiFraudScore: doc.aiFraudScore,
+        aiExtractedData: doc.aiExtractedData,
+        aiRejectionReason: doc.aiRejectionReason,
+        aiVerifiedAt: doc.aiVerifiedAt,
+        aiRetryCount: doc.aiRetryCount,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get AI report" });
+    }
+  });
+
+  // Get all documents for a trade case (admin) - ADMIN
+  app.get("/api/admin/finabridge/cases/:caseId/documents", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
+    try {
+      const docs = await storage.getCaseDocuments(req.params.caseId);
+      res.json({ documents: docs });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get case documents" });
+    }
+  });
 
   app.get("/api/admin/finabridge/analytics", ensureAdminAsync, requirePermission('view_finabridge'), async (req, res) => {
     try {

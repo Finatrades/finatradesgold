@@ -62,6 +62,7 @@ All deposit approvals (bank transfer, card, crypto, physical gold) must go throu
 - **Verifiable Credentials System (W3C VC 2.0)**: Automatic VC issuance on KYC approval, signed with RS256 JWT, and compliant with FATF/eIDAS 2.0.
 - **Centralized Platform Configuration**: All fees, limits, and system settings managed via a database table and admin interface.
 - **Email Notification Management**: Comprehensive system with user preferences and audit logs, including automated monthly account statements.
+- **AI Document Verification Engine**: Automated AI fraud detection for trade finance documents (LC, POL, WR). Documents saved with 'AI Review' status are automatically queued for GPT-4o Vision extraction and 6-point fraud scoring (amount consistency, expiry validity, KYC name match, approved bank list, document consistency, AI anomaly detection). Score < 50 → Tier 1 Review; Score ≥ 50 → AI Rejected. Results saved to `trade_documents` table (`ai_fraud_score`, `ai_extracted_data`, `ai_rejection_reason`, `ai_verified_at`). Admin can view full AI reports in the FinaBridge management panel under the "AI Verification" tab. Implemented as a BullMQ worker with 3-attempt exponential backoff (30s/2min/5min), with fallback inline processing when Redis is unavailable.
 
 **Data Storage:**
 - Two-database architecture: AWS RDS PostgreSQL for production (SSL/TLS) and Replit PostgreSQL for development/backup, with hourly backup sync.

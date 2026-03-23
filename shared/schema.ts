@@ -2,7 +2,7 @@
 
 
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,7 +33,7 @@ export const bnslTerminationStatusEnum = pgEnum('bnsl_termination_status', [
 export const tradeCaseStatusEnum = pgEnum('trade_case_status', [
   'Draft', 'Submitted', 'Under Review', 'Approved', 'Active', 'Settled', 'Cancelled', 'Rejected'
 ]);
-export const documentStatusEnum = pgEnum('document_status', ['Pending', 'Approved', 'Rejected']);
+export const documentStatusEnum = pgEnum('document_status', ['Pending', 'Approved', 'Rejected', 'AI Review', 'Tier 1 Review', 'AI Rejected']);
 
 export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'admin', 'agent']);
 
@@ -2282,6 +2282,13 @@ export const tradeDocuments = pgTable("trade_documents", {
   reviewedBy: varchar("reviewed_by", { length: 255 }),
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
+  // AI Verification Fields
+  aiVerificationStatus: varchar("ai_verification_status", { length: 50 }), // 'pending' | 'processing' | 'completed' | 'failed'
+  aiFraudScore: integer("ai_fraud_score"), // 0-100
+  aiExtractedData: jsonb("ai_extracted_data"), // Structured fields extracted by AI
+  aiRejectionReason: text("ai_rejection_reason"),
+  aiVerifiedAt: timestamp("ai_verified_at"),
+  aiRetryCount: integer("ai_retry_count").default(0),
 });
 
 export const insertTradeDocumentSchema = createInsertSchema(tradeDocuments).omit({ id: true });

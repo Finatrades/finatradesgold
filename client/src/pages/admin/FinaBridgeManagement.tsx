@@ -9,7 +9,7 @@ import {
   Briefcase, CheckCircle, XCircle, TrendingUp, 
   Loader2, RefreshCw, Eye, Send, ArrowRight, Package, FileCheck, AlertCircle,
   ChevronDown, ChevronUp, Ship, Building, Phone, Mail, Calendar, Edit3, MessageCircle,
-  ShieldCheck, ShieldAlert, Bot, User, Award, ExternalLink, FileText
+  Shield, ShieldAlert, ShieldCheck, ShieldX, Brain, Bot, User, Award, ExternalLink, FileText
 } from 'lucide-react';
 import DealRoom from '@/components/finabridge/DealRoom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -131,6 +131,193 @@ interface SettlementHold {
   createdAt: string;
 }
 
+interface FraudCheckResult {
+  checkName: string;
+  passed: boolean;
+  score: number;
+  maxScore: number;
+  detail: string;
+}
+
+interface AiExtractedData {
+  extracted: Record<string, unknown>;
+  fraudResult: {
+    totalScore: number;
+    checks: FraudCheckResult[];
+    recommendation: 'pass' | 'reject';
+    summary: string;
+  };
+}
+
+interface TradeDocumentWithAi {
+  id: string;
+  caseId: string;
+  documentType: string;
+  documentUrl: string;
+  fileName: string;
+  status: string;
+  uploadedAt: string;
+  aiVerificationStatus: string | null;
+  aiFraudScore: number | null;
+  aiExtractedData: AiExtractedData | null;
+  aiRejectionReason: string | null;
+  aiVerifiedAt: string | null;
+  aiRetryCount: number | null;
+}
+
+interface TradeCaseWithDocs {
+  id: string;
+  caseNumber: string;
+  userId: string;
+  companyName: string;
+  tradeType: string;
+  commodityType: string;
+  tradeValueUsd: string;
+  buyerName: string | null;
+  sellerName: string | null;
+  status: string;
+  createdAt: string;
+  documents?: TradeDocumentWithAi[];
+}
+
+interface AiCaseCardProps {
+  tradeCase: TradeCaseWithDocs;
+  expandedAiDoc: string | null;
+  setExpandedAiDoc: (id: string | null) => void;
+  getStatusColor: (s: string) => string;
+  getFraudScoreBadgeColor: (s: number | null) => string;
+  getFraudScoreLabel: (s: number | null) => string;
+}
+
+function AiCaseCard({ tradeCase, expandedAiDoc, setExpandedAiDoc, getStatusColor, getFraudScoreBadgeColor, getFraudScoreLabel }: AiCaseCardProps) {
+  return (
+    <div className="border rounded-lg overflow-hidden" data-testid={`ai-case-${tradeCase.id}`}>
+      <div className="p-4 bg-muted/30 border-b">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold">{tradeCase.caseNumber}</h3>
+            <p className="text-sm text-muted-foreground">{tradeCase.companyName} · {tradeCase.tradeType} · {tradeCase.commodityType}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Trade Value: <strong>${parseFloat(tradeCase.tradeValueUsd).toLocaleString()}</strong>
+            </p>
+          </div>
+          <Badge className={getStatusColor(tradeCase.status)}>{tradeCase.status}</Badge>
+        </div>
+      </div>
+      {tradeCase.documents && tradeCase.documents.length > 0 && (
+        <div className="divide-y">
+          {tradeCase.documents.map((doc) => (
+            <div key={doc.id} className="p-4" data-testid={`ai-doc-${doc.id}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {doc.aiFraudScore !== null && doc.aiFraudScore >= 50 ? (
+                    <ShieldX className="w-5 h-5 text-red-500" />
+                  ) : doc.aiFraudScore !== null ? (
+                    <ShieldCheck className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <ShieldAlert className="w-5 h-5 text-amber-500" />
+                  )}
+                  <div>
+                    <p className="font-medium text-sm">{doc.documentType}</p>
+                    <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {doc.aiFraudScore !== null && (
+                    <Badge className={getFraudScoreBadgeColor(doc.aiFraudScore)} data-testid={`fraud-score-${doc.id}`}>
+                      {getFraudScoreLabel(doc.aiFraudScore)}
+                    </Badge>
+                  )}
+                  <Badge className={getStatusColor(doc.status)}>{doc.status}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setExpandedAiDoc(expandedAiDoc === doc.id ? null : doc.id)}
+                    data-testid={`button-expand-ai-${doc.id}`}
+                  >
+                    {expandedAiDoc === doc.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {expandedAiDoc === doc.id && (
+                <div className="mt-4 space-y-4" data-testid={`ai-report-${doc.id}`}>
+                  {doc.aiRejectionReason && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-xs font-semibold text-red-800 mb-1 flex items-center gap-1">
+                        <XCircle className="w-3 h-3" /> AI Rejection Reason
+                      </p>
+                      <p className="text-sm text-red-700">{doc.aiRejectionReason}</p>
+                    </div>
+                  )}
+
+                  {doc.aiExtractedData?.fraudResult && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fraud Check Results</p>
+                      <div className="divide-y border rounded-lg overflow-hidden">
+                        {doc.aiExtractedData.fraudResult.checks.map((check, idx) => (
+                          <div key={idx} className="flex items-start justify-between p-3 text-sm" data-testid={`fraud-check-${doc.id}-${idx}`}>
+                            <div className="flex items-start gap-2">
+                              {check.passed ? (
+                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                              )}
+                              <div>
+                                <p className="font-medium">{check.checkName}</p>
+                                <p className="text-xs text-muted-foreground">{check.detail}</p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-mono shrink-0 ml-4">{check.score}/{check.maxScore}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {doc.aiExtractedData?.extracted && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Extracted Document Fields</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(doc.aiExtractedData.extracted)
+                          .filter(([k, v]) => v !== null && v !== undefined && !Array.isArray(v) && k !== 'anomalies' && k !== 'document_appears_authentic')
+                          .map(([key, value]) => (
+                            <div key={key} className="p-2 bg-muted/30 rounded text-xs" data-testid={`extracted-field-${doc.id}-${key}`}>
+                              <p className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</p>
+                              <p className="font-medium">{String(value)}</p>
+                            </div>
+                          ))}
+                      </div>
+                      {((doc.aiExtractedData.extracted.anomalies as string[] | undefined)?.length ?? 0) > 0 && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="text-xs font-semibold text-amber-800 mb-1">Flagged Anomalies</p>
+                          <ul className="text-xs text-amber-700 list-disc list-inside space-y-1">
+                            {(doc.aiExtractedData.extracted.anomalies as string[]).map((anomaly, i) => (
+                              <li key={i}>{anomaly}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                    <span>Verified: {doc.aiVerifiedAt ? new Date(doc.aiVerifiedAt).toLocaleString() : 'Not yet'}</span>
+                    <span>Retries: {doc.aiRetryCount ?? 0}/3</span>
+                    <a href={doc.documentUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                      View Original Document
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FinaBridgeManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -156,6 +343,9 @@ export default function FinaBridgeManagement() {
     hold: SettlementHold;
     request: TradeRequest;
   } | null>(null);
+  const [aiCases, setAiCases] = useState<TradeCaseWithDocs[]>([]);
+  const [aiCasesLoading, setAiCasesLoading] = useState(false);
+  const [expandedAiDoc, setExpandedAiDoc] = useState<string | null>(null);
 
   // Option D — Tier Review State
   const [tierRequests, setTierRequests] = useState<TradeRequest[]>([]);
@@ -274,6 +464,19 @@ export default function FinaBridgeManagement() {
     }
   };
 
+  const fetchAiCases = async () => {
+    setAiCasesLoading(true);
+    try {
+      const res = await apiRequest('GET', '/api/admin/finabridge/ai-cases');
+      const data = await res.json();
+      setAiCases(data.cases || []);
+    } catch (err) {
+      console.error('Failed to load AI cases:', err);
+    } finally {
+      setAiCasesLoading(false);
+    }
+  };
+
   const openReleaseDialog = (hold: SettlementHold, request: TradeRequest) => {
     setReleaseConfirmDialog({ hold, request });
   };
@@ -303,6 +506,7 @@ export default function FinaBridgeManagement() {
     fetchDealRooms();
     fetchSettlementHolds();
     fetchTierRequests();
+    fetchAiCases();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchRequests();
@@ -310,6 +514,7 @@ export default function FinaBridgeManagement() {
       fetchDealRooms();
       fetchSettlementHolds();
       fetchTierRequests();
+      fetchAiCases();
     }, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
@@ -435,7 +640,6 @@ export default function FinaBridgeManagement() {
       case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
       case 'Declined': return 'bg-gray-100 text-gray-700';
-      // Option D statuses
       case 'AI Review': return 'bg-blue-100 text-blue-800';
       case 'AI Rejected': return 'bg-red-100 text-red-800';
       case 'Tier 1 Review': return 'bg-amber-100 text-amber-800';
@@ -445,12 +649,26 @@ export default function FinaBridgeManagement() {
     }
   };
 
-  const getFraudScoreColor = (score: string | null | undefined) => {
+  const getFraudScoreTextColor = (score: string | null | undefined) => {
     if (!score) return 'text-gray-500';
     const n = parseFloat(score);
     if (n <= 20) return 'text-green-600';
     if (n <= 50) return 'text-amber-600';
     return 'text-red-600';
+  };
+
+  const getFraudScoreBadgeColor = (score: number | null) => {
+    if (score === null) return 'bg-gray-100 text-gray-700';
+    if (score < 25) return 'bg-green-100 text-green-800';
+    if (score < 50) return 'bg-amber-100 text-amber-800';
+    return 'bg-red-100 text-red-800';
+  };
+
+  const getFraudScoreLabel = (score: number | null) => {
+    if (score === null) return 'Pending';
+    if (score < 25) return `${score}/100 — Low Fraud Risk`;
+    if (score < 50) return `${score}/100 — Medium Fraud Risk`;
+    return `${score}/100 — High Fraud Risk`;
   };
 
   const parseTierAiData = (aiExtractedData: string | null | undefined) => {
@@ -554,6 +772,10 @@ export default function FinaBridgeManagement() {
                   {tierRequests.filter(r => r.status === 'Tier 3 Review').length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="aiverification" data-testid="tab-ai-verification">
+              <Brain className="w-4 h-4 mr-1" />
+              AI Verification
             </TabsTrigger>
             <TabsTrigger value="disclaimer">Disclaimer</TabsTrigger>
           </TabsList>
@@ -697,6 +919,95 @@ export default function FinaBridgeManagement() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="aiverification" className="mt-4">
+            {aiCasesLoading ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">Loading AI verification queues...</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Tier 1 Review Queue */}
+                {(() => {
+                  const tier1Cases = aiCases
+                    .map(tc => ({ ...tc, documents: (tc.documents || []).filter(d => d.status === 'Tier 1 Review') }))
+                    .filter(tc => tc.documents.length > 0);
+                  return (
+                    <div data-testid="tier1-review-queue">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldAlert className="w-5 h-5 text-amber-500" />
+                        <h2 className="text-lg font-bold">Tier 1 Review Queue</h2>
+                        <Badge className="bg-amber-100 text-amber-700">{tier1Cases.reduce((n, tc) => n + tc.documents.length, 0)} documents</Badge>
+                      </div>
+                      {tier1Cases.length === 0 ? (
+                        <Card>
+                          <CardContent className="p-8 text-center text-muted-foreground">
+                            <ShieldCheck className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                            <p className="text-sm">No documents awaiting Tier 1 Review</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <div className="space-y-3">
+                          {tier1Cases.map(tradeCase => (
+                            <AiCaseCard
+                              key={tradeCase.id}
+                              tradeCase={tradeCase}
+                              expandedAiDoc={expandedAiDoc}
+                              setExpandedAiDoc={setExpandedAiDoc}
+                              getStatusColor={getStatusColor}
+                              getFraudScoreBadgeColor={getFraudScoreBadgeColor}
+                              getFraudScoreLabel={getFraudScoreLabel}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* AI Rejected Queue */}
+                {(() => {
+                  const rejectedCases = aiCases
+                    .map(tc => ({ ...tc, documents: (tc.documents || []).filter(d => d.status === 'AI Rejected') }))
+                    .filter(tc => tc.documents.length > 0);
+                  return (
+                    <div data-testid="ai-rejected-queue">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldX className="w-5 h-5 text-red-500" />
+                        <h2 className="text-lg font-bold">AI Rejected</h2>
+                        <Badge className="bg-red-100 text-red-700">{rejectedCases.reduce((n, tc) => n + tc.documents.length, 0)} documents</Badge>
+                      </div>
+                      {rejectedCases.length === 0 ? (
+                        <Card>
+                          <CardContent className="p-8 text-center text-muted-foreground">
+                            <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                            <p className="text-sm">No AI-rejected documents</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <div className="space-y-3">
+                          {rejectedCases.map(tradeCase => (
+                            <AiCaseCard
+                              key={tradeCase.id}
+                              tradeCase={tradeCase}
+                              expandedAiDoc={expandedAiDoc}
+                              setExpandedAiDoc={setExpandedAiDoc}
+                              getStatusColor={getStatusColor}
+                              getFraudScoreBadgeColor={getFraudScoreBadgeColor}
+                              getFraudScoreLabel={getFraudScoreLabel}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="disclaimer" className="mt-4">
@@ -865,7 +1176,7 @@ export default function FinaBridgeManagement() {
                           {request.aiFraudScore && (
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Fraud Score</p>
-                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                              <p className={`text-xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                 {parseFloat(request.aiFraudScore).toFixed(0)}/100
                               </p>
                             </div>
@@ -907,7 +1218,7 @@ export default function FinaBridgeManagement() {
                             {request.aiFraudScore && (
                               <div className="p-3 bg-gray-50 rounded-lg">
                                 <p className="text-xs font-semibold text-gray-600 mb-1">Fraud Risk Score</p>
-                                <p className={`text-2xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                                <p className={`text-2xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                   {parseFloat(request.aiFraudScore).toFixed(1)} / 100
                                 </p>
                                 <p className="text-xs text-gray-500">{parseFloat(request.aiFraudScore) <= 20 ? 'Low risk' : parseFloat(request.aiFraudScore) <= 50 ? 'Medium risk' : 'High risk'}</p>
@@ -980,7 +1291,7 @@ export default function FinaBridgeManagement() {
                           {request.aiFraudScore && (
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Fraud Score</p>
-                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                              <p className={`text-xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                 {parseFloat(request.aiFraudScore).toFixed(0)}/100
                               </p>
                             </div>
@@ -1024,7 +1335,7 @@ export default function FinaBridgeManagement() {
                             </div>
                             <div className="p-3 bg-gray-50 rounded-lg text-center">
                               <p className="text-xs text-gray-600 font-semibold">Fraud Score</p>
-                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                              <p className={`text-xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                 {request.aiFraudScore ? `${parseFloat(request.aiFraudScore).toFixed(1)}/100` : '—'}
                               </p>
                             </div>
@@ -1115,7 +1426,7 @@ export default function FinaBridgeManagement() {
                           {request.aiFraudScore && (
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Fraud Score</p>
-                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                              <p className={`text-xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                 {parseFloat(request.aiFraudScore).toFixed(0)}/100
                               </p>
                             </div>
@@ -1163,7 +1474,7 @@ export default function FinaBridgeManagement() {
                             </div>
                             <div className="p-3 bg-gray-50 rounded-lg text-center">
                               <p className="text-xs text-gray-600 font-semibold">Fraud Score</p>
-                              <p className={`text-xl font-bold ${getFraudScoreColor(request.aiFraudScore)}`}>
+                              <p className={`text-xl font-bold ${getFraudScoreTextColor(request.aiFraudScore)}`}>
                                 {request.aiFraudScore ? `${parseFloat(request.aiFraudScore).toFixed(1)}/100` : '—'}
                               </p>
                             </div>
