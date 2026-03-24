@@ -33,6 +33,7 @@ interface AdminStats {
   totalVolumeAed: number;
   revenue: number;
   revenueAed: number;
+  revenueIsEstimated?: boolean;
   pendingDeposits: number;
   pendingWithdrawals: number;
   pendingTransactions: number;
@@ -337,7 +338,7 @@ export default function AdminDashboard() {
               href="/admin/kyc"
             />
             <GlassStatsCard 
-              title="Revenue" 
+              title={stats?.revenueIsEstimated ? "Revenue (Est.)" : "Revenue"}
               value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
               subtitle={isLoading ? 'Platform earnings' : <AedSubtitle amount={stats?.revenueAed || 0} />}
               icon={<TrendingUp className="w-6 h-6" />} 
