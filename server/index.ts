@@ -483,6 +483,13 @@ app.use((req, res, next) => {
     console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
 
+  // Ensure FINABRIDGE_AI_CALLBACK_SECRET is set — auto-generate if not configured
+  // as a Replit Secret (so it's never committed to source control)
+  if (!process.env.FINABRIDGE_AI_CALLBACK_SECRET) {
+    process.env.FINABRIDGE_AI_CALLBACK_SECRET = crypto.randomBytes(32).toString('hex');
+    console.warn('[Security] FINABRIDGE_AI_CALLBACK_SECRET auto-generated — set it as a Replit Secret for a stable persistent value');
+  }
+
   // Initialize AI document verification worker
   try {
     const { initializeVerifyDocumentWorker } = await import('./jobs/verify-document.job');

@@ -3,6 +3,8 @@ import { extractDocumentData, calculateFraudScore } from '../services/ocr-servic
 import { db } from '../db';
 import { tradeDocuments } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
+import https from 'https';
+import http from 'http';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_URL || process.env.REDIS_URL;
 const QUEUE_NAME = 'verify-document';
@@ -52,6 +54,61 @@ function getRedisConnection(): { host: string; port: number; password?: string; 
 // Backoff delays: attempt 1 = 30s, attempt 2 = 2min, attempt 3 = 5min
 const BACKOFF_DELAYS_MS = [30_000, 120_000, 300_000];
 
+/**
+ * Notify the internal AI callback route so it can update the trade request
+ * status and send the Option D email notifications (Email #3A/#3B/#4).
+ * The route is protected by FINABRIDGE_AI_CALLBACK_SECRET — auto-generated
+ * at server startup in index.ts and always available in process.env.
+ */
+async function notifyAiCallbackRoute(
+  caseId: string,
+  aiStatus: 'Pass' | 'Fail',
+  fraudScore: number,
+  extractedData: unknown,
+  rejectionReason?: string,
+): Promise<void> {
+  const secret = process.env.FINABRIDGE_AI_CALLBACK_SECRET;
+  if (!secret) {
+    console.warn('[VerifyDoc] FINABRIDGE_AI_CALLBACK_SECRET not set — skipping callback route notification');
+    return;
+  }
+
+  const port = process.env.PORT || '5000';
+  const body = JSON.stringify({ aiStatus, fraudScore, extractedData, rejectionReason });
+  const options = {
+    hostname: '127.0.0.1',
+    port: parseInt(port),
+    path: `/api/admin/finabridge/requests/${caseId}/ai-callback`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+      'x-finabridge-secret': secret,
+    },
+  };
+
+  return new Promise<void>((resolve) => {
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`[VerifyDoc] AI callback route notified for case ${caseId}: ${data}`);
+        } else {
+          console.warn(`[VerifyDoc] AI callback route returned ${res.statusCode} for case ${caseId}: ${data}`);
+        }
+        resolve();
+      });
+    });
+    req.on('error', (err) => {
+      console.error(`[VerifyDoc] AI callback route request failed for case ${caseId}:`, err.message);
+      resolve();
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
 let verifyDocumentQueue: Queue | null = null;
 let verifyDocumentWorker: Worker | null = null;
 
@@ -60,7 +117,7 @@ export function getVerifyDocumentQueue(): Queue | null {
 }
 
 async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<void> {
-  const { documentId, documentUrl, documentType, tradeValueUsd, buyerName, sellerName, companyName } = job.data;
+  const { documentId, documentUrl, documentType, caseId, tradeValueUsd, buyerName, sellerName, companyName } = job.data;
   console.log(`[VerifyDoc] Processing document ${documentId} (type: ${documentType}, attempt: ${job.attemptsMade + 1})`);
 
   await db.update(tradeDocuments)
@@ -96,6 +153,15 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
       .where(eq(tradeDocuments.id, documentId));
 
     console.log(`[VerifyDoc] Document ${documentId} status → ${newDocStatus}`);
+
+    // Notify the internal AI callback route to update trade request status + send emails
+    await notifyAiCallbackRoute(
+      caseId,
+      fraudResult.recommendation === 'reject' ? 'Fail' : 'Pass',
+      fraudResult.totalScore,
+      { extracted, fraudResult },
+      fraudResult.recommendation === 'reject' ? fraudResult.summary : undefined,
+    );
   } catch (error) {
     const attemptNumber = job.attemptsMade + 1;
     console.error(`[VerifyDoc] Attempt ${attemptNumber} failed for ${documentId}:`, error);
@@ -110,6 +176,8 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
         })
         .where(eq(tradeDocuments.id, documentId));
       console.log(`[VerifyDoc] Document ${documentId} flagged for manual review after max retries`);
+      // Notify route that document verification failed — move request to Tier 1 for manual review
+      await notifyAiCallbackRoute(caseId, 'Pass', 0, null, undefined);
     } else {
       await db.update(tradeDocuments)
         .set({ aiRetryCount: attemptNumber })
