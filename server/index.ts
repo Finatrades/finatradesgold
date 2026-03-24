@@ -491,7 +491,16 @@ app.use((req, res, next) => {
     console.warn('[Security] ACTION REQUIRED for production: add FINABRIDGE_AI_CALLBACK_SECRET to Replit Secrets panel for a stable persistent value.');
   }
 
-  // Initialize AI document verification worker
+  // Setup Socket.IO for real-time chat
+  setupSocketIO(httpServer);
+  
+  await registerRoutes(httpServer, app);
+  
+  registerR2ProxyRoutes(app);
+
+  // Initialize AI document verification worker AFTER routes are registered.
+  // The worker makes HTTP callback POSTs to /api/admin/finabridge/requests/:id/ai-callback
+  // which must exist before any queued jobs begin executing.
   try {
     const { initializeVerifyDocumentWorker } = await import('./jobs/verify-document.job');
     initializeVerifyDocumentWorker();
@@ -499,13 +508,6 @@ app.use((req, res, next) => {
   } catch (error) {
     console.warn('[Enterprise] AI document verification worker skipped:', error);
   }
-
-  // Setup Socket.IO for real-time chat
-  setupSocketIO(httpServer);
-  
-  await registerRoutes(httpServer, app);
-  
-  registerR2ProxyRoutes(app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     if (err.type === 'entity.too.large') {
