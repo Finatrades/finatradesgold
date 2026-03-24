@@ -5605,6 +5605,7 @@ export async function registerRoutes(
           kycType = 'kycAml';
         } catch (e) {
           console.error('[KYC] updateKycSubmission failed for id:', req.params.id, e instanceof Error ? e.message : e);
+          notifyError({ error: e instanceof Error ? e : new Error(String(e)), context: `KYC update failed for submission ${req.params.id}`, route: req.originalUrl });
         }
       }
       
