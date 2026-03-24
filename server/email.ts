@@ -614,6 +614,37 @@ export async function sendEmail(
   }
 }
 
+/**
+ * Render a template and send via sendEmailDirect (bypasses notification toggles).
+ * Use for guaranteed internal admin delivery where user-preference checks must not apply.
+ */
+export async function sendEmailViaTemplate(
+  to: string,
+  templateSlug: string,
+  data: EmailData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const branding = await getBrandingForEmail();
+    const enrichedData: EmailData = {
+      ...data,
+      company_name: branding.companyName,
+      company_logo: branding.logoUrl,
+      primary_color: branding.primaryColor,
+    };
+    const template = await getEmailTemplate(templateSlug);
+    if (!template) {
+      console.error(`[Email] Template not found for sendEmailViaTemplate: ${templateSlug}`);
+      return { success: false, error: `Template not found: ${templateSlug}` };
+    }
+    const subject = replaceVariables(template.subject, enrichedData);
+    const htmlBody = replaceVariables(template.body, enrichedData);
+    return sendEmailDirect(to, subject, htmlBody);
+  } catch (error) {
+    console.error(`[Email] sendEmailViaTemplate failed for ${to}:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 export async function sendEmailDirect(
   to: string,
   subject: string,
@@ -791,11 +822,15 @@ export const EMAIL_TEMPLATES = {
 
   // FinaBridge Option D — 13-Email Notification Chain
   FINABRIDGE_REQUEST_SUBMITTED: 'finabridge_request_submitted',       // #2  submission → admins
-  FINABRIDGE_AI_PASS_ADMIN: 'finabridge_ai_pass_admin',               // #3A AI pass → Macy action
+  FINABRIDGE_AI_PASS_ADMIN: 'finabridge_ai_pass_admin',               // #3A AI pass → Macy action required
+  FINABRIDGE_AI_PASS_ADMIN_CC: 'finabridge_ai_pass_admin_cc',         // #3A CC → Farah/Reda awareness
   FINABRIDGE_AI_REJECTED_IMPORTER: 'finabridge_ai_rejected_importer', // #3B AI fail → importer
+  FINABRIDGE_AI_FAIL_ADMIN: 'finabridge_ai_fail_admin',               // #3B AI fail → admin FYI (all 3)
   FINABRIDGE_UNDER_REVIEW_IMPORTER: 'finabridge_under_review_importer', // #4  AI pass → importer FYI
   FINABRIDGE_TIER1_APPROVED: 'finabridge_tier1_approved',             // #5  Tier1 pass → Farah action
-  FINABRIDGE_TIER2_APPROVED: 'finabridge_tier2_approved',             // #6  Tier2 pass → Reda action
+  FINABRIDGE_TIER1_APPROVED_CC: 'finabridge_tier1_approved_cc',       // #5  CC → Reda/Macy awareness
+  FINABRIDGE_TIER2_APPROVED: 'finabridge_tier2_approved',             // #6  Tier2 pass → Reda final decision
+  FINABRIDGE_TIER2_APPROVED_CC: 'finabridge_tier2_approved_cc',       // #6  CC → Farah/Macy awareness
   FINABRIDGE_TRADE_LIVE: 'finabridge_trade_live',                     // #7  Reda approve → importer live
   FINABRIDGE_TRADE_LIVE_TEAM: 'finabridge_trade_live_team',           // #7B Reda approve → team FYI
   FINABRIDGE_SETTLEMENT_EXPORTER: 'finabridge_settlement_exporter',   // #12 settlement → exporter
@@ -2603,10 +2638,10 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     name: 'FinaBridge Request Submitted (Admin Notification)',
     type: 'email' as const,
     module: 'trade_finance',
-    subject: '[Action Required] New FinaBridge Application — Ref {{trade_ref}}',
+    subject: '[FYI] New FinaBridge Application Submitted — Ref {{trade_ref}}',
     body: `
       <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
-      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">A new FinaBridge trade finance application has been submitted and is pending AI document verification before entering the review pipeline.</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">A new FinaBridge trade finance application has been submitted and is currently undergoing AI document verification. No action is required at this stage — you will receive a follow-up notification once AI processing is complete.</p>
 
       <div style="background: linear-gradient(135deg, #f8f4fc, #ede9fe); border-left: 4px solid #8A2BE2; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
         <p style="font-weight: 700; color: #4B0082; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Application Summary</p>
@@ -2657,7 +2692,8 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
           <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">AI Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #16a34a;">✓ Passed</td></tr>
           <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Fraud Score</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{fraud_score}} / 100</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Document Type</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+          <tr style="border-bottom: 1px solid #bbf7d0;"><td style="padding: 8px 0; color: #6b7280;">Document Type</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Extracted Fields</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{extracted_summary}}</td></tr>
         </table>
       </div>
 
@@ -2668,11 +2704,12 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       </p>
     `,
     variables: [
-      { name: 'admin_name', description: 'Admin full name' },
+      { name: 'admin_name', description: 'Admin full name (Macy)' },
       { name: 'trade_ref', description: 'Trade reference ID' },
       { name: 'importer_name', description: 'Importer name' },
       { name: 'fraud_score', description: 'AI fraud score (0-100)' },
       { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'extracted_summary', description: 'AI extracted fields summary' },
       { name: 'admin_url', description: 'Admin panel URL' },
     ],
     status: 'published' as const,
@@ -2833,7 +2870,9 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e;">{{importer_name}}</td></tr>
           <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Trade Value</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #92400e; font-size: 16px;">${'$'}{{trade_value}} USD</td></tr>
           <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Instrument</td><td style="padding: 8px 0; text-align: right; color: #92400e;">{{instrument_type}}</td></tr>
-          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 1 (Macy)</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">✓ Approved</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">AI Fraud Score</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">{{ai_fraud_score}} / 100</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 1 ({{tier1_reviewer}})</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">✓ Approved</td></tr>
+          <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 1 Notes</td><td style="padding: 8px 0; text-align: right; color: #92400e; font-style: italic;">{{tier1_notes}}</td></tr>
           <tr style="border-bottom: 1px solid #fde68a;"><td style="padding: 8px 0; color: #78350f;">Tier 2 ({{tier2_reviewer}})</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">✓ Approved</td></tr>
           <tr><td style="padding: 8px 0; color: #78350f;">Tier 2 Notes</td><td style="padding: 8px 0; text-align: right; color: #92400e; font-style: italic;">{{tier2_notes}}</td></tr>
         </table>
@@ -2851,6 +2890,9 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'importer_name', description: 'Importer name' },
       { name: 'trade_value', description: 'Trade value in USD' },
       { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'ai_fraud_score', description: 'AI fraud score (0-100)' },
+      { name: 'tier1_reviewer', description: 'Tier 1 reviewer name (Macy)' },
+      { name: 'tier1_notes', description: 'Tier 1 review notes from Macy' },
       { name: 'tier2_reviewer', description: 'Tier 2 reviewer name (Farah)' },
       { name: 'tier2_notes', description: 'Tier 2 review notes' },
       { name: 'admin_url', description: 'Admin panel URL' },
@@ -3008,6 +3050,146 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'trade_status', description: 'Final trade status' },
       { name: 'closure_notes', description: 'Admin closure notes' },
       { name: 'dashboard_url', description: 'Dashboard URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #3A CC: AI pass awareness — Farah and Reda (no action required)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN_CC,
+    name: 'FinaBridge AI Pass — CC Awareness (Farah/Reda)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[CC] AI Verified — FinaBridge Ref {{trade_ref}} Escalated to Tier 1 Review',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">For your awareness — the AI document verification engine has passed the FinaBridge application below. The case has been escalated to <strong>Macy for Tier 1 Review</strong>. No action is required from you at this stage.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #374151; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">AI Verification Summary</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">AI Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #16a34a;">✓ Passed</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Fraud Score</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{fraud_score}} / 100</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Document Type</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{instrument_type}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Extracted Summary</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{extracted_summary}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">You will be notified when Macy's Tier 1 review is complete and escalated to you. <a href="{{admin_url}}" style="color: #8A2BE2;">View in Admin Panel</a>.</p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin name (Farah or Reda)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'fraud_score', description: 'AI fraud score (0-100)' },
+      { name: 'instrument_type', description: 'Payment instrument type' },
+      { name: 'extracted_summary', description: 'AI extracted fields summary' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #3B admin awareness: AI fail — Macy, Farah, Reda all receive FYI
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_AI_FAIL_ADMIN,
+    name: 'FinaBridge AI Rejected — Admin Awareness (All 3)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[FYI] AI Rejected — FinaBridge Ref {{trade_ref}}',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">For your awareness — the AI document verification system has rejected the FinaBridge application below. The importer has been notified directly and no action is required from you at this stage.</p>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 14px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">AI Rejection — Admin Awareness</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fecaca;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #fecaca;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #fecaca;"><td style="padding: 8px 0; color: #6b7280;">AI Status</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #dc2626;">✗ Rejected</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Rejection Reason</td><td style="padding: 8px 0; text-align: right; color: #374151;">{{rejection_reason}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;"><a href="{{admin_url}}" style="color: #8A2BE2;">View in Admin Panel</a></p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin name (Macy, Farah, or Reda)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'rejection_reason', description: 'AI rejection reason' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #5 CC: Tier 1 approved awareness — Reda and Macy (no action required)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED_CC,
+    name: 'FinaBridge Tier 1 Approved — CC Awareness (Reda/Macy)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[CC] Tier 1 Approved — FinaBridge Ref {{trade_ref}} Escalated to Farah',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">For your awareness — the following FinaBridge application has been approved at Tier 1 by <strong>{{tier1_reviewer}}</strong> and escalated to Farah for Tier 2 review. No action is required from you at this stage.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Tier 1 Approved By</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">{{tier1_reviewer}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Tier 1 Notes</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{tier1_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;"><a href="{{admin_url}}" style="color: #8A2BE2;">View in Admin Panel</a></p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin name (Reda or Macy)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'tier1_reviewer', description: 'Tier 1 reviewer name' },
+      { name: 'tier1_notes', description: 'Tier 1 review notes' },
+      { name: 'admin_url', description: 'Admin panel URL' },
+    ],
+    status: 'published' as const,
+  },
+
+  // Email #6 CC: Tier 2 approved awareness — Farah and Macy (no action required)
+  {
+    slug: EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED_CC,
+    name: 'FinaBridge Tier 2 Approved — CC Awareness (Farah/Macy)',
+    type: 'email' as const,
+    module: 'trade_finance',
+    subject: '[CC] Tier 2 Approved — FinaBridge Ref {{trade_ref}} Escalated to Director',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{admin_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">For your awareness — the following FinaBridge application has been approved at Tier 2 by <strong>{{tier2_reviewer}}</strong> and escalated to Director Reda for final sign-off. No action is required from you.</p>
+
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Reference</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151; font-family: monospace;">{{trade_ref}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Importer</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #374151;">{{importer_name}}</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Trade Value</td><td style="padding: 8px 0; text-align: right; color: #374151;">${'$'}{{trade_value}} USD</td></tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;"><td style="padding: 8px 0; color: #6b7280;">Tier 2 Approved By</td><td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 700;">{{tier2_reviewer}}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Tier 2 Notes</td><td style="padding: 8px 0; text-align: right; color: #374151; font-style: italic;">{{tier2_notes}}</td></tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; margin: 0;"><a href="{{admin_url}}" style="color: #8A2BE2;">View in Admin Panel</a></p>
+    `,
+    variables: [
+      { name: 'admin_name', description: 'Admin name (Farah or Macy)' },
+      { name: 'trade_ref', description: 'Trade reference ID' },
+      { name: 'importer_name', description: 'Importer name' },
+      { name: 'trade_value', description: 'Trade value in USD' },
+      { name: 'tier2_reviewer', description: 'Tier 2 reviewer name' },
+      { name: 'tier2_notes', description: 'Tier 2 review notes' },
+      { name: 'admin_url', description: 'Admin panel URL' },
     ],
     status: 'published' as const,
   },

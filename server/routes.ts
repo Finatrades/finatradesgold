@@ -46,7 +46,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
-import { sendEmail, sendEmailDirect, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates, verifyUnsubscribeToken } from "./email";
+import { sendEmail, sendEmailDirect, sendEmailViaTemplate, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates, verifyUnsubscribeToken } from "./email";
 import { 
   processTransactionDocuments, 
   resendCertificate, 
@@ -14145,7 +14145,7 @@ export async function registerRoutes(
         link: '/admin/finabridge',
       });
 
-      // Email #2 — notify all 3 admins of new submission
+      // Email #2 — notify all 3 admins of new submission (FYI — AI is processing, no action required)
       try {
         const adminEmails = [
           { email: 'macy@finatrades.com', name: 'Macy' },
@@ -14154,7 +14154,7 @@ export async function registerRoutes(
         ];
         const importerName = importerUser?.companyName || `${importerUser?.firstName || ''} ${importerUser?.lastName || ''}`.trim() || 'Importer';
         for (const admin of adminEmails) {
-          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_REQUEST_SUBMITTED, {
+          sendEmailViaTemplate(admin.email, EMAIL_TEMPLATES.FINABRIDGE_REQUEST_SUBMITTED, {
             admin_name: admin.name,
             trade_ref: request.tradeRefId,
             importer_name: importerName,
@@ -14840,21 +14840,32 @@ export async function registerRoutes(
           aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
         } as any);
 
-        // Email #3A — AI pass → Macy action required (CC Farah, Reda)
-        const adminsToNotify = [
-          { email: 'macy@finatrades.com', name: 'Macy' },
-          { email: 'farah@finatrades.com', name: 'Farah Hashim' },
-          { email: 'reda@finatrades.com', name: 'Reda' },
-        ];
-        for (const admin of adminsToNotify) {
-          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN, {
-            admin_name: admin.name,
-            trade_ref: request.tradeRefId,
-            importer_name: importerName,
-            fraud_score: fraudScore?.toFixed(1) || '0',
-            instrument_type: (request as any).paymentInstrumentType || 'Not specified',
-            admin_url: adminUrl,
-          }).catch(err => console.error('[Email] AI pass admin email failed:', err));
+        // Email #3A — AI pass → Macy action required; Farah and Reda get CC awareness copies
+        const aiExtractedSummary = extractedData
+          ? Object.entries(extractedData as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join(' | ')
+          : 'No extracted data available';
+        const aiPassCommonVars = {
+          trade_ref: request.tradeRefId,
+          importer_name: importerName,
+          fraud_score: fraudScore?.toFixed(1) || '0',
+          instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+          admin_url: adminUrl,
+        };
+
+        // Macy — ACTION REQUIRED (with fraud score + extracted fields summary)
+        sendEmailViaTemplate('macy@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN, {
+          admin_name: 'Macy',
+          extracted_summary: aiExtractedSummary,
+          ...aiPassCommonVars,
+        }).catch(err => console.error('[Email] AI pass Macy email failed:', err));
+
+        // Farah and Reda — CC awareness (no action required)
+        for (const cc of [{ email: 'farah@finatrades.com', name: 'Farah Hashim' }, { email: 'reda@finatrades.com', name: 'Reda' }]) {
+          sendEmailViaTemplate(cc.email, EMAIL_TEMPLATES.FINABRIDGE_AI_PASS_ADMIN_CC, {
+            admin_name: cc.name,
+            extracted_summary: aiExtractedSummary,
+            ...aiPassCommonVars,
+          }).catch(err => console.error('[Email] AI pass CC email failed:', err));
         }
 
         // Email #4 — importer "under review"
@@ -14887,17 +14898,19 @@ export async function registerRoutes(
           }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] AI rejected importer email failed:', err));
         }
 
-        // Notify all admins of AI failure
+        // Email #3B admin awareness — Macy, Farah, and Reda all receive FYI copy (no action needed)
         const failAdmins = [
           { email: 'macy@finatrades.com', name: 'Macy' },
           { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+          { email: 'reda@finatrades.com', name: 'Reda' },
         ];
         for (const admin of failAdmins) {
-          sendEmail(admin.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
-            user_name: admin.name,
+          sendEmailViaTemplate(admin.email, EMAIL_TEMPLATES.FINABRIDGE_AI_FAIL_ADMIN, {
+            admin_name: admin.name,
             trade_ref: request.tradeRefId,
-            rejection_reason: `[Admin copy] AI rejected ${importerName}'s application. Reason: ${rejectionReason || 'Unknown'}`,
-            dashboard_url: adminUrl,
+            importer_name: importerName,
+            rejection_reason: rejectionReason || 'Document verification failed',
+            admin_url: adminUrl,
           }).catch(err => console.error('[Email] AI fail admin copy email failed:', err));
         }
       }
@@ -14958,31 +14971,39 @@ export async function registerRoutes(
         tier1ReviewedBy: reviewedBy || 'Macy',
       } as any);
 
-      // Email #5 — notify Farah (Tier 2) with Macy's notes
+      // Email #5 — notify Farah (Tier 2) with Macy's notes; Reda and Macy get CC awareness copies
       const importer = await storage.getUser(request.importerUserId);
       const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
-      sendEmail('farah@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
+      const tier1ReviewerName = reviewedBy || 'Macy';
+      const tier1NotesSafe = notes || 'No notes provided';
+      const tier1TradeRef = request.tradeRefId;
+      const tier1TradeValue = parseFloat(request.tradeValueUsd.toString()).toLocaleString();
+      const tier1InstrumentType = (request as any).paymentInstrumentType || 'Not specified';
+
+      // Farah — ACTION REQUIRED
+      sendEmailViaTemplate('farah@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
         admin_name: 'Farah Hashim',
-        trade_ref: request.tradeRefId,
+        trade_ref: tier1TradeRef,
         importer_name: importerName,
-        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
-        tier1_reviewer: reviewedBy || 'Macy',
-        tier1_notes: notes || 'No notes provided',
+        trade_value: tier1TradeValue,
+        instrument_type: tier1InstrumentType,
+        tier1_reviewer: tier1ReviewerName,
+        tier1_notes: tier1NotesSafe,
         admin_url: '/admin/finabridge',
       }).catch(err => console.error('[Email] Tier1 approve email to Farah failed:', err));
 
-      // Notify Reda as CC
-      sendEmail('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
-        admin_name: 'Reda',
-        trade_ref: request.tradeRefId,
-        importer_name: importerName,
-        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
-        tier1_reviewer: reviewedBy || 'Macy',
-        tier1_notes: notes || 'No notes provided',
-        admin_url: '/admin/finabridge',
-      }).catch(err => console.error('[Email] Tier1 approve CC to Reda failed:', err));
+      // Reda and Macy — CC awareness (no action required)
+      for (const cc of [{ email: 'reda@finatrades.com', name: 'Reda' }, { email: 'macy@finatrades.com', name: 'Macy' }]) {
+        sendEmailViaTemplate(cc.email, EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED_CC, {
+          admin_name: cc.name,
+          trade_ref: tier1TradeRef,
+          importer_name: importerName,
+          trade_value: tier1TradeValue,
+          tier1_reviewer: tier1ReviewerName,
+          tier1_notes: tier1NotesSafe,
+          admin_url: '/admin/finabridge',
+        }).catch(err => console.error(`[Email] Tier1 approve CC to ${cc.name} failed:`, err));
+      }
 
       res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
     } catch (error) {
@@ -15038,19 +15059,45 @@ export async function registerRoutes(
         tier2ReviewedBy: reviewedBy || 'Farah',
       } as any);
 
-      // Email #6 — notify Reda (Director) for final approval
+      // Email #6 — notify Reda (Director) for final approval with full trail; Farah and Macy get CC copies
       const importer = await storage.getUser(request.importerUserId);
       const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
-      sendEmail('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED, {
+      const tier2ReviewerName = reviewedBy || 'Farah';
+      const tier2NotesSafe = notes || 'No notes provided';
+      const tier2TradeRef = request.tradeRefId;
+      const tier2TradeValue = parseFloat(request.tradeValueUsd.toString()).toLocaleString();
+      const tier2InstrumentType = (request as any).paymentInstrumentType || 'Not specified';
+      const aiScore = (request as any).aiFraudScore || 'N/A';
+      const tier1NotesSaved = (request as any).tier1Notes || 'No notes recorded';
+      const tier1ReviewerSaved = (request as any).tier1ReviewedBy || 'Macy';
+
+      // Reda — FINAL DECISION REQUIRED with full compliance trail
+      sendEmailViaTemplate('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED, {
         admin_name: 'Reda',
-        trade_ref: request.tradeRefId,
+        trade_ref: tier2TradeRef,
         importer_name: importerName,
-        trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-        instrument_type: (request as any).paymentInstrumentType || 'Not specified',
-        tier2_reviewer: reviewedBy || 'Farah',
-        tier2_notes: notes || 'No notes provided',
+        trade_value: tier2TradeValue,
+        instrument_type: tier2InstrumentType,
+        ai_fraud_score: aiScore,
+        tier1_reviewer: tier1ReviewerSaved,
+        tier1_notes: tier1NotesSaved,
+        tier2_reviewer: tier2ReviewerName,
+        tier2_notes: tier2NotesSafe,
         admin_url: '/admin/finabridge',
       }).catch(err => console.error('[Email] Tier2 approve email to Reda failed:', err));
+
+      // Farah and Macy — CC awareness (no action required)
+      for (const cc of [{ email: 'farah@finatrades.com', name: 'Farah Hashim' }, { email: 'macy@finatrades.com', name: 'Macy' }]) {
+        sendEmailViaTemplate(cc.email, EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED_CC, {
+          admin_name: cc.name,
+          trade_ref: tier2TradeRef,
+          importer_name: importerName,
+          trade_value: tier2TradeValue,
+          tier2_reviewer: tier2ReviewerName,
+          tier2_notes: tier2NotesSafe,
+          admin_url: '/admin/finabridge',
+        }).catch(err => console.error(`[Email] Tier2 approve CC to ${cc.name} failed:`, err));
+      }
 
       res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
     } catch (error) {
