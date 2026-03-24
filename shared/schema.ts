@@ -33,7 +33,7 @@ export const bnslTerminationStatusEnum = pgEnum('bnsl_termination_status', [
 export const tradeCaseStatusEnum = pgEnum('trade_case_status', [
   'Draft', 'Submitted', 'Under Review', 'Approved', 'Active', 'Settled', 'Cancelled', 'Rejected'
 ]);
-export const documentStatusEnum = pgEnum('document_status', ['Pending', 'Approved', 'Rejected', 'AI Review', 'Tier 1 Review', 'AI Rejected']);
+export const documentStatusEnum = pgEnum('document_status', ['Pending', 'Approved', 'Rejected', 'AI Review', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review', 'AI Rejected']);
 
 export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'admin', 'agent']);
 
@@ -2284,7 +2284,7 @@ export const tradeDocuments = pgTable("trade_documents", {
   reviewNotes: text("review_notes"),
   // AI Verification Fields
   aiVerificationStatus: varchar("ai_verification_status", { length: 50 }), // 'pending' | 'processing' | 'completed' | 'failed'
-  aiFraudScore: integer("ai_fraud_score"), // 0-100
+  aiFraudScore: decimal("ai_fraud_score", { precision: 5, scale: 2 }), // 0.00–100.00
   aiExtractedData: jsonb("ai_extracted_data"), // Structured fields extracted by AI
   aiRejectionReason: text("ai_rejection_reason"),
   aiVerifiedAt: timestamp("ai_verified_at"),
@@ -4553,16 +4553,12 @@ export type ExporterTrustScore = typeof exporterTrustScores.$inferSelect;
 // FINABRIDGE - TRADE RISK SCORING
 // ============================================
 
-export const tradeRiskLevelEnum = pgEnum('trade_risk_level', [
-  'Low', 'Medium', 'High', 'Critical'
-]);
-
 export const tradeRiskAssessments = pgTable("trade_risk_assessments", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
   
   riskScore: integer("risk_score").notNull(),
-  riskLevel: tradeRiskLevelEnum("risk_level").notNull(),
+  riskLevel: riskLevelEnum("risk_level").notNull(),
   
   importerKycStatus: varchar("importer_kyc_status", { length: 50 }),
   exporterKycStatus: varchar("exporter_kyc_status", { length: 50 }),

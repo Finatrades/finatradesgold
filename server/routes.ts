@@ -3753,8 +3753,10 @@ export async function registerRoutes(
         return sum + (isNaN(txValue) ? 0 : Math.abs(txValue));
       }, 0);
       
-      // Revenue estimate (1% of volume as placeholder)
+      // Revenue estimate: 1% of total volume as a placeholder until fee data is fully modelled.
+      // Labelled as estimated in the API response so admins are not misled.
       const revenue = totalVolume * 0.01;
+      const revenueIsEstimated = true;
       
       // Calculate current month and last month volumes for percentage change
       const currentMonthVolume = allTransactions
@@ -4038,6 +4040,7 @@ export async function registerRoutes(
         totalVolumeAed,
         revenue,
         revenueAed,
+        revenueIsEstimated,
         pendingKycRequests,
         pendingDeposits,
         pendingWithdrawals,
@@ -14958,6 +14961,7 @@ export async function registerRoutes(
 
       res.json({ requests: enriched });
     } catch (error) {
+      console.error('[FinaBridge] GET tier-review failed:', error instanceof Error ? error.message : error);
       res.status(400).json({ message: "Failed to get tier review requests" });
     }
   });
@@ -15014,6 +15018,7 @@ export async function registerRoutes(
 
       res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
     } catch (error) {
+      console.error('[FinaBridge] tier1-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
     }
   });
@@ -15046,6 +15051,7 @@ export async function registerRoutes(
 
       res.json({ message: "Tier 1 rejected — importer notified" });
     } catch (error) {
+      console.error('[FinaBridge] tier1-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 1" });
     }
   });
@@ -15108,6 +15114,7 @@ export async function registerRoutes(
 
       res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
     } catch (error) {
+      console.error('[FinaBridge] tier2-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
     }
   });
@@ -15139,6 +15146,7 @@ export async function registerRoutes(
 
       res.json({ message: "Tier 2 rejected — importer notified" });
     } catch (error) {
+      console.error('[FinaBridge] tier2-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
     }
   });
@@ -15193,6 +15201,7 @@ export async function registerRoutes(
 
       res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
     } catch (error) {
+      console.error('[FinaBridge] tier3-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
     }
   });
@@ -15224,6 +15233,7 @@ export async function registerRoutes(
 
       res.json({ message: "Director rejected — importer notified" });
     } catch (error) {
+      console.error('[FinaBridge] tier3-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
     }
   });
