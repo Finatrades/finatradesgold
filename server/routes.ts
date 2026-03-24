@@ -5601,6 +5601,7 @@ export async function registerRoutes(
           submission = await storage.updateKycSubmission(req.params.id, dbUpdates);
           kycType = 'kycAml';
         } catch (e) {
+          console.error('[KYC] updateKycSubmission failed for id:', req.params.id, e instanceof Error ? e.message : e);
         }
       }
       
@@ -14821,7 +14822,13 @@ export async function registerRoutes(
   // ——————————————————————————————————————————————
 
   // Internal callback: AI verification completed
+  // Protected by a shared secret header (FINABRIDGE_AI_CALLBACK_SECRET env var)
   app.post("/api/admin/finabridge/requests/:id/ai-callback", async (req, res) => {
+    const callbackSecret = process.env.FINABRIDGE_AI_CALLBACK_SECRET;
+    const providedSecret = req.headers['x-finabridge-secret'];
+    if (!callbackSecret || !providedSecret || providedSecret !== callbackSecret) {
+      return res.status(401).json({ message: "Unauthorized: invalid or missing callback secret" });
+    }
     try {
       const { aiStatus, fraudScore, extractedData, rejectionReason } = req.body;
       const request = await storage.getTradeRequest(req.params.id);
