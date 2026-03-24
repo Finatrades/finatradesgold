@@ -487,7 +487,8 @@ app.use((req, res, next) => {
   // as a Replit Secret (so it's never committed to source control)
   if (!process.env.FINABRIDGE_AI_CALLBACK_SECRET) {
     process.env.FINABRIDGE_AI_CALLBACK_SECRET = crypto.randomBytes(32).toString('hex');
-    console.warn('[Security] FINABRIDGE_AI_CALLBACK_SECRET auto-generated — set it as a Replit Secret for a stable persistent value');
+    console.warn('[Security] FINABRIDGE_AI_CALLBACK_SECRET auto-generated (ephemeral, changes on each restart).');
+    console.warn('[Security] ACTION REQUIRED for production: add FINABRIDGE_AI_CALLBACK_SECRET to Replit Secrets panel for a stable persistent value.');
   }
 
   // Initialize AI document verification worker
