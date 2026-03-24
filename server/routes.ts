@@ -14962,6 +14962,7 @@ export async function registerRoutes(
       res.json({ requests: enriched });
     } catch (error) {
       console.error('[FinaBridge] GET tier-review failed:', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier Review Fetch Failed', route: 'GET /api/admin/finabridge/tier-review' });
       res.status(400).json({ message: "Failed to get tier review requests" });
     }
   });
@@ -15019,6 +15020,7 @@ export async function registerRoutes(
       res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
     } catch (error) {
       console.error('[FinaBridge] tier1-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 1 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-approve` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
     }
   });
@@ -15052,6 +15054,7 @@ export async function registerRoutes(
       res.json({ message: "Tier 1 rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier1-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 1 Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-reject` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 1" });
     }
   });
@@ -15115,6 +15118,7 @@ export async function registerRoutes(
       res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
     } catch (error) {
       console.error('[FinaBridge] tier2-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-approve` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
     }
   });
@@ -15147,6 +15151,7 @@ export async function registerRoutes(
       res.json({ message: "Tier 2 rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier2-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-reject` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
     }
   });
@@ -15202,6 +15207,7 @@ export async function registerRoutes(
       res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
     } catch (error) {
       console.error('[FinaBridge] tier3-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-approve` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
     }
   });
@@ -15234,6 +15240,7 @@ export async function registerRoutes(
       res.json({ message: "Director rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier3-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-reject` });
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
     }
   });

@@ -338,7 +338,7 @@ export default function AdminDashboard() {
               href="/admin/kyc"
             />
             <GlassStatsCard 
-              title={stats?.revenueIsEstimated ? "Revenue (Est.)" : "Revenue"}
+              title={stats?.revenueIsEstimated ? "Revenue (Estimated)" : "Revenue"}
               value={isLoading ? '...' : formatCurrency(stats?.revenue || 0)}
               subtitle={isLoading ? 'Platform earnings' : <AedSubtitle amount={stats?.revenueAed || 0} />}
               icon={<TrendingUp className="w-6 h-6" />} 
