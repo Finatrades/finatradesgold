@@ -3,7 +3,6 @@ import { extractDocumentData, calculateFraudScore } from '../services/ocr-servic
 import { db } from '../db';
 import { tradeDocuments } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
-import https from 'https';
 import http from 'http';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_URL || process.env.REDIS_URL;
@@ -176,8 +175,14 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
         })
         .where(eq(tradeDocuments.id, documentId));
       console.log(`[VerifyDoc] Document ${documentId} flagged for manual review after max retries`);
-      // Notify route that document verification failed — move request to Tier 1 for manual review
-      await notifyAiCallbackRoute(caseId, 'Pass', 0, null, undefined);
+      // AI verification failed after all retries — reject request, let importer resubmit
+      await notifyAiCallbackRoute(
+        caseId,
+        'Fail',
+        100,
+        null,
+        'AI verification could not be completed after 3 attempts. Please contact support or resubmit your documents.',
+      );
     } else {
       await db.update(tradeDocuments)
         .set({ aiRetryCount: attemptNumber })
