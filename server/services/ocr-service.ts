@@ -358,19 +358,26 @@ export interface KycOcrResult {
   checkedAt: string;
 }
 
-/** Simple token-based name similarity (0-1). */
+/** Script-aware token-based name similarity (0-1).
+ * Handles Latin (incl. accented/diacritic), Arabic, Cyrillic, CJK, etc.
+ * - Latin names: NFD decompose + strip diacritics, then lowercase, split on whitespace/punctuation
+ * - Non-Latin scripts: Unicode-aware lowercase, split on whitespace/punctuation, preserve script chars
+ * Comparison is case-insensitive and diacritic-tolerant; word order independent.
+ */
 function nameSimilarity(a: string, b: string): number {
   if (!a || !b) return 0;
-  // Normalize: Unicode decompose (NFD) to convert accented/transliterated chars to base ASCII
-  // then lowercase and strip remaining non-alphabetic characters (handles Arabic, Cyrillic, etc.)
-  const normalize = (s: string) =>
-    s.normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // strip combining diacritics
+  const normalize = (s: string): string[] => {
+    // NFD decompose + strip combining diacritics (é -> e, ñ -> n, etc.)
+    const diacriticStripped = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return diacriticStripped
       .toLowerCase()
-      .replace(/[^a-z\s]/g, '')
-      .trim();
-  const tokensA = normalize(a).split(/\s+/).filter(Boolean);
-  const tokensB = normalize(b).split(/\s+/).filter(Boolean);
+      // Split on whitespace and common punctuation; preserve script chars including non-Latin
+      .split(/[\s\-_.,/\\|]+/)
+      .map(t => t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')) // trim leading/trailing non-word chars per token
+      .filter(Boolean);
+  };
+  const tokensA = normalize(a);
+  const tokensB = normalize(b);
   if (tokensA.length === 0 || tokensB.length === 0) return 0;
   const matched = tokensA.filter(t => tokensB.includes(t));
   return matched.length / Math.max(tokensA.length, tokensB.length);
