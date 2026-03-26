@@ -5537,6 +5537,9 @@ export async function registerRoutes(
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const submissionType = (req.query.submissionType as string) || 'personal';
+      if (!['personal', 'corporate'].includes(submissionType)) {
+        return res.status(400).json({ message: "submissionType must be 'personal' or 'corporate'" });
+      }
       const draft = await storage.getKycDraft(userId, submissionType);
       res.json({ draft: draft || null });
     } catch (err) {
@@ -5549,6 +5552,9 @@ export async function registerRoutes(
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const { submissionType = 'personal', draftData } = req.body;
+      if (!['personal', 'corporate'].includes(submissionType)) {
+        return res.status(400).json({ message: "submissionType must be 'personal' or 'corporate'" });
+      }
       if (!draftData || typeof draftData !== 'object') {
         return res.status(400).json({ message: "draftData is required" });
       }
