@@ -349,6 +349,7 @@ export default function KYC() {
     const serverTs = serverDraftData.draft.updatedAt ? new Date(serverDraftData.draft.updatedAt).getTime() : 0;
     const localTs = savedDraft?.savedAt || 0;
     if (serverTs <= localTs) return;
+    // Restore all personal fields
     if (sd.personalFullName) setPersonalFullName(sd.personalFullName);
     if (sd.personalEmail) setPersonalEmail(sd.personalEmail);
     if (sd.personalPhone) setPersonalPhone(sd.personalPhone);
@@ -362,8 +363,32 @@ export default function KYC() {
     if (sd.personalAccountType) setPersonalAccountType(sd.personalAccountType);
     if (sd.personalDateOfBirth) setPersonalDateOfBirth(sd.personalDateOfBirth);
     if (sd.passportExpiryDate) setPassportExpiryDate(sd.passportExpiryDate);
+    // Restore all corporate fields
+    if (sd.corporateStep !== undefined) setCorporateStep(sd.corporateStep);
     if (sd.companyName) setCompanyName(sd.companyName);
     if (sd.corporateRegNumber) setCorporateRegNumber(sd.corporateRegNumber);
+    if (sd.incorporationDate) setIncorporationDate(sd.incorporationDate);
+    if (sd.countryOfIncorporation) setCountryOfIncorporation(sd.countryOfIncorporation);
+    if (sd.companyType) setCompanyType(sd.companyType);
+    if (sd.natureOfBusiness) setNatureOfBusiness(sd.natureOfBusiness);
+    if (sd.numberOfEmployees) setNumberOfEmployees(sd.numberOfEmployees);
+    if (sd.headOfficeAddress) setHeadOfficeAddress(sd.headOfficeAddress);
+    if (sd.telephoneNumber) setTelephoneNumber(sd.telephoneNumber);
+    if (sd.website) setWebsite(sd.website);
+    if (sd.emailAddress) setEmailAddress(sd.emailAddress);
+    if (sd.tradingContactName) setTradingContactName(sd.tradingContactName);
+    if (sd.tradingContactEmail) setTradingContactEmail(sd.tradingContactEmail);
+    if (sd.tradingContactPhone) setTradingContactPhone(sd.tradingContactPhone);
+    if (sd.financeContactName) setFinanceContactName(sd.financeContactName);
+    if (sd.financeContactEmail) setFinanceContactEmail(sd.financeContactEmail);
+    if (sd.financeContactPhone) setFinanceContactPhone(sd.financeContactPhone);
+    if (sd.shareholderCompanyUbos) setShareholderCompanyUbos(sd.shareholderCompanyUbos);
+    if (sd.hasPepOwners !== undefined) setHasPepOwners(sd.hasPepOwners);
+    if (sd.pepDetails) setPepDetails(sd.pepDetails);
+    if (sd.tradeLicenseExpiryDate) setTradeLicenseExpiryDate(sd.tradeLicenseExpiryDate);
+    if (sd.directorPassportExpiryDate) setDirectorPassportExpiryDate(sd.directorPassportExpiryDate);
+    if (Array.isArray(sd.beneficialOwners) && sd.beneficialOwners.length > 0) setBeneficialOwners(sd.beneficialOwners);
+    // Restore step state
     if (sd.finatradesStep) setFinatradesStep(sd.finatradesStep);
   }, [serverDraftData]);
 

@@ -12,8 +12,12 @@ CREATE TABLE IF NOT EXISTS "kyc_drafts" (
     CONSTRAINT "kyc_drafts_user_submission_uniq" UNIQUE ("user_id", "submission_type")
 );
 
--- OCR mismatch flag: populated async after personal KYC submission via GPT-4o vision
+-- Personal KYC: OCR mismatch flag + risk score + change-requested sections
 ALTER TABLE "finatrades_personal_kyc"
     ADD COLUMN IF NOT EXISTS "ocr_mismatch_flag" jsonb,
     ADD COLUMN IF NOT EXISTS "risk_score" integer DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS "change_requested_sections" jsonb;
+
+-- Corporate KYC: change-requested sections (authoritative unlock source for resubmit)
+ALTER TABLE "finatrades_corporate_kyc"
     ADD COLUMN IF NOT EXISTS "change_requested_sections" jsonb;

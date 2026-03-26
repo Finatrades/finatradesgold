@@ -826,6 +826,8 @@ export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
   reviewedBy: varchar("reviewed_by", { length: 255 }),
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
+  // Sections the admin has requested changes on (populated on Changes Requested decision)
+  changeRequestedSections: json("change_requested_sections").$type<string[]>(),
   
   // DocuSign Agreement Tracking
   agreementEnvelopeId: varchar("agreement_envelope_id", { length: 255 }),
