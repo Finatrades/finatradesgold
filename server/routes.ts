@@ -11121,6 +11121,17 @@ export async function registerRoutes(
       }
       
       res.json({ gift, message: "Gold gift sent successfully" });
+
+      // Low balance alert after gift debit
+      const giftSender = await storage.getUser(senderUserId).catch(() => null);
+      if (giftSender?.email) {
+        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
+        checkAndSendLowBalanceAlert(
+          storage, senderUserId, giftSender.email,
+          giftSender.firstName, giftSender.lastName,
+          getGoldPricePerGram,
+        ).catch(err => console.error('[Email] Low balance check (gift) failed:', err));
+      }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send gift" });
     }
@@ -19389,6 +19400,16 @@ export async function registerRoutes(
       });
       
       res.json({ transfer, message: "Payment successful" });
+
+      // Low balance alert for payer (LGPW debit on QR payment)
+      if (payer.email) {
+        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
+        checkAndSendLowBalanceAlert(
+          storage, payer.id, payer.email,
+          payer.firstName, payer.lastName,
+          getGoldPricePerGram,
+        ).catch(err => console.error('[Email] Low balance check (QR payment) failed:', err));
+      }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
     }
