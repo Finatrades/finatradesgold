@@ -128,7 +128,7 @@ const OCCUPATION_OPTIONS = [
 export default function KYC() {
   const { user, refreshUser } = useAuth();
   const { addNotification } = useNotifications();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [isResettingKyc, setIsResettingKyc] = useState(false);
   
@@ -160,7 +160,7 @@ export default function KYC() {
   const existingSubmission = existingKycData?.submission;
 
   const isChangesRequested = existingSubmission?.status === 'Changes Requested';
-  const isResubmitMode = isChangesRequested && (typeof window !== 'undefined' && window.location.search.includes('resubmit=true'));
+  const isResubmitMode = isChangesRequested && location.includes('resubmit=true');
 
   const { data: sectionReviewsData } = useQuery({
     queryKey: ['/api/kyc/section-reviews', existingSubmission?.id],
@@ -599,13 +599,13 @@ export default function KYC() {
       return;
     }
     
-    // Validate required documents
-    if (!idFrontFile || !idBackFile || !addressProofFile) {
+    // Validate required documents (skip validation for locked sections in resubmit mode)
+    if (!isSectionLocked('documents') && (!idFrontFile || !idBackFile || !addressProofFile)) {
       toast.error("Please upload all required documents");
       return;
     }
     
-    if (!capturedSelfie) {
+    if (!isSectionLocked('liveness') && !capturedSelfie) {
       toast.error("Please complete liveness verification");
       return;
     }
@@ -613,10 +613,10 @@ export default function KYC() {
     setIsSubmitting(true);
     
     try {
-      // Convert documents to base64
-      const idFrontBase64 = await fileToBase64(idFrontFile);
-      const idBackBase64 = await fileToBase64(idBackFile);
-      const addressProofBase64 = await fileToBase64(addressProofFile);
+      // Convert newly-uploaded documents to base64; omit if section is locked (server keeps existing)
+      const idFrontBase64 = idFrontFile ? await fileToBase64(idFrontFile) : null;
+      const idBackBase64 = idBackFile ? await fileToBase64(idBackFile) : null;
+      const addressProofBase64 = addressProofFile ? await fileToBase64(addressProofFile) : null;
       const passportBase64 = passportFile ? await fileToBase64(passportFile) : null;
       
       await apiRequest('POST', '/api/finatrades-kyc/personal', {
@@ -636,14 +636,16 @@ export default function KYC() {
           accountType: personalAccountType
         },
         documents: {
-          idFront: { url: idFrontBase64, uploaded: true },
-          idBack: { url: idBackBase64, uploaded: true },
-          addressProof: { url: addressProofBase64, uploaded: true },
-          passport: passportBase64 ? { url: passportBase64, uploaded: true } : null
+          idFront: idFrontBase64 ? { url: idFrontBase64, uploaded: true } : undefined,
+          idBack: idBackBase64 ? { url: idBackBase64, uploaded: true } : undefined,
+          addressProof: addressProofBase64 ? { url: addressProofBase64, uploaded: true } : undefined,
+          passport: passportBase64 ? { url: passportBase64, uploaded: true } : undefined
         },
         passportExpiryDate: passportExpiryDate || null,
-        livenessVerified: true,
-        livenessCapture: capturedSelfie,
+        livenessVerified: capturedSelfie ? true : undefined,
+        livenessCapture: capturedSelfie || undefined,
+        isResubmit: isResubmitMode,
+        lockedSections: isResubmitMode ? approvedSections : [],
         status: 'In Progress'
       });
       
@@ -680,7 +682,7 @@ export default function KYC() {
   const handleFinatradesCorporateSubmit = async () => {
     if (!user) return;
     
-    if (!capturedSelfie) {
+    if (!isSectionLocked('representative_liveness') && !capturedSelfie) {
       toast.error("Please complete representative liveness verification");
       return;
     }
@@ -724,7 +726,9 @@ export default function KYC() {
         documents: docsPayload,
         tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
         directorPassportExpiryDate: directorPassportExpiryDate || null,
-        representativeLiveness: capturedSelfie,
+        representativeLiveness: capturedSelfie || undefined,
+        isResubmit: isResubmitMode,
+        lockedSections: isResubmitMode ? approvedSections : [],
         status: 'In Progress'
       });
       
@@ -738,7 +742,6 @@ export default function KYC() {
       
       clearKycDraft();
       queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/finatrades-kyc/corporate'] });
       toast.success("Corporate KYC Submitted Successfully", {
         description: "Your verification is now under review."
       });
@@ -1177,7 +1180,7 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isDocumentsComplete = isSectionLocked('documents') || (idFrontFile && idBackFile && passportFile && passportExpiryDate && addressProofFile);
+    const isDocumentsComplete = isSectionLocked('documents') || (idFrontFile && idBackFile && addressProofFile);
     
     return (
       <div className="min-h-screen bg-background text-foreground">

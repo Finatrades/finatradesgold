@@ -22771,7 +22771,7 @@ export async function registerRoutes(
   app.post("/api/finatrades-kyc/personal", ensureAuthenticated, async (req, res) => {
     try {
       console.log(`[KYC] Personal KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
-      const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate } = req.body;
+      const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate, isResubmit, lockedSections } = req.body;
       
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
@@ -22782,7 +22782,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
+      const existing = await storage.getFinatradesPersonalKyc(userId);
+      const locked: string[] = Array.isArray(lockedSections) ? lockedSections : [];
+      const docsLocked = isResubmit && locked.includes('documents');
+      const livenessLocked = isResubmit && locked.includes('liveness');
+      
       // Flatten the nested objects into individual fields
+      // For locked sections in resubmit mode, preserve existing values
       const kycData = {
         userId,
         // Personal Information
@@ -22798,21 +22804,19 @@ export async function registerRoutes(
         occupation: personalInformation?.occupation,
         sourceOfFunds: personalInformation?.sourceOfFunds,
         accountType: personalInformation?.accountType,
-        // Documents
-        idFrontUrl: documents?.idFront?.url,
-        idBackUrl: documents?.idBack?.url,
-        passportUrl: documents?.passport?.url,
-        addressProofUrl: documents?.addressProof?.url,
+        // Documents — preserve existing URLs when section is locked
+        idFrontUrl: docsLocked ? (existing?.idFrontUrl ?? undefined) : (documents?.idFront?.url ?? undefined),
+        idBackUrl: docsLocked ? (existing?.idBackUrl ?? undefined) : (documents?.idBack?.url ?? undefined),
+        passportUrl: docsLocked ? (existing?.passportUrl ?? undefined) : (documents?.passport?.url ?? undefined),
+        addressProofUrl: docsLocked ? (existing?.addressProofUrl ?? undefined) : (documents?.addressProof?.url ?? undefined),
         // Document Expiry
         passportExpiryDate: passportExpiryDate || null,
-        // Liveness
-        livenessCapture,
-        livenessVerified: !!livenessVerified,
-        livenessVerifiedAt: livenessVerified ? new Date() : null,
+        // Liveness — preserve existing when section is locked
+        livenessCapture: livenessLocked ? (existing?.livenessCapture ?? undefined) : (livenessCapture ?? undefined),
+        livenessVerified: livenessLocked ? (existing?.livenessVerified ?? false) : !!livenessVerified,
+        livenessVerifiedAt: livenessLocked ? (existing?.livenessVerifiedAt ?? null) : (livenessVerified ? new Date() : null),
         status: 'In Progress' as const,
       };
-      
-      const existing = await storage.getFinatradesPersonalKyc(userId);
       
       if (existing) {
         const updated = await storage.updateFinatradesPersonalKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
@@ -22913,7 +22917,7 @@ export async function registerRoutes(
       console.log(`[KYC] Corporate KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
       const { 
         userId, 
-        livenessCapture: representativeLiveness,
+        representativeLiveness,
         companyName,
         registrationNumber,
         incorporationDate,
@@ -22939,6 +22943,8 @@ export async function registerRoutes(
         documents,
         tradeLicenseExpiryDate,
         directorPassportExpiryDate,
+        isResubmit,
+        lockedSections,
         status
       } = req.body;
       
@@ -22950,6 +22956,10 @@ export async function registerRoutes(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      const existing = await storage.getFinatradesCorporateKyc(userId);
+      const locked: string[] = Array.isArray(lockedSections) ? lockedSections : [];
+      const livenessLocked = isResubmit && locked.includes('representative_liveness');
       
       const kycData = {
         companyName,
@@ -22977,13 +22987,11 @@ export async function registerRoutes(
         documents,
         tradeLicenseExpiryDate: tradeLicenseExpiryDate || null,
         directorPassportExpiryDate: directorPassportExpiryDate || null,
-        livenessCapture: representativeLiveness,
-        livenessVerified: !!representativeLiveness,
-        livenessVerifiedAt: representativeLiveness ? new Date() : null,
+        livenessCapture: livenessLocked ? (existing?.livenessCapture ?? undefined) : (representativeLiveness ?? undefined),
+        livenessVerified: livenessLocked ? (existing?.livenessVerified ?? false) : !!representativeLiveness,
+        livenessVerifiedAt: livenessLocked ? (existing?.livenessVerifiedAt ?? null) : (representativeLiveness ? new Date() : null),
         status: status || 'In Progress',
       };
-      
-      const existing = await storage.getFinatradesCorporateKyc(userId);
       
       if (existing) {
         const updated = await storage.updateFinatradesCorporateKyc(existing.id, { ...kycData, status: 'Pending Review' as any });

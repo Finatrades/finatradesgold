@@ -1414,6 +1414,107 @@ export default function KYCReview() {
                     );
                   })()}
                 </div>
+
+                {/* Risk Intelligence Panel — OCR/fraud score, name flag, screening */}
+                {(() => {
+                  const appData = fullApplicationData || selectedApplication;
+                  const fraudScore = parseFloat(appData?.aiFraudScore || appData?.fraudScore || '');
+                  const hasFraudScore = !isNaN(fraudScore);
+                  const riskScore = appData?.riskScore;
+                  const isPep = appData?.isPep;
+                  const isSanctioned = appData?.isSanctioned;
+                  const aiStatus = appData?.aiVerificationStatus;
+                  const aiRejectionReason = appData?.aiRejectionReason;
+                  const hasAnyRiskData = hasFraudScore || riskScore || isPep || isSanctioned || aiStatus;
+                  
+                  if (!hasAnyRiskData) return null;
+                  
+                  const fraudRisk = hasFraudScore
+                    ? fraudScore >= 70 ? 'high' : fraudScore >= 40 ? 'medium' : 'low'
+                    : null;
+                  
+                  return (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-500" /> Risk Intelligence
+                      </h4>
+                      <div className="space-y-2">
+                        {hasFraudScore && (
+                          <div className={`flex items-center justify-between p-2 rounded border text-sm ${
+                            fraudRisk === 'high' ? 'bg-red-50 border-red-200' :
+                            fraudRisk === 'medium' ? 'bg-amber-50 border-amber-200' :
+                            'bg-green-50 border-green-200'
+                          }`} data-testid="risk-fraud-score">
+                            <span className="text-gray-600">AI Fraud Score</span>
+                            <span className={`font-bold ${
+                              fraudRisk === 'high' ? 'text-red-700' :
+                              fraudRisk === 'medium' ? 'text-amber-700' :
+                              'text-green-700'
+                            }`}>
+                              {fraudScore.toFixed(1)} / 100
+                              {fraudRisk === 'high' && ' ⚠ HIGH RISK'}
+                              {fraudRisk === 'medium' && ' — Medium'}
+                            </span>
+                          </div>
+                        )}
+                        {aiStatus && (
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded border text-sm" data-testid="risk-ai-status">
+                            <span className="text-gray-600">AI Verification Status</span>
+                            <Badge className={aiStatus === 'completed' ? 'bg-green-100 text-green-700' : aiStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}>
+                              {aiStatus}
+                            </Badge>
+                          </div>
+                        )}
+                        {aiRejectionReason && (
+                          <div className="p-2 bg-red-50 rounded border border-red-200 text-sm text-red-700" data-testid="risk-ai-rejection">
+                            <span className="font-medium">AI Rejection Reason: </span>{aiRejectionReason}
+                          </div>
+                        )}
+                        {isPep && (
+                          <div className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200 text-sm text-red-700" data-testid="risk-pep-flag">
+                            <XCircle className="w-4 h-4 flex-shrink-0" />
+                            <span><span className="font-bold">PEP Flag:</span> Applicant is a Politically Exposed Person</span>
+                          </div>
+                        )}
+                        {isSanctioned && (
+                          <div className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200 text-sm text-red-700" data-testid="risk-sanctions-flag">
+                            <XCircle className="w-4 h-4 flex-shrink-0" />
+                            <span><span className="font-bold">Sanctions Match:</span> Applicant appears on a sanctions list</span>
+                          </div>
+                        )}
+                        {riskScore != null && riskScore > 0 && (
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded border text-sm" data-testid="risk-score">
+                            <span className="text-gray-600">Screening Risk Score</span>
+                            <span className={`font-medium ${riskScore >= 70 ? 'text-red-600' : riskScore >= 40 ? 'text-amber-600' : 'text-green-600'}`}>
+                              {riskScore} / 100
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Name Mismatch Check — prompt admin to verify submitted name against ID */}
+                {(() => {
+                  const appData = fullApplicationData || selectedApplication;
+                  const isPersonal = appData?.kycType === 'finatrades_personal' || (appData?.kycType?.startsWith('finatrades') === false && appData?.accountType !== 'business');
+                  const submittedName = appData?.fullName;
+                  if (!isPersonal || !submittedName) return null;
+                  return (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm" data-testid="name-verification-prompt">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-blue-800">Name Verification Required</span>
+                          <p className="text-blue-700 mt-0.5">
+                            Submitted name: <span className="font-bold">{submittedName}</span>. Please verify this matches the name shown on the uploaded ID documents.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 
                 {(selectedApplication?.accountType === 'business' || fullApplicationData?.kycType === 'finatrades_corporate') && (() => {
                   const biz = fullApplicationData || selectedApplication;
