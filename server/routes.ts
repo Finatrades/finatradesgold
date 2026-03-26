@@ -22857,10 +22857,10 @@ export async function registerRoutes(
           checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
             .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
-              const currentScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
               await storage.updateFinatradesPersonalKyc(updated!.id, {
                 ocrMismatchFlag: ocrResult,
-                ...(mismatch ? { riskScore: currentScore + 10 } : {}),
+                // Set risk score idempotently: 10 if mismatch, 0 if clean (not cumulative)
+                riskScore: mismatch ? 10 : 0,
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
             })

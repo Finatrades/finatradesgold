@@ -827,7 +827,7 @@ export const finatradesCorporateKyc = pgTable("finatrades_corporate_kyc", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   // Sections the admin has requested changes on (populated on Changes Requested decision)
-  changeRequestedSections: json("change_requested_sections").$type<string[]>(),
+  changeRequestedSections: jsonb("change_requested_sections").$type<string[]>(),
   
   // DocuSign Agreement Tracking
   agreementEnvelopeId: varchar("agreement_envelope_id", { length: 255 }),
@@ -898,10 +898,10 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   signedDocumentUrl: text("signed_document_url"),
 
   // Sections the admin has requested changes on (populated on Changes Requested decision)
-  changeRequestedSections: json("change_requested_sections").$type<string[]>(),
+  changeRequestedSections: jsonb("change_requested_sections").$type<string[]>(),
 
   // OCR Mismatch Flagging — populated async after submission
-  ocrMismatchFlag: json("ocr_mismatch_flag").$type<{
+  ocrMismatchFlag: jsonb("ocr_mismatch_flag").$type<{
     checked: boolean;
     nameMismatch: boolean;
     dobMismatch: boolean;
@@ -910,7 +910,7 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
     similarity: number;
     checkedAt: string;
   } | null>(),
-  // Submission-level risk score (OCR adds 10 pts if mismatch detected)
+  // Submission-level risk score: 10 if OCR mismatch (idempotent per submission), 0 if clean
   riskScore: integer("risk_score").default(0),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -929,7 +929,7 @@ export const kycDrafts = pgTable("kyc_drafts", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   submissionType: varchar("submission_type", { length: 50 }).notNull().default('personal'),
-  draftData: json("draft_data").$type<Record<string, any>>(),
+  draftData: jsonb("draft_data").$type<Record<string, any>>(),
   savedAt: timestamp("saved_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
