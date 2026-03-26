@@ -13950,59 +13950,63 @@ export async function registerRoutes(
         const notes = req.body.notes || req.body.adminNotes || '';
         const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
 
-        if (caseUser?.email && statusChanged) {
+        const requestDocuments = req.body.requestDocuments === true;
+        const caseRef = tradeCase.caseNumber || tradeCase.id;
+
+        if (caseUser?.email) {
           const userName = `${caseUser.firstName || ''} ${caseUser.lastName || ''}`.trim() || 'Valued Client';
 
-          if (tradeCase.status === 'Approved') {
-            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
-              user_name: userName,
-              case_id: tradeCase.caseId || tradeCase.id,
-              credit_limit: tradeCase.tradeValueUsd || '0',
-              valid_until: 'As per agreement',
-            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
-          } else if (tradeCase.status === 'Rejected') {
-            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
-              user_name: userName,
-              case_id: tradeCase.caseId || tradeCase.id,
-              rejection_reason: notes || 'Does not meet current eligibility requirements.',
-            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
-          } else if (tradeCase.status === 'Completed') {
-            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
-              user_name: userName,
-              case_id: tradeCase.caseId || tradeCase.id,
-              total_value: tradeCase.tradeValueUsd || '0',
-              completion_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
-          } else if (tradeCase.status === 'Documents Requested') {
-            // Admin requested additional documents
+          // Admin explicitly requests additional documents (body flag, independent of status change)
+          if (requestDocuments) {
             sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_DOCUMENT_REQUEST, {
               user_name: userName,
-              case_id: tradeCase.caseId || tradeCase.id,
+              case_id: caseRef,
               required_documents: notes || 'Please log in to view the required documents.',
               upload_url: `${appBaseUrl}/trade-finance`,
             }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade document request email failed:', e));
-          } else {
-            // Generic status change
-            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
-              user_name: userName,
-              case_id: tradeCase.caseId || tradeCase.id,
-              new_status: tradeCase.status || 'Updated',
-              update_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-              status_notes: notes || 'Please log in to your account for more details.',
-            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
+            await storage.createNotification({
+              userId: caseUser.id,
+              title: 'Documents Required',
+              message: `Additional documents are required for your trade finance case ${caseRef}. Please upload them promptly.`,
+              type: 'trade',
+              link: '/trade-finance',
+              read: false,
+            }).catch(() => {});
           }
-        }
 
-        // If admin requests documents — also notify via bell
-        if (statusChanged && tradeCase.status === 'Documents Requested' && caseUser) {
-          await storage.createNotification({
-            userId: caseUser.id,
-            title: 'Documents Required',
-            message: `Additional documents are required for your trade finance case ${tradeCase.caseId || tradeCase.id}. Please upload them promptly.`,
-            type: 'trade',
-            link: '/trade-finance',
-            read: false,
-          }).catch(() => {});
+          if (statusChanged) {
+            if (tradeCase.status === 'Approved') {
+              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
+                user_name: userName,
+                case_id: caseRef,
+                credit_limit: tradeCase.tradeValueUsd || '0',
+                valid_until: 'As per agreement',
+              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
+            } else if (tradeCase.status === 'Rejected' || tradeCase.status === 'Cancelled') {
+              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
+                user_name: userName,
+                case_id: caseRef,
+                rejection_reason: notes || 'Does not meet current eligibility requirements.',
+              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
+            } else if (tradeCase.status === 'Settled') {
+              // Settled = trade case successfully completed
+              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
+                user_name: userName,
+                case_id: caseRef,
+                total_value: tradeCase.tradeValueUsd || '0',
+                completion_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
+            } else {
+              // Generic status change (Submitted, Under Review, Active, etc.)
+              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
+                user_name: userName,
+                case_id: caseRef,
+                new_status: tradeCase.status || 'Updated',
+                update_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                status_notes: notes || 'Please log in to your account for more details.',
+              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
+            }
+          }
         }
       } catch (emailErr) { console.error('[Email] Trade case status email trigger failed:', emailErr); }
     } catch (error) {
