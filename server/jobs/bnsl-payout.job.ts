@@ -1,16 +1,21 @@
+import { Queue, Worker } from 'bullmq';
 import { cacheGet, cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { notifyError } from '../system-notifications';
+import { getRedisConnection } from '../job-queue-bullmq';
 import { db } from '../db';
-import { bnslPlans, bnslPayouts } from '../../shared/schema';
+import { wallets, transactions, bnslPlans, bnslPayouts } from '../../shared/schema';
 import { eq, lte, inArray, and } from 'drizzle-orm';
 import type { IStorage } from '../storage';
+import type { InsertTransaction } from '../../shared/schema';
 
 const ADMIN_EMAILS = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
 const LAST_RUN_KEY = 'bnsl:autopay:lastrun';
 const HIGH_RISK_FAILURE_DAYS = 3;
+const QUEUE_NAME = 'bnsl-payout';
+const DAILY_JOB_ID = 'bnsl-payout-daily';
 
-interface PayoutEngineStats {
+export interface PayoutEngineStats {
   timestamp: string;
   processed: number;
   failed: number;
@@ -28,16 +33,18 @@ async function notifyAdminsInApp(
   try {
     const allUsers = await storage.getAllUsers();
     const admins = allUsers.filter(u => u.role === 'admin');
-    for (const admin of admins) {
-      await storage.createNotification({
-        userId: admin.id,
-        title,
-        message,
-        type,
-        link: link || null,
-        read: false,
-      });
-    }
+    await Promise.all(
+      admins.map(admin =>
+        storage.createNotification({
+          userId: admin.id,
+          title,
+          message,
+          type,
+          link: link || null,
+          read: false,
+        }),
+      ),
+    );
   } catch (err) {
     console.error('[BNSL Payout Engine] notifyAdminsInApp failed:', err);
   }
@@ -60,20 +67,19 @@ export async function runBnslPayoutEngine(
 
   console.log('[BNSL Payout Engine] Running automated payout cycle...');
 
-  // Fetch all active or maturing plans
   const allPlans = await storage.getAllBnslPlans();
   const eligiblePlans = allPlans.filter(p => p.status === 'Active' || p.status === 'Maturing');
 
-  // Get live gold price once for this run — abort if unavailable
+  // Fetch live gold price once — abort entire cycle if unavailable
   let goldPrice: number;
   try {
     goldPrice = await getGoldPricePerGram();
     if (!goldPrice || goldPrice <= 0) throw new Error('Invalid gold price returned');
   } catch (priceErr) {
-    const errMsg = priceErr instanceof Error ? priceErr.message : String(priceErr);
-    console.error('[BNSL Payout Engine] Cannot fetch gold price — aborting run:', errMsg);
+    const msg = priceErr instanceof Error ? priceErr.message : String(priceErr);
+    console.error('[BNSL Payout Engine] Cannot fetch gold price — aborting run:', msg);
     await notifyError({
-      error: priceErr instanceof Error ? priceErr : new Error(errMsg),
+      error: priceErr instanceof Error ? priceErr : new Error(msg),
       context: 'bnsl-payout-engine:gold-price-fetch',
       route: '/jobs/bnsl-payout',
     });
@@ -84,8 +90,8 @@ export async function runBnslPayoutEngine(
 
   for (const plan of eligiblePlans) {
     const payouts = await storage.getPlanPayouts(plan.id);
-    const duePending = payouts.filter(p =>
-      p.status === 'Scheduled' && new Date(p.scheduledDate) <= today,
+    const duePending = payouts.filter(
+      p => p.status === 'Scheduled' && new Date(p.scheduledDate) <= today,
     );
 
     for (const payout of duePending) {
@@ -97,65 +103,84 @@ export async function runBnslPayoutEngine(
         const monetaryAmount = parseFloat(payout.monetaryAmountUsd.toString());
         const gramsCredited = monetaryAmount / goldPrice;
 
-        // Credit user's FinaPay wallet
-        const wallet = await storage.getWallet(plan.userId);
-        if (!wallet) throw new Error(`Wallet not found for user ${plan.userId}`);
+        // Atomic DB transaction: wallet credit + payout status + plan margins + tx record
+        await db.transaction(async (tx) => {
+          // 1. Credit user FinaPay wallet
+          const [currentWallet] = await tx
+            .select()
+            .from(wallets)
+            .where(eq(wallets.userId, plan.userId));
+          if (!currentWallet) throw new Error(`Wallet not found for user ${plan.userId}`);
 
-        const currentGold = parseFloat(wallet.goldGrams);
-        await storage.updateWallet(wallet.id, {
-          goldGrams: (currentGold + gramsCredited).toFixed(6),
+          const newGoldGrams = (parseFloat(currentWallet.goldGrams) + gramsCredited).toFixed(6);
+          await tx
+            .update(wallets)
+            .set({ goldGrams: newGoldGrams, updatedAt: new Date() })
+            .where(eq(wallets.id, currentWallet.id));
+
+          // 2. Mark payout Paid with market data — clear any prior failureReason
+          await tx
+            .update(bnslPayouts)
+            .set({
+              status: 'Paid',
+              marketPriceUsdPerGram: goldPrice.toFixed(2),
+              gramsCredited: gramsCredited.toFixed(6),
+              paidAt: new Date(),
+              failureReason: null,
+            })
+            .where(eq(bnslPayouts.id, payout.id));
+
+          // 3. Update plan paid/remaining margin tracking
+          const currentPaidUsd = parseFloat(plan.paidMarginUsd?.toString() || '0');
+          const currentPaidGrams = parseFloat(plan.paidMarginGrams?.toString() || '0');
+          const currentRemainingUsd = parseFloat(plan.remainingMarginUsd?.toString() || '0');
+          await tx
+            .update(bnslPlans)
+            .set({
+              paidMarginUsd: (currentPaidUsd + monetaryAmount).toFixed(2),
+              paidMarginGrams: (currentPaidGrams + gramsCredited).toFixed(6),
+              remainingMarginUsd: Math.max(0, currentRemainingUsd - monetaryAmount).toFixed(2),
+              updatedAt: new Date(),
+            })
+            .where(eq(bnslPlans.id, plan.id));
+
+          // 4. Transaction record
+          const txRecord: InsertTransaction = {
+            userId: plan.userId,
+            type: 'Receive',
+            status: 'Completed',
+            amountGold: gramsCredited.toFixed(6),
+            amountUsd: monetaryAmount.toFixed(2),
+            goldPriceUsdPerGram: goldPrice.toFixed(2),
+            description: `BNSL Auto Payout #${payout.sequence} — ${plan.contractId}`,
+            sourceModule: 'bnsl',
+            bnslPlanId: plan.id,
+            bnslPayoutId: payout.id,
+          };
+          await tx.insert(transactions).values(txRecord);
         });
 
-        // Mark payout as Paid
-        await storage.updateBnslPayout(payout.id, {
-          status: 'Paid',
-          marketPriceUsdPerGram: goldPrice.toFixed(2),
-          gramsCredited: gramsCredited.toFixed(6),
-          paidAt: new Date(),
-          failureReason: null,
-        });
+        // Post-transaction observability (non-critical — failures don't roll back the payment)
+        try {
+          const { vaultLedgerService } = await import('../vault-ledger-service');
+          await vaultLedgerService.recordLedgerEntry({
+            userId: plan.userId,
+            action: 'Payout_Credit',
+            goldGrams: gramsCredited,
+            goldPriceUsdPerGram: goldPrice,
+            fromWallet: 'BNSL',
+            toWallet: 'FinaPay',
+            fromStatus: 'Locked_BNSL',
+            toStatus: 'Available',
+            bnslPlanId: plan.id,
+            bnslPayoutId: payout.id,
+            notes: `BNSL Auto Payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
+            createdBy: 'system',
+          });
+        } catch (ledgerErr) {
+          console.error('[BNSL Payout Engine] Ledger entry failed (non-fatal):', ledgerErr);
+        }
 
-        // Update plan paid/remaining margin tracking
-        const currentPaidUsd = parseFloat(plan.paidMarginUsd?.toString() || '0');
-        const currentPaidGrams = parseFloat(plan.paidMarginGrams?.toString() || '0');
-        await storage.updateBnslPlan(plan.id, {
-          paidMarginUsd: (currentPaidUsd + monetaryAmount).toFixed(2),
-          paidMarginGrams: (currentPaidGrams + gramsCredited).toFixed(6),
-          remainingMarginUsd: (parseFloat(plan.remainingMarginUsd?.toString() || '0') - monetaryAmount).toFixed(2),
-        });
-
-        // Transaction record
-        await storage.createTransaction({
-          userId: plan.userId,
-          type: 'Receive',
-          status: 'Completed',
-          amountGold: gramsCredited.toFixed(6),
-          amountUsd: monetaryAmount.toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          description: `BNSL Auto Payout #${payout.sequence} — ${plan.contractId}`,
-          sourceModule: 'bnsl',
-          bnslPlanId: plan.id,
-          bnslPayoutId: payout.id,
-        });
-
-        // Vault ledger entry
-        const { vaultLedgerService } = await import('../vault-ledger-service');
-        await vaultLedgerService.recordLedgerEntry({
-          userId: plan.userId,
-          action: 'Payout_Credit',
-          goldGrams: gramsCredited,
-          goldPriceUsdPerGram: goldPrice,
-          fromWallet: 'BNSL',
-          toWallet: 'FinaPay',
-          fromStatus: 'Locked_BNSL',
-          toStatus: 'Available',
-          bnslPlanId: plan.id,
-          bnslPayoutId: payout.id,
-          notes: `BNSL Auto Payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-          createdBy: 'system',
-        });
-
-        // Audit log
         await storage.createAuditLog({
           entityType: 'bnsl',
           entityId: plan.id,
@@ -163,91 +188,111 @@ export async function runBnslPayoutEngine(
           actor: 'system',
           actorRole: 'system',
           details: `Auto payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-        });
+        }).catch(err => console.error('[BNSL Payout Engine] Audit log failed (non-fatal):', err));
 
-        // Idempotency: mark this payout as processed (60-day TTL)
+        // Idempotency: mark processed (60-day TTL)
         await cacheSet(idempotencyKey, '1', 60 * 24 * 60 * 60);
         stats.processed++;
-        console.log(`[BNSL Payout Engine] Paid #${payout.sequence} for plan ${plan.contractId}: ${gramsCredited.toFixed(4)}g`);
+        console.log(
+          `[BNSL Payout Engine] Paid #${payout.sequence} for plan ${plan.contractId}: ${gramsCredited.toFixed(4)}g`,
+        );
 
-        // Notify user of successful payout credit
+        // User notification email
         const planUser = await storage.getUser(plan.userId).catch(() => null);
         if (planUser?.email) {
-          const remainingUsd = parseFloat(plan.remainingMarginUsd?.toString() || '0') - monetaryAmount;
+          const remainingAfter = Math.max(
+            0,
+            parseFloat(plan.remainingMarginUsd?.toString() || '0') - monetaryAmount,
+          );
           const freshPayouts = await storage.getPlanPayouts(plan.id).catch(() => []);
           const nextPayout = freshPayouts.find(p => p.status === 'Scheduled');
           sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_RECEIVED, {
             user_name: `${planUser.firstName || ''} ${planUser.lastName || ''}`.trim() || 'Valued Partner',
             plan_name: plan.contractId,
             amount: monetaryAmount.toFixed(2),
-            remaining_balance: Math.max(0, remainingUsd).toFixed(2),
+            remaining_balance: remainingAfter.toFixed(2),
             next_due_date: nextPayout?.scheduledDate
               ? new Date(nextPayout.scheduledDate).toLocaleDateString()
               : 'All payments settled',
-          }).catch(err => console.error('[BNSL Payout Engine] User email failed:', err));
+          }).catch(err => console.error('[BNSL Payout Engine] User email failed (non-fatal):', err));
         }
       } catch (err) {
         const failureReason = err instanceof Error ? err.message : String(err);
-        console.error(`[BNSL Payout Engine] Failed payout ${payout.id} for plan ${plan.contractId}:`, failureReason);
-
-        // Persist failure reason on the payout record
-        await storage.updateBnslPayout(payout.id, {
-          status: 'Failed',
+        console.error(
+          `[BNSL Payout Engine] Failed payout ${payout.id} for plan ${plan.contractId}:`,
           failureReason,
-        }).catch(() => null);
+        );
+
+        // Persist failure reason — non-retriable unless manually resolved
+        await db
+          .update(bnslPayouts)
+          .set({ status: 'Failed', failureReason })
+          .where(eq(bnslPayouts.id, payout.id))
+          .catch(() => null);
         stats.failed++;
 
-        // System error alert via notifyError (throttled, writes to system_logs)
+        // System alert via notifyError (throttled, writes to system_logs)
         await notifyError({
           error: err instanceof Error ? err : new Error(failureReason),
           context: `bnsl-payout-engine:payout-failed:${payout.id}`,
           route: '/jobs/bnsl-payout',
           userId: plan.userId,
-          requestData: { planId: plan.id, contractId: plan.contractId, payoutSequence: payout.sequence },
+          requestData: {
+            planId: plan.id,
+            contractId: plan.contractId,
+            payoutSequence: payout.sequence,
+            failureReason,
+          },
         });
 
-        // Admin in-app notification + email
+        // In-app admin notification
         await notifyAdminsInApp(
           storage,
-          `BNSL Auto Payout Failed`,
+          'BNSL Auto Payout Failed',
           `Payout #${payout.sequence} on plan ${plan.contractId} failed: ${failureReason.substring(0, 120)}`,
           'error',
           '/admin/bnsl',
         );
-        const planUser = await storage.getUser(plan.userId).catch(() => null);
-        const userName = planUser ? `${planUser.firstName} ${planUser.lastName}` : plan.userId;
+
+        // Admin emails
         for (const adminEmail of ADMIN_EMAILS) {
           sendEmail(adminEmail, EMAIL_TEMPLATES.BNSL_PAYMENT_OVERDUE, {
-            user_name: `Admin`,
-            plan_name: `${plan.contractId} (payout #${payout.sequence}) — ${userName}`,
+            user_name: 'Admin',
+            plan_name: `${plan.contractId} (payout #${payout.sequence})`,
             amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
             days_overdue: '0',
             late_fee: '0.00',
-            payment_url: `https://finatrades.com/admin/bnsl`,
+            payment_url: 'https://finatrades.com/admin/bnsl',
           }).catch(() => null);
         }
       }
     }
 
-    // After processing due payouts, check maturity transition:
-    // Plan is eligible to become Maturing only if:
-    //   1. All payouts are Paid or Cancelled (no more scheduled/pending)
-    //   2. The plan's maturityDate is on or before today (term has been reached)
-    if (duePending.length > 0) {
+    // Maturity transition check — runs for ALL Active plans each cycle (not just those
+    // with due payouts this run), so plans paid over multiple cycles transition correctly.
+    if (plan.status === 'Active') {
       const freshPayouts = await storage.getPlanPayouts(plan.id);
       const allSettled = freshPayouts.every(p => p.status === 'Paid' || p.status === 'Cancelled');
+
+      // Explicit term-date validation: maturity date must have been reached
       const maturityDate = plan.maturityDate ? new Date(plan.maturityDate) : null;
       const termReached = maturityDate !== null && maturityDate <= today;
 
-      if (allSettled && termReached && plan.status === 'Active') {
-        await storage.updateBnslPlan(plan.id, { status: 'Maturing' }).catch(() => null);
+      if (allSettled && termReached) {
+        await db
+          .update(bnslPlans)
+          .set({ status: 'Maturing', updatedAt: new Date() })
+          .where(eq(bnslPlans.id, plan.id))
+          .catch(() => null);
         stats.maturing++;
-        console.log(`[BNSL Payout Engine] Plan ${plan.contractId} moved to Maturing — term date ${maturityDate!.toISOString().slice(0,10)} reached`);
+        console.log(
+          `[BNSL Payout Engine] Plan ${plan.contractId} → Maturing (term: ${maturityDate!.toISOString().slice(0, 10)}, all payouts settled)`,
+        );
 
-        // Admin notification: base settlement requires manual review
+        // Admin alert: base settlement requires manual review
         await notifyAdminsInApp(
           storage,
-          `BNSL Plan Ready for Base Settlement`,
+          'BNSL Plan Ready for Base Settlement',
           `Plan ${plan.contractId} has completed all margin payouts and reached term. Base settlement review required.`,
           'warning',
           '/admin/bnsl',
@@ -265,7 +310,7 @@ export async function runBnslPayoutEngine(
     }
   }
 
-  // High-risk flagging: plans with any Failed payout whose scheduled date is >3 days old
+  // High-risk flagging: any plan with a Failed payout scheduled >3 days ago
   const cutoffDate = new Date(now.getTime() - HIGH_RISK_FAILURE_DAYS * 24 * 60 * 60 * 1000);
   const failedPayouts = await db
     .select({ planId: bnslPayouts.planId })
@@ -285,30 +330,29 @@ export async function runBnslPayoutEngine(
       const flaggedPlan = updated[0];
       stats.highRiskFlagged++;
 
-      // Emit in-app admin alert for high-risk escalation
       await notifyAdminsInApp(
         storage,
-        `BNSL Plan Escalated to High Risk`,
+        'BNSL Plan Escalated to High Risk',
         `Plan ${flaggedPlan.contractId} has been flagged High Risk: a payout has been overdue for more than ${HIGH_RISK_FAILURE_DAYS} days.`,
         'error',
         '/admin/bnsl',
       );
-
       await notifyError({
-        error: new Error(`BNSL plan ${flaggedPlan.contractId} escalated to High Risk (payout overdue >${HIGH_RISK_FAILURE_DAYS} days)`),
+        error: new Error(
+          `BNSL plan ${flaggedPlan.contractId} escalated to High Risk (payout overdue >${HIGH_RISK_FAILURE_DAYS} days)`,
+        ),
         context: `bnsl-payout-engine:high-risk-flag:${planId}`,
         route: '/jobs/bnsl-payout',
       });
     }
   }
 
-  if (highRiskPlanIds.length > 0) {
+  if (stats.highRiskFlagged > 0) {
     console.log(`[BNSL Payout Engine] Flagged ${stats.highRiskFlagged} plan(s) as High Risk`);
   }
 
   stats.timestamp = now.toISOString();
   await cacheSet(LAST_RUN_KEY, JSON.stringify(stats), 48 * 60 * 60);
-
   console.log(
     `[BNSL Payout Engine] Cycle complete — processed: ${stats.processed}, failed: ${stats.failed}, maturing: ${stats.maturing}, high-risk: ${stats.highRiskFlagged}`,
   );
@@ -325,17 +369,75 @@ export async function getPayoutEngineStatus(): Promise<PayoutEngineStats | null>
   }
 }
 
+/**
+ * Starts the BNSL payout engine:
+ * - Primary: BullMQ repeatable job (cron: daily at 02:00 UTC) + Worker
+ * - Fallback: setInterval (24h) when Redis/BullMQ is unavailable
+ * Runs an immediate cycle on startup in both modes.
+ */
 export function startBnslPayoutEngine(
   storage: IStorage,
   getGoldPricePerGram: () => Promise<number>,
 ): void {
+  const connection = getRedisConnection();
+
+  if (connection) {
+    try {
+      const queue = new Queue(QUEUE_NAME, { connection });
+
+      // Worker: processes each job by running the full payout cycle
+      const worker = new Worker(
+        QUEUE_NAME,
+        async (_job) => {
+          return await runBnslPayoutEngine(storage, getGoldPricePerGram);
+        },
+        { connection },
+      );
+      worker.on('failed', (job, err) => {
+        console.error(`[BNSL Payout Engine] BullMQ worker job ${job?.id} failed:`, err.message);
+      });
+
+      // Register daily repeatable job (idempotent — BullMQ deduplicates by jobId+cron)
+      queue
+        .add(
+          'daily-run',
+          {},
+          {
+            jobId: DAILY_JOB_ID,
+            repeat: { cron: '0 2 * * *' }, // 02:00 UTC daily
+            removeOnComplete: { count: 7 },
+            removeOnFail: { count: 30 },
+          },
+        )
+        .catch(err =>
+          console.error('[BNSL Payout Engine] Failed to register repeatable job:', err),
+        );
+
+      console.log('[BNSL Payout Engine] BullMQ scheduler started (cron: 0 2 * * *)');
+    } catch (bullErr) {
+      console.error('[BNSL Payout Engine] BullMQ init failed, using fallback scheduler:', bullErr);
+      _startFallbackScheduler(storage, getGoldPricePerGram);
+      return;
+    }
+  } else {
+    console.warn('[BNSL Payout Engine] No Redis connection — using fallback interval scheduler');
+    _startFallbackScheduler(storage, getGoldPricePerGram);
+  }
+
+  // Immediate startup run in both BullMQ and fallback modes
   runBnslPayoutEngine(storage, getGoldPricePerGram).catch(err =>
     console.error('[BNSL Payout Engine] Startup run error:', err),
   );
+}
+
+function _startFallbackScheduler(
+  storage: IStorage,
+  getGoldPricePerGram: () => Promise<number>,
+): void {
   setInterval(() => {
     runBnslPayoutEngine(storage, getGoldPricePerGram).catch(err =>
-      console.error('[BNSL Payout Engine] Scheduler error:', err),
+      console.error('[BNSL Payout Engine] Fallback scheduler error:', err),
     );
   }, 24 * 60 * 60 * 1000);
-  console.log('[BNSL Payout Engine] Scheduler started (daily cadence)');
+  console.log('[BNSL Payout Engine] Fallback scheduler started (daily interval)');
 }

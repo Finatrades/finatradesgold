@@ -66,7 +66,7 @@ function cleanRedisUrl(rawUrl: string): string {
   return url.replace(/^["']|["']$/g, '');
 }
 
-function getRedisConnection(): { host: string; port: number; password?: string; tls?: {} } | null {
+export function getRedisConnection(): { host: string; port: number; password?: string; tls?: {} } | null {
   if (!REDIS_URL) {
     return null;
   }
