@@ -240,7 +240,7 @@ export default function KYC() {
   const draftSubmissionType = user?.accountType === 'business' ? 'corporate' : 'personal';
 
   // Fetch server-side draft on mount (including resubmission flows — users may have saved progress)
-  const { data: serverDraftData } = useQuery({
+  const { data: serverDraftData, isFetched: serverDraftFetched } = useQuery({
     queryKey: ['/api/kyc/draft', user?.id, draftSubmissionType],
     queryFn: async () => {
       const res = await fetch(`/api/kyc/draft?submissionType=${draftSubmissionType}`, { credentials: 'include' });
@@ -417,8 +417,9 @@ export default function KYC() {
   }, [serverDraftData]);
 
   // Auto-save KYC draft to localStorage + server (debounced)
+  // Gate on serverDraftFetched to prevent overwriting a server draft before it loads
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !serverDraftFetched) return;
     const debounceTimer = setTimeout(() => {
       try {
         const draft = {
@@ -459,7 +460,7 @@ export default function KYC() {
     tradingContactName, tradingContactEmail, tradingContactPhone,
     financeContactName, financeContactEmail, financeContactPhone,
     beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey,
+    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey, serverDraftFetched,
   ]);
 
   const clearKycDraft = () => {

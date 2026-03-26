@@ -380,11 +380,28 @@ export async function checkKycOcrMismatch(
   declaredDob: string,
 ): Promise<KycOcrResult> {
   const checkedAt = new Date().toISOString();
+  const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   try {
-    const { buffer, mimeType } = await downloadFromR2(documentUrl);
-    const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    const imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
-    const base64 = buffer.toString('base64');
+    let base64: string;
+    let imageType: string;
+
+    if (documentUrl.startsWith('data:')) {
+      // Handle base64 data URIs (submitted before R2 upload completes)
+      const commaIdx = documentUrl.indexOf(',');
+      if (commaIdx === -1) throw new Error('Malformed data URI');
+      const header = documentUrl.substring(0, commaIdx);
+      const mimeMatch = header.match(/data:([^;]+);base64/);
+      const detectedMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      if (!supportedTypes.includes(detectedMime)) {
+        return { checked: false, nameMismatch: false, dobMismatch: false, extractedName: null, extractedDob: null, similarity: 1, checkedAt };
+      }
+      imageType = detectedMime;
+      base64 = documentUrl.substring(commaIdx + 1);
+    } else {
+      const { buffer, mimeType } = await downloadFromR2(documentUrl);
+      imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
+      base64 = buffer.toString('base64');
+    }
 
     const prompt = `You are a KYC document analyst. Examine this identity document (passport, national ID, or driver's licence) and extract the following fields. Respond ONLY with valid JSON.
 
