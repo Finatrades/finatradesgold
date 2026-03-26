@@ -1,5 +1,5 @@
 import { Queue, Worker } from 'bullmq';
-import { cacheGet, cacheSet } from '../redis-client';
+import { cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { notifyError } from '../system-notifications';
 import { getRedisConnection } from '../job-queue-bullmq';
@@ -95,18 +95,24 @@ export async function runBnslPayoutEngine(
     );
 
     for (const payout of duePending) {
-      const idempotencyKey = `bnsl:autopay:payout:${payout.id}`;
-      const alreadyDone = await cacheGet(idempotencyKey);
-      if (alreadyDone) continue;
-
       try {
         const monetaryAmount = parseFloat(payout.monetaryAmountUsd.toString());
         const gramsCredited = monetaryAmount / goldPrice;
 
-        // Atomic DB transaction: wallet credit + payout status + plan margins + tx record
-        // Uses SQL atomic increment expressions so concurrent/multi-payout runs accumulate
-        // correctly without depending on stale plan/wallet snapshots.
-        await db.transaction(async (tx) => {
+        // DB-level claim: atomically transition Scheduled → Processing.
+        // This is the primary idempotency/exactly-once guard — if 0 rows are updated
+        // (payout is no longer Scheduled), another instance already claimed it → skip.
+        // All subsequent financial writes happen within the same transaction as the claim.
+        const committed = await db.transaction(async (tx) => {
+          // Claim step: Scheduled → Processing (conditional update, returns row only if transitioned)
+          const [claimed] = await tx
+            .update(bnslPayouts)
+            .set({ status: 'Processing' })
+            .where(and(eq(bnslPayouts.id, payout.id), eq(bnslPayouts.status, 'Scheduled')))
+            .returning({ id: bnslPayouts.id });
+
+          if (!claimed) return false; // Already claimed by another run — skip
+
           // Guard: wallet must exist for this user
           const [existingWallet] = await tx
             .select({ id: wallets.id })
@@ -114,7 +120,7 @@ export async function runBnslPayoutEngine(
             .where(eq(wallets.userId, plan.userId));
           if (!existingWallet) throw new Error(`Wallet not found for user ${plan.userId}`);
 
-          // 1. Credit user FinaPay wallet (atomic SQL increment — no read-modify-write)
+          // Credit user FinaPay wallet (atomic SQL increment — no read-modify-write)
           await tx
             .update(wallets)
             .set({
@@ -123,7 +129,7 @@ export async function runBnslPayoutEngine(
             })
             .where(eq(wallets.userId, plan.userId));
 
-          // 2. Mark payout Paid with market data — clear any prior failureReason/failedAt
+          // Mark payout Paid — clear any prior failureReason/failedAt
           await tx
             .update(bnslPayouts)
             .set({
@@ -136,9 +142,8 @@ export async function runBnslPayoutEngine(
             })
             .where(eq(bnslPayouts.id, payout.id));
 
-          // 3. Update plan paid/remaining margin — atomic SQL increments prevent
-          //    last-writer-wins when multiple payouts for the same plan are processed
-          //    in a single engine cycle.
+          // Update plan paid/remaining margin — atomic SQL increments prevent
+          // last-writer-wins when ≥2 payouts for the same plan are processed in one cycle.
           await tx
             .update(bnslPlans)
             .set({
@@ -149,7 +154,7 @@ export async function runBnslPayoutEngine(
             })
             .where(eq(bnslPlans.id, plan.id));
 
-          // 4. Transaction record
+          // Transaction record
           const txRecord: InsertTransaction = {
             userId: plan.userId,
             type: 'Receive',
@@ -163,7 +168,14 @@ export async function runBnslPayoutEngine(
             bnslPayoutId: payout.id,
           };
           await tx.insert(transactions).values(txRecord);
+
+          return true;
         });
+
+        if (!committed) {
+          console.log(`[BNSL Payout Engine] Payout ${payout.id} already claimed by another run — skipping`);
+          continue;
+        }
 
         // Post-transaction observability (non-critical — failures don't roll back the payment)
         try {
@@ -195,8 +207,6 @@ export async function runBnslPayoutEngine(
           details: `Auto payout #${payout.sequence}: ${gramsCredited.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
         }).catch(err => console.error('[BNSL Payout Engine] Audit log failed (non-fatal):', err));
 
-        // Idempotency: mark processed (60-day TTL)
-        await cacheSet(idempotencyKey, '1', 60 * 24 * 60 * 60);
         stats.processed++;
         console.log(
           `[BNSL Payout Engine] Paid #${payout.sequence} for plan ${plan.contractId}: ${gramsCredited.toFixed(4)}g`,
@@ -393,13 +403,16 @@ export function startBnslPayoutEngine(
     try {
       const queue = new Queue(QUEUE_NAME, { connection });
 
-      // Worker: processes each job by running the full payout cycle
+      // Worker: processes each BullMQ job by running the full payout cycle.
+      // BullMQ ensures at-most-one concurrent worker per queue; combined with the
+      // DB-level claim (Scheduled→Processing conditional update), this achieves
+      // exactly-once payment semantics even across multiple app instances.
       const worker = new Worker(
         QUEUE_NAME,
         async (_job) => {
           return await runBnslPayoutEngine(storage, getGoldPricePerGram);
         },
-        { connection },
+        { connection, concurrency: 1 },
       );
       worker.on('failed', (job, err) => {
         console.error(`[BNSL Payout Engine] BullMQ worker job ${job?.id} failed:`, err.message);
@@ -421,21 +434,21 @@ export function startBnslPayoutEngine(
           console.error('[BNSL Payout Engine] Failed to register repeatable job:', err),
         );
 
+      // Immediate startup run — routed through BullMQ so the Worker's concurrency=1
+      // prevents overlapping execution across multiple app instances
+      queue
+        .add('startup-run', {}, { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } })
+        .catch(err => console.error('[BNSL Payout Engine] Failed to queue startup run:', err));
+
       console.log('[BNSL Payout Engine] BullMQ scheduler started (cron: 0 2 * * *)');
     } catch (bullErr) {
       console.error('[BNSL Payout Engine] BullMQ init failed, using fallback scheduler:', bullErr);
       _startFallbackScheduler(storage, getGoldPricePerGram);
-      return;
     }
   } else {
     console.warn('[BNSL Payout Engine] No Redis connection — using fallback interval scheduler');
     _startFallbackScheduler(storage, getGoldPricePerGram);
   }
-
-  // Immediate startup run in both BullMQ and fallback modes
-  runBnslPayoutEngine(storage, getGoldPricePerGram).catch(err =>
-    console.error('[BNSL Payout Engine] Startup run error:', err),
-  );
 }
 
 function _startFallbackScheduler(
