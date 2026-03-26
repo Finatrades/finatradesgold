@@ -9858,28 +9858,7 @@ export async function registerRoutes(
       const user = await storage.getUser(request.userId);
       if (user?.email) {
         try {
-          if (status === 'Stored' || status === 'Stored in Vault') {
-            const finalWeightGrams = verifiedWeightGrams != null ? parseFloat(String(verifiedWeightGrams)) : parseFloat(request.totalDeclaredWeightGrams);
-            const pricePerGram = goldPriceUsdPerGram != null ? parseFloat(String(goldPriceUsdPerGram)) : 85.22;
-            const totalValue = finalWeightGrams * pricePerGram;
-            await sendEmail({
-              to: user.email,
-              subject: 'Your Gold Deposit Has Been Stored - FinaVault',
-              html: `
-                <h2>Gold Deposit Confirmed</h2>
-                <p>Dear ${user.firstName || 'Valued Customer'},</p>
-                <p>Great news! Your gold deposit has been verified and stored in our secure vault.</p>
-                <table style="border-collapse: collapse; margin: 20px 0;">
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reference:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.referenceNumber}</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Verified Weight:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${finalWeightGrams.toFixed(4)} grams</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Value:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">$${totalValue.toFixed(2)} USD</td></tr>
-                  <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Vault Location:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${request.vaultLocation}</td></tr>
-                </table>
-                <p>Your FinaPay wallet has been credited with the gold. You can now view your certificates in the FinaVault section.</p>
-                <p>Thank you for choosing Finatrades!</p>
-              `,
-            });
-          } else if (status === 'Rejected') {
+          if (status === 'Rejected') {
             await sendEmail({
               to: user.email,
               subject: 'Vault Deposit Request Update - FinaVault',
@@ -13735,52 +13714,68 @@ export async function registerRoutes(
         const goldGramsToRefund = request.goldGrams ? parseFloat(request.goldGrams.toString()) : null;
         const walletType = (request.goldWalletType as 'LGPW' | 'FGPW') || 'LGPW';
 
-        if (goldGramsToRefund && goldGramsToRefund > 0) {
-          const [existingSummary] = await db.select()
-            .from(vaultOwnershipSummary)
-            .where(eq(vaultOwnershipSummary.userId, request.userId));
-
-          if (walletType === 'LGPW') {
-            if (existingSummary) {
-              await db.update(vaultOwnershipSummary).set({
-                mpgwAvailableGrams: (parseFloat(existingSummary.mpgwAvailableGrams || '0') + goldGramsToRefund).toFixed(6),
-                lastUpdated: new Date(),
-              }).where(eq(vaultOwnershipSummary.userId, request.userId));
-            }
-          } else {
-            // FGPW: restore by creating a new batch at the original locked price
-            const { createFpgwBatch } = await import('./fpgw-batch-service');
-            const lockedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
-            if (lockedPrice > 0) {
-              await createFpgwBatch({
-                userId: request.userId,
-                goldGrams: goldGramsToRefund,
-                lockedPriceUsd: lockedPrice,
-                sourceType: 'deposit',
-                notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
-              });
-            }
+        // Derive gold grams to refund: use stored value first, then compute from amountUsd / goldPriceAtRequest.
+        // If neither is available, block rejection to prevent lost gold — admin must investigate.
+        let resolvedGoldGrams = goldGramsToRefund;
+        if (!resolvedGoldGrams || resolvedGoldGrams <= 0) {
+          const storedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
+          const storedUsd = request.amountUsd ? parseFloat(request.amountUsd.toString()) : 0;
+          if (storedPrice > 0 && storedUsd > 0) {
+            resolvedGoldGrams = storedUsd / storedPrice;
           }
-
-          // Create refund transaction record (gold denomination)
-          await storage.createTransaction({
-            userId: request.userId,
-            type: 'Deposit',
-            status: 'Completed',
-            amountGold: goldGramsToRefund.toString(),
-            amountUsd: request.amountUsd.toString(),
-            description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
-            referenceId: `${request.referenceNumber}-REFUND`,
-            sourceModule: 'finapay',
-            goldWalletType: walletType,
-            approvedBy: updates.processedBy,
-            approvedAt: new Date(),
-            updatedAt: new Date(),
-          });
-        } else {
-          // goldGrams not stored on this request — log for admin follow-up
-          console.error(`[Withdrawal Rejection] Cannot auto-refund gold for request ${request.id}: goldGrams field is null. Manual review required.`);
         }
+
+        if (!resolvedGoldGrams || resolvedGoldGrams <= 0) {
+          // Cannot determine how much gold to refund — block rejection to prevent lost value
+          return res.status(400).json({
+            message: 'Cannot reject this withdrawal: gold amount cannot be determined (goldGrams and goldPriceAtRequest are both missing). Please resolve this request manually by reviewing the transaction history and restoring the held gold directly in the user\'s vault.',
+            code: 'REFUND_DATA_MISSING',
+            requestId: request.id,
+            referenceNumber: request.referenceNumber,
+          });
+        }
+
+        const [existingSummary] = await db.select()
+          .from(vaultOwnershipSummary)
+          .where(eq(vaultOwnershipSummary.userId, request.userId));
+
+        if (walletType === 'LGPW') {
+          if (existingSummary) {
+            await db.update(vaultOwnershipSummary).set({
+              mpgwAvailableGrams: (parseFloat(existingSummary.mpgwAvailableGrams || '0') + resolvedGoldGrams).toFixed(6),
+              lastUpdated: new Date(),
+            }).where(eq(vaultOwnershipSummary.userId, request.userId));
+          }
+        } else {
+          // FGPW: restore by creating a new batch at the original locked price
+          const { createFpgwBatch } = await import('./fpgw-batch-service');
+          const lockedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
+          if (lockedPrice > 0) {
+            await createFpgwBatch({
+              userId: request.userId,
+              goldGrams: resolvedGoldGrams,
+              lockedPriceUsd: lockedPrice,
+              sourceType: 'deposit',
+              notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+            });
+          }
+        }
+
+        // Create refund transaction record (gold denomination)
+        await storage.createTransaction({
+          userId: request.userId,
+          type: 'Deposit',
+          status: 'Completed',
+          amountGold: resolvedGoldGrams.toString(),
+          amountUsd: request.amountUsd.toString(),
+          description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+          referenceId: `${request.referenceNumber}-REFUND`,
+          sourceModule: 'finapay',
+          goldWalletType: walletType,
+          approvedBy: updates.processedBy,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        });
         
         // Create bell notification for withdrawal rejection
         await storage.createNotification({
