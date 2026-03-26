@@ -1766,13 +1766,18 @@ export async function registerRoutes(
           
           const daysUntilDue = Math.round((payoutDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
           
-          // Mark overdue payouts as Processing + send overdue email
-          if (payoutDate <= today) {
+          // Strictly past due (yesterday or earlier): mark as Processing + send overdue email once
+          if (payoutDate < today) {
             await storage.updateBnslPayout(payout.id, { status: 'Processing' });
             payoutsProcessed++;
             console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
             
-            if (planUser?.email) {
+            // Only email if this is the same day we flip to Processing (first detection)
+            // Use a Redis idempotency key to avoid duplicate overdue emails
+            const overdueKey = `bnsl:overdue:${payout.id}`;
+            const redisClient = getRedisClient();
+            const alreadyNotified = await redisClient.get(overdueKey).catch(() => null);
+            if (!alreadyNotified && planUser?.email) {
               const daysOverdue = Math.abs(daysUntilDue);
               sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_OVERDUE, {
                 user_name: `${planUser.firstName} ${planUser.lastName}`,
@@ -1782,10 +1787,15 @@ export async function registerRoutes(
                 late_fee: '0.00',
                 payment_url: '/bnsl',
               }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL overdue email failed:', err));
+              // Mark as notified for 30 days to prevent re-sending
+              await redisClient.set(overdueKey, '1', { ex: 30 * 24 * 60 * 60 }).catch(() => {});
             }
           } else if (daysUntilDue === 7 || daysUntilDue === 1) {
-            // 7-day and 1-day payment reminders
-            if (planUser?.email) {
+            // 7-day and 1-day payment reminders — idempotent per payout per reminder type
+            const reminderKey = `bnsl:reminder:${payout.id}:${daysUntilDue}d`;
+            const redisClient = getRedisClient();
+            const alreadySent = await redisClient.get(reminderKey).catch(() => null);
+            if (!alreadySent && planUser?.email) {
               sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_REMINDER, {
                 user_name: `${planUser.firstName} ${planUser.lastName}`,
                 plan_name: plan.contractId,
@@ -1793,6 +1803,8 @@ export async function registerRoutes(
                 due_date: payoutDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 payment_url: '/bnsl',
               }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL reminder email failed:', err));
+              // Mark as sent for 2 days to prevent duplicate sends within same 6-hour polling cycle
+              await redisClient.set(reminderKey, '1', { ex: 2 * 24 * 60 * 60 }).catch(() => {});
               console.log(`[BNSL Auto-Process] Payment reminder sent to ${planUser.email} for plan ${plan.contractId} (${daysUntilDue} days until due)`);
             }
           }
@@ -1813,8 +1825,15 @@ export async function registerRoutes(
       const now = new Date();
       if (now.getDate() !== 1) return; // Only run on the 1st of the month
 
-      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const monthName = prevMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      // Idempotent: only fire once per month
+      const monthKey = `stmt:monthly:${now.getFullYear()}-${now.getMonth()}`;
+      const monthRedis = getRedisClient();
+      const alreadyRan = await monthRedis.get(monthKey).catch(() => null);
+      if (alreadyRan) return;
+
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const monthName = prevMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
 
       console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
@@ -1823,11 +1842,16 @@ export async function registerRoutes(
       for (const user of allUsers) {
         if (!user.email || user.status === 'Suspended') continue;
         try {
-          // Only send to users who have been active (have a wallet)
+          // Only send to users who had at least one transaction in the prior month
+          const txns = await storage.getUserTransactions(user.id);
+          const hadActivityInMonth = txns.some(t => {
+            const d = new Date(t.createdAt || t.completedAt || 0);
+            return d >= prevMonthStart && d <= prevMonthEnd;
+          });
+          if (!hadActivityInMonth) continue;
+
           const wallet = await storage.getWallet(user.id);
-          if (!wallet) continue;
-          const goldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
-          if (goldBalance < 0.0001) continue; // Skip zero-balance accounts
+          const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
 
           sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
             user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
@@ -1838,19 +1862,29 @@ export async function registerRoutes(
           sent++;
         } catch (e) { /* skip this user */ }
       }
+      // Mark as ran for 25 days so it doesn't re-fire within the same month
+      await monthRedis.set(monthKey, '1', { ex: 25 * 24 * 60 * 60 }).catch(() => {});
       console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName}`);
     } catch (err) {
       console.error('[Monthly Statement] Scheduler error:', err);
     }
   }, 24 * 60 * 60 * 1000); // Check once per day
 
-  // Annual Tax Statement Scheduler — runs once per day, fires on Jan 15 of each year
+  // Annual Tax Statement Scheduler — runs once per day, fires on January 1st of each year
   setInterval(async () => {
     try {
       const now = new Date();
-      if (now.getMonth() !== 0 || now.getDate() !== 15) return; // Only January 15
+      if (now.getMonth() !== 0 || now.getDate() !== 1) return; // Only January 1st
+
+      // Idempotent: only fire once per year
+      const yearKey = `stmt:annual:${now.getFullYear()}`;
+      const yearRedis = getRedisClient();
+      const alreadyRan = await yearRedis.get(yearKey).catch(() => null);
+      if (alreadyRan) return;
 
       const prevYear = now.getFullYear() - 1;
+      const prevYearStart = new Date(prevYear, 0, 1);
+      const prevYearEnd = new Date(prevYear, 11, 31, 23, 59, 59, 999);
       const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
 
       console.log(`[Annual Statement] Sending annual tax statements for ${prevYear}`);
@@ -1859,10 +1893,16 @@ export async function registerRoutes(
       for (const user of allUsers) {
         if (!user.email || user.status === 'Suspended') continue;
         try {
-          // Only send to users with any wallet history
+          // Only send to users who had at least one transaction in the prior year
+          const txns = await storage.getUserTransactions(user.id);
+          const hadActivityInYear = txns.some(t => {
+            const d = new Date(t.createdAt || t.completedAt || 0);
+            return d >= prevYearStart && d <= prevYearEnd;
+          });
+          if (!hadActivityInYear) continue;
+
           const wallet = await storage.getWallet(user.id);
-          if (!wallet) continue;
-          const goldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
+          const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
 
           sendEmail(user.email, EMAIL_TEMPLATES.ANNUAL_TAX_STATEMENT, {
             user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
@@ -1873,6 +1913,8 @@ export async function registerRoutes(
           sent++;
         } catch (e) { /* skip this user */ }
       }
+      // Mark as ran for 360 days so it doesn't re-fire within the same year
+      await yearRedis.set(yearKey, '1', { ex: 360 * 24 * 60 * 60 }).catch(() => {});
       console.log(`[Annual Statement] Sent ${sent} annual tax statements for ${prevYear}`);
     } catch (err) {
       console.error('[Annual Statement] Scheduler error:', err);
@@ -18866,18 +18908,17 @@ export async function registerRoutes(
         }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer sent confirmation failed:', err));
       }
 
-      // Low balance alert: check if sender's remaining balance is below threshold
+      // Low balance alert: check if sender's remaining balance falls below 0.1g
       try {
         const updatedSenderWallet = await storage.getWallet(sender.id);
-        const senderPrefs = await storage.getUserPreferences(sender.id);
-        const threshold = parseFloat((senderPrefs as any)?.lowBalanceThreshold || '0');
+        const LOW_BALANCE_THRESHOLD_GRAMS = 0.1; // Default threshold: 0.1g gold
         const remainingGrams = parseFloat(updatedSenderWallet?.goldGrams?.toString() || '0');
-        if (threshold > 0 && remainingGrams < threshold && sender.email) {
+        if (remainingGrams < LOW_BALANCE_THRESHOLD_GRAMS && remainingGrams >= 0 && sender.email) {
           const currentGoldPrice = await getGoldPricePerGram().catch(() => 139.44);
           sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
             user_name: `${sender.firstName} ${sender.lastName}`,
             current_balance: (remainingGrams * currentGoldPrice).toFixed(2),
-            threshold: (threshold * currentGoldPrice).toFixed(2),
+            threshold: (LOW_BALANCE_THRESHOLD_GRAMS * currentGoldPrice).toFixed(2),
             deposit_url: '/finapay',
           }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert failed:', err));
         }
@@ -20125,6 +20166,16 @@ export async function registerRoutes(
         }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (sender) failed:', err));
       }
 
+      // Send transfer_cancelled email to recipient (they were expecting funds that won't arrive)
+      if (recipient?.email) {
+        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
+          user_name: `${recipient.firstName} ${recipient.lastName}`,
+          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+          gold_amount: goldAmount.toFixed(4),
+          cancellation_reason: reason || 'Transfer was cancelled by the sender',
+        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (recipient) failed:', err));
+      }
+
       // Bell notification for sender
       await storage.createNotification({
         userId: sender.id,
@@ -20133,6 +20184,17 @@ export async function registerRoutes(
         type: 'transaction',
         link: '/finapay',
       }).catch(() => {});
+
+      // Bell notification for recipient if they exist
+      if (recipient) {
+        await storage.createNotification({
+          userId: recipient.id,
+          title: 'Pending Transfer Cancelled',
+          message: `A pending transfer of ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName} was cancelled.`,
+          type: 'transaction',
+          link: '/finapay',
+        }).catch(() => {});
+      }
 
       res.json({ message: "Transfer cancelled. Funds have been returned to your wallet." });
     } catch (error) {
