@@ -13748,17 +13748,24 @@ export async function registerRoutes(
           }
         } else {
           // FGPW: restore by creating a new batch at the original locked price
-          const { createFpgwBatch } = await import('./fpgw-batch-service');
           const lockedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
-          if (lockedPrice > 0) {
-            await createFpgwBatch({
-              userId: request.userId,
-              goldGrams: resolvedGoldGrams,
-              lockedPriceUsd: lockedPrice,
-              sourceType: 'deposit',
-              notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+          if (lockedPrice <= 0) {
+            // Block FGPW rejection if locked price is missing — FGPW batches require the original locked price
+            return res.status(400).json({
+              message: 'Cannot reject this FGPW withdrawal: goldPriceAtRequest is missing and cannot restore fixed-price batch. Please resolve this request manually.',
+              code: 'FGPW_REFUND_PRICE_MISSING',
+              requestId: request.id,
+              referenceNumber: request.referenceNumber,
             });
           }
+          const { createFpgwBatch } = await import('./fpgw-batch-service');
+          await createFpgwBatch({
+            userId: request.userId,
+            goldGrams: resolvedGoldGrams,
+            lockedPriceUsd: lockedPrice,
+            sourceType: 'deposit',
+            notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+          });
         }
 
         // Create refund transaction record (gold denomination)
