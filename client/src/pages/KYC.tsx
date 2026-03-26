@@ -184,8 +184,13 @@ export default function KYC() {
 
   const approvedSections = sectionReviews.filter(r => r.status === 'approved').map(r => r.sectionName);
   const rejectedSections = sectionReviews.filter(r => r.status === 'rejected');
-  // Sections explicitly flagged by admin as needing changes — these are the ONLY unlocked sections.
-  const changeRequestedSections = rejectedSections.map(r => r.sectionName);
+
+  // Primary source: changeRequestedSections persisted on the submission by admin review.
+  // Fallback: derive from sectionReviews query (backward compat).
+  const submissionChangeRequestedSections: string[] = (existingSubmission as any)?.changeRequestedSections || [];
+  const changeRequestedSections: string[] = submissionChangeRequestedSections.length > 0
+    ? submissionChangeRequestedSections
+    : rejectedSections.map(r => r.sectionName);
 
   const isSectionLocked = (sectionName: string) => {
     if (!isResubmitMode) return false;
@@ -210,7 +215,7 @@ export default function KYC() {
   // Derive submission type early (needed for draft fetch)
   const draftSubmissionType = user?.accountType === 'business' ? 'corporate' : 'personal';
 
-  // Fetch server-side draft on mount and merge if server draft is newer
+  // Fetch server-side draft on mount (including resubmission flows — users may have saved progress)
   const { data: serverDraftData } = useQuery({
     queryKey: ['/api/kyc/draft', user?.id, draftSubmissionType],
     queryFn: async () => {
@@ -218,7 +223,7 @@ export default function KYC() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!user?.id && !existingSubmission,
+    enabled: !!user?.id,
   });
 
   // Finatrades mode state - shared between personal and corporate

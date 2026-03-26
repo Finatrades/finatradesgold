@@ -5620,6 +5620,15 @@ export async function registerRoutes(
                 reviewedAt: new Date(),
               });
             }
+            // Persist change-requested sections directly on personal KYC submission for authoritative unlock
+            if (kycType === 'finatrades_personal') {
+              const rejectedSectionNames = sectionReviewsInput
+                .filter((s: any) => s.status === 'rejected')
+                .map((s: any) => s.section as string);
+              await storage.updateFinatradesPersonalKyc(req.params.id, {
+                changeRequestedSections: rejectedSectionNames,
+              }).catch(() => null);
+            }
           }
 
           await storage.createKycDecisionRecord({

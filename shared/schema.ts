@@ -895,6 +895,9 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   agreementCompletedAt: timestamp("agreement_completed_at"),
   signedDocumentUrl: text("signed_document_url"),
 
+  // Sections the admin has requested changes on (populated on Changes Requested decision)
+  changeRequestedSections: json("change_requested_sections").$type<string[]>(),
+
   // OCR Mismatch Flagging — populated async after submission
   ocrMismatchFlag: json("ocr_mismatch_flag").$type<{
     checked: boolean;
