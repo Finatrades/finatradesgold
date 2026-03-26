@@ -14047,7 +14047,7 @@ export async function registerRoutes(
           for (const adminEmail of adminEmails) {
             sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
               user_name: uploaderName,
-              trade_ref: tradeCase.caseId || tradeCase.id,
+              trade_ref: tradeCase.caseNumber,
               document_type: document.documentType || 'Document',
               uploaded_by: uploaderName,
               upload_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),

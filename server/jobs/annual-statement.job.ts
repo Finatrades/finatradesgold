@@ -71,7 +71,7 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
         year: String(prevYear),
         total_purchases_gold: totalPurchasesGold.toFixed(4),
         total_sales_gold: totalSalesGold.toFixed(4),
-        realized_gains: realizedGains >= 0 ? realizedGains.toFixed(2) : realizedGains.toFixed(2),
+        realized_gains: realizedGains.toFixed(2),
         year_end_gold: yearEndGold.toFixed(4),
       }, { userId: user.id }).catch(e => console.error(`[Annual Statement] Email failed for ${user.email}:`, e));
       sent++;
