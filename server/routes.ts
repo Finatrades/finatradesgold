@@ -13971,8 +13971,9 @@ export async function registerRoutes(
             } else if (tradeCase.status === 'Rejected' || tradeCase.status === 'Cancelled') {
               sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
                 user_name: userName,
-                case_id: caseRef,
+                trade_ref: caseRef,
                 rejection_reason: notes || 'Does not meet current eligibility requirements.',
+                rejection_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
               }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
             } else if (tradeCase.status === 'Settled') {
               // Settled = trade case successfully completed
@@ -14046,10 +14047,10 @@ export async function registerRoutes(
           for (const adminEmail of adminEmails) {
             sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
               user_name: uploaderName,
-              case_id: tradeCase.caseId || tradeCase.id,
+              trade_ref: tradeCase.caseId || tradeCase.id,
               document_type: document.documentType || 'Document',
+              uploaded_by: uploaderName,
               upload_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-              review_url: 'https://finatrades.com/admin/trade-finance',
             }).catch(e => console.error('[Email] Trade document uploaded admin notification failed:', e));
           }
         }
@@ -14420,20 +14421,23 @@ export async function registerRoutes(
         const exporterDealUser = await storage.getUser(proposal.exporterUserId);
         const dealRoomUrl = `/finabridge/deals/${dealRoom.id}`;
 
+        const dealCreatedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         if (importerDealUser?.email) {
           sendEmail(importerDealUser.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED, {
             user_name: `${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || 'Valued Client',
             trade_ref: request.tradeRefId,
+            deal_room_id: dealRoom.id,
             counterparty_name: exporterDealUser ? (`${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || exporterDealUser.companyName || 'your exporter') : 'your exporter',
-            deal_room_url: dealRoomUrl,
+            created_date: dealCreatedDate,
           }, { userId: importerDealUser.id, recipientName: importerDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created importer email failed:', e));
         }
         if (exporterDealUser?.email) {
           sendEmail(exporterDealUser.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED, {
             user_name: `${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || 'Valued Partner',
             trade_ref: request.tradeRefId,
+            deal_room_id: dealRoom.id,
             counterparty_name: importerDealUser ? (`${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || importerDealUser.companyName || 'your importer') : 'your importer',
-            deal_room_url: dealRoomUrl,
+            created_date: dealCreatedDate,
           }, { userId: exporterDealUser.id, recipientName: exporterDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created exporter email failed:', e));
         }
       } catch (dealRoomEmailErr) { console.error('[Email] Deal room created email trigger failed:', dealRoomEmailErr); }
@@ -14513,8 +14517,8 @@ export async function registerRoutes(
             sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_DECLINED, {
               user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
               trade_ref: tradeReq.tradeRefId,
-              goods_name: tradeReq.goodsName || '',
-              trade_value: parseFloat(tradeReq.tradeValueUsd || '0').toLocaleString(),
+              proposal_amount: parseFloat(tradeReq.tradeValueUsd || '0').toLocaleString(),
+              decline_reason: 'The importer has selected another proposal for this trade request.',
             }, { userId: exporterUser.id, recipientName: exporterUser.firstName || undefined }).catch(e => console.error('[Email] FinaBridge proposal declined email failed:', e));
           }
         }
@@ -16356,8 +16360,7 @@ export async function registerRoutes(
                 shipment_status: shipmentStatusText,
                 tracking_number: trackingNumber || 'N/A',
                 current_location: currentLocation || 'N/A',
-                update_date: shipmentDate,
-                deal_room_url: dealLink,
+                dashboard_url: dealLink,
               }, { userId: importerUser.id }).catch(e => console.error('[Email] Shipment update importer email failed:', e));
             }
             if (acceptedProposal) {
@@ -16369,8 +16372,7 @@ export async function registerRoutes(
                   shipment_status: shipmentStatusText,
                   tracking_number: trackingNumber || 'N/A',
                   current_location: currentLocation || 'N/A',
-                  update_date: shipmentDate,
-                  deal_room_url: dealLink,
+                  dashboard_url: dealLink,
                 }, { userId: exporterUser.id }).catch(e => console.error('[Email] Shipment update exporter email failed:', e));
               }
             }
@@ -16401,7 +16403,6 @@ export async function registerRoutes(
             }
 
             // Send finabridge_shipment_update emails for new shipment creation
-            const shipmentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
             const importerUser = await storage.getUser(tradeReq.importerUserId);
             if (importerUser?.email) {
               sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE, {
@@ -16410,8 +16411,7 @@ export async function registerRoutes(
                 shipment_status: status || 'Tracking Created',
                 tracking_number: trackingNumber || 'N/A',
                 current_location: currentLocation || 'N/A',
-                update_date: shipmentDate,
-                deal_room_url: dealLink,
+                dashboard_url: dealLink,
               }, { userId: importerUser.id }).catch(e => console.error('[Email] New shipment importer email failed:', e));
             }
             if (acceptedProposal) {
@@ -16423,8 +16423,7 @@ export async function registerRoutes(
                   shipment_status: status || 'Tracking Created',
                   tracking_number: trackingNumber || 'N/A',
                   current_location: currentLocation || 'N/A',
-                  update_date: shipmentDate,
-                  deal_room_url: dealLink,
+                  dashboard_url: dealLink,
                 }, { userId: exporterUser.id }).catch(e => console.error('[Email] New shipment exporter email failed:', e));
               }
             }

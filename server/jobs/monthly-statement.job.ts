@@ -18,12 +18,11 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
 
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-  const monthName = prevMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
+  const monthName = prevMonthStart.toLocaleDateString('en-US', { month: 'long' });
+  const yearName = String(prevMonthStart.getFullYear());
 
-  console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
+  console.log(`[Monthly Statement] Sending monthly statements for ${monthName} ${yearName}`);
 
-  // Only email-verified, non-frozen users
   const allUsers = await db
     .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
     .from(users)
@@ -40,21 +39,42 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
     if (!user.email || frozenIds.has(user.id)) continue;
     try {
       const txns: Transaction[] = await storage.getUserTransactions(user.id);
-      const hadActivityInMonth = txns.some(t => {
+
+      const monthTxns = txns.filter(t => {
         const d = t.createdAt ? new Date(t.createdAt) : null;
         return d !== null && d >= prevMonthStart && d <= prevMonthEnd;
       });
-      if (!hadActivityInMonth) continue;
+      if (monthTxns.length === 0) continue;
 
+      // Compute opening and closing balances from transaction history
       const wallet = await storage.getWallet(user.id);
-      const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
+      const closingGold = parseFloat(wallet?.goldGrams?.toString() || '0');
+
+      // Net change: sum of credited amounts minus debited amounts in the month
+      let netChange = 0;
+      for (const t of monthTxns) {
+        const g = parseFloat(t.amountGold?.toString() || '0');
+        if (t.type === 'Receive' || t.type === 'Deposit') netChange += g;
+        else if (t.type === 'Send' || t.type === 'Withdrawal') netChange -= g;
+      }
+      const openingGold = closingGold - netChange;
+
+      const goldPrice = 90; // Approximate fallback; jobs don't have price fn access
+      const openingUsd = (openingGold * goldPrice).toFixed(2);
+      const closingUsd = (closingGold * goldPrice).toFixed(2);
+      const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);
       const userName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
 
       sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
         user_name: userName,
-        statement_month: monthName,
-        gold_balance: goldBalance.toFixed(4),
-        statement_url: `${appBaseUrl}/dashboard`,
+        month: monthName,
+        year: yearName,
+        opening_gold: openingGold.toFixed(4),
+        opening_usd: openingUsd,
+        closing_gold: closingGold.toFixed(4),
+        closing_usd: closingUsd,
+        total_transactions: String(monthTxns.length),
+        net_change_gold: netChangeGold,
       }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
       sent++;
     } catch (e) {
@@ -63,13 +83,11 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
   }
 
   await cacheSet(monthKey, '1', MONTHLY_STMT_IDEMPOTENCY_TTL);
-  console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName}`);
+  console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName} ${yearName}`);
 }
 
 export function startMonthlyStatementScheduler(storage: IStorage): void {
-  // Run immediately on startup in case the service was down at midnight on the 1st
   runMonthlyStatementJob(storage).catch(err => console.error('[Monthly Statement] Startup check error:', err));
-  // Then check once per day
   setInterval(() => {
     runMonthlyStatementJob(storage).catch(err => console.error('[Monthly Statement] Scheduler error:', err));
   }, 24 * 60 * 60 * 1000);

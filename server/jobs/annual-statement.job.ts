@@ -19,11 +19,9 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
   const prevYear = now.getFullYear() - 1;
   const prevYearStart = new Date(prevYear, 0, 1);
   const prevYearEnd = new Date(prevYear, 11, 31, 23, 59, 59, 999);
-  const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
 
   console.log(`[Annual Statement] Sending annual tax statements for ${prevYear}`);
 
-  // Only email-verified, non-frozen users
   const allUsers = await db
     .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
     .from(users)
@@ -40,21 +38,41 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
     if (!user.email || frozenIds.has(user.id)) continue;
     try {
       const txns: Transaction[] = await storage.getUserTransactions(user.id);
-      const hadActivityInYear = txns.some(t => {
+
+      const yearTxns = txns.filter(t => {
         const d = t.createdAt ? new Date(t.createdAt) : null;
         return d !== null && d >= prevYearStart && d <= prevYearEnd;
       });
-      if (!hadActivityInYear) continue;
+      if (yearTxns.length === 0) continue;
+
+      // Compute summary values from transactions
+      let totalPurchasesGold = 0;
+      let totalSalesGold = 0;
+      let realizedGains = 0;
+      for (const t of yearTxns) {
+        const g = parseFloat(t.amountGold?.toString() || '0');
+        const usd = parseFloat(t.amountUsd?.toString() || '0');
+        if (t.type === 'Receive' || t.type === 'Deposit') {
+          totalPurchasesGold += g;
+        } else if (t.type === 'Send' || t.type === 'Withdrawal') {
+          totalSalesGold += g;
+          // Realized gain/loss: proceeds (usd) compared to cost at current gold price (~90/g fallback)
+          const costBasis = g * 90;
+          realizedGains += usd - costBasis;
+        }
+      }
 
       const wallet = await storage.getWallet(user.id);
-      const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
+      const yearEndGold = parseFloat(wallet?.goldGrams?.toString() || '0');
       const userName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
 
       sendEmail(user.email, EMAIL_TEMPLATES.ANNUAL_TAX_STATEMENT, {
         user_name: userName,
-        tax_year: String(prevYear),
-        gold_balance: goldBalance.toFixed(4),
-        statement_url: `${appBaseUrl}/dashboard`,
+        year: String(prevYear),
+        total_purchases_gold: totalPurchasesGold.toFixed(4),
+        total_sales_gold: totalSalesGold.toFixed(4),
+        realized_gains: realizedGains >= 0 ? realizedGains.toFixed(2) : realizedGains.toFixed(2),
+        year_end_gold: yearEndGold.toFixed(4),
       }, { userId: user.id }).catch(e => console.error(`[Annual Statement] Email failed for ${user.email}:`, e));
       sent++;
     } catch (e) {
@@ -67,9 +85,7 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
 }
 
 export function startAnnualStatementScheduler(storage: IStorage): void {
-  // Run immediately on startup in case the service was down at midnight on Jan 1st
   runAnnualStatementJob(storage).catch(err => console.error('[Annual Statement] Startup check error:', err));
-  // Then check once per day
   setInterval(() => {
     runAnnualStatementJob(storage).catch(err => console.error('[Annual Statement] Scheduler error:', err));
   }, 24 * 60 * 60 * 1000);
