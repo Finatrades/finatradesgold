@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Loader2, RefreshCw, Edit, Trash2, Settings, Plus } from 'lucide-react';
+import { TrendingUp, AlertTriangle, FileText, CheckCircle, Clock, Loader2, RefreshCw, Edit, Trash2, Settings, Plus, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -482,6 +482,14 @@ function BnslAgreementsManager() {
   );
 }
 
+interface PayoutEngineStats {
+  timestamp: string;
+  processed: number;
+  failed: number;
+  maturing: number;
+  highRiskFlagged: number;
+}
+
 export default function BNSLManagement() {
   const { allPlans, auditLogs, currentGoldPrice, updatePlanStatus, addAuditLog, updatePayout, updateEarlyTermination, refreshAllPlans } = useBnsl();
   
@@ -493,7 +501,32 @@ export default function BNSLManagement() {
   
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  
+  const [engineStatus, setEngineStatus] = useState<PayoutEngineStats | null>(null);
+  const [engineRunning, setEngineRunning] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/admin/bnsl/payout-engine/status', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => setEngineStatus(data.status ?? null))
+      .catch(() => null);
+  }, []);
+
+  const handleRunEngine = async () => {
+    setEngineRunning(true);
+    try {
+      const res = await fetch('/api/admin/bnsl/payout-engine/run', { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.stats) {
+        setEngineStatus(data.stats);
+        toast.success(`Engine run complete — ${data.stats.processed} paid, ${data.stats.failed} failed`);
+      }
+    } catch {
+      toast.error('Payout engine run failed');
+    } finally {
+      setEngineRunning(false);
+    }
+  };
+
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
 
   const handleOpenPlan = (id: string) => {
@@ -518,7 +551,7 @@ export default function BNSLManagement() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
            <Card className="bg-blue-50 border-blue-100">
              <CardContent className="p-6">
                <div className="flex items-center gap-4">
@@ -572,6 +605,38 @@ export default function BNSLManagement() {
                    <h3 className="text-2xl font-bold text-red-700">{terminationRequests}</h3>
                  </div>
                </div>
+             </CardContent>
+           </Card>
+
+           <Card className="bg-amber-50 border-amber-100">
+             <CardContent className="p-6">
+               <div className="flex items-center justify-between gap-2 mb-2">
+                 <div className="flex items-center gap-3">
+                   <div className="p-3 bg-amber-100 text-amber-700 rounded-lg">
+                     <Zap className="w-5 h-5" />
+                   </div>
+                   <div>
+                     <p className="text-sm font-medium text-amber-900">Payout Engine</p>
+                     {engineStatus ? (
+                       <p className="text-xs text-amber-700">
+                         Last: {new Date(engineStatus.timestamp).toLocaleString()}
+                       </p>
+                     ) : (
+                       <p className="text-xs text-amber-600">No run recorded yet</p>
+                     )}
+                   </div>
+                 </div>
+                 <Button size="sm" variant="outline" onClick={handleRunEngine} disabled={engineRunning} data-testid="btn-run-payout-engine" className="h-8 text-xs">
+                   {engineRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                 </Button>
+               </div>
+               {engineStatus && (
+                 <div className="flex gap-3 text-xs mt-1">
+                   <span className="text-green-700 font-semibold">{engineStatus.processed} paid</span>
+                   <span className="text-red-600 font-semibold">{engineStatus.failed} failed</span>
+                   <span className="text-amber-700">{engineStatus.maturing} maturing</span>
+                 </div>
+               )}
              </CardContent>
            </Card>
         </div>

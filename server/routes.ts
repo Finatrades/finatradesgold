@@ -1803,6 +1803,10 @@ export async function registerRoutes(
   // See server/jobs/bnsl-reminder.job.ts
   { const { startBnslReminderScheduler } = await import('./jobs/bnsl-reminder.job'); startBnslReminderScheduler(storage); }
 
+  // BNSL Automated Payout Engine — daily job that credits margin payouts, flags high-risk plans
+  // See server/jobs/bnsl-payout.job.ts
+  { const { startBnslPayoutEngine } = await import('./jobs/bnsl-payout.job'); startBnslPayoutEngine(storage, getGoldPricePerGram); }
+
   // Monthly and Annual Statement Schedulers — started from dedicated job modules
   // See server/jobs/monthly-statement.job.ts and server/jobs/annual-statement.job.ts
   { const { startMonthlyStatementScheduler } = await import('./jobs/monthly-statement.job'); startMonthlyStatementScheduler(storage); }
@@ -12202,6 +12206,28 @@ export async function registerRoutes(
       res.json({ agreements });
     } catch (error) {
       res.status(400).json({ message: "Failed to get agreements" });
+    }
+  });
+
+  // BNSL Payout Engine — last run status (for admin dashboard card)
+  app.get("/api/admin/bnsl/payout-engine/status", ensureAdminAsync, requirePermission('view_bnsl', 'manage_bnsl'), async (req, res) => {
+    try {
+      const { getPayoutEngineStatus } = await import('./jobs/bnsl-payout.job');
+      const status = await getPayoutEngineStatus();
+      res.json({ status });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get payout engine status" });
+    }
+  });
+
+  // BNSL Payout Engine — manual trigger (for testing / emergency catch-up)
+  app.post("/api/admin/bnsl/payout-engine/run", ensureAdminAsync, requirePermission('manage_bnsl'), async (req, res) => {
+    try {
+      const { runBnslPayoutEngine } = await import('./jobs/bnsl-payout.job');
+      const stats = await runBnslPayoutEngine(storage, getGoldPricePerGram);
+      res.json({ stats, message: "Payout engine run complete" });
+    } catch (error) {
+      res.status(500).json({ message: "Payout engine run failed" });
     }
   });
   
