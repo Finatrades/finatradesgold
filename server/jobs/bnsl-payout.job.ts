@@ -5,7 +5,7 @@ import { notifyError } from '../system-notifications';
 import { getRedisConnection } from '../job-queue-bullmq';
 import { db } from '../db';
 import { wallets, transactions, bnslPlans, bnslPayouts } from '../../shared/schema';
-import { eq, lte, inArray, and } from 'drizzle-orm';
+import { eq, lte, inArray, and, sql } from 'drizzle-orm';
 import type { IStorage } from '../storage';
 import type { InsertTransaction } from '../../shared/schema';
 
@@ -104,21 +104,26 @@ export async function runBnslPayoutEngine(
         const gramsCredited = monetaryAmount / goldPrice;
 
         // Atomic DB transaction: wallet credit + payout status + plan margins + tx record
+        // Uses SQL atomic increment expressions so concurrent/multi-payout runs accumulate
+        // correctly without depending on stale plan/wallet snapshots.
         await db.transaction(async (tx) => {
-          // 1. Credit user FinaPay wallet
-          const [currentWallet] = await tx
-            .select()
+          // Guard: wallet must exist for this user
+          const [existingWallet] = await tx
+            .select({ id: wallets.id })
             .from(wallets)
             .where(eq(wallets.userId, plan.userId));
-          if (!currentWallet) throw new Error(`Wallet not found for user ${plan.userId}`);
+          if (!existingWallet) throw new Error(`Wallet not found for user ${plan.userId}`);
 
-          const newGoldGrams = (parseFloat(currentWallet.goldGrams) + gramsCredited).toFixed(6);
+          // 1. Credit user FinaPay wallet (atomic SQL increment — no read-modify-write)
           await tx
             .update(wallets)
-            .set({ goldGrams: newGoldGrams, updatedAt: new Date() })
-            .where(eq(wallets.id, currentWallet.id));
+            .set({
+              goldGrams: sql`${wallets.goldGrams} + ${gramsCredited.toFixed(6)}::numeric`,
+              updatedAt: new Date(),
+            })
+            .where(eq(wallets.userId, plan.userId));
 
-          // 2. Mark payout Paid with market data — clear any prior failureReason
+          // 2. Mark payout Paid with market data — clear any prior failureReason/failedAt
           await tx
             .update(bnslPayouts)
             .set({
@@ -126,20 +131,20 @@ export async function runBnslPayoutEngine(
               marketPriceUsdPerGram: goldPrice.toFixed(2),
               gramsCredited: gramsCredited.toFixed(6),
               paidAt: new Date(),
+              failedAt: null,
               failureReason: null,
             })
             .where(eq(bnslPayouts.id, payout.id));
 
-          // 3. Update plan paid/remaining margin tracking
-          const currentPaidUsd = parseFloat(plan.paidMarginUsd?.toString() || '0');
-          const currentPaidGrams = parseFloat(plan.paidMarginGrams?.toString() || '0');
-          const currentRemainingUsd = parseFloat(plan.remainingMarginUsd?.toString() || '0');
+          // 3. Update plan paid/remaining margin — atomic SQL increments prevent
+          //    last-writer-wins when multiple payouts for the same plan are processed
+          //    in a single engine cycle.
           await tx
             .update(bnslPlans)
             .set({
-              paidMarginUsd: (currentPaidUsd + monetaryAmount).toFixed(2),
-              paidMarginGrams: (currentPaidGrams + gramsCredited).toFixed(6),
-              remainingMarginUsd: Math.max(0, currentRemainingUsd - monetaryAmount).toFixed(2),
+              paidMarginUsd: sql`${bnslPlans.paidMarginUsd} + ${monetaryAmount.toFixed(2)}::numeric`,
+              paidMarginGrams: sql`${bnslPlans.paidMarginGrams} + ${gramsCredited.toFixed(6)}::numeric`,
+              remainingMarginUsd: sql`GREATEST(0, ${bnslPlans.remainingMarginUsd} - ${monetaryAmount.toFixed(2)}::numeric)`,
               updatedAt: new Date(),
             })
             .where(eq(bnslPlans.id, plan.id));
@@ -223,10 +228,11 @@ export async function runBnslPayoutEngine(
           failureReason,
         );
 
-        // Persist failure reason — non-retriable unless manually resolved
+        // Persist failure reason and timestamp — non-retriable unless manually resolved
+        // failedAt is used for the >3-day high-risk escalation threshold
         await db
           .update(bnslPayouts)
-          .set({ status: 'Failed', failureReason })
+          .set({ status: 'Failed', failureReason, failedAt: new Date() })
           .where(eq(bnslPayouts.id, payout.id))
           .catch(() => null);
         stats.failed++;
@@ -310,12 +316,14 @@ export async function runBnslPayoutEngine(
     }
   }
 
-  // High-risk flagging: any plan with a Failed payout scheduled >3 days ago
+  // High-risk flagging: plans where any payout has been in Failed status for >3 days.
+  // Uses failedAt (when it was marked Failed) — not scheduledDate — to count the actual
+  // duration a payout has been in a failed state.
   const cutoffDate = new Date(now.getTime() - HIGH_RISK_FAILURE_DAYS * 24 * 60 * 60 * 1000);
   const failedPayouts = await db
     .select({ planId: bnslPayouts.planId })
     .from(bnslPayouts)
-    .where(and(eq(bnslPayouts.status, 'Failed'), lte(bnslPayouts.scheduledDate, cutoffDate)));
+    .where(and(eq(bnslPayouts.status, 'Failed'), lte(bnslPayouts.failedAt, cutoffDate)));
 
   const highRiskPlanIds = [...new Set(failedPayouts.map(p => p.planId))];
   for (const planId of highRiskPlanIds) {

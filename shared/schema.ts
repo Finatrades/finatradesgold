@@ -2123,6 +2123,7 @@ export const bnslPayouts = pgTable("bnsl_payouts", {
   gramsCredited: decimal("grams_credited", { precision: 18, scale: 6 }),
   status: bnslPayoutStatusEnum("status").notNull().default('Scheduled'),
   paidAt: timestamp("paid_at"),
+  failedAt: timestamp("failed_at"),
   failureReason: text("failure_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -1736,68 +1736,11 @@ export async function registerRoutes(
     }
   }, 24 * 60 * 60 * 1000);
 
-  // BNSL Auto-Processing: Check for due payouts daily (runs every 6 hours)
-  setInterval(async () => {
-    try {
-      console.log('[BNSL Auto-Process] Checking for due payouts and mature plans...');
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Get all active plans
-      const allPlans = await storage.getAllBnslPlans();
-      const activePlans = allPlans.filter(p => p.status === 'Active');
-      
-      let payoutsProcessed = 0;
-      let plansMatured = 0;
-      
-      for (const plan of activePlans) {
-        // Check if plan has reached maturity
-        const maturityDate = new Date(plan.maturityDate);
-        maturityDate.setHours(0, 0, 0, 0);
-        
-        if (maturityDate <= today && plan.status === 'Active') {
-          // Mark plan as Maturing (admin needs to process final settlement)
-          await storage.updateBnslPlan(plan.id, { status: 'Maturing' });
-          plansMatured++;
-          console.log(`[BNSL Auto-Process] Plan ${plan.contractId} marked as Maturing`);
-          // Bell notification
-          try {
-            await storage.createNotification({
-              userId: plan.userId,
-              title: 'BNSL Plan Has Matured',
-              message: `Your BNSL plan '${plan.contractId}' has reached its maturity date and is now pending final settlement. Our team will process it shortly.`,
-              type: 'bnsl',
-              link: '/bnsl',
-              read: false,
-            });
-          } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
-        }
-        
-        // Check payouts and advance state for past-due ones
-        const payouts = await storage.getPlanPayouts(plan.id);
-        for (const payout of payouts) {
-          if (payout.status !== 'Scheduled') continue;
-          const payoutDate = new Date(payout.scheduledDate);
-          payoutDate.setHours(0, 0, 0, 0);
-          if (payoutDate < today) {
-            // Past due: advance payout to Processing so admin can action it
-            await storage.updateBnslPayout(payout.id, { status: 'Processing' });
-            payoutsProcessed++;
-            console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
-          }
-        }
-        // BNSL reminder/overdue emails are handled by the dedicated daily BNSL reminder job
-        // (server/jobs/bnsl-reminder.job.ts) — no email logic here.
-      }
-      
-      if (payoutsProcessed > 0 || plansMatured > 0) {
-        console.log(`[BNSL Auto-Process] Marked ${payoutsProcessed} payouts as Processing, ${plansMatured} plans as Maturing`);
-      }
-    } catch (error) {
-      console.error('[BNSL Auto-Process] Error:', error);
-    }
-  }, 6 * 60 * 60 * 1000); // Run every 6 hours
+  // BNSL Auto-Processing (legacy Scheduled→Processing transition) is DISABLED.
+  // The BNSL Payout Engine (server/jobs/bnsl-payout.job.ts) now handles all payout
+  // automation including wallet credits, maturity transitions, and admin alerts.
+  // Keeping Scheduled payouts in Scheduled state ensures the engine can atomically
+  // process them within a DB transaction.
 
   // BNSL Reminder Scheduler — dedicated daily job for payment reminders and overdue emails
   // See server/jobs/bnsl-reminder.job.ts
