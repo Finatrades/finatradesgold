@@ -1553,8 +1553,8 @@ export default function KYCReview() {
                                 {ocrFlag.extractedDob ? <> Extracted: <span className="font-bold">{ocrFlag.extractedDob}</span></> : null}
                               </p>
                             )}
-                            {ocrFlag.confidence !== undefined && (
-                              <p className="text-xs text-amber-600">OCR confidence: {Math.round(ocrFlag.confidence * 100)}%</p>
+                            {ocrFlag.similarity !== undefined && (
+                              <p className="text-xs text-amber-600">Name similarity score: {Math.round(ocrFlag.similarity * 100)}%</p>
                             )}
                           </div>
                         </div>

@@ -218,6 +218,7 @@ export default function KYC() {
 
   const isSectionLocked = (sectionName: string) => {
     if (!isResubmitMode) return false;
+    // Use the same changeRequestedSections source (with fallback) as lockedSections computation.
     // Lock every section EXCEPT those the admin explicitly requested changes on.
     return !changeRequestedSections.includes(sectionName);
   };
