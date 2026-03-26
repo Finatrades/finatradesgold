@@ -1,5 +1,5 @@
 import { Queue, Worker } from 'bullmq';
-import { cacheSet } from '../redis-client';
+import { cacheGet, cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { notifyError } from '../system-notifications';
 import { getRedisConnection } from '../job-queue-bullmq';
@@ -70,19 +70,50 @@ export async function runBnslPayoutEngine(
   const allPlans = await storage.getAllBnslPlans();
   const eligiblePlans = allPlans.filter(p => p.status === 'Active' || p.status === 'Maturing');
 
-  // Fetch live gold price once — abort entire cycle if unavailable
+  // Fetch live gold price once — if unavailable, mark all currently-due Scheduled payouts
+  // as Failed (with reason) and alert admins, then abort this cycle.
   let goldPrice: number;
   try {
     goldPrice = await getGoldPricePerGram();
     if (!goldPrice || goldPrice <= 0) throw new Error('Invalid gold price returned');
   } catch (priceErr) {
     const msg = priceErr instanceof Error ? priceErr.message : String(priceErr);
-    console.error('[BNSL Payout Engine] Cannot fetch gold price — aborting run:', msg);
+    const failureReason = `Gold price unavailable: ${msg}`;
+    console.error('[BNSL Payout Engine] Cannot fetch gold price — marking due payouts Failed:', msg);
+
+    // Mark all currently-due Scheduled payouts as Failed
+    const nowTs = new Date();
+    for (const plan of eligiblePlans) {
+      const payouts = await storage.getPlanPayouts(plan.id).catch(() => []);
+      const duePayouts = payouts.filter(
+        p => p.status === 'Scheduled' && new Date(p.scheduledDate) <= today,
+      );
+      for (const payout of duePayouts) {
+        await db
+          .update(bnslPayouts)
+          .set({ status: 'Failed', failureReason, failedAt: nowTs })
+          .where(and(eq(bnslPayouts.id, payout.id), eq(bnslPayouts.status, 'Scheduled')))
+          .catch(() => null);
+        stats.failed++;
+      }
+    }
+
     await notifyError({
       error: priceErr instanceof Error ? priceErr : new Error(msg),
       context: 'bnsl-payout-engine:gold-price-fetch',
       route: '/jobs/bnsl-payout',
     });
+
+    if (stats.failed > 0) {
+      await notifyAdminsInApp(
+        storage,
+        'BNSL Payout Engine: Gold Price Unavailable',
+        `${stats.failed} due payout(s) could not be processed — gold price fetch failed: ${msg}`,
+        'error',
+        '/admin/bnsl',
+      );
+    }
+
     stats.timestamp = now.toISOString();
     await cacheSet(LAST_RUN_KEY, JSON.stringify(stats), 48 * 60 * 60);
     return stats;

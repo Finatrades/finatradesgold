@@ -43,6 +43,13 @@
       "when": 1774516800000,
       "tag": "0005_add_low_balance_threshold",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774522000000,
+      "tag": "0006_add_bnsl_payout_failure_reason",
+      "breakpoints": true
     }
   ]
 }
