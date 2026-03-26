@@ -1,6 +1,10 @@
 import { getRedisClient } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
+import { db } from '../db';
+import { users, userAccountStatus } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
 import type { IStorage } from '../storage';
+import type { Transaction } from '../../shared/schema';
 
 const MONTHLY_STMT_IDEMPOTENCY_TTL = 25 * 24 * 60 * 60; // 25 days
 
@@ -20,22 +24,33 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
 
   console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
 
-  const allUsers = await storage.getAllUsers();
-  let sent = 0;
+  // Fetch only active (email-verified, non-frozen) users
+  const allUsers = await db
+    .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
+    .from(users)
+    .where(eq(users.isEmailVerified, true));
 
+  // Fetch all frozen user IDs for exclusion
+  const frozenRows = await db
+    .select({ userId: userAccountStatus.userId })
+    .from(userAccountStatus)
+    .where(eq(userAccountStatus.isFrozen, true));
+  const frozenIds = new Set(frozenRows.map(r => r.userId));
+
+  let sent = 0;
   for (const user of allUsers) {
-    if (!user.email || user.status === 'Suspended') continue;
+    if (!user.email || frozenIds.has(user.id)) continue;
     try {
-      const txns = await storage.getUserTransactions(user.id);
+      const txns: Transaction[] = await storage.getUserTransactions(user.id);
       const hadActivityInMonth = txns.some(t => {
-        const d = new Date((t as any).createdAt || (t as any).completedAt || 0);
-        return d >= prevMonthStart && d <= prevMonthEnd;
+        const d = t.createdAt ? new Date(t.createdAt) : null;
+        return d !== null && d >= prevMonthStart && d <= prevMonthEnd;
       });
       if (!hadActivityInMonth) continue;
 
       const wallet = await storage.getWallet(user.id);
       const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
-      const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client';
+      const userName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
 
       sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
         user_name: userName,
@@ -45,7 +60,7 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
       }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
       sent++;
     } catch (e) {
-      // Skip this user, continue with others
+      // Skip this user; non-fatal
     }
   }
 
@@ -54,9 +69,11 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
 }
 
 export function startMonthlyStatementScheduler(storage: IStorage): void {
-  const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // Check once per day
-  console.log('[Monthly Statement] Scheduler started (fires on 1st of each month)');
+  // Run immediately on startup in case the service was down at midnight on the 1st
+  runMonthlyStatementJob(storage).catch(err => console.error('[Monthly Statement] Startup check error:', err));
+  // Then check once per day
   setInterval(() => {
     runMonthlyStatementJob(storage).catch(err => console.error('[Monthly Statement] Scheduler error:', err));
-  }, CHECK_INTERVAL_MS);
+  }, 24 * 60 * 60 * 1000);
+  console.log('[Monthly Statement] Scheduler started (fires on 1st of each month)');
 }
