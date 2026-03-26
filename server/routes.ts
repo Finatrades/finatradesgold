@@ -5558,6 +5558,11 @@ export async function registerRoutes(
       if (!draftData || typeof draftData !== 'object') {
         return res.status(400).json({ message: "draftData is required" });
       }
+      // Guard against oversized payloads (max 256 KB serialized)
+      const serialized = JSON.stringify(draftData);
+      if (serialized.length > 256 * 1024) {
+        return res.status(413).json({ message: "draftData payload exceeds 256 KB limit" });
+      }
       const draft = await storage.upsertKycDraft(userId, submissionType, draftData);
       res.json({ draft });
     } catch (err) {
