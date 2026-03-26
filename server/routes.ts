@@ -18776,6 +18776,22 @@ export async function registerRoutes(
           details: `Invitation transfer created: ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. Token: ${invitationToken.substring(0, 8)}...`,
         });
         
+        // Low balance alert: check if sender's remaining LGPW balance is below 0.1g after this debit
+        try {
+          const updatedSenderWalletInv = await storage.getWallet(sender.id);
+          const LOW_BALANCE_THRESHOLD_GRAMS = 0.1;
+          const remainingGramsInv = parseFloat(updatedSenderWalletInv?.goldGrams?.toString() || '0');
+          if (remainingGramsInv < LOW_BALANCE_THRESHOLD_GRAMS && remainingGramsInv >= 0 && sender.email) {
+            const currentGoldPriceInv = await getGoldPricePerGram().catch(() => 139.44);
+            sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
+              user_name: `${sender.firstName} ${sender.lastName}`,
+              current_balance: (remainingGramsInv * currentGoldPriceInv).toFixed(2),
+              threshold: (LOW_BALANCE_THRESHOLD_GRAMS * currentGoldPriceInv).toFixed(2),
+              deposit_url: '/finapay',
+            }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert (invite) failed:', err));
+          }
+        } catch (lbErr) { console.error('[Email] Low balance check (invite) failed:', lbErr); }
+
         return res.json({
           transfer: inviteTransfer,
           pending: true,
@@ -20137,36 +20153,58 @@ export async function registerRoutes(
       const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
 
-      // Refund gold to sender's wallet
-      const senderWallet = await storage.getWallet(sender.id);
-      if (senderWallet) {
-        const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-        await storage.updateWallet(senderWallet.id, {
-          goldGrams: (senderGoldBalance + goldAmount).toFixed(6),
-        });
-        // Restore cert ledger
-        try {
-          const { restoreToCert } = await import('./cert-ledger-service');
-          await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer cancelled by sender${reason ? `: ${reason}` : ''}`);
-        } catch (certErr) {
-          console.error('[CertLedger] Failed to restore certs on transfer cancellation:', certErr);
+      // Determine which wallet type was used by inspecting the sender's transaction record
+      // LGPW: deducted from wallet at send time — must be refunded on cancel
+      // FGPW: NOT deducted at send time (batches consumed only at accept time) — no wallet refund needed
+      let sourceWalletType: 'LGPW' | 'FGPW' = 'LGPW'; // default to LGPW (safe)
+      if (transfer.senderTransactionId) {
+        const senderTxRecord = await storage.getTransaction(transfer.senderTransactionId).catch(() => null);
+        if (senderTxRecord?.goldWalletType === 'FGPW') {
+          sourceWalletType = 'FGPW';
         }
       }
 
-      // Create refund transaction for sender
-      await storage.createTransaction({
-        userId: sender.id,
-        type: 'Refund',
-        status: 'Completed',
-        amountGold: goldAmount.toFixed(6),
-        amountUsd: (goldAmount * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        description: `Transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
-        referenceId: transfer.referenceNumber,
-        sourceModule: 'finapay',
-        goldWalletType: 'LGPW',
-        completedAt: new Date(),
-      });
+      if (sourceWalletType === 'LGPW') {
+        // LGPW: refund gold to sender's LGPW wallet (it was debited at send time)
+        const senderWallet = await storage.getWallet(sender.id);
+        if (senderWallet) {
+          const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
+          await storage.updateWallet(senderWallet.id, {
+            goldGrams: (senderGoldBalance + goldAmount).toFixed(6),
+          });
+          // Restore cert ledger
+          try {
+            const { restoreToCert } = await import('./cert-ledger-service');
+            await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer cancelled by sender${reason ? `: ${reason}` : ''}`);
+          } catch (certErr) {
+            console.error('[CertLedger] Failed to restore certs on transfer cancellation:', certErr);
+          }
+        }
+
+        // Create refund transaction for sender (LGPW only)
+        await storage.createTransaction({
+          userId: sender.id,
+          type: 'Refund',
+          status: 'Completed',
+          amountGold: goldAmount.toFixed(6),
+          amountUsd: (goldAmount * goldPrice).toFixed(2),
+          goldPriceUsdPerGram: goldPrice.toFixed(2),
+          description: `Transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
+          referenceId: transfer.referenceNumber,
+          sourceModule: 'finapay',
+          goldWalletType: 'LGPW',
+          completedAt: new Date(),
+        });
+      } else {
+        // FGPW: nothing was debited yet — just void the pending transaction record
+        if (transfer.senderTransactionId) {
+          await storage.updateTransaction(transfer.senderTransactionId, {
+            status: 'Cancelled',
+            description: `FGPW transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
+          }).catch(err => console.error('[Routes] Failed to void FGPW sender tx on cancel:', err));
+        }
+        console.log(`[Routes] FGPW pending transfer ${transfer.id} cancelled — no wallet refund needed (batches not yet consumed)`);
+      }
 
       // Update transfer status
       await storage.updatePeerTransfer(transfer.id, {
