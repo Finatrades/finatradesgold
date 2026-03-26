@@ -3619,6 +3619,8 @@ export const userPreferences = pgTable("user_preferences", {
   // Transfer preferences
   requireTransferApproval: boolean("require_transfer_approval").notNull().default(false), // Require accept/reject for incoming transfers
   transferApprovalTimeout: integer("transfer_approval_timeout").notNull().default(24), // Hours before auto-accept (0 = no auto-accept)
+  // Alert preferences
+  lowBalanceThresholdGrams: decimal("low_balance_threshold_grams", { precision: 18, scale: 6 }).default('0.1'), // Alert when LGPW balance drops below this (grams)
   // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

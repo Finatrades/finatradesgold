@@ -1838,107 +1838,10 @@ export async function registerRoutes(
     }
   }, 6 * 60 * 60 * 1000); // Run every 6 hours
 
-  // Monthly Statement Scheduler — runs once per day, fires on the 1st of each month
-  setInterval(async () => {
-    try {
-      const now = new Date();
-      if (now.getDate() !== 1) return; // Only run on the 1st of the month
-
-      // Idempotent: only fire once per month
-      const monthKey = `stmt:monthly:${now.getFullYear()}-${now.getMonth()}`;
-      const monthRedis = getRedisClient();
-      const alreadyRan = await monthRedis.get(monthKey).catch(() => null);
-      if (alreadyRan) return;
-
-      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      const monthName = prevMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
-
-      console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
-      const allUsers = await storage.getAllUsers();
-      let sent = 0;
-      for (const user of allUsers) {
-        if (!user.email || user.status === 'Suspended') continue;
-        try {
-          // Only send to users who had at least one transaction in the prior month
-          const txns = await storage.getUserTransactions(user.id);
-          const hadActivityInMonth = txns.some(t => {
-            const d = new Date(t.createdAt || t.completedAt || 0);
-            return d >= prevMonthStart && d <= prevMonthEnd;
-          });
-          if (!hadActivityInMonth) continue;
-
-          const wallet = await storage.getWallet(user.id);
-          const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
-
-          sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
-            user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
-            statement_month: monthName,
-            gold_balance: goldBalance.toFixed(4),
-            statement_url: `${appBaseUrl}/dashboard`,
-          }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
-          sent++;
-        } catch (e) { /* skip this user */ }
-      }
-      // Mark as ran for 25 days so it doesn't re-fire within the same month
-      await monthRedis.set(monthKey, '1', { ex: 25 * 24 * 60 * 60 }).catch(() => {});
-      console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName}`);
-    } catch (err) {
-      console.error('[Monthly Statement] Scheduler error:', err);
-    }
-  }, 24 * 60 * 60 * 1000); // Check once per day
-
-  // Annual Tax Statement Scheduler — runs once per day, fires on January 1st of each year
-  setInterval(async () => {
-    try {
-      const now = new Date();
-      if (now.getMonth() !== 0 || now.getDate() !== 1) return; // Only January 1st
-
-      // Idempotent: only fire once per year
-      const yearKey = `stmt:annual:${now.getFullYear()}`;
-      const yearRedis = getRedisClient();
-      const alreadyRan = await yearRedis.get(yearKey).catch(() => null);
-      if (alreadyRan) return;
-
-      const prevYear = now.getFullYear() - 1;
-      const prevYearStart = new Date(prevYear, 0, 1);
-      const prevYearEnd = new Date(prevYear, 11, 31, 23, 59, 59, 999);
-      const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
-
-      console.log(`[Annual Statement] Sending annual tax statements for ${prevYear}`);
-      const allUsers = await storage.getAllUsers();
-      let sent = 0;
-      for (const user of allUsers) {
-        if (!user.email || user.status === 'Suspended') continue;
-        try {
-          // Only send to users who had at least one transaction in the prior year
-          const txns = await storage.getUserTransactions(user.id);
-          const hadActivityInYear = txns.some(t => {
-            const d = new Date(t.createdAt || t.completedAt || 0);
-            return d >= prevYearStart && d <= prevYearEnd;
-          });
-          if (!hadActivityInYear) continue;
-
-          const wallet = await storage.getWallet(user.id);
-          const goldBalance = parseFloat(wallet?.goldGrams?.toString() || '0');
-
-          sendEmail(user.email, EMAIL_TEMPLATES.ANNUAL_TAX_STATEMENT, {
-            user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
-            tax_year: String(prevYear),
-            gold_balance: goldBalance.toFixed(4),
-            statement_url: `${appBaseUrl}/dashboard`,
-          }, { userId: user.id }).catch(e => console.error(`[Annual Statement] Email failed for ${user.email}:`, e));
-          sent++;
-        } catch (e) { /* skip this user */ }
-      }
-      // Mark as ran for 360 days so it doesn't re-fire within the same year
-      await yearRedis.set(yearKey, '1', { ex: 360 * 24 * 60 * 60 }).catch(() => {});
-      console.log(`[Annual Statement] Sent ${sent} annual tax statements for ${prevYear}`);
-    } catch (err) {
-      console.error('[Annual Statement] Scheduler error:', err);
-    }
-  }, 24 * 60 * 60 * 1000); // Check once per day
+  // Monthly and Annual Statement Schedulers — started from dedicated job modules
+  // See server/jobs/monthly-statement.job.ts and server/jobs/annual-statement.job.ts
+  { const { startMonthlyStatementScheduler } = await import('./jobs/monthly-statement.job'); startMonthlyStatementScheduler(storage); }
+  { const { startAnnualStatementScheduler } = await import('./jobs/annual-statement.job'); startAnnualStatementScheduler(storage); }
 
   // Login with rate limiting
   app.post("/api/auth/login", geoRestrictionMiddleware(), authRateLimiter, async (req, res) => {
@@ -18776,17 +18679,29 @@ export async function registerRoutes(
           details: `Invitation transfer created: ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. Token: ${invitationToken.substring(0, 8)}...`,
         });
         
-        // Low balance alert: check if sender's remaining LGPW balance is below 0.1g after this debit
+        // Send transfer_sent email to sender for invite transfer confirmation
+        if (sender.email) {
+          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
+            user_name: `${sender.firstName} ${sender.lastName}`,
+            recipient_name: recipientIdentifier,
+            gold_amount: goldAmount.toFixed(4),
+            usd_value: usdEquivalent.toFixed(2),
+            reference_id: referenceNumber,
+          }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Invite transfer_sent failed:', err));
+        }
+
+        // Low balance alert: check if sender's remaining LGPW balance falls below their configured threshold
         try {
           const updatedSenderWalletInv = await storage.getWallet(sender.id);
-          const LOW_BALANCE_THRESHOLD_GRAMS = 0.1;
+          const senderPrefsInv = await storage.getUserPreferences(sender.id);
+          const invThreshold = parseFloat(senderPrefsInv?.lowBalanceThresholdGrams?.toString() || '0.1');
           const remainingGramsInv = parseFloat(updatedSenderWalletInv?.goldGrams?.toString() || '0');
-          if (remainingGramsInv < LOW_BALANCE_THRESHOLD_GRAMS && remainingGramsInv >= 0 && sender.email) {
+          if (invThreshold > 0 && remainingGramsInv < invThreshold && remainingGramsInv >= 0 && sender.email) {
             const currentGoldPriceInv = await getGoldPricePerGram().catch(() => 139.44);
             sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
               user_name: `${sender.firstName} ${sender.lastName}`,
               current_balance: (remainingGramsInv * currentGoldPriceInv).toFixed(2),
-              threshold: (LOW_BALANCE_THRESHOLD_GRAMS * currentGoldPriceInv).toFixed(2),
+              threshold: (invThreshold * currentGoldPriceInv).toFixed(2),
               deposit_url: '/finapay',
             }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert (invite) failed:', err));
           }
@@ -18943,17 +18858,18 @@ export async function registerRoutes(
         }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer sent confirmation failed:', err));
       }
 
-      // Low balance alert: check if sender's remaining balance falls below 0.1g
+      // Low balance alert: check if sender's remaining LGPW balance falls below their configured threshold
       try {
         const updatedSenderWallet = await storage.getWallet(sender.id);
-        const LOW_BALANCE_THRESHOLD_GRAMS = 0.1; // Default threshold: 0.1g gold
+        const senderPrefsForLb = await storage.getUserPreferences(sender.id);
+        const lbThreshold = parseFloat(senderPrefsForLb?.lowBalanceThresholdGrams?.toString() || '0.1');
         const remainingGrams = parseFloat(updatedSenderWallet?.goldGrams?.toString() || '0');
-        if (remainingGrams < LOW_BALANCE_THRESHOLD_GRAMS && remainingGrams >= 0 && sender.email) {
+        if (lbThreshold > 0 && remainingGrams < lbThreshold && remainingGrams >= 0 && sender.email) {
           const currentGoldPrice = await getGoldPricePerGram().catch(() => 139.44);
           sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
             user_name: `${sender.firstName} ${sender.lastName}`,
             current_balance: (remainingGrams * currentGoldPrice).toFixed(2),
-            threshold: (LOW_BALANCE_THRESHOLD_GRAMS * currentGoldPrice).toFixed(2),
+            threshold: (lbThreshold * currentGoldPrice).toFixed(2),
             deposit_url: '/finapay',
           }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert failed:', err));
         }
