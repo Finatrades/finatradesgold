@@ -495,6 +495,10 @@ function _startFallbackScheduler(
   storage: IStorage,
   getGoldPricePerGram: () => Promise<number>,
 ): void {
+  // Run an immediate startup cycle (mirrors BullMQ startup behaviour)
+  runBnslPayoutEngine(storage, getGoldPricePerGram).catch(err =>
+    console.error('[BNSL Payout Engine] Fallback startup run error:', err),
+  );
   setInterval(() => {
     runBnslPayoutEngine(storage, getGoldPricePerGram).catch(err =>
       console.error('[BNSL Payout Engine] Fallback scheduler error:', err),
