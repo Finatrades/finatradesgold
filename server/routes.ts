@@ -101,7 +101,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
-import { checkKycOcrMismatch } from "./services/ocr-service";
+import { checkKycOcrMismatch, type KycOcrResult } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -22717,12 +22717,13 @@ export async function registerRoutes(
     }
   });
 
-  // KYC Draft — server-side draft persistence
+  // KYC Draft — server-side draft persistence (keyed by userId + submissionType)
   app.get("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const draft = await storage.getKycDraft(userId);
+      const submissionType = (req.query.submissionType as string) || 'personal';
+      const draft = await storage.getKycDraft(userId, submissionType);
       res.json({ draft: draft || null });
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch draft" });
@@ -22832,7 +22833,7 @@ export async function registerRoutes(
         }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
 
         // Delete server-side draft now that submission is complete
-        storage.deleteKycDraft(userId).catch(() => null);
+        storage.deleteKycDraft(userId, 'personal').catch(() => null);
 
         res.json({ success: true, submission: updated });
 
@@ -22840,11 +22841,11 @@ export async function registerRoutes(
         const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
         if (docUrlForOcr && kycData.fullName) {
           checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
-            .then(async ocrResult => {
+            .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
               const currentScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
               await storage.updateFinatradesPersonalKyc(updated!.id, {
-                ocrMismatchFlag: ocrResult as any,
+                ocrMismatchFlag: ocrResult,
                 ...(mismatch ? { riskScore: currentScore + 10 } : {}),
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
@@ -22885,7 +22886,7 @@ export async function registerRoutes(
         }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
 
         // Delete server-side draft now that submission is complete
-        storage.deleteKycDraft(userId).catch(() => null);
+        storage.deleteKycDraft(userId, 'personal').catch(() => null);
 
         res.json({ success: true, submission });
 
@@ -22893,10 +22894,10 @@ export async function registerRoutes(
         const docUrlForOcr2 = kycData.passportUrl || kycData.idFrontUrl;
         if (docUrlForOcr2 && kycData.fullName) {
           checkKycOcrMismatch(docUrlForOcr2, kycData.fullName, kycData.dateOfBirth || '')
-            .then(async ocrResult => {
+            .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
               await storage.updateFinatradesPersonalKyc(submission.id, {
-                ocrMismatchFlag: ocrResult as any,
+                ocrMismatchFlag: ocrResult,
                 ...(mismatch ? { riskScore: 10 } : {}),
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
@@ -23043,6 +23044,9 @@ export async function registerRoutes(
           dashboard_url: `${baseUrl}/dashboard`,
         }).catch(err => console.error('[KYC] Failed to send corporate submission confirmation email:', err));
 
+        // Delete server-side draft now that submission is complete
+        storage.deleteKycDraft(userId, 'corporate').catch(() => null);
+
         res.json({ success: true, submission: updated });
       } else {
         const submission = await storage.createFinatradesCorporateKyc({
@@ -23079,6 +23083,9 @@ export async function registerRoutes(
           processing_time: '5 business days',
           dashboard_url: `${baseUrl}/dashboard`,
         }).catch(err => console.error('[KYC] Failed to send corporate submission confirmation email:', err));
+
+        // Delete server-side draft now that submission is complete
+        storage.deleteKycDraft(userId, 'corporate').catch(() => null);
 
         res.json({ success: true, submission });
       }

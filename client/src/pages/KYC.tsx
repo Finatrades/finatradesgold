@@ -182,6 +182,7 @@ export default function KYC() {
     reviewedAt: string | null;
   }> = sectionReviewsData?.reviews || [];
 
+  const approvedSections = sectionReviews.filter(r => r.status === 'approved').map(r => r.sectionName);
   const rejectedSections = sectionReviews.filter(r => r.status === 'rejected');
   // Sections explicitly flagged by admin as needing changes — these are the ONLY unlocked sections.
   const changeRequestedSections = rejectedSections.map(r => r.sectionName);
@@ -206,11 +207,14 @@ export default function KYC() {
   }
   const savedDraft = savedDraftRef.current;
 
+  // Derive submission type early (needed for draft fetch)
+  const draftSubmissionType = user?.accountType === 'business' ? 'corporate' : 'personal';
+
   // Fetch server-side draft on mount and merge if server draft is newer
   const { data: serverDraftData } = useQuery({
-    queryKey: ['/api/kyc/draft', user?.id],
+    queryKey: ['/api/kyc/draft', user?.id, draftSubmissionType],
     queryFn: async () => {
-      const res = await fetch('/api/kyc/draft', { credentials: 'include' });
+      const res = await fetch(`/api/kyc/draft?submissionType=${draftSubmissionType}`, { credentials: 'include' });
       if (!res.ok) return null;
       return res.json();
     },
@@ -384,7 +388,7 @@ export default function KYC() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ submissionType: user?.accountType === 'business' ? 'corporate' : 'personal', draftData: draft }),
+          body: JSON.stringify({ submissionType: draftSubmissionType, draftData: draft }),
         }).catch(() => null);
       } catch (e) {
         console.warn('[KYC] Failed to save draft:', e);

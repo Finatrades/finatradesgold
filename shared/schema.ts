@@ -2,7 +2,7 @@
 
 
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -922,12 +922,14 @@ export type FinatradesPersonalKyc = typeof finatradesPersonalKyc.$inferSelect;
 
 export const kycDrafts = pgTable("kyc_drafts", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   submissionType: varchar("submission_type", { length: 50 }).notNull().default('personal'),
   draftData: json("draft_data").$type<Record<string, any>>(),
   savedAt: timestamp("saved_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userSubmissionTypeUniq: unique().on(table.userId, table.submissionType),
+}));
 
 export const insertKycDraftSchema = createInsertSchema(kycDrafts).omit({ id: true, savedAt: true, updatedAt: true });
 export type InsertKycDraft = z.infer<typeof insertKycDraftSchema>;

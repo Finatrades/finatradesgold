@@ -726,9 +726,9 @@ export interface IStorage {
   getKycReasonCodes(): Promise<KycReasonCode[]>;
 
   // KYC Drafts
-  getKycDraft(userId: string): Promise<KycDraft | undefined>;
+  getKycDraft(userId: string, submissionType: string): Promise<KycDraft | undefined>;
   upsertKycDraft(userId: string, submissionType: string, draftData: Record<string, any>): Promise<KycDraft>;
-  deleteKycDraft(userId: string): Promise<void>;
+  deleteKycDraft(userId: string, submissionType: string): Promise<void>;
 
   // User Notifications
   getNotification(id: string): Promise<Notification | undefined>;
@@ -3609,18 +3609,20 @@ export class DatabaseStorage implements IStorage {
   // KYC DRAFTS
   // ============================================
 
-  async getKycDraft(userId: string): Promise<KycDraft | undefined> {
-    const [draft] = await db.select().from(kycDrafts).where(eq(kycDrafts.userId, userId));
+  async getKycDraft(userId: string, submissionType: string): Promise<KycDraft | undefined> {
+    const [draft] = await db.select().from(kycDrafts).where(
+      and(eq(kycDrafts.userId, userId), eq(kycDrafts.submissionType, submissionType))
+    );
     return draft || undefined;
   }
 
   async upsertKycDraft(userId: string, submissionType: string, draftData: Record<string, any>): Promise<KycDraft> {
     const now = new Date();
-    const existing = await this.getKycDraft(userId);
+    const existing = await this.getKycDraft(userId, submissionType);
     if (existing) {
       const [updated] = await db.update(kycDrafts)
-        .set({ submissionType, draftData, updatedAt: now })
-        .where(eq(kycDrafts.userId, userId))
+        .set({ draftData, updatedAt: now })
+        .where(and(eq(kycDrafts.userId, userId), eq(kycDrafts.submissionType, submissionType)))
         .returning();
       return updated;
     }
@@ -3630,8 +3632,10 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async deleteKycDraft(userId: string): Promise<void> {
-    await db.delete(kycDrafts).where(eq(kycDrafts.userId, userId));
+  async deleteKycDraft(userId: string, submissionType: string): Promise<void> {
+    await db.delete(kycDrafts).where(
+      and(eq(kycDrafts.userId, userId), eq(kycDrafts.submissionType, submissionType))
+    );
   }
 
   // ============================================
