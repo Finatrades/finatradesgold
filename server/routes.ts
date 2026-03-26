@@ -1425,7 +1425,7 @@ export async function registerRoutes(
               link: '/finapay',
             });
             
-            // Notify sender
+            // Notify sender (bell)
             await storage.createNotification({
               userId: invite.senderId,
               title: 'Transfer Claimed',
@@ -1433,7 +1433,26 @@ export async function registerRoutes(
               type: 'success',
               link: '/finapay',
             });
-            
+
+            // Send transfer_completed email to the new user (recipient)
+            if (user.email) {
+              sendEmail(user.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
+                user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Member',
+                recipient_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Member',
+                gold_amount: goldAmount.toFixed(4),
+              }, { userId: user.id, recipientName: user.firstName || undefined }).catch(e => console.error('[Email] Invite claim transfer_completed (recipient) failed:', e));
+            }
+
+            // Send transfer_completed email to original sender confirming delivery
+            const inviteSender = await storage.getUser(invite.senderId).catch(() => null);
+            if (inviteSender?.email) {
+              sendEmail(inviteSender.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
+                user_name: `${inviteSender.firstName || ''} ${inviteSender.lastName || ''}`.trim() || 'Valued Client',
+                recipient_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+                gold_amount: goldAmount.toFixed(4),
+              }, { userId: inviteSender.id, recipientName: inviteSender.firstName || undefined }).catch(e => console.error('[Email] Invite claim transfer_completed (sender) failed:', e));
+            }
+
             console.log(`[Registration] Claimed invitation transfer ${invite.referenceNumber} for ${user.email}`);
           }
         }
@@ -20102,10 +20121,18 @@ export async function registerRoutes(
       }
 
       const sender = await storage.getUser(transfer.senderId);
-      const recipient = await storage.getUser(transfer.recipientId);
       if (!sender) {
         return res.status(404).json({ message: "Sender not found" });
       }
+
+      // For registered P2P transfers: recipientId is the actual recipient user
+      // For invitation (unregistered) transfers: recipientId may be a placeholder — use recipientIdentifier (email)
+      const isInviteTransfer = !!(transfer.recipientIdentifier && transfer.recipientIdentifier.includes('@') && transfer.recipientId === transfer.senderId);
+      const recipient = isInviteTransfer ? null : await storage.getUser(transfer.recipientId);
+      // The display name for the cancelled transfer recipient
+      const recipientDisplayName = recipient
+        ? `${recipient.firstName} ${recipient.lastName}`.trim()
+        : (transfer.recipientIdentifier || 'the intended recipient');
 
       const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
       const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
@@ -20134,7 +20161,7 @@ export async function registerRoutes(
         amountGold: goldAmount.toFixed(6),
         amountUsd: (goldAmount * goldPrice).toFixed(2),
         goldPriceUsdPerGram: goldPrice.toFixed(2),
-        description: `Transfer to ${recipient?.firstName || 'user'} was cancelled${reason ? `: ${reason}` : ''}`,
+        description: `Transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
         referenceId: transfer.referenceNumber,
         sourceModule: 'finapay',
         goldWalletType: 'LGPW',
@@ -20160,13 +20187,15 @@ export async function registerRoutes(
       if (sender.email) {
         sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
           user_name: `${sender.firstName} ${sender.lastName}`,
-          recipient_name: recipient ? `${recipient.firstName} ${recipient.lastName}` : 'the intended recipient',
+          recipient_name: recipientDisplayName,
           gold_amount: goldAmount.toFixed(4),
           cancellation_reason: reason || 'Cancelled by sender',
         }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (sender) failed:', err));
       }
 
-      // Send transfer_cancelled email to recipient (they were expecting funds that won't arrive)
+      // Send transfer_cancelled email to the intended recipient:
+      // - Registered recipients: email them directly using their user record
+      // - Unregistered (invitation) transfers: email the recipientIdentifier address directly
       if (recipient?.email) {
         sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
           user_name: `${recipient.firstName} ${recipient.lastName}`,
@@ -20174,6 +20203,14 @@ export async function registerRoutes(
           gold_amount: goldAmount.toFixed(4),
           cancellation_reason: reason || 'Transfer was cancelled by the sender',
         }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (recipient) failed:', err));
+      } else if (isInviteTransfer && transfer.recipientIdentifier && transfer.recipientIdentifier.includes('@')) {
+        // Send to unregistered email — no userId tracking since they haven't registered yet
+        sendEmail(transfer.recipientIdentifier, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
+          user_name: transfer.recipientIdentifier,
+          recipient_name: transfer.recipientIdentifier,
+          gold_amount: goldAmount.toFixed(4),
+          cancellation_reason: reason || 'The sender has cancelled this pending transfer',
+        }).catch(err => console.error('[Email] Transfer cancelled (unregistered recipient) failed:', err));
       }
 
       // Bell notification for sender
