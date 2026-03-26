@@ -1,4 +1,4 @@
-import { getRedisClient } from '../redis-client';
+import { cacheGet, cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { db } from '../db';
 import { users, userAccountStatus } from '../../shared/schema';
@@ -13,8 +13,7 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
   if (now.getDate() !== 1) return;
 
   const monthKey = `stmt:monthly:${now.getFullYear()}-${now.getMonth()}`;
-  const redis = getRedisClient();
-  const alreadyRan = await redis.get(monthKey).catch(() => null);
+  const alreadyRan = await cacheGet(monthKey);
   if (alreadyRan) return;
 
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -24,13 +23,12 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
 
   console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
 
-  // Fetch only active (email-verified, non-frozen) users
+  // Only email-verified, non-frozen users
   const allUsers = await db
     .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
     .from(users)
     .where(eq(users.isEmailVerified, true));
 
-  // Fetch all frozen user IDs for exclusion
   const frozenRows = await db
     .select({ userId: userAccountStatus.userId })
     .from(userAccountStatus)
@@ -64,7 +62,7 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
     }
   }
 
-  await redis.set(monthKey, '1', { ex: MONTHLY_STMT_IDEMPOTENCY_TTL }).catch(() => {});
+  await cacheSet(monthKey, '1', MONTHLY_STMT_IDEMPOTENCY_TTL);
   console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName}`);
 }
 
