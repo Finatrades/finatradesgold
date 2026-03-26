@@ -1774,60 +1774,8 @@ export async function registerRoutes(
           } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
         }
         
-        // Check for due payouts and send reminders/overdue emails
-        const planUser = await storage.getUser(plan.userId).catch(() => null);
-        const payouts = await storage.getPlanPayouts(plan.id);
-        for (const payout of payouts) {
-          if (payout.status !== 'Scheduled') continue;
-          
-          const payoutDate = new Date(payout.scheduledDate);
-          payoutDate.setHours(0, 0, 0, 0);
-          
-          const daysUntilDue = Math.round((payoutDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-          
-          // Strictly past due (yesterday or earlier): mark as Processing + send overdue email once
-          if (payoutDate < today) {
-            await storage.updateBnslPayout(payout.id, { status: 'Processing' });
-            payoutsProcessed++;
-            console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
-            
-            // Only email if this is the same day we flip to Processing (first detection)
-            // Use a Redis idempotency key to avoid duplicate overdue emails
-            const overdueKey = `bnsl:overdue:${payout.id}`;
-            const redisClient = getRedisClient();
-            const alreadyNotified = await redisClient.get(overdueKey).catch(() => null);
-            if (!alreadyNotified && planUser?.email) {
-              const daysOverdue = Math.abs(daysUntilDue);
-              sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_OVERDUE, {
-                user_name: `${planUser.firstName} ${planUser.lastName}`,
-                plan_name: plan.contractId,
-                amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
-                days_overdue: String(daysOverdue),
-                late_fee: '0.00',
-                payment_url: '/bnsl',
-              }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL overdue email failed:', err));
-              // Mark as notified for 30 days to prevent re-sending
-              await redisClient.set(overdueKey, '1', { ex: 30 * 24 * 60 * 60 }).catch(() => {});
-            }
-          } else if (daysUntilDue === 7 || daysUntilDue === 1) {
-            // 7-day and 1-day payment reminders — idempotent per payout per reminder type
-            const reminderKey = `bnsl:reminder:${payout.id}:${daysUntilDue}d`;
-            const redisClient = getRedisClient();
-            const alreadySent = await redisClient.get(reminderKey).catch(() => null);
-            if (!alreadySent && planUser?.email) {
-              sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_REMINDER, {
-                user_name: `${planUser.firstName} ${planUser.lastName}`,
-                plan_name: plan.contractId,
-                amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
-                due_date: payoutDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                payment_url: '/bnsl',
-              }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL reminder email failed:', err));
-              // Mark as sent for 2 days to prevent duplicate sends within same 6-hour polling cycle
-              await redisClient.set(reminderKey, '1', { ex: 2 * 24 * 60 * 60 }).catch(() => {});
-              console.log(`[BNSL Auto-Process] Payment reminder sent to ${planUser.email} for plan ${plan.contractId} (${daysUntilDue} days until due)`);
-            }
-          }
-        }
+        // BNSL reminder/overdue emails are handled by the dedicated daily BNSL reminder job
+        // (server/jobs/bnsl-reminder.job.ts) — no email logic here.
       }
       
       if (payoutsProcessed > 0 || plansMatured > 0) {
@@ -1837,6 +1785,10 @@ export async function registerRoutes(
       console.error('[BNSL Auto-Process] Error:', error);
     }
   }, 6 * 60 * 60 * 1000); // Run every 6 hours
+
+  // BNSL Reminder Scheduler — dedicated daily job for payment reminders and overdue emails
+  // See server/jobs/bnsl-reminder.job.ts
+  { const { startBnslReminderScheduler } = await import('./jobs/bnsl-reminder.job'); startBnslReminderScheduler(storage); }
 
   // Monthly and Annual Statement Schedulers — started from dedicated job modules
   // See server/jobs/monthly-statement.job.ts and server/jobs/annual-statement.job.ts
@@ -13685,6 +13637,16 @@ export async function registerRoutes(
       });
       
       res.json({ request });
+
+      // Low balance alert: check if LGPW balance dropped below threshold after hold
+      if (selectedWalletType === 'LGPW' && withdrawUser?.email) {
+        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
+        checkAndSendLowBalanceAlert(
+          storage, userId, withdrawUser.email,
+          withdrawUser.firstName, withdrawUser.lastName,
+          getGoldPricePerGram,
+        ).catch(err => console.error('[Email] Low balance check (withdrawal) failed:', err));
+      }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
     }
@@ -18694,22 +18656,15 @@ export async function registerRoutes(
           }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Invite transfer_sent failed:', err));
         }
 
-        // Low balance alert: check if sender's remaining LGPW balance falls below their configured threshold
-        try {
-          const updatedSenderWalletInv = await storage.getWallet(sender.id);
-          const senderPrefsInv = await storage.getUserPreferences(sender.id);
-          const invThreshold = parseFloat(senderPrefsInv?.lowBalanceThresholdGrams?.toString() || '0.1');
-          const remainingGramsInv = parseFloat(updatedSenderWalletInv?.goldGrams?.toString() || '0');
-          if (invThreshold > 0 && remainingGramsInv < invThreshold && remainingGramsInv >= 0 && sender.email) {
-            const currentGoldPriceInv = await getGoldPricePerGram().catch(() => 139.44);
-            sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
-              user_name: `${sender.firstName} ${sender.lastName}`,
-              current_balance: (remainingGramsInv * currentGoldPriceInv).toFixed(2),
-              threshold: (invThreshold * currentGoldPriceInv).toFixed(2),
-              deposit_url: '/finapay',
-            }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert (invite) failed:', err));
-          }
-        } catch (lbErr) { console.error('[Email] Low balance check (invite) failed:', lbErr); }
+        // Low balance alert for invite path
+        if (sender.email) {
+          const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
+          checkAndSendLowBalanceAlert(
+            storage, sender.id, sender.email,
+            sender.firstName, sender.lastName,
+            getGoldPricePerGram,
+          ).catch(err => console.error('[Email] Low balance check (invite) failed:', err));
+        }
 
         return res.json({
           transfer: inviteTransfer,
@@ -18862,24 +18817,17 @@ export async function registerRoutes(
         }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer sent confirmation failed:', err));
       }
 
-      // Low balance alert: check if sender's remaining LGPW balance falls below their configured threshold
-      try {
-        const updatedSenderWallet = await storage.getWallet(sender.id);
-        const senderPrefsForLb = await storage.getUserPreferences(sender.id);
-        const lbThreshold = parseFloat(senderPrefsForLb?.lowBalanceThresholdGrams?.toString() || '0.1');
-        const remainingGrams = parseFloat(updatedSenderWallet?.goldGrams?.toString() || '0');
-        if (lbThreshold > 0 && remainingGrams < lbThreshold && remainingGrams >= 0 && sender.email) {
-          const currentGoldPrice = await getGoldPricePerGram().catch(() => 139.44);
-          sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
-            user_name: `${sender.firstName} ${sender.lastName}`,
-            current_balance: (remainingGrams * currentGoldPrice).toFixed(2),
-            threshold: (lbThreshold * currentGoldPrice).toFixed(2),
-            deposit_url: '/finapay',
-          }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert failed:', err));
-        }
-      } catch (lbErr) { console.error('[Email] Low balance check failed:', lbErr); }
+      // Low balance alert for registered recipient P2P path
+      if (sender.email) {
+        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
+        checkAndSendLowBalanceAlert(
+          storage, sender.id, sender.email,
+          sender.firstName, sender.lastName,
+          getGoldPricePerGram,
+        ).catch(err => console.error('[Email] Low balance check (P2P) failed:', err));
+      }
 
-        return res.json({
+      return res.json({
         transfer: pendingTransfer,
         pending: true,
         message: `Transfer of ${goldAmount.toFixed(4)}g gold sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
