@@ -451,8 +451,10 @@ If a field cannot be read, use null. Do not include explanations.`;
     const extractedDob: string | null = extracted.date_of_birth || null;
 
     // Only flag mismatch when both extracted and declared values are present (avoid false positives on unreadable docs)
+    // Threshold is configurable via KYC_OCR_NAME_SIMILARITY_THRESHOLD env var (default: 0.8)
+    const nameThreshold = Math.min(1, Math.max(0, parseFloat(process.env.KYC_OCR_NAME_SIMILARITY_THRESHOLD || '0.8')));
     const similarity = (extractedName && declaredName) ? nameSimilarity(extractedName, declaredName) : 1;
-    const nameMismatch = !!(extractedName && declaredName && similarity < 0.8);
+    const nameMismatch = !!(extractedName && declaredName && similarity < nameThreshold);
     const dobMismatch = !!(extractedDob && declaredDob && extractedDob !== declaredDob);
 
     return { checked: true, nameMismatch, dobMismatch, extractedName, extractedDob, similarity, checkedAt };
