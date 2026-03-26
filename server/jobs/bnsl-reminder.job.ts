@@ -10,24 +10,24 @@ export async function runBnslReminderJob(storage: IStorage): Promise<void> {
   today.setHours(0, 0, 0, 0);
 
   const allPlans = await storage.getAllBnslPlans();
-  const activePlans = allPlans.filter(p => p.status === 'Active' || p.status === 'Maturing');
+  // Include Active and Maturing plans; overdue payouts can exist under either
+  const eligiblePlans = allPlans.filter(p => p.status === 'Active' || p.status === 'Maturing');
 
   const redis = getRedisClient();
 
-  for (const plan of activePlans) {
+  for (const plan of eligiblePlans) {
     const planUser = await storage.getUser(plan.userId).catch(() => null);
     if (!planUser?.email) continue;
 
     const payouts = await storage.getPlanPayouts(plan.id);
     for (const payout of payouts) {
-      if (payout.status !== 'Scheduled') continue;
-
       const payoutDate = new Date(payout.scheduledDate);
       payoutDate.setHours(0, 0, 0, 0);
       const daysUntilDue = Math.round((payoutDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 
-      if (payoutDate < today) {
-        // Past due — send overdue email once (idempotent)
+      // Overdue check: payout is past-due — either still Scheduled or already flipped to Processing
+      // (the BNSL auto-process loop marks Scheduled→Processing for past-due, so we must check both)
+      if (payoutDate < today && (payout.status === 'Scheduled' || payout.status === 'Processing')) {
         const overdueKey = `bnsl:overdue:${payout.id}`;
         const alreadyNotified = await redis.get(overdueKey).catch(() => null);
         if (!alreadyNotified) {
@@ -41,10 +41,13 @@ export async function runBnslReminderJob(storage: IStorage): Promise<void> {
             payment_url: '/bnsl',
           }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL overdue email failed:', err));
           await redis.set(overdueKey, '1', { ex: OVERDUE_IDEMPOTENCY_TTL }).catch(() => {});
-          console.log(`[BNSL Reminder] Overdue email sent to ${planUser.email} for plan ${plan.contractId} (${daysOverdue}d overdue)`);
+          console.log(`[BNSL Reminder] Overdue email sent to ${planUser.email} for plan ${plan.contractId} (${daysOverdue}d overdue, status: ${payout.status})`);
         }
-      } else if (daysUntilDue === 7 || daysUntilDue === 1) {
-        // 7-day and 1-day reminders — idempotent per payout per reminder type
+        continue; // Skip reminder check for past-due payouts
+      }
+
+      // Upcoming reminder check: only for Scheduled payouts
+      if (payout.status === 'Scheduled' && (daysUntilDue === 7 || daysUntilDue === 1)) {
         const reminderKey = `bnsl:reminder:${payout.id}:${daysUntilDue}d`;
         const alreadySent = await redis.get(reminderKey).catch(() => null);
         if (!alreadySent) {

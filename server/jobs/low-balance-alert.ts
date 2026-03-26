@@ -1,9 +1,13 @@
+import { getRedisClient } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import type { IStorage } from '../storage';
 
+// Prevent spamming: only send one low-balance alert per user per 24 hours
+const LOW_BALANCE_COOLDOWN_TTL = 24 * 60 * 60; // 24 hours
+
 /**
  * Checks if a user's LGPW gold balance has dropped below their configured threshold
- * and sends a LOW_BALANCE_ALERT email if so.
+ * and sends a LOW_BALANCE_ALERT email if so. Idempotent — at most one alert per 24h per user.
  *
  * Call this after any LGPW debit transaction completes.
  */
@@ -22,6 +26,12 @@ export async function checkAndSendLowBalanceAlert(
 
   if (threshold <= 0 || remainingGrams >= threshold || remainingGrams < 0) return;
 
+  // Idempotency: skip if we already sent an alert for this user in the last 24 hours
+  const redis = getRedisClient();
+  const cooldownKey = `lba:${userId}`;
+  const alreadySent = await redis.get(cooldownKey).catch(() => null);
+  if (alreadySent) return;
+
   try {
     const goldPrice = await getGoldPricePerGram().catch(() => 139.44);
     const userName = `${userFirstName} ${userLastName}`.trim() || 'Valued Client';
@@ -31,6 +41,8 @@ export async function checkAndSendLowBalanceAlert(
       threshold: (threshold * goldPrice).toFixed(2),
       deposit_url: '/finapay',
     }, { userId }).catch(err => console.error('[Email] Low balance alert failed:', err));
+
+    await redis.set(cooldownKey, '1', { ex: LOW_BALANCE_COOLDOWN_TTL }).catch(() => {});
   } catch (err) {
     console.error('[Email] Low balance check failed:', err);
   }
