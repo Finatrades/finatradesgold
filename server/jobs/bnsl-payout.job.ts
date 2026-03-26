@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
+import { notifyError } from '../system-notifications';
 import { db } from '../db';
 import { bnslPlans, bnslPayouts } from '../../shared/schema';
 import { eq, lte, inArray, and } from 'drizzle-orm';
@@ -15,6 +16,31 @@ interface PayoutEngineStats {
   failed: number;
   maturing: number;
   highRiskFlagged: number;
+}
+
+async function notifyAdminsInApp(
+  storage: IStorage,
+  title: string,
+  message: string,
+  type: 'info' | 'success' | 'warning' | 'error',
+  link?: string,
+): Promise<void> {
+  try {
+    const allUsers = await storage.getAllUsers();
+    const admins = allUsers.filter(u => u.role === 'admin');
+    for (const admin of admins) {
+      await storage.createNotification({
+        userId: admin.id,
+        title,
+        message,
+        type,
+        link: link || null,
+        read: false,
+      });
+    }
+  } catch (err) {
+    console.error('[BNSL Payout Engine] notifyAdminsInApp failed:', err);
+  }
 }
 
 export async function runBnslPayoutEngine(
@@ -38,13 +64,19 @@ export async function runBnslPayoutEngine(
   const allPlans = await storage.getAllBnslPlans();
   const eligiblePlans = allPlans.filter(p => p.status === 'Active' || p.status === 'Maturing');
 
-  // Get live gold price once for this run
+  // Get live gold price once for this run — abort if unavailable
   let goldPrice: number;
   try {
     goldPrice = await getGoldPricePerGram();
     if (!goldPrice || goldPrice <= 0) throw new Error('Invalid gold price returned');
   } catch (priceErr) {
-    console.error('[BNSL Payout Engine] Cannot fetch gold price — aborting run:', priceErr);
+    const errMsg = priceErr instanceof Error ? priceErr.message : String(priceErr);
+    console.error('[BNSL Payout Engine] Cannot fetch gold price — aborting run:', errMsg);
+    await notifyError({
+      error: priceErr instanceof Error ? priceErr : new Error(errMsg),
+      context: 'bnsl-payout-engine:gold-price-fetch',
+      route: '/jobs/bnsl-payout',
+    });
     stats.timestamp = now.toISOString();
     await cacheSet(LAST_RUN_KEY, JSON.stringify(stats), 48 * 60 * 60);
     return stats;
@@ -80,6 +112,7 @@ export async function runBnslPayoutEngine(
           marketPriceUsdPerGram: goldPrice.toFixed(2),
           gramsCredited: gramsCredited.toFixed(6),
           paidAt: new Date(),
+          failureReason: null,
         });
 
         // Update plan paid/remaining margin tracking
@@ -105,7 +138,7 @@ export async function runBnslPayoutEngine(
           bnslPayoutId: payout.id,
         });
 
-        // Ledger entry
+        // Vault ledger entry
         const { vaultLedgerService } = await import('../vault-ledger-service');
         await vaultLedgerService.recordLedgerEntry({
           userId: plan.userId,
@@ -154,17 +187,39 @@ export async function runBnslPayoutEngine(
           }).catch(err => console.error('[BNSL Payout Engine] User email failed:', err));
         }
       } catch (err) {
-        console.error(`[BNSL Payout Engine] Failed payout ${payout.id} for plan ${plan.contractId}:`, err);
-        await storage.updateBnslPayout(payout.id, { status: 'Failed' }).catch(() => null);
+        const failureReason = err instanceof Error ? err.message : String(err);
+        console.error(`[BNSL Payout Engine] Failed payout ${payout.id} for plan ${plan.contractId}:`, failureReason);
+
+        // Persist failure reason on the payout record
+        await storage.updateBnslPayout(payout.id, {
+          status: 'Failed',
+          failureReason,
+        }).catch(() => null);
         stats.failed++;
 
-        // Alert admins
+        // System error alert via notifyError (throttled, writes to system_logs)
+        await notifyError({
+          error: err instanceof Error ? err : new Error(failureReason),
+          context: `bnsl-payout-engine:payout-failed:${payout.id}`,
+          route: '/jobs/bnsl-payout',
+          userId: plan.userId,
+          requestData: { planId: plan.id, contractId: plan.contractId, payoutSequence: payout.sequence },
+        });
+
+        // Admin in-app notification + email
+        await notifyAdminsInApp(
+          storage,
+          `BNSL Auto Payout Failed`,
+          `Payout #${payout.sequence} on plan ${plan.contractId} failed: ${failureReason.substring(0, 120)}`,
+          'error',
+          '/admin/bnsl',
+        );
         const planUser = await storage.getUser(plan.userId).catch(() => null);
         const userName = planUser ? `${planUser.firstName} ${planUser.lastName}` : plan.userId;
         for (const adminEmail of ADMIN_EMAILS) {
           sendEmail(adminEmail, EMAIL_TEMPLATES.BNSL_PAYMENT_OVERDUE, {
             user_name: `Admin`,
-            plan_name: `${plan.contractId} (payout #${payout.sequence})`,
+            plan_name: `${plan.contractId} (payout #${payout.sequence}) — ${userName}`,
             amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
             days_overdue: '0',
             late_fee: '0.00',
@@ -174,20 +229,43 @@ export async function runBnslPayoutEngine(
       }
     }
 
-    // After processing this plan's due payouts, check if it should become Maturing
-    // (all payouts are Paid) — re-fetch fresh payouts
+    // After processing due payouts, check maturity transition:
+    // Plan is eligible to become Maturing only if:
+    //   1. All payouts are Paid or Cancelled (no more scheduled/pending)
+    //   2. The plan's maturityDate is on or before today (term has been reached)
     if (duePending.length > 0) {
       const freshPayouts = await storage.getPlanPayouts(plan.id);
-      const allPaid = freshPayouts.every(p => p.status === 'Paid' || p.status === 'Cancelled');
-      if (allPaid && plan.status === 'Active') {
+      const allSettled = freshPayouts.every(p => p.status === 'Paid' || p.status === 'Cancelled');
+      const maturityDate = plan.maturityDate ? new Date(plan.maturityDate) : null;
+      const termReached = maturityDate !== null && maturityDate <= today;
+
+      if (allSettled && termReached && plan.status === 'Active') {
         await storage.updateBnslPlan(plan.id, { status: 'Maturing' }).catch(() => null);
         stats.maturing++;
-        console.log(`[BNSL Payout Engine] Plan ${plan.contractId} moved to Maturing (all payouts settled)`);
+        console.log(`[BNSL Payout Engine] Plan ${plan.contractId} moved to Maturing — term date ${maturityDate!.toISOString().slice(0,10)} reached`);
+
+        // Admin notification: base settlement requires manual review
+        await notifyAdminsInApp(
+          storage,
+          `BNSL Plan Ready for Base Settlement`,
+          `Plan ${plan.contractId} has completed all margin payouts and reached term. Base settlement review required.`,
+          'warning',
+          '/admin/bnsl',
+        );
+        for (const adminEmail of ADMIN_EMAILS) {
+          sendEmail(adminEmail, EMAIL_TEMPLATES.BNSL_PAYMENT_RECEIVED, {
+            user_name: 'Admin',
+            plan_name: `${plan.contractId} — BASE SETTLEMENT REQUIRED`,
+            amount: parseFloat(plan.basePriceComponentUsd?.toString() || '0').toFixed(2),
+            remaining_balance: '0.00',
+            next_due_date: 'Immediate — manual base settlement required',
+          }).catch(() => null);
+        }
       }
     }
   }
 
-  // High-risk flagging: plans with any Failed payout whose scheduled date is > HIGH_RISK_FAILURE_DAYS old
+  // High-risk flagging: plans with any Failed payout whose scheduled date is >3 days old
   const cutoffDate = new Date(now.getTime() - HIGH_RISK_FAILURE_DAYS * 24 * 60 * 60 * 1000);
   const failedPayouts = await db
     .select({ planId: bnslPayouts.planId })
@@ -196,21 +274,44 @@ export async function runBnslPayoutEngine(
 
   const highRiskPlanIds = [...new Set(failedPayouts.map(p => p.planId))];
   for (const planId of highRiskPlanIds) {
-    await db
+    const updated = await db
       .update(bnslPlans)
       .set({ planRiskLevel: 'High Risk' })
       .where(and(eq(bnslPlans.id, planId), inArray(bnslPlans.status, ['Active', 'Maturing'])))
-      .catch(() => null);
-    stats.highRiskFlagged++;
+      .returning()
+      .catch(() => []);
+
+    if (updated.length > 0) {
+      const flaggedPlan = updated[0];
+      stats.highRiskFlagged++;
+
+      // Emit in-app admin alert for high-risk escalation
+      await notifyAdminsInApp(
+        storage,
+        `BNSL Plan Escalated to High Risk`,
+        `Plan ${flaggedPlan.contractId} has been flagged High Risk: a payout has been overdue for more than ${HIGH_RISK_FAILURE_DAYS} days.`,
+        'error',
+        '/admin/bnsl',
+      );
+
+      await notifyError({
+        error: new Error(`BNSL plan ${flaggedPlan.contractId} escalated to High Risk (payout overdue >${HIGH_RISK_FAILURE_DAYS} days)`),
+        context: `bnsl-payout-engine:high-risk-flag:${planId}`,
+        route: '/jobs/bnsl-payout',
+      });
+    }
   }
+
   if (highRiskPlanIds.length > 0) {
-    console.log(`[BNSL Payout Engine] Flagged ${highRiskPlanIds.length} plan(s) as High Risk`);
+    console.log(`[BNSL Payout Engine] Flagged ${stats.highRiskFlagged} plan(s) as High Risk`);
   }
 
   stats.timestamp = now.toISOString();
   await cacheSet(LAST_RUN_KEY, JSON.stringify(stats), 48 * 60 * 60);
 
-  console.log(`[BNSL Payout Engine] Cycle complete — processed: ${stats.processed}, failed: ${stats.failed}, maturing: ${stats.maturing}, high-risk: ${stats.highRiskFlagged}`);
+  console.log(
+    `[BNSL Payout Engine] Cycle complete — processed: ${stats.processed}, failed: ${stats.failed}, maturing: ${stats.maturing}, high-risk: ${stats.highRiskFlagged}`,
+  );
   return stats;
 }
 
