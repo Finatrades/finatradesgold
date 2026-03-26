@@ -361,9 +361,17 @@ export interface KycOcrResult {
 /** Simple token-based name similarity (0-1). */
 function nameSimilarity(a: string, b: string): number {
   if (!a || !b) return 0;
-  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, '').trim();
-  const tokensA = normalize(a).split(/\s+/);
-  const tokensB = normalize(b).split(/\s+/);
+  // Normalize: Unicode decompose (NFD) to convert accented/transliterated chars to base ASCII
+  // then lowercase and strip remaining non-alphabetic characters (handles Arabic, Cyrillic, etc.)
+  const normalize = (s: string) =>
+    s.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // strip combining diacritics
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, '')
+      .trim();
+  const tokensA = normalize(a).split(/\s+/).filter(Boolean);
+  const tokensB = normalize(b).split(/\s+/).filter(Boolean);
+  if (tokensA.length === 0 || tokensB.length === 0) return 0;
   const matched = tokensA.filter(t => tokensB.includes(t));
   return matched.length / Math.max(tokensA.length, tokensB.length);
 }

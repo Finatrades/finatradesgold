@@ -22912,7 +22912,8 @@ export async function registerRoutes(
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
               await storage.updateFinatradesPersonalKyc(submission.id, {
                 ocrMismatchFlag: ocrResult,
-                ...(mismatch ? { riskScore: 10 } : {}),
+                // Idempotent: 10 on mismatch, 0 on clean (consistent with update path)
+                riskScore: mismatch ? 10 : 0,
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
             })
