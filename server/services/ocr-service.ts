@@ -389,63 +389,92 @@ function nameSimilarity(a: string, b: string): number {
  *
  * Returns a structured KycOcrResult.  Safe to call fire-and-forget — never throws.
  */
+/** Extract name + DOB from a KYC document via GPT (text prompt for PDFs, image for images). */
+async function extractKycFieldsFromDocument(
+  buffer: Buffer | null,
+  base64: string | null,
+  mimeType: string,
+  documentUrl: string,
+): Promise<{ full_name: string | null; date_of_birth: string | null }> {
+  const pdfPrompt = `You are a KYC document analyst. The following is extracted text from an identity document (passport, national ID, or driver's licence). Extract name and date of birth. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nIf a field cannot be found, use null. Do not include explanations.`;
+  const imagePrompt = `You are a KYC document analyst. Examine this identity document (passport, national ID, or driver's licence) and extract the following fields. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nIf a field cannot be read, use null. Do not include explanations.`;
+
+  let response;
+  if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
+    // Text-based PDF: extract text then ask GPT in a text prompt
+    const parsed = await pdfParse(buffer);
+    const text = parsed?.text?.trim() || '';
+    if (text.length < 30) throw new Error('PDF text too short for extraction — may be a scanned image PDF');
+    response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 3000)}` }],
+      max_tokens: 200,
+      temperature: 0,
+    });
+  } else if (base64) {
+    // Image (JPEG/PNG/WEBP/GIF) or base64 data URI
+    response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: imagePrompt },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
+        ],
+      }],
+      max_tokens: 200,
+      temperature: 0,
+    });
+  } else {
+    throw new Error('No usable document content for OCR extraction');
+  }
+
+  const content = response.choices[0]?.message?.content || '{}';
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+}
+
 export async function checkKycOcrMismatch(
   documentUrl: string,
   declaredName: string,
   declaredDob: string,
 ): Promise<KycOcrResult> {
   const checkedAt = new Date().toISOString();
-  const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   try {
-    let base64: string;
-    let imageType: string;
+    let buffer: Buffer | null = null;
+    let base64: string | null = null;
+    let mimeType: string;
 
     if (documentUrl.startsWith('data:')) {
-      // Handle base64 data URIs (submitted before R2 upload completes)
+      // Handle base64 data URIs (client-side preview URLs, submitted before R2 upload)
       const commaIdx = documentUrl.indexOf(',');
       if (commaIdx === -1) throw new Error('Malformed data URI');
       const header = documentUrl.substring(0, commaIdx);
       const mimeMatch = header.match(/data:([^;]+);base64/);
-      const detectedMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      if (!supportedTypes.includes(detectedMime)) {
+      mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      if (mimeType === 'application/pdf') {
+        // Decode PDF from data URI and extract via pdf-parse
+        const pdfBuffer = Buffer.from(documentUrl.substring(commaIdx + 1), 'base64');
+        buffer = pdfBuffer;
+      } else if (supportedImageTypes.includes(mimeType)) {
+        base64 = documentUrl.substring(commaIdx + 1);
+      } else {
         return { checked: false, nameMismatch: false, dobMismatch: false, extractedName: null, extractedDob: null, similarity: 1, checkedAt };
       }
-      imageType = detectedMime;
-      base64 = documentUrl.substring(commaIdx + 1);
     } else {
-      const { buffer, mimeType } = await downloadFromR2(documentUrl);
-      imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
-      base64 = buffer.toString('base64');
+      const downloaded = await downloadFromR2(documentUrl);
+      mimeType = downloaded.mimeType;
+      buffer = downloaded.buffer;
+      if (supportedImageTypes.includes(mimeType)) {
+        base64 = buffer.toString('base64');
+        buffer = null; // use base64 path for images
+      } else if (mimeType !== 'application/pdf' && !documentUrl.toLowerCase().endsWith('.pdf')) {
+        return { checked: false, nameMismatch: false, dobMismatch: false, extractedName: null, extractedDob: null, similarity: 1, checkedAt };
+      }
     }
 
-    const prompt = `You are a KYC document analyst. Examine this identity document (passport, national ID, or driver's licence) and extract the following fields. Respond ONLY with valid JSON.
-
-Schema:
-{
-  "full_name": string | null,
-  "date_of_birth": "YYYY-MM-DD" | null
-}
-
-If a field cannot be read, use null. Do not include explanations.`;
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}`, detail: 'high' } },
-          ],
-        },
-      ],
-      max_tokens: 200,
-      temperature: 0,
-    });
-
-    const content = response.choices[0]?.message?.content || '{}';
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    const extracted = await extractKycFieldsFromDocument(buffer, base64, mimeType, documentUrl);
 
     const extractedName: string | null = extracted.full_name || null;
     const extractedDob: string | null = extracted.date_of_birth || null;
