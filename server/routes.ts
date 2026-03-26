@@ -9828,103 +9828,20 @@ export async function registerRoutes(
       if (estimatedProcessingDays) updates.estimatedProcessingDays = estimatedProcessingDays;
       if (estimatedCompletionDate) updates.estimatedCompletionDate = new Date(estimatedCompletionDate);
 
-      // If status is "Stored" or "Stored in Vault", create vault holding, certificate, and credit wallet
+      // If status is "Stored" or "Stored in Vault", enforce Golden Rule via UFM pipeline
       if (status === 'Stored' || status === 'Stored in Vault') {
-        const finalWeightGrams = verifiedWeightGrams || parseFloat(request.totalDeclaredWeightGrams);
-        const pricePerGram = goldPriceUsdPerGram || 85.22;
-        const totalValue = finalWeightGrams * pricePerGram;
-
-        // Create vault holding
-        const holding = await storage.createVaultHolding({
-          userId: request.userId,
-          goldGrams: finalWeightGrams.toString(),
-          vaultLocation: request.vaultLocation,
-          isPhysicallyDeposited: true,
-          purchasePriceUsdPerGram: pricePerGram.toString(),
+        // GOLDEN RULE ENFORCEMENT: Physical vault deposits must be approved through the
+        // Unified Payment Management (UFM) pipeline to ensure physical gold allocation,
+        // storage certificate, and Wingold order are recorded before any credit is issued.
+        // Direct approval through this route is blocked to prevent bypassing the Golden Rule.
+        return res.status(400).json({
+          message: 'Golden Rule: Vault deposits must be approved through the Unified Payment Management system to ensure physical gold allocation is recorded before crediting.',
+          code: 'GOLDEN_RULE_VIOLATION',
+          action: 'Please use the Unified Payment Management panel (/admin/unified-payments) to approve this deposit with the required physical gold allocation and storage certificate details.',
         });
-
-        // Generate Digital Ownership Certificate (from Finatrades)
-        const docCertNumber = await storage.generateCertificateNumber('Digital Ownership');
-        const digitalCert = await storage.createCertificate({
-          certificateNumber: docCertNumber,
-          userId: request.userId,
-          vaultHoldingId: holding.id,
-          type: 'Digital Ownership',
-          status: 'Active',
-          goldGrams: finalWeightGrams.toString(),
-          goldPriceUsdPerGram: pricePerGram.toString(),
-          totalValueUsd: totalValue.toFixed(2),
-          issuer: 'Finatrades Finance SA',
-          vaultLocation: request.vaultLocation,
-        });
-        
-        // Generate Physical Storage Certificate (from Wingold & Metals DMCC)
-        const certificateNumber = await storage.generateCertificateNumber('Physical Storage');
-        const certificate = await storage.createCertificate({
-          certificateNumber,
-          userId: request.userId,
-          vaultHoldingId: holding.id,
-          type: 'Physical Storage',
-          status: 'Active',
-          goldGrams: finalWeightGrams.toString(),
-          goldPriceUsdPerGram: pricePerGram.toString(),
-          totalValueUsd: totalValue.toFixed(2),
-          issuer: 'Wingold and Metals DMCC',
-          vaultLocation: request.vaultLocation,
-        });
-
-        // Credit user's FinaPay wallet
-        const wallet = await storage.getWallet(request.userId);
-        if (wallet) {
-          const newGoldBalance = parseFloat(wallet.goldGrams) + finalWeightGrams;
-          await storage.updateWallet(wallet.id, {
-            goldGrams: newGoldBalance.toFixed(6),
-          });
-
-          // Create transaction record - include USD value calculation
-          const depositTx = await storage.createTransaction({
-            userId: request.userId,
-            type: 'Deposit',
-            status: 'Completed',
-            amountGold: finalWeightGrams.toString(),
-            amountUsd: totalValue.toFixed(2),
-            goldPriceUsdPerGram: pricePerGram.toString(),
-            description: `FinaVault deposit: ${finalWeightGrams}g physical gold stored`,
-            sourceModule: 'finavault',
-            referenceId: request.referenceNumber,
-          });
-
-          // Record ledger entry for deposit
-          const { vaultLedgerService } = await import('./vault-ledger-service');
-          await vaultLedgerService.recordLedgerEntry({
-            userId: request.userId,
-            action: 'Deposit',
-            goldGrams: finalWeightGrams,
-            goldPriceUsdPerGram: pricePerGram,
-            fromWallet: 'External',
-            toWallet: 'FinaPay',
-            toStatus: 'Available',
-            transactionId: depositTx.id,
-            certificateId: certificate.id,
-            notes: `FinaVault physical deposit: ${finalWeightGrams}g gold stored at ${request.vaultLocation}`,
-            createdBy: adminId,
-          });
-          
-          // Emit real-time sync event for auto-update
-          emitLedgerEvent(request.userId, {
-            type: 'balance_update',
-            module: 'finavault',
-            action: 'vault_deposit_stored',
-            data: { goldGrams: finalWeightGrams, amountUsd: totalValue },
-          });
-        }
-
-        updates.vaultHoldingId = holding.id;
-        updates.certificateId = certificate.id;
-        updates.digitalCertificateId = digitalCert.id;
-        updates.storedAt = new Date();
-        updates.vaultInternalReference = `WG-${Date.now().toString(36).toUpperCase()}`;
       }
+
+      // All other status updates (Under Review, Received, Rejected, etc.) continue normally below
 
       const updatedRequest = await storage.updateVaultDepositRequest(req.params.id, updates);
 
@@ -10191,6 +10108,15 @@ export async function registerRoutes(
       const request = await storage.getVaultWithdrawalRequest(req.params.id);
       if (!request) {
         return res.status(404).json({ message: "Withdrawal request not found" });
+      }
+
+      // SECURITY: Prevent self-approval — admin cannot approve/reject their own vault withdrawal
+      const adminSessionUserId = req.session?.userId;
+      if (adminSessionUserId && adminSessionUserId === request.userId) {
+        return res.status(403).json({
+          message: 'Self-approval not allowed. An admin cannot approve or reject their own vault withdrawal request.',
+          code: 'SELF_APPROVAL_BLOCKED',
+        });
       }
 
       const updates: any = { 
@@ -13653,6 +13579,9 @@ export async function registerRoutes(
         amountUsd,
         referenceNumber,
         ...bankDetails,
+        // Always store server-computed gold values for accurate refunds on rejection
+        goldGrams: goldGramsRequired.toFixed(6),
+        goldPriceAtRequest: goldPricePerGram.toFixed(2),
       });
       
       // GOLD-ONLY: Deduct gold grams from the selected wallet type atomically with request creation
@@ -13726,6 +13655,15 @@ export async function registerRoutes(
       if (!request) {
         return res.status(404).json({ message: "Withdrawal request not found" });
       }
+
+      // SECURITY: Prevent self-approval — admin cannot approve/reject their own withdrawal request
+      const adminSessionUserId = req.session?.userId;
+      if (adminSessionUserId && adminSessionUserId === request.userId) {
+        return res.status(403).json({
+          message: 'Self-approval not allowed. An admin cannot approve or reject their own withdrawal request.',
+          code: 'SELF_APPROVAL_BLOCKED',
+        });
+      }
       
       const updates = req.body;
       
@@ -13790,37 +13728,65 @@ export async function registerRoutes(
         });
       }
       
-      // If rejecting from Pending or Processing, refund the held amount back to wallet
+      // If rejecting from Pending or Processing, refund the held gold grams back to the vault ownership summary
       if (updates.status === 'Rejected' && (request.status === 'Pending' || request.status === 'Processing')) {
-        const wallet = await storage.getWallet(request.userId);
-        if (wallet) {
-          const currentBalance = parseFloat(wallet.usdBalance.toString());
-          const refundAmount = parseFloat(request.amountUsd.toString());
-          await storage.updateWallet(wallet.id, {
-            usdBalance: (currentBalance + refundAmount).toString(),
-          });
-          
-          // Create refund transaction record
+        // GOLD-DENOMINATED REFUND: Return gold grams to the wallet that was originally debited.
+        // Do NOT update usdBalance — this platform is gold-denominated.
+        const goldGramsToRefund = request.goldGrams ? parseFloat(request.goldGrams.toString()) : null;
+        const walletType = (request.goldWalletType as 'LGPW' | 'FGPW') || 'LGPW';
+
+        if (goldGramsToRefund && goldGramsToRefund > 0) {
+          const [existingSummary] = await db.select()
+            .from(vaultOwnershipSummary)
+            .where(eq(vaultOwnershipSummary.userId, request.userId));
+
+          if (walletType === 'LGPW') {
+            if (existingSummary) {
+              await db.update(vaultOwnershipSummary).set({
+                mpgwAvailableGrams: (parseFloat(existingSummary.mpgwAvailableGrams || '0') + goldGramsToRefund).toFixed(6),
+                lastUpdated: new Date(),
+              }).where(eq(vaultOwnershipSummary.userId, request.userId));
+            }
+          } else {
+            // FGPW: restore by creating a new batch at the original locked price
+            const { createFpgwBatch } = await import('./fpgw-batch-service');
+            const lockedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
+            if (lockedPrice > 0) {
+              await createFpgwBatch({
+                userId: request.userId,
+                goldGrams: goldGramsToRefund,
+                lockedPriceUsd: lockedPrice,
+                sourceType: 'deposit',
+                notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
+              });
+            }
+          }
+
+          // Create refund transaction record (gold denomination)
           await storage.createTransaction({
             userId: request.userId,
             type: 'Deposit',
             status: 'Completed',
+            amountGold: goldGramsToRefund.toString(),
             amountUsd: request.amountUsd.toString(),
             description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
             referenceId: `${request.referenceNumber}-REFUND`,
             sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
+            goldWalletType: walletType,
             approvedBy: updates.processedBy,
             approvedAt: new Date(),
             updatedAt: new Date(),
           });
+        } else {
+          // goldGrams not stored on this request — log for admin follow-up
+          console.error(`[Withdrawal Rejection] Cannot auto-refund gold for request ${request.id}: goldGrams field is null. Manual review required.`);
         }
         
         // Create bell notification for withdrawal rejection
         await storage.createNotification({
           userId: request.userId,
           title: 'Withdrawal Rejected',
-          message: `Your withdrawal request of $${parseFloat(request.amountUsd.toString()).toFixed(2)} was rejected. The funds have been returned to your wallet.`,
+          message: `Your withdrawal request of $${parseFloat(request.amountUsd.toString()).toFixed(2)} was rejected. Any held gold has been returned to your wallet.`,
           type: 'transaction',
           link: '/dashboard',
         });
