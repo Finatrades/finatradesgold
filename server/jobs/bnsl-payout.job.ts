@@ -4,7 +4,7 @@ import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { notifyError } from '../system-notifications';
 import { getRedisConnection } from '../job-queue-bullmq';
 import { db } from '../db';
-import { wallets, transactions, bnslPlans, bnslPayouts } from '../../shared/schema';
+import { bnslWallets, transactions, bnslPlans, bnslPayouts } from '../../shared/schema';
 import { eq, lte, inArray, and, sql } from 'drizzle-orm';
 import type { IStorage } from '../storage';
 import type { InsertTransaction } from '../../shared/schema';
@@ -144,21 +144,30 @@ export async function runBnslPayoutEngine(
 
           if (!claimed) return false; // Already claimed by another run — skip
 
-          // Guard: wallet must exist for this user
-          const [existingWallet] = await tx
-            .select({ id: wallets.id })
-            .from(wallets)
-            .where(eq(wallets.userId, plan.userId));
-          if (!existingWallet) throw new Error(`Wallet not found for user ${plan.userId}`);
+          // Credit user's BNSL wallet (availableGoldGrams) — margin payouts accumulate here.
+          // Upsert: insert if wallet doesn't exist, otherwise increment atomically.
+          const [existingBnslWallet] = await tx
+            .select({ id: bnslWallets.id })
+            .from(bnslWallets)
+            .where(eq(bnslWallets.userId, plan.userId));
 
-          // Credit user FinaPay wallet (atomic SQL increment — no read-modify-write)
-          await tx
-            .update(wallets)
-            .set({
-              goldGrams: sql`${wallets.goldGrams} + ${gramsCredited.toFixed(6)}::numeric`,
-              updatedAt: new Date(),
-            })
-            .where(eq(wallets.userId, plan.userId));
+          if (existingBnslWallet) {
+            await tx
+              .update(bnslWallets)
+              .set({
+                availableGoldGrams: sql`${bnslWallets.availableGoldGrams} + ${gramsCredited.toFixed(6)}::numeric`,
+                availableValueUsd: sql`${bnslWallets.availableValueUsd} + ${monetaryAmount.toFixed(2)}::numeric`,
+                updatedAt: new Date(),
+              })
+              .where(eq(bnslWallets.userId, plan.userId));
+          } else {
+            await tx.insert(bnslWallets).values({
+              userId: plan.userId,
+              availableGoldGrams: gramsCredited.toFixed(6),
+              availableValueUsd: monetaryAmount.toFixed(2),
+              lockedGoldGrams: '0',
+            });
+          }
 
           // Mark payout Paid — clear any prior failureReason/failedAt
           await tx
@@ -217,7 +226,7 @@ export async function runBnslPayoutEngine(
             goldGrams: gramsCredited,
             goldPriceUsdPerGram: goldPrice,
             fromWallet: 'BNSL',
-            toWallet: 'FinaPay',
+            toWallet: 'BNSL',
             fromStatus: 'Locked_BNSL',
             toStatus: 'Available',
             bnslPlanId: plan.id,
