@@ -22854,13 +22854,19 @@ export async function registerRoutes(
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
         if (docUrlForOcr && kycData.fullName) {
+          // Capture prior OCR state before async to allow additive risk scoring
+          const priorOcrFlag = updated?.ocrMismatchFlag as { nameMismatch?: boolean; dobMismatch?: boolean } | null;
+          const priorOcrDelta = (priorOcrFlag?.nameMismatch || priorOcrFlag?.dobMismatch) ? 10 : 0;
+          const priorRiskScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
           checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
             .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
+              const newOcrDelta = mismatch ? 10 : 0;
+              // Additive idempotent: remove prior OCR contribution, add new OCR contribution
+              const newRiskScore = Math.max(0, priorRiskScore - priorOcrDelta) + newOcrDelta;
               await storage.updateFinatradesPersonalKyc(updated!.id, {
                 ocrMismatchFlag: ocrResult,
-                // Set risk score idempotently: 10 if mismatch, 0 if clean (not cumulative)
-                riskScore: mismatch ? 10 : 0,
+                riskScore: newRiskScore,
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
             })
@@ -22910,9 +22916,9 @@ export async function registerRoutes(
           checkKycOcrMismatch(docUrlForOcr2, kycData.fullName, kycData.dateOfBirth || '')
             .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
+              // New submission: no prior OCR delta, so additive = just the new delta
               await storage.updateFinatradesPersonalKyc(submission.id, {
                 ocrMismatchFlag: ocrResult,
-                // Idempotent: 10 on mismatch, 0 on clean (consistent with update path)
                 riskScore: mismatch ? 10 : 0,
               });
               if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
