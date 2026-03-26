@@ -1755,7 +1755,8 @@ export async function registerRoutes(
           } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
         }
         
-        // Check for due payouts
+        // Check for due payouts and send reminders/overdue emails
+        const planUser = await storage.getUser(plan.userId).catch(() => null);
         const payouts = await storage.getPlanPayouts(plan.id);
         for (const payout of payouts) {
           if (payout.status !== 'Scheduled') continue;
@@ -1763,11 +1764,37 @@ export async function registerRoutes(
           const payoutDate = new Date(payout.scheduledDate);
           payoutDate.setHours(0, 0, 0, 0);
           
-          // Mark overdue payouts as Processing (admin needs to manually process)
+          const daysUntilDue = Math.round((payoutDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+          
+          // Mark overdue payouts as Processing + send overdue email
           if (payoutDate <= today) {
             await storage.updateBnslPayout(payout.id, { status: 'Processing' });
             payoutsProcessed++;
             console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
+            
+            if (planUser?.email) {
+              const daysOverdue = Math.abs(daysUntilDue);
+              sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_OVERDUE, {
+                user_name: `${planUser.firstName} ${planUser.lastName}`,
+                plan_name: plan.contractId,
+                amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
+                days_overdue: String(daysOverdue),
+                late_fee: '0.00',
+                payment_url: '/bnsl',
+              }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL overdue email failed:', err));
+            }
+          } else if (daysUntilDue === 7 || daysUntilDue === 1) {
+            // 7-day and 1-day payment reminders
+            if (planUser?.email) {
+              sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_REMINDER, {
+                user_name: `${planUser.firstName} ${planUser.lastName}`,
+                plan_name: plan.contractId,
+                amount: parseFloat(payout.monetaryAmountUsd.toString()).toFixed(2),
+                due_date: payoutDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                payment_url: '/bnsl',
+              }, { userId: planUser.id }).catch(err => console.error('[Email] BNSL reminder email failed:', err));
+              console.log(`[BNSL Auto-Process] Payment reminder sent to ${planUser.email} for plan ${plan.contractId} (${daysUntilDue} days until due)`);
+            }
           }
         }
       }
@@ -1779,6 +1806,78 @@ export async function registerRoutes(
       console.error('[BNSL Auto-Process] Error:', error);
     }
   }, 6 * 60 * 60 * 1000); // Run every 6 hours
+
+  // Monthly Statement Scheduler — runs once per day, fires on the 1st of each month
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      if (now.getDate() !== 1) return; // Only run on the 1st of the month
+
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const monthName = prevMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
+
+      console.log(`[Monthly Statement] Sending monthly statements for ${monthName}`);
+      const allUsers = await storage.getAllUsers();
+      let sent = 0;
+      for (const user of allUsers) {
+        if (!user.email || user.status === 'Suspended') continue;
+        try {
+          // Only send to users who have been active (have a wallet)
+          const wallet = await storage.getWallet(user.id);
+          if (!wallet) continue;
+          const goldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
+          if (goldBalance < 0.0001) continue; // Skip zero-balance accounts
+
+          sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
+            user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
+            statement_month: monthName,
+            gold_balance: goldBalance.toFixed(4),
+            statement_url: `${appBaseUrl}/dashboard`,
+          }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
+          sent++;
+        } catch (e) { /* skip this user */ }
+      }
+      console.log(`[Monthly Statement] Sent ${sent} statements for ${monthName}`);
+    } catch (err) {
+      console.error('[Monthly Statement] Scheduler error:', err);
+    }
+  }, 24 * 60 * 60 * 1000); // Check once per day
+
+  // Annual Tax Statement Scheduler — runs once per day, fires on Jan 15 of each year
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      if (now.getMonth() !== 0 || now.getDate() !== 15) return; // Only January 15
+
+      const prevYear = now.getFullYear() - 1;
+      const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
+
+      console.log(`[Annual Statement] Sending annual tax statements for ${prevYear}`);
+      const allUsers = await storage.getAllUsers();
+      let sent = 0;
+      for (const user of allUsers) {
+        if (!user.email || user.status === 'Suspended') continue;
+        try {
+          // Only send to users with any wallet history
+          const wallet = await storage.getWallet(user.id);
+          if (!wallet) continue;
+          const goldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
+
+          sendEmail(user.email, EMAIL_TEMPLATES.ANNUAL_TAX_STATEMENT, {
+            user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Client',
+            tax_year: String(prevYear),
+            gold_balance: goldBalance.toFixed(4),
+            statement_url: `${appBaseUrl}/dashboard`,
+          }, { userId: user.id }).catch(e => console.error(`[Annual Statement] Email failed for ${user.email}:`, e));
+          sent++;
+        } catch (e) { /* skip this user */ }
+      }
+      console.log(`[Annual Statement] Sent ${sent} annual tax statements for ${prevYear}`);
+    } catch (err) {
+      console.error('[Annual Statement] Scheduler error:', err);
+    }
+  }, 24 * 60 * 60 * 1000); // Check once per day
 
   // Login with rate limiting
   app.post("/api/auth/login", geoRestrictionMiddleware(), authRateLimiter, async (req, res) => {
@@ -13873,11 +13972,75 @@ export async function registerRoutes(
   // Update trade case - PROTECTED
   app.patch("/api/trade/cases/:id", ensureAuthenticated, async (req, res) => {
     try {
+      const previousCase = await storage.getTradeCase(req.params.id);
       const tradeCase = await storage.updateTradeCase(req.params.id, req.body);
       if (!tradeCase) {
         return res.status(404).json({ message: "Trade case not found" });
       }
       res.json({ tradeCase });
+
+      // Fire status-specific email triggers after response is sent
+      try {
+        const caseUser = await storage.getUser(tradeCase.userId);
+        const statusChanged = previousCase && previousCase.status !== tradeCase.status;
+        const notes = req.body.notes || req.body.adminNotes || '';
+        const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
+
+        if (caseUser?.email && statusChanged) {
+          const userName = `${caseUser.firstName || ''} ${caseUser.lastName || ''}`.trim() || 'Valued Client';
+
+          if (tradeCase.status === 'Approved') {
+            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
+              user_name: userName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              credit_limit: tradeCase.tradeValueUsd || '0',
+              valid_until: 'As per agreement',
+            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
+          } else if (tradeCase.status === 'Rejected') {
+            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
+              user_name: userName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              rejection_reason: notes || 'Does not meet current eligibility requirements.',
+            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
+          } else if (tradeCase.status === 'Completed') {
+            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
+              user_name: userName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              total_value: tradeCase.tradeValueUsd || '0',
+              completion_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
+          } else if (tradeCase.status === 'Documents Requested') {
+            // Admin requested additional documents
+            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_DOCUMENT_REQUEST, {
+              user_name: userName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              required_documents: notes || 'Please log in to view the required documents.',
+              upload_url: `${appBaseUrl}/trade-finance`,
+            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade document request email failed:', e));
+          } else {
+            // Generic status change
+            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
+              user_name: userName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              new_status: tradeCase.status || 'Updated',
+              update_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+              status_notes: notes || 'Please log in to your account for more details.',
+            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
+          }
+        }
+
+        // If admin requests documents — also notify via bell
+        if (statusChanged && tradeCase.status === 'Documents Requested' && caseUser) {
+          await storage.createNotification({
+            userId: caseUser.id,
+            title: 'Documents Required',
+            message: `Additional documents are required for your trade finance case ${tradeCase.caseId || tradeCase.id}. Please upload them promptly.`,
+            type: 'trade',
+            link: '/trade-finance',
+            read: false,
+          }).catch(() => {});
+        }
+      } catch (emailErr) { console.error('[Email] Trade case status email trigger failed:', emailErr); }
     } catch (error) {
       res.status(400).json({ message: "Failed to update trade case" });
     }
@@ -13918,6 +14081,25 @@ export async function registerRoutes(
           console.error('[VerifyDoc] Failed to queue AI verification:', err);
         }
       }
+
+      // Notify admin team that a user uploaded documents
+      try {
+        const tradeCase = await storage.getTradeCase(document.caseId);
+        if (tradeCase) {
+          const uploaderUser = await storage.getUser(tradeCase.userId);
+          const uploaderName = uploaderUser ? `${uploaderUser.firstName || ''} ${uploaderUser.lastName || ''}`.trim() || uploaderUser.email : 'User';
+          const adminEmails = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
+          for (const adminEmail of adminEmails) {
+            sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
+              user_name: uploaderName,
+              case_id: tradeCase.caseId || tradeCase.id,
+              document_type: document.documentType || 'Document',
+              upload_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+              review_url: 'https://finatrades.com/admin/trade-finance',
+            }).catch(e => console.error('[Email] Trade document uploaded admin notification failed:', e));
+          }
+        }
+      } catch (notifyErr) { console.error('[Email] Trade document upload notification failed:', notifyErr); }
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
     }
@@ -14277,7 +14459,31 @@ export async function registerRoutes(
         exporterUserId: proposal.exporterUserId,
         status: 'active',
       });
-      
+
+      // Send finabridge_deal_room_created invitation emails to both parties
+      try {
+        const importerDealUser = await storage.getUser(request.importerUserId);
+        const exporterDealUser = await storage.getUser(proposal.exporterUserId);
+        const dealRoomUrl = `/finabridge/deals/${dealRoom.id}`;
+
+        if (importerDealUser?.email) {
+          sendEmail(importerDealUser.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED, {
+            user_name: `${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || 'Valued Client',
+            trade_ref: request.tradeRefId,
+            counterparty_name: exporterDealUser ? (`${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || exporterDealUser.companyName || 'your exporter') : 'your exporter',
+            deal_room_url: dealRoomUrl,
+          }, { userId: importerDealUser.id, recipientName: importerDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created importer email failed:', e));
+        }
+        if (exporterDealUser?.email) {
+          sendEmail(exporterDealUser.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED, {
+            user_name: `${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || 'Valued Partner',
+            trade_ref: request.tradeRefId,
+            counterparty_name: importerDealUser ? (`${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || importerDealUser.companyName || 'your importer') : 'your importer',
+            deal_room_url: dealRoomUrl,
+          }, { userId: exporterDealUser.id, recipientName: exporterDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created exporter email failed:', e));
+        }
+      } catch (dealRoomEmailErr) { console.error('[Email] Deal room created email trigger failed:', dealRoomEmailErr); }
+
       // Notify exporter that their proposal was accepted
       try {
         const importerUser = await storage.getUser(request.importerUserId);
@@ -14346,6 +14552,17 @@ export async function registerRoutes(
             link: '/finabridge',
             read: false,
           });
+
+          // Send finabridge_proposal_declined email to the exporter
+          const exporterUser = await storage.getUser(proposal.exporterUserId);
+          if (exporterUser?.email) {
+            sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_DECLINED, {
+              user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
+              trade_ref: tradeReq.tradeRefId,
+              goods_name: tradeReq.goodsName || '',
+              trade_value: parseFloat(tradeReq.tradeValueUsd || '0').toLocaleString(),
+            }, { userId: exporterUser.id, recipientName: exporterUser.firstName || undefined }).catch(e => console.error('[Email] FinaBridge proposal declined email failed:', e));
+          }
         }
       } catch (e) { console.error('[Notification] Failed to create importer decline notification:', e); }
       
@@ -16160,7 +16377,7 @@ export async function registerRoutes(
           updatedAt: new Date()
         }).where(eq(tradeShipments.id, existing.id)).returning();
         
-        // Notify both parties of shipment update
+        // Notify both parties of shipment update (bell + email)
         try {
           const tradeReq = await storage.getTradeRequest(tradeRequestId);
           if (tradeReq) {
@@ -16172,6 +16389,36 @@ export async function registerRoutes(
             const acceptedProposal = acceptedProposals.find(p => p.status === 'Accepted');
             if (acceptedProposal) {
               await storage.createNotification({ userId: acceptedProposal.exporterUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            }
+
+            // Send finabridge_shipment_update emails to both importer and exporter
+            const shipmentStatusText = status || 'Updated';
+            const shipmentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const importerUser = await storage.getUser(tradeReq.importerUserId);
+            if (importerUser?.email) {
+              sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE, {
+                user_name: `${importerUser.firstName || ''} ${importerUser.lastName || ''}`.trim() || 'Valued Client',
+                trade_ref: tradeReq.tradeRefId,
+                shipment_status: shipmentStatusText,
+                tracking_number: trackingNumber || 'N/A',
+                current_location: currentLocation || 'N/A',
+                update_date: shipmentDate,
+                deal_room_url: dealLink,
+              }, { userId: importerUser.id }).catch(e => console.error('[Email] Shipment update importer email failed:', e));
+            }
+            if (acceptedProposal) {
+              const exporterUser = await storage.getUser(acceptedProposal.exporterUserId);
+              if (exporterUser?.email) {
+                sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE, {
+                  user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
+                  trade_ref: tradeReq.tradeRefId,
+                  shipment_status: shipmentStatusText,
+                  tracking_number: trackingNumber || 'N/A',
+                  current_location: currentLocation || 'N/A',
+                  update_date: shipmentDate,
+                  deal_room_url: dealLink,
+                }, { userId: exporterUser.id }).catch(e => console.error('[Email] Shipment update exporter email failed:', e));
+              }
             }
           }
         } catch (e) { console.error('[Notification] Failed to create shipment update notification:', e); }
@@ -16185,7 +16432,7 @@ export async function registerRoutes(
           originPort, destinationPort, currentLocation, customsStatus, notes
         }).returning();
         
-        // Notify both parties of new shipment tracking
+        // Notify both parties of new shipment tracking (bell + email)
         try {
           const tradeReq = await storage.getTradeRequest(tradeRequestId);
           if (tradeReq) {
@@ -16197,6 +16444,35 @@ export async function registerRoutes(
             const acceptedProposal = allProposals.find(p => p.status === 'Accepted');
             if (acceptedProposal) {
               await storage.createNotification({ userId: acceptedProposal.exporterUserId, title: 'Shipment Update', message: shipmentMsg, type: 'trade', link: dealLink, read: false });
+            }
+
+            // Send finabridge_shipment_update emails for new shipment creation
+            const shipmentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const importerUser = await storage.getUser(tradeReq.importerUserId);
+            if (importerUser?.email) {
+              sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE, {
+                user_name: `${importerUser.firstName || ''} ${importerUser.lastName || ''}`.trim() || 'Valued Client',
+                trade_ref: tradeReq.tradeRefId,
+                shipment_status: status || 'Tracking Created',
+                tracking_number: trackingNumber || 'N/A',
+                current_location: currentLocation || 'N/A',
+                update_date: shipmentDate,
+                deal_room_url: dealLink,
+              }, { userId: importerUser.id }).catch(e => console.error('[Email] New shipment importer email failed:', e));
+            }
+            if (acceptedProposal) {
+              const exporterUser = await storage.getUser(acceptedProposal.exporterUserId);
+              if (exporterUser?.email) {
+                sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_SHIPMENT_UPDATE, {
+                  user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
+                  trade_ref: tradeReq.tradeRefId,
+                  shipment_status: status || 'Tracking Created',
+                  tracking_number: trackingNumber || 'N/A',
+                  current_location: currentLocation || 'N/A',
+                  update_date: shipmentDate,
+                  deal_room_url: dealLink,
+                }, { userId: exporterUser.id }).catch(e => console.error('[Email] New shipment exporter email failed:', e));
+              }
             }
           }
         } catch (e) { console.error('[Notification] Failed to create new shipment notification:', e); }
@@ -18566,7 +18842,7 @@ export async function registerRoutes(
         link: '/finapay',
       });
       
-      // Send pending transfer email to recipient using proper template
+      // Send pending transfer email to recipient
       if (recipient.email) {
         sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
           user_name: `${recipient.firstName} ${recipient.lastName}`,
@@ -18576,9 +18852,37 @@ export async function registerRoutes(
           reference_number: referenceNumber,
           memo: memo || '',
           expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
-        }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
+        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
       }
-      
+
+      // Send transfer_sent confirmation to sender
+      if (sender.email) {
+        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
+          user_name: `${sender.firstName} ${sender.lastName}`,
+          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+          gold_amount: goldAmount.toFixed(4),
+          usd_value: usdEquivalent.toFixed(2),
+          reference_id: referenceNumber,
+        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer sent confirmation failed:', err));
+      }
+
+      // Low balance alert: check if sender's remaining balance is below threshold
+      try {
+        const updatedSenderWallet = await storage.getWallet(sender.id);
+        const senderPrefs = await storage.getUserPreferences(sender.id);
+        const threshold = parseFloat((senderPrefs as any)?.lowBalanceThreshold || '0');
+        const remainingGrams = parseFloat(updatedSenderWallet?.goldGrams?.toString() || '0');
+        if (threshold > 0 && remainingGrams < threshold && sender.email) {
+          const currentGoldPrice = await getGoldPricePerGram().catch(() => 139.44);
+          sendEmail(sender.email, EMAIL_TEMPLATES.LOW_BALANCE_ALERT, {
+            user_name: `${sender.firstName} ${sender.lastName}`,
+            current_balance: (remainingGrams * currentGoldPrice).toFixed(2),
+            threshold: (threshold * currentGoldPrice).toFixed(2),
+            deposit_url: '/finapay',
+          }, { userId: sender.id }).catch(err => console.error('[Email] Low balance alert failed:', err));
+        }
+      } catch (lbErr) { console.error('[Email] Low balance check failed:', lbErr); }
+
         return res.json({
         transfer: pendingTransfer,
         pending: true,
@@ -19545,34 +19849,24 @@ export async function registerRoutes(
           data: { transferId: transfer.id, recipientId: recipient.id },
         });
         
-      // Send email notification to sender
+      // Send transfer_completed email to sender (their gold was successfully delivered)
       if (sender.email) {
-        sendEmailDirect(
-          sender.email,
-          `Your transfer to ${recipient.firstName} ${recipient.lastName} was accepted`,
-          `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #8A2BE2, #4B0082); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Transfer Accepted!</h1>
-            </div>
-            <div style="padding: 30px; background: #ffffff;">
-              <p>Hello ${sender.firstName},</p>
-              <p>Great news! ${recipient.firstName} ${recipient.lastName} has accepted your transfer.</p>
-              <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <p style="font-size: 28px; font-weight: bold; color: #22c55e; margin: 0;">
-                  ${goldAmount.toFixed(4)}g Gold
-                </p>
-                <p style="color: #6b7280; margin: 5px 0;">to ${recipient.firstName} ${recipient.lastName}</p>
-              </div>
-              <p style="text-align: center; margin-top: 30px;">
-                <a href="https://finatrades.com/dashboard" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Dashboard</a>
-              </p>
-            </div>
-          </div>
-          `
-        ).catch(err => console.error('[Email] Failed to send transfer accepted notification:', err));
+        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
+          user_name: `${sender.firstName} ${sender.lastName}`,
+          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+          gold_amount: goldAmount.toFixed(4),
+        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer completed (sender) failed:', err));
       }
-      
+
+      // Send transfer_completed email to recipient (they received gold)
+      if (recipient.email) {
+        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
+          user_name: `${recipient.firstName} ${recipient.lastName}`,
+          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
+          gold_amount: goldAmount.toFixed(4),
+        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Transfer completed (recipient) failed:', err));
+      }
+
       // Create bell notifications for both parties
       await storage.createNotification({
         userId: recipient.id,
@@ -19744,6 +20038,106 @@ export async function registerRoutes(
     } catch (error) {
       console.error('[Routes] Error rejecting transfer:', error);
       res.status(400).json({ message: "Failed to reject transfer" });
+    }
+  });
+
+  // Cancel a pending outgoing transfer (by sender) - PROTECTED: requires authentication
+  app.post("/api/finapay/pending/:id/cancel", ensureAuthenticated, async (req, res) => {
+    try {
+      const { reason } = req.body;
+      const transfer = await storage.getPeerTransfer(req.params.id);
+
+      if (!transfer) {
+        return res.status(404).json({ message: "Transfer not found" });
+      }
+
+      // SECURITY: Only the sender can cancel their own outgoing transfer
+      if (transfer.senderId !== req.session?.userId) {
+        return res.status(403).json({ message: "Not authorized to cancel this transfer" });
+      }
+
+      if (transfer.status !== 'Pending') {
+        return res.status(400).json({ message: "Transfer is no longer pending and cannot be cancelled" });
+      }
+
+      const sender = await storage.getUser(transfer.senderId);
+      const recipient = await storage.getUser(transfer.recipientId);
+      if (!sender) {
+        return res.status(404).json({ message: "Sender not found" });
+      }
+
+      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
+      const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
+
+      // Refund gold to sender's wallet
+      const senderWallet = await storage.getWallet(sender.id);
+      if (senderWallet) {
+        const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
+        await storage.updateWallet(senderWallet.id, {
+          goldGrams: (senderGoldBalance + goldAmount).toFixed(6),
+        });
+        // Restore cert ledger
+        try {
+          const { restoreToCert } = await import('./cert-ledger-service');
+          await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer cancelled by sender${reason ? `: ${reason}` : ''}`);
+        } catch (certErr) {
+          console.error('[CertLedger] Failed to restore certs on transfer cancellation:', certErr);
+        }
+      }
+
+      // Create refund transaction for sender
+      await storage.createTransaction({
+        userId: sender.id,
+        type: 'Refund',
+        status: 'Completed',
+        amountGold: goldAmount.toFixed(6),
+        amountUsd: (goldAmount * goldPrice).toFixed(2),
+        goldPriceUsdPerGram: goldPrice.toFixed(2),
+        description: `Transfer to ${recipient?.firstName || 'user'} was cancelled${reason ? `: ${reason}` : ''}`,
+        referenceId: transfer.referenceNumber,
+        sourceModule: 'finapay',
+        goldWalletType: 'LGPW',
+        completedAt: new Date(),
+      });
+
+      // Update transfer status
+      await storage.updatePeerTransfer(transfer.id, {
+        status: 'Cancelled',
+        respondedAt: new Date(),
+        rejectionReason: reason || 'Cancelled by sender',
+      });
+
+      // Emit real-time sync event
+      emitLedgerEvent(sender.id, {
+        type: 'balance_update',
+        module: 'finapay',
+        action: 'transfer_cancelled',
+        data: { transferId: transfer.id, refunded: true },
+      });
+
+      // Send transfer_cancelled email to sender (confirming gold returned)
+      if (sender.email) {
+        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
+          user_name: `${sender.firstName} ${sender.lastName}`,
+          recipient_name: recipient ? `${recipient.firstName} ${recipient.lastName}` : 'the intended recipient',
+          gold_amount: goldAmount.toFixed(4),
+          cancellation_reason: reason || 'Cancelled by sender',
+        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (sender) failed:', err));
+      }
+
+      // Bell notification for sender
+      await storage.createNotification({
+        userId: sender.id,
+        title: 'Transfer Cancelled',
+        message: `Your transfer of ${goldAmount.toFixed(4)}g gold has been cancelled. Funds returned to your wallet.`,
+        type: 'transaction',
+        link: '/finapay',
+      }).catch(() => {});
+
+      res.json({ message: "Transfer cancelled. Funds have been returned to your wallet." });
+    } catch (error) {
+      console.error('[Routes] Error cancelling transfer:', error);
+      res.status(400).json({ message: "Failed to cancel transfer" });
     }
   });
 
