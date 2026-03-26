@@ -201,6 +201,21 @@ export default function KYC() {
     ? submissionChangeRequestedSections
     : rejectedSections.map(r => r.sectionName);
 
+  const ALL_PERSONAL_SECTIONS = ['personal_information', 'documents', 'liveness'];
+  const ALL_CORPORATE_SECTIONS = ['corporate_details', 'beneficial_owners', 'corporate_documents', 'representative_liveness'];
+
+  // Derive locked sections from changeRequestedSections (preferred) or approvedSections (fallback)
+  const personalLockedSections = isResubmitMode
+    ? (changeRequestedSections.length > 0
+        ? ALL_PERSONAL_SECTIONS.filter(s => !changeRequestedSections.includes(s))
+        : approvedSections)
+    : [];
+  const corporateLockedSections = isResubmitMode
+    ? (changeRequestedSections.length > 0
+        ? ALL_CORPORATE_SECTIONS.filter(s => !changeRequestedSections.includes(s))
+        : approvedSections)
+    : [];
+
   const isSectionLocked = (sectionName: string) => {
     if (!isResubmitMode) return false;
     // Lock every section EXCEPT those the admin explicitly requested changes on.
@@ -735,7 +750,7 @@ export default function KYC() {
         livenessVerified: capturedSelfie ? true : undefined,
         livenessCapture: capturedSelfie || undefined,
         isResubmit: isResubmitMode,
-        lockedSections: isResubmitMode ? approvedSections : [],
+        lockedSections: personalLockedSections,
         status: 'In Progress'
       });
       
@@ -818,7 +833,7 @@ export default function KYC() {
         directorPassportExpiryDate: directorPassportExpiryDate || null,
         representativeLiveness: capturedSelfie || undefined,
         isResubmit: isResubmitMode,
-        lockedSections: isResubmitMode ? approvedSections : [],
+        lockedSections: corporateLockedSections,
         status: 'In Progress'
       });
       
