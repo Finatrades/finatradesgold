@@ -5662,11 +5662,11 @@ export async function registerRoutes(
             if (kycType === 'finatrades_personal') {
               await storage.updateFinatradesPersonalKyc(req.params.id, {
                 changeRequestedSections: rejectedSectionNames,
-              }).catch(() => null);
+              }).catch((err: Error) => console.error('[KYC] Failed to persist changeRequestedSections for personal submission:', err?.message));
             } else if (kycType === 'finatrades_corporate') {
               await storage.updateFinatradesCorporateKyc(req.params.id, {
                 changeRequestedSections: rejectedSectionNames,
-              }).catch(() => null);
+              }).catch((err: Error) => console.error('[KYC] Failed to persist changeRequestedSections for corporate submission:', err?.message));
             }
           }
 
@@ -22860,7 +22860,10 @@ export async function registerRoutes(
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
         if (docUrlForOcr && kycData.fullName) {
-          // Capture prior OCR state before async to allow additive risk scoring
+          // Capture prior OCR state before async to allow additive risk scoring.
+          // Note: this is a best-effort read-modify-write; concurrent writes to riskScore are unlikely
+          // in practice (OCR is the only writer post-submit), but a future dedicated ocr_risk_score column
+          // would fully eliminate any race.
           const priorOcrFlag = updated?.ocrMismatchFlag as { nameMismatch?: boolean; dobMismatch?: boolean } | null;
           const priorOcrDelta = (priorOcrFlag?.nameMismatch || priorOcrFlag?.dobMismatch) ? 10 : 0;
           const priorRiskScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
