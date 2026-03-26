@@ -442,13 +442,9 @@ export default function KYC() {
           savedAt: Date.now(),
         };
         localStorage.setItem(kycStorageKey, JSON.stringify(draft));
-        // Also persist to server (best-effort, no blocking)
-        fetch('/api/kyc/draft', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ submissionType: draftSubmissionType, draftData: draft }),
-        }).catch(() => null);
+        // Also persist to server (best-effort, non-blocking; uses apiRequest to include CSRF token)
+        apiRequest('PUT', '/api/kyc/draft', { submissionType: draftSubmissionType, draftData: draft })
+          .catch((err: unknown) => console.warn('[KYC] Server draft save failed:', err instanceof Error ? err.message : err));
       } catch (e) {
         console.warn('[KYC] Failed to save draft:', e);
       }
