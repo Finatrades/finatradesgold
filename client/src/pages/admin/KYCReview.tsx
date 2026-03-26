@@ -1426,7 +1426,6 @@ export default function KYCReview() {
                   const aiStatus = appData?.aiVerificationStatus;
                   const aiRejectionReason = appData?.aiRejectionReason;
                   const ocrFlag = appData?.ocrMismatchFlag;
-                  const hasOcrMismatch = ocrFlag?.checked && (ocrFlag?.nameMismatch || ocrFlag?.dobMismatch);
                   const hasAnyRiskData = hasFraudScore || riskScore || isPep || isSanctioned || aiStatus || ocrFlag?.checked;
                   
                   if (!hasAnyRiskData) return null;
