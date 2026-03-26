@@ -345,6 +345,91 @@ export async function extractDocumentData(
 }
 
 // ============================================================
+// KYC IDENTITY EXTRACTION & MISMATCH DETECTION
+// ============================================================
+
+export interface KycOcrResult {
+  checked: boolean;
+  nameMismatch: boolean;
+  dobMismatch: boolean;
+  extractedName: string | null;
+  extractedDob: string | null;
+  similarity: number;
+  checkedAt: string;
+}
+
+/** Simple token-based name similarity (0-1). */
+function nameSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, '').trim();
+  const tokensA = normalize(a).split(/\s+/);
+  const tokensB = normalize(b).split(/\s+/);
+  const matched = tokensA.filter(t => tokensB.includes(t));
+  return matched.length / Math.max(tokensA.length, tokensB.length);
+}
+
+/**
+ * Extract name and date of birth from a KYC identity document (passport or ID card)
+ * via GPT-4o vision, then compare against the applicant's declared values.
+ *
+ * Returns a structured KycOcrResult.  Safe to call fire-and-forget — never throws.
+ */
+export async function checkKycOcrMismatch(
+  documentUrl: string,
+  declaredName: string,
+  declaredDob: string,
+): Promise<KycOcrResult> {
+  const checkedAt = new Date().toISOString();
+  try {
+    const { buffer, mimeType } = await downloadFromR2(documentUrl);
+    const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
+    const base64 = buffer.toString('base64');
+
+    const prompt = `You are a KYC document analyst. Examine this identity document (passport, national ID, or driver's licence) and extract the following fields. Respond ONLY with valid JSON.
+
+Schema:
+{
+  "full_name": string | null,
+  "date_of_birth": "YYYY-MM-DD" | null
+}
+
+If a field cannot be read, use null. Do not include explanations.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}`, detail: 'high' } },
+          ],
+        },
+      ],
+      max_tokens: 200,
+      temperature: 0,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+
+    const extractedName: string | null = extracted.full_name || null;
+    const extractedDob: string | null = extracted.date_of_birth || null;
+
+    const similarity = extractedName ? nameSimilarity(extractedName, declaredName) : 0;
+    const nameMismatch = similarity < 0.8;
+    const dobMismatch = !!extractedDob && !!declaredDob && extractedDob !== declaredDob;
+
+    return { checked: true, nameMismatch, dobMismatch, extractedName, extractedDob, similarity, checkedAt };
+  } catch (err) {
+    console.error('[KYC OCR] Identity extraction failed:', err instanceof Error ? err.message : err);
+    return { checked: false, nameMismatch: false, dobMismatch: false, extractedName: null, extractedDob: null, similarity: 0, checkedAt };
+  }
+}
+
+// ============================================================
 // FRAUD SCORING ENGINE (6 checks)
 // ============================================================
 

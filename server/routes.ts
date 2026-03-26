@@ -101,6 +101,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
+import { checkKycOcrMismatch } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -5539,6 +5540,31 @@ export async function registerRoutes(
     }
   });
   
+  // Unified KYC status updater — single code path for personal, corporate, and AML submissions.
+  async function updateKycSubmissionStatus(
+    id: string,
+    safeUpdates: Record<string, any>,
+    fallbackUpdates: Record<string, any>,
+  ): Promise<{ submission: any; kycType: string } | null> {
+    const personal = await storage.getFinatradesPersonalKycById(id);
+    if (personal) {
+      const updated = await storage.updateFinatradesPersonalKyc(id, safeUpdates);
+      return { submission: updated, kycType: 'finatrades_personal' };
+    }
+    const corporate = await storage.getFinatradesCorporateKycById(id);
+    if (corporate) {
+      const updated = await storage.updateFinatradesCorporateKyc(id, safeUpdates);
+      return { submission: updated, kycType: 'finatrades_corporate' };
+    }
+    try {
+      const updated = await storage.updateKycSubmission(id, fallbackUpdates);
+      return { submission: updated, kycType: 'kycAml' };
+    } catch (e) {
+      console.error('[KYC] updateKycSubmissionStatus failed for id:', id, e instanceof Error ? e.message : e);
+      return null;
+    }
+  }
+
   // Update KYC status (Admin) - handles kycAml, Finatrades personal, and corporate KYC
   app.patch("/api/kyc/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
@@ -5550,9 +5576,6 @@ export async function registerRoutes(
       }
 
       const { sectionReviews: sectionReviewsInput, decisionNotes, ...dbUpdates } = updates;
-      
-      let submission: any = null;
-      let kycType = 'kycAml';
 
       const safeKycUpdates: any = {};
       if (dbUpdates.status !== undefined) safeKycUpdates.status = dbUpdates.status;
@@ -5560,29 +5583,13 @@ export async function registerRoutes(
       if (dbUpdates.reviewedBy !== undefined) safeKycUpdates.reviewedBy = dbUpdates.reviewedBy;
       if (dbUpdates.reviewedAt !== undefined) safeKycUpdates.reviewedAt = dbUpdates.reviewedAt;
 
-      const existingPersonal = await storage.getFinatradesPersonalKycById(req.params.id);
-      if (existingPersonal) {
-        submission = await storage.updateFinatradesPersonalKyc(req.params.id, safeKycUpdates);
-        kycType = 'finatrades_personal';
+      const result = await updateKycSubmissionStatus(req.params.id, safeKycUpdates, dbUpdates);
+      if (!result) {
+        notifyError({ error: new Error(`KYC submission not found: ${req.params.id}`), context: `KYC update failed`, route: req.originalUrl });
       }
 
-      if (!submission) {
-        const existingCorporate = await storage.getFinatradesCorporateKycById(req.params.id);
-        if (existingCorporate) {
-          submission = await storage.updateFinatradesCorporateKyc(req.params.id, safeKycUpdates);
-          kycType = 'finatrades_corporate';
-        }
-      }
-
-      if (!submission) {
-        try {
-          submission = await storage.updateKycSubmission(req.params.id, dbUpdates);
-          kycType = 'kycAml';
-        } catch (e) {
-          console.error('[KYC] updateKycSubmission failed for id:', req.params.id, e instanceof Error ? e.message : e);
-          notifyError({ error: e instanceof Error ? e : new Error(String(e)), context: `KYC update failed for submission ${req.params.id}`, route: req.originalUrl });
-        }
-      }
+      let submission = result?.submission ?? null;
+      let kycType = result?.kycType ?? 'kycAml';
       
       if (!submission) {
         return res.status(404).json({ message: "KYC submission not found" });
@@ -22710,6 +22717,33 @@ export async function registerRoutes(
     }
   });
 
+  // KYC Draft — server-side draft persistence
+  app.get("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const draft = await storage.getKycDraft(userId);
+      res.json({ draft: draft || null });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch draft" });
+    }
+  });
+
+  app.put("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const { submissionType = 'personal', draftData } = req.body;
+      if (!draftData || typeof draftData !== 'object') {
+        return res.status(400).json({ message: "draftData is required" });
+      }
+      const draft = await storage.upsertKycDraft(userId, submissionType, draftData);
+      res.json({ draft });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to save draft" });
+    }
+  });
+
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
   app.post("/api/finatrades-kyc/personal", ensureAuthenticated, async (req, res) => {
     try {
@@ -22797,7 +22831,26 @@ export async function registerRoutes(
           dashboard_url: `${baseUrl}/dashboard`,
         }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
 
+        // Delete server-side draft now that submission is complete
+        storage.deleteKycDraft(userId).catch(() => null);
+
         res.json({ success: true, submission: updated });
+
+        // Async OCR mismatch check (fire-and-forget, does not block response)
+        const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
+        if (docUrlForOcr && kycData.fullName) {
+          checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
+            .then(async ocrResult => {
+              const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
+              const currentScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
+              await storage.updateFinatradesPersonalKyc(updated!.id, {
+                ocrMismatchFlag: ocrResult as any,
+                ...(mismatch ? { riskScore: currentScore + 10 } : {}),
+              });
+              if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
+            })
+            .catch(() => null);
+        }
       } else {
         const submission = await storage.createFinatradesPersonalKyc(kycData);
         await storage.updateUser(userId, { kycStatus: 'Pending Review' });
@@ -22831,7 +22884,25 @@ export async function registerRoutes(
           dashboard_url: `${baseUrl}/dashboard`,
         }).catch(err => console.error('[KYC] Failed to send submission confirmation email:', err));
 
+        // Delete server-side draft now that submission is complete
+        storage.deleteKycDraft(userId).catch(() => null);
+
         res.json({ success: true, submission });
+
+        // Async OCR mismatch check (fire-and-forget, does not block response)
+        const docUrlForOcr2 = kycData.passportUrl || kycData.idFrontUrl;
+        if (docUrlForOcr2 && kycData.fullName) {
+          checkKycOcrMismatch(docUrlForOcr2, kycData.fullName, kycData.dateOfBirth || '')
+            .then(async ocrResult => {
+              const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
+              await storage.updateFinatradesPersonalKyc(submission.id, {
+                ocrMismatchFlag: ocrResult as any,
+                ...(mismatch ? { riskScore: 10 } : {}),
+              });
+              if (mismatch) console.log(`[KYC OCR] Mismatch detected for ${userId}: name=${ocrResult.nameMismatch}, dob=${ocrResult.dobMismatch}`);
+            })
+            .catch(() => null);
+        }
       }
     } catch (error) {
       console.error("Failed to submit Finatrades personal KYC:", error);

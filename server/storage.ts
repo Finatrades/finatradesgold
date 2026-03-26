@@ -140,6 +140,8 @@ import {
   type KycSectionReview, type InsertKycSectionReview,
   type KycReasonCode, type InsertKycReasonCode,
   type KycDecisionRecord, type InsertKycDecisionRecord,
+  kycDrafts,
+  type KycDraft, type InsertKycDraft,
   certificateEvents,
   type CertificateEvent, type InsertCertificateEvent,
 } from "@shared/schema";
@@ -722,6 +724,11 @@ export interface IStorage {
   createKycDecisionRecord(data: InsertKycDecisionRecord): Promise<KycDecisionRecord>;
   getKycDecisionRecords(submissionId: string): Promise<KycDecisionRecord[]>;
   getKycReasonCodes(): Promise<KycReasonCode[]>;
+
+  // KYC Drafts
+  getKycDraft(userId: string): Promise<KycDraft | undefined>;
+  upsertKycDraft(userId: string, submissionType: string, draftData: Record<string, any>): Promise<KycDraft>;
+  deleteKycDraft(userId: string): Promise<void>;
 
   // User Notifications
   getNotification(id: string): Promise<Notification | undefined>;
@@ -3596,6 +3603,35 @@ export class DatabaseStorage implements IStorage {
   async getKycReasonCodes(): Promise<KycReasonCode[]> {
     return await db.select().from(kycReasonCodes)
       .where(eq(kycReasonCodes.isActive, true));
+  }
+
+  // ============================================
+  // KYC DRAFTS
+  // ============================================
+
+  async getKycDraft(userId: string): Promise<KycDraft | undefined> {
+    const [draft] = await db.select().from(kycDrafts).where(eq(kycDrafts.userId, userId));
+    return draft || undefined;
+  }
+
+  async upsertKycDraft(userId: string, submissionType: string, draftData: Record<string, any>): Promise<KycDraft> {
+    const now = new Date();
+    const existing = await this.getKycDraft(userId);
+    if (existing) {
+      const [updated] = await db.update(kycDrafts)
+        .set({ submissionType, draftData, updatedAt: now })
+        .where(eq(kycDrafts.userId, userId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(kycDrafts)
+      .values({ userId, submissionType, draftData, savedAt: now, updatedAt: now })
+      .returning();
+    return created;
+  }
+
+  async deleteKycDraft(userId: string): Promise<void> {
+    await db.delete(kycDrafts).where(eq(kycDrafts.userId, userId));
   }
 
   // ============================================

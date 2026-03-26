@@ -182,12 +182,14 @@ export default function KYC() {
     reviewedAt: string | null;
   }> = sectionReviewsData?.reviews || [];
 
-  const approvedSections = sectionReviews.filter(r => r.status === 'approved').map(r => r.sectionName);
   const rejectedSections = sectionReviews.filter(r => r.status === 'rejected');
+  // Sections explicitly flagged by admin as needing changes — these are the ONLY unlocked sections.
+  const changeRequestedSections = rejectedSections.map(r => r.sectionName);
 
   const isSectionLocked = (sectionName: string) => {
     if (!isResubmitMode) return false;
-    return approvedSections.includes(sectionName);
+    // Lock every section EXCEPT those the admin explicitly requested changes on.
+    return !changeRequestedSections.includes(sectionName);
   };
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -203,6 +205,17 @@ export default function KYC() {
     } catch { savedDraftRef.current = {}; }
   }
   const savedDraft = savedDraftRef.current;
+
+  // Fetch server-side draft on mount and merge if server draft is newer
+  const { data: serverDraftData } = useQuery({
+    queryKey: ['/api/kyc/draft', user?.id],
+    queryFn: async () => {
+      const res = await fetch('/api/kyc/draft', { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user?.id && !existingSubmission,
+  });
 
   // Finatrades mode state - shared between personal and corporate
   const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>(
@@ -318,7 +331,34 @@ export default function KYC() {
   const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState(savedDraft?.tradeLicenseExpiryDate || '');
   const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState(savedDraft?.directorPassportExpiryDate || '');
 
-  // Auto-save KYC draft to localStorage
+  // Restore from server-side draft when fetched (only if server draft is newer than localStorage)
+  const serverDraftRestored = useRef(false);
+  useEffect(() => {
+    if (serverDraftRestored.current || !serverDraftData?.draft?.draftData) return;
+    serverDraftRestored.current = true;
+    const sd = serverDraftData.draft.draftData;
+    const serverTs = serverDraftData.draft.updatedAt ? new Date(serverDraftData.draft.updatedAt).getTime() : 0;
+    const localTs = savedDraft?.savedAt || 0;
+    if (serverTs <= localTs) return;
+    if (sd.personalFullName) setPersonalFullName(sd.personalFullName);
+    if (sd.personalEmail) setPersonalEmail(sd.personalEmail);
+    if (sd.personalPhone) setPersonalPhone(sd.personalPhone);
+    if (sd.personalCountry) setPersonalCountry(sd.personalCountry);
+    if (sd.personalCity) setPersonalCity(sd.personalCity);
+    if (sd.personalAddress) setPersonalAddress(sd.personalAddress);
+    if (sd.personalPostalCode) setPersonalPostalCode(sd.personalPostalCode);
+    if (sd.personalNationality) setPersonalNationality(sd.personalNationality);
+    if (sd.personalOccupation) setPersonalOccupation(sd.personalOccupation);
+    if (sd.personalSourceOfFunds) setPersonalSourceOfFunds(sd.personalSourceOfFunds);
+    if (sd.personalAccountType) setPersonalAccountType(sd.personalAccountType);
+    if (sd.personalDateOfBirth) setPersonalDateOfBirth(sd.personalDateOfBirth);
+    if (sd.passportExpiryDate) setPassportExpiryDate(sd.passportExpiryDate);
+    if (sd.companyName) setCompanyName(sd.companyName);
+    if (sd.corporateRegNumber) setCorporateRegNumber(sd.corporateRegNumber);
+    if (sd.finatradesStep) setFinatradesStep(sd.finatradesStep);
+  }, [serverDraftData]);
+
+  // Auto-save KYC draft to localStorage + server (debounced)
   useEffect(() => {
     if (!user?.id) return;
     const debounceTimer = setTimeout(() => {
@@ -339,10 +379,17 @@ export default function KYC() {
           savedAt: Date.now(),
         };
         localStorage.setItem(kycStorageKey, JSON.stringify(draft));
+        // Also persist to server (best-effort, no blocking)
+        fetch('/api/kyc/draft', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ submissionType: user?.accountType === 'business' ? 'corporate' : 'personal', draftData: draft }),
+        }).catch(() => null);
       } catch (e) {
         console.warn('[KYC] Failed to save draft:', e);
       }
-    }, 500);
+    }, 1500);
     return () => clearTimeout(debounceTimer);
   }, [
     finatradesStep, personalFullName, personalEmail, personalPhone, personalCountry,

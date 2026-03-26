@@ -894,7 +894,20 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
   agreementSentAt: timestamp("agreement_sent_at"),
   agreementCompletedAt: timestamp("agreement_completed_at"),
   signedDocumentUrl: text("signed_document_url"),
-  
+
+  // OCR Mismatch Flagging — populated async after submission
+  ocrMismatchFlag: json("ocr_mismatch_flag").$type<{
+    checked: boolean;
+    nameMismatch: boolean;
+    dobMismatch: boolean;
+    extractedName: string | null;
+    extractedDob: string | null;
+    similarity: number;
+    checkedAt: string;
+  } | null>(),
+  // Submission-level risk score (OCR adds 10 pts if mismatch detected)
+  riskScore: integer("risk_score").default(0),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -902,6 +915,23 @@ export const finatradesPersonalKyc = pgTable("finatrades_personal_kyc", {
 export const insertFinatradesPersonalKycSchema = createInsertSchema(finatradesPersonalKyc).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertFinatradesPersonalKyc = z.infer<typeof insertFinatradesPersonalKycSchema>;
 export type FinatradesPersonalKyc = typeof finatradesPersonalKyc.$inferSelect;
+
+// ============================================
+// KYC DRAFTS (server-side draft persistence)
+// ============================================
+
+export const kycDrafts = pgTable("kyc_drafts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),
+  submissionType: varchar("submission_type", { length: 50 }).notNull().default('personal'),
+  draftData: json("draft_data").$type<Record<string, any>>(),
+  savedAt: timestamp("saved_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertKycDraftSchema = createInsertSchema(kycDrafts).omit({ id: true, savedAt: true, updatedAt: true });
+export type InsertKycDraft = z.infer<typeof insertKycDraftSchema>;
+export type KycDraft = typeof kycDrafts.$inferSelect;
 
 // ============================================
 // KYC SUBMISSION VERSIONING

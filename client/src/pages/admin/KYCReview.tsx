@@ -1425,7 +1425,9 @@ export default function KYCReview() {
                   const isSanctioned = appData?.isSanctioned;
                   const aiStatus = appData?.aiVerificationStatus;
                   const aiRejectionReason = appData?.aiRejectionReason;
-                  const hasAnyRiskData = hasFraudScore || riskScore || isPep || isSanctioned || aiStatus;
+                  const ocrFlag = appData?.ocrMismatchFlag;
+                  const hasOcrMismatch = ocrFlag?.checked && (ocrFlag?.nameMismatch || ocrFlag?.dobMismatch);
+                  const hasAnyRiskData = hasFraudScore || riskScore || isPep || isSanctioned || aiStatus || ocrFlag?.checked;
                   
                   if (!hasAnyRiskData) return null;
                   
@@ -1510,6 +1512,51 @@ export default function KYCReview() {
                           <p className="text-blue-700 mt-0.5">
                             Submitted name: <span className="font-bold">{submittedName}</span>. Please verify this matches the name shown on the uploaded ID documents.
                           </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* OCR Document Mismatch Warning */}
+                {(() => {
+                  const appData = fullApplicationData || selectedApplication;
+                  const ocrFlag = appData?.ocrMismatchFlag;
+                  if (!ocrFlag?.checked) return null;
+                  const hasNameMismatch = ocrFlag?.nameMismatch;
+                  const hasDobMismatch = ocrFlag?.dobMismatch;
+                  const hasMismatch = hasNameMismatch || hasDobMismatch;
+                  if (!hasMismatch) {
+                    return (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm" data-testid="ocr-match-ok">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-700 font-semibold">OCR Verified</span>
+                          <span className="text-green-600">Document name and date of birth match the declared information.</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm" data-testid="ocr-mismatch-warning">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-amber-800">OCR Mismatch Detected</span>
+                          <div className="text-amber-700 mt-1 space-y-0.5">
+                            {hasNameMismatch && (
+                              <p>Name on document does not match declared name.
+                                {ocrFlag.extractedName ? <> Extracted: <span className="font-bold">{ocrFlag.extractedName}</span></> : null}
+                              </p>
+                            )}
+                            {hasDobMismatch && (
+                              <p>Date of birth on document does not match declared DOB.
+                                {ocrFlag.extractedDob ? <> Extracted: <span className="font-bold">{ocrFlag.extractedDob}</span></> : null}
+                              </p>
+                            )}
+                            {ocrFlag.confidence !== undefined && (
+                              <p className="text-xs text-amber-600">OCR confidence: {Math.round(ocrFlag.confidence * 100)}%</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
