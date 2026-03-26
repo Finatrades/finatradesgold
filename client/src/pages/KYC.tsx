@@ -218,9 +218,11 @@ export default function KYC() {
 
   const isSectionLocked = (sectionName: string) => {
     if (!isResubmitMode) return false;
-    // Use the same changeRequestedSections source (with fallback) as lockedSections computation.
-    // Lock every section EXCEPT those the admin explicitly requested changes on.
-    return !changeRequestedSections.includes(sectionName);
+    // Use the same derived lock arrays as the submit payloads for consistency.
+    // Corporate sections use corporateLockedSections; personal uses personalLockedSections.
+    const isCorporateSection = ALL_CORPORATE_SECTIONS.includes(sectionName);
+    const lockedSet = isCorporateSection ? corporateLockedSections : personalLockedSections;
+    return lockedSet.includes(sectionName);
   };
   
   const [isSubmitting, setIsSubmitting] = useState(false);
