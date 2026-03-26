@@ -5530,6 +5530,35 @@ export async function registerRoutes(
       res.status(500).json({ message: error instanceof Error ? error.message : "Failed to reset KYC" });
     }
   });
+  // KYC Draft — server-side draft persistence (keyed by userId + submissionType)
+  // NOTE: Must be registered BEFORE /api/kyc/:userId to avoid Express shadowing 'draft' as a userId.
+  app.get("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const submissionType = (req.query.submissionType as string) || 'personal';
+      const draft = await storage.getKycDraft(userId, submissionType);
+      res.json({ draft: draft || null });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch draft" });
+    }
+  });
+
+  app.put("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const { submissionType = 'personal', draftData } = req.body;
+      if (!draftData || typeof draftData !== 'object') {
+        return res.status(400).json({ message: "draftData is required" });
+      }
+      const draft = await storage.upsertKycDraft(userId, submissionType, draftData);
+      res.json({ draft });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to save draft" });
+    }
+  });
+
   // Get user's KYC submission - PROTECTED: requires matching session
   app.get("/api/kyc/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
@@ -22723,34 +22752,6 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to get KYC mode:", error);
       res.status(400).json({ message: "Failed to get KYC mode" });
-    }
-  });
-
-  // KYC Draft — server-side draft persistence (keyed by userId + submissionType)
-  app.get("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const submissionType = (req.query.submissionType as string) || 'personal';
-      const draft = await storage.getKycDraft(userId, submissionType);
-      res.json({ draft: draft || null });
-    } catch (err) {
-      res.status(500).json({ message: "Failed to fetch draft" });
-    }
-  });
-
-  app.put("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const { submissionType = 'personal', draftData } = req.body;
-      if (!draftData || typeof draftData !== 'object') {
-        return res.status(400).json({ message: "draftData is required" });
-      }
-      const draft = await storage.upsertKycDraft(userId, submissionType, draftData);
-      res.json({ draft });
-    } catch (err) {
-      res.status(500).json({ message: "Failed to save draft" });
     }
   });
 
