@@ -3618,18 +3618,15 @@ export class DatabaseStorage implements IStorage {
 
   async upsertKycDraft(userId: string, submissionType: string, draftData: Record<string, any>): Promise<KycDraft> {
     const now = new Date();
-    const existing = await this.getKycDraft(userId, submissionType);
-    if (existing) {
-      const [updated] = await db.update(kycDrafts)
-        .set({ draftData, updatedAt: now })
-        .where(and(eq(kycDrafts.userId, userId), eq(kycDrafts.submissionType, submissionType)))
-        .returning();
-      return updated;
-    }
-    const [created] = await db.insert(kycDrafts)
+    // Atomic DB-native upsert on composite (userId, submissionType) unique constraint
+    const [result] = await db.insert(kycDrafts)
       .values({ userId, submissionType, draftData, savedAt: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [kycDrafts.userId, kycDrafts.submissionType],
+        set: { draftData, updatedAt: now },
+      })
       .returning();
-    return created;
+    return result;
   }
 
   async deleteKycDraft(userId: string, submissionType: string): Promise<void> {
