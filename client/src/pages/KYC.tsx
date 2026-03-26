@@ -392,6 +392,7 @@ export default function KYC() {
     if (sd.passportExpiryDate) setPassportExpiryDate(sd.passportExpiryDate);
     // Restore all corporate fields
     if (sd.corporateStep !== undefined) setCorporateStep(sd.corporateStep);
+    if (sd.corporateRole) setCorporateRole(sd.corporateRole as 'importer' | 'exporter' | 'both');
     if (sd.companyName) setCompanyName(sd.companyName);
     if (sd.corporateRegNumber) setCorporateRegNumber(sd.corporateRegNumber);
     if (sd.incorporationDate) setIncorporationDate(sd.incorporationDate);
@@ -431,7 +432,7 @@ export default function KYC() {
           personalCity, personalAddress, personalPostalCode, personalNationality,
           personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
           passportExpiryDate,
-          corporateStep, companyName, corporateRegNumber, incorporationDate,
+          corporateStep, companyName, corporateRole, corporateRegNumber, incorporationDate,
           countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
           headOfficeAddress, telephoneNumber, website, emailAddress,
           tradingContactName, tradingContactEmail, tradingContactPhone,
@@ -463,7 +464,7 @@ export default function KYC() {
     tradingContactName, tradingContactEmail, tradingContactPhone,
     financeContactName, financeContactEmail, financeContactPhone,
     beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-    tradeLicenseExpiryDate, directorPassportExpiryDate, user?.id, kycStorageKey, serverDraftFetched,
+    tradeLicenseExpiryDate, directorPassportExpiryDate, corporateRole, user?.id, kycStorageKey, serverDraftFetched,
   ]);
 
   const clearKycDraft = () => {
