@@ -1774,6 +1774,19 @@ export async function registerRoutes(
           } catch (e) { console.error('[Notification] Failed to create BNSL maturity notification:', e); }
         }
         
+        // Check payouts and advance state for past-due ones
+        const payouts = await storage.getPlanPayouts(plan.id);
+        for (const payout of payouts) {
+          if (payout.status !== 'Scheduled') continue;
+          const payoutDate = new Date(payout.scheduledDate);
+          payoutDate.setHours(0, 0, 0, 0);
+          if (payoutDate < today) {
+            // Past due: advance payout to Processing so admin can action it
+            await storage.updateBnslPayout(payout.id, { status: 'Processing' });
+            payoutsProcessed++;
+            console.log(`[BNSL Auto-Process] Payout #${payout.sequence} for plan ${plan.contractId} marked as Processing`);
+          }
+        }
         // BNSL reminder/overdue emails are handled by the dedicated daily BNSL reminder job
         // (server/jobs/bnsl-reminder.job.ts) — no email logic here.
       }
