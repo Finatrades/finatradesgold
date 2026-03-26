@@ -631,10 +631,13 @@ export default function BNSLManagement() {
                  </Button>
                </div>
                {engineStatus && (
-                 <div className="flex gap-3 text-xs mt-1">
+                 <div className="flex flex-wrap gap-2 text-xs mt-1">
                    <span className="text-green-700 font-semibold">{engineStatus.processed} paid</span>
                    <span className="text-red-600 font-semibold">{engineStatus.failed} failed</span>
                    <span className="text-amber-700">{engineStatus.maturing} maturing</span>
+                   {engineStatus.highRiskFlagged > 0 && (
+                     <span className="text-red-700 font-bold">⚠ {engineStatus.highRiskFlagged} high-risk</span>
+                   )}
                  </div>
                )}
              </CardContent>

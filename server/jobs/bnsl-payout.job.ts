@@ -136,6 +136,23 @@ export async function runBnslPayoutEngine(
         await cacheSet(idempotencyKey, '1', 60 * 24 * 60 * 60);
         stats.processed++;
         console.log(`[BNSL Payout Engine] Paid #${payout.sequence} for plan ${plan.contractId}: ${gramsCredited.toFixed(4)}g`);
+
+        // Notify user of successful payout credit
+        const planUser = await storage.getUser(plan.userId).catch(() => null);
+        if (planUser?.email) {
+          const remainingUsd = parseFloat(plan.remainingMarginUsd?.toString() || '0') - monetaryAmount;
+          const freshPayouts = await storage.getPlanPayouts(plan.id).catch(() => []);
+          const nextPayout = freshPayouts.find(p => p.status === 'Scheduled');
+          sendEmail(planUser.email, EMAIL_TEMPLATES.BNSL_PAYMENT_RECEIVED, {
+            user_name: `${planUser.firstName || ''} ${planUser.lastName || ''}`.trim() || 'Valued Partner',
+            plan_name: plan.contractId,
+            amount: monetaryAmount.toFixed(2),
+            remaining_balance: Math.max(0, remainingUsd).toFixed(2),
+            next_due_date: nextPayout?.scheduledDate
+              ? new Date(nextPayout.scheduledDate).toLocaleDateString()
+              : 'All payments settled',
+          }).catch(err => console.error('[BNSL Payout Engine] User email failed:', err));
+        }
       } catch (err) {
         console.error(`[BNSL Payout Engine] Failed payout ${payout.id} for plan ${plan.contractId}:`, err);
         await storage.updateBnslPayout(payout.id, { status: 'Failed' }).catch(() => null);
