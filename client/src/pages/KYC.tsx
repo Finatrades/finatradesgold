@@ -157,7 +157,16 @@ export default function KYC() {
     enabled: !!user?.id
   });
   
-  const existingSubmission = existingKycData?.submission;
+  interface KycSubmission {
+    id?: string;
+    status?: string;
+    userId?: string;
+    changeRequestedSections?: string[];
+    personalInformation?: Record<string, string>;
+    companyName?: string;
+    [key: string]: unknown;
+  }
+  const existingSubmission: KycSubmission | undefined = existingKycData?.submission;
 
   const isChangesRequested = existingSubmission?.status === 'Changes Requested';
   const isResubmitMode = isChangesRequested && location.includes('resubmit=true');
@@ -187,7 +196,7 @@ export default function KYC() {
 
   // Primary source: changeRequestedSections persisted on the submission by admin review.
   // Fallback: derive from sectionReviews query (backward compat).
-  const submissionChangeRequestedSections: string[] = (existingSubmission as any)?.changeRequestedSections || [];
+  const submissionChangeRequestedSections: string[] = existingSubmission?.changeRequestedSections || [];
   const changeRequestedSections: string[] = submissionChangeRequestedSections.length > 0
     ? submissionChangeRequestedSections
     : rejectedSections.map(r => r.sectionName);

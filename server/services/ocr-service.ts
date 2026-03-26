@@ -418,9 +418,10 @@ If a field cannot be read, use null. Do not include explanations.`;
     const extractedName: string | null = extracted.full_name || null;
     const extractedDob: string | null = extracted.date_of_birth || null;
 
-    const similarity = extractedName ? nameSimilarity(extractedName, declaredName) : 0;
-    const nameMismatch = similarity < 0.8;
-    const dobMismatch = !!extractedDob && !!declaredDob && extractedDob !== declaredDob;
+    // Only flag mismatch when both extracted and declared values are present (avoid false positives on unreadable docs)
+    const similarity = (extractedName && declaredName) ? nameSimilarity(extractedName, declaredName) : 1;
+    const nameMismatch = !!(extractedName && declaredName && similarity < 0.8);
+    const dobMismatch = !!(extractedDob && declaredDob && extractedDob !== declaredDob);
 
     return { checked: true, nameMismatch, dobMismatch, extractedName, extractedDob, similarity, checkedAt };
   } catch (err) {
