@@ -1,7 +1,10 @@
 import OpenAI from 'openai';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>;
+const _pdfParseMod = require('pdf-parse');
+// pdf-parse is CJS — unwrap .default if the bundler wraps it
+const pdfParse: (buffer: Buffer) => Promise<{ text: string; numpages: number }> =
+  typeof _pdfParseMod === 'function' ? _pdfParseMod : _pdfParseMod.default ?? _pdfParseMod;
 import { getFromR2, isR2Configured } from '../r2-storage';
 import Tesseract from 'tesseract.js';
 import { parse as parseMrz } from 'mrz';
@@ -442,7 +445,23 @@ Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, rec
   if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
     const parsed = await pdfParse(buffer);
     const text = parsed?.text?.trim() || '';
-    if (text.length < 30) throw new Error('PDF text too short — may be a scanned image PDF');
+    if (text.length < 30) {
+      // Scanned/image-only PDF — no extractable text, return manual-review placeholder
+      console.warn('[KYC OCR] Scanned PDF detected (no text). Marking for manual review.');
+      return {
+        is_identity_document: true,
+        full_name: null,
+        date_of_birth: null,
+        nationality: null,
+        document_number: null,
+        expiry_date: null,
+        document_type: null,
+        issue_date: null,
+        issuing_country: null,
+        address: null,
+        sex: null,
+      };
+    }
     response = await visionClient.chat.completions.create({
       model: textModel,
       messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 4000)}` }],

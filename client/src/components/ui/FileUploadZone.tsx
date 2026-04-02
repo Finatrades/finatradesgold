@@ -2,6 +2,27 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).href;
+
+async function pdfFirstPageToJpegBase64(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(1);
+  const scale = 2.5;
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d')!;
+  await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  return dataUrl.split(',')[1];
+}
 
 export interface ScanFields {
   is_identity_document?: boolean;
@@ -102,17 +123,42 @@ export function FileUploadZone({
 
   const callOcrApi = useCallback(async (f: File) => {
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          const b64 = result.split(',')[1];
-          if (b64) resolve(b64);
-          else reject(new Error('Failed to read file'));
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(f);
-      });
+      // For PDFs: render first page to JPEG so Groq vision can read any PDF type
+      let base64: string;
+      let mimeType: string;
+      if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+        console.log('[OCR] PDF detected — rendering first page to JPEG for vision scan...');
+        try {
+          base64 = await pdfFirstPageToJpegBase64(f);
+          mimeType = 'image/jpeg';
+          console.log('[OCR] PDF rendered to JPEG, base64 length:', base64.length);
+        } catch (pdfErr) {
+          console.warn('[OCR] PDF render failed, falling back to raw PDF:', pdfErr instanceof Error ? pdfErr.message : String(pdfErr));
+          base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const b64 = (e.target?.result as string).split(',')[1];
+              if (b64) resolve(b64); else reject(new Error('Failed to read file'));
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+          });
+          mimeType = 'application/pdf';
+        }
+      } else {
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            const b64 = result.split(',')[1];
+            if (b64) resolve(b64);
+            else reject(new Error('Failed to read file'));
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+        mimeType = f.type || 'image/jpeg';
+      }
 
       // Fetch CSRF token from the server (same approach as Login/Security pages)
       let csrfToken: string | null = null;
@@ -131,11 +177,11 @@ export function FileUploadZone({
 
       const bodyStr = JSON.stringify({
         base64,
-        mimeType: f.type || 'image/jpeg',
+        mimeType,
         declaredName: declaredName || undefined,
         declaredDob: declaredDob || undefined,
       });
-      console.log('[OCR] Sending scan request, payload size:', bodyStr.length, 'bytes, mimeType:', f.type);
+      console.log('[OCR] Sending scan request, payload size:', bodyStr.length, 'bytes, mimeType:', mimeType);
 
       const resp = await fetch('/api/kyc/scan-document', {
         method: 'POST',
