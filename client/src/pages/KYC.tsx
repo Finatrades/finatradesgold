@@ -975,12 +975,13 @@ export default function KYC() {
   }
   
   // Show status page if user has already submitted KYC and it's being reviewed
-  if (existingSubmission && ['Pending Review', 'Escalated', 'In Review'].includes(existingSubmission.status)) {
+  if (existingSubmission && ['In Progress', 'Pending Review', 'Escalated', 'In Review'].includes(existingSubmission.status)) {
     const isCorporate = user?.accountType === 'business';
     const expectedDays = isCorporate ? '5 business days' : '24 hours';
     const statusLabel = existingSubmission.status === 'Escalated' ? 'Under Enhanced Review' 
       : existingSubmission.status === 'Pending Review' ? 'Pending Review'
       : existingSubmission.status === 'In Review' ? 'Under Active Review'
+      : existingSubmission.status === 'In Progress' ? 'Pending Review'
       : 'Under Review';
     
     return (
