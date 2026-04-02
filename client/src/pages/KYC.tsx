@@ -27,6 +27,75 @@ interface BeneficialOwner {
 }
 
 
+// Normalize OCR-returned nationality (MRZ code or adjective) → lowercase country name
+function normalizeNationalityToCountry(raw: string): string {
+  const r = raw.toLowerCase().trim().replace(/\s+/g, ' ');
+  const mrzMap: Record<string, string> = {
+    pak: 'pakistan', ind: 'india', gbr: 'united kingdom', usa: 'united states',
+    are: 'united arab emirates', sau: 'saudi arabia', bgd: 'bangladesh',
+    egy: 'egypt', phl: 'philippines', lka: 'sri lanka', nga: 'nigeria',
+    ken: 'kenya', zaf: 'south africa', mys: 'malaysia', sgp: 'singapore',
+    aus: 'australia', can: 'canada', deu: 'germany', fra: 'france',
+    ita: 'italy', esp: 'spain', nld: 'netherlands', bel: 'belgium',
+    che: 'switzerland', swe: 'sweden', nor: 'norway', dnk: 'denmark',
+    rus: 'russia', chn: 'china', jpn: 'japan', kor: 'south korea',
+    tur: 'turkey', irn: 'iran', irq: 'iraq', jor: 'jordan', lbn: 'lebanon',
+    mar: 'morocco', tun: 'tunisia', dza: 'algeria', eth: 'ethiopia',
+    gha: 'ghana', uga: 'uganda', tza: 'tanzania', zmb: 'zambia',
+    zwe: 'zimbabwe', mex: 'mexico', bra: 'brazil', arg: 'argentina',
+    col: 'colombia', ven: 'venezuela', per: 'peru', chl: 'chile',
+    nzl: 'new zealand', idn: 'indonesia', tha: 'thailand', vnm: 'vietnam',
+    mmr: 'myanmar', kaz: 'kazakhstan', uzb: 'uzbekistan', aze: 'azerbaijan',
+    ukr: 'ukraine', pol: 'poland', rou: 'romania', hun: 'hungary',
+    cze: 'czech republic', svk: 'slovakia', hrv: 'croatia', srb: 'serbia',
+    prt: 'portugal', grc: 'greece', fin: 'finland', irl: 'ireland',
+    isr: 'israel', kwt: 'kuwait', qat: 'qatar', bhr: 'bahrain', omn: 'oman',
+    npl: 'nepal', afg: 'afghanistan', kwt2: 'kuwait', yem: 'yemen',
+  };
+  if (r.length === 3 && mrzMap[r]) return mrzMap[r];
+  const adjectiveMap: Record<string, string> = {
+    pakistani: 'pakistan', indian: 'india', british: 'united kingdom',
+    american: 'united states', emirati: 'united arab emirates',
+    'saudi arabian': 'saudi arabia', saudi: 'saudi arabia',
+    bangladeshi: 'bangladesh', egyptian: 'egypt',
+    filipino: 'philippines', philippine: 'philippines',
+    srilankan: 'sri lanka', 'sri lankan': 'sri lanka',
+    nigerian: 'nigeria', kenyan: 'kenya', 'south african': 'south africa',
+    malaysian: 'malaysia', singaporean: 'singapore', australian: 'australia',
+    canadian: 'canada', german: 'germany', french: 'france',
+    italian: 'italy', spanish: 'spain', dutch: 'netherlands',
+    belgian: 'belgium', swiss: 'switzerland', swedish: 'sweden',
+    norwegian: 'norway', danish: 'denmark', russian: 'russia',
+    chinese: 'china', japanese: 'japan', 'south korean': 'south korea', korean: 'south korea',
+    turkish: 'turkey', iranian: 'iran', iraqi: 'iraq',
+    jordanian: 'jordan', lebanese: 'lebanon', moroccan: 'morocco',
+    tunisian: 'tunisia', algerian: 'algeria', ethiopian: 'ethiopia',
+    ghanaian: 'ghana', ugandan: 'uganda', tanzanian: 'tanzania',
+    zambian: 'zambia', zimbabwean: 'zimbabwe', mexican: 'mexico',
+    brazilian: 'brazil', argentinian: 'argentina', argentinean: 'argentina',
+    colombian: 'colombia', venezuelan: 'venezuela', peruvian: 'peru',
+    chilean: 'chile', 'new zealander': 'new zealand',
+    indonesian: 'indonesia', thai: 'thailand', vietnamese: 'vietnam',
+    burmese: 'myanmar', kazakh: 'kazakhstan', uzbek: 'uzbekistan',
+    azerbaijani: 'azerbaijan', ukrainian: 'ukraine', polish: 'poland',
+    romanian: 'romania', hungarian: 'hungary', czech: 'czech republic',
+    slovak: 'slovakia', croatian: 'croatia', serbian: 'serbia',
+    portuguese: 'portugal', greek: 'greece', finnish: 'finland',
+    irish: 'ireland', israeli: 'israel', kuwaiti: 'kuwait',
+    qatari: 'qatar', bahraini: 'bahrain', omani: 'oman', nepali: 'nepal',
+    afghan: 'afghanistan', yemeni: 'yemen',
+  };
+  if (adjectiveMap[r]) return adjectiveMap[r];
+  return r;
+}
+
+function nationalityMatches(declared: string, scanned: string): boolean {
+  if (!declared || !scanned) return true;
+  const d = declared.toLowerCase().trim();
+  const s = normalizeNationalityToCountry(scanned);
+  return d === s || d.includes(s) || s.includes(d);
+}
+
 const COUNTRIES = [
   { code: 'AF', name: 'Afghanistan' }, { code: 'AL', name: 'Albania' }, { code: 'DZ', name: 'Algeria' },
   { code: 'AD', name: 'Andorra' }, { code: 'AO', name: 'Angola' }, { code: 'AG', name: 'Antigua and Barbuda' },
@@ -278,6 +347,7 @@ export default function KYC() {
   // Document details (auto-filled from scan)
   const [passportNumber, setPassportNumber] = useState(savedDraft?.passportNumber || '');
   const [passportExpiryDate, setPassportExpiryDate] = useState(savedDraft?.passportExpiryDate || '');
+  const [passportNationality, setPassportNationality] = useState(savedDraft?.passportNationality || '');
 
   // KYC personal info real-time validation
   const [kycFieldErrors, setKycFieldErrors] = useState<Record<string, string>>({});
@@ -460,7 +530,7 @@ export default function KYC() {
     personalFullName, personalEmail, personalPhone, personalCountry,
     personalCity, personalAddress, personalPostalCode, personalNationality,
     personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-    passportNumber, passportExpiryDate,
+    passportNumber, passportExpiryDate, passportNationality,
     corporateStep, companyName, corporateRole, corporateRegNumber, incorporationDate,
     countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
     headOfficeAddress, telephoneNumber, website, emailAddress,
@@ -1285,7 +1355,8 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isIdentityDocsComplete = isSectionLocked('documents') || (!!passportFile && !!passportExpiryDate);
+    const nationalityOk = !passportNationality || nationalityMatches(personalNationality, passportNationality);
+    const isIdentityDocsComplete = isSectionLocked('documents') || (!!passportFile && !!passportExpiryDate && nationalityOk);
     const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
@@ -1693,8 +1764,22 @@ export default function KYC() {
                               if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
                               if (fields.document_number && !passportNumber) setPassportNumber(fields.document_number);
                               if (fields.expiry_date && !passportExpiryDate) setPassportExpiryDate(fields.expiry_date);
+                              if (fields.nationality) setPassportNationality(fields.nationality);
                             }}
                           />
+
+                          {passportNationality && personalNationality && !nationalityMatches(personalNationality, passportNationality) && (
+                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-red-700">Nationality mismatch</p>
+                                <p className="text-xs text-red-600 mt-0.5">
+                                  Your passport shows <span className="font-semibold">{passportNationality}</span> but you declared <span className="font-semibold">{personalNationality}</span> in Step 1.
+                                  Please go back and correct your nationality, or upload the correct passport.
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
