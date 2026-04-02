@@ -1688,11 +1688,18 @@ export default function KYC() {
                             onFile={setIdFrontFile}
                             testId="input-id-front"
                             enableOcr
+                            expectedDocType="national_id"
                             declaredName={personalFullName}
                             declaredDob={personalDateOfBirth}
                             onScanResult={(fields) => {
                               if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
                               if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
+                            }}
+                            onWrongDocType={(detectedType, fields) => {
+                              if (detectedType === 'passport' && idFrontFile && !passportFile) {
+                                setPassportFile(idFrontFile);
+                                setIdFrontFile(null);
+                              }
                             }}
                           />
 
@@ -1717,6 +1724,7 @@ export default function KYC() {
                             onFile={setPassportFile}
                             testId="input-passport"
                             enableOcr
+                            expectedDocType="passport"
                             declaredName={personalFullName}
                             declaredDob={personalDateOfBirth}
                             onScanResult={(fields) => {

@@ -26,6 +26,7 @@ async function pdfFirstPageToJpegBase64(file: File): Promise<string> {
 
 export interface ScanFields {
   is_identity_document?: boolean;
+  document_type?: 'passport' | 'national_id' | 'driver_licence' | null;
   full_name: string | null;
   date_of_birth: string | null;
   nationality: string | null;
@@ -53,12 +54,20 @@ interface FileUploadZoneProps {
   onFile: (file: File | null) => void;
   testId?: string;
   enableOcr?: boolean;
+  expectedDocType?: 'national_id' | 'passport' | 'any';
   declaredName?: string;
   declaredDob?: string;
   onScanResult?: (result: ScanFields, verification?: ScanVerification | null) => void;
+  onWrongDocType?: (detectedType: string, fields: ScanFields) => void;
 }
 
 type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete' | 'error';
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  passport: 'Passport',
+  national_id: 'National ID',
+  driver_licence: 'Driver Licence',
+};
 
 export function FileUploadZone({
   label,
@@ -71,9 +80,11 @@ export function FileUploadZone({
   onFile,
   testId,
   enableOcr = false,
+  expectedDocType = 'any',
   declaredName,
   declaredDob,
   onScanResult,
+  onWrongDocType,
 }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -83,6 +94,7 @@ export function FileUploadZone({
   const [progress, setProgress] = useState(0);
   const [scanFields, setScanFields] = useState<ScanFields | null>(null);
   const [verification, setVerification] = useState<ScanVerification | null>(null);
+  const [wrongSlot, setWrongSlot] = useState<boolean>(false);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -100,6 +112,7 @@ export function FileUploadZone({
       setPreview(null);
       setScanFields(null);
       setVerification(null);
+      setWrongSlot(false);
       if (progressRef.current) clearInterval(progressRef.current);
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     }
@@ -211,6 +224,18 @@ export function FileUploadZone({
         setError('This does not appear to be a valid identity document. Please upload a passport, national ID, or driver\'s licence.');
         onFile(null);
         return;
+      }
+
+      // Detect wrong-slot: e.g. passport uploaded to the ID (national_id) slot
+      const detectedType = fields.document_type ?? null;
+      let isWrongSlot = false;
+      if (detectedType && expectedDocType !== 'any') {
+        isWrongSlot = (expectedDocType === 'national_id' && detectedType === 'passport')
+          || (expectedDocType === 'passport' && detectedType === 'national_id');
+      }
+      setWrongSlot(isWrongSlot);
+      if (isWrongSlot && onWrongDocType && detectedType) {
+        onWrongDocType(detectedType, fields);
       }
 
       const verif: ScanVerification | null = data.verification ?? null;
@@ -445,8 +470,26 @@ export function FileUploadZone({
                 )}
               </div>
 
+              {/* Wrong-slot advisory — passport uploaded to ID slot */}
+              {wrongSlot && scanFields?.document_type === 'passport' && expectedDocType === 'national_id' && (
+                <div className="flex items-start gap-1.5 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs font-sans">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-amber-700 dark:text-amber-400">
+                    <strong>Passport detected.</strong> This slot is for a national ID or driver's licence. If you only have a passport, upload it in the <strong>Passport</strong> section below — or keep it here and we'll note it for review.
+                  </p>
+                </div>
+              )}
+
               {enableOcr && scanFields && (
                 <div className="rounded-lg border border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-y divide-gray-100 dark:divide-green-900/40 text-xs overflow-hidden font-mono">
+                  {/* Document type row */}
+                  {scanFields.document_type ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">TYPE</span>
+                      <span className="font-semibold text-foreground">{DOC_TYPE_LABELS[scanFields.document_type] ?? scanFields.document_type}</span>
+                    </div>
+                  ) : null}
+
                   {/* Name row */}
                   {scanFields.full_name ? (
                     <div className="flex items-center justify-between px-3 py-2 gap-3">
@@ -460,8 +503,8 @@ export function FileUploadZone({
                             <CircleCheck className="w-3.5 h-3.5" /> MATCHED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0">
-                            <CircleX className="w-3.5 h-3.5" /> DIFFERS
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0" title={`${verification.similarity ?? 0}% match with your Step 1 name`}>
+                            <CircleX className="w-3.5 h-3.5" /> DIFFERS{verification.similarity != null ? ` (${verification.similarity}%)` : ''}
                           </span>
                         )
                       ) : null}
@@ -481,7 +524,7 @@ export function FileUploadZone({
                             <CircleCheck className="w-3.5 h-3.5" /> MATCHED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0">
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0" title="Date of birth on document differs from Step 1">
                             <CircleX className="w-3.5 h-3.5" /> DIFFERS
                           </span>
                         )
@@ -529,7 +572,7 @@ export function FileUploadZone({
                     <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 font-sans">
                       <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <p className="text-amber-700 dark:text-amber-400">
-                        Details don't fully match what you entered in Step 1. Please verify your name and date of birth are correct before submitting.
+                        Details don't fully match Step 1.{verification?.nameMatch === false && verification?.similarity != null && ` Name similarity: ${verification.similarity}%.`} Please verify your name and date of birth are correct — our team will review any discrepancies.
                       </p>
                     </div>
                   )}

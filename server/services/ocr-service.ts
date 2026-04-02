@@ -409,9 +409,10 @@ async function extractKycFieldsFromDocument(
   base64: string | null,
   mimeType: string,
   documentUrl: string,
-): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null; nationality: string | null; document_number: string | null; expiry_date: string | null }> {
+): Promise<{ is_identity_document: boolean; document_type: string | null; full_name: string | null; date_of_birth: string | null; nationality: string | null; document_number: string | null; expiry_date: string | null }> {
   const schema = `{
   "is_identity_document": boolean,
+  "document_type": "passport" | "national_id" | "driver_licence" | null,
   "full_name": string | null,
   "date_of_birth": "YYYY-MM-DD" | null,
   "nationality": string | null,
@@ -422,12 +423,14 @@ async function extractKycFieldsFromDocument(
 Determine if this is a government-issued identity document (passport, national ID, or driver licence).
 Extract all available fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
 ${schema}
+Set "document_type" to "passport", "national_id", or "driver_licence" based on the document.
 Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, receipt, certificate). No explanations.`;
 
   const imagePrompt = `You are a KYC document analyst. Examine this identity document image.
 Determine if this is a government-issued identity document (passport, national ID, or driver licence).
 Extract all visible fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
 ${schema}
+Set "document_type" to "passport", "national_id", or "driver_licence" based on what you see.
 Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, receipt, photo, certificate). No explanations.`;
 
   // Prefer Groq (free, 1k req/day) → fall back to OpenAI if Groq not configured
@@ -490,8 +493,10 @@ Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, rec
   const content = response.choices[0]?.message?.content || '{}';
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+  const validDocTypes = ['passport', 'national_id', 'driver_licence'];
   return {
     is_identity_document: parsed.is_identity_document !== false,
+    document_type: validDocTypes.includes(parsed.document_type) ? parsed.document_type : null,
     full_name: parsed.full_name ?? null,
     date_of_birth: parsed.date_of_birth ?? null,
     nationality: parsed.nationality ?? null,
@@ -505,6 +510,7 @@ Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, rec
 
 export interface TieredScanResult {
   is_identity_document: boolean;
+  document_type: string | null;
   full_name: string | null;
   date_of_birth: string | null;
   nationality: string | null;
@@ -547,8 +553,14 @@ function findAndParseMrz(text: string): TieredScanResult | null {
           const firstName = (f.firstName || '').replace(/</g, ' ').trim();
           const lastName = (f.lastName || '').replace(/</g, ' ').trim();
           const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+          // MRZ document type: TD1/TD2 = national_id, TD3/MRP = passport
+          const docCode = (f.documentCode || '').toUpperCase();
+          const mrzDocType = docCode.startsWith('P') ? 'passport'
+            : (docCode.startsWith('I') || docCode.startsWith('A') || docCode.startsWith('C')) ? 'national_id'
+            : 'passport';
           return {
             is_identity_document: true,
+            document_type: mrzDocType,
             full_name: fullName,
             date_of_birth: formatMrzDate(f.birthDate),
             nationality: f.nationalityCode || null,
@@ -613,6 +625,7 @@ export async function scanDocumentBase64(
   const gptResult = await extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
   return {
     is_identity_document: gptResult.is_identity_document,
+    document_type: gptResult.document_type,
     full_name: gptResult.full_name,
     date_of_birth: gptResult.date_of_birth,
     nationality: gptResult.nationality,
