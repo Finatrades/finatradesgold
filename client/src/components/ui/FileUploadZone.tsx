@@ -114,8 +114,17 @@ export function FileUploadZone({
         reader.readAsDataURL(f);
       });
 
-      const csrfMatch = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-      const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : null;
+      // Fetch CSRF token from the server (same approach as Login/Security pages)
+      let csrfToken: string | null = null;
+      try {
+        const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
+        const csrfData = await csrfRes.json();
+        csrfToken = csrfData?.csrfToken ?? null;
+      } catch {
+        // fallback: try cookie
+        const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+        csrfToken = m ? decodeURIComponent(m[1]) : null;
+      }
 
       const resp = await fetch('/api/kyc/scan-document', {
         method: 'POST',
@@ -151,7 +160,8 @@ export function FileUploadZone({
       setScanFields(fields);
       setVerification(verif);
       onScanResult?.(fields, verif);
-    } catch {
+    } catch (err) {
+      console.error('[OCR] Scan failed:', err);
       setScanFields({ full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null });
       setVerification(null);
     }

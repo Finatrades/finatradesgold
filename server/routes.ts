@@ -5589,6 +5589,7 @@ export async function registerRoutes(
   app.post("/api/kyc/scan-document", ensureAuthenticated, async (req, res) => {
     try {
       const { base64, mimeType, declaredName, declaredDob } = req.body;
+      console.log(`[KYC Scan] Request received — mimeType: ${mimeType}, base64 length: ${base64?.length ?? 0}, user: ${req.session?.userId}`);
       if (!base64 || typeof base64 !== 'string') {
         return res.status(400).json({ error: 'base64 document data required' });
       }
