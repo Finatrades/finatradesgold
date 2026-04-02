@@ -444,11 +444,13 @@ export default function Dashboard() {
             data-testid="button-deposit-gold-quick">
             <Vault className="w-3.5 h-3.5" /> Deposit Gold
           </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 hover:shadow-md hover:shadow-indigo-100/50 transition-all duration-200"
-            data-testid="button-create-trade-quick">
-            <Landmark className="w-3.5 h-3.5" /> Create Trade
-          </motion.button>
+          {isBusinessUser && (
+            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 hover:shadow-md hover:shadow-indigo-100/50 transition-all duration-200"
+              data-testid="button-create-trade-quick">
+              <Landmark className="w-3.5 h-3.5" /> Create Trade
+            </motion.button>
+          )}
         </motion.div>
 
 
