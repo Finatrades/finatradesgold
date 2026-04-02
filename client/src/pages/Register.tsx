@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building, User, Eye, EyeOff, Camera, RefreshCw } from 'lucide-react';
+import { Building, User, Eye, EyeOff, Camera, RefreshCw, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { FormWizard } from '@/components/ui/FormWizard';
 import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
@@ -39,6 +40,8 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [registerStep, setRegisterStep] = useState<'details' | 'photo'>('details');
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -293,11 +296,26 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
     return true;
   };
 
+  const advanceToPhoto = () => {
+    if (!validateForm()) return;
+    if (!formData.agreedToTerms) {
+      toast.error("Please agree to the Terms and Conditions");
+      return;
+    }
+    setRegisterStep('photo');
+    startCamera();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (registerStep === 'details') {
+      advanceToPhoto();
+      return;
+    }
+
     if (!validateForm()) return;
-    
     if (!formData.agreedToTerms) {
       toast.error("Please agree to the Terms and Conditions");
       return;
@@ -351,7 +369,20 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
           </div>
 
         <Card className="p-6">
+          <div className="mb-6">
+            <FormWizard
+              orientation="horizontal"
+              steps={[
+                { id: 'details', label: 'Account Details', isComplete: registerStep === 'photo' },
+                { id: 'photo', label: 'Profile Photo' },
+              ]}
+              currentStep={registerStep}
+              data-testid="register-wizard"
+            />
+          </div>
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            {registerStep === 'details' && (<>
             <div className="flex rounded-lg border overflow-hidden" data-testid="account-type-toggle">
               <button
                 type="button"
@@ -540,9 +571,60 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
               )}
             </div>
 
+            <div>
+              <Label htmlFor="referralCode">Referral Code (optional)</Label>
+              <Input
+                id="referralCode"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="Enter referral code if you have one"
+                className="h-12"
+                data-testid="input-referral-code"
+              />
+              {referralCode && (
+                <p className="text-xs text-green-600 mt-1">Referral code applied</p>
+              )}
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="terms"
+                checked={formData.agreedToTerms}
+                onCheckedChange={(checked) => setFormData({ ...formData, agreedToTerms: checked as boolean })}
+                data-testid="checkbox-terms"
+              />
+              <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
+                I agree to the <Link href="/terms" className="text-primary hover:underline">Terms and Conditions</Link> and <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+              </Label>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white py-6 gap-2"
+              data-testid="button-next-photo"
+            >
+              <span className="font-bold">Next: Take Your Selfie</span>
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary font-semibold hover:underline">
+                Sign In
+              </Link>
+            </p>
+            </>)}
+
+            {registerStep === 'photo' && (<>
+            <div className="text-center mb-2">
+              <h3 className="font-semibold text-lg">Take Your Profile Selfie</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                This photo helps verify your identity. You can skip this step.
+              </p>
+            </div>
+
             <div className="border rounded-lg p-4">
-              <Label className="mb-3 block">Profile Selfie</Label>
-              
               {!profilePhoto && !cameraStream && (
                 <div className="text-center">
                   <Button
@@ -640,34 +722,6 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
               )}
             </div>
 
-            <div>
-              <Label htmlFor="referralCode">Referral Code (optional)</Label>
-              <Input
-                id="referralCode"
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                placeholder="Enter referral code if you have one"
-                className="h-12"
-                data-testid="input-referral-code"
-              />
-              {referralCode && (
-                <p className="text-xs text-green-600 mt-1">Referral code applied</p>
-              )}
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="terms"
-                checked={formData.agreedToTerms}
-                onCheckedChange={(checked) => setFormData({ ...formData, agreedToTerms: checked as boolean })}
-                data-testid="checkbox-terms"
-              />
-              <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
-                I agree to the <Link href="/terms" className="text-primary hover:underline">Terms and Conditions</Link> and <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
-              </Label>
-            </div>
-
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -677,12 +731,30 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
               {isSubmitting ? 'Creating Account...' : <span className="font-bold">Create Account</span>}
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/login" className="text-primary font-semibold hover:underline">
-                Sign In
-              </Link>
-            </p>
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { stopCamera(); setRegisterStep('details'); }}
+                className="gap-1.5 text-muted-foreground"
+                data-testid="button-back-details"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              {!profilePhoto && (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  data-testid="button-skip-photo"
+                >
+                  Skip photo
+                </Button>
+              )}
+            </div>
+            </>)}
           </form>
         </Card>
       </div>

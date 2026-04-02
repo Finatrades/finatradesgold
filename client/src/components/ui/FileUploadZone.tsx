@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Upload, X, File, CheckCircle, AlertCircle, Image } from 'lucide-react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 
@@ -14,6 +14,8 @@ interface FileUploadZoneProps {
   onFile: (file: File | null) => void;
   testId?: string;
 }
+
+type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete';
 
 export function FileUploadZone({
   label,
@@ -30,6 +32,48 @@ export function FileUploadZone({
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (progressRef.current) clearInterval(progressRef.current);
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!file) {
+      setScanStatus('idle');
+      setProgress(0);
+      setPreview(null);
+      if (progressRef.current) clearInterval(progressRef.current);
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    }
+  }, [file]);
+
+  const startProgressAnimation = useCallback(() => {
+    setScanStatus('uploading');
+    setProgress(0);
+    if (progressRef.current) clearInterval(progressRef.current);
+
+    progressRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) {
+          if (progressRef.current) clearInterval(progressRef.current);
+          setScanStatus('scanning');
+          scanTimerRef.current = setTimeout(() => {
+            setProgress(100);
+            setScanStatus('complete');
+          }, 800);
+          return 90;
+        }
+        return prev + Math.random() * 12 + 5;
+      });
+    }, 100);
+  }, []);
 
   const processFile = useCallback(
     (f: File) => {
@@ -54,8 +98,9 @@ export function FileUploadZone({
         setPreview(null);
       }
       onFile(f);
+      startProgressAnimation();
     },
-    [accept, maxSizeMB, onFile]
+    [accept, maxSizeMB, onFile, startProgressAnimation]
   );
 
   const handleDrop = useCallback(
@@ -77,8 +122,12 @@ export function FileUploadZone({
   const removeFile = () => {
     setPreview(null);
     setError(null);
+    setScanStatus('idle');
+    setProgress(0);
     onFile(null);
     if (inputRef.current) inputRef.current.value = '';
+    if (progressRef.current) clearInterval(progressRef.current);
+    if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
   };
 
   const typeLabels = accept
@@ -146,46 +195,88 @@ export function FileUploadZone({
           />
         </div>
       ) : (
-        <div className="border rounded-xl p-3 bg-green-50/40 dark:bg-green-950/20 border-green-200 dark:border-green-800 flex items-center gap-3 group">
-          {preview ? (
-            <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-border flex-shrink-0">
-              <img
-                src={preview}
-                alt="Preview"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+        <div
+          className={cn(
+            'border rounded-xl p-3 flex flex-col gap-2.5 group transition-colors',
+            scanStatus === 'complete'
+              ? 'bg-green-50/40 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+              : 'bg-muted/20 border-border'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            {preview ? (
+              <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-border flex-shrink-0">
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              </div>
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                <File className="w-7 h-7 text-muted-foreground" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                {scanStatus === 'complete' ? (
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                ) : (
+                  <ScanLine className="w-4 h-4 text-primary flex-shrink-0 animate-pulse" />
+                )}
+                <span className="text-sm font-medium truncate">{file.name}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {(file.size / 1024 / 1024).toFixed(2)} MB
+              </p>
             </div>
-          ) : (
-            <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-              <File className="w-7 h-7 text-muted-foreground" />
+            {!disabled && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFile();
+                }}
+                className="flex-shrink-0 text-muted-foreground hover:text-red-600 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove file"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+
+          {(scanStatus === 'uploading' || scanStatus === 'scanning') && (
+            <div className="space-y-1" data-testid={testId ? `${testId}-progress` : undefined}>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <ScanLine className="w-3 h-3 animate-pulse" />
+                  {scanStatus === 'uploading' ? 'Uploading…' : 'Scanning document…'}
+                </span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-200',
+                    scanStatus === 'scanning' ? 'bg-amber-500' : 'bg-primary'
+                  )}
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-              <span className="text-sm font-medium text-green-800 dark:text-green-400 truncate">
-                {file.name}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {(file.size / 1024 / 1024).toFixed(2)} MB
-            </p>
-          </div>
-          {!disabled && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeFile();
-              }}
-              className="flex-shrink-0 text-muted-foreground hover:text-red-600 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Remove file"
+
+          {scanStatus === 'complete' && (
+            <div
+              className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium"
+              data-testid={testId ? `${testId}-scan-complete` : undefined}
             >
-              <X className="w-4 h-4" />
-            </Button>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Document scan complete — ready for submission
+            </div>
           )}
         </div>
       )}
@@ -199,3 +290,5 @@ export function FileUploadZone({
     </div>
   );
 }
+
+export default FileUploadZone;

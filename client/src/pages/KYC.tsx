@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileUploadZone } from '@/components/ui/FileUploadZone';
+import { FormWizard, type WizardStep } from '@/components/ui/FormWizard';
+import { ConfirmationPanel, type ConfirmationSection } from '@/components/ui/ConfirmationPanel';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -281,6 +284,10 @@ export default function KYC() {
   
   // Document expiry dates (for notification reminders)
   const [passportExpiryDate, setPassportExpiryDate] = useState(savedDraft?.passportExpiryDate || '');
+
+  // KYC personal info real-time validation
+  const [kycFieldErrors, setKycFieldErrors] = useState<Record<string, string>>({});
+  const [kycTouched, setKycTouched] = useState<Record<string, boolean>>({});
   
   // Pre-fill data from user profile (only if no saved draft)
   useEffect(() => {
@@ -485,6 +492,55 @@ export default function KYC() {
     }
   }, [existingSubmission]);
   
+  // KYC field validation helpers
+  const validateKycField = useCallback((field: string, value: string): string => {
+    switch (field) {
+      case 'personalFullName':
+        return value.trim().length < 2 ? 'Full name is required' : '';
+      case 'personalEmail':
+        if (!value.trim()) return 'Email is required';
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Please enter a valid email address';
+      case 'personalPhone':
+        return value.trim().length < 5 ? 'Phone number is required' : '';
+      case 'personalDateOfBirth':
+        return !value ? 'Date of birth is required' : '';
+      case 'personalCity':
+        return value.trim().length < 2 ? 'City is required' : '';
+      case 'personalAddress':
+        return value.trim().length < 5 ? 'Address is required' : '';
+      default:
+        return '';
+    }
+  }, []);
+
+  const handleKycFieldChange = useCallback((field: string, value: string, setter: (v: string) => void) => {
+    setter(value);
+    if (kycTouched[field]) {
+      const err = validateKycField(field, value);
+      setKycFieldErrors(prev => ({ ...prev, [field]: err }));
+    }
+  }, [kycTouched, validateKycField]);
+
+  const handleKycFieldBlur = useCallback((field: string, value: string) => {
+    setKycTouched(prev => ({ ...prev, [field]: true }));
+    const err = validateKycField(field, value);
+    setKycFieldErrors(prev => ({ ...prev, [field]: err }));
+  }, [validateKycField]);
+
+  // useFormDraft for auto-saving personal KYC fields to localStorage
+  const kycDraftData = {
+    personalFullName, personalEmail, personalPhone, personalCountry,
+    personalCity, personalAddress, personalPostalCode, personalNationality,
+    personalOccupation, personalSourceOfFunds, personalDateOfBirth,
+    passportExpiryDate, finatradesStep,
+  };
+  useFormDraft({
+    key: `kyc_personal_draft_${user?.id || 'anon'}`,
+    data: kycDraftData,
+    debounceMs: 600,
+    enabled: !!user?.id && finatradesStep !== 'complete',
+  });
+
   // Liveness camera state (shared between modes)
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1345,34 +1401,40 @@ export default function KYC() {
             <div className="grid md:grid-cols-12 gap-8">
               
               {/* Sidebar Steps */}
-              <div className="md:col-span-4 space-y-4">
-                <StepItem 
-                  title="Personal Information"
-                  description="Your basic details" 
-                  icon={<User className="w-5 h-5" />} 
-                  isActive={finatradesStep === 'personal_info'} 
-                  isCompleted={currentStepIdx > 0}
-                />
-                <StepItem 
-                  title="Document Upload"
-                  description="ID and address proof" 
-                  icon={<FileText className="w-5 h-5" />} 
-                  isActive={finatradesStep === 'documents'} 
-                  isCompleted={currentStepIdx > 1}
-                />
-                <StepItem 
-                  title="Liveness Check"
-                  description="Verify your identity" 
-                  icon={<Camera className="w-5 h-5" />} 
-                  isActive={finatradesStep === 'liveness'} 
-                  isCompleted={!!capturedSelfie && currentStepIdx >= 2}
-                />
-                <StepItem 
-                  title="Review & Submit"
-                  description="Confirm and submit" 
-                  icon={<CheckCircle2 className="w-5 h-5" />} 
-                  isActive={finatradesStep === 'complete'} 
-                  isCompleted={isSubmitted}
+              <div className="md:col-span-4">
+                <FormWizard
+                  steps={[
+                    {
+                      id: 'personal_info',
+                      label: 'Personal Information',
+                      description: 'Your basic details',
+                      isComplete: currentStepIdx > 0,
+                    },
+                    {
+                      id: 'documents',
+                      label: 'Document Upload',
+                      description: 'ID and address proof',
+                      isComplete: currentStepIdx > 1,
+                    },
+                    {
+                      id: 'liveness',
+                      label: 'Liveness Check',
+                      description: 'Verify your identity',
+                      isComplete: !!capturedSelfie && currentStepIdx >= 2,
+                    },
+                    {
+                      id: 'complete',
+                      label: 'Review & Submit',
+                      description: 'Confirm and submit',
+                      isComplete: isSubmitted,
+                    },
+                  ] as WizardStep[]}
+                  currentStep={finatradesStep}
+                  onStepChange={(id) => {
+                    const stepOrder = ['personal_info', 'documents', 'liveness', 'complete'];
+                    const targetIdx = stepOrder.indexOf(id);
+                    if (targetIdx <= currentStepIdx) setFinatradesStep(id as typeof finatradesStep);
+                  }}
                 />
               </div>
 
@@ -1405,11 +1467,14 @@ export default function KYC() {
                             <Label>Full Name <span className="text-red-500">*</span></Label>
                             <Input
                               value={personalFullName}
-                              onChange={(e) => setPersonalFullName(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalFullName', e.target.value, setPersonalFullName)}
+                              onBlur={(e) => handleKycFieldBlur('personalFullName', e.target.value)}
                               placeholder="Enter your full legal name"
                               disabled={isSectionLocked('personal_information')}
+                              className={kycFieldErrors.personalFullName ? 'border-red-500' : kycTouched.personalFullName && !kycFieldErrors.personalFullName ? 'border-green-500' : ''}
                               data-testid="input-full-name"
                             />
+                            {kycFieldErrors.personalFullName && <p className="text-red-500 text-xs mt-1" data-testid="error-full-name">{kycFieldErrors.personalFullName}</p>}
                           </div>
                           
                           <div>
@@ -1417,20 +1482,26 @@ export default function KYC() {
                             <Input
                               type="email"
                               value={personalEmail}
-                              onChange={(e) => setPersonalEmail(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalEmail', e.target.value, setPersonalEmail)}
+                              onBlur={(e) => handleKycFieldBlur('personalEmail', e.target.value)}
                               placeholder="your@email.com"
+                              className={kycFieldErrors.personalEmail ? 'border-red-500' : kycTouched.personalEmail && !kycFieldErrors.personalEmail ? 'border-green-500' : ''}
                               data-testid="input-email"
                             />
+                            {kycFieldErrors.personalEmail && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-email">{kycFieldErrors.personalEmail}</p>}
                           </div>
                           
                           <div>
                             <Label>Phone <span className="text-red-500">*</span></Label>
                             <Input
                               value={personalPhone}
-                              onChange={(e) => setPersonalPhone(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalPhone', e.target.value, setPersonalPhone)}
+                              onBlur={(e) => handleKycFieldBlur('personalPhone', e.target.value)}
                               placeholder="+1 234 567 8900"
+                              className={kycFieldErrors.personalPhone ? 'border-red-500' : kycTouched.personalPhone && !kycFieldErrors.personalPhone ? 'border-green-500' : ''}
                               data-testid="input-phone"
                             />
+                            {kycFieldErrors.personalPhone && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-phone">{kycFieldErrors.personalPhone}</p>}
                           </div>
                           
                           <div>
@@ -1438,9 +1509,12 @@ export default function KYC() {
                             <Input
                               type="date"
                               value={personalDateOfBirth}
-                              onChange={(e) => setPersonalDateOfBirth(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalDateOfBirth', e.target.value, setPersonalDateOfBirth)}
+                              onBlur={(e) => handleKycFieldBlur('personalDateOfBirth', e.target.value)}
+                              className={kycFieldErrors.personalDateOfBirth ? 'border-red-500' : kycTouched.personalDateOfBirth && !kycFieldErrors.personalDateOfBirth ? 'border-green-500' : ''}
                               data-testid="input-dob"
                             />
+                            {kycFieldErrors.personalDateOfBirth && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-dob">{kycFieldErrors.personalDateOfBirth}</p>}
                           </div>
                           
                           <div>
@@ -1475,21 +1549,27 @@ export default function KYC() {
                             <Label>City <span className="text-red-500">*</span></Label>
                             <Input
                               value={personalCity}
-                              onChange={(e) => setPersonalCity(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalCity', e.target.value, setPersonalCity)}
+                              onBlur={(e) => handleKycFieldBlur('personalCity', e.target.value)}
                               placeholder="Your city"
+                              className={kycFieldErrors.personalCity ? 'border-red-500' : kycTouched.personalCity && !kycFieldErrors.personalCity ? 'border-green-500' : ''}
                               data-testid="input-city"
                             />
+                            {kycFieldErrors.personalCity && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-city">{kycFieldErrors.personalCity}</p>}
                           </div>
                           
                           <div className="col-span-2">
                             <Label>Address <span className="text-red-500">*</span></Label>
                             <Textarea
                               value={personalAddress}
-                              onChange={(e) => setPersonalAddress(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('personalAddress', e.target.value, setPersonalAddress)}
+                              onBlur={(e) => handleKycFieldBlur('personalAddress', e.target.value)}
                               placeholder="Your full residential address"
+                              className={kycFieldErrors.personalAddress ? 'border-red-500' : kycTouched.personalAddress && !kycFieldErrors.personalAddress ? 'border-green-500' : ''}
                               data-testid="input-address"
                               rows={2}
                             />
+                            {kycFieldErrors.personalAddress && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-address">{kycFieldErrors.personalAddress}</p>}
                           </div>
                           
                           <div>
@@ -1832,76 +1912,73 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                          <div className="p-4 rounded-lg border border-border bg-muted/30">
-                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                              <User className="w-4 h-4 text-primary" />
-                              Personal Information
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div><span className="text-muted-foreground">Name:</span> <span className="font-medium" data-testid="review-fullname">{personalFullName}</span></div>
-                              <div><span className="text-muted-foreground">Email:</span> <span className="font-medium" data-testid="review-email">{personalEmail}</span></div>
-                              <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium" data-testid="review-phone">{personalPhone}</span></div>
-                              <div><span className="text-muted-foreground">DOB:</span> <span className="font-medium" data-testid="review-dob">{personalDateOfBirth}</span></div>
-                              <div><span className="text-muted-foreground">Nationality:</span> <span className="font-medium">{personalNationality}</span></div>
-                              <div><span className="text-muted-foreground">Country:</span> <span className="font-medium">{personalCountry}</span></div>
-                              <div><span className="text-muted-foreground">City:</span> <span className="font-medium">{personalCity}</span></div>
-                              <div><span className="text-muted-foreground">Address:</span> <span className="font-medium">{personalAddress}</span></div>
-                              <div><span className="text-muted-foreground">Occupation:</span> <span className="font-medium">{personalOccupation}</span></div>
-                              <div><span className="text-muted-foreground">Source of Funds:</span> <span className="font-medium">{personalSourceOfFunds}</span></div>
-                            </div>
-                          </div>
-
-                          <div className="p-4 rounded-lg border border-border bg-muted/30">
-                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                              <FileText className="w-4 h-4 text-primary" />
-                              Documents
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div className="flex items-center gap-2">
-                                {idFrontFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                                <span>ID Front</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {idBackFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                                <span>ID Back</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {addressProofFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                                <span>Address Proof</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {passportFile ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <span className="text-muted-foreground text-xs">Passport (optional)</span>}
-                                {passportFile && <span>Passport</span>}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="p-4 rounded-lg border border-border bg-muted/30">
-                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                              <Camera className="w-4 h-4 text-primary" />
-                              Liveness Verification
-                            </h4>
-                            <div className="flex items-center gap-3">
-                              {capturedSelfie ? (
-                                <>
-                                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-500">
-                                    <img src={capturedSelfie} alt="Selfie" className="w-full h-full object-cover" />
-                                  </div>
-                                  <div className="flex items-center gap-2 text-green-600">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Verified</span>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="flex items-center gap-2 text-amber-600">
-                                  <AlertCircle className="w-4 h-4" />
-                                  <span className="text-sm">Not completed</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <ConfirmationPanel
+                          title="Review Your Submission"
+                          description="Please confirm all details are correct before submitting."
+                          sections={[
+                            {
+                              title: 'Personal Information',
+                              icon: <User className="w-4 h-4" />,
+                              onEdit: () => setFinatradesStep('personal_info'),
+                              fields: [
+                                { label: 'Full Name', value: personalFullName, highlight: true },
+                                { label: 'Email', value: personalEmail },
+                                { label: 'Phone', value: personalPhone },
+                                { label: 'Date of Birth', value: personalDateOfBirth },
+                                { label: 'Nationality', value: personalNationality },
+                                { label: 'Country', value: personalCountry },
+                                { label: 'City', value: personalCity },
+                                { label: 'Address', value: personalAddress },
+                                { label: 'Occupation', value: personalOccupation },
+                                { label: 'Source of Funds', value: personalSourceOfFunds },
+                              ],
+                            } as ConfirmationSection,
+                            {
+                              title: 'Documents',
+                              icon: <FileText className="w-4 h-4" />,
+                              onEdit: () => setFinatradesStep('documents'),
+                              fields: [
+                                {
+                                  label: 'ID Front',
+                                  value: idFrontFile
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{idFrontFile.name}</span>
+                                    : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
+                                },
+                                {
+                                  label: 'ID Back',
+                                  value: idBackFile
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{idBackFile.name}</span>
+                                    : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
+                                },
+                                {
+                                  label: 'Address Proof',
+                                  value: addressProofFile
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{addressProofFile.name}</span>
+                                    : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
+                                },
+                                {
+                                  label: 'Passport',
+                                  value: passportFile
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportFile.name}</span>
+                                    : 'Optional — not provided',
+                                },
+                              ],
+                            } as ConfirmationSection,
+                            {
+                              title: 'Liveness Verification',
+                              icon: <Camera className="w-4 h-4" />,
+                              onEdit: () => { stopLivenessCamera(); setFinatradesStep('liveness'); },
+                              fields: [
+                                {
+                                  label: 'Selfie',
+                                  value: capturedSelfie
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />Captured</span>
+                                    : <span className="flex items-center gap-1 text-amber-600"><AlertCircle className="w-3.5 h-3.5" />Not completed</span>,
+                                },
+                              ],
+                            } as ConfirmationSection,
+                          ]}
+                        />
 
                         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                           <p className="text-sm text-blue-700">
