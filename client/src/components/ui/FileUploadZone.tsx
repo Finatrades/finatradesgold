@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX, CircleDot, Globe, Hash, Calendar } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 
@@ -379,94 +379,87 @@ export function FileUploadZone({
               </div>
 
               {enableOcr && scanFields && (
-                <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/60 dark:bg-green-950/20 divide-y divide-green-100 dark:divide-green-900 text-xs overflow-hidden">
+                <div className="rounded-lg border border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-y divide-gray-100 dark:divide-green-900/40 text-xs overflow-hidden font-mono">
                   {/* Name row */}
-                  {scanFields.full_name && (
-                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
-                      <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
-                        <CircleDot className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate font-medium text-foreground">{scanFields.full_name}</span>
-                      </span>
-                      {verification?.nameMatch !== null && verification?.nameMatch !== undefined ? (
+                  {scanFields.full_name ? (
+                    <div className="flex items-center justify-between px-3 py-2 gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">NAME</span>
+                        <span className="font-semibold text-foreground truncate">{scanFields.full_name}</span>
+                      </div>
+                      {verification?.nameMatch != null ? (
                         verification.nameMatch ? (
-                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium flex-shrink-0">
-                            <CircleCheck className="w-3.5 h-3.5" /> Name match
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> MATCHED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium flex-shrink-0">
-                            <CircleX className="w-3.5 h-3.5" /> Name differs
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> DIFFERS
                           </span>
                         )
-                      ) : (
-                        <span className="text-muted-foreground flex-shrink-0">Name extracted</span>
-                      )}
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* DOB row */}
-                  {scanFields.date_of_birth && (
-                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
-                      <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span className="font-medium text-foreground">{scanFields.date_of_birth}</span>
-                      </span>
-                      {verification?.dobMatch !== null && verification?.dobMatch !== undefined ? (
+                  {scanFields.date_of_birth ? (
+                    <div className="flex items-center justify-between px-3 py-2 gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">DOB</span>
+                        <span className="font-semibold text-foreground">{scanFields.date_of_birth}</span>
+                      </div>
+                      {verification?.dobMatch != null ? (
                         verification.dobMatch ? (
-                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium flex-shrink-0">
-                            <CircleCheck className="w-3.5 h-3.5" /> DOB match
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> MATCHED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium flex-shrink-0">
-                            <CircleX className="w-3.5 h-3.5" /> DOB differs
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> DIFFERS
                           </span>
                         )
-                      ) : (
-                        <span className="text-muted-foreground flex-shrink-0">DOB extracted</span>
-                      )}
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Nationality row */}
-                  {scanFields.nationality && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5">
-                      <Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      <span className="text-muted-foreground">Nationality:</span>
-                      <span className="font-medium text-foreground">{scanFields.nationality}</span>
+                  {scanFields.nationality ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">COUNTRY</span>
+                      <span className="font-semibold text-foreground">{scanFields.nationality}</span>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Document number row */}
-                  {scanFields.document_number && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5">
-                      <Hash className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      <span className="text-muted-foreground">Doc #:</span>
-                      <span className="font-medium text-foreground font-mono">{scanFields.document_number}</span>
+                  {scanFields.document_number ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">DOC #</span>
+                      <span className="font-semibold text-foreground tracking-wider">{scanFields.document_number}</span>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Expiry row */}
-                  {scanFields.expiry_date && (
-                    <div className="flex items-center justify-between px-3 py-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">Expires:</span>
-                        <span className="font-medium text-foreground">{scanFields.expiry_date}</span>
+                  {scanFields.expiry_date ? (
+                    <div className="flex items-center justify-between px-3 py-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">EXPIRY</span>
+                        <span className="font-semibold text-foreground">{scanFields.expiry_date}</span>
                       </div>
                       {new Date(scanFields.expiry_date) < new Date() ? (
-                        <span className="flex items-center gap-1 text-red-600 font-medium">
-                          <CircleX className="w-3.5 h-3.5" /> Expired
+                        <span className="flex items-center gap-1 text-red-600 font-semibold flex-shrink-0">
+                          <CircleX className="w-3.5 h-3.5" /> EXPIRED
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium">
-                          <CircleCheck className="w-3.5 h-3.5" /> Valid
+                        <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold flex-shrink-0">
+                          <CircleCheck className="w-3.5 h-3.5" /> VALID
                         </span>
                       )}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Mismatch warning */}
-                  {((verification?.nameMatch === false) || (verification?.dobMatch === false)) && (
-                    <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-950/30">
+                  {(verification?.nameMatch === false || verification?.dobMatch === false) && (
+                    <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 font-sans">
                       <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <p className="text-amber-700 dark:text-amber-400">
                         Details don't fully match what you entered in Step 1. Please verify your name and date of birth are correct before submitting.
@@ -474,10 +467,10 @@ export function FileUploadZone({
                     </div>
                   )}
 
-                  {/* No fields at all */}
+                  {/* No fields extracted */}
                   {!scanFields.full_name && !scanFields.date_of_birth && (
-                    <div className="px-3 py-2 text-muted-foreground">
-                      Document accepted — fields could not be auto-extracted. An agent will review manually.
+                    <div className="px-3 py-2 text-muted-foreground font-sans">
+                      Document accepted — MRZ could not be read. An agent will verify manually.
                     </div>
                   )}
                 </div>

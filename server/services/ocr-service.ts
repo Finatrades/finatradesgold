@@ -508,8 +508,8 @@ function findAndParseMrz(text: string): TieredScanResult | null {
 
 /**
  * Scan a document from raw base64 + mimeType (no R2 upload needed).
- * Tier 1: Tesseract.js (images) or pdf-parse (text PDFs) → MRZ parsing (FREE)
- * Tier 2: GPT-4o vision fallback (for non-MRZ docs, scanned PDFs, driving licences)
+ * Uses Tesseract.js (images) or pdf-parse (text PDFs) + MRZ parsing only.
+ * Returns null fields if no MRZ is found — no AI/GPT fallback.
  */
 export async function scanDocumentBase64(
   base64: string,
@@ -517,7 +517,7 @@ export async function scanDocumentBase64(
 ): Promise<TieredScanResult> {
   const isPdf = mimeType === 'application/pdf';
 
-  // TIER 1A: Text-based PDF → extract text → try MRZ
+  // Text-based PDF: extract text then try MRZ
   if (isPdf) {
     try {
       const buffer = Buffer.from(base64, 'base64');
@@ -527,10 +527,12 @@ export async function scanDocumentBase64(
         const mrzResult = findAndParseMrz(text);
         if (mrzResult) return mrzResult;
       }
-    } catch { /* fall through to GPT */ }
+    } catch (err) {
+      console.warn('[KYC OCR] PDF parse failed:', err instanceof Error ? err.message : err);
+    }
   }
 
-  // TIER 1B: Image → Tesseract OCR → try MRZ
+  // Image: Tesseract OCR then try MRZ
   if (!isPdf) {
     try {
       const { data: { text } } = await Tesseract.recognize(
@@ -543,24 +545,22 @@ export async function scanDocumentBase64(
         if (mrzResult) return mrzResult;
       }
     } catch (err) {
-      console.warn('[KYC OCR] Tesseract failed, using GPT fallback:', err instanceof Error ? err.message : err);
+      console.warn('[KYC OCR] Tesseract failed:', err instanceof Error ? err.message : err);
     }
   }
 
-  // TIER 2: GPT-4o fallback (handles non-MRZ docs, driving licences, scanned PDFs)
-  const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
-  const imgBase64: string | null = isPdf ? null : base64;
-  const gptResult = await extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
+  // No MRZ found — return accepted with null fields (no AI fallback)
   return {
-    is_identity_document: gptResult.is_identity_document,
-    full_name: gptResult.full_name,
-    date_of_birth: gptResult.date_of_birth,
+    is_identity_document: true,
+    full_name: null,
+    date_of_birth: null,
     nationality: null,
     document_number: null,
     expiry_date: null,
-    source: 'gpt',
+    source: 'mrz',
   };
 }
+
 
 export async function checkKycOcrMismatch(
   documentUrl: string,
