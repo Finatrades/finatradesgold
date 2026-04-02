@@ -81,9 +81,15 @@ export function useFormDraft<T>({
       // storage full or unavailable
     }
     if (apiEndpoint) {
+      const csrfCookie = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      const csrfToken = csrfCookie ? decodeURIComponent(csrfCookie[1]) : null;
       fetch(apiEndpoint, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify({ submissionType, draftData: dataRef.current }),
       }).catch(() => {});
@@ -110,8 +116,14 @@ export function useFormDraft<T>({
     setServerDraftData(null);
     if (apiEndpoint) {
       const deleteUrl = submissionType ? `${apiEndpoint}?submissionType=${submissionType}` : apiEndpoint;
+      const csrfCookie = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      const csrfToken = csrfCookie ? decodeURIComponent(csrfCookie[1]) : null;
       fetch(deleteUrl, {
         method: 'DELETE',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         credentials: 'include',
       }).catch(() => {});
     }

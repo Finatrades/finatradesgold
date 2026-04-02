@@ -117,31 +117,42 @@ export function FileUploadZone({
       // Fetch CSRF token from the server (same approach as Login/Security pages)
       let csrfToken: string | null = null;
       try {
+        console.log('[OCR] Fetching CSRF token...');
         const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
         const csrfData = await csrfRes.json();
         csrfToken = csrfData?.csrfToken ?? null;
-      } catch {
-        // fallback: try cookie
+        console.log('[OCR] CSRF token obtained:', csrfToken ? 'yes (' + csrfToken.slice(0, 6) + '...)' : 'null');
+      } catch (csrfErr) {
+        console.warn('[OCR] CSRF fetch failed, trying cookie:', csrfErr instanceof Error ? csrfErr.message : String(csrfErr));
         const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
         csrfToken = m ? decodeURIComponent(m[1]) : null;
+        console.log('[OCR] Cookie fallback token:', csrfToken ? 'yes' : 'null');
       }
+
+      const bodyStr = JSON.stringify({
+        base64,
+        mimeType: f.type || 'image/jpeg',
+        declaredName: declaredName || undefined,
+        declaredDob: declaredDob || undefined,
+      });
+      console.log('[OCR] Sending scan request, payload size:', bodyStr.length, 'bytes, mimeType:', f.type);
 
       const resp = await fetch('/api/kyc/scan-document', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
         },
         credentials: 'include',
-        body: JSON.stringify({
-          base64,
-          mimeType: f.type || 'image/jpeg',
-          declaredName: declaredName || undefined,
-          declaredDob: declaredDob || undefined,
-        }),
+        body: bodyStr,
       });
 
-      if (!resp.ok) throw new Error('Scan request failed');
+      console.log('[OCR] Response status:', resp.status, resp.ok ? 'OK' : 'NOT OK');
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => '');
+        throw new Error(`Scan request failed: ${resp.status} ${errBody}`);
+      }
       const data = await resp.json();
       const fields: ScanFields = data.fields ?? {
         is_identity_document: true, full_name: null, date_of_birth: null,
@@ -161,7 +172,7 @@ export function FileUploadZone({
       setVerification(verif);
       onScanResult?.(fields, verif);
     } catch (err) {
-      console.error('[OCR] Scan failed:', err);
+      console.error('[OCR] Scan failed:', err instanceof Error ? `${err.name}: ${err.message}` : String(err));
       setScanFields({ full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null });
       setVerification(null);
     }
