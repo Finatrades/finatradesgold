@@ -395,9 +395,9 @@ async function extractKycFieldsFromDocument(
   base64: string | null,
   mimeType: string,
   documentUrl: string,
-): Promise<{ full_name: string | null; date_of_birth: string | null }> {
-  const pdfPrompt = `You are a KYC document analyst. The following is extracted text from an identity document (passport, national ID, or driver's licence). Extract name and date of birth. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nIf a field cannot be found, use null. Do not include explanations.`;
-  const imagePrompt = `You are a KYC document analyst. Examine this identity document (passport, national ID, or driver's licence) and extract the following fields. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nIf a field cannot be read, use null. Do not include explanations.`;
+): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null }> {
+  const pdfPrompt = `You are a KYC document analyst. The following is extracted text from a document. First determine if this is a government-issued identity document (passport, national ID, or driver's licence). Then extract the fields below. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "is_identity_document": boolean,\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nSet "is_identity_document" to false if the document is clearly not an identity document (e.g. receipt, invoice, application form, certificate, etc.). If a field cannot be found, use null. Do not include explanations.`;
+  const imagePrompt = `You are a KYC document analyst. Examine this document image. First determine if this is a government-issued identity document (passport, national ID, or driver's licence). Then extract the fields below. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "is_identity_document": boolean,\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nSet "is_identity_document" to false if the document is clearly not an identity document (e.g. receipt, invoice, application form, certificate, photo, etc.). If a field cannot be read, use null. Do not include explanations.`;
 
   let response;
   if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
@@ -431,7 +431,13 @@ async function extractKycFieldsFromDocument(
 
   const content = response.choices[0]?.message?.content || '{}';
   const jsonMatch = content.match(/\{[\s\S]*\}/);
-  return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+  const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+  // Default is_identity_document to true if GPT omits the field (avoid false blocking)
+  return {
+    is_identity_document: parsed.is_identity_document !== false,
+    full_name: parsed.full_name ?? null,
+    date_of_birth: parsed.date_of_birth ?? null,
+  };
 }
 
 /**
@@ -441,7 +447,7 @@ async function extractKycFieldsFromDocument(
 export async function scanDocumentBase64(
   base64: string,
   mimeType: string,
-): Promise<{ full_name: string | null; date_of_birth: string | null }> {
+): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null }> {
   const isPdf = mimeType === 'application/pdf';
   const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
   const imgBase64: string | null = isPdf ? null : base64;

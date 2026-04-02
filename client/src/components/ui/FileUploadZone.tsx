@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './button';
 
 interface ScanFields {
+  is_identity_document?: boolean;
   full_name: string | null;
   date_of_birth: string | null;
 }
@@ -104,7 +105,17 @@ export function FileUploadZone({
 
       if (!resp.ok) throw new Error('Scan request failed');
       const data = await resp.json();
-      const fields: ScanFields = data.fields ?? { full_name: null, date_of_birth: null };
+      const fields: ScanFields = data.fields ?? { is_identity_document: true, full_name: null, date_of_birth: null };
+
+      if (fields.is_identity_document === false) {
+        // Document is not a valid identity document — reject it
+        setProgress(100);
+        setScanStatus('error');
+        setError('This does not appear to be a valid identity document. Please upload a passport, national ID, or driver\'s licence.');
+        onFile(null);
+        return;
+      }
+
       setScanFields(fields);
       onScanResult?.(fields);
     } catch {
@@ -112,7 +123,7 @@ export function FileUploadZone({
     }
     setProgress(100);
     setScanStatus('complete');
-  }, [onScanResult]);
+  }, [onScanResult, onFile]);
 
   const processFile = useCallback(
     (f: File) => {
