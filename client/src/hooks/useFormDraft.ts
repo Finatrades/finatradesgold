@@ -5,14 +5,18 @@ interface UseFormDraftOptions<T> {
   data: T;
   debounceMs?: number;
   enabled?: boolean;
+  apiEndpoint?: string;
+  submissionType?: string;
 }
 
 interface UseFormDraftReturn {
   savedAt: Date | null;
   isDirty: boolean;
+  showResumeBanner: boolean;
   save: () => void;
   load: <T>() => T | null;
   clear: () => void;
+  dismissResume: () => void;
 }
 
 export function useFormDraft<T>({
@@ -20,6 +24,8 @@ export function useFormDraft<T>({
   data,
   debounceMs = 500,
   enabled = true,
+  apiEndpoint,
+  submissionType = 'personal',
 }: UseFormDraftOptions<T>): UseFormDraftReturn {
   const [savedAt, setSavedAt] = useState<Date | null>(() => {
     try {
@@ -34,10 +40,30 @@ export function useFormDraft<T>({
     return null;
   });
   const [isDirty, setIsDirty] = useState(false);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dataRef = useRef<T>(data);
+  const initializedRef = useRef(false);
 
   dataRef.current = data;
+
+  useEffect(() => {
+    if (!enabled || !apiEndpoint || initializedRef.current) return;
+    initializedRef.current = true;
+    fetch(`${apiEndpoint}?submissionType=${submissionType}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (json?.draft?.draftData) {
+          const serverTs = json.draft.updatedAt ? new Date(json.draft.updatedAt).getTime() : 0;
+          const dismissed = localStorage.getItem(`${key}_resume_dismissed`);
+          const dismissedTs = dismissed ? parseInt(dismissed, 10) : 0;
+          if (serverTs > dismissedTs) {
+            setShowResumeBanner(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [apiEndpoint, submissionType, key, enabled]);
 
   const save = useCallback(() => {
     if (!enabled) return;
@@ -50,7 +76,15 @@ export function useFormDraft<T>({
     } catch {
       // storage full or unavailable
     }
-  }, [key, enabled]);
+    if (apiEndpoint) {
+      fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ submissionType, draftData: dataRef.current }),
+      }).catch(() => {});
+    }
+  }, [key, enabled, apiEndpoint, submissionType]);
 
   const load = useCallback(<R>(): R | null => {
     try {
@@ -65,8 +99,21 @@ export function useFormDraft<T>({
   const clear = useCallback(() => {
     localStorage.removeItem(key);
     localStorage.removeItem(`${key}_meta`);
+    localStorage.removeItem(`${key}_resume_dismissed`);
     setSavedAt(null);
     setIsDirty(false);
+    setShowResumeBanner(false);
+    if (apiEndpoint) {
+      fetch(apiEndpoint, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {});
+    }
+  }, [key, apiEndpoint]);
+
+  const dismissResume = useCallback(() => {
+    localStorage.setItem(`${key}_resume_dismissed`, Date.now().toString());
+    setShowResumeBanner(false);
   }, [key]);
 
   useEffect(() => {
@@ -79,5 +126,5 @@ export function useFormDraft<T>({
     };
   }, [data, debounceMs, save, enabled]);
 
-  return { savedAt, isDirty, save, load, clear };
+  return { savedAt, isDirty, showResumeBanner, save, load, clear, dismissResume };
 }

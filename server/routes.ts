@@ -101,7 +101,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
-import { checkKycOcrMismatch, type KycOcrResult } from "./services/ocr-service";
+import { checkKycOcrMismatch, scanDocumentBase64, type KycOcrResult } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -5567,6 +5567,28 @@ export async function registerRoutes(
       res.json({ draft });
     } catch (err) {
       res.status(500).json({ message: "Failed to save draft" });
+    }
+  });
+
+  // Scan a document (base64) with OCR and return extracted name/DOB fields
+  app.post("/api/kyc/scan-document", ensureAuthenticated, async (req, res) => {
+    try {
+      const { base64, mimeType } = req.body;
+      if (!base64 || typeof base64 !== 'string') {
+        return res.status(400).json({ error: 'base64 document data required' });
+      }
+      if (!mimeType || typeof mimeType !== 'string') {
+        return res.status(400).json({ error: 'mimeType required' });
+      }
+      const supported = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+      if (!supported.includes(mimeType)) {
+        return res.status(400).json({ error: 'Unsupported document type' });
+      }
+      const fields = await scanDocumentBase64(base64, mimeType);
+      return res.json({ success: true, fields });
+    } catch (err) {
+      console.warn('[KYC] Document scan failed:', err instanceof Error ? err.message : err);
+      return res.json({ success: false, fields: { full_name: null, date_of_birth: null } });
     }
   });
 

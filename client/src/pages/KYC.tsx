@@ -258,8 +258,12 @@ export default function KYC() {
   });
 
   // Finatrades mode state - shared between personal and corporate
-  const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'documents' | 'liveness' | 'complete'>(
-    savedDraft?.finatradesStep || 'personal_info'
+  const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'identity_docs' | 'address_compliance' | 'liveness' | 'complete'>(
+    (() => {
+      const saved = savedDraft?.finatradesStep;
+      if (saved === 'documents') return 'identity_docs';
+      return (saved as 'personal_info' | 'identity_docs' | 'address_compliance' | 'liveness' | 'complete') || 'personal_info';
+    })()
   );
   
   // Personal Information (pre-filled from user where available)
@@ -424,8 +428,11 @@ export default function KYC() {
     if (sd.tradeLicenseExpiryDate) setTradeLicenseExpiryDate(sd.tradeLicenseExpiryDate);
     if (sd.directorPassportExpiryDate) setDirectorPassportExpiryDate(sd.directorPassportExpiryDate);
     if (Array.isArray(sd.beneficialOwners) && sd.beneficialOwners.length > 0) setBeneficialOwners(sd.beneficialOwners);
-    // Restore step state
-    if (sd.finatradesStep) setFinatradesStep(sd.finatradesStep);
+    // Restore step state (map old 'documents' → 'identity_docs')
+    if (sd.finatradesStep) {
+      const step = sd.finatradesStep === 'documents' ? 'identity_docs' : sd.finatradesStep;
+      setFinatradesStep(step as typeof finatradesStep);
+    }
   }, [serverDraftData]);
 
   // Auto-save KYC draft to localStorage + server (debounced)
@@ -502,12 +509,33 @@ export default function KYC() {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Please enter a valid email address';
       case 'personalPhone':
         return value.trim().length < 5 ? 'Phone number is required' : '';
-      case 'personalDateOfBirth':
-        return !value ? 'Date of birth is required' : '';
+      case 'personalDateOfBirth': {
+        if (!value) return 'Date of birth is required';
+        const dob = new Date(value);
+        const age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        return age < 18 ? 'You must be at least 18 years old' : '';
+      }
       case 'personalCity':
         return value.trim().length < 2 ? 'City is required' : '';
       case 'personalAddress':
         return value.trim().length < 5 ? 'Address is required' : '';
+      case 'personalNationality':
+        return !value.trim() ? 'Nationality is required' : '';
+      case 'personalOccupation':
+        return !value.trim() ? 'Occupation is required' : '';
+      case 'personalSourceOfFunds':
+        return !value.trim() ? 'Source of funds is required' : '';
+      case 'personalCountry':
+        return !value.trim() ? 'Country is required' : '';
+      case 'passportExpiryDate': {
+        if (!value) return 'Passport expiry date is required';
+        const expiry = new Date(value);
+        if (expiry <= new Date()) return 'Passport must not be expired';
+        const sixMonths = new Date();
+        sixMonths.setMonth(sixMonths.getMonth() + 6);
+        if (expiry < sixMonths) return 'Passport must be valid for at least 6 months';
+        return '';
+      }
       default:
         return '';
     }
@@ -527,18 +555,20 @@ export default function KYC() {
     setKycFieldErrors(prev => ({ ...prev, [field]: err }));
   }, [validateKycField]);
 
-  // useFormDraft for auto-saving personal KYC fields to localStorage
+  // useFormDraft for auto-saving personal KYC fields to localStorage + server banner
   const kycDraftData = {
     personalFullName, personalEmail, personalPhone, personalCountry,
     personalCity, personalAddress, personalPostalCode, personalNationality,
     personalOccupation, personalSourceOfFunds, personalDateOfBirth,
     passportExpiryDate, finatradesStep,
   };
-  useFormDraft({
+  const { showResumeBanner: showKycResumeBanner, dismissResume: dismissKycResume } = useFormDraft({
     key: `kyc_personal_draft_${user?.id || 'anon'}`,
     data: kycDraftData,
     debounceMs: 600,
     enabled: !!user?.id && finatradesStep !== 'complete',
+    apiEndpoint: '/api/kyc/draft',
+    submissionType: 'personal',
   });
 
   // Liveness camera state (shared between modes)
@@ -1335,7 +1365,7 @@ export default function KYC() {
 
   // === FINATRADES MODE: PERSONAL ACCOUNT KYC ===
   if (!isBusiness) {
-    const stepOrder = ['personal_info', 'documents', 'liveness', 'complete'];
+    const stepOrder = ['personal_info', 'identity_docs', 'address_compliance', 'liveness', 'complete'];
     const currentStepIdx = stepOrder.indexOf(finatradesStep);
     const finatradesProgress = Math.round(((currentStepIdx + 1) / stepOrder.length) * 100);
     
@@ -1343,7 +1373,8 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isDocumentsComplete = isSectionLocked('documents') || (idFrontFile && idBackFile && addressProofFile);
+    const isIdentityDocsComplete = isSectionLocked('documents') || ((idFrontFile || passportFile) && passportExpiryDate);
+    const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -1402,6 +1433,21 @@ export default function KYC() {
               
               {/* Sidebar Steps */}
               <div className="md:col-span-4">
+                {showKycResumeBanner && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800">Resume saved draft?</p>
+                      <p className="text-xs text-blue-600 mt-0.5">We found a previously saved draft for this form.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={dismissKycResume}
+                      className="text-xs text-blue-600 hover:text-blue-800 underline shrink-0"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
                 <FormWizard
                   steps={[
                     {
@@ -1411,16 +1457,22 @@ export default function KYC() {
                       isComplete: currentStepIdx > 0,
                     },
                     {
-                      id: 'documents',
-                      label: 'Document Upload',
-                      description: 'ID and address proof',
+                      id: 'identity_docs',
+                      label: 'Identity Documents',
+                      description: 'Passport & ID upload',
                       isComplete: currentStepIdx > 1,
+                    },
+                    {
+                      id: 'address_compliance',
+                      label: 'Address & Compliance',
+                      description: 'Proof of address',
+                      isComplete: currentStepIdx > 2,
                     },
                     {
                       id: 'liveness',
                       label: 'Liveness Check',
                       description: 'Verify your identity',
-                      isComplete: !!capturedSelfie && currentStepIdx >= 2,
+                      isComplete: !!capturedSelfie && currentStepIdx >= 3,
                     },
                     {
                       id: 'complete',
@@ -1431,7 +1483,6 @@ export default function KYC() {
                   ] as WizardStep[]}
                   currentStep={finatradesStep}
                   onStepChange={(id) => {
-                    const stepOrder = ['personal_info', 'documents', 'liveness', 'complete'];
                     const targetIdx = stepOrder.indexOf(id);
                     if (targetIdx <= currentStepIdx) setFinatradesStep(id as typeof finatradesStep);
                   }}
@@ -1614,24 +1665,24 @@ export default function KYC() {
                       </CardContent>
                       <CardFooter className="flex justify-end">
                         <Button 
-                          onClick={() => setFinatradesStep('documents')}
+                          onClick={() => setFinatradesStep('identity_docs')}
                           disabled={!isPersonalInfoComplete}
                           className="bg-primary text-white hover:bg-primary/90"
-                          data-testid="button-continue-documents"
+                          data-testid="button-continue-identity-docs"
                         >
-                          Continue to Documents
+                          Continue to Identity Documents
                         </Button>
                       </CardFooter>
                     </div>
                   )}
 
-                  {/* STEP 2: Document Upload */}
-                  {finatradesStep === 'documents' && (
+                  {/* STEP 2: Identity Documents */}
+                  {finatradesStep === 'identity_docs' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <FileText className="w-5 h-5" />
-                          Document Upload
+                          Identity Documents
                           {isSectionLocked('documents') && (
                             <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
@@ -1641,14 +1692,13 @@ export default function KYC() {
                         <CardDescription>
                           {isSectionLocked('documents')
                             ? 'This section has been approved and is locked.'
-                            : 'Upload clear photos of your identification documents.'}
+                            : 'Upload your government-issued ID or passport. Our AI will extract your details automatically.'}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        {/* Format requirements notice */}
                         <div className="p-3 bg-gray-50 border rounded-lg">
                           <p className="text-sm font-medium text-gray-700">Accepted Formats:</p>
-                          <p className="text-xs text-gray-500">JPG, JPEG, PNG, PDF - Max file size: 5MB</p>
+                          <p className="text-xs text-gray-500">JPG, JPEG, PNG, PDF — max 5 MB · AI extraction enabled</p>
                         </div>
                         
                         <div className="space-y-5">
@@ -1662,6 +1712,11 @@ export default function KYC() {
                             file={idFrontFile}
                             onFile={setIdFrontFile}
                             testId="input-id-front"
+                            enableOcr
+                            onScanResult={(fields) => {
+                              if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
+                              if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
+                            }}
                           />
 
                           <FileUploadZone
@@ -1669,7 +1724,6 @@ export default function KYC() {
                             description="Back side of your national ID or driver's licence"
                             accept=".jpg,.jpeg,.png,.pdf"
                             maxSizeMB={5}
-                            required
                             disabled={isSectionLocked('documents')}
                             file={idBackFile}
                             onFile={setIdBackFile}
@@ -1678,47 +1732,97 @@ export default function KYC() {
 
                           <FileUploadZone
                             label="Passport"
-                            description="Photo page of your valid passport"
+                            description="Photo page of your valid passport (required if you don't have a national ID)"
                             accept=".jpg,.jpeg,.png,.pdf"
                             maxSizeMB={5}
-                            required
                             disabled={isSectionLocked('documents')}
                             file={passportFile}
                             onFile={setPassportFile}
                             testId="input-passport"
+                            enableOcr
+                            onScanResult={(fields) => {
+                              if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
+                              if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
+                            }}
                           />
 
                           <div>
-                            <Label className="text-sm">Passport Expiry Date <span className="text-red-500">*</span></Label>
-                            <p className="text-xs text-muted-foreground mb-1">We'll send you reminders before it expires</p>
+                            <Label className="text-sm">
+                              Passport Expiry Date <span className="text-red-500">*</span>
+                            </Label>
+                            <p className="text-xs text-muted-foreground mb-1">Must be valid for at least 6 months</p>
                             <Input
                               type="date"
                               value={passportExpiryDate}
-                              onChange={(e) => setPassportExpiryDate(e.target.value)}
+                              onChange={(e) => handleKycFieldChange('passportExpiryDate', e.target.value, setPassportExpiryDate)}
+                              onBlur={(e) => handleKycFieldBlur('passportExpiryDate', e.target.value)}
                               min={new Date().toISOString().split('T')[0]}
                               disabled={isSectionLocked('documents')}
+                              className={kycFieldErrors.passportExpiryDate ? 'border-red-500' : kycTouched.passportExpiryDate && !kycFieldErrors.passportExpiryDate ? 'border-green-500' : ''}
                               data-testid="input-passport-expiry"
                             />
+                            {kycFieldErrors.passportExpiryDate && (
+                              <p className="text-red-500 text-xs mt-1">{kycFieldErrors.passportExpiryDate}</p>
+                            )}
                           </div>
-
-                          <FileUploadZone
-                            label="Proof of Address"
-                            description="Utility bill, bank statement, or government letter dated within the last 3 months"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            maxSizeMB={5}
-                            required
-                            disabled={isSectionLocked('documents')}
-                            file={addressProofFile}
-                            onFile={setAddressProofFile}
-                            testId="input-address-proof"
-                          />
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => setFinatradesStep('personal_info')}>Back</Button>
                         <Button 
+                          onClick={() => setFinatradesStep('address_compliance')}
+                          disabled={!isIdentityDocsComplete}
+                          className="bg-primary text-white hover:bg-primary/90"
+                          data-testid="button-continue-address"
+                        >
+                          Continue to Address & Compliance
+                        </Button>
+                      </CardFooter>
+                    </div>
+                  )}
+
+                  {/* STEP 3: Address & Compliance */}
+                  {finatradesStep === 'address_compliance' && (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="w-5 h-5" />
+                          Address & Compliance
+                          {isSectionLocked('documents') && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <Lock className="w-3 h-3" /> Approved
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {isSectionLocked('documents')
+                            ? 'This section has been approved and is locked.'
+                            : 'Provide proof of your current residential address.'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
+                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                          <p className="text-sm font-medium text-blue-800">Address on file</p>
+                          <p className="text-xs text-blue-600 mt-0.5">{[personalAddress, personalCity, personalCountry].filter(Boolean).join(', ') || 'Not yet provided'}</p>
+                        </div>
+
+                        <FileUploadZone
+                          label="Proof of Address"
+                          description="Utility bill, bank statement, or government letter dated within the last 3 months"
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          maxSizeMB={5}
+                          required
+                          disabled={isSectionLocked('documents')}
+                          file={addressProofFile}
+                          onFile={setAddressProofFile}
+                          testId="input-address-proof"
+                        />
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button variant="outline" onClick={() => setFinatradesStep('identity_docs')}>Back</Button>
+                        <Button 
                           onClick={() => setFinatradesStep('liveness')}
-                          disabled={!isDocumentsComplete}
+                          disabled={!isAddressComplianceComplete}
                           className="bg-primary text-white hover:bg-primary/90"
                           data-testid="button-continue-liveness"
                         >
@@ -1852,7 +1956,7 @@ export default function KYC() {
                          )}
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('documents'); }}>Back</Button>
+                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('address_compliance'); }}>Back</Button>
                         <Button 
                           onClick={() => { stopLivenessCamera(); setFinatradesStep('complete'); }}
                           disabled={!capturedSelfie && !isSectionLocked('liveness')}
@@ -1936,7 +2040,7 @@ export default function KYC() {
                             {
                               title: 'Documents',
                               icon: <FileText className="w-4 h-4" />,
-                              onEdit: () => setFinatradesStep('documents'),
+                              onEdit: () => setFinatradesStep('identity_docs'),
                               fields: [
                                 {
                                   label: 'ID Front',
@@ -2023,8 +2127,6 @@ export default function KYC() {
 
   // === FINATRADES MODE: CORPORATE ACCOUNT KYC ===
   if (isBusiness) {
-    const corpProgress = Math.round((corporateStep / 5) * 100);
-    
     return (
       <div className="min-h-screen bg-background text-foreground">
         <div className="min-h-screen py-12 bg-background">
@@ -2075,64 +2177,21 @@ export default function KYC() {
                 </span>
                 <span>Step {corporateStep} of 5</span>
               </div>
-              <Progress value={corpProgress} className="h-2 bg-muted" />
-            </div>
-
-            {/* Horizontal Tab/Card Navigation */}
-            <div className="mb-8">
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-                {[
-                  { step: 1, title: 'Corporate Details', icon: <Building className="w-6 h-6" /> },
-                  { step: 2, title: 'Beneficial Owners', icon: <User className="w-6 h-6" /> },
-                  { step: 3, title: 'Documents', icon: <FileText className="w-6 h-6" /> },
-                  { step: 4, title: 'Representative', icon: <Camera className="w-6 h-6" /> },
-                  { step: 5, title: 'Review & Submit', icon: <CheckCircle2 className="w-6 h-6" /> },
-                ].map(({ step, title, icon }) => {
-                  const isActive = corporateStep === step;
-                  const isCompleted = corporateStep > step;
-                  
-                  return (
-                    <button
-                      key={step}
-                      onClick={() => {
-                        if (isCompleted) setCorporateStep(step);
-                      }}
-                      disabled={!isCompleted && !isActive}
-                      className={`
-                        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
-                        ${isActive 
-                          ? 'bg-primary border-primary text-white shadow-lg scale-105' 
-                          : isCompleted 
-                            ? 'bg-card border-primary/30 text-foreground hover:border-primary/50 cursor-pointer hover:shadow-md' 
-                            : 'bg-muted/50 border-border text-muted-foreground cursor-not-allowed opacity-60'
-                        }
-                      `}
-                      aria-selected={isActive}
-                      data-testid={`tab-step-${step}`}
-                    >
-                      <div className={`
-                        w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center
-                        ${isActive 
-                          ? 'bg-white/20' 
-                          : isCompleted 
-                            ? 'bg-primary/10 text-primary' 
-                            : 'bg-muted'
-                        }
-                      `}>
-                        {isCompleted && !isActive ? (
-                          <CheckCircle2 className="w-6 h-6 text-primary" />
-                        ) : (
-                          icon
-                        )}
-                      </div>
-                      <span className="text-xs font-medium leading-tight block">{title}</span>
-                      {isActive && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-white rounded-full" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <FormWizard
+                orientation="horizontal"
+                steps={[
+                  { id: 'corp-1', label: 'Corporate Details', description: 'Company info & contacts', isComplete: corporateStep > 1 },
+                  { id: 'corp-2', label: 'Beneficial Owners', description: 'UBO & shareholding', isComplete: corporateStep > 2 },
+                  { id: 'corp-3', label: 'Documents', description: 'Corporate document upload', isComplete: corporateStep > 3 },
+                  { id: 'corp-4', label: 'Representative', description: 'Liveness verification', isComplete: corporateStep > 4 },
+                  { id: 'corp-5', label: 'Review & Submit', description: 'Final confirmation' },
+                ] as WizardStep[]}
+                currentStep={`corp-${corporateStep}`}
+                onStepChange={(id) => {
+                  const stepNum = parseInt(id.replace('corp-', ''), 10);
+                  if (stepNum < corporateStep) setCorporateStep(stepNum);
+                }}
+              />
             </div>
 
             {/* Main Content */}

@@ -3,6 +3,11 @@ import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck } from
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 
+interface ScanFields {
+  full_name: string | null;
+  date_of_birth: string | null;
+}
+
 interface FileUploadZoneProps {
   label: string;
   description?: string;
@@ -13,9 +18,11 @@ interface FileUploadZoneProps {
   file?: File | null;
   onFile: (file: File | null) => void;
   testId?: string;
+  enableOcr?: boolean;
+  onScanResult?: (result: ScanFields) => void;
 }
 
-type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete';
+type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete' | 'error';
 
 export function FileUploadZone({
   label,
@@ -27,6 +34,8 @@ export function FileUploadZone({
   file,
   onFile,
   testId,
+  enableOcr = false,
+  onScanResult,
 }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -34,6 +43,7 @@ export function FileUploadZone({
   const [error, setError] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
   const [progress, setProgress] = useState(0);
+  const [scanFields, setScanFields] = useState<ScanFields | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,35 +59,65 @@ export function FileUploadZone({
       setScanStatus('idle');
       setProgress(0);
       setPreview(null);
+      setScanFields(null);
       if (progressRef.current) clearInterval(progressRef.current);
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     }
   }, [file]);
 
-  const startProgressAnimation = useCallback(() => {
+  const startProgressAnimation = useCallback((targetPct = 90) => {
     setScanStatus('uploading');
     setProgress(0);
     if (progressRef.current) clearInterval(progressRef.current);
-
     progressRef.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) {
+        if (prev >= targetPct) {
           if (progressRef.current) clearInterval(progressRef.current);
           setScanStatus('scanning');
-          scanTimerRef.current = setTimeout(() => {
-            setProgress(100);
-            setScanStatus('complete');
-          }, 800);
-          return 90;
+          return targetPct;
         }
         return prev + Math.random() * 12 + 5;
       });
     }, 100);
   }, []);
 
+  const callOcrApi = useCallback(async (f: File) => {
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          const b64 = result.split(',')[1];
+          if (b64) resolve(b64);
+          else reject(new Error('Failed to read file'));
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+
+      const resp = await fetch('/api/kyc/scan-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ base64, mimeType: f.type || 'image/jpeg' }),
+      });
+
+      if (!resp.ok) throw new Error('Scan request failed');
+      const data = await resp.json();
+      const fields: ScanFields = data.fields ?? { full_name: null, date_of_birth: null };
+      setScanFields(fields);
+      onScanResult?.(fields);
+    } catch {
+      setScanFields({ full_name: null, date_of_birth: null });
+    }
+    setProgress(100);
+    setScanStatus('complete');
+  }, [onScanResult]);
+
   const processFile = useCallback(
     (f: File) => {
       setError(null);
+      setScanFields(null);
       if (f.size > maxSizeMB * 1024 * 1024) {
         setError(`File too large. Maximum size is ${maxSizeMB}MB.`);
         return;
@@ -98,9 +138,18 @@ export function FileUploadZone({
         setPreview(null);
       }
       onFile(f);
-      startProgressAnimation();
+      if (enableOcr) {
+        startProgressAnimation(80);
+        callOcrApi(f);
+      } else {
+        startProgressAnimation(90);
+        scanTimerRef.current = setTimeout(() => {
+          setProgress(100);
+          setScanStatus('complete');
+        }, 900);
+      }
     },
-    [accept, maxSizeMB, onFile, startProgressAnimation]
+    [accept, maxSizeMB, onFile, startProgressAnimation, enableOcr, callOcrApi]
   );
 
   const handleDrop = useCallback(
@@ -124,6 +173,7 @@ export function FileUploadZone({
     setError(null);
     setScanStatus('idle');
     setProgress(0);
+    setScanFields(null);
     onFile(null);
     if (inputRef.current) inputRef.current.value = '';
     if (progressRef.current) clearInterval(progressRef.current);
@@ -253,7 +303,7 @@ export function FileUploadZone({
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <ScanLine className="w-3 h-3 animate-pulse" />
-                  {scanStatus === 'uploading' ? 'Uploading…' : 'Scanning document…'}
+                  {scanStatus === 'uploading' ? 'Uploading…' : enableOcr ? 'AI scanning document…' : 'Scanning document…'}
                 </span>
                 <span>{Math.round(progress)}%</span>
               </div>
@@ -271,11 +321,23 @@ export function FileUploadZone({
 
           {scanStatus === 'complete' && (
             <div
-              className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium"
+              className="space-y-1"
               data-testid={testId ? `${testId}-scan-complete` : undefined}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Document scan complete — ready for submission
+              <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {enableOcr ? 'AI document scan complete' : 'Document scan complete'} — ready for submission
+              </div>
+              {enableOcr && scanFields && (scanFields.full_name || scanFields.date_of_birth) && (
+                <div className="text-xs text-muted-foreground pl-5 space-y-0.5">
+                  {scanFields.full_name && (
+                    <p>Name detected: <span className="font-medium text-foreground">{scanFields.full_name}</span></p>
+                  )}
+                  {scanFields.date_of_birth && (
+                    <p>DOB detected: <span className="font-medium text-foreground">{scanFields.date_of_birth}</span></p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

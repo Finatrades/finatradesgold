@@ -434,6 +434,20 @@ async function extractKycFieldsFromDocument(
   return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
 }
 
+/**
+ * Scan a document from raw base64 + mimeType (no R2 upload needed).
+ * Used by the /api/kyc/scan-document endpoint for real-time client-side OCR preview.
+ */
+export async function scanDocumentBase64(
+  base64: string,
+  mimeType: string,
+): Promise<{ full_name: string | null; date_of_birth: string | null }> {
+  const isPdf = mimeType === 'application/pdf';
+  const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
+  const imgBase64: string | null = isPdf ? null : base64;
+  return extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
+}
+
 export async function checkKycOcrMismatch(
   documentUrl: string,
   declaredName: string,
