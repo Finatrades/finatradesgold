@@ -1362,7 +1362,7 @@ export default function KYC() {
     
     const nationalityOk = !passportNationality || nationalityMatches(personalNationality, passportNationality);
     const isIdentityDocsComplete = isSectionLocked('documents') || (!!passportFile && !!passportExpiryDate && nationalityOk);
-    const isAddressComplianceComplete = isSectionLocked('documents') || (!!addressProofFile && !addressProofNameMismatch);
+    const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -1889,12 +1889,12 @@ export default function KYC() {
                         {(() => {
                           const addrNameOk = !addressProofNameMismatch;
                           return !addrNameOk ? (
-                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                              <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                               <div>
-                                <p className="text-sm font-medium text-red-700">Name mismatch on address document</p>
-                                <p className="text-xs text-red-600 mt-0.5">
-                                  The name on your address proof doesn't match your declared name. Please upload a document with your correct name, or go back and fix Step 1.
+                                <p className="text-sm font-medium text-amber-700">Name doesn't fully match</p>
+                                <p className="text-xs text-amber-600 mt-0.5">
+                                  The name on your address proof differs from your declared name. You can still continue — our team will review the discrepancy.
                                 </p>
                               </div>
                             </div>
