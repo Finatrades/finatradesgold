@@ -427,30 +427,41 @@ Extract all visible fields. Respond ONLY with valid JSON matching this schema �
 ${schema}
 Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, receipt, photo, certificate). No explanations.`;
 
+  // Prefer Groq (free, 1k req/day) → fall back to OpenAI if Groq not configured
+  const visionClient = groqClient ?? openai;
+  const visionModel = groqClient
+    ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+    : 'gpt-4o';
+  const textModel = groqClient
+    ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+    : 'gpt-4o';
+
+  console.log(`[KYC OCR] Vision model: ${visionModel}`);
+
   let response;
   if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
     const parsed = await pdfParse(buffer);
     const text = parsed?.text?.trim() || '';
     if (text.length < 30) throw new Error('PDF text too short — may be a scanned image PDF');
-    response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    response = await visionClient.chat.completions.create({
+      model: textModel,
       messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 4000)}` }],
-      max_tokens: 300,
+      max_tokens: 512,
       temperature: 0,
     });
   } else if (base64) {
     const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
-    response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    response = await visionClient.chat.completions.create({
+      model: visionModel,
       messages: [{
         role: 'user',
         content: [
           { type: 'text', text: imagePrompt },
-          { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}`, detail: 'high' } },
+          { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}` } },
         ],
       }],
-      max_tokens: 300,
+      max_tokens: 512,
       temperature: 0,
     });
   } else {
@@ -577,7 +588,7 @@ export async function scanDocumentBase64(
   }
 
   // Step 2: GPT-4o fallback — handles any real-world ID/passport image
-  console.log('[KYC OCR] MRZ not found, using GPT-4o vision');
+  console.log('[KYC OCR] MRZ not found, using AI vision fallback (Groq/Llama 4 Scout)');
   const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
   const imgBase64: string | null = isPdf ? null : base64;
   const gptResult = await extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
