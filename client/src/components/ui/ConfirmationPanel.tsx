@@ -22,6 +22,9 @@ interface ConfirmationPanelProps {
   status?: 'review' | 'success' | 'error';
   statusMessage?: string;
   className?: string;
+  onConfirm?: () => void;
+  confirmLabel?: string;
+  isConfirming?: boolean;
 }
 
 export function ConfirmationPanel({
@@ -31,6 +34,9 @@ export function ConfirmationPanel({
   status = 'review',
   statusMessage,
   className = '',
+  onConfirm,
+  confirmLabel = 'Confirm & Submit',
+  isConfirming = false,
 }: ConfirmationPanelProps) {
   return (
     <div className={`space-y-4 ${className}`} data-testid="confirmation-panel">
@@ -94,6 +100,20 @@ export function ConfirmationPanel({
           </div>
         </div>
       ))}
+
+      {onConfirm && (
+        <div className="flex justify-end pt-2">
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={isConfirming}
+            className="bg-primary text-white hover:bg-primary/90"
+            data-testid="button-confirmation-confirm"
+          >
+            {isConfirming ? 'Submitting…' : confirmLabel}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -340,6 +340,7 @@ export default function KYC() {
   const [companyType, setCompanyType] = useState<'public' | 'private'>(savedDraft?.companyType || 'private');
   const [corporateRole, setCorporateRole] = useState<'importer' | 'exporter' | 'both'>(savedDraft?.corporateRole || 'importer');
   const [corpStep1Errors, setCorpStep1Errors] = useState<{ companyName?: string; regNumber?: string; role?: string }>({});
+  const [corpStep4Errors, setCorpStep4Errors] = useState<{ headOfficeAddress?: string; emailAddress?: string }>({});
   const [natureOfBusiness, setNatureOfBusiness] = useState(savedDraft?.natureOfBusiness || '');
   const [numberOfEmployees, setNumberOfEmployees] = useState(savedDraft?.numberOfEmployees || '');
   const [headOfficeAddress, setHeadOfficeAddress] = useState(savedDraft?.headOfficeAddress || '');
@@ -2669,23 +2670,63 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('corporate_details') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           <Label>Head Office Address <span className="text-red-500">*</span></Label>
-                          <Textarea value={headOfficeAddress} onChange={(e) => setHeadOfficeAddress(e.target.value)} placeholder="Full registered address including city, state, postal code" data-testid="input-head-office" rows={3} />
+                          <Textarea
+                            value={headOfficeAddress}
+                            onChange={(e) => {
+                              setHeadOfficeAddress(e.target.value);
+                              setCorpStep4Errors(prev => ({ ...prev, headOfficeAddress: e.target.value.trim() ? undefined : 'Head office address is required' }));
+                            }}
+                            onBlur={() => setCorpStep4Errors(prev => ({ ...prev, headOfficeAddress: headOfficeAddress.trim() ? undefined : 'Head office address is required' }))}
+                            placeholder="Full registered address including city, state, postal code"
+                            data-testid="input-head-office"
+                            rows={3}
+                            className={corpStep4Errors.headOfficeAddress ? 'border-red-500 focus-visible:ring-red-500' : headOfficeAddress.trim() ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                          />
+                          {corpStep4Errors.headOfficeAddress && <p className="text-xs text-red-500">{corpStep4Errors.headOfficeAddress}</p>}
                         </div>
                         
                         <div className="grid md:grid-cols-3 gap-4">
                           <div className="space-y-2">
                             <Label>Telephone</Label>
-                            <Input value={telephoneNumber} onChange={(e) => setTelephoneNumber(e.target.value)} placeholder="+1 234 567 8900" data-testid="input-telephone" />
+                            <Input
+                              value={telephoneNumber}
+                              onChange={(e) => setTelephoneNumber(e.target.value)}
+                              placeholder="+1 234 567 8900"
+                              data-testid="input-telephone"
+                              className={telephoneNumber.trim() ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>Website</Label>
-                            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.example.com" data-testid="input-website" />
+                            <Input
+                              value={website}
+                              onChange={(e) => setWebsite(e.target.value)}
+                              placeholder="https://www.example.com"
+                              data-testid="input-website"
+                              className={website.trim() ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                            />
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label>Email Address</Label>
-                            <Input value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="info@company.com" data-testid="input-email-address" />
+                            <Input
+                              value={emailAddress}
+                              onChange={(e) => {
+                                setEmailAddress(e.target.value);
+                                const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value);
+                                setCorpStep4Errors(prev => ({ ...prev, emailAddress: e.target.value && !emailValid ? 'Invalid email format' : undefined }));
+                              }}
+                              onBlur={() => {
+                                if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
+                                  setCorpStep4Errors(prev => ({ ...prev, emailAddress: 'Invalid email format' }));
+                                }
+                              }}
+                              placeholder="info@company.com"
+                              data-testid="input-email-address"
+                              className={corpStep4Errors.emailAddress ? 'border-red-500 focus-visible:ring-red-500' : emailAddress && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress) ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                            />
+                            {corpStep4Errors.emailAddress && <p className="text-xs text-red-500">{corpStep4Errors.emailAddress}</p>}
                           </div>
                         </div>
                         
@@ -2711,8 +2752,12 @@ export default function KYC() {
                         <Button variant="outline" onClick={() => setCorporateStep(3)}>Back</Button>
                         <Button 
                           onClick={() => {
-                            if (!headOfficeAddress.trim()) {
-                              toast.error("Head office address is required");
+                            const errors: { headOfficeAddress?: string; emailAddress?: string } = {};
+                            if (!headOfficeAddress.trim()) errors.headOfficeAddress = 'Head office address is required';
+                            if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) errors.emailAddress = 'Invalid email format';
+                            if (Object.keys(errors).length > 0) {
+                              setCorpStep4Errors(errors);
+                              toast.error("Please fix the highlighted fields");
                               return;
                             }
                             setCorporateStep(5);

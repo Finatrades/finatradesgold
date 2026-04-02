@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 
 interface UseFormDraftOptions<T> {
   key: string;
@@ -126,6 +126,10 @@ export function useFormDraft<T>({
     return serverDraftData;
   }, [serverDraftData, dismissResume]);
 
+  const serializedData = useMemo(() => {
+    try { return JSON.stringify(data); } catch { return ''; }
+  }, [data]);
+
   useEffect(() => {
     if (!enabled) return;
     setIsDirty(true);
@@ -134,7 +138,7 @@ export function useFormDraft<T>({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [data, debounceMs, save, enabled]);
+  }, [serializedData, debounceMs, save, enabled]);
 
   return { savedAt, isDirty, showResumeBanner, serverDraftData, save, load, clear, dismissResume, restoreDraft };
 }
