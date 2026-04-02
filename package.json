@@ -29,6 +29,7 @@
     "@hookform/resolvers": "^3.10.0",
     "@isaacs/brace-expansion": "^5.0.1",
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@mediapipe/tasks-vision": "^0.10.34",
     "@opentelemetry/auto-instrumentations-node": "^0.67.3",
     "@opentelemetry/exporter-trace-otlp-http": "^0.209.0",
     "@opentelemetry/sdk-node": "^0.209.0",
