@@ -339,6 +339,7 @@ export default function KYC() {
   const [countryOfIncorporation, setCountryOfIncorporation] = useState(savedDraft?.countryOfIncorporation || '');
   const [companyType, setCompanyType] = useState<'public' | 'private'>(savedDraft?.companyType || 'private');
   const [corporateRole, setCorporateRole] = useState<'importer' | 'exporter' | 'both'>(savedDraft?.corporateRole || 'importer');
+  const [corpStep1Errors, setCorpStep1Errors] = useState<{ companyName?: string; regNumber?: string; role?: string }>({});
   const [natureOfBusiness, setNatureOfBusiness] = useState(savedDraft?.natureOfBusiness || '');
   const [numberOfEmployees, setNumberOfEmployees] = useState(savedDraft?.numberOfEmployees || '');
   const [headOfficeAddress, setHeadOfficeAddress] = useState(savedDraft?.headOfficeAddress || '');
@@ -767,8 +768,9 @@ export default function KYC() {
     }
     
     // Validate required documents (skip validation for locked sections in resubmit mode)
-    if (!isSectionLocked('documents') && (!idFrontFile || !idBackFile || !addressProofFile)) {
-      toast.error("Please upload all required documents");
+    const hasValidId = (idFrontFile && idBackFile) || passportFile;
+    if (!isSectionLocked('documents') && (!hasValidId || !addressProofFile)) {
+      toast.error("Please upload all required documents (ID front + back, or passport, and address proof)");
       return;
     }
     
@@ -1347,7 +1349,9 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isIdentityDocsComplete = isSectionLocked('documents') || ((idFrontFile || passportFile) && passportExpiryDate);
+    const isIdentityDocsComplete = isSectionLocked('documents') || (
+      ((idFrontFile && idBackFile) || passportFile) && !!passportExpiryDate
+    );
     const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
@@ -2217,7 +2221,7 @@ export default function KYC() {
                   { id: 'corp-1', label: 'Company Info', description: 'Details & contacts', isComplete: corporateStep > 1 },
                   { id: 'corp-2', label: 'Directors & Owners', description: 'UBO & shareholding', isComplete: corporateStep > 2 },
                   { id: 'corp-3', label: 'Business Documents', description: 'Corporate document upload', isComplete: corporateStep > 3 },
-                  { id: 'corp-4', label: 'Address & Compliance', description: 'Registered address & representative', isComplete: corporateStep > 4 },
+                  { id: 'corp-4', label: 'Address & Compliance', description: 'Registered address & contacts', isComplete: corporateStep > 4 },
                   { id: 'corp-5', label: 'Review & Submit', description: 'Final confirmation' },
                 ] as WizardStep[]}
                 currentStep={`corp-${corporateStep}`}
@@ -2252,13 +2256,35 @@ export default function KYC() {
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('corporate_details') ? 'opacity-60 pointer-events-none' : ''}`}>
                         <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label>Company Name <span className="text-red-500">*</span></Label>
-                            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company legal name" data-testid="input-company-name" />
+                            <Input
+                              value={companyName}
+                              onChange={(e) => {
+                                setCompanyName(e.target.value);
+                                setCorpStep1Errors(prev => ({ ...prev, companyName: e.target.value.trim() ? undefined : 'Company name is required' }));
+                              }}
+                              onBlur={() => setCorpStep1Errors(prev => ({ ...prev, companyName: companyName.trim() ? undefined : 'Company name is required' }))}
+                              placeholder="Company legal name"
+                              data-testid="input-company-name"
+                              className={corpStep1Errors.companyName ? 'border-red-500 focus-visible:ring-red-500' : companyName.trim() ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                            />
+                            {corpStep1Errors.companyName && <p className="text-xs text-red-500">{corpStep1Errors.companyName}</p>}
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label>Registration Number <span className="text-red-500">*</span></Label>
-                            <Input value={corporateRegNumber} onChange={(e) => setCorporateRegNumber(e.target.value)} placeholder="Company registration number" data-testid="input-reg-number" />
+                            <Input
+                              value={corporateRegNumber}
+                              onChange={(e) => {
+                                setCorporateRegNumber(e.target.value);
+                                setCorpStep1Errors(prev => ({ ...prev, regNumber: e.target.value.trim() ? undefined : 'Registration number is required' }));
+                              }}
+                              onBlur={() => setCorpStep1Errors(prev => ({ ...prev, regNumber: corporateRegNumber.trim() ? undefined : 'Registration number is required' }))}
+                              placeholder="Company registration number"
+                              data-testid="input-reg-number"
+                              className={corpStep1Errors.regNumber ? 'border-red-500 focus-visible:ring-red-500' : corporateRegNumber.trim() ? 'border-green-500 focus-visible:ring-green-500' : ''}
+                            />
+                            {corpStep1Errors.regNumber && <p className="text-xs text-red-500">{corpStep1Errors.regNumber}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label>Date of Incorporation</Label>
@@ -2280,10 +2306,16 @@ export default function KYC() {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label>Role <span className="text-red-500">*</span></Label>
-                            <Select value={corporateRole} onValueChange={(v: 'importer' | 'exporter' | 'both') => setCorporateRole(v)}>
-                              <SelectTrigger data-testid="select-corporate-role">
+                            <Select
+                              value={corporateRole}
+                              onValueChange={(v: 'importer' | 'exporter' | 'both') => {
+                                setCorporateRole(v);
+                                setCorpStep1Errors(prev => ({ ...prev, role: v ? undefined : 'Role is required' }));
+                              }}
+                            >
+                              <SelectTrigger data-testid="select-corporate-role" className={corpStep1Errors.role ? 'border-red-500' : corporateRole ? 'border-green-500' : ''}>
                                 <SelectValue placeholder="Select role" />
                               </SelectTrigger>
                               <SelectContent>
@@ -2292,6 +2324,7 @@ export default function KYC() {
                                 <SelectItem value="both">Both (Importer & Exporter)</SelectItem>
                               </SelectContent>
                             </Select>
+                            {corpStep1Errors.role && <p className="text-xs text-red-500">{corpStep1Errors.role}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label>Number of Employees</Label>
@@ -2314,44 +2347,6 @@ export default function KYC() {
                           <Label>Nature of Business</Label>
                           <Textarea value={natureOfBusiness} onChange={(e) => setNatureOfBusiness(e.target.value)} placeholder="Describe your company's primary business activities" data-testid="input-nature-business" />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label>Head Office Address</Label>
-                          <Textarea value={headOfficeAddress} onChange={(e) => setHeadOfficeAddress(e.target.value)} placeholder="Full address including city, state, postal code" data-testid="input-head-office" />
-                        </div>
-                        
-                        <div className="grid md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label>Telephone</Label>
-                            <Input value={telephoneNumber} onChange={(e) => setTelephoneNumber(e.target.value)} placeholder="+1 234 567 8900" data-testid="input-telephone" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Website</Label>
-                            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.example.com" data-testid="input-website" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Email Address</Label>
-                            <Input value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="info@company.com" data-testid="input-email" />
-                          </div>
-                        </div>
-                        
-                        <div className="border-t pt-4">
-                          <h4 className="font-medium mb-4">Contact Persons</h4>
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                              <h5 className="text-sm font-medium text-muted-foreground">Trading Contact</h5>
-                              <Input value={tradingContactName} onChange={(e) => setTradingContactName(e.target.value)} placeholder="Full Name" data-testid="input-trading-name" />
-                              <Input value={tradingContactEmail} onChange={(e) => setTradingContactEmail(e.target.value)} placeholder="Email" data-testid="input-trading-email" />
-                              <Input value={tradingContactPhone} onChange={(e) => setTradingContactPhone(e.target.value)} placeholder="Phone" data-testid="input-trading-phone" />
-                            </div>
-                            <div className="space-y-3">
-                              <h5 className="text-sm font-medium text-muted-foreground">Finance Contact</h5>
-                              <Input value={financeContactName} onChange={(e) => setFinanceContactName(e.target.value)} placeholder="Full Name" data-testid="input-finance-name" />
-                              <Input value={financeContactEmail} onChange={(e) => setFinanceContactEmail(e.target.value)} placeholder="Email" data-testid="input-finance-email" />
-                              <Input value={financeContactPhone} onChange={(e) => setFinanceContactPhone(e.target.value)} placeholder="Phone" data-testid="input-finance-phone" />
-                            </div>
-                          </div>
-                        </div>
                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => setLocation('/dashboard')} data-testid="button-back-dashboard">
@@ -2359,8 +2354,13 @@ export default function KYC() {
                         </Button>
                         <Button 
                           onClick={() => {
-                            if (!companyName.trim() || !corporateRegNumber.trim()) {
-                              toast.error("Company name and registration number are required");
+                            const errors: { companyName?: string; regNumber?: string; role?: string } = {};
+                            if (!companyName.trim()) errors.companyName = 'Company name is required';
+                            if (!corporateRegNumber.trim()) errors.regNumber = 'Registration number is required';
+                            if (!corporateRole) errors.role = 'Role is required';
+                            if (Object.keys(errors).length > 0) {
+                              setCorpStep1Errors(errors);
+                              toast.error("Please fill in all required fields");
                               return;
                             }
                             setCorporateStep(2);
@@ -2519,53 +2519,96 @@ export default function KYC() {
                             : 'Upload required corporate documents. All documents should be certified copies or originals.'}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className={`space-y-4 ${isSectionLocked('corporate_documents') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        {[
-                          { key: 'certificateOfIncorporation', label: 'Certificate of Incorporation', required: true },
-                          { key: 'tradeLicense', label: 'Trade License / Business License', required: false },
-                          { key: 'memorandumArticles', label: 'Memorandum & Articles of Association', required: true },
-                          { key: 'shareholderList', label: 'List of Shareholders', required: true },
-                          { key: 'uboPassports', label: 'UBO Passports (all beneficial owners)', required: true },
-                          { key: 'boardResolution', label: 'Board Resolution', required: false },
-                          { key: 'authorizedSignatories', label: 'Authorized Signatories', required: false },
-                          { key: 'bankReferenceLetter', label: 'Bank Reference Letter', required: false },
-                          { key: 'financialStatements', label: 'Financial Statements (last 2 years)', required: false },
-                          { key: 'taxCertificate', label: 'Tax Certificate / VAT Registration', required: false },
-                          { key: 'pepSelfDeclaration', label: 'PEP Self-Declaration Form', required: hasPepOwners },
-                        ].map((doc) => (
-                          <div key={doc.key} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                corpDocs[doc.key as keyof typeof corpDocs] ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
-                              }`}>
-                                {corpDocs[doc.key as keyof typeof corpDocs] ? <CheckCircle2 className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                              </div>
-                              <div>
-                                <span className="font-medium text-sm">{doc.label}</span>
-                                {doc.required && <span className="text-red-500 ml-1">*</span>}
-                                {corpDocs[doc.key as keyof typeof corpDocs] && (
-                                  <p className="text-xs text-muted-foreground">{corpDocs[doc.key as keyof typeof corpDocs]?.name}</p>
-                                )}
-                              </div>
-                            </div>
-                            <div>
-                              <input 
-                                type="file" 
-                                id={`doc-${doc.key}`} 
-                                className="hidden" 
-                                onChange={(e) => handleCorpDocUpload(e, doc.key as keyof typeof corpDocs)}
+                      <CardContent className={`space-y-6 ${isSectionLocked('corporate_documents') ? 'opacity-60 pointer-events-none' : ''}`}>
+                        <div>
+                          <h4 className="text-sm font-semibold mb-3 text-foreground">Required Documents</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <FileUploadZone
+                              label="Certificate of Incorporation *"
+                              description="Upload certified copy"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, certificateOfIncorporation: file }))}
+                              file={corpDocs.certificateOfIncorporation ?? null}
+                              testId="upload-cert-incorporation"
+                              required
+                            />
+                            <FileUploadZone
+                              label="Memorandum & Articles of Association *"
+                              description="M&A or equivalent charter document"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, memorandumArticles: file }))}
+                              file={corpDocs.memorandumArticles ?? null}
+                              testId="upload-memorandum"
+                              required
+                            />
+                            <FileUploadZone
+                              label="List of Shareholders *"
+                              description="Current shareholder register"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, shareholderList: file }))}
+                              file={corpDocs.shareholderList ?? null}
+                              testId="upload-shareholder-list"
+                              required
+                            />
+                            <FileUploadZone
+                              label="UBO Passports *"
+                              description="Passports of all beneficial owners"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, uboPassports: file }))}
+                              file={corpDocs.uboPassports ?? null}
+                              testId="upload-ubo-passports"
+                              required
+                            />
+                            {hasPepOwners && (
+                              <FileUploadZone
+                                label="PEP Self-Declaration Form *"
+                                description="Required due to PEP status"
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                onFile={(file) => setCorpDocs(prev => ({ ...prev, pepSelfDeclaration: file }))}
+                                file={corpDocs.pepSelfDeclaration ?? null}
+                                testId="upload-pep-declaration"
+                                required
                               />
-                              <label htmlFor={`doc-${doc.key}`}>
-                                <Button variant="outline" size="sm" asChild>
-                                  <span className="cursor-pointer">
-                                    <Upload className="w-4 h-4 mr-1" />
-                                    {corpDocs[doc.key as keyof typeof corpDocs] ? 'Replace' : 'Upload'}
-                                  </span>
-                                </Button>
-                              </label>
-                            </div>
+                            )}
                           </div>
-                        ))}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Optional Supporting Documents</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <FileUploadZone
+                              label="Trade License / Business License"
+                              description="If applicable in your jurisdiction"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, tradeLicense: file }))}
+                              file={corpDocs.tradeLicense ?? null}
+                              testId="upload-trade-license"
+                            />
+                            <FileUploadZone
+                              label="Board Resolution"
+                              description="Authorizing this KYC submission"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, boardResolution: file }))}
+                              file={corpDocs.boardResolution ?? null}
+                              testId="upload-board-resolution"
+                            />
+                            <FileUploadZone
+                              label="Bank Reference Letter"
+                              description="From your primary banking institution"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, bankReferenceLetter: file }))}
+                              file={corpDocs.bankReferenceLetter ?? null}
+                              testId="upload-bank-reference"
+                            />
+                            <FileUploadZone
+                              label="Financial Statements (last 2 years)"
+                              description="Audited or management accounts"
+                              accept=".jpg,.jpeg,.png,.pdf"
+                              onFile={(file) => setCorpDocs(prev => ({ ...prev, financialStatements: file }))}
+                              file={corpDocs.financialStatements ?? null}
+                              testId="upload-financial-statements"
+                            />
+                          </div>
+                        </div>
                         
                         <div className="mt-6 p-4 border rounded-lg bg-muted/30">
                           <h4 className="font-medium text-sm mb-3">Document Expiry Dates</h4>
@@ -2607,138 +2650,77 @@ export default function KYC() {
                     </div>
                   )}
 
-                  {/* STEP 4: Representative Liveness */}
+                  {/* STEP 4: Address & Compliance */}
                   {corporateStep === 4 && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          Authorized Representative Verification
-                          {isSectionLocked('representative_liveness') && (
+                          Address & Compliance
+                          {isSectionLocked('corporate_details') && (
                             <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
                         </CardTitle>
                         <CardDescription>
-                          {isSectionLocked('representative_liveness')
+                          {isSectionLocked('corporate_details')
                             ? 'This section has been approved and is locked.'
-                            : 'The authorized representative must complete a liveness check to verify their identity.'}
+                            : 'Provide your registered address and primary contact persons.'}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="flex flex-col items-center py-6">
-                         <canvas ref={canvasRef} className="hidden" />
-                         
-                         {capturedSelfie && (
-                           <div className="text-center">
-                             <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
-                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
-                             </div>
-                             <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
-                               <CheckCircle2 className="w-5 h-5" />
-                               <span className="font-medium">Liveness Verified!</span>
-                             </div>
-                             <Button 
-                               type="button"
-                               onClick={retakeLiveness}
-                               variant="outline"
-                               className="gap-2"
-                               data-testid="button-retake-liveness"
-                             >
-                               <RefreshCw className="w-4 h-4" />
-                               Retake Photo
-                             </Button>
-                           </div>
-                         )}
-
-                         {!cameraStream && !capturedSelfie && (
-                           <div className="flex flex-col items-center justify-center text-center w-full">
-                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6 mx-auto">
-                               <Camera className="w-16 h-16 text-muted-foreground" />
-                             </div>
-                             <Button 
-                               type="button"
-                               onClick={startLivenessCamera}
-                               variant="secondary"
-                               className="gap-2 mb-4 mx-auto"
-                               data-testid="button-start-liveness"
-                             >
-                               <Camera className="w-5 h-5" />
-                               Start Liveness Check
-                             </Button>
-                             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                               Please ensure your face is well-lit and centered. No glasses or hats.
-                             </p>
-                           </div>
-                         )}
-
-                         {cameraError && (
-                           <div className="text-center text-red-500 py-4">
-                             <p>{cameraError}</p>
-                             <Button type="button" onClick={startLivenessCamera} variant="outline" className="mt-2">
-                               Try Again
-                             </Button>
-                           </div>
-                         )}
-
-                         {cameraStream && !capturedSelfie && (
-                           <div className="relative w-full max-w-xs">
-                             <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
-                               <video
-                                 ref={videoRef}
-                                 autoPlay
-                                 playsInline
-                                 muted
-                                 className="w-full h-full object-cover"
-                                 style={{ transform: 'scaleX(-1)' }}
-                               />
-                               {!isCameraReady && (
-                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                                   <p className="text-white text-sm">Loading camera...</p>
-                                 </div>
-                               )}
-                             </div>
-                             
-                             {isCameraReady && (
-                               <div className="mt-4 w-full">
-                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                   <span>Movement Detection</span>
-                                   <span>{Math.round(movementProgress)}%</span>
-                                 </div>
-                                 <Progress value={movementProgress} className="h-2" />
-                               </div>
-                             )}
-                             
-                             <div className="mt-4 text-center">
-                               <p className="text-sm font-medium text-primary animate-pulse">
-                                 {instruction}
-                               </p>
-                               <p className="text-xs text-muted-foreground mt-2">
-                                 Slowly turn your head left and right to verify liveness
-                               </p>
-                             </div>
-                             
-                             <div className="mt-4 flex justify-center">
-                               <Button 
-                                 type="button"
-                                 onClick={stopLivenessCamera}
-                                 variant="outline"
-                                 size="sm"
-                               >
-                                 Cancel
-                               </Button>
-                             </div>
-                           </div>
-                         )}
+                      <CardContent className={`space-y-6 ${isSectionLocked('corporate_details') ? 'opacity-60 pointer-events-none' : ''}`}>
+                        <div className="space-y-2">
+                          <Label>Head Office Address <span className="text-red-500">*</span></Label>
+                          <Textarea value={headOfficeAddress} onChange={(e) => setHeadOfficeAddress(e.target.value)} placeholder="Full registered address including city, state, postal code" data-testid="input-head-office" rows={3} />
+                        </div>
+                        
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Telephone</Label>
+                            <Input value={telephoneNumber} onChange={(e) => setTelephoneNumber(e.target.value)} placeholder="+1 234 567 8900" data-testid="input-telephone" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Website</Label>
+                            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.example.com" data-testid="input-website" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="info@company.com" data-testid="input-email-address" />
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-4">Contact Persons</h4>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                              <h5 className="text-sm font-medium text-muted-foreground">Trading Contact</h5>
+                              <Input value={tradingContactName} onChange={(e) => setTradingContactName(e.target.value)} placeholder="Full Name" data-testid="input-trading-name" />
+                              <Input value={tradingContactEmail} onChange={(e) => setTradingContactEmail(e.target.value)} placeholder="Email" data-testid="input-trading-email" />
+                              <Input value={tradingContactPhone} onChange={(e) => setTradingContactPhone(e.target.value)} placeholder="Phone" data-testid="input-trading-phone" />
+                            </div>
+                            <div className="space-y-3">
+                              <h5 className="text-sm font-medium text-muted-foreground">Finance Contact</h5>
+                              <Input value={financeContactName} onChange={(e) => setFinanceContactName(e.target.value)} placeholder="Full Name" data-testid="input-finance-name" />
+                              <Input value={financeContactEmail} onChange={(e) => setFinanceContactEmail(e.target.value)} placeholder="Email" data-testid="input-finance-email" />
+                              <Input value={financeContactPhone} onChange={(e) => setFinanceContactPhone(e.target.value)} placeholder="Phone" data-testid="input-finance-phone" />
+                            </div>
+                          </div>
+                        </div>
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setCorporateStep(3); }}>Back</Button>
+                        <Button variant="outline" onClick={() => setCorporateStep(3)}>Back</Button>
                         <Button 
-                          onClick={() => setCorporateStep(5)}
-                          disabled={!capturedSelfie}
+                          onClick={() => {
+                            if (!headOfficeAddress.trim()) {
+                              toast.error("Head office address is required");
+                              return;
+                            }
+                            setCorporateStep(5);
+                          }}
                           className="bg-primary text-white hover:bg-primary/90"
                           data-testid="button-continue-step-5"
                         >
-                          Continue
+                          Continue to Review
                         </Button>
                       </CardFooter>
                     </div>
@@ -2784,9 +2766,85 @@ export default function KYC() {
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle>Review & Submit</CardTitle>
-                        <CardDescription>Please review your submission before finalizing.</CardDescription>
+                        <CardDescription>Complete the representative liveness check, then review and submit your application.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
+
+                        {/* Representative Liveness Check */}
+                        <div className="border rounded-xl p-4 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">Authorized Representative Verification</h4>
+                            {isSectionLocked('representative_liveness') && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                <Lock className="w-3 h-3" /> Approved
+                              </span>
+                            )}
+                          </div>
+                          {!isSectionLocked('representative_liveness') && (
+                            <div className="flex flex-col items-center py-2">
+                              <canvas ref={canvasRef} className="hidden" />
+                              {capturedSelfie ? (
+                                <div className="text-center">
+                                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-3">
+                                    <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2 text-green-600 mb-3">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    <span className="font-medium text-sm">Liveness Verified!</span>
+                                  </div>
+                                  <Button type="button" onClick={retakeLiveness} variant="outline" size="sm" className="gap-2" data-testid="button-retake-liveness">
+                                    <RefreshCw className="w-4 h-4" /> Retake
+                                  </Button>
+                                </div>
+                              ) : !cameraStream ? (
+                                <div className="flex flex-col items-center text-center">
+                                  <div className="w-32 h-32 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-4 mx-auto">
+                                    <Camera className="w-12 h-12 text-muted-foreground" />
+                                  </div>
+                                  <Button type="button" onClick={startLivenessCamera} variant="secondary" className="gap-2 mb-2" data-testid="button-start-liveness">
+                                    <Camera className="w-4 h-4" /> Start Liveness Check
+                                  </Button>
+                                  <p className="text-xs text-muted-foreground max-w-xs">Face well-lit, centered. No glasses or hats.</p>
+                                  {cameraError && <p className="text-sm text-red-500 mt-2">{cameraError}</p>}
+                                </div>
+                              ) : (
+                                <div className="relative w-full max-w-xs">
+                                  <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary">
+                                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                                    {!isCameraReady && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                                        <p className="text-white text-xs">Loading camera...</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isCameraReady && (
+                                    <div className="mt-3 w-full">
+                                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                        <span>Movement Detection</span>
+                                        <span>{Math.round(movementProgress)}%</span>
+                                      </div>
+                                      <Progress value={movementProgress} className="h-2" />
+                                    </div>
+                                  )}
+                                  <div className="mt-3 text-center">
+                                    <p className="text-sm font-medium text-primary animate-pulse">{instruction}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Slowly turn your head left and right</p>
+                                  </div>
+                                  <div className="mt-3 flex justify-center">
+                                    <Button type="button" onClick={stopLivenessCamera} variant="outline" size="sm">Cancel</Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {isSectionLocked('representative_liveness') && (
+                            <div className="flex items-center gap-2 text-green-600 text-sm">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Liveness previously approved — no action required.</span>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="space-y-4">
                           <div className="p-4 bg-muted/30 rounded-lg">
                             <h4 className="font-medium mb-2">Company Information</h4>
