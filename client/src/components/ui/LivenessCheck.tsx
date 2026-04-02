@@ -23,250 +23,257 @@ function getBlendshape(result: any, name: string): number {
   )?.score ?? 0;
 }
 
+// ─── Pixar / claymorphism 3D cartoon avatar ────────────────────────────────
+
 function AvatarFace({ challenge, allDone }: { challenge: Challenge | null; allDone: boolean }) {
   const isBlinking = challenge === 'blink';
   const isMouth = challenge === 'mouth';
 
   return (
-    <svg viewBox="0 0 200 220" width="160" height="176" aria-hidden style={{ filter: 'drop-shadow(0 8px 24px rgba(124,58,237,0.35))' }}>
+    <svg
+      viewBox="0 0 260 300"
+      width="170" height="197"
+      aria-hidden
+      style={{ filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.30))' }}
+    >
       <defs>
-        {/* Outer glow ring gradient */}
-        <linearGradient id="lv-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={allDone ? '#10b981' : '#7c3aed'} />
-          <stop offset="50%" stopColor={allDone ? '#34d399' : '#a855f7'} />
-          <stop offset="100%" stopColor={allDone ? '#6ee7b7' : '#f59e0b'} />
+        {/* Skin — warm peach, bright top-left highlight */}
+        <radialGradient id="cv-skin" cx="38%" cy="28%" r="72%">
+          <stop offset="0%"   stopColor="#fdebd4" />
+          <stop offset="35%"  stopColor="#f7c8a0" />
+          <stop offset="75%"  stopColor="#e8a070" />
+          <stop offset="100%" stopColor="#c97840" />
+        </radialGradient>
+        {/* Face edge vignette for 3D roundness */}
+        <radialGradient id="cv-vignette" cx="50%" cy="52%" r="50%">
+          <stop offset="58%" stopColor="transparent" />
+          <stop offset="100%" stopColor="rgba(100,45,0,0.28)" />
+        </radialGradient>
+        {/* Ear skin */}
+        <radialGradient id="cv-ear" cx="50%" cy="40%" r="60%">
+          <stop offset="0%"   stopColor="#f7c8a0" />
+          <stop offset="100%" stopColor="#d98e55" />
+        </radialGradient>
+        {/* Hair — brown with blue-grey crown sheen */}
+        <linearGradient id="cv-hair-base" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%"   stopColor="#7a5230" />
+          <stop offset="45%"  stopColor="#5a3a1a" />
+          <stop offset="100%" stopColor="#2e1a06" />
         </linearGradient>
-        {/* Background disc */}
-        <radialGradient id="lv-bg" cx="40%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#1e1b4b" />
-          <stop offset="100%" stopColor="#0f0a1e" />
-        </radialGradient>
-        {/* Skin gradient — warm, 3D depth */}
-        <radialGradient id="lv-skin" cx="42%" cy="35%" r="65%">
-          <stop offset="0%"   stopColor="#fde8c8" />
-          <stop offset="40%"  stopColor="#f5c99a" />
-          <stop offset="80%"  stopColor="#e8a96e" />
-          <stop offset="100%" stopColor="#c47d3b" />
-        </radialGradient>
-        {/* Face edge shadow */}
-        <radialGradient id="lv-shade" cx="50%" cy="50%" r="50%">
-          <stop offset="60%"  stopColor="transparent" />
-          <stop offset="100%" stopColor="rgba(80,30,0,0.35)" />
-        </radialGradient>
-        {/* Hair gradient */}
-        <linearGradient id="lv-hair" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#2d1b00" />
-          <stop offset="100%" stopColor="#1a0f00" />
+        <linearGradient id="cv-hair-sheen" x1="0%" y1="0%" x2="60%" y2="100%">
+          <stop offset="0%"   stopColor="rgba(90,70,110,0.55)" />
+          <stop offset="100%" stopColor="rgba(90,70,110,0)" />
         </linearGradient>
-        {/* Iris gradient — gold / amber brand color */}
-        <radialGradient id="lv-iris-l" cx="35%" cy="30%" r="70%">
-          <stop offset="0%"   stopColor={allDone ? '#34d399' : '#f59e0b'} />
-          <stop offset="50%"  stopColor={allDone ? '#059669' : '#b45309'} />
-          <stop offset="100%" stopColor={allDone ? '#064e3b' : '#451a03'} />
+        {/* Eyes — cartoon green iris */}
+        <radialGradient id="cv-iris" cx="35%" cy="28%" r="68%">
+          <stop offset="0%"   stopColor={allDone ? '#6ee7b7' : '#66bb6a'} />
+          <stop offset="50%"  stopColor={allDone ? '#10b981' : '#388e3c'} />
+          <stop offset="100%" stopColor={allDone ? '#065f46' : '#1b5e20'} />
         </radialGradient>
-        <radialGradient id="lv-iris-r" cx="35%" cy="30%" r="70%">
-          <stop offset="0%"   stopColor={allDone ? '#34d399' : '#f59e0b'} />
-          <stop offset="50%"  stopColor={allDone ? '#059669' : '#b45309'} />
-          <stop offset="100%" stopColor={allDone ? '#064e3b' : '#451a03'} />
-        </radialGradient>
-        {/* Lip gradient */}
-        <linearGradient id="lv-lip" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#c2185b" />
-          <stop offset="100%" stopColor="#880e4f" />
+        {/* Teal shirt */}
+        <linearGradient id="cv-shirt" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#26a69a" />
+          <stop offset="100%" stopColor="#00796b" />
+        </linearGradient>
+        {/* Blue collar */}
+        <linearGradient id="cv-collar" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#1976d2" />
+          <stop offset="100%" stopColor="#0d47a1" />
         </linearGradient>
         {/* Cheek blush */}
-        <radialGradient id="lv-blush-l" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,120,120,0.35)" />
-          <stop offset="100%" stopColor="rgba(255,120,120,0)" />
+        <radialGradient id="cv-blush" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="rgba(255,140,110,0.38)" />
+          <stop offset="100%" stopColor="rgba(255,140,110,0)" />
         </radialGradient>
-        <radialGradient id="lv-blush-r" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,120,120,0.35)" />
-          <stop offset="100%" stopColor="rgba(255,120,120,0)" />
-        </radialGradient>
-        {/* Forehead specular highlight */}
-        <radialGradient id="lv-spec" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
+        {/* Neck */}
+        <linearGradient id="cv-neck" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#f0b07a" />
+          <stop offset="100%" stopColor="#d08040" />
+        </linearGradient>
+        {/* Forehead gloss */}
+        <radialGradient id="cv-gloss" cx="45%" cy="45%" r="55%">
+          <stop offset="0%"   stopColor="rgba(255,255,255,0.38)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </radialGradient>
-        {/* Neck gradient */}
-        <linearGradient id="lv-neck" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#e8a96e" />
-          <stop offset="100%" stopColor="#c47d3b" />
-        </linearGradient>
-        {/* Done glow */}
-        <filter id="lv-glow">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
       </defs>
 
       <style>{`
-        @keyframes lv-blink {
-          0%, 25%, 100% { ry: 0px; }
-          8%             { ry: 14px; }
-          16%            { ry: 14px; }
+        @keyframes cv-blink {
+          0%, 22%, 100% { ry: 0; }
+          7%, 15%        { ry: 26px; }
         }
-        @keyframes lv-brow-up {
+        @keyframes cv-brow-raise {
           0%, 100% { transform: translateY(0); }
-          30%, 70% { transform: translateY(-3px); }
+          25%, 75%  { transform: translateY(-4px); }
         }
-        @keyframes lv-jaw-open {
+        @keyframes cv-jaw {
           0%, 100% { transform: translateY(0) scaleY(1); }
-          35%, 65%  { transform: translateY(5px) scaleY(1.5); }
+          30%, 70%  { transform: translateY(7px) scaleY(1.6); }
         }
-        @keyframes lv-breathe {
-          0%, 100% { transform: scale(1); }
-          50%      { transform: scale(1.008); }
+        @keyframes cv-breathe {
+          0%, 100% { transform: scale(1);     }
+          50%      { transform: scale(1.012); }
         }
-        @keyframes lv-done-pop {
-          0%   { transform: scale(0.7); opacity: 0; }
-          70%  { transform: scale(1.08); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
+        @keyframes cv-done-pop {
+          0%   { transform: scale(0.6); opacity: 0; }
+          65%  { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1);   opacity: 1; }
         }
-        @keyframes lv-ring-spin {
-          from { stroke-dashoffset: 502; }
-          to   { stroke-dashoffset: 0; }
-        }
-        .lv-face-group { animation: lv-breathe 3s ease-in-out infinite; transform-origin: 100px 110px; }
-        .lv-lid-l { animation: ${isBlinking ? 'lv-blink 2s ease-in-out infinite' : 'none'}; transform-origin: 72px 96px; }
-        .lv-lid-r { animation: ${isBlinking ? 'lv-blink 2s ease-in-out infinite' : 'none'}; transform-origin: 128px 96px; }
-        .lv-brow  { animation: ${isBlinking ? 'lv-brow-up 2s ease-in-out infinite' : 'none'}; }
-        .lv-jaw-g { animation: ${isMouth ? 'lv-jaw-open 2s ease-in-out infinite' : 'none'}; transform-origin: 100px 148px; }
-        .lv-done-g { animation: lv-done-pop 0.5s cubic-bezier(.17,.67,.37,1.25) both; }
+        .cv-body  { animation: cv-breathe 3.2s ease-in-out infinite; transform-origin: 130px 150px; }
+        .cv-lid-l { animation: ${isBlinking ? 'cv-blink 2s ease-in-out infinite' : 'none'}; transform-origin: 103px 138px; }
+        .cv-lid-r { animation: ${isBlinking ? 'cv-blink 2s ease-in-out infinite' : 'none'}; transform-origin: 157px 138px; }
+        .cv-brows { animation: ${isBlinking ? 'cv-brow-raise 2s ease-in-out infinite' : 'none'}; }
+        .cv-jaw   { animation: ${isMouth ? 'cv-jaw 2.2s ease-in-out infinite' : 'none'}; transform-origin: 130px 196px; }
+        .cv-done  { animation: cv-done-pop 0.55s cubic-bezier(.17,.67,.37,1.35) both; }
       `}</style>
 
-      {/* ── Background disc ────────────────────────────────── */}
-      <circle cx="100" cy="110" r="96" fill="url(#lv-bg)" />
+      {/* ── Breathing group ─────────────────────────────── */}
+      <g className="cv-body">
 
-      {/* ── Outer glow ring ────────────────────────────────── */}
-      <circle cx="100" cy="110" r="94" fill="none"
-        stroke="url(#lv-ring)" strokeWidth={allDone ? '4' : '3'}
-        strokeDasharray="502" strokeLinecap="round"
-        opacity={allDone ? '1' : '0.85'} />
-
-      {/* ── Main face group (subtle breathing) ─────────────── */}
-      <g className="lv-face-group">
+        {/* Teal shirt */}
+        <ellipse cx="130" cy="294" rx="88" ry="42" fill="url(#cv-shirt)" />
+        <path d="M 60 268 Q 130 256 200 268 L 218 300 L 42 300 Z" fill="url(#cv-shirt)" />
+        {/* Blue V-collar */}
+        <path d="M 92 260 Q 130 252 168 260 Q 148 270 130 276 Q 112 270 92 260 Z"
+          fill="url(#cv-collar)" />
 
         {/* Neck */}
-        <rect x="84" y="178" width="32" height="28" rx="12" fill="url(#lv-neck)" />
+        <ellipse cx="130" cy="252" rx="30" ry="22" fill="url(#cv-neck)" />
+
+        {/* Left ear */}
+        <ellipse cx="38"  cy="158" rx="19" ry="24" fill="url(#cv-ear)" />
+        <ellipse cx="42"  cy="158" rx="12" ry="16" fill="#e89060" opacity="0.7" />
+        <ellipse cx="42"  cy="158" rx="6"  ry="9"  fill="#c87040" opacity="0.5" />
+
+        {/* Right ear */}
+        <ellipse cx="222" cy="158" rx="19" ry="24" fill="url(#cv-ear)" />
+        <ellipse cx="218" cy="158" rx="12" ry="16" fill="#e89060" opacity="0.7" />
+        <ellipse cx="218" cy="158" rx="6"  ry="9"  fill="#c87040" opacity="0.5" />
+
+        {/* Hair — back layer (behind face) */}
+        <ellipse cx="130" cy="98" rx="90" ry="72" fill="#3d2008" />
 
         {/* Face oval */}
-        <ellipse cx="100" cy="118" rx="62" ry="74" fill="url(#lv-skin)" />
-        {/* Edge shading for 3D roundness */}
-        <ellipse cx="100" cy="118" rx="62" ry="74" fill="url(#lv-shade)" />
+        <ellipse cx="130" cy="158" rx="88" ry="96" fill="url(#cv-skin)" />
+        {/* Edge vignette for roundness */}
+        <ellipse cx="130" cy="158" rx="88" ry="96" fill="url(#cv-vignette)" />
 
-        {/* Hair — covers top dome */}
-        <ellipse cx="100" cy="68" rx="62" ry="42" fill="url(#lv-hair)" />
-        {/* Hair parting / styling shape */}
-        <path d="M 100 46 Q 115 52 138 62 Q 162 48 155 35 Q 130 20 100 22 Q 70 20 45 35 Q 38 48 62 62 Q 85 52 100 46 Z"
-          fill="#3d2600" opacity="0.7" />
-        {/* Hair highlight */}
-        <ellipse cx="88" cy="52" rx="18" ry="8" fill="rgba(255,200,100,0.12)" transform="rotate(-15 88 52)" />
+        {/* Hair — front, sweeping over forehead */}
+        <path d="M 42 120 Q 44 52 130 40 Q 216 52 218 120
+                 Q 195 72 155 60 Q 130 52 108 58 Q 72 64 42 120 Z"
+          fill="url(#cv-hair-base)" />
+        {/* Left side depth */}
+        <path d="M 42 120 Q 48 80 80 65 Q 60 90 55 118 Z" fill="#2e1a06" />
+        {/* Right side depth */}
+        <path d="M 218 120 Q 210 78 172 60 Q 196 80 202 118 Z" fill="#2e1a06" />
+        {/* Blue-grey crown sheen */}
+        <path d="M 60 100 Q 90 48 130 40 Q 170 48 200 100
+                 Q 175 62 130 55 Q 85 62 60 100 Z"
+          fill="url(#cv-hair-sheen)" />
+        {/* Hair highlight streak */}
+        <ellipse cx="108" cy="62" rx="22" ry="8"
+          fill="rgba(200,175,145,0.28)" transform="rotate(-18 108 62)" />
 
-        {/* Forehead specular */}
-        <ellipse cx="88" cy="78" rx="22" ry="14" fill="url(#lv-spec)" />
+        {/* Forehead gloss */}
+        <ellipse cx="112" cy="100" rx="34" ry="20"
+          fill="url(#cv-gloss)" transform="rotate(-12 112 100)" />
 
-        {/* ── Eyebrows ─────────────────────────────────────── */}
-        <g className="lv-brow">
-          <path d="M 52 88 Q 66 82 80 86" stroke="#3d2600" strokeWidth="4.5" fill="none"
-            strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 120 86 Q 134 82 148 88" stroke="#3d2600" strokeWidth="4.5" fill="none"
-            strokeLinecap="round" strokeLinejoin="round" />
+        {/* ── Eyebrows ───────────────────────────────────── */}
+        <g className="cv-brows">
+          <path d="M 80 118 Q 100 110 118 115"
+            stroke="#3d1f00" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M 142 115 Q 160 110 180 118"
+            stroke="#3d1f00" strokeWidth="5" fill="none" strokeLinecap="round" />
         </g>
 
-        {/* ── Eyes ─────────────────────────────────────────── */}
-        {/* Left eye */}
-        <g>
-          <ellipse cx="72" cy="104" rx="17" ry="13" fill="white" />
-          <ellipse cx="72" cy="105" rx="11" ry="11" fill="url(#lv-iris-l)" />
-          <ellipse cx="72" cy="105" rx="6" ry="6" fill="#0f0500" />
-          <circle cx="76" cy="101" r="3.5" fill="rgba(255,255,255,0.8)" />
-          <circle cx="69" cy="107" r="1.5" fill="rgba(255,255,255,0.4)" />
-          {/* Upper eyelid line */}
-          <path d="M 55 104 Q 72 94 89 104" fill="#3d2600" opacity="0.25" />
-          {/* Lash line */}
-          <path d="M 56 104 Q 72 96 88 104" stroke="#1a0f00" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          {/* Animated eyelid */}
-          <ellipse className="lv-lid-l" cx="72" cy="98" rx="18" ry="0" fill="#f5c99a" />
-        </g>
+        {/* ── Left eye ───────────────────────────────────── */}
+        <circle cx="103" cy="140" r="26" fill="white" />
+        <circle cx="103" cy="142" r="18" fill="url(#cv-iris)" />
+        <circle cx="103" cy="142" r="10" fill="#0a1a0a" />
+        {/* Large cartoon catchlight */}
+        <circle cx="110" cy="134" r="8"  fill="rgba(255,255,255,0.92)" />
+        <circle cx="97"  cy="149" r="3"  fill="rgba(255,255,255,0.50)" />
+        {/* Upper lash line */}
+        <path d="M 78 138 Q 103 122 128 138"
+          stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round" />
+        {/* Animated eyelid (closes on blink) */}
+        <ellipse className="cv-lid-l" cx="103" cy="128" rx="28" ry="0" fill="#f7c8a0" />
 
-        {/* Right eye */}
-        <g>
-          <ellipse cx="128" cy="104" rx="17" ry="13" fill="white" />
-          <ellipse cx="128" cy="105" rx="11" ry="11" fill="url(#lv-iris-r)" />
-          <ellipse cx="128" cy="105" rx="6" ry="6" fill="#0f0500" />
-          <circle cx="132" cy="101" r="3.5" fill="rgba(255,255,255,0.8)" />
-          <circle cx="125" cy="107" r="1.5" fill="rgba(255,255,255,0.4)" />
-          <path d="M 111 104 Q 128 94 145 104" fill="#3d2600" opacity="0.25" />
-          <path d="M 112 104 Q 128 96 144 104" stroke="#1a0f00" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          <ellipse className="lv-lid-r" cx="128" cy="98" rx="18" ry="0" fill="#f5c99a" />
-        </g>
+        {/* ── Right eye ──────────────────────────────────── */}
+        <circle cx="157" cy="140" r="26" fill="white" />
+        <circle cx="157" cy="142" r="18" fill="url(#cv-iris)" />
+        <circle cx="157" cy="142" r="10" fill="#0a1a0a" />
+        <circle cx="164" cy="134" r="8"  fill="rgba(255,255,255,0.92)" />
+        <circle cx="151" cy="149" r="3"  fill="rgba(255,255,255,0.50)" />
+        <path d="M 132 138 Q 157 122 182 138"
+          stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <ellipse className="cv-lid-r" cx="157" cy="128" rx="28" ry="0" fill="#f7c8a0" />
 
-        {/* Under-eye soft shadow */}
-        <ellipse cx="72" cy="116" rx="16" ry="5" fill="rgba(150,80,20,0.12)" />
-        <ellipse cx="128" cy="116" rx="16" ry="5" fill="rgba(150,80,20,0.12)" />
+        {/* Under-eye shadow */}
+        <ellipse cx="103" cy="164" rx="22" ry="7" fill="rgba(180,90,30,0.13)" />
+        <ellipse cx="157" cy="164" rx="22" ry="7" fill="rgba(180,90,30,0.13)" />
 
-        {/* Cheek blush */}
-        <ellipse cx="54" cy="128" rx="20" ry="12" fill="url(#lv-blush-l)" />
-        <ellipse cx="146" cy="128" rx="20" ry="12" fill="url(#lv-blush-r)" />
+        {/* ── Cheek blush ────────────────────────────────── */}
+        <ellipse cx="66"  cy="178" rx="30" ry="18" fill="url(#cv-blush)" />
+        <ellipse cx="194" cy="178" rx="30" ry="18" fill="url(#cv-blush)" />
 
-        {/* ── Nose ─────────────────────────────────────────── */}
-        <path d="M 100 118 Q 96 132 90 136 Q 100 140 110 136 Q 104 132 100 118 Z"
-          fill="rgba(160,90,30,0.25)" />
-        {/* Nose highlight */}
-        <ellipse cx="100" cy="124" rx="4" ry="6" fill="rgba(255,220,170,0.4)" />
-        {/* Nostrils */}
-        <ellipse cx="91" cy="137" rx="5" ry="3.5" fill="rgba(120,60,10,0.35)" transform="rotate(-10 91 137)" />
-        <ellipse cx="109" cy="137" rx="5" ry="3.5" fill="rgba(120,60,10,0.35)" transform="rotate(10 109 137)" />
+        {/* ── Nose ───────────────────────────────────────── */}
+        <path d="M 130 170 Q 122 184 116 190 Q 130 196 144 190 Q 138 184 130 170 Z"
+          fill="rgba(175,90,30,0.18)" />
+        <ellipse cx="118" cy="188" rx="7" ry="5"
+          fill="rgba(140,65,20,0.32)" transform="rotate(-8 118 188)" />
+        <ellipse cx="142" cy="188" rx="7" ry="5"
+          fill="rgba(140,65,20,0.32)" transform="rotate(8 142 188)" />
+        <ellipse cx="130" cy="178" rx="5" ry="8" fill="rgba(255,230,200,0.38)" />
 
-        {/* ── Mouth ────────────────────────────────────────── */}
-        <g className="lv-jaw-g">
+        {/* ── Mouth / jaw group (animated on mouth challenge) */}
+        <g className="cv-jaw">
           {/* Upper lip */}
-          <path d="M 80 150 Q 90 145 100 148 Q 110 145 120 150 Q 110 156 100 154 Q 90 156 80 150 Z"
-            fill="url(#lv-lip)" />
+          <path d="M 106 200 Q 118 194 130 197 Q 142 194 154 200 Q 142 207 130 205 Q 118 207 106 200 Z"
+            fill="#c2556e" />
           {/* Cupid's bow highlight */}
-          <path d="M 88 147 Q 100 143 112 147" stroke="rgba(255,180,200,0.5)" strokeWidth="1.5" fill="none" />
+          <path d="M 114 196 Q 130 191 146 196"
+            stroke="rgba(255,190,200,0.55)" strokeWidth="1.5" fill="none" />
 
-          {/* Neutral lower lip / closed smile (shown when not in mouth challenge and not done) */}
+          {/* Neutral — closed lower lip */}
           {!isMouth && !allDone && (
-            <path d="M 80 150 Q 100 162 120 150 Q 110 158 100 158 Q 90 158 80 150 Z"
-              fill="#d4766e" opacity="0.85" />
+            <path d="M 106 200 Q 130 216 154 200 Q 150 210 130 212 Q 110 210 106 200 Z"
+              fill="#d4667e" opacity="0.9" />
           )}
 
-          {/* Mouth open challenge */}
+          {/* Mouth OPEN challenge */}
           {isMouth && (
             <g>
-              <ellipse cx="100" cy="158" rx="18" ry="3" fill="#3d0015">
-                <animate attributeName="ry" values="3;14;3" dur="2s" ease="ease-in-out" repeatCount="indefinite" />
+              <ellipse cx="130" cy="208" rx="22" ry="3" fill="#3d0018">
+                <animate attributeName="ry" values="3;16;3" dur="2.2s" repeatCount="indefinite" />
               </ellipse>
-              <ellipse cx="100" cy="158" rx="14" ry="2" fill="#7b1fa2" opacity="0.7">
-                <animate attributeName="ry" values="2;9;2" dur="2s" ease="ease-in-out" repeatCount="indefinite" begin="0.05s" />
+              <ellipse cx="130" cy="216" rx="14" ry="3" fill="#e57399" opacity="0.85">
+                <animate attributeName="ry" values="2;8;2" dur="2.2s" repeatCount="indefinite" begin="0.06s" />
               </ellipse>
-              {/* Teeth */}
-              <ellipse cx="100" cy="154" rx="13" ry="2" fill="white" opacity="0.9">
-                <animate attributeName="ry" values="1;5;1" dur="2s" ease="ease-in-out" repeatCount="indefinite" begin="0.1s" />
+              <ellipse cx="130" cy="203" rx="18" ry="2" fill="white" opacity="0.92">
+                <animate attributeName="ry" values="1;6;1" dur="2.2s" repeatCount="indefinite" begin="0.1s" />
               </ellipse>
             </g>
           )}
 
-          {/* Done: wide happy smile */}
+          {/* Done — big smile + teeth */}
           {allDone && (
-            <g className="lv-done-g" filter="url(#lv-glow)">
-              <path d="M 74 152 Q 100 176 126 152 Q 114 162 100 164 Q 86 162 74 152 Z"
-                fill="#10b981" opacity="0.9" />
-              <path d="M 80 152 Q 100 170 120 152" stroke="#ffffff" strokeWidth="1.5" fill="none" opacity="0.6" />
-              {/* Dimples */}
-              <circle cx="76" cy="154" r="3" fill="rgba(255,100,120,0.3)" />
-              <circle cx="124" cy="154" r="3" fill="rgba(255,100,120,0.3)" />
+            <g className="cv-done">
+              <path d="M 98 200 Q 130 226 162 200 Q 158 214 130 216 Q 102 214 98 200 Z"
+                fill="#10b981" opacity="0.92" />
+              <ellipse cx="130" cy="204" rx="22" ry="5" fill="white" opacity="0.88" />
+              <circle cx="98"  cy="204" r="5" fill="rgba(255,120,130,0.35)" />
+              <circle cx="162" cy="204" r="5" fill="rgba(255,120,130,0.35)" />
             </g>
           )}
         </g>
 
-        {/* Done overlay: green sparkle ring */}
+        {/* Done sparkle ring */}
         {allDone && (
-          <g className="lv-done-g">
-            <circle cx="100" cy="110" r="90" fill="none" stroke="#10b981" strokeWidth="6"
-              strokeDasharray="15 8" opacity="0.5" />
+          <g className="cv-done">
+            <circle cx="130" cy="150" r="118" fill="none"
+              stroke="#10b981" strokeWidth="5"
+              strokeDasharray="18 10" opacity="0.45" />
           </g>
         )}
       </g>
@@ -569,7 +576,7 @@ export function LivenessCheck({ onVerified, onCancel, existingSelfie, onRetake }
           {/* Avatar + Camera side by side */}
           <div className="flex items-center justify-center gap-6 w-full">
 
-            {/* 3D Avatar */}
+            {/* 3D cartoon avatar */}
             <div className="flex flex-col items-center gap-1.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Guide</p>
               <AvatarFace challenge={currentChallenge} allDone={allDone} />
