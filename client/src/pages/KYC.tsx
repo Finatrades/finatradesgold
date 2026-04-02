@@ -246,16 +246,7 @@ export default function KYC() {
   // Derive submission type early (needed for draft fetch)
   const draftSubmissionType = user?.accountType === 'business' ? 'corporate' : 'personal';
 
-  // Fetch server-side draft on mount (including resubmission flows — users may have saved progress)
-  const { data: serverDraftData, isFetched: serverDraftFetched } = useQuery({
-    queryKey: ['/api/kyc/draft', user?.id, draftSubmissionType],
-    queryFn: async () => {
-      const res = await fetch(`/api/kyc/draft?submissionType=${draftSubmissionType}`, { credentials: 'include' });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
+  // Server draft is loaded via useFormDraft (single source of truth — see below)
 
   // Finatrades mode state - shared between personal and corporate
   const [finatradesStep, setFinatradesStep] = useState<'personal_info' | 'identity_docs' | 'address_compliance' | 'liveness' | 'complete'>(
@@ -381,65 +372,7 @@ export default function KYC() {
   const [tradeLicenseExpiryDate, setTradeLicenseExpiryDate] = useState(savedDraft?.tradeLicenseExpiryDate || '');
   const [directorPassportExpiryDate, setDirectorPassportExpiryDate] = useState(savedDraft?.directorPassportExpiryDate || '');
 
-  // Restore from server-side draft when fetched (only if server draft is newer than localStorage)
-  const serverDraftRestored = useRef(false);
-  useEffect(() => {
-    if (serverDraftRestored.current || !serverDraftData?.draft?.draftData) return;
-    serverDraftRestored.current = true;
-    const sd = serverDraftData.draft.draftData;
-    const serverTs = serverDraftData.draft.updatedAt ? new Date(serverDraftData.draft.updatedAt).getTime() : 0;
-    const localTs = savedDraft?.savedAt || 0;
-    if (serverTs <= localTs) return;
-    // Restore all personal fields
-    if (sd.personalFullName) setPersonalFullName(sd.personalFullName);
-    if (sd.personalEmail) setPersonalEmail(sd.personalEmail);
-    if (sd.personalPhone) setPersonalPhone(sd.personalPhone);
-    if (sd.personalCountry) setPersonalCountry(sd.personalCountry);
-    if (sd.personalCity) setPersonalCity(sd.personalCity);
-    if (sd.personalAddress) setPersonalAddress(sd.personalAddress);
-    if (sd.personalPostalCode) setPersonalPostalCode(sd.personalPostalCode);
-    if (sd.personalNationality) setPersonalNationality(sd.personalNationality);
-    if (sd.personalOccupation) setPersonalOccupation(sd.personalOccupation);
-    if (sd.personalSourceOfFunds) setPersonalSourceOfFunds(sd.personalSourceOfFunds);
-    if (sd.personalAccountType) setPersonalAccountType(sd.personalAccountType);
-    if (sd.personalDateOfBirth) setPersonalDateOfBirth(sd.personalDateOfBirth);
-    if (sd.passportExpiryDate) setPassportExpiryDate(sd.passportExpiryDate);
-    // Restore all corporate fields
-    if (sd.corporateStep !== undefined) setCorporateStep(sd.corporateStep);
-    if (sd.corporateRole) setCorporateRole(sd.corporateRole as 'importer' | 'exporter' | 'both');
-    if (sd.companyName) setCompanyName(sd.companyName);
-    if (sd.corporateRegNumber) setCorporateRegNumber(sd.corporateRegNumber);
-    if (sd.incorporationDate) setIncorporationDate(sd.incorporationDate);
-    if (sd.countryOfIncorporation) setCountryOfIncorporation(sd.countryOfIncorporation);
-    if (sd.companyType) setCompanyType(sd.companyType);
-    if (sd.natureOfBusiness) setNatureOfBusiness(sd.natureOfBusiness);
-    if (sd.numberOfEmployees) setNumberOfEmployees(sd.numberOfEmployees);
-    if (sd.headOfficeAddress) setHeadOfficeAddress(sd.headOfficeAddress);
-    if (sd.telephoneNumber) setTelephoneNumber(sd.telephoneNumber);
-    if (sd.website) setWebsite(sd.website);
-    if (sd.emailAddress) setEmailAddress(sd.emailAddress);
-    if (sd.tradingContactName) setTradingContactName(sd.tradingContactName);
-    if (sd.tradingContactEmail) setTradingContactEmail(sd.tradingContactEmail);
-    if (sd.tradingContactPhone) setTradingContactPhone(sd.tradingContactPhone);
-    if (sd.financeContactName) setFinanceContactName(sd.financeContactName);
-    if (sd.financeContactEmail) setFinanceContactEmail(sd.financeContactEmail);
-    if (sd.financeContactPhone) setFinanceContactPhone(sd.financeContactPhone);
-    if (sd.shareholderCompanyUbos) setShareholderCompanyUbos(sd.shareholderCompanyUbos);
-    if (sd.hasPepOwners !== undefined) setHasPepOwners(sd.hasPepOwners);
-    if (sd.pepDetails) setPepDetails(sd.pepDetails);
-    if (sd.tradeLicenseExpiryDate) setTradeLicenseExpiryDate(sd.tradeLicenseExpiryDate);
-    if (sd.directorPassportExpiryDate) setDirectorPassportExpiryDate(sd.directorPassportExpiryDate);
-    if (Array.isArray(sd.beneficialOwners) && sd.beneficialOwners.length > 0) setBeneficialOwners(sd.beneficialOwners);
-    // Restore step state (map old 'documents' → 'identity_docs')
-    if (sd.finatradesStep) {
-      const step = sd.finatradesStep === 'documents' ? 'identity_docs' : sd.finatradesStep;
-      setFinatradesStep(step as typeof finatradesStep);
-    }
-  }, [serverDraftData]);
-
-  // Auto-save KYC draft to localStorage + server (debounced)
-  // Gate on serverDraftFetched to prevent overwriting a server draft before it loads
-  // Legacy autosave removed — useFormDraft below is the single authoritative save path
+  // Auto-save KYC draft via useFormDraft (single authoritative save path — see hook setup below)
 
   const clearKycDraft = () => {
     try { localStorage.removeItem(kycStorageKey); } catch {}
@@ -538,11 +471,12 @@ export default function KYC() {
     showResumeBanner: showKycResumeBanner,
     dismissResume: dismissKycResume,
     restoreDraft: restoreKycDraft,
+    clear: clearKycServerDraft,
   } = useFormDraft({
     key: `kyc_draft_${user?.id || 'anon'}`,
     data: kycDraftData,
     debounceMs: 1500,
-    enabled: !!user?.id && serverDraftFetched && finatradesStep !== 'complete',
+    enabled: !!user?.id && finatradesStep !== 'complete',
     apiEndpoint: '/api/kyc/draft',
     submissionType: draftSubmissionType,
   });
@@ -828,6 +762,7 @@ export default function KYC() {
       });
       
       clearKycDraft();
+      clearKycServerDraft();
       queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finatrades-kyc/personal'] });
       toast.success("KYC Submitted Successfully", {
@@ -911,6 +846,7 @@ export default function KYC() {
       });
       
       clearKycDraft();
+      clearKycServerDraft();
       queryClient.invalidateQueries({ queryKey: ['/api/kyc-status'] });
       toast.success("Corporate KYC Submitted Successfully", {
         description: "Your verification is now under review."

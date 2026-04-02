@@ -109,12 +109,13 @@ export function useFormDraft<T>({
     setShowResumeBanner(false);
     setServerDraftData(null);
     if (apiEndpoint) {
-      fetch(apiEndpoint, {
+      const deleteUrl = submissionType ? `${apiEndpoint}?submissionType=${submissionType}` : apiEndpoint;
+      fetch(deleteUrl, {
         method: 'DELETE',
         credentials: 'include',
       }).catch(() => {});
     }
-  }, [key, apiEndpoint]);
+  }, [key, apiEndpoint, submissionType]);
 
   const dismissResume = useCallback(() => {
     localStorage.setItem(`${key}_resume_dismissed`, Date.now().toString());

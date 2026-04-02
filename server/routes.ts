@@ -5570,6 +5570,21 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const submissionType = (req.query.submissionType as string) || 'personal';
+      if (!['personal', 'corporate'].includes(submissionType)) {
+        return res.status(400).json({ message: "submissionType must be 'personal' or 'corporate'" });
+      }
+      await storage.deleteKycDraft(userId, submissionType);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete draft" });
+    }
+  });
+
   // Scan a document (base64) with OCR and return extracted name/DOB fields
   app.post("/api/kyc/scan-document", ensureAuthenticated, async (req, res) => {
     try {
