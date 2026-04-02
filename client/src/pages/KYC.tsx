@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileUploadZone } from '@/components/ui/FileUploadZone';
-import { LivenessCheck } from '@/components/ui/LivenessCheck';
 import { FormWizard, type WizardStep } from '@/components/ui/FormWizard';
 import { ConfirmationPanel, type ConfirmationSection } from '@/components/ui/ConfirmationPanel';
 import { useFormDraft } from '@/hooks/useFormDraft';
@@ -559,8 +558,166 @@ export default function KYC() {
     submissionType: draftSubmissionType,
   });
 
-  // Liveness state — managed by LivenessCheck component
+  // Liveness camera state (shared between modes)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previousFrameRef = useRef<ImageData | null>(null);
+  const movementCountRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [livenessVerified, setLivenessVerified] = useState(false);
   const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+  const [movementProgress, setMovementProgress] = useState(0);
+  const [instruction, setInstruction] = useState('Position your face in the circle');
+
+  const startLivenessCamera = useCallback(async () => {
+    setCameraError(null);
+    setIsCameraReady(false);
+    setLivenessVerified(false);
+    setCapturedSelfie(null);
+    setMovementProgress(0);
+    movementCountRef.current = 0;
+    previousFrameRef.current = null;
+    setInstruction('Position your face in the circle');
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+      setCameraStream(stream);
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      setCameraError(err.name === 'NotAllowedError' 
+        ? 'Camera access denied. Please allow camera access.'
+        : 'Unable to access camera. Please check your device settings.');
+    }
+  }, []);
+
+  const stopLivenessCamera = useCallback(() => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    setIsCameraReady(false);
+  }, [cameraStream]);
+
+  const captureSelfiPhoto = useCallback(() => {
+    if (videoRef.current && canvasRef.current && isCameraReady) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        setCapturedSelfie(dataUrl);
+        stopLivenessCamera();
+        toast.success('Liveness verified! Photo captured.');
+      }
+    }
+  }, [isCameraReady, stopLivenessCamera]);
+
+  const detectMovement = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || !isCameraReady || livenessVerified) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    if (previousFrameRef.current) {
+      const prev = previousFrameRef.current.data;
+      const curr = currentFrame.data;
+      let diffSum = 0;
+      const sampleStep = 16;
+      
+      for (let i = 0; i < curr.length; i += 4 * sampleStep) {
+        diffSum += Math.abs(curr[i] - prev[i]);
+        diffSum += Math.abs(curr[i + 1] - prev[i + 1]);
+        diffSum += Math.abs(curr[i + 2] - prev[i + 2]);
+      }
+      
+      const avgDiff = diffSum / (curr.length / (4 * sampleStep));
+      
+      if (avgDiff > 8) {
+        movementCountRef.current += 1;
+        const newProgress = Math.min((movementCountRef.current / 25) * 100, 100);
+        setMovementProgress(newProgress);
+        
+        if (movementCountRef.current >= 10 && movementCountRef.current < 20) {
+          setInstruction('Keep moving... Turn your head slowly');
+        } else if (movementCountRef.current >= 20) {
+          setInstruction('Perfect! Capturing...');
+        }
+        
+        if (movementCountRef.current >= 25) {
+          setLivenessVerified(true);
+          captureSelfiPhoto();
+          return;
+        }
+      }
+    }
+    
+    previousFrameRef.current = currentFrame;
+    animationFrameRef.current = requestAnimationFrame(detectMovement);
+  }, [isCameraReady, livenessVerified, captureSelfiPhoto]);
+
+  useEffect(() => {
+    if (cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current?.play();
+        setIsCameraReady(true);
+        setInstruction('Now slowly turn your head left and right');
+      };
+    }
+  }, [cameraStream]);
+
+  useEffect(() => {
+    if (isCameraReady && cameraStream && !livenessVerified) {
+      const timeoutId = setTimeout(() => {
+        detectMovement();
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isCameraReady, cameraStream, livenessVerified, detectMovement]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [cameraStream]);
+
+  const retakeLiveness = useCallback(() => {
+    setCapturedSelfie(null);
+    setLivenessVerified(false);
+    startLivenessCamera();
+  }, [startLivenessCamera]);
   
   const handleCorpDocUpload = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof corpDocs) => {
     if (e.target.files && e.target.files[0]) {
@@ -1776,27 +1933,115 @@ export default function KYC() {
                             : 'We need to verify you\'re a real person. Follow the instructions below.'}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="flex flex-col items-center py-4">
-                        {isSectionLocked('liveness') ? (
-                          <div className="flex flex-col items-center gap-3 text-center py-4">
-                            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                              <CheckCircle2 className="w-10 h-10 text-green-600" />
-                            </div>
-                            <p className="text-sm font-medium text-green-700">Liveness check approved</p>
-                          </div>
-                        ) : (
-                          <LivenessCheck
-                            onVerified={(selfie) => setCapturedSelfie(selfie)}
-                            onCancel={() => setFinatradesStep('address_compliance')}
-                            existingSelfie={capturedSelfie}
-                            onRetake={() => setCapturedSelfie(null)}
-                          />
-                        )}
+                      <CardContent className="flex flex-col items-center py-6">
+                         <canvas ref={canvasRef} className="hidden" />
+                         
+                         {capturedSelfie && (
+                           <div className="text-center">
+                             <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
+                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                             </div>
+                             <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                               <CheckCircle2 className="w-5 h-5" />
+                               <span className="font-medium">Liveness Verified!</span>
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={retakeLiveness}
+                               variant="outline"
+                               className="gap-2"
+                               data-testid="button-retake-liveness"
+                             >
+                               <RefreshCw className="w-4 h-4" />
+                               Retake Photo
+                             </Button>
+                           </div>
+                         )}
+
+                         {!cameraStream && !capturedSelfie && (
+                           <div className="flex flex-col items-center justify-center text-center w-full">
+                             <div className="w-48 h-48 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-6 mx-auto">
+                               <Camera className="w-16 h-16 text-muted-foreground" />
+                             </div>
+                             <Button 
+                               type="button"
+                               onClick={startLivenessCamera}
+                               variant="secondary"
+                               className="gap-2 mb-4 mx-auto"
+                               data-testid="button-start-liveness"
+                             >
+                               <Camera className="w-5 h-5" />
+                               Start Liveness Check
+                             </Button>
+                             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                               Please ensure your face is well-lit and centered. No glasses or hats.
+                             </p>
+                           </div>
+                         )}
+
+                         {cameraError && (
+                           <div className="text-center text-red-500 py-4">
+                             <p>{cameraError}</p>
+                             <Button type="button" onClick={startLivenessCamera} variant="outline" className="mt-2">
+                               Try Again
+                             </Button>
+                           </div>
+                         )}
+
+                         {cameraStream && !capturedSelfie && (
+                           <div className="relative w-full max-w-xs">
+                             <div className="relative w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-primary">
+                               <video
+                                 ref={videoRef}
+                                 autoPlay
+                                 playsInline
+                                 muted
+                                 className="w-full h-full object-cover"
+                                 style={{ transform: 'scaleX(-1)' }}
+                               />
+                               {!isCameraReady && (
+                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                                   <p className="text-white text-sm">Loading camera...</p>
+                                 </div>
+                               )}
+                             </div>
+                             
+                             {isCameraReady && (
+                               <div className="mt-4 w-full">
+                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                   <span>Movement Detection</span>
+                                   <span>{Math.round(movementProgress)}%</span>
+                                 </div>
+                                 <Progress value={movementProgress} className="h-2" />
+                               </div>
+                             )}
+                             
+                             <div className="mt-4 text-center">
+                               <p className="text-sm font-medium text-primary animate-pulse">
+                                 {instruction}
+                               </p>
+                               <p className="text-xs text-muted-foreground mt-2">
+                                 Slowly turn your head left and right to verify liveness
+                               </p>
+                             </div>
+                             
+                             <div className="mt-4 flex justify-center">
+                               <Button 
+                                 type="button"
+                                 onClick={stopLivenessCamera}
+                                 variant="outline"
+                                 size="sm"
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </div>
+                         )}
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={() => setFinatradesStep('address_compliance')}>Back</Button>
+                        <Button variant="outline" onClick={() => { stopLivenessCamera(); setFinatradesStep('address_compliance'); }}>Back</Button>
                         <Button 
-                          onClick={() => setFinatradesStep('complete')}
+                          onClick={() => { stopLivenessCamera(); setFinatradesStep('complete'); }}
                           disabled={!capturedSelfie && !isSectionLocked('liveness')}
                           className="bg-primary hover:bg-primary/90 text-white font-bold"
                           data-testid="button-continue-to-review"
@@ -1909,7 +2154,7 @@ export default function KYC() {
                             {
                               title: 'Liveness Verification',
                               icon: <Camera className="w-4 h-4" />,
-                              onEdit: () => setFinatradesStep('liveness'),
+                              onEdit: () => { stopLivenessCamera(); setFinatradesStep('liveness'); },
                               fields: [
                                 {
                                   label: 'Selfie',
@@ -2625,12 +2870,61 @@ export default function KYC() {
                             )}
                           </div>
                           {!isSectionLocked('representative_liveness') && (
-                            <LivenessCheck
-                              onVerified={(selfie) => setCapturedSelfie(selfie)}
-                              onCancel={() => {}}
-                              existingSelfie={capturedSelfie}
-                              onRetake={() => setCapturedSelfie(null)}
-                            />
+                            <div className="flex flex-col items-center py-2">
+                              <canvas ref={canvasRef} className="hidden" />
+                              {capturedSelfie ? (
+                                <div className="text-center">
+                                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-3">
+                                    <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2 text-green-600 mb-3">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    <span className="font-medium text-sm">Liveness Verified!</span>
+                                  </div>
+                                  <Button type="button" onClick={retakeLiveness} variant="outline" size="sm" className="gap-2" data-testid="button-retake-liveness">
+                                    <RefreshCw className="w-4 h-4" /> Retake
+                                  </Button>
+                                </div>
+                              ) : !cameraStream ? (
+                                <div className="flex flex-col items-center text-center">
+                                  <div className="w-32 h-32 rounded-full bg-muted border-4 border-dashed border-border flex items-center justify-center mb-4 mx-auto">
+                                    <Camera className="w-12 h-12 text-muted-foreground" />
+                                  </div>
+                                  <Button type="button" onClick={startLivenessCamera} variant="secondary" className="gap-2 mb-2" data-testid="button-start-liveness">
+                                    <Camera className="w-4 h-4" /> Start Liveness Check
+                                  </Button>
+                                  <p className="text-xs text-muted-foreground max-w-xs">Face well-lit, centered. No glasses or hats.</p>
+                                  {cameraError && <p className="text-sm text-red-500 mt-2">{cameraError}</p>}
+                                </div>
+                              ) : (
+                                <div className="relative w-full max-w-xs">
+                                  <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary">
+                                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                                    {!isCameraReady && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                                        <p className="text-white text-xs">Loading camera...</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isCameraReady && (
+                                    <div className="mt-3 w-full">
+                                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                        <span>Movement Detection</span>
+                                        <span>{Math.round(movementProgress)}%</span>
+                                      </div>
+                                      <Progress value={movementProgress} className="h-2" />
+                                    </div>
+                                  )}
+                                  <div className="mt-3 text-center">
+                                    <p className="text-sm font-medium text-primary animate-pulse">{instruction}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Slowly turn your head left and right</p>
+                                  </div>
+                                  <div className="mt-3 flex justify-center">
+                                    <Button type="button" onClick={stopLivenessCamera} variant="outline" size="sm">Cancel</Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                           {isSectionLocked('representative_liveness') && (
                             <div className="flex items-center gap-2 text-green-600 text-sm">

@@ -189,29 +189,6 @@ app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_as
 
 // Serve public folder for static documents (PDFs, guides, etc.)
 app.use('/docs', express.static(path.join(process.cwd(), 'public')));
-
-// Proxy /__mockup to the mockup sandbox Vite dev server (development only)
-if (process.env.NODE_ENV !== 'production') {
-  const httpModule = await import('http');
-  app.use('/__mockup', (req, res) => {
-    const options = {
-      hostname: 'localhost',
-      port: 5173,
-      path: `/__mockup${req.url}`,
-      method: req.method,
-      headers: { ...req.headers, host: 'localhost:5173' },
-    };
-    const proxy = httpModule.default.request(options, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-      proxyRes.pipe(res, { end: true });
-    });
-    proxy.on('error', () => {
-      if (!res.headersSent) res.status(502).send('Mockup sandbox not running');
-    });
-    req.pipe(proxy, { end: true });
-  });
-}
-
 const httpServer = createServer(app);
 
 declare module "http" {
