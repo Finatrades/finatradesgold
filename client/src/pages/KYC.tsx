@@ -272,12 +272,11 @@ export default function KYC() {
   const [personalDateOfBirth, setPersonalDateOfBirth] = useState(savedDraft?.personalDateOfBirth || '');
   
   // Document uploads
-  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
-  const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [addressProofFile, setAddressProofFile] = useState<File | null>(null);
   
-  // Document expiry dates (for notification reminders)
+  // Document details (auto-filled from scan)
+  const [passportNumber, setPassportNumber] = useState(savedDraft?.passportNumber || '');
   const [passportExpiryDate, setPassportExpiryDate] = useState(savedDraft?.passportExpiryDate || '');
 
   // KYC personal info real-time validation
@@ -381,7 +380,10 @@ export default function KYC() {
   // Pre-fill expiry dates from existing submission
   useEffect(() => {
     if (existingSubmission) {
-      // Personal KYC expiry date
+      // Personal KYC passport details
+      if (existingSubmission.passportNumber) {
+        setPassportNumber(existingSubmission.passportNumber);
+      }
       if (existingSubmission.passportExpiryDate) {
         setPassportExpiryDate(existingSubmission.passportExpiryDate);
       }
@@ -458,7 +460,7 @@ export default function KYC() {
     personalFullName, personalEmail, personalPhone, personalCountry,
     personalCity, personalAddress, personalPostalCode, personalNationality,
     personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-    passportExpiryDate,
+    passportNumber, passportExpiryDate,
     corporateStep, companyName, corporateRole, corporateRegNumber, incorporationDate,
     countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
     headOfficeAddress, telephoneNumber, website, emailAddress,
@@ -703,9 +705,9 @@ export default function KYC() {
     }
     
     // Validate required documents (skip validation for locked sections in resubmit mode)
-    const hasValidId = (idFrontFile && idBackFile) || passportFile;
+    const hasValidId = !!passportFile;
     if (!isSectionLocked('documents') && (!hasValidId || !addressProofFile)) {
-      toast.error("Please upload all required documents (ID front + back, or passport, and address proof)");
+      toast.error("Please upload your passport and address proof document");
       return;
     }
     
@@ -718,8 +720,6 @@ export default function KYC() {
     
     try {
       // Convert newly-uploaded documents to base64; omit if section is locked (server keeps existing)
-      const idFrontBase64 = idFrontFile ? await fileToBase64(idFrontFile) : null;
-      const idBackBase64 = idBackFile ? await fileToBase64(idBackFile) : null;
       const addressProofBase64 = addressProofFile ? await fileToBase64(addressProofFile) : null;
       const passportBase64 = passportFile ? await fileToBase64(passportFile) : null;
       
@@ -740,11 +740,10 @@ export default function KYC() {
           accountType: personalAccountType
         },
         documents: {
-          idFront: idFrontBase64 ? { url: idFrontBase64, uploaded: true } : undefined,
-          idBack: idBackBase64 ? { url: idBackBase64, uploaded: true } : undefined,
           addressProof: addressProofBase64 ? { url: addressProofBase64, uploaded: true } : undefined,
           passport: passportBase64 ? { url: passportBase64, uploaded: true } : undefined
         },
+        passportNumber: passportNumber || null,
         passportExpiryDate: passportExpiryDate || null,
         livenessVerified: capturedSelfie ? true : undefined,
         livenessCapture: capturedSelfie || undefined,
@@ -1286,9 +1285,7 @@ export default function KYC() {
       personalCountry && personalCity && personalAddress && personalNationality && 
       personalOccupation && personalSourceOfFunds && personalDateOfBirth;
     
-    const isIdentityDocsComplete = isSectionLocked('documents') || (
-      ((idFrontFile && idBackFile) || passportFile) && !!passportExpiryDate
-    );
+    const isIdentityDocsComplete = isSectionLocked('documents') || (!!passportFile && !!passportExpiryDate);
     const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
@@ -1667,58 +1664,22 @@ export default function KYC() {
                         <CardDescription>
                           {isSectionLocked('documents')
                             ? 'This section has been approved and is locked.'
-                            : 'Upload your government-issued ID or passport. Our AI will extract your details automatically.'}
+                            : 'Upload your passport photo page. Our AI will automatically extract your name, date of birth, passport number and expiry date.'}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        <div className="p-3 bg-gray-50 border rounded-lg">
-                          <p className="text-sm font-medium text-gray-700">Accepted Formats:</p>
-                          <p className="text-xs text-gray-500">JPG, JPEG, PNG, PDF — max 5 MB · AI extraction enabled</p>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm font-medium text-blue-700">Passport required</p>
+                          <p className="text-xs text-blue-600 mt-0.5">JPG, JPEG, PNG, PDF — max 5 MB · AI extraction enabled · expiry &amp; passport number auto-filled</p>
                         </div>
-                        
+
                         <div className="space-y-5">
                           <FileUploadZone
-                            label="ID Document (Front)"
-                            description="Clear photo showing your name, date of birth and document number"
+                            label="Passport"
+                            description="Photo page showing your photo, name, passport number and expiry date"
                             accept=".jpg,.jpeg,.png,.pdf"
                             maxSizeMB={5}
                             required
-                            disabled={isSectionLocked('documents')}
-                            file={idFrontFile}
-                            onFile={setIdFrontFile}
-                            testId="input-id-front"
-                            enableOcr
-                            expectedDocType="national_id"
-                            declaredName={personalFullName}
-                            declaredDob={personalDateOfBirth}
-                            onScanResult={(fields) => {
-                              if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
-                              if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
-                            }}
-                            onWrongDocType={(detectedType, fields) => {
-                              if (detectedType === 'passport' && idFrontFile && !passportFile) {
-                                setPassportFile(idFrontFile);
-                                setIdFrontFile(null);
-                              }
-                            }}
-                          />
-
-                          <FileUploadZone
-                            label="ID Document (Back)"
-                            description="Back side of your national ID or driver's licence"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            maxSizeMB={5}
-                            disabled={isSectionLocked('documents')}
-                            file={idBackFile}
-                            onFile={setIdBackFile}
-                            testId="input-id-back"
-                          />
-
-                          <FileUploadZone
-                            label="Passport"
-                            description="Photo page of your valid passport (required if you don't have a national ID)"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            maxSizeMB={5}
                             disabled={isSectionLocked('documents')}
                             file={passportFile}
                             onFile={setPassportFile}
@@ -1730,27 +1691,46 @@ export default function KYC() {
                             onScanResult={(fields) => {
                               if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
                               if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
+                              if (fields.document_number && !passportNumber) setPassportNumber(fields.document_number);
+                              if (fields.expiry_date && !passportExpiryDate) setPassportExpiryDate(fields.expiry_date);
                             }}
                           />
 
-                          <div>
-                            <Label className="text-sm">
-                              Passport Expiry Date <span className="text-red-500">*</span>
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-1">Must be valid for at least 6 months</p>
-                            <Input
-                              type="date"
-                              value={passportExpiryDate}
-                              onChange={(e) => handleKycFieldChange('passportExpiryDate', e.target.value, setPassportExpiryDate)}
-                              onBlur={(e) => handleKycFieldBlur('passportExpiryDate', e.target.value)}
-                              min={new Date().toISOString().split('T')[0]}
-                              disabled={isSectionLocked('documents')}
-                              className={kycFieldErrors.passportExpiryDate ? 'border-red-500' : kycTouched.passportExpiryDate && !kycFieldErrors.passportExpiryDate ? 'border-green-500' : ''}
-                              data-testid="input-passport-expiry"
-                            />
-                            {kycFieldErrors.passportExpiryDate && (
-                              <p className="text-red-500 text-xs mt-1">{kycFieldErrors.passportExpiryDate}</p>
-                            )}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm">
+                                Passport Number <span className="text-red-500">*</span>
+                              </Label>
+                              <p className="text-xs text-muted-foreground mb-1">Auto-filled from scan</p>
+                              <Input
+                                value={passportNumber}
+                                onChange={(e) => setPassportNumber(e.target.value.toUpperCase())}
+                                placeholder="e.g. N9688343"
+                                disabled={isSectionLocked('documents')}
+                                className={passportNumber ? 'border-green-500' : ''}
+                                data-testid="input-passport-number"
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="text-sm">
+                                Passport Expiry Date <span className="text-red-500">*</span>
+                              </Label>
+                              <p className="text-xs text-muted-foreground mb-1">Auto-filled from scan</p>
+                              <Input
+                                type="date"
+                                value={passportExpiryDate}
+                                onChange={(e) => handleKycFieldChange('passportExpiryDate', e.target.value, setPassportExpiryDate)}
+                                onBlur={(e) => handleKycFieldBlur('passportExpiryDate', e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                disabled={isSectionLocked('documents')}
+                                className={kycFieldErrors.passportExpiryDate ? 'border-red-500' : passportExpiryDate ? 'border-green-500' : ''}
+                                data-testid="input-passport-expiry"
+                              />
+                              {kycFieldErrors.passportExpiryDate && (
+                                <p className="text-red-500 text-xs mt-1">{kycFieldErrors.passportExpiryDate}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -2030,28 +2010,28 @@ export default function KYC() {
                               onEdit: () => setFinatradesStep('identity_docs'),
                               fields: [
                                 {
-                                  label: 'ID Front',
-                                  value: idFrontFile
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{idFrontFile.name}</span>
+                                  label: 'Passport',
+                                  value: passportFile
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportFile.name}</span>
                                     : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
                                 },
                                 {
-                                  label: 'ID Back',
-                                  value: idBackFile
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{idBackFile.name}</span>
-                                    : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
+                                  label: 'Passport Number',
+                                  value: passportNumber
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportNumber}</span>
+                                    : <span className="text-amber-600">Not provided</span>,
+                                },
+                                {
+                                  label: 'Passport Expiry',
+                                  value: passportExpiryDate
+                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportExpiryDate}</span>
+                                    : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not provided</span>,
                                 },
                                 {
                                   label: 'Address Proof',
                                   value: addressProofFile
                                     ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{addressProofFile.name}</span>
                                     : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
-                                },
-                                {
-                                  label: 'Passport',
-                                  value: passportFile
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportFile.name}</span>
-                                    : 'Optional — not provided',
                                 },
                               ],
                             } as ConfirmationSection,
