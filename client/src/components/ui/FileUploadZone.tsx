@@ -26,12 +26,19 @@ async function pdfFirstPageToJpegBase64(file: File): Promise<string> {
 
 export interface ScanFields {
   is_identity_document?: boolean;
+  is_address_document?: boolean;
   document_type?: 'passport' | 'national_id' | 'driver_licence' | null;
+  document_type_label?: string | null;
   full_name: string | null;
   date_of_birth: string | null;
   nationality: string | null;
   document_number: string | null;
   expiry_date: string | null;
+  address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  document_date?: string | null;
   source?: 'mrz' | 'gpt';
 }
 
@@ -54,7 +61,7 @@ interface FileUploadZoneProps {
   onFile: (file: File | null) => void;
   testId?: string;
   enableOcr?: boolean;
-  expectedDocType?: 'national_id' | 'passport' | 'any';
+  expectedDocType?: 'national_id' | 'passport' | 'address_proof' | 'any';
   declaredName?: string;
   declaredDob?: string;
   onScanResult?: (result: ScanFields, verification?: ScanVerification | null) => void;
@@ -188,15 +195,17 @@ export function FileUploadZone({
         console.log('[OCR] Cookie fallback token:', csrfToken ? 'yes' : 'null');
       }
 
+      const isAddressProofMode = expectedDocType === 'address_proof';
+      const endpoint = isAddressProofMode ? '/api/kyc/scan-address-proof' : '/api/kyc/scan-document';
       const bodyStr = JSON.stringify({
         base64,
         mimeType,
         declaredName: declaredName || undefined,
-        declaredDob: declaredDob || undefined,
+        ...(isAddressProofMode ? {} : { declaredDob: declaredDob || undefined }),
       });
-      console.log('[OCR] Sending scan request, payload size:', bodyStr.length, 'bytes, mimeType:', mimeType);
+      console.log('[OCR] Sending scan request to', endpoint, ', payload size:', bodyStr.length, 'bytes, mimeType:', mimeType);
 
-      const resp = await fetch('/api/kyc/scan-document', {
+      const resp = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,35 +222,59 @@ export function FileUploadZone({
         throw new Error(`Scan request failed: ${resp.status} ${errBody}`);
       }
       const data = await resp.json();
-      const fields: ScanFields = data.fields ?? {
-        is_identity_document: true, full_name: null, date_of_birth: null,
-        nationality: null, document_number: null, expiry_date: null, source: 'gpt',
-      };
 
-      if (fields.is_identity_document === false) {
-        setProgress(100);
-        setScanStatus('error');
-        setError('This does not appear to be a valid identity document. Please upload a passport, national ID, or driver\'s licence.');
-        onFile(null);
-        return;
-      }
+      if (isAddressProofMode) {
+        const addrFields = data.fields ?? {};
+        const fields: ScanFields = {
+          is_address_document: addrFields.is_address_document ?? true,
+          document_type_label: addrFields.document_type_label ?? null,
+          full_name: addrFields.full_name ?? null,
+          date_of_birth: null,
+          nationality: null,
+          document_number: null,
+          expiry_date: null,
+          address: addrFields.address ?? null,
+          city: addrFields.city ?? null,
+          postal_code: addrFields.postal_code ?? null,
+          country: addrFields.country ?? null,
+          document_date: addrFields.document_date ?? null,
+          source: 'gpt',
+        };
+        const nv = data.nameVerification ?? null;
+        const verif: ScanVerification | null = nv ? { nameMatch: nv.nameMatch, dobMatch: null, similarity: nv.similarity, declaredName: nv.declaredName, declaredDob: null } : null;
+        setScanFields(fields);
+        setVerification(verif);
+        onScanResult?.(fields, verif);
+      } else {
+        const fields: ScanFields = data.fields ?? {
+          is_identity_document: true, full_name: null, date_of_birth: null,
+          nationality: null, document_number: null, expiry_date: null, source: 'gpt',
+        };
 
-      // Detect wrong-slot: e.g. passport uploaded to the ID (national_id) slot
-      const detectedType = fields.document_type ?? null;
-      let isWrongSlot = false;
-      if (detectedType && expectedDocType !== 'any') {
-        isWrongSlot = (expectedDocType === 'national_id' && detectedType === 'passport')
-          || (expectedDocType === 'passport' && detectedType === 'national_id');
-      }
-      setWrongSlot(isWrongSlot);
-      if (isWrongSlot && onWrongDocType && detectedType) {
-        onWrongDocType(detectedType, fields);
-      }
+        if (fields.is_identity_document === false) {
+          setProgress(100);
+          setScanStatus('error');
+          setError('This does not appear to be a valid identity document. Please upload a passport, national ID, or driver\'s licence.');
+          onFile(null);
+          return;
+        }
 
-      const verif: ScanVerification | null = data.verification ?? null;
-      setScanFields(fields);
-      setVerification(verif);
-      onScanResult?.(fields, verif);
+        const detectedType = fields.document_type ?? null;
+        let isWrongSlot = false;
+        if (detectedType && expectedDocType !== 'any') {
+          isWrongSlot = (expectedDocType === 'national_id' && detectedType === 'passport')
+            || (expectedDocType === 'passport' && detectedType === 'national_id');
+        }
+        setWrongSlot(isWrongSlot);
+        if (isWrongSlot && onWrongDocType && detectedType) {
+          onWrongDocType(detectedType, fields);
+        }
+
+        const verif: ScanVerification | null = data.verification ?? null;
+        setScanFields(fields);
+        setVerification(verif);
+        onScanResult?.(fields, verif);
+      }
     } catch (err) {
       console.error('[OCR] Scan failed:', err instanceof Error ? `${err.name}: ${err.message}` : String(err));
       setScanFields({ full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null });
@@ -249,7 +282,7 @@ export function FileUploadZone({
     }
     setProgress(100);
     setScanStatus('complete');
-  }, [onScanResult, onFile, declaredName, declaredDob]);
+  }, [onScanResult, onFile, declaredName, declaredDob, expectedDocType, onWrongDocType]);
 
   const processFile = useCallback(
     (f: File) => {
@@ -537,6 +570,59 @@ export function FileUploadZone({
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">COUNTRY</span>
                       <span className="font-semibold text-foreground">{scanFields.nationality}</span>
+                    </div>
+                  ) : null}
+
+                  {/* Address proof rows */}
+                  {scanFields.document_type_label ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">TYPE</span>
+                      <span className="font-semibold text-foreground capitalize">{scanFields.document_type_label}</span>
+                    </div>
+                  ) : null}
+                  {scanFields.address ? (
+                    <div className="flex items-start gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0 mt-0.5">ADDR</span>
+                      <span className="font-semibold text-foreground text-xs leading-relaxed">{scanFields.address}</span>
+                    </div>
+                  ) : null}
+                  {scanFields.city ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">CITY</span>
+                      <span className="font-semibold text-foreground">{scanFields.city}</span>
+                    </div>
+                  ) : null}
+                  {scanFields.postal_code ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">POST</span>
+                      <span className="font-semibold text-foreground tracking-wider">{scanFields.postal_code}</span>
+                    </div>
+                  ) : null}
+                  {scanFields.country ? (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">CTRY</span>
+                      <span className="font-semibold text-foreground">{scanFields.country}</span>
+                    </div>
+                  ) : null}
+                  {scanFields.document_date ? (
+                    <div className="flex items-center justify-between px-3 py-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">DATE</span>
+                        <span className="font-semibold text-foreground">{scanFields.document_date}</span>
+                      </div>
+                      {(() => {
+                        const docDate = new Date(scanFields.document_date!);
+                        const threeMonthsAgo = new Date(); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                        return docDate < threeMonthsAgo ? (
+                          <span className="flex items-center gap-1 text-red-600 font-semibold flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> OUTDATED
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> RECENT
+                          </span>
+                        );
+                      })()}
                     </div>
                   ) : null}
 

@@ -348,6 +348,7 @@ export default function KYC() {
   const [passportNumber, setPassportNumber] = useState(savedDraft?.passportNumber || '');
   const [passportExpiryDate, setPassportExpiryDate] = useState(savedDraft?.passportExpiryDate || '');
   const [passportNationality, setPassportNationality] = useState(savedDraft?.passportNationality || '');
+  const [addressProofNameMismatch, setAddressProofNameMismatch] = useState(false);
 
   // KYC personal info real-time validation
   const [kycFieldErrors, setKycFieldErrors] = useState<Record<string, string>>({});
@@ -448,6 +449,10 @@ export default function KYC() {
   };
 
   // Pre-fill expiry dates from existing submission
+  useEffect(() => {
+    if (!addressProofFile) setAddressProofNameMismatch(false);
+  }, [addressProofFile]);
+
   useEffect(() => {
     if (existingSubmission) {
       // Personal KYC passport details
@@ -1357,7 +1362,7 @@ export default function KYC() {
     
     const nationalityOk = !passportNationality || nationalityMatches(personalNationality, passportNationality);
     const isIdentityDocsComplete = isSectionLocked('documents') || (!!passportFile && !!passportExpiryDate && nationalityOk);
-    const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
+    const isAddressComplianceComplete = isSectionLocked('documents') || (!!addressProofFile && !addressProofNameMismatch);
     
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -1868,7 +1873,33 @@ export default function KYC() {
                           file={addressProofFile}
                           onFile={setAddressProofFile}
                           testId="input-address-proof"
+                          enableOcr
+                          expectedDocType="address_proof"
+                          declaredName={personalFullName}
+                          onScanResult={(fields, verif) => {
+                            if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
+                            if (fields.address && !personalAddress) setPersonalAddress(fields.address);
+                            if (fields.city && !personalCity) setPersonalCity(fields.city);
+                            if (fields.postal_code && !personalPostalCode) setPersonalPostalCode(fields.postal_code);
+                            if (verif && verif.nameMatch === false) setAddressProofNameMismatch(true);
+                            else setAddressProofNameMismatch(false);
+                          }}
                         />
+
+                        {(() => {
+                          const addrNameOk = !addressProofNameMismatch;
+                          return !addrNameOk ? (
+                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-red-700">Name mismatch on address document</p>
+                                <p className="text-xs text-red-600 mt-0.5">
+                                  The name on your address proof doesn't match your declared name. Please upload a document with your correct name, or go back and fix Step 1.
+                                </p>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => setFinatradesStep('identity_docs')}>Back</Button>

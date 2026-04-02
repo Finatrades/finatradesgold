@@ -694,6 +694,109 @@ export async function checkKycOcrMismatch(
 }
 
 // ============================================================
+// ADDRESS PROOF EXTRACTION
+// ============================================================
+
+export interface AddressProofFields {
+  is_address_document: boolean;
+  document_type_label: string | null;
+  full_name: string | null;
+  address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  country: string | null;
+  document_date: string | null;
+}
+
+export async function extractAddressProofFields(
+  base64: string,
+  mimeType: string,
+): Promise<AddressProofFields> {
+  const schema = `{
+  "is_address_document": boolean,
+  "document_type_label": "utility bill" | "bank statement" | "government letter" | "rental agreement" | "other" | null,
+  "full_name": string | null,
+  "address": string | null,
+  "city": string | null,
+  "postal_code": string | null,
+  "country": string | null,
+  "document_date": "YYYY-MM-DD" | null
+}`;
+
+  const pdfPrompt = `You are a KYC compliance officer. The following is extracted text from a proof-of-address document.
+Extract all available fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
+${schema}
+Set "is_address_document" to false only if this is clearly an identity document (passport, ID card) or something entirely unrelated to an address (e.g. blank page, photo, invoice without an address). No explanations.`;
+
+  const imagePrompt = `You are a KYC compliance officer. Examine this proof-of-address document image.
+Extract all visible fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
+${schema}
+Set "is_address_document" to false only if this is clearly an identity document (passport, ID card) or something unrelated to address proof. No explanations.`;
+
+  const fallback: AddressProofFields = {
+    is_address_document: true,
+    document_type_label: null,
+    full_name: null,
+    address: null,
+    city: null,
+    postal_code: null,
+    country: null,
+    document_date: null,
+  };
+
+  try {
+    const visionClient = groqClient ?? openai;
+    const model = groqClient ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'gpt-4o';
+    let response;
+
+    const isPdf = mimeType === 'application/pdf';
+    if (isPdf) {
+      const buf = Buffer.from(base64, 'base64');
+      const parsed = await pdfParse(buf);
+      const text = parsed?.text?.trim() || '';
+      if (text.length < 20) return fallback;
+      response = await visionClient.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 4000)}` }],
+        max_tokens: 512,
+        temperature: 0,
+      });
+    } else {
+      response = await visionClient.chat.completions.create({
+        model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: imagePrompt },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
+          ],
+        }],
+        max_tokens: 512,
+        temperature: 0,
+      });
+    }
+
+    const raw = response.choices[0]?.message?.content ?? '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return fallback;
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      is_address_document: parsed.is_address_document ?? true,
+      document_type_label: parsed.document_type_label ?? null,
+      full_name: parsed.full_name ?? null,
+      address: parsed.address ?? null,
+      city: parsed.city ?? null,
+      postal_code: parsed.postal_code ?? null,
+      country: parsed.country ?? null,
+      document_date: parsed.document_date ?? null,
+    };
+  } catch (err) {
+    console.warn('[AddressProofOCR] Extraction failed:', err instanceof Error ? err.message : err);
+    return fallback;
+  }
+}
+
+// ============================================================
 // FRAUD SCORING ENGINE (6 checks)
 // ============================================================
 

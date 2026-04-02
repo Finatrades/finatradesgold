@@ -101,7 +101,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
-import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, type KycOcrResult, type TieredScanResult } from "./services/ocr-service";
+import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, extractAddressProofFields, type KycOcrResult, type TieredScanResult, type AddressProofFields } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -5632,6 +5632,27 @@ export async function registerRoutes(
     } catch (err) {
       console.warn('[KYC] Document scan failed:', err instanceof Error ? err.message : err);
       return res.json({ success: false, fields: { is_identity_document: true, full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null, source: 'gpt' }, verification: null });
+    }
+  });
+
+  app.post("/api/kyc/scan-address-proof", ensureAuthenticated, async (req, res) => {
+    try {
+      const { base64, mimeType, declaredName } = req.body;
+      if (!base64 || typeof base64 !== 'string') return res.status(400).json({ error: 'base64 required' });
+      if (!mimeType || typeof mimeType !== 'string') return res.status(400).json({ error: 'mimeType required' });
+
+      const fields: AddressProofFields = await extractAddressProofFields(base64, mimeType);
+
+      let nameVerification: { nameMatch: boolean | null; similarity: number | null; declaredName: string | null } | null = null;
+      if (declaredName && fields.full_name) {
+        const similarity = nameSimilarity(fields.full_name, declaredName);
+        nameVerification = { nameMatch: similarity >= 0.75, similarity: Math.round(similarity * 100), declaredName };
+      }
+
+      return res.json({ success: true, fields, nameVerification });
+    } catch (err) {
+      console.warn('[AddressProof Scan] Failed:', err instanceof Error ? err.message : err);
+      return res.json({ success: false, fields: { is_address_document: true, document_type_label: null, full_name: null, address: null, city: null, postal_code: null, country: null, document_date: null }, nameVerification: null });
     }
   });
 
