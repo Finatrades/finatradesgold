@@ -8,6 +8,15 @@ import { parse as parseMrz } from 'mrz';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Groq vision client — free tier (1,000 req/day, no CC needed)
+// Falls back gracefully if GROQ_API_KEY is not set
+const groqClient = process.env.GROQ_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.groq.com/openai/v1',
+    })
+  : null;
+
 // ============================================================
 // APPROVED ISSUING BANKS LIST
 // ============================================================
