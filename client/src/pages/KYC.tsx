@@ -567,8 +567,6 @@ export default function KYC() {
     data: kycDraftData,
     debounceMs: 600,
     enabled: !!user?.id && finatradesStep !== 'complete',
-    apiEndpoint: '/api/kyc/draft',
-    submissionType: 'personal',
   });
 
   // Liveness camera state (shared between modes)
@@ -1469,19 +1467,13 @@ export default function KYC() {
                       isComplete: currentStepIdx > 2,
                     },
                     {
-                      id: 'liveness',
-                      label: 'Liveness Check',
-                      description: 'Verify your identity',
-                      isComplete: !!capturedSelfie && currentStepIdx >= 3,
-                    },
-                    {
                       id: 'complete',
                       label: 'Review & Submit',
-                      description: 'Confirm and submit',
+                      description: 'Liveness check & confirm',
                       isComplete: isSubmitted,
                     },
                   ] as WizardStep[]}
-                  currentStep={finatradesStep}
+                  currentStep={finatradesStep === 'liveness' ? 'complete' : finatradesStep}
                   onStepChange={(id) => {
                     const targetIdx = stepOrder.indexOf(id);
                     if (targetIdx <= currentStepIdx) setFinatradesStep(id as typeof finatradesStep);
@@ -2180,10 +2172,10 @@ export default function KYC() {
               <FormWizard
                 orientation="horizontal"
                 steps={[
-                  { id: 'corp-1', label: 'Corporate Details', description: 'Company info & contacts', isComplete: corporateStep > 1 },
-                  { id: 'corp-2', label: 'Beneficial Owners', description: 'UBO & shareholding', isComplete: corporateStep > 2 },
-                  { id: 'corp-3', label: 'Documents', description: 'Corporate document upload', isComplete: corporateStep > 3 },
-                  { id: 'corp-4', label: 'Representative', description: 'Liveness verification', isComplete: corporateStep > 4 },
+                  { id: 'corp-1', label: 'Company Info', description: 'Details & contacts', isComplete: corporateStep > 1 },
+                  { id: 'corp-2', label: 'Directors & Owners', description: 'UBO & shareholding', isComplete: corporateStep > 2 },
+                  { id: 'corp-3', label: 'Business Documents', description: 'Corporate document upload', isComplete: corporateStep > 3 },
+                  { id: 'corp-4', label: 'Address & Compliance', description: 'Registered address & representative', isComplete: corporateStep > 4 },
                   { id: 'corp-5', label: 'Review & Submit', description: 'Final confirmation' },
                 ] as WizardStep[]}
                 currentStep={`corp-${corporateStep}`}

@@ -16,6 +16,7 @@ interface FormWizardProps {
   onStepChange?: (stepId: string) => void;
   orientation?: 'vertical' | 'horizontal';
   className?: string;
+  'data-testid'?: string;
 }
 
 export function FormWizard({
@@ -24,12 +25,13 @@ export function FormWizard({
   onStepChange,
   orientation = 'vertical',
   className = '',
+  'data-testid': dataTestId,
 }: FormWizardProps) {
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   if (orientation === 'horizontal') {
     return (
-      <div className={`flex items-center gap-0 ${className}`} data-testid="form-wizard-horizontal">
+      <div className={`flex items-center gap-0 ${className}`} data-testid={dataTestId ?? "form-wizard-horizontal"}>
         {steps.map((step, idx) => {
           const isActive = step.id === currentStep;
           const isCompleted = step.isComplete || idx < currentIndex;
@@ -84,7 +86,7 @@ export function FormWizard({
   }
 
   return (
-    <nav className={`flex flex-col gap-1 ${className}`} data-testid="form-wizard-vertical">
+    <nav className={`flex flex-col gap-1 ${className}`} data-testid={dataTestId ?? "form-wizard-vertical"}>
       {steps.map((step, idx) => {
         const isActive = step.id === currentStep;
         const isCompleted = step.isComplete || idx < currentIndex;
