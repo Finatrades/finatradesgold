@@ -114,9 +114,15 @@ export function FileUploadZone({
         reader.readAsDataURL(f);
       });
 
+      const csrfMatch = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : null;
+
       const resp = await fetch('/api/kyc/scan-document', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify({
           base64,
