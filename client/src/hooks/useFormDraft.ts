@@ -9,14 +9,16 @@ interface UseFormDraftOptions<T> {
   submissionType?: string;
 }
 
-interface UseFormDraftReturn {
+interface UseFormDraftReturn<T> {
   savedAt: Date | null;
   isDirty: boolean;
   showResumeBanner: boolean;
+  serverDraftData: T | null;
   save: () => void;
-  load: <T>() => T | null;
+  load: <R>() => R | null;
   clear: () => void;
   dismissResume: () => void;
+  restoreDraft: () => T | null;
 }
 
 export function useFormDraft<T>({
@@ -26,7 +28,7 @@ export function useFormDraft<T>({
   enabled = true,
   apiEndpoint,
   submissionType = 'personal',
-}: UseFormDraftOptions<T>): UseFormDraftReturn {
+}: UseFormDraftOptions<T>): UseFormDraftReturn<T> {
   const [savedAt, setSavedAt] = useState<Date | null>(() => {
     try {
       const raw = localStorage.getItem(`${key}_meta`);
@@ -41,6 +43,7 @@ export function useFormDraft<T>({
   });
   const [isDirty, setIsDirty] = useState(false);
   const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [serverDraftData, setServerDraftData] = useState<T | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dataRef = useRef<T>(data);
   const initializedRef = useRef(false);
@@ -54,6 +57,7 @@ export function useFormDraft<T>({
       .then(r => r.ok ? r.json() : null)
       .then(json => {
         if (json?.draft?.draftData) {
+          setServerDraftData(json.draft.draftData as T);
           const serverTs = json.draft.updatedAt ? new Date(json.draft.updatedAt).getTime() : 0;
           const dismissed = localStorage.getItem(`${key}_resume_dismissed`);
           const dismissedTs = dismissed ? parseInt(dismissed, 10) : 0;
@@ -103,6 +107,7 @@ export function useFormDraft<T>({
     setSavedAt(null);
     setIsDirty(false);
     setShowResumeBanner(false);
+    setServerDraftData(null);
     if (apiEndpoint) {
       fetch(apiEndpoint, {
         method: 'DELETE',
@@ -116,6 +121,11 @@ export function useFormDraft<T>({
     setShowResumeBanner(false);
   }, [key]);
 
+  const restoreDraft = useCallback((): T | null => {
+    dismissResume();
+    return serverDraftData;
+  }, [serverDraftData, dismissResume]);
+
   useEffect(() => {
     if (!enabled) return;
     setIsDirty(true);
@@ -126,5 +136,5 @@ export function useFormDraft<T>({
     };
   }, [data, debounceMs, save, enabled]);
 
-  return { savedAt, isDirty, showResumeBanner, save, load, clear, dismissResume };
+  return { savedAt, isDirty, showResumeBanner, serverDraftData, save, load, clear, dismissResume, restoreDraft };
 }

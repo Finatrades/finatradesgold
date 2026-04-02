@@ -437,46 +437,7 @@ export default function KYC() {
 
   // Auto-save KYC draft to localStorage + server (debounced)
   // Gate on serverDraftFetched to prevent overwriting a server draft before it loads
-  useEffect(() => {
-    if (!user?.id || !serverDraftFetched) return;
-    const debounceTimer = setTimeout(() => {
-      try {
-        const draft = {
-          finatradesStep,
-          personalFullName, personalEmail, personalPhone, personalCountry,
-          personalCity, personalAddress, personalPostalCode, personalNationality,
-          personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-          passportExpiryDate,
-          corporateStep, companyName, corporateRole, corporateRegNumber, incorporationDate,
-          countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
-          headOfficeAddress, telephoneNumber, website, emailAddress,
-          tradingContactName, tradingContactEmail, tradingContactPhone,
-          financeContactName, financeContactEmail, financeContactPhone,
-          beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-          tradeLicenseExpiryDate, directorPassportExpiryDate,
-          savedAt: Date.now(),
-        };
-        localStorage.setItem(kycStorageKey, JSON.stringify(draft));
-        // Also persist to server (best-effort, non-blocking; uses apiRequest to include CSRF token)
-        apiRequest('PUT', '/api/kyc/draft', { submissionType: draftSubmissionType, draftData: draft })
-          .catch((err: unknown) => console.warn('[KYC] Server draft save failed:', err instanceof Error ? err.message : err));
-      } catch (e) {
-        console.warn('[KYC] Failed to save draft:', e);
-      }
-    }, 1500);
-    return () => clearTimeout(debounceTimer);
-  }, [
-    finatradesStep, personalFullName, personalEmail, personalPhone, personalCountry,
-    personalCity, personalAddress, personalPostalCode, personalNationality,
-    personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
-    passportExpiryDate, corporateStep, companyName, corporateRegNumber, incorporationDate,
-    countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
-    headOfficeAddress, telephoneNumber, website, emailAddress,
-    tradingContactName, tradingContactEmail, tradingContactPhone,
-    financeContactName, financeContactEmail, financeContactPhone,
-    beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
-    tradeLicenseExpiryDate, directorPassportExpiryDate, corporateRole, user?.id, kycStorageKey, serverDraftFetched,
-  ]);
+  // Legacy autosave removed — useFormDraft below is the single authoritative save path
 
   const clearKycDraft = () => {
     try { localStorage.removeItem(kycStorageKey); } catch {}
@@ -555,18 +516,33 @@ export default function KYC() {
     setKycFieldErrors(prev => ({ ...prev, [field]: err }));
   }, [validateKycField]);
 
-  // useFormDraft for auto-saving personal KYC fields to localStorage + server banner
+  // useFormDraft: single authoritative save path for ALL KYC fields (personal + corporate)
+  // Uses localStorage + backend API; gated to prevent saving before server draft loads
   const kycDraftData = {
+    finatradesStep,
     personalFullName, personalEmail, personalPhone, personalCountry,
     personalCity, personalAddress, personalPostalCode, personalNationality,
-    personalOccupation, personalSourceOfFunds, personalDateOfBirth,
-    passportExpiryDate, finatradesStep,
+    personalOccupation, personalSourceOfFunds, personalAccountType, personalDateOfBirth,
+    passportExpiryDate,
+    corporateStep, companyName, corporateRole, corporateRegNumber, incorporationDate,
+    countryOfIncorporation, companyType, natureOfBusiness, numberOfEmployees,
+    headOfficeAddress, telephoneNumber, website, emailAddress,
+    tradingContactName, tradingContactEmail, tradingContactPhone,
+    financeContactName, financeContactEmail, financeContactPhone,
+    beneficialOwners, shareholderCompanyUbos, hasPepOwners, pepDetails,
+    tradeLicenseExpiryDate, directorPassportExpiryDate,
   };
-  const { showResumeBanner: showKycResumeBanner, dismissResume: dismissKycResume } = useFormDraft({
-    key: `kyc_personal_draft_${user?.id || 'anon'}`,
+  const {
+    showResumeBanner: showKycResumeBanner,
+    dismissResume: dismissKycResume,
+    restoreDraft: restoreKycDraft,
+  } = useFormDraft({
+    key: `kyc_draft_${user?.id || 'anon'}`,
     data: kycDraftData,
-    debounceMs: 600,
-    enabled: !!user?.id && finatradesStep !== 'complete',
+    debounceMs: 1500,
+    enabled: !!user?.id && serverDraftFetched && finatradesStep !== 'complete',
+    apiEndpoint: '/api/kyc/draft',
+    submissionType: draftSubmissionType,
   });
 
   // Liveness camera state (shared between modes)
@@ -1432,18 +1408,44 @@ export default function KYC() {
               {/* Sidebar Steps */}
               <div className="md:col-span-4">
                 {showKycResumeBanner && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-800">Resume saved draft?</p>
-                      <p className="text-xs text-blue-600 mt-0.5">We found a previously saved draft for this form.</p>
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800 mb-1">Resume saved draft?</p>
+                    <p className="text-xs text-blue-600 mb-2">A more recent draft was found from another session.</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        data-testid="button-restore-draft"
+                        onClick={() => {
+                          const sd = restoreKycDraft();
+                          if (!sd) return;
+                          const d = sd as typeof kycDraftData;
+                          if (d.personalFullName) setPersonalFullName(d.personalFullName);
+                          if (d.personalEmail) setPersonalEmail(d.personalEmail);
+                          if (d.personalPhone) setPersonalPhone(d.personalPhone);
+                          if (d.personalCountry) setPersonalCountry(d.personalCountry);
+                          if (d.personalCity) setPersonalCity(d.personalCity);
+                          if (d.personalAddress) setPersonalAddress(d.personalAddress);
+                          if (d.personalPostalCode) setPersonalPostalCode(d.personalPostalCode);
+                          if (d.personalNationality) setPersonalNationality(d.personalNationality);
+                          if (d.personalOccupation) setPersonalOccupation(d.personalOccupation);
+                          if (d.personalSourceOfFunds) setPersonalSourceOfFunds(d.personalSourceOfFunds);
+                          if (d.personalDateOfBirth) setPersonalDateOfBirth(d.personalDateOfBirth);
+                          if (d.passportExpiryDate) setPassportExpiryDate(d.passportExpiryDate);
+                          if (d.finatradesStep) setFinatradesStep((d.finatradesStep === 'documents' ? 'identity_docs' : d.finatradesStep) as typeof finatradesStep);
+                        }}
+                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="button-dismiss-draft"
+                        onClick={dismissKycResume}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Dismiss
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={dismissKycResume}
-                      className="text-xs text-blue-600 hover:text-blue-800 underline shrink-0"
-                    >
-                      Dismiss
-                    </button>
                   </div>
                 )}
                 <FormWizard
@@ -1562,8 +1564,17 @@ export default function KYC() {
                           
                           <div>
                             <Label>Nationality <span className="text-red-500">*</span></Label>
-                            <Select value={personalNationality} onValueChange={setPersonalNationality}>
-                              <SelectTrigger data-testid="select-nationality">
+                            <Select
+                              value={personalNationality}
+                              onValueChange={(val) => {
+                                handleKycFieldChange('personalNationality', val, setPersonalNationality);
+                                handleKycFieldBlur('personalNationality', val);
+                              }}
+                            >
+                              <SelectTrigger
+                                data-testid="select-nationality"
+                                className={kycFieldErrors.personalNationality ? 'border-red-500' : kycTouched.personalNationality && personalNationality ? 'border-green-500' : ''}
+                              >
                                 <SelectValue placeholder="Select nationality" />
                               </SelectTrigger>
                               <SelectContent className="max-h-60">
@@ -1572,12 +1583,22 @@ export default function KYC() {
                                 ))}
                               </SelectContent>
                             </Select>
+                            {kycFieldErrors.personalNationality && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-nationality">{kycFieldErrors.personalNationality}</p>}
                           </div>
                           
                           <div>
                             <Label>Country of Residence <span className="text-red-500">*</span></Label>
-                            <Select value={personalCountry} onValueChange={setPersonalCountry}>
-                              <SelectTrigger data-testid="select-country">
+                            <Select
+                              value={personalCountry}
+                              onValueChange={(val) => {
+                                handleKycFieldChange('personalCountry', val, setPersonalCountry);
+                                handleKycFieldBlur('personalCountry', val);
+                              }}
+                            >
+                              <SelectTrigger
+                                data-testid="select-country"
+                                className={kycFieldErrors.personalCountry ? 'border-red-500' : kycTouched.personalCountry && personalCountry ? 'border-green-500' : ''}
+                              >
                                 <SelectValue placeholder="Select country" />
                               </SelectTrigger>
                               <SelectContent className="max-h-60">
@@ -1586,6 +1607,7 @@ export default function KYC() {
                                 ))}
                               </SelectContent>
                             </Select>
+                            {kycFieldErrors.personalCountry && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-country">{kycFieldErrors.personalCountry}</p>}
                           </div>
                           
                           <div>
@@ -1627,8 +1649,17 @@ export default function KYC() {
                           
                           <div>
                             <Label>Occupation <span className="text-red-500">*</span></Label>
-                            <Select value={personalOccupation} onValueChange={setPersonalOccupation}>
-                              <SelectTrigger data-testid="select-occupation">
+                            <Select
+                              value={personalOccupation}
+                              onValueChange={(val) => {
+                                handleKycFieldChange('personalOccupation', val, setPersonalOccupation);
+                                handleKycFieldBlur('personalOccupation', val);
+                              }}
+                            >
+                              <SelectTrigger
+                                data-testid="select-occupation"
+                                className={kycFieldErrors.personalOccupation ? 'border-red-500' : kycTouched.personalOccupation && personalOccupation ? 'border-green-500' : ''}
+                              >
                                 <SelectValue placeholder="Select occupation" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1637,12 +1668,22 @@ export default function KYC() {
                                 ))}
                               </SelectContent>
                             </Select>
+                            {kycFieldErrors.personalOccupation && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-occupation">{kycFieldErrors.personalOccupation}</p>}
                           </div>
                           
                           <div>
                             <Label>Source of Funds <span className="text-red-500">*</span></Label>
-                            <Select value={personalSourceOfFunds} onValueChange={setPersonalSourceOfFunds}>
-                              <SelectTrigger data-testid="select-source-funds">
+                            <Select
+                              value={personalSourceOfFunds}
+                              onValueChange={(val) => {
+                                handleKycFieldChange('personalSourceOfFunds', val, setPersonalSourceOfFunds);
+                                handleKycFieldBlur('personalSourceOfFunds', val);
+                              }}
+                            >
+                              <SelectTrigger
+                                data-testid="select-source-funds"
+                                className={kycFieldErrors.personalSourceOfFunds ? 'border-red-500' : kycTouched.personalSourceOfFunds && personalSourceOfFunds ? 'border-green-500' : ''}
+                              >
                                 <SelectValue placeholder="Select source" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1651,6 +1692,7 @@ export default function KYC() {
                                 ))}
                               </SelectContent>
                             </Select>
+                            {kycFieldErrors.personalSourceOfFunds && <p className="text-red-500 text-xs mt-1" data-testid="error-kyc-source-funds">{kycFieldErrors.personalSourceOfFunds}</p>}
                           </div>
                           
                         </div>

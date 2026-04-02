@@ -372,12 +372,18 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
           <div className="mb-6">
             <FormWizard
               orientation="horizontal"
+              showProgress
               steps={[
                 { id: 'details', label: 'Account Details', isComplete: registerStep === 'photo' },
                 { id: 'photo', label: 'Profile Photo' },
               ]}
               currentStep={registerStep}
               data-testid="register-wizard"
+              onBack={registerStep === 'photo' ? () => { stopCamera(); setRegisterStep('details'); } : undefined}
+              isBackDisabled={registerStep === 'details'}
+              backLabel="← Back"
+              onNext={registerStep === 'details' ? advanceToPhoto : undefined}
+              nextLabel="Next: Take Your Selfie →"
             />
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">
