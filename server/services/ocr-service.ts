@@ -391,40 +391,57 @@ export function nameSimilarity(a: string, b: string): number {
  *
  * Returns a structured KycOcrResult.  Safe to call fire-and-forget — never throws.
  */
-/** Extract name + DOB from a KYC document via GPT (text prompt for PDFs, image for images). */
+/** Extract KYC fields from a document via GPT-4o (text prompt for PDFs, vision for images). */
 async function extractKycFieldsFromDocument(
   buffer: Buffer | null,
   base64: string | null,
   mimeType: string,
   documentUrl: string,
-): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null }> {
-  const pdfPrompt = `You are a KYC document analyst. The following is extracted text from a document. First determine if this is a government-issued identity document (passport, national ID, or driver's licence). Then extract the fields below. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "is_identity_document": boolean,\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nSet "is_identity_document" to false if the document is clearly not an identity document (e.g. receipt, invoice, application form, certificate, etc.). If a field cannot be found, use null. Do not include explanations.`;
-  const imagePrompt = `You are a KYC document analyst. Examine this document image. First determine if this is a government-issued identity document (passport, national ID, or driver's licence). Then extract the fields below. Respond ONLY with valid JSON.\n\nSchema:\n{\n  "is_identity_document": boolean,\n  "full_name": string | null,\n  "date_of_birth": "YYYY-MM-DD" | null\n}\n\nSet "is_identity_document" to false if the document is clearly not an identity document (e.g. receipt, invoice, application form, certificate, photo, etc.). If a field cannot be read, use null. Do not include explanations.`;
+): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null; nationality: string | null; document_number: string | null; expiry_date: string | null }> {
+  const schema = `{
+  "is_identity_document": boolean,
+  "full_name": string | null,
+  "date_of_birth": "YYYY-MM-DD" | null,
+  "nationality": string | null,
+  "document_number": string | null,
+  "expiry_date": "YYYY-MM-DD" | null
+}`;
+  const pdfPrompt = `You are a KYC document analyst. The following is extracted text from a document.
+Determine if this is a government-issued identity document (passport, national ID, or driver licence).
+Extract all available fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
+${schema}
+Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, receipt, certificate). No explanations.`;
+
+  const imagePrompt = `You are a KYC document analyst. Examine this identity document image.
+Determine if this is a government-issued identity document (passport, national ID, or driver licence).
+Extract all visible fields. Respond ONLY with valid JSON matching this schema — use null for any field not found:
+${schema}
+Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, receipt, photo, certificate). No explanations.`;
 
   let response;
   if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
-    // Text-based PDF: extract text then ask GPT in a text prompt
     const parsed = await pdfParse(buffer);
     const text = parsed?.text?.trim() || '';
-    if (text.length < 30) throw new Error('PDF text too short for extraction — may be a scanned image PDF');
+    if (text.length < 30) throw new Error('PDF text too short — may be a scanned image PDF');
     response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 3000)}` }],
-      max_tokens: 200,
+      messages: [{ role: 'user', content: `${pdfPrompt}\n\nDocument text:\n${text.substring(0, 4000)}` }],
+      max_tokens: 300,
       temperature: 0,
     });
   } else if (base64) {
-    // Image (JPEG/PNG/WEBP/GIF) or base64 data URI
+    const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
     response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{
         role: 'user',
         content: [
           { type: 'text', text: imagePrompt },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
+          { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}`, detail: 'high' } },
         ],
       }],
-      max_tokens: 200,
+      max_tokens: 300,
       temperature: 0,
     });
   } else {
@@ -434,14 +451,15 @@ async function extractKycFieldsFromDocument(
   const content = response.choices[0]?.message?.content || '{}';
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-  // Default is_identity_document to true if GPT omits the field (avoid false blocking)
   return {
     is_identity_document: parsed.is_identity_document !== false,
     full_name: parsed.full_name ?? null,
     date_of_birth: parsed.date_of_birth ?? null,
+    nationality: parsed.nationality ?? null,
+    document_number: parsed.document_number ?? null,
+    expiry_date: parsed.expiry_date ?? null,
   };
 }
-
 // ============================================================
 // TIERED OCR: Tesseract.js + MRZ → GPT-4o fallback
 // ============================================================
@@ -508,8 +526,8 @@ function findAndParseMrz(text: string): TieredScanResult | null {
 
 /**
  * Scan a document from raw base64 + mimeType (no R2 upload needed).
- * Uses Tesseract.js (images) or pdf-parse (text PDFs) + MRZ parsing only.
- * Returns null fields if no MRZ is found — no AI/GPT fallback.
+ * 1. Tesseract.js (images) or pdf-parse (text PDFs) + MRZ parsing (free, instant)
+ * 2. GPT-4o vision fallback when MRZ is not found (handles any real-world ID)
  */
 export async function scanDocumentBase64(
   base64: string,
@@ -517,7 +535,7 @@ export async function scanDocumentBase64(
 ): Promise<TieredScanResult> {
   const isPdf = mimeType === 'application/pdf';
 
-  // Text-based PDF: extract text then try MRZ
+  // Step 1A: Text-based PDF — extract text, try MRZ
   if (isPdf) {
     try {
       const buffer = Buffer.from(base64, 'base64');
@@ -532,7 +550,7 @@ export async function scanDocumentBase64(
     }
   }
 
-  // Image: Tesseract OCR then try MRZ
+  // Step 1B: Image — Tesseract OCR, try MRZ
   if (!isPdf) {
     try {
       const { data: { text } } = await Tesseract.recognize(
@@ -549,19 +567,21 @@ export async function scanDocumentBase64(
     }
   }
 
-  // No MRZ found — return accepted with null fields (no AI fallback)
+  // Step 2: GPT-4o fallback — handles any real-world ID/passport image
+  console.log('[KYC OCR] MRZ not found, using GPT-4o vision');
+  const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
+  const imgBase64: string | null = isPdf ? null : base64;
+  const gptResult = await extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
   return {
-    is_identity_document: true,
-    full_name: null,
-    date_of_birth: null,
-    nationality: null,
-    document_number: null,
-    expiry_date: null,
-    source: 'mrz',
+    is_identity_document: gptResult.is_identity_document,
+    full_name: gptResult.full_name,
+    date_of_birth: gptResult.date_of_birth,
+    nationality: gptResult.nationality,
+    document_number: gptResult.document_number,
+    expiry_date: gptResult.expiry_date,
+    source: 'gpt',
   };
 }
-
-
 export async function checkKycOcrMismatch(
   documentUrl: string,
   declaredName: string,
