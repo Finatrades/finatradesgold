@@ -3704,9 +3704,9 @@ export async function registerRoutes(
       
       // Pending KYC count from both submissions table and users table
       const pendingKycSubmissions = kycSubmissions.filter(k => 
-        k.status === 'In Progress'
+        k.status === 'In Progress' || k.status === 'Pending Review'
       ).length;
-      const pendingKycUsers = users.filter(u => u.kycStatus === 'In Progress').length;
+      const pendingKycUsers = users.filter(u => u.kycStatus === 'In Progress' || u.kycStatus === 'Pending Review').length;
       const pendingKycCount = Math.max(pendingKycSubmissions, pendingKycUsers);
       
       // Total transaction volume - calculate USD equivalent from all monetary fields
@@ -4072,8 +4072,8 @@ export async function registerRoutes(
       }
 
       // Count pending KYC from both kyc_submissions and users table
-      const pendingKycSubmissions = kycSubmissions.filter(k => k.status === 'In Progress').length;
-      const pendingKycUsers = allUsers.filter(u => u.kycStatus === 'In Progress').length;
+      const pendingKycSubmissions = kycSubmissions.filter(k => k.status === 'In Progress' || k.status === 'Pending Review').length;
+      const pendingKycUsers = allUsers.filter(u => u.kycStatus === 'In Progress' || u.kycStatus === 'Pending Review').length;
       const pendingKyc = Math.max(pendingKycSubmissions, pendingKycUsers);
       const pendingTransactions = allTransactions.filter(tx => tx.status === 'Pending').length;
       const pendingDeposits = allDepositRequests.filter(d => d.status === 'Pending' || d.status === 'Under Review').length;
