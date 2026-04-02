@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FileUploadZone } from '@/components/ui/FileUploadZone';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1570,93 +1571,67 @@ export default function KYC() {
                           <p className="text-xs text-gray-500">JPG, JPEG, PNG, PDF - Max file size: 5MB</p>
                         </div>
                         
-                        <div className="space-y-4">
-                          <div className="p-4 border-2 border-dashed rounded-lg">
-                            <Label className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4" />
-                              ID Document (Front) <span className="text-red-500">*</span>
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
+                        <div className="space-y-5">
+                          <FileUploadZone
+                            label="ID Document (Front)"
+                            description="Clear photo showing your name, date of birth and document number"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            maxSizeMB={5}
+                            required
+                            disabled={isSectionLocked('documents')}
+                            file={idFrontFile}
+                            onFile={setIdFrontFile}
+                            testId="input-id-front"
+                          />
+
+                          <FileUploadZone
+                            label="ID Document (Back)"
+                            description="Back side of your national ID or driver's licence"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            maxSizeMB={5}
+                            required
+                            disabled={isSectionLocked('documents')}
+                            file={idBackFile}
+                            onFile={setIdBackFile}
+                            testId="input-id-back"
+                          />
+
+                          <FileUploadZone
+                            label="Passport"
+                            description="Photo page of your valid passport"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            maxSizeMB={5}
+                            required
+                            disabled={isSectionLocked('documents')}
+                            file={passportFile}
+                            onFile={setPassportFile}
+                            testId="input-passport"
+                          />
+
+                          <div>
+                            <Label className="text-sm">Passport Expiry Date <span className="text-red-500">*</span></Label>
+                            <p className="text-xs text-muted-foreground mb-1">We'll send you reminders before it expires</p>
                             <Input
-                              type="file"
-                              accept=".jpg,.jpeg,.png,.pdf"
-                              onChange={(e) => setIdFrontFile(e.target.files?.[0] || null)}
-                              data-testid="input-id-front"
+                              type="date"
+                              value={passportExpiryDate}
+                              onChange={(e) => setPassportExpiryDate(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                              disabled={isSectionLocked('documents')}
+                              data-testid="input-passport-expiry"
                             />
-                            {idFrontFile && (
-                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" /> {idFrontFile.name}
-                              </p>
-                            )}
                           </div>
-                          
-                          <div className="p-4 border-2 border-dashed rounded-lg">
-                            <Label className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4" />
-                              ID Document (Back) <span className="text-red-500">*</span>
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
-                            <Input
-                              type="file"
-                              accept=".jpg,.jpeg,.png,.pdf"
-                              onChange={(e) => setIdBackFile(e.target.files?.[0] || null)}
-                              data-testid="input-id-back"
-                            />
-                            {idBackFile && (
-                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" /> {idBackFile.name}
-                              </p>
-                            )}
-                          </div>
-                          
-                          <div className="p-4 border-2 border-dashed rounded-lg">
-                            <Label className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4" />
-                              Passport <span className="text-red-500">*</span>
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-2">Format: JPG, PNG, or PDF</p>
-                            <Input
-                              type="file"
-                              accept=".jpg,.jpeg,.png,.pdf"
-                              onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
-                              data-testid="input-passport"
-                            />
-                            {passportFile && (
-                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" /> {passportFile.name}
-                              </p>
-                            )}
-                            <div className="mt-3">
-                              <Label className="text-sm">Passport Expiry Date <span className="text-red-500">*</span></Label>
-                              <p className="text-xs text-muted-foreground mb-1">We'll send you reminders before it expires</p>
-                              <Input
-                                type="date"
-                                value={passportExpiryDate}
-                                onChange={(e) => setPassportExpiryDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
-                                data-testid="input-passport-expiry"
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 border-2 border-dashed rounded-lg">
-                            <Label className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4" />
-                              Proof of Address <span className="text-red-500">*</span>
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-2">Utility bill, bank statement, or government letter (dated within 3 months). Format: JPG, PNG, or PDF</p>
-                            <Input
-                              type="file"
-                              accept=".jpg,.jpeg,.png,.pdf"
-                              onChange={(e) => setAddressProofFile(e.target.files?.[0] || null)}
-                              data-testid="input-address-proof"
-                            />
-                            {addressProofFile && (
-                              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" /> {addressProofFile.name}
-                              </p>
-                            )}
-                          </div>
+
+                          <FileUploadZone
+                            label="Proof of Address"
+                            description="Utility bill, bank statement, or government letter dated within the last 3 months"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            maxSizeMB={5}
+                            required
+                            disabled={isSectionLocked('documents')}
+                            file={addressProofFile}
+                            onFile={setAddressProofFile}
+                            testId="input-address-proof"
+                          />
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between">

@@ -69,6 +69,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const startCamera = useCallback(async () => {
     setCameraError(null);
@@ -178,13 +179,97 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   }, [formData.password]);
 
   const isPasswordValid = Object.values(passwordStrength).every(Boolean);
+  const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
+
+  const getStrengthColor = (index: number) => {
+    if (strengthScore === 0) return 'bg-muted';
+    if (index >= strengthScore) return 'bg-muted';
+    if (strengthScore <= 1) return 'bg-red-500';
+    if (strengthScore === 2) return 'bg-orange-400';
+    if (strengthScore === 3) return 'bg-yellow-400';
+    return 'bg-green-500';
+  };
+
+  const getStrengthLabel = () => {
+    if (strengthScore === 0) return '';
+    if (strengthScore <= 1) return 'Weak';
+    if (strengthScore === 2) return 'Fair';
+    if (strengthScore === 3) return 'Good';
+    return 'Strong';
+  };
+
+  const getStrengthLabelColor = () => {
+    if (strengthScore <= 1) return 'text-red-500';
+    if (strengthScore === 2) return 'text-orange-500';
+    if (strengthScore === 3) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const validateField = (name: string, value: string) => {
+    const errs = { ...fieldErrors };
+    switch (name) {
+      case 'firstName':
+        errs.firstName = value.trim() ? '' : 'First name is required';
+        break;
+      case 'lastName':
+        errs.lastName = value.trim() ? '' : 'Last name is required';
+        break;
+      case 'email':
+        if (!value.trim()) {
+          errs.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          errs.email = 'Please enter a valid email address';
+        } else {
+          errs.email = '';
+        }
+        break;
+      case 'password': {
+        const pwStrength = {
+          length: value.length >= 8,
+          uppercase: /[A-Z]/.test(value),
+          number: /[0-9]/.test(value),
+          special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+        };
+        if (!value) errs.password = 'Password is required';
+        else if (!Object.values(pwStrength).every(Boolean)) errs.password = 'Password does not meet all requirements';
+        else errs.password = '';
+        if (formData.confirmPassword && touched.confirmPassword) {
+          errs.confirmPassword = value !== formData.confirmPassword ? 'Passwords do not match' : '';
+        }
+        break;
+      }
+      case 'confirmPassword':
+        errs.confirmPassword = value !== formData.password ? 'Passwords do not match' : '';
+        break;
+      case 'companyName':
+        errs.companyName = value.trim() ? '' : 'Company name is required';
+        break;
+    }
+    setFieldErrors(errs);
+  };
+
+  const handleFieldChange = (name: string, value: string) => {
+    setFormData({ ...formData, [name]: value });
+    if (touched[name]) {
+      validateField(name, value);
+    }
+  };
+
+  const handleFieldBlur = (name: string, value: string) => {
+    setTouched({ ...touched, [name]: true });
+    validateField(name, value);
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
     
     if (!formData.firstName.trim()) errors.firstName = "First name is required";
     if (!formData.lastName.trim()) errors.lastName = "Last name is required";
-    if (!formData.email.trim()) errors.email = "Email is required";
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
     if (!formData.password) {
       errors.password = "Password is required";
     } else if (!isPasswordValid) {
@@ -198,9 +283,8 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
     if (accountType === 'business' && !formData.companyName.trim()) {
       errors.companyName = "Company name is required";
     }
-    // Profile selfie is now optional - can be added later during KYC
-    
     setFieldErrors(errors);
+    setTouched({ firstName: true, lastName: true, email: true, password: true, confirmPassword: true, companyName: true });
     
     if (Object.keys(errors).length > 0) {
       toast.error("Please fill in all required fields");
@@ -303,22 +387,24 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className={fieldErrors.firstName ? 'border-red-500' : ''}
+                  onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('firstName', e.target.value)}
+                  className={fieldErrors.firstName ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   data-testid="input-firstname"
                 />
-                {fieldErrors.firstName && <p className="text-red-500 text-xs mt-1">{fieldErrors.firstName}</p>}
+                {fieldErrors.firstName && <p className="text-red-500 text-xs mt-1" data-testid="error-firstname">{fieldErrors.firstName}</p>}
               </div>
               <div>
                 <Label htmlFor="lastName">Last Name *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className={fieldErrors.lastName ? 'border-red-500' : ''}
+                  onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('lastName', e.target.value)}
+                  className={fieldErrors.lastName ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   data-testid="input-lastname"
                 />
-                {fieldErrors.lastName && <p className="text-red-500 text-xs mt-1">{fieldErrors.lastName}</p>}
+                {fieldErrors.lastName && <p className="text-red-500 text-xs mt-1" data-testid="error-lastname">{fieldErrors.lastName}</p>}
               </div>
             </div>
 
@@ -328,11 +414,12 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={fieldErrors.email ? 'border-red-500' : ''}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                onBlur={(e) => handleFieldBlur('email', e.target.value)}
+                className={fieldErrors.email ? 'border-red-500 focus-visible:ring-red-500' : touched.email && !fieldErrors.email ? 'border-green-500' : ''}
                 data-testid="input-email"
               />
-              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1" data-testid="error-email">{fieldErrors.email}</p>}
             </div>
 
             <div>
@@ -353,11 +440,12 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                   <Input
                     id="companyName"
                     value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    className={fieldErrors.companyName ? 'border-red-500' : ''}
+                    onChange={(e) => handleFieldChange('companyName', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('companyName', e.target.value)}
+                    className={fieldErrors.companyName ? 'border-red-500 focus-visible:ring-red-500' : ''}
                     data-testid="input-company"
                   />
-                  {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyName}</p>}
+                  {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1" data-testid="error-company">{fieldErrors.companyName}</p>}
                 </div>
                 <div>
                   <Label htmlFor="registrationNumber">Registration Number</Label>
@@ -378,7 +466,8 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => handleFieldChange('password', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('password', e.target.value)}
                   className={fieldErrors.password ? 'border-red-500 pr-10' : 'pr-10'}
                   data-testid="input-password"
                 />
@@ -390,13 +479,40 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
-              <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
-                <span className={passwordStrength.length ? 'text-green-600' : 'text-gray-400'}>✓ 8+ characters</span>
-                <span className={passwordStrength.uppercase ? 'text-green-600' : 'text-gray-400'}>✓ Uppercase</span>
-                <span className={passwordStrength.number ? 'text-green-600' : 'text-gray-400'}>✓ Number</span>
-                <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-400'}>✓ Special char</span>
-              </div>
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1" data-testid="error-password">{fieldErrors.password}</p>}
+              {formData.password && (
+                <div className="mt-2 space-y-2" data-testid="password-strength">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-1 flex-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${getStrengthColor(i)}`}
+                        />
+                      ))}
+                    </div>
+                    {getStrengthLabel() && (
+                      <span className={`text-xs font-medium ${getStrengthLabelColor()}`} data-testid="strength-label">
+                        {getStrengthLabel()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                    <span className={passwordStrength.length ? 'text-green-600' : 'text-muted-foreground'}>
+                      {passwordStrength.length ? '✓' : '○'} 8+ characters
+                    </span>
+                    <span className={passwordStrength.uppercase ? 'text-green-600' : 'text-muted-foreground'}>
+                      {passwordStrength.uppercase ? '✓' : '○'} Uppercase letter
+                    </span>
+                    <span className={passwordStrength.number ? 'text-green-600' : 'text-muted-foreground'}>
+                      {passwordStrength.number ? '✓' : '○'} Number
+                    </span>
+                    <span className={passwordStrength.special ? 'text-green-600' : 'text-muted-foreground'}>
+                      {passwordStrength.special ? '✓' : '○'} Special character
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -405,11 +521,23 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className={fieldErrors.confirmPassword ? 'border-red-500' : ''}
+                onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+                onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                className={
+                  fieldErrors.confirmPassword
+                    ? 'border-red-500 focus-visible:ring-red-500'
+                    : formData.confirmPassword && formData.confirmPassword === formData.password
+                    ? 'border-green-500'
+                    : ''
+                }
                 data-testid="input-confirm-password"
               />
-              {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+              {fieldErrors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1" data-testid="error-confirm-password">{fieldErrors.confirmPassword}</p>
+              )}
+              {!fieldErrors.confirmPassword && formData.confirmPassword && formData.confirmPassword === formData.password && (
+                <p className="text-green-600 text-xs mt-1">Passwords match</p>
+              )}
             </div>
 
             <div className="border rounded-lg p-4">

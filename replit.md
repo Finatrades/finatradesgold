@@ -92,6 +92,22 @@ All deposit approvals (bank transfer, card, crypto, physical gold) must go throu
 - drizzle-zod
 - @hookform/resolvers
 
+## Form System (Task #43)
+
+**FileUploadZone** (`client/src/components/ui/FileUploadZone.tsx`):
+- Reusable drag-and-drop file upload component
+- Props: `label`, `description`, `accept`, `maxSizeMB`, `required`, `disabled`, `file`, `onFile`, `testId`
+- Features: drag-and-drop, image thumbnail preview, file size/type validation, remove button
+- Used in KYC personal document upload step (ID Front, ID Back, Passport, Address Proof)
+
+**Real-time Registration Validation** (`client/src/pages/Register.tsx`, `client/src/components/mobile/MobileRegister.tsx`):
+- `touched` state tracks which fields have been interacted with
+- `handleFieldChange` / `handleFieldBlur` for per-field inline validation
+- Email validates format on blur with regex
+- Password strength: 4-segment colored bar (red→orange→yellow→green) with label (Weak/Fair/Good/Strong)
+- Confirm password: live match/mismatch indicator with green border
+- All fields show errors on submit (marks all as touched)
+
 **Gold Price API:**
 - Metals-API.com (Copper Pack) with caching and fallback mechanisms.
 

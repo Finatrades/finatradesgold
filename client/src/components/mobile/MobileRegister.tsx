@@ -56,6 +56,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const startCamera = useCallback(async () => {
     setCameraError(null);
@@ -165,6 +166,80 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   }, [formData.password]);
 
   const isPasswordValid = Object.values(passwordStrength).every(Boolean);
+  const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
+
+  const getStrengthColor = (index: number) => {
+    if (strengthScore === 0) return 'bg-gray-200';
+    if (index >= strengthScore) return 'bg-gray-200';
+    if (strengthScore <= 1) return 'bg-red-500';
+    if (strengthScore === 2) return 'bg-orange-400';
+    if (strengthScore === 3) return 'bg-yellow-400';
+    return 'bg-green-500';
+  };
+
+  const getStrengthLabel = () => {
+    if (strengthScore === 0) return '';
+    if (strengthScore <= 1) return 'Weak';
+    if (strengthScore === 2) return 'Fair';
+    if (strengthScore === 3) return 'Good';
+    return 'Strong';
+  };
+
+  const getStrengthLabelColor = () => {
+    if (strengthScore <= 1) return 'text-red-500';
+    if (strengthScore === 2) return 'text-orange-500';
+    if (strengthScore === 3) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const validateField = (name: string, value: string) => {
+    const errs = { ...fieldErrors };
+    switch (name) {
+      case 'firstName':
+        errs.firstName = value.trim() ? '' : 'First name is required';
+        break;
+      case 'lastName':
+        errs.lastName = value.trim() ? '' : 'Last name is required';
+        break;
+      case 'email':
+        if (!value.trim()) errs.email = 'Email is required';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) errs.email = 'Please enter a valid email address';
+        else errs.email = '';
+        break;
+      case 'password': {
+        const pwStrength = {
+          length: value.length >= 8,
+          uppercase: /[A-Z]/.test(value),
+          number: /[0-9]/.test(value),
+          special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+        };
+        if (!value) errs.password = 'Password is required';
+        else if (!Object.values(pwStrength).every(Boolean)) errs.password = 'Password does not meet all requirements';
+        else errs.password = '';
+        if (formData.confirmPassword && touched.confirmPassword) {
+          errs.confirmPassword = value !== formData.confirmPassword ? 'Passwords do not match' : '';
+        }
+        break;
+      }
+      case 'confirmPassword':
+        errs.confirmPassword = value !== formData.password ? 'Passwords do not match' : '';
+        break;
+      case 'companyName':
+        errs.companyName = value.trim() ? '' : 'Company name is required';
+        break;
+    }
+    setFieldErrors(errs);
+  };
+
+  const handleFieldChange = (name: string, value: string) => {
+    setFormData({ ...formData, [name]: value });
+    if (touched[name]) validateField(name, value);
+  };
+
+  const handleFieldBlur = (name: string, value: string) => {
+    setTouched({ ...touched, [name]: true });
+    validateField(name, value);
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -172,6 +247,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
     if (!formData.firstName.trim()) errors.firstName = "First name is required";
     if (!formData.lastName.trim()) errors.lastName = "Last name is required";
     if (!formData.email.trim()) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = "Please enter a valid email address";
     if (!formData.password) {
       errors.password = "Password is required";
     } else if (!isPasswordValid) {
@@ -187,6 +263,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
     }
     
     setFieldErrors(errors);
+    setTouched({ firstName: true, lastName: true, email: true, password: true, confirmPassword: true, companyName: true });
     
     if (Object.keys(errors).length > 0) {
       toast.error("Please fill in all required fields");
@@ -309,12 +386,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               <Input
                 id="firstName"
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                onBlur={(e) => handleFieldBlur('firstName', e.target.value)}
                 className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.firstName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
                 placeholder="Enter your first name"
                 data-testid="input-firstname"
               />
-              {fieldErrors.firstName && <p className="text-red-500 text-xs mt-1">{fieldErrors.firstName}</p>}
+              {fieldErrors.firstName && <p className="text-red-500 text-xs mt-1" data-testid="error-firstname">{fieldErrors.firstName}</p>}
             </div>
 
             <div>
@@ -322,12 +400,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               <Input
                 id="lastName"
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                onBlur={(e) => handleFieldBlur('lastName', e.target.value)}
                 className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.lastName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
                 placeholder="Enter your last name"
                 data-testid="input-lastname"
               />
-              {fieldErrors.lastName && <p className="text-red-500 text-xs mt-1">{fieldErrors.lastName}</p>}
+              {fieldErrors.lastName && <p className="text-red-500 text-xs mt-1" data-testid="error-lastname">{fieldErrors.lastName}</p>}
             </div>
 
             <div>
@@ -336,12 +415,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.email ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                onBlur={(e) => handleFieldBlur('email', e.target.value)}
+                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.email ? 'border-red-400 focus:border-red-500' : touched.email && !fieldErrors.email ? 'border-green-400' : 'focus:border-purple-500'}`}
                 placeholder="you@example.com"
                 data-testid="input-email"
               />
-              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1" data-testid="error-email">{fieldErrors.email}</p>}
             </div>
 
             <div>
@@ -369,12 +449,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   <Input
                     id="companyName"
                     value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    onChange={(e) => handleFieldChange('companyName', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('companyName', e.target.value)}
                     className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.companyName ? 'border-red-400' : 'focus:border-purple-500'}`}
                     placeholder="Your company name"
                     data-testid="input-company"
                   />
-                  {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyName}</p>}
+                  {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1" data-testid="error-company">{fieldErrors.companyName}</p>}
                 </div>
                 <div>
                   <Label htmlFor="registrationNumber" className="text-gray-700 text-sm font-medium">Registration Number</Label>
@@ -397,7 +478,8 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => handleFieldChange('password', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('password', e.target.value)}
                   className={`h-12 rounded-xl border-gray-200 bg-white pr-12 ${fieldErrors.password ? 'border-red-400' : 'focus:border-purple-500'}`}
                   placeholder="Create a strong password"
                   data-testid="input-password"
@@ -410,21 +492,37 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
-              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-                <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : 'text-gray-400'}`}>
-                  <Check className={`w-3 h-3 ${passwordStrength.length ? 'opacity-100' : 'opacity-40'}`} /> 8+ characters
-                </span>
-                <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
-                  <Check className={`w-3 h-3 ${passwordStrength.uppercase ? 'opacity-100' : 'opacity-40'}`} /> Uppercase
-                </span>
-                <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : 'text-gray-400'}`}>
-                  <Check className={`w-3 h-3 ${passwordStrength.number ? 'opacity-100' : 'opacity-40'}`} /> Number
-                </span>
-                <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600' : 'text-gray-400'}`}>
-                  <Check className={`w-3 h-3 ${passwordStrength.special ? 'opacity-100' : 'opacity-40'}`} /> Special char
-                </span>
-              </div>
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1" data-testid="error-password">{fieldErrors.password}</p>}
+              {formData.password && (
+                <div className="mt-2 space-y-2" data-testid="password-strength">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-1 flex-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${getStrengthColor(i)}`} />
+                      ))}
+                    </div>
+                    {getStrengthLabel() && (
+                      <span className={`text-xs font-medium ${getStrengthLabelColor()}`} data-testid="strength-label">
+                        {getStrengthLabel()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : 'text-gray-400'}`}>
+                      <Check className={`w-3 h-3 ${passwordStrength.length ? 'opacity-100' : 'opacity-40'}`} /> 8+ characters
+                    </span>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                      <Check className={`w-3 h-3 ${passwordStrength.uppercase ? 'opacity-100' : 'opacity-40'}`} /> Uppercase
+                    </span>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : 'text-gray-400'}`}>
+                      <Check className={`w-3 h-3 ${passwordStrength.number ? 'opacity-100' : 'opacity-40'}`} /> Number
+                    </span>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600' : 'text-gray-400'}`}>
+                      <Check className={`w-3 h-3 ${passwordStrength.special ? 'opacity-100' : 'opacity-40'}`} /> Special char
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -433,12 +531,22 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.confirmPassword ? 'border-red-400' : 'focus:border-purple-500'}`}
+                onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+                onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
+                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${
+                  fieldErrors.confirmPassword
+                    ? 'border-red-400'
+                    : formData.confirmPassword && formData.confirmPassword === formData.password
+                    ? 'border-green-400'
+                    : 'focus:border-purple-500'
+                }`}
                 placeholder="Re-enter your password"
                 data-testid="input-confirm-password"
               />
-              {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+              {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1" data-testid="error-confirm-password">{fieldErrors.confirmPassword}</p>}
+              {!fieldErrors.confirmPassword && formData.confirmPassword && formData.confirmPassword === formData.password && (
+                <p className="text-green-600 text-xs mt-1">Passwords match</p>
+              )}
             </div>
           </motion.div>
 
