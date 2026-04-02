@@ -1,12 +1,24 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX, CircleDot, Globe, Hash, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 
-interface ScanFields {
+export interface ScanFields {
   is_identity_document?: boolean;
   full_name: string | null;
   date_of_birth: string | null;
+  nationality: string | null;
+  document_number: string | null;
+  expiry_date: string | null;
+  source?: 'mrz' | 'gpt';
+}
+
+export interface ScanVerification {
+  nameMatch: boolean | null;
+  dobMatch: boolean | null;
+  similarity: number | null;
+  declaredName: string | null;
+  declaredDob: string | null;
 }
 
 interface FileUploadZoneProps {
@@ -20,7 +32,9 @@ interface FileUploadZoneProps {
   onFile: (file: File | null) => void;
   testId?: string;
   enableOcr?: boolean;
-  onScanResult?: (result: ScanFields) => void;
+  declaredName?: string;
+  declaredDob?: string;
+  onScanResult?: (result: ScanFields, verification?: ScanVerification | null) => void;
 }
 
 type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete' | 'error';
@@ -36,6 +50,8 @@ export function FileUploadZone({
   onFile,
   testId,
   enableOcr = false,
+  declaredName,
+  declaredDob,
   onScanResult,
 }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +61,7 @@ export function FileUploadZone({
   const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [scanFields, setScanFields] = useState<ScanFields | null>(null);
+  const [verification, setVerification] = useState<ScanVerification | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,6 +78,7 @@ export function FileUploadZone({
       setProgress(0);
       setPreview(null);
       setScanFields(null);
+      setVerification(null);
       if (progressRef.current) clearInterval(progressRef.current);
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     }
@@ -100,15 +118,22 @@ export function FileUploadZone({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ base64, mimeType: f.type || 'image/jpeg' }),
+        body: JSON.stringify({
+          base64,
+          mimeType: f.type || 'image/jpeg',
+          declaredName: declaredName || undefined,
+          declaredDob: declaredDob || undefined,
+        }),
       });
 
       if (!resp.ok) throw new Error('Scan request failed');
       const data = await resp.json();
-      const fields: ScanFields = data.fields ?? { is_identity_document: true, full_name: null, date_of_birth: null };
+      const fields: ScanFields = data.fields ?? {
+        is_identity_document: true, full_name: null, date_of_birth: null,
+        nationality: null, document_number: null, expiry_date: null, source: 'gpt',
+      };
 
       if (fields.is_identity_document === false) {
-        // Document is not a valid identity document — reject it
         setProgress(100);
         setScanStatus('error');
         setError('This does not appear to be a valid identity document. Please upload a passport, national ID, or driver\'s licence.');
@@ -116,14 +141,17 @@ export function FileUploadZone({
         return;
       }
 
+      const verif: ScanVerification | null = data.verification ?? null;
       setScanFields(fields);
-      onScanResult?.(fields);
+      setVerification(verif);
+      onScanResult?.(fields, verif);
     } catch {
-      setScanFields({ full_name: null, date_of_birth: null });
+      setScanFields({ full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null });
+      setVerification(null);
     }
     setProgress(100);
     setScanStatus('complete');
-  }, [onScanResult, onFile]);
+  }, [onScanResult, onFile, declaredName, declaredDob]);
 
   const processFile = useCallback(
     (f: File) => {
@@ -332,20 +360,119 @@ export function FileUploadZone({
 
           {scanStatus === 'complete' && (
             <div
-              className="space-y-1"
+              className="space-y-2"
               data-testid={testId ? `${testId}-scan-complete` : undefined}
             >
+              {/* Header */}
               <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                {enableOcr ? 'AI document scan complete' : 'Document scan complete'} — ready for submission
+                {scanFields?.source === 'mrz' ? 'MRZ scan complete' : enableOcr ? 'AI document scan complete' : 'Document scan complete'} — ready for submission
+                {scanFields?.source === 'mrz' && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 font-semibold">FREE</span>
+                )}
               </div>
-              {enableOcr && scanFields && (scanFields.full_name || scanFields.date_of_birth) && (
-                <div className="text-xs text-muted-foreground pl-5 space-y-0.5">
+
+              {enableOcr && scanFields && (
+                <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/60 dark:bg-green-950/20 divide-y divide-green-100 dark:divide-green-900 text-xs overflow-hidden">
+                  {/* Name row */}
                   {scanFields.full_name && (
-                    <p>Name detected: <span className="font-medium text-foreground">{scanFields.full_name}</span></p>
+                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
+                        <CircleDot className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate font-medium text-foreground">{scanFields.full_name}</span>
+                      </span>
+                      {verification?.nameMatch !== null && verification?.nameMatch !== undefined ? (
+                        verification.nameMatch ? (
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> Name match
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> Name differs
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground flex-shrink-0">Name extracted</span>
+                      )}
+                    </div>
                   )}
+
+                  {/* DOB row */}
                   {scanFields.date_of_birth && (
-                    <p>DOB detected: <span className="font-medium text-foreground">{scanFields.date_of_birth}</span></p>
+                    <div className="flex items-center justify-between px-3 py-1.5 gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium text-foreground">{scanFields.date_of_birth}</span>
+                      </span>
+                      {verification?.dobMatch !== null && verification?.dobMatch !== undefined ? (
+                        verification.dobMatch ? (
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> DOB match
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> DOB differs
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground flex-shrink-0">DOB extracted</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Nationality row */}
+                  {scanFields.nationality && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5">
+                      <Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-muted-foreground">Nationality:</span>
+                      <span className="font-medium text-foreground">{scanFields.nationality}</span>
+                    </div>
+                  )}
+
+                  {/* Document number row */}
+                  {scanFields.document_number && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5">
+                      <Hash className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-muted-foreground">Doc #:</span>
+                      <span className="font-medium text-foreground font-mono">{scanFields.document_number}</span>
+                    </div>
+                  )}
+
+                  {/* Expiry row */}
+                  {scanFields.expiry_date && (
+                    <div className="flex items-center justify-between px-3 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="text-muted-foreground">Expires:</span>
+                        <span className="font-medium text-foreground">{scanFields.expiry_date}</span>
+                      </div>
+                      {new Date(scanFields.expiry_date) < new Date() ? (
+                        <span className="flex items-center gap-1 text-red-600 font-medium">
+                          <CircleX className="w-3.5 h-3.5" /> Expired
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium">
+                          <CircleCheck className="w-3.5 h-3.5" /> Valid
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Mismatch warning */}
+                  {((verification?.nameMatch === false) || (verification?.dobMatch === false)) && (
+                    <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-950/30">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-amber-700 dark:text-amber-400">
+                        Details don't fully match what you entered in Step 1. Please verify your name and date of birth are correct before submitting.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* No fields at all */}
+                  {!scanFields.full_name && !scanFields.date_of_birth && (
+                    <div className="px-3 py-2 text-muted-foreground">
+                      Document accepted — fields could not be auto-extracted. An agent will review manually.
+                    </div>
                   )}
                 </div>
               )}

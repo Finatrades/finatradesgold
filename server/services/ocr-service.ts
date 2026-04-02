@@ -3,6 +3,8 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>;
 import { getFromR2, isR2Configured } from '../r2-storage';
+import Tesseract from 'tesseract.js';
+import { parse as parseMrz } from 'mrz';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -364,7 +366,7 @@ export interface KycOcrResult {
  * - Non-Latin scripts: Unicode-aware lowercase, split on whitespace/punctuation, preserve script chars
  * Comparison is case-insensitive and diacritic-tolerant; word order independent.
  */
-function nameSimilarity(a: string, b: string): number {
+export function nameSimilarity(a: string, b: string): number {
   if (!a || !b) return 0;
   const normalize = (s: string): string[] => {
     // NFD decompose + strip combining diacritics (é -> e, ñ -> n, etc.)
@@ -440,18 +442,124 @@ async function extractKycFieldsFromDocument(
   };
 }
 
+// ============================================================
+// TIERED OCR: Tesseract.js + MRZ → GPT-4o fallback
+// ============================================================
+
+export interface TieredScanResult {
+  is_identity_document: boolean;
+  full_name: string | null;
+  date_of_birth: string | null;
+  nationality: string | null;
+  document_number: string | null;
+  expiry_date: string | null;
+  source: 'mrz' | 'gpt';
+}
+
+/** Convert MRZ date YYMMDD → YYYY-MM-DD */
+function formatMrzDate(yymmdd: string | null | undefined): string | null {
+  if (!yymmdd || yymmdd.length < 6) return null;
+  const yy = parseInt(yymmdd.substring(0, 2), 10);
+  const mm = yymmdd.substring(2, 4);
+  const dd = yymmdd.substring(4, 6);
+  const year = yy > 30 ? 1900 + yy : 2000 + yy;
+  return `${year}-${mm}-${dd}`;
+}
+
+/** Find MRZ lines in raw text and parse with mrz package */
+function findAndParseMrz(text: string): TieredScanResult | null {
+  const lines = text
+    .split('\n')
+    .map(l => l.replace(/\s+/g, '').toUpperCase().replace(/[^A-Z0-9<]/g, ''))
+    .filter(l => l.length >= 28 && /^[A-Z0-9<]+$/.test(l));
+
+  if (lines.length < 2) return null;
+
+  // Try consecutive pairs/triples to find a valid MRZ
+  for (let i = 0; i <= lines.length - 2; i++) {
+    const candidates: string[][] = [
+      lines.length > i + 2 ? [lines[i], lines[i + 1], lines[i + 2]] : null,
+      [lines[i], lines[i + 1]],
+    ].filter(Boolean) as string[][];
+
+    for (const candidate of candidates) {
+      try {
+        const result = parseMrz(candidate);
+        if (result.valid) {
+          const f = result.fields as Record<string, string>;
+          const firstName = (f.firstName || '').replace(/</g, ' ').trim();
+          const lastName = (f.lastName || '').replace(/</g, ' ').trim();
+          const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+          return {
+            is_identity_document: true,
+            full_name: fullName,
+            date_of_birth: formatMrzDate(f.birthDate),
+            nationality: f.nationalityCode || null,
+            document_number: f.documentNumber || null,
+            expiry_date: formatMrzDate(f.expirationDate),
+            source: 'mrz',
+          };
+        }
+      } catch { /* continue */ }
+    }
+  }
+  return null;
+}
+
 /**
  * Scan a document from raw base64 + mimeType (no R2 upload needed).
- * Used by the /api/kyc/scan-document endpoint for real-time client-side OCR preview.
+ * Tier 1: Tesseract.js (images) or pdf-parse (text PDFs) → MRZ parsing (FREE)
+ * Tier 2: GPT-4o vision fallback (for non-MRZ docs, scanned PDFs, driving licences)
  */
 export async function scanDocumentBase64(
   base64: string,
   mimeType: string,
-): Promise<{ is_identity_document: boolean; full_name: string | null; date_of_birth: string | null }> {
+): Promise<TieredScanResult> {
   const isPdf = mimeType === 'application/pdf';
+
+  // TIER 1A: Text-based PDF → extract text → try MRZ
+  if (isPdf) {
+    try {
+      const buffer = Buffer.from(base64, 'base64');
+      const parsed = await pdfParse(buffer);
+      const text = parsed?.text?.trim() || '';
+      if (text.length >= 30) {
+        const mrzResult = findAndParseMrz(text);
+        if (mrzResult) return mrzResult;
+      }
+    } catch { /* fall through to GPT */ }
+  }
+
+  // TIER 1B: Image → Tesseract OCR → try MRZ
+  if (!isPdf) {
+    try {
+      const { data: { text } } = await Tesseract.recognize(
+        `data:${mimeType};base64,${base64}`,
+        'eng',
+        { logger: () => {} },
+      );
+      if (text) {
+        const mrzResult = findAndParseMrz(text);
+        if (mrzResult) return mrzResult;
+      }
+    } catch (err) {
+      console.warn('[KYC OCR] Tesseract failed, using GPT fallback:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  // TIER 2: GPT-4o fallback (handles non-MRZ docs, driving licences, scanned PDFs)
   const buffer: Buffer | null = isPdf ? Buffer.from(base64, 'base64') : null;
   const imgBase64: string | null = isPdf ? null : base64;
-  return extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
+  const gptResult = await extractKycFieldsFromDocument(buffer, imgBase64, mimeType, '');
+  return {
+    is_identity_document: gptResult.is_identity_document,
+    full_name: gptResult.full_name,
+    date_of_birth: gptResult.date_of_birth,
+    nationality: null,
+    document_number: null,
+    expiry_date: null,
+    source: 'gpt',
+  };
 }
 
 export async function checkKycOcrMismatch(

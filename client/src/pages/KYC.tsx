@@ -1688,6 +1688,8 @@ export default function KYC() {
                             onFile={setIdFrontFile}
                             testId="input-id-front"
                             enableOcr
+                            declaredName={personalFullName}
+                            declaredDob={personalDateOfBirth}
                             onScanResult={(fields) => {
                               if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
                               if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);
@@ -1715,6 +1717,8 @@ export default function KYC() {
                             onFile={setPassportFile}
                             testId="input-passport"
                             enableOcr
+                            declaredName={personalFullName}
+                            declaredDob={personalDateOfBirth}
                             onScanResult={(fields) => {
                               if (fields.full_name && !personalFullName) setPersonalFullName(fields.full_name);
                               if (fields.date_of_birth && !personalDateOfBirth) setPersonalDateOfBirth(fields.date_of_birth);

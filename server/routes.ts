@@ -101,7 +101,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
-import { checkKycOcrMismatch, scanDocumentBase64, type KycOcrResult } from "./services/ocr-service";
+import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, type KycOcrResult, type TieredScanResult } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -5588,7 +5588,7 @@ export async function registerRoutes(
   // Scan a document (base64) with OCR and return extracted name/DOB fields
   app.post("/api/kyc/scan-document", ensureAuthenticated, async (req, res) => {
     try {
-      const { base64, mimeType } = req.body;
+      const { base64, mimeType, declaredName, declaredDob } = req.body;
       if (!base64 || typeof base64 !== 'string') {
         return res.status(400).json({ error: 'base64 document data required' });
       }
@@ -5599,11 +5599,38 @@ export async function registerRoutes(
       if (!supported.includes(mimeType)) {
         return res.status(400).json({ error: 'Unsupported document type' });
       }
-      const fields = await scanDocumentBase64(base64, mimeType);
-      return res.json({ success: true, fields });
+
+      const fields: TieredScanResult = await scanDocumentBase64(base64, mimeType);
+
+      // Compute name + DOB comparison against pre-filled user data
+      let verification: {
+        nameMatch: boolean | null;
+        dobMatch: boolean | null;
+        similarity: number | null;
+        declaredName: string | null;
+        declaredDob: string | null;
+      } | null = null;
+
+      if (declaredName || declaredDob) {
+        const similarity = (fields.full_name && declaredName)
+          ? nameSimilarity(fields.full_name, declaredName)
+          : null;
+        const dobMatch = (fields.date_of_birth && declaredDob)
+          ? fields.date_of_birth === declaredDob
+          : null;
+        verification = {
+          nameMatch: similarity !== null ? similarity >= 0.75 : null,
+          dobMatch,
+          similarity: similarity !== null ? Math.round(similarity * 100) : null,
+          declaredName: (typeof declaredName === 'string' && declaredName) ? declaredName : null,
+          declaredDob: (typeof declaredDob === 'string' && declaredDob) ? declaredDob : null,
+        };
+      }
+
+      return res.json({ success: true, fields, verification });
     } catch (err) {
       console.warn('[KYC] Document scan failed:', err instanceof Error ? err.message : err);
-      return res.json({ success: false, fields: { full_name: null, date_of_birth: null } });
+      return res.json({ success: false, fields: { is_identity_document: true, full_name: null, date_of_birth: null, nationality: null, document_number: null, expiry_date: null, source: 'gpt' }, verification: null });
     }
   });
 
