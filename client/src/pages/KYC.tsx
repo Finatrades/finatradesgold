@@ -1741,7 +1741,7 @@ export default function KYC() {
                       <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm font-medium text-blue-700">Passport required</p>
-                          <p className="text-xs text-blue-600 mt-0.5">JPG, JPEG, PNG, PDF — max 5 MB · AI extraction enabled · expiry &amp; passport number auto-filled</p>
+                          <p className="text-xs text-blue-600 mt-0.5">JPG, JPEG, PNG, PDF — max 5 MB</p>
                         </div>
 
                         <div className="space-y-5">
