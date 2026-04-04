@@ -17004,7 +17004,8 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/deal-rooms/:dealRoomId/lc-status", ensureAuthenticated, async (req, res) => {
+  // LC stage transition handler — shared logic
+  const handleLcStageTransition = async (req: any, res: any) => {
     try {
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
@@ -17021,19 +17022,28 @@ export async function registerRoutes(
       else if (dealRoom.exporterUserId === sessionUserId) userRoleInDeal = 'exporter';
       if (!userRoleInDeal) return res.status(403).json({ message: "Not authorized to update this deal room" });
 
-      const { lcLifecycleStatus, notes } = req.body;
+      const lcLifecycleStatus = req.body.lcLifecycleStatus || req.body.stage;
+      const { notes } = req.body;
 
-      // 9-stage state machine with role-based transition rules
+      // 9-stage state machine with strict role-based transition rules
       type TransitionRule = { allowedRoles: string[]; fromStages: string[] };
       const TRANSITION_RULES: Record<string, TransitionRule> = {
         'LC Issued':             { allowedRoles: ['admin'], fromStages: ['Draft'] },
-        'Docs Submitted':        { allowedRoles: ['exporter', 'admin'], fromStages: ['LC Issued'] },
+        'Docs Submitted':        { allowedRoles: ['exporter'], fromStages: ['LC Issued'] }, // exporter-only
         'Docs Under Review':     { allowedRoles: ['admin'], fromStages: ['Docs Submitted', 'Discrepancy Resolved'] },
         'Discrepancy Raised':    { allowedRoles: ['admin'], fromStages: ['Docs Under Review'] },
         'Discrepancy Resolved':  { allowedRoles: ['admin', 'exporter'], fromStages: ['Discrepancy Raised'] },
         'Approved':              { allowedRoles: ['admin'], fromStages: ['Docs Under Review', 'Discrepancy Resolved'] },
-        'Payment Triggered':     { allowedRoles: ['importer', 'admin'], fromStages: ['Approved'] },
+        'Payment Triggered':     { allowedRoles: ['importer'], fromStages: ['Approved'] }, // importer-only
         'Closed':                { allowedRoles: ['admin'], fromStages: ['Payment Triggered'] },
+      };
+
+      // Legacy stage normalization map for server-side validation
+      const LEGACY_STAGE_MAP: Record<string, string> = {
+        'Contract Signed': 'Draft',
+        'Under Review': 'Docs Under Review',
+        'Discrepancy': 'Discrepancy Raised',
+        'Funds Released': 'Payment Triggered',
       };
 
       const allValidStages = ['Draft', 'LC Issued', 'Docs Submitted', 'Docs Under Review', 'Discrepancy Raised', 'Discrepancy Resolved', 'Approved', 'Payment Triggered', 'Closed'];
@@ -17043,7 +17053,9 @@ export async function registerRoutes(
 
       const rule = TRANSITION_RULES[lcLifecycleStatus];
       if (rule) {
-        const currentStage = dealRoom.lcLifecycleStatus || 'Draft';
+        // Normalize current stage before applying rules (handles legacy persisted values)
+        const rawCurrentStage = dealRoom.lcLifecycleStatus || 'Draft';
+        const currentStage = LEGACY_STAGE_MAP[rawCurrentStage] || rawCurrentStage;
         if (!rule.fromStages.includes(currentStage)) {
           return res.status(400).json({ message: `Cannot transition to ${lcLifecycleStatus} from ${currentStage}` });
         }
@@ -17107,7 +17119,11 @@ export async function registerRoutes(
       console.error('[DealRoom] LC status update error:', error);
       res.status(400).json({ message: "Failed to update LC lifecycle status" });
     }
-  });
+  };
+
+  // Register both route paths (lc-status = legacy, lc-stage = new spec)
+  app.patch("/api/deal-rooms/:dealRoomId/lc-status", ensureAuthenticated, handleLcStageTransition);
+  app.patch("/api/deal-rooms/:dealRoomId/lc-stage", ensureAuthenticated, handleLcStageTransition);
 
   // ============================================================================
   // DEAL ROOM - MILESTONES
