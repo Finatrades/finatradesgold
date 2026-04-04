@@ -717,7 +717,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     setRaisingDiscrepancy(true);
     try {
       const res = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/discrepancies`, {
-        documentId: discrepancyDocId || null,
+        documentId: (discrepancyDocId && discrepancyDocId !== 'none') ? discrepancyDocId : null,
         reasonType: discrepancyReason,
         description: discrepancyDescription,
       });
@@ -1013,7 +1013,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <Select value={discrepancyDocId} onValueChange={setDiscrepancyDocId}>
                 <SelectTrigger data-testid="select-discrepancy-doc"><SelectValue placeholder="Select document..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No specific document</SelectItem>
+                  <SelectItem value="none">No specific document</SelectItem>
                   {documents.map(d => <SelectItem key={d.id} value={d.id}>{d.documentType} - {d.fileName}</SelectItem>)}
                 </SelectContent>
               </Select>

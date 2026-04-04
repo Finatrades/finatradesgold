@@ -16935,12 +16935,16 @@ export async function registerRoutes(
       if (!['Approved', 'Rejected', 'Under Review'].includes(status)) {
         return res.status(400).json({ message: "Status must be Approved, Rejected, or Under Review" });
       }
+      // Rejection always requires notes so discrepancy can be meaningful
+      if (status === 'Rejected' && !verificationNotes?.trim()) {
+        return res.status(400).json({ message: "Rejection notes are required when rejecting a document" });
+      }
 
       const [updated] = await db.update(dealRoomDocuments).set({
         status,
         verifiedBy: sessionUserId,
         verifiedAt: new Date(),
-        verificationNotes: verificationNotes || null,
+        verificationNotes: verificationNotes?.trim() || null,
         updatedAt: new Date(),
       }).where(
         and(
@@ -16951,15 +16955,15 @@ export async function registerRoutes(
 
       if (!updated) return res.status(404).json({ message: "Document not found" });
 
-      // If rejected, auto-create a discrepancy entry
-      if (status === 'Rejected' && verificationNotes) {
+      // Rejection always auto-creates a discrepancy entry
+      if (status === 'Rejected') {
         await db.insert(dealDiscrepancies).values({
           id: crypto.randomUUID(),
           dealRoomId: req.params.dealRoomId,
           documentId: req.params.documentId,
           raisedByUserId: sessionUserId,
           reasonType: 'Other',
-          description: `Document rejected: ${verificationNotes}`,
+          description: `Document rejected: ${verificationNotes.trim()}`,
           status: 'open',
         });
       }
@@ -16974,6 +16978,30 @@ export async function registerRoutes(
   // ============================================================================
   // DEAL ROOM - LC LIFECYCLE STATUS
   // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/lc-status", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      res.json({
+        lcLifecycleStatus: dealRoom.lcLifecycleStatus || 'Contract Signed',
+        dealRoomId: dealRoom.id,
+        isClosed: dealRoom.isClosed,
+      });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch LC lifecycle status" });
+    }
+  });
 
   app.patch("/api/deal-rooms/:dealRoomId/lc-status", ensureAuthenticated, async (req, res) => {
     try {
