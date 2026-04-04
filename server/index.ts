@@ -134,7 +134,7 @@ app.use(helmet({
   hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   xContentTypeOptions: true,
-  xFrameOptions: { action: "sameorigin" },
+  xFrameOptions: false,
 }));
 
 // Session configuration with Redis (primary) or PostgreSQL (fallback)
