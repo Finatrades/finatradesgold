@@ -65,12 +65,23 @@ interface AgreementAcceptance {
   acceptedAt: string; ipAddress?: string | null;
 }
 
+interface Mt700ValidationResult {
+  documentId: string;
+  documentType: string;
+  triggeredBy?: string;
+  validatedAt: string;
+  fields: { tag: string; name: string; description: string; present: boolean }[];
+  summary: { total: number; present: number; missing: number };
+  isValid: boolean;
+}
+
 interface DealRoomDocument {
   id: string; dealRoomId: string; uploadedByUserId: string; uploaderRole: string;
   documentType: string; fileName: string; fileUrl: string; fileSize: number | null;
   description: string | null; status: string; verifiedBy: string | null;
   verifiedAt: string | null; verificationNotes: string | null;
   versionNumber: number | null; parentDocumentId: string | null; createdAt: string;
+  mt700ValidationResult?: Mt700ValidationResult | null;
 }
 
 interface DealMilestone {
@@ -783,12 +794,12 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `deal-summary-${room?.tradeRequest?.tradeRefId || dealRoomId}.html`;
+      a.download = `deal-summary-${room?.tradeRequest?.tradeRefId || dealRoomId}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: 'Deal Summary exported', description: 'Open the downloaded file in a browser and use print-to-PDF.' });
+      toast({ title: 'Deal Summary PDF exported', description: 'Your PDF deal summary has been downloaded.' });
     } catch { toast({ title: 'Export failed', description: 'Please try again', variant: 'destructive' }); }
     finally { setExportingPdf(false); }
   };
@@ -1619,7 +1630,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                           <h4 className="font-semibold text-indigo-700 text-sm">MT700 Field Validator — {doc.fileName}</h4>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground">Validate mandatory SWIFT MT700 fields for LC compliance</p>
-                            {(doc as any).mt700ValidationResult?.triggeredBy === 'auto-approval' && (
+                            {doc.mt700ValidationResult?.triggeredBy === 'auto-approval' && (
                               <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium" data-testid={`mt700-auto-badge-${doc.id}`}>Auto-validated on approval</span>
                             )}
                           </div>

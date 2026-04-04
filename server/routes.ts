@@ -1758,7 +1758,7 @@ export async function registerRoutes(
   { const { startAnnualStatementScheduler } = await import('./jobs/annual-statement.job'); startAnnualStatementScheduler(storage); }
 
   // FinaBridge LC Expiry Notification Cron — runs every 12 hours
-  // Notifies admin for open deal rooms where LC expires within 3 days
+  // Creates in-app + email notifications for open deal rooms where LC expires within 3 days
   setInterval(async () => {
     try {
       const now = new Date();
@@ -1775,12 +1775,28 @@ export async function registerRoutes(
           const adminUsers = await db.select().from(users).where(eq(users.role, 'admin'));
           const targets = adminUsers.filter(u => !room.assignedAdminId || u.id === room.assignedAdminId);
           for (const admin of targets) {
-            if (!admin.email) continue;
+            if (!admin.email || !admin.id) continue;
+            const notificationTitle = `LC Expiry Alert — ${daysUntilExpiry} day(s) remaining`;
+            const notificationMessage = `Deal Room ${room.id.slice(0, 8)} has an LC expiring on ${lcRow.expiryDate}. Immediate review required.`;
+            // In-app notification (bell)
+            try {
+              await storage.createNotification({
+                userId: admin.id,
+                title: notificationTitle,
+                message: notificationMessage,
+                type: 'warning',
+                link: `/admin/finabridge`,
+                read: false,
+              });
+            } catch (notifErr) {
+              console.error(`[FinaBridge] Failed to create in-app notification for ${admin.email}:`, notifErr);
+            }
+            // Email notification
             try {
               const { sendEmail } = await import('./email');
               await sendEmail({
                 to: admin.email,
-                subject: `[FinaBridge] LC Expiry Alert — ${daysUntilExpiry} day(s) remaining`,
+                subject: `[FinaBridge] ${notificationTitle}`,
                 html: `
                   <p>Dear ${admin.firstName || admin.email},</p>
                   <p>This is an automated alert from the FinaBridge Deal Manager.</p>
@@ -17759,9 +17775,15 @@ export async function registerRoutes(
       
       // Fetch related data for each room
       const roomsWithDetails = await Promise.all(rooms.map(async (room) => {
-        const tradeRequest = await storage.getTradeRequest(room.tradeRequestId);
-        const importer = await storage.getUser(room.importerUserId);
-        const exporter = await storage.getUser(room.exporterUserId);
+        const [tradeRequest, importer, exporter, docs] = await Promise.all([
+          storage.getTradeRequest(room.tradeRequestId),
+          storage.getUser(room.importerUserId),
+          storage.getUser(room.exporterUserId),
+          db.select({ id: dealRoomDocuments.id, status: dealRoomDocuments.status })
+            .from(dealRoomDocuments).where(eq(dealRoomDocuments.dealRoomId, room.id)),
+        ]);
+        const docsTotal = docs.length;
+        const docsApproved = docs.filter(d => d.status === 'Approved').length;
         
         return {
           ...room,
@@ -17773,6 +17795,8 @@ export async function registerRoutes(
           } : null,
           importer: importer ? { id: importer.id, finatradesId: importer.finatradesId, email: importer.email } : null,
           exporter: exporter ? { id: exporter.id, finatradesId: exporter.finatradesId, email: exporter.email } : null,
+          docsTotal,
+          docsApproved,
         };
       }));
       
@@ -18131,167 +18155,150 @@ export async function registerRoutes(
 
       const now = new Date();
       const formatDate = (d: Date | string | null | undefined) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
-      const esc = (s: string | null | undefined): string => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const safeStr = (s: string | null | undefined) => (s || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
-      const statusColor = (s: string) => {
-        if (s === 'Approved' || s === 'Verified') return '#16a34a';
-        if (s === 'Rejected') return '#dc2626';
-        if (s === 'Under Review') return '#d97706';
-        return '#6b7280';
+      // Generate PDF using PDFKit (consistent with existing certificate/agreement PDF generation)
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const filename = `deal-summary-${tradeRequest?.tradeRefId || dealRoom.id}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      doc.pipe(res);
+
+      const PURPLE = '#7c3aed';
+      const GRAY = '#6b7280';
+      const pageW = doc.page.width - 100; // content width (margins on both sides)
+
+      // Helper: section heading
+      const sectionHeading = (title: string) => {
+        doc.moveDown(0.5);
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(PURPLE).text(title.toUpperCase());
+        doc.moveTo(50, doc.y).lineTo(50 + pageW, doc.y).strokeColor('#e5e7eb').lineWidth(0.5).stroke();
+        doc.fillColor('#000000').moveDown(0.3);
       };
 
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Deal Summary — ${tradeRequest?.tradeRefId || dealRoom.id}</title>
-<style>
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; margin: 0; padding: 24px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px; }
-  .logo { font-size: 22px; font-weight: 800; color: #7c3aed; }
-  .logo span { color: #111827; }
-  .deal-id { font-size: 11px; color: #6b7280; margin-top: 4px; }
-  h2 { font-size: 14px; font-weight: 700; color: #7c3aed; margin: 20px 0 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; }
-  .card-title { font-weight: 700; font-size: 11px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; letter-spacing: 0.05em; }
-  .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f3f4f6; }
-  .row:last-child { border: none; }
-  .label { color: #6b7280; }
-  .value { font-weight: 600; text-align: right; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-  th { background: #f3f4f6; font-size: 10px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.04em; padding: 8px 10px; text-align: left; }
-  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; font-size: 11px; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #9ca3af; text-align: center; }
-  .warn { background: #fef3c7; border: 1px solid #fcd34d; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 11px; }
-  .page-break { page-break-before: always; }
-</style>
-</head>
-<body>
+      // Helper: key-value row
+      const kv = (label: string, value: string) => {
+        const y = doc.y;
+        doc.fontSize(9).font('Helvetica').fillColor(GRAY).text(label, 50, y, { width: 150, continued: false });
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827').text(safeStr(value) || 'N/A', 210, y, { width: pageW - 160 });
+      };
 
-<div class="header">
-  <div>
-    <div class="logo">Fina<span>Trades</span> — FinaBridge</div>
-    <div class="deal-id">Deal Summary Report &nbsp;|&nbsp; Generated ${formatDate(now)} at ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-  </div>
-  <div style="text-align:right;">
-    <div style="font-size:13px; font-weight:700;">Deal Ref: ${tradeRequest?.tradeRefId || 'N/A'}</div>
-    <div style="font-size:11px; color:#6b7280;">Status: <strong>${dealRoom.status}</strong> &nbsp;|&nbsp; LC Stage: <strong>${dealRoom.lcLifecycleStatus || 'Draft'}</strong></div>
-  </div>
-</div>
+      // ─── Header ───────────────────────────────────────────────────────────────
+      doc.fontSize(18).font('Helvetica-Bold').fillColor(PURPLE).text('FinaTrades', 50, 50, { continued: true });
+      doc.fillColor('#111827').text(' — FinaBridge Deal Summary');
+      doc.fontSize(9).font('Helvetica').fillColor(GRAY)
+        .text(`Generated: ${formatDate(now)} at ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 50, doc.y)
+        .moveDown(0.2);
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#111827')
+        .text(`Deal Ref: ${safeStr(tradeRequest?.tradeRefId) || 'N/A'}  |  Status: ${dealRoom.status}  |  LC Stage: ${dealRoom.lcLifecycleStatus || 'Draft'}`);
+      doc.moveTo(50, doc.y + 4).lineTo(50 + pageW, doc.y + 4).strokeColor(PURPLE).lineWidth(1.5).stroke();
+      doc.moveDown(1);
 
-<h2>Trade Overview</h2>
-<div class="grid2">
-  <div class="card">
-    <div class="card-title">Trade Details</div>
-    <div class="row"><span class="label">Goods</span><span class="value">${esc(tradeRequest?.goodsName)}</span></div>
-    <div class="row"><span class="label">Trade Value</span><span class="value">$${parseFloat(tradeRequest?.tradeValueUsd || '0').toLocaleString()} USD</span></div>
-    <div class="row"><span class="label">Settlement Gold</span><span class="value">${parseFloat(tradeRequest?.settlementGoldGrams || '0').toFixed(3)}g Au</span></div>
-    <div class="row"><span class="label">Currency</span><span class="value">${esc(tradeRequest?.currency) || 'USD'}</span></div>
-    <div class="row"><span class="label">Incoterms</span><span class="value">${esc(tradeRequest?.incoterms) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Deal Opened</span><span class="value">${formatDate(dealRoom.createdAt)}</span></div>
-  </div>
-  <div class="card">
-    <div class="card-title">LC Terms</div>
-    <div class="row"><span class="label">LC Type</span><span class="value">${esc(lcTermsRow?.lcType) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Expiry Date</span><span class="value">${esc(lcTermsRow?.expiryDate) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Expiry Place</span><span class="value">${esc(lcTermsRow?.expiryPlace) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Amount</span><span class="value">${lcTermsRow?.amount ? '$' + parseFloat(lcTermsRow.amount).toLocaleString() : 'N/A'}</span></div>
-    <div class="row"><span class="label">Partial Shipment</span><span class="value">${lcTermsRow?.partialShipment ? 'Allowed' : 'Not Allowed'}</span></div>
-    <div class="row"><span class="label">Transshipment</span><span class="value">${lcTermsRow?.transshipment ? 'Allowed' : 'Not Allowed'}</span></div>
-  </div>
-</div>
+      // ─── Trade Overview ───────────────────────────────────────────────────────
+      sectionHeading('Trade Overview');
+      kv('Goods', safeStr(tradeRequest?.goodsName));
+      kv('Trade Value', `$${parseFloat(tradeRequest?.tradeValueUsd || '0').toLocaleString()} USD`);
+      kv('Settlement Gold', `${parseFloat(tradeRequest?.settlementGoldGrams || '0').toFixed(3)}g Au`);
+      kv('Currency', safeStr(tradeRequest?.currency) || 'USD');
+      kv('Incoterms', safeStr(tradeRequest?.incoterms));
+      kv('Deal Opened', formatDate(dealRoom.createdAt));
 
-<h2>Deal Parties</h2>
-<div class="grid2">
-  <div class="card">
-    <div class="card-title">Importer</div>
-    <div class="row"><span class="label">Name</span><span class="value">${importer ? esc(importer.firstName ? importer.firstName + ' ' + (importer.lastName || '') : importer.email) : 'N/A'}</span></div>
-    <div class="row"><span class="label">Company</span><span class="value">${esc(importer?.companyName) || 'N/A'}</span></div>
-    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${esc(importer?.finatradesId) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Email</span><span class="value">${esc(importer?.email) || 'N/A'}</span></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Exporter</div>
-    <div class="row"><span class="label">Name</span><span class="value">${exporter ? esc(exporter.firstName ? exporter.firstName + ' ' + (exporter.lastName || '') : exporter.email) : 'N/A'}</span></div>
-    <div class="row"><span class="label">Company</span><span class="value">${esc(exporter?.companyName) || 'N/A'}</span></div>
-    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${esc(exporter?.finatradesId) || 'N/A'}</span></div>
-    <div class="row"><span class="label">Email</span><span class="value">${esc(exporter?.email) || 'N/A'}</span></div>
-  </div>
-</div>
+      // ─── LC Terms ─────────────────────────────────────────────────────────────
+      sectionHeading('LC Terms');
+      kv('LC Type', safeStr(lcTermsRow?.lcType));
+      kv('Expiry Date', safeStr(lcTermsRow?.expiryDate));
+      kv('Expiry Place', safeStr(lcTermsRow?.expiryPlace));
+      kv('LC Amount', lcTermsRow?.amount ? `$${parseFloat(lcTermsRow.amount).toLocaleString()}` : 'N/A');
+      kv('Partial Shipment', lcTermsRow?.partialShipment ? 'Allowed' : 'Not Allowed');
+      kv('Transshipment', lcTermsRow?.transshipment ? 'Allowed' : 'Not Allowed');
 
-<h2>Document Checklist</h2>
-<table>
-  <thead>
-    <tr>
-      <th>Document Type</th>
-      <th>Uploaded By</th>
-      <th>Status</th>
-      <th>Version</th>
-      <th>Verified At</th>
-      <th>Notes</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${latestDocs.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No documents uploaded</td></tr>` : latestDocs.map(d => `
-    <tr>
-      <td><strong>${esc(d.documentType)}</strong></td>
-      <td>${esc(d.uploaderRole)}</td>
-      <td><span class="badge" style="background:${statusColor(d.status)}20; color:${statusColor(d.status)};">${esc(d.status)}</span></td>
-      <td>v${d.versionNumber ?? 1}</td>
-      <td>${formatDate(d.verifiedAt)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(d.verificationNotes) || '—'}</td>
-    </tr>`).join('')}
-  </tbody>
-</table>
+      // ─── Deal Parties ─────────────────────────────────────────────────────────
+      sectionHeading('Deal Parties — Importer');
+      kv('Name', importer ? safeStr(importer.firstName ? `${importer.firstName} ${importer.lastName || ''}` : importer.email) : 'N/A');
+      kv('Company', safeStr(importer?.companyName));
+      kv('FinaTrades ID', safeStr(importer?.finatradesId));
+      kv('Email', safeStr(importer?.email));
+      sectionHeading('Deal Parties — Exporter');
+      kv('Name', exporter ? safeStr(exporter.firstName ? `${exporter.firstName} ${exporter.lastName || ''}` : exporter.email) : 'N/A');
+      kv('Company', safeStr(exporter?.companyName));
+      kv('FinaTrades ID', safeStr(exporter?.finatradesId));
+      kv('Email', safeStr(exporter?.email));
 
-<h2>Deal Milestone Timeline</h2>
-<table>
-  <thead>
-    <tr><th>#</th><th>Milestone</th><th>Role</th><th>Date &amp; Time</th><th>Notes</th></tr>
-  </thead>
-  <tbody>
-    ${milestones.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No milestones recorded</td></tr>` : milestones.map((m, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><strong>${esc(m.milestoneName)}</strong></td>
-      <td>${esc(m.completedByRole) || '—'}</td>
-      <td>${formatDate(m.completedAt)}</td>
-      <td>${esc(m.notes) || '—'}</td>
-    </tr>`).join('')}
-  </tbody>
-</table>
+      // ─── Document Checklist ───────────────────────────────────────────────────
+      sectionHeading('Document Checklist');
+      if (latestDocs.length === 0) {
+        doc.fontSize(9).font('Helvetica').fillColor(GRAY).text('No documents uploaded.');
+      } else {
+        // Table header
+        const cols = { type: 50, role: 195, status: 305, ver: 390, date: 440, notes: 500 };
+        const tableHeaderY = doc.y;
+        doc.rect(50, tableHeaderY, pageW, 16).fill('#f3f4f6');
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(GRAY)
+          .text('DOCUMENT TYPE', cols.type, tableHeaderY + 4, { width: 140 })
+          .text('UPLOADED BY', cols.role, tableHeaderY + 4, { width: 105 })
+          .text('STATUS', cols.status, tableHeaderY + 4, { width: 80 })
+          .text('VER', cols.ver, tableHeaderY + 4, { width: 45 })
+          .text('VERIFIED', cols.date, tableHeaderY + 4, { width: 55 });
+        doc.moveDown(0.1);
+        doc.y = tableHeaderY + 20;
+        for (const d of latestDocs) {
+          const rowY = doc.y;
+          if (rowY > 700) { doc.addPage(); }
+          doc.fontSize(8).font('Helvetica').fillColor('#111827')
+            .text(safeStr(d.documentType), cols.type, rowY, { width: 140 })
+            .text(safeStr(d.uploaderRole), cols.role, rowY, { width: 105 })
+            .text(safeStr(d.status), cols.status, rowY, { width: 80 })
+            .text(`v${d.versionNumber ?? 1}`, cols.ver, rowY, { width: 45 })
+            .text(formatDate(d.verifiedAt), cols.date, rowY, { width: 55 });
+          doc.moveTo(50, doc.y + 2).lineTo(50 + pageW, doc.y + 2).strokeColor('#f3f4f6').lineWidth(0.5).stroke();
+          doc.moveDown(0.2);
+        }
+      }
 
-${discrepancyRows.length > 0 ? `
-<h2>Discrepancy Log</h2>
-<table>
-  <thead>
-    <tr><th>Type</th><th>Status</th><th>Raised</th><th>Resolved</th><th>Description</th></tr>
-  </thead>
-  <tbody>
-    ${discrepancyRows.map(d => `
-    <tr>
-      <td>${esc(d.reasonType)}</td>
-      <td><span class="badge" style="background:${d.status === 'open' ? '#fef3c7' : '#d1fae5'}; color:${d.status === 'open' ? '#92400e' : '#065f46'};">${esc(d.status)}</span></td>
-      <td>${formatDate(d.createdAt)}</td>
-      <td>${formatDate(d.resolvedAt)}</td>
-      <td>${esc(d.description) || '—'}</td>
-    </tr>`).join('')}
-  </tbody>
-</table>` : ''}
+      // ─── Milestones ───────────────────────────────────────────────────────────
+      sectionHeading('Deal Milestone Timeline');
+      if (milestones.length === 0) {
+        doc.fontSize(9).font('Helvetica').fillColor(GRAY).text('No milestones recorded.');
+      } else {
+        milestones.forEach((m, i) => {
+          const rowY = doc.y;
+          if (rowY > 700) { doc.addPage(); }
+          doc.fontSize(8).font('Helvetica').fillColor('#111827')
+            .text(`${i + 1}. ${safeStr(m.milestoneName)}`, 50, rowY, { width: 280 });
+          doc.fontSize(8).fillColor(GRAY)
+            .text(`${safeStr(m.completedByRole) || '—'}   ${formatDate(m.completedAt)}`, 340, rowY, { width: 210 });
+          doc.moveTo(50, doc.y + 1).lineTo(50 + pageW, doc.y + 1).strokeColor('#f3f4f6').lineWidth(0.5).stroke();
+          doc.moveDown(0.1);
+        });
+      }
 
-<div class="footer">
-  This document is confidential and intended for authorized parties only. Generated by FinaTrades FinaBridge platform.<br>
-  Deal Room ID: ${dealRoom.id} &nbsp;|&nbsp; Trade Ref: ${esc(tradeRequest?.tradeRefId) || 'N/A'} &nbsp;|&nbsp; ${formatDate(now)}
-</div>
+      // ─── Discrepancies ────────────────────────────────────────────────────────
+      if (discrepancyRows.length > 0) {
+        sectionHeading('Discrepancy Log');
+        discrepancyRows.forEach((d) => {
+          if (doc.y > 700) { doc.addPage(); }
+          doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827')
+            .text(`[${d.status?.toUpperCase()}] ${safeStr(d.reasonType)}`, 50, doc.y, { width: pageW });
+          doc.fontSize(8).font('Helvetica').fillColor(GRAY)
+            .text(`Raised: ${formatDate(d.createdAt)}  |  Resolved: ${formatDate(d.resolvedAt)}`, 50, doc.y);
+          if (d.description) {
+            doc.fontSize(8).fillColor('#374151').text(safeStr(d.description), 50, doc.y, { width: pageW });
+          }
+          doc.moveDown(0.3);
+        });
+      }
 
-</body>
-</html>`;
+      // ─── Footer ───────────────────────────────────────────────────────────────
+      doc.moveDown(1);
+      doc.moveTo(50, doc.y).lineTo(50 + pageW, doc.y).strokeColor('#e5e7eb').lineWidth(0.5).stroke();
+      doc.moveDown(0.3);
+      doc.fontSize(8).font('Helvetica').fillColor(GRAY)
+        .text(
+          `Confidential — authorized parties only. FinaTrades FinaBridge. Deal Room ID: ${dealRoom.id} | Generated: ${formatDate(now)}`,
+          50, doc.y, { width: pageW, align: 'center' }
+        );
 
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="deal-summary-${tradeRequest?.tradeRefId || dealRoom.id}.html"`);
-      res.send(html);
+      doc.end();
     } catch (error) {
       console.error('[DealRoom] PDF export error:', error);
       res.status(500).json({ message: "Failed to generate deal summary" });
@@ -18335,32 +18342,80 @@ ${discrepancyRows.length > 0 ? `
         { tag: ':45A:', name: 'Description of Goods / Services', description: 'Description of the goods or services' },
       ];
 
-      // Attempt to extract text from the document URL / filename for scanning
-      // In a real system this would parse PDF text — here we scan fileName + description for tags
-      const documentText = [doc.fileName, doc.description, doc.verificationNotes].filter(Boolean).join(' ').toUpperCase();
-
-      const validationFields = MT700_MANDATORY_FIELDS.map(field => ({
-        tag: field.tag,
-        name: field.name,
-        description: field.description,
-        present: documentText.includes(field.tag.toUpperCase().replace(':', '')) ||
-                 documentText.includes(field.tag.replace(':', '')) ||
-                 // For simple demo validation based on doc type being LC Draft and having content
-                 (doc.documentType === 'LC Draft' && doc.description?.toLowerCase().includes(field.tag.replace(/:/g, '').toLowerCase())),
-      }));
-
-      // If doc is an LC Draft, use presence of the doc itself as a heuristic for basic fields
-      // In production: parse actual PDF text with pdf2pic / pdf-parse
-      if (doc.documentType === 'LC Draft') {
-        // Mark fields as present if we can infer them from the deal LC terms
-        const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
-        if (lcRow) {
-          for (const field of validationFields) {
-            if (field.tag === ':31D:' && lcRow.expiryDate) field.present = true;
-            if (field.tag === ':32B:' && lcRow.amount) field.present = true;
-            if (field.tag === ':40A:' && lcRow.lcType) field.present = true;
-            if (field.tag === ':43P:') field.present = lcRow.partialShipment !== null;
+      // Extract actual document text from the uploaded file (PDF or text)
+      let extractedText = '';
+      let extractionSource = 'none';
+      try {
+        const fileUrl = doc.fileUrl;
+        if (fileUrl) {
+          let fileBuffer: Buffer | null = null;
+          if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+            // R2 / CDN file — fetch the content
+            const resp = await fetch(fileUrl, { headers: { 'User-Agent': 'FinaTrades-MT700-Validator/1.0' } });
+            if (resp.ok) {
+              const arrayBuf = await resp.arrayBuffer();
+              fileBuffer = Buffer.from(arrayBuf);
+              extractionSource = 'remote-fetch';
+            }
+          } else if (fileUrl.startsWith('/uploads/')) {
+            // Local upload file
+            const { readFile } = await import('fs/promises');
+            const path = await import('path');
+            const localPath = path.join(process.cwd(), 'public', fileUrl);
+            fileBuffer = await readFile(localPath).catch(() => null);
+            if (fileBuffer) extractionSource = 'local-file';
           }
+          if (fileBuffer) {
+            // Try PDF extraction first
+            const isPdf = doc.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25; // '%PDF'
+            if (isPdf) {
+              try {
+                const pdfParse = (await import('pdf-parse')).default;
+                const pdfData = await pdfParse(fileBuffer);
+                extractedText = pdfData.text || '';
+                extractionSource += '-pdf-parse';
+              } catch (pdfErr) {
+                // Fall back to raw text extraction
+                extractedText = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+                extractionSource += '-raw-text';
+              }
+            } else {
+              // Plain text or other format
+              extractedText = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+              extractionSource += '-raw-text';
+            }
+          }
+        }
+      } catch (extractErr) {
+        console.error('[MT700] Text extraction failed (non-blocking):', extractErr);
+      }
+
+      // Build the text corpus for tag scanning:
+      // 1. Extracted document text (primary — actual content)
+      // 2. Metadata fields (secondary — fallback)
+      const upperText = extractedText.toUpperCase();
+      const metaText = [doc.fileName, doc.description, doc.verificationNotes].filter(Boolean).join(' ').toUpperCase();
+      const fullText = `${upperText} ${metaText}`;
+
+      const validationFields = MT700_MANDATORY_FIELDS.map(field => {
+        const tagNoColon = field.tag.replace(/:/g, '');
+        const tagWithColon = field.tag;
+        return {
+          tag: field.tag,
+          name: field.name,
+          description: field.description,
+          present: fullText.includes(tagNoColon) || fullText.includes(tagWithColon),
+        };
+      });
+
+      // Cross-check with LC terms stored in DB — terms confirmed in system count as present
+      const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+      if (lcRow) {
+        for (const field of validationFields) {
+          if (field.tag === ':31D:' && lcRow.expiryDate) field.present = true;
+          if (field.tag === ':32B:' && lcRow.amount) field.present = true;
+          if (field.tag === ':40A:' && lcRow.lcType) field.present = true;
+          if (field.tag === ':43P:') field.present = lcRow.partialShipment !== null;
         }
       }
 
@@ -18370,6 +18425,7 @@ ${discrepancyRows.length > 0 ? `
         documentId: doc.id,
         documentType: doc.documentType,
         validatedAt: new Date().toISOString(),
+        extractionSource,
         fields: validationFields,
         summary: { total: validationFields.length, present: presentCount, missing: missingCount },
         isValid: missingCount === 0,

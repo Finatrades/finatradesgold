@@ -113,15 +113,19 @@ interface AdminDealRoom {
   status: string;
   createdAt: string;
   updatedAt: string;
+  lcLifecycleStatus?: string | null;
+  isClosed?: boolean | null;
   tradeRequest?: {
     tradeRefId: string;
     goodsName: string;
     tradeValueUsd: string;
     status: string;
-  };
+  } | null;
   importer?: { id: string; finatradesId: string | null; email: string } | null;
   exporter?: { id: string; finatradesId: string | null; email: string } | null;
   unreadCount?: number;
+  docsTotal?: number;
+  docsApproved?: number;
 }
 
 interface SettlementHold {
@@ -1661,9 +1665,8 @@ export default function FinaBridgeManagement() {
                           <tbody>
                             {dealManagerRooms.map(room => {
                               const daysOpen = Math.floor((Date.now() - new Date(room.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-                              const docs = (room as any).documents || [];
-                              const docsApproved = docs.filter((d: any) => d.status === 'Approved').length;
-                              const docsTotal = docs.length;
+                              const docsApproved = room.docsApproved ?? 0;
+                              const docsTotal = room.docsTotal ?? 0;
                               const lastActivity = room.updatedAt ? new Date(room.updatedAt) : new Date(room.createdAt);
                               const daysSinceActivity = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
                               const slaBadge = daysOpen <= 7 ? { label: 'On Track', cls: 'bg-emerald-100 text-emerald-700' }
