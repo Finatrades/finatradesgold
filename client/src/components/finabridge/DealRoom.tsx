@@ -554,23 +554,30 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     } catch {} finally { setDiscrepanciesLoading(false); }
   }, [dealRoomId]);
 
+  const [wizardDismissed, setWizardDismissed] = useState(false);
+
   const fetchLcTerms = useCallback(async () => {
     try {
       const r = await apiRequest('GET', `/api/deal-rooms/${dealRoomId}/lc-terms`);
       if (r.ok) {
         const d = await r.json();
         setLcTermsData(d.lcTerms);
-        if (!d.lcTerms && (userRole === 'importer' || userRole === 'admin')) setShowLcWizard(true);
+        // Only auto-show wizard for rooms without LC terms and if user hasn't dismissed it this session
+        if (!d.lcTerms && !wizardDismissed && (userRole === 'importer' || userRole === 'admin')) setShowLcWizard(true);
       }
-    } catch {}
-  }, [dealRoomId, userRole]);
+    } catch (err) {
+      console.error('[DealRoom] Failed to fetch LC terms:', err);
+    }
+  }, [dealRoomId, userRole, wizardDismissed]);
 
   const fetchRisk = useCallback(async () => {
     setRiskLoading(true);
     try {
       const r = await apiRequest('GET', `/api/deal-rooms/${dealRoomId}/counterparty-risk`);
       if (r.ok) { const d = await r.json(); setImporterRisk(d.importerRisk); setExporterRisk(d.exporterRisk); }
-    } catch {} finally { setRiskLoading(false); }
+    } catch (err) {
+      console.error('[DealRoom] Failed to fetch counterparty risk:', err);
+    } finally { setRiskLoading(false); }
   }, [dealRoomId]);
 
   useEffect(() => {
@@ -891,7 +898,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
   return (
     <>
       {/* LC Wizard */}
-      <Dialog open={showLcWizard} onOpenChange={setShowLcWizard}>
+      <Dialog open={showLcWizard} onOpenChange={(open) => { setShowLcWizard(open); if (!open) setWizardDismissed(true); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -983,7 +990,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
           <DialogFooter className="flex items-center justify-between gap-2">
             <div className="flex gap-2">
               {lcWizardStep > 1 && <Button variant="outline" onClick={() => setLcWizardStep(s => s - 1)}>Back</Button>}
-              <Button variant="ghost" onClick={() => setShowLcWizard(false)}>Skip for now</Button>
+              <Button variant="ghost" onClick={() => { setShowLcWizard(false); setWizardDismissed(true); }}>Skip for now</Button>
             </div>
             {lcWizardStep < 4
               ? <Button onClick={() => setLcWizardStep(s => s + 1)} data-testid="btn-lc-wizard-next">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
