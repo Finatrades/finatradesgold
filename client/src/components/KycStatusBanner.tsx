@@ -1,15 +1,31 @@
 import { Link } from 'wouter';
-import { AlertTriangle, ShieldCheck, ArrowRight, X, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, ShieldCheck, ArrowRight, X, Clock, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface KycStatusBannerProps {
   kycStatus: string;
 }
 
+interface KycRefData {
+  referenceNumber: string | null;
+  slaDeadline: string | null;
+}
+
 export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
   const [dismissed, setDismissed] = useState(false);
-  
+  const [refData, setRefData] = useState<KycRefData | null>(null);
+
+  const showsRef = kycStatus === 'Pending Review' || kycStatus === 'In Review';
+
+  useEffect(() => {
+    if (!showsRef) return;
+    fetch('/api/kyc/my-reference', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.referenceNumber) setRefData(data); })
+      .catch(() => null);
+  }, [kycStatus]);
+
   if (dismissed) return null;
   if (kycStatus === 'Approved') return null;
 
@@ -84,26 +100,42 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
   if (!content) return null;
 
   return (
-    <div 
+    <div
       className={`${content.bgColor} ${content.borderColor} border rounded-lg p-4 mb-4 mx-4 mt-4`}
       data-testid="kyc-status-banner"
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5">{content.icon}</div>
-          <div>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="mt-0.5 flex-shrink-0">{content.icon}</div>
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground" data-testid="kyc-banner-title">
               {content.title}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
               {content.message}
             </p>
+            {showsRef && refData?.referenceNumber && (
+              <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                  <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                  Ref: <span className="font-mono" data-testid="kyc-banner-reference">{refData.referenceNumber}</span>
+                </span>
+                {refData.slaDeadline && (
+                  <span className="text-xs text-muted-foreground">
+                    Expected by{' '}
+                    <strong className="text-foreground" data-testid="kyc-banner-sla">
+                      {new Date(refData.slaDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </strong>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Link href={kycStatus === 'Changes Requested' ? '/kyc?resubmit=true' : '/kyc'}>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
               data-testid="kyc-banner-cta"
             >
@@ -112,9 +144,9 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
             </Button>
           </Link>
           {content.canDismiss && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setDismissed(true)}
               className="text-muted-foreground hover:text-foreground"
               data-testid="kyc-banner-dismiss"

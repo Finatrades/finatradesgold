@@ -300,6 +300,7 @@ export default function KYC() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionRef, setSubmissionRef] = useState<{ referenceNumber: string; slaDeadline: string } | null>(null);
   
   const kycStorageKey = `kyc_draft_${user?.id || 'unknown'}`;
 
@@ -365,6 +366,13 @@ export default function KYC() {
       setPersonalAccountType(user.accountType || 'personal');
     }
   }, [user]);
+
+  // Populate submission reference from already-existing KYC data (returning users)
+  useEffect(() => {
+    if (existingKycData?.referenceNumber && existingKycData?.slaDeadline && !submissionRef) {
+      setSubmissionRef({ referenceNumber: existingKycData.referenceNumber, slaDeadline: existingKycData.slaDeadline });
+    }
+  }, [existingKycData]);
 
   // Pre-fill from existing submission in resubmit mode
   useEffect(() => {
@@ -798,7 +806,7 @@ export default function KYC() {
       const addressProofBase64 = addressProofFile ? await fileToBase64(addressProofFile) : null;
       const passportBase64 = passportFile ? await fileToBase64(passportFile) : null;
       
-      await apiRequest('POST', '/api/finatrades-kyc/personal', {
+      const personalResult = await apiRequest('POST', '/api/finatrades-kyc/personal', {
         userId: user.id,
         personalInformation: {
           fullName: personalFullName,
@@ -826,6 +834,10 @@ export default function KYC() {
         lockedSections: personalLockedSections,
         status: 'In Progress'
       });
+      
+      if (personalResult?.referenceNumber) {
+        setSubmissionRef({ referenceNumber: personalResult.referenceNumber, slaDeadline: personalResult.slaDeadline });
+      }
       
       await refreshUser();
       
@@ -878,7 +890,7 @@ export default function KYC() {
         }
       }
       
-      await apiRequest('POST', '/api/finatrades-kyc/corporate', {
+      const corporateResult = await apiRequest('POST', '/api/finatrades-kyc/corporate', {
         userId: user.id,
         companyName,
         registrationNumber: corporateRegNumber,
@@ -910,6 +922,10 @@ export default function KYC() {
         lockedSections: corporateLockedSections,
         status: 'In Progress'
       });
+      
+      if (corporateResult?.referenceNumber) {
+        setSubmissionRef({ referenceNumber: corporateResult.referenceNumber, slaDeadline: corporateResult.slaDeadline });
+      }
       
       await refreshUser();
       
@@ -2067,6 +2083,20 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {submissionRef && (
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                            <div>
+                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Reference Number</p>
+                              <p className="text-lg font-mono font-bold text-blue-900 mt-0.5" data-testid="text-kyc-reference">{submissionRef.referenceNumber}</p>
+                            </div>
+                            <div className="sm:text-right">
+                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Expected By</p>
+                              <p className="text-sm font-semibold text-blue-900 mt-0.5" data-testid="text-kyc-sla">
+                                {new Date(submissionRef.slaDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                           <div className="flex items-center gap-3 mb-2">
                             <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -2831,6 +2861,20 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {submissionRef && (
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                            <div>
+                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Reference Number</p>
+                              <p className="text-lg font-mono font-bold text-blue-900 mt-0.5" data-testid="text-kyc-reference-corp">{submissionRef.referenceNumber}</p>
+                            </div>
+                            <div className="sm:text-right">
+                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Expected By</p>
+                              <p className="text-sm font-semibold text-blue-900 mt-0.5" data-testid="text-kyc-sla-corp">
+                                {new Date(submissionRef.slaDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                           <div className="flex items-center gap-3 mb-2">
                             <CheckCircle2 className="w-5 h-5 text-green-600" />

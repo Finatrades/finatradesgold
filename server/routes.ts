@@ -5611,6 +5611,29 @@ export async function registerRoutes(
   });
   // KYC Draft — server-side draft persistence (keyed by userId + submissionType)
   // NOTE: Must be registered BEFORE /api/kyc/:userId to avoid Express shadowing 'draft' as a userId.
+  // KYC My Reference — same reason: must be before /api/kyc/:userId
+  app.get("/api/kyc/my-reference", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const personal = await storage.getFinatradesPersonalKyc(userId);
+      if (personal?.id) {
+        const ref = `FT-KYC-${personal.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const sla = personal.updatedAt ? new Date(new Date(personal.updatedAt).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString() : null;
+        return res.json({ referenceNumber: ref, slaDeadline: sla, kycType: 'personal', status: personal.status });
+      }
+      const corporate = await storage.getFinatradesCorporateKyc(userId);
+      if (corporate?.id) {
+        const ref = `FT-KYC-${corporate.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const sla = corporate.updatedAt ? new Date(new Date(corporate.updatedAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null;
+        return res.json({ referenceNumber: ref, slaDeadline: sla, kycType: 'corporate', status: corporate.status });
+      }
+      res.json({ referenceNumber: null, slaDeadline: null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get KYC reference" });
+    }
+  });
+
   app.get("/api/kyc/draft", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6027,6 +6050,14 @@ export async function registerRoutes(
       }
 
       await storage.updateUser(submission.userId, { kycStatus: 'In Review' });
+
+      await storage.createNotification({
+        userId: submission.userId,
+        title: 'Your KYC is Under Active Review',
+        message: 'A compliance officer has started reviewing your KYC submission. You will be notified of the outcome by email as soon as a decision is made.',
+        type: 'info',
+        link: '/kyc',
+      });
 
       const latestVersion = await storage.getLatestKycVersion(req.params.id);
       if (latestVersion) {
@@ -24379,7 +24410,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'personal').catch(() => null);
 
-        res.json({ success: true, submission: updated });
+        const refUpdated = `FT-KYC-${updated.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const slaUpdated = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
+        res.json({ success: true, submission: updated, referenceNumber: refUpdated, slaDeadline: slaUpdated });
 
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
@@ -24441,7 +24474,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'personal').catch(() => null);
 
-        res.json({ success: true, submission });
+        const refNew = `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const slaNew = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
+        res.json({ success: true, submission, referenceNumber: refNew, slaDeadline: slaNew });
 
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr2 = kycData.passportUrl || kycData.idFrontUrl;
@@ -24466,14 +24501,13 @@ export async function registerRoutes(
     }
   });
 
-  // Get Finatrades Personal KYC status
   app.get("/api/finatrades-kyc/personal/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesPersonalKyc(userId);
-
-
-      res.json({ submission });
+      const referenceNumber = submission?.id ? `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}` : null;
+      const slaDeadline = submission?.updatedAt ? new Date(new Date(submission.updatedAt).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString() : null;
+      res.json({ submission, referenceNumber, slaDeadline });
     } catch (error) {
       console.error("Failed to get Finatrades personal KYC:", error);
       res.status(400).json({ message: "Failed to get KYC status" });
@@ -24601,7 +24635,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'corporate').catch(() => null);
 
-        res.json({ success: true, submission: updated });
+        const refCorpUpdated = `FT-KYC-${updated.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const slaCorpUpdated = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+        res.json({ success: true, submission: updated, referenceNumber: refCorpUpdated, slaDeadline: slaCorpUpdated });
       } else {
         const submission = await storage.createFinatradesCorporateKyc({
           userId,
@@ -24641,7 +24677,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'corporate').catch(() => null);
 
-        res.json({ success: true, submission });
+        const refCorpNew = `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const slaCorpNew = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+        res.json({ success: true, submission, referenceNumber: refCorpNew, slaDeadline: slaCorpNew });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades corporate KYC:", error);
@@ -24655,9 +24693,9 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const submission = await storage.getFinatradesCorporateKyc(userId);
-
-
-      res.json({ submission });
+      const referenceNumber = submission?.id ? `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}` : null;
+      const slaDeadline = submission?.updatedAt ? new Date(new Date(submission.updatedAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null;
+      res.json({ submission, referenceNumber, slaDeadline });
     } catch (error) {
       console.error("Failed to get Finatrades corporate KYC:", error);
       res.status(400).json({ message: "Failed to get KYC status" });
