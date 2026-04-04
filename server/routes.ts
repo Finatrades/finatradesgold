@@ -1772,43 +1772,61 @@ export async function registerRoutes(
           const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
           console.log(`[FinaBridge] LC Expiry Alert: Deal Room ${room.id} expires in ${daysUntilExpiry} day(s) (${lcRow.expiryDate})`);
           // Notify assigned admin if present, otherwise notify all admins
+          const notificationTitle = `LC Expiry Alert — ${daysUntilExpiry} day(s) remaining`;
+          const adminMessage = `Deal Room ${room.id.slice(0, 8)} has an LC expiring on ${lcRow.expiryDate}. Immediate review required.`;
+          const partyMessage = `Your deal room LC expires in ${daysUntilExpiry} day(s) on ${lcRow.expiryDate}. Please contact your deal manager.`;
+
+          // Notify admin(s) — assigned manager first, else all admins
           const adminUsers = await db.select().from(users).where(eq(users.role, 'admin'));
-          const targets = adminUsers.filter(u => !room.assignedAdminId || u.id === room.assignedAdminId);
-          for (const admin of targets) {
-            if (!admin.email || !admin.id) continue;
-            const notificationTitle = `LC Expiry Alert — ${daysUntilExpiry} day(s) remaining`;
-            const notificationMessage = `Deal Room ${room.id.slice(0, 8)} has an LC expiring on ${lcRow.expiryDate}. Immediate review required.`;
+          const adminTargets = adminUsers.filter(u => !room.assignedAdminId || u.id === room.assignedAdminId);
+          for (const admin of adminTargets) {
+            if (!admin.id) continue;
             // In-app notification (bell)
             try {
               await storage.createNotification({
                 userId: admin.id,
                 title: notificationTitle,
-                message: notificationMessage,
+                message: adminMessage,
                 type: 'warning',
                 link: `/admin/finabridge`,
                 read: false,
               });
             } catch (notifErr) {
-              console.error(`[FinaBridge] Failed to create in-app notification for ${admin.email}:`, notifErr);
+              console.error(`[FinaBridge] Failed to create in-app notification for admin ${admin.id}:`, notifErr);
             }
             // Email notification
-            try {
-              const { sendEmail } = await import('./email');
-              await sendEmail({
-                to: admin.email,
-                subject: `[FinaBridge] ${notificationTitle}`,
-                html: `
-                  <p>Dear ${admin.firstName || admin.email},</p>
-                  <p>This is an automated alert from the FinaBridge Deal Manager.</p>
-                  <p>Deal Room <strong>${room.id}</strong> has an LC that will expire in <strong>${daysUntilExpiry} day(s)</strong> on <strong>${lcRow.expiryDate}</strong>.</p>
-                  <p>Please review the deal and take appropriate action before the LC expires.</p>
-                  <p>Log in to the admin panel to manage this deal: <a href="${process.env.BASE_URL || 'https://finatrades.com'}/admin/finabridge">FinaBridge Admin</a></p>
-                  <p>— FinaTrades FinaBridge System</p>
-                `,
-              });
-            } catch (emailErr) {
-              console.error(`[FinaBridge] Failed to send LC expiry email to ${admin.email}:`, emailErr);
+            if (admin.email) {
+              try {
+                const { sendEmail } = await import('./email');
+                await sendEmail({
+                  to: admin.email,
+                  subject: `[FinaBridge] ${notificationTitle}`,
+                  html: `
+                    <p>Dear ${admin.firstName || admin.email},</p>
+                    <p>This is an automated alert from the FinaBridge Deal Manager.</p>
+                    <p>Deal Room <strong>${room.id}</strong> has an LC that will expire in <strong>${daysUntilExpiry} day(s)</strong> on <strong>${lcRow.expiryDate}</strong>.</p>
+                    <p>Please review the deal and take appropriate action before the LC expires.</p>
+                    <p>Log in to the admin panel to manage this deal: <a href="${process.env.BASE_URL || 'https://finatrades.com'}/admin/finabridge">FinaBridge Admin</a></p>
+                    <p>— FinaTrades FinaBridge System</p>
+                  `,
+                });
+              } catch (emailErr) {
+                console.error(`[FinaBridge] Failed to send LC expiry email to ${admin.email}:`, emailErr);
+              }
             }
+          }
+
+          // Notify deal participants (importer + exporter) — in-app only
+          for (const userId of [room.importerUserId, room.exporterUserId]) {
+            if (!userId) continue;
+            await storage.createNotification({
+              userId,
+              title: notificationTitle,
+              message: partyMessage,
+              type: 'warning',
+              link: `/finabridge`,
+              read: false,
+            }).catch(err => console.error(`[FinaBridge] Party LC expiry notification failed for ${userId}:`, err));
           }
         }
       }
