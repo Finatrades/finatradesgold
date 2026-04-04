@@ -1673,7 +1673,7 @@ export default function FinaBridgeManagement() {
                               const slaBadge = daysOpen <= 7 ? { label: 'On Track', cls: 'bg-emerald-100 text-emerald-700' }
                                 : daysOpen <= 14 ? { label: 'At Risk', cls: 'bg-amber-100 text-amber-700' }
                                 : { label: 'Overdue', cls: 'bg-red-100 text-red-700' };
-                              const lcStage = (room as any).lcLifecycleStatus || 'Draft';
+                              const lcStage = room.lcLifecycleStatus || 'Draft';
                               const lcStageCls = lcStage === 'Active' ? 'bg-emerald-100 text-emerald-700'
                                 : lcStage === 'Expired' ? 'bg-red-100 text-red-700'
                                 : 'bg-slate-100 text-slate-600';
@@ -1887,10 +1887,10 @@ export default function FinaBridgeManagement() {
                                 cx="50%"
                                 cy="50%"
                                 outerRadius={70}
-                                label={({ type, rejectionRate }: any) => `${type.split('_')[0]}: ${rejectionRate}%`}
+                                label={({ type, rejectionRate }: { type: string; rejectionRate: number; total: number; rejected: number }) => `${type.split('_')[0]}: ${rejectionRate}%`}
                                 labelLine={false}
                               >
-                                {analyticsData.docRejectionRates.map((_: any, idx: number) => (
+                                {analyticsData.docRejectionRates.map((_entry, idx: number) => (
                                   <Cell key={idx} fill={['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#7c3aed', '#ec4899', '#14b8a6'][idx % 7]} />
                                 ))}
                               </Pie>

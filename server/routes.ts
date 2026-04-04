@@ -16915,12 +16915,21 @@ export async function registerRoutes(
         parentDocumentId: req.body.parentDocumentId || null,
       }).returning();
 
-      // Smart notification: document submitted — notify admin and the other party
+      // Smart notification: document submitted — notify admin(s) and the other party
       try {
         const notifMsg = `${documentType} submitted by ${userRole} in deal room — review required.`;
         const notifLink = `/finabridge/deal-room/${dealRoom.id}`;
         if (dealRoom.assignedAdminId && dealRoom.assignedAdminId !== sessionUserId) {
+          // Assigned deal manager gets direct notification
           await storage.createNotification({ userId: dealRoom.assignedAdminId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
+        } else {
+          // No deal manager assigned — notify all admins so nothing is silently missed
+          const allAdmins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'));
+          for (const admin of allAdmins) {
+            if (admin.id !== sessionUserId) {
+              await storage.createNotification({ userId: admin.id, title: 'Document Submitted (Unassigned Deal)', message: notifMsg, type: 'trade', link: `/admin/finabridge`, read: false }).catch(() => {});
+            }
+          }
         }
         if (userRole === 'exporter' && dealRoom.importerUserId !== sessionUserId) {
           await storage.createNotification({ userId: dealRoom.importerUserId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
