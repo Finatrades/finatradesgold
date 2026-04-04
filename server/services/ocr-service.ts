@@ -970,3 +970,259 @@ export function calculateFraudScore(
 
   return { totalScore: fraudScore, checks, recommendation, summary };
 }
+
+// ============================================================
+// CORPORATE DOCUMENT OCR — verify document type for KYC
+// ============================================================
+
+export type CorpDocType =
+  | 'certificate_of_incorporation'
+  | 'memorandum_articles'
+  | 'shareholder_list'
+  | 'trade_license'
+  | 'board_resolution'
+  | 'bank_reference'
+  | 'financial_statements'
+  | 'pep_declaration';
+
+export interface CorpDocScanResult {
+  isCorrectType: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  companyNameFound: string | null;
+  companyNameMatch: boolean | null;
+  keyFieldFound: string | null;
+  issues: string[];
+  raw: Record<string, unknown>;
+}
+
+const CORP_DOC_PROMPTS: Record<CorpDocType, { label: string; prompt: string }> = {
+  certificate_of_incorporation: {
+    label: 'Certificate of Incorporation',
+    prompt: `You are a corporate compliance document analyst. Examine this document and determine if it is a Certificate of Incorporation (or equivalent: Certificate of Formation, Articles of Incorporation, Company Registration Certificate). Extract the following and respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "registration_number": string | null,
+  "incorporation_date": string | null,
+  "country_of_incorporation": string | null,
+  "issuing_authority": string | null,
+  "issues": string[]
+}
+Set is_correct_type=false if this appears to be a random file, personal document, invoice, bank statement, or unrelated document. issues[] should list any red flags (e.g. no official seal, no registration number, unclear issuer).`,
+  },
+  memorandum_articles: {
+    label: 'Memorandum & Articles of Association',
+    prompt: `You are a corporate compliance document analyst. Examine this document and determine if it is a Memorandum of Association, Articles of Association, Company Constitution, or Corporate Charter. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "document_date": string | null,
+  "contains_shareholder_info": boolean,
+  "contains_director_info": boolean,
+  "issues": string[]
+}
+Set is_correct_type=false if this is a random file, personal ID, invoice, or unrelated document.`,
+  },
+  shareholder_list: {
+    label: 'List of Shareholders',
+    prompt: `You are a corporate compliance document analyst. Determine if this document is a Register of Shareholders, Shareholder Register, or List of Members showing ownership percentages. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "num_shareholders_found": number | null,
+  "shows_percentages": boolean,
+  "document_date": string | null,
+  "issues": string[]
+}
+Set is_correct_type=false if this is a random file, personal document, invoice, or has no shareholder names/percentages.`,
+  },
+  trade_license: {
+    label: 'Trade / Business License',
+    prompt: `You are a corporate compliance document analyst. Determine if this document is a Trade License, Business License, Business Registration Certificate, or Commercial Registration. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "license_number": string | null,
+  "issuing_authority": string | null,
+  "expiry_date": string | null,
+  "issues": string[]
+}
+Set is_correct_type=false if this is not a license/permit document.`,
+  },
+  board_resolution: {
+    label: 'Board Resolution',
+    prompt: `You are a corporate compliance document analyst. Determine if this document is a Board Resolution or Minutes of Directors authorizing this KYC submission or opening of a financial account. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "resolution_date": string | null,
+  "authorized_persons": string[],
+  "purpose_mentioned": boolean,
+  "issues": string[]
+}
+Set is_correct_type=false if this is not a board resolution or directors' resolution.`,
+  },
+  bank_reference: {
+    label: 'Bank Reference Letter',
+    prompt: `You are a corporate compliance document analyst. Determine if this document is a Bank Reference Letter or Banker's Confirmation Letter. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "bank_name": string | null,
+  "client_name": string | null,
+  "letter_date": string | null,
+  "account_mentioned": boolean,
+  "issues": string[]
+}
+Set is_correct_type=false if this is not a bank reference/confirmation letter.`,
+  },
+  financial_statements: {
+    label: 'Financial Statements',
+    prompt: `You are a corporate compliance document analyst. Determine if this document contains Financial Statements (audited or management accounts including P&L, balance sheet, or cash flow). Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "company_name": string | null,
+  "period_covered": string | null,
+  "contains_balance_sheet": boolean,
+  "contains_income_statement": boolean,
+  "audited": boolean | null,
+  "issues": string[]
+}
+Set is_correct_type=false if this is not a financial statement.`,
+  },
+  pep_declaration: {
+    label: 'PEP Self-Declaration Form',
+    prompt: `You are a corporate compliance document analyst. Determine if this document is a PEP (Politically Exposed Person) Self-Declaration or PEP Disclosure Form. Respond ONLY with valid JSON:
+{
+  "is_correct_type": boolean,
+  "confidence": "high" | "medium" | "low",
+  "declarant_name": string | null,
+  "declaration_date": string | null,
+  "pep_status_declared": boolean | null,
+  "issues": string[]
+}
+Set is_correct_type=false if this is not a PEP declaration form.`,
+  },
+};
+
+export async function scanCorporateDocument(
+  base64: string,
+  mimeType: string,
+  documentType: CorpDocType,
+  companyName?: string,
+): Promise<CorpDocScanResult> {
+  const cfg = CORP_DOC_PROMPTS[documentType];
+  if (!cfg) throw new Error(`Unknown corporate document type: ${documentType}`);
+
+  const visionClient = groqClient ?? openai;
+  const visionModel = groqClient ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'gpt-4o';
+  const textModel = groqClient ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'gpt-4o';
+
+  const companyContext = companyName
+    ? `\n\nThe company name declared by the applicant is: "${companyName}". Check if the document matches this company.`
+    : '';
+
+  const fullPrompt = cfg.prompt + companyContext;
+
+  let response: Awaited<ReturnType<typeof visionClient.chat.completions.create>>;
+
+  try {
+    if (mimeType === 'application/pdf') {
+      // Try to get text from PDF, then use text model
+      const buf = Buffer.from(base64, 'base64');
+      const parsed = await pdfParse(buf).catch(() => null);
+      const text = parsed?.text?.trim() || '';
+      if (text.length >= 30) {
+        response = await visionClient.chat.completions.create({
+          model: textModel,
+          messages: [{ role: 'user', content: `${fullPrompt}\n\nDocument text:\n${text.substring(0, 5000)}` }],
+          max_tokens: 512,
+          temperature: 0,
+        });
+      } else {
+        // Scanned PDF — treat as image (caller should have converted to JPEG)
+        response = await visionClient.chat.completions.create({
+          model: visionModel,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: fullPrompt },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
+            ],
+          }],
+          max_tokens: 512,
+          temperature: 0,
+        });
+      }
+    } else {
+      const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const imageType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
+      response = await visionClient.chat.completions.create({
+        model: visionModel,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: fullPrompt },
+            { type: 'image_url', image_url: { url: `data:${imageType};base64,${base64}` } },
+          ],
+        }],
+        max_tokens: 512,
+        temperature: 0,
+      });
+    }
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+
+    const isCorrectType = parsed.is_correct_type === true;
+    const confidence: 'high' | 'medium' | 'low' =
+      ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'medium';
+
+    // Try to detect company name from whatever field the prompt returned
+    const companyNameFound =
+      parsed.company_name ?? parsed.client_name ?? parsed.declarant_name ?? null;
+
+    // Key field varies by doc type
+    const keyFieldFound =
+      parsed.registration_number ?? parsed.license_number ?? parsed.bank_name ??
+      parsed.resolution_date ?? parsed.period_covered ?? parsed.document_date ?? null;
+
+    // Company name match check
+    let companyNameMatch: boolean | null = null;
+    if (companyName && companyNameFound) {
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      companyNameMatch = normalize(companyNameFound).includes(normalize(companyName).substring(0, 8))
+        || normalize(companyName).includes(normalize(companyNameFound).substring(0, 8))
+        || nameSimilarity(companyNameFound, companyName) >= 0.6;
+    }
+
+    return {
+      isCorrectType,
+      confidence,
+      companyNameFound,
+      companyNameMatch,
+      keyFieldFound,
+      issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+      raw: parsed,
+    };
+  } catch (err) {
+    console.error('[CorpDocOCR] Scan failed:', err instanceof Error ? err.message : err);
+    // Graceful fallback — don't block submission on OCR failure
+    return {
+      isCorrectType: true,
+      confidence: 'low',
+      companyNameFound: null,
+      companyNameMatch: null,
+      keyFieldFound: null,
+      issues: ['OCR scan could not complete — document accepted for manual review'],
+      raw: {},
+    };
+  }
+}

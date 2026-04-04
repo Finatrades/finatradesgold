@@ -102,7 +102,7 @@ import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
-import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, extractAddressProofFields, type KycOcrResult, type TieredScanResult, type AddressProofFields } from "./services/ocr-service";
+import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, extractAddressProofFields, scanCorporateDocument, type KycOcrResult, type TieredScanResult, type AddressProofFields, type CorpDocType, type CorpDocScanResult } from "./services/ocr-service";
 import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
@@ -5755,6 +5755,28 @@ export async function registerRoutes(
     } catch (err) {
       console.warn('[AddressProof Scan] Failed:', err instanceof Error ? err.message : err);
       return res.json({ success: false, fields: { is_address_document: true, document_type_label: null, full_name: null, address: null, city: null, postal_code: null, country: null, document_date: null }, nameVerification: null });
+    }
+  });
+
+  // Scan corporate document with Groq OCR — verify document type and extract key fields
+  app.post("/api/kyc/scan-corporate-document", ensureAuthenticated, async (req, res) => {
+    try {
+      const { base64, mimeType, documentType, companyName } = req.body;
+      if (!base64 || typeof base64 !== 'string') return res.status(400).json({ error: 'base64 required' });
+      if (!mimeType || typeof mimeType !== 'string') return res.status(400).json({ error: 'mimeType required' });
+      if (!documentType || typeof documentType !== 'string') return res.status(400).json({ error: 'documentType required' });
+
+      const result: CorpDocScanResult = await scanCorporateDocument(
+        base64,
+        mimeType,
+        documentType as CorpDocType,
+        companyName ?? undefined,
+      );
+      console.log(`[CorpDocScan] user=${req.session?.userId} type=${documentType} correct=${result.isCorrectType} conf=${result.confidence}`);
+      return res.json({ success: true, result });
+    } catch (err) {
+      console.warn('[CorpDocScan] Failed:', err instanceof Error ? err.message : err);
+      return res.json({ success: false, result: { isCorrectType: true, confidence: 'low', companyNameFound: null, companyNameMatch: null, keyFieldFound: null, issues: ['Scan could not complete — accepted for manual review'], raw: {} } });
     }
   });
 

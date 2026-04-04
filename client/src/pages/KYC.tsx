@@ -2607,6 +2607,8 @@ export default function KYC() {
                               file={corpDocs.certificateOfIncorporation ?? null}
                               testId="upload-cert-incorporation"
                               required
+                              corpDocType="certificate_of_incorporation"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="Memorandum & Articles of Association *"
@@ -2616,6 +2618,8 @@ export default function KYC() {
                               file={corpDocs.memorandumArticles ?? null}
                               testId="upload-memorandum"
                               required
+                              corpDocType="memorandum_articles"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="List of Shareholders *"
@@ -2625,15 +2629,19 @@ export default function KYC() {
                               file={corpDocs.shareholderList ?? null}
                               testId="upload-shareholder-list"
                               required
+                              corpDocType="shareholder_list"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="UBO Passports *"
-                              description="Passports of all beneficial owners"
+                              description="Passports of all beneficial owners — AI will verify each is a passport"
                               accept=".jpg,.jpeg,.png,.pdf"
                               onFile={(file) => setCorpDocs(prev => ({ ...prev, uboPassports: file }))}
                               file={corpDocs.uboPassports ?? null}
                               testId="upload-ubo-passports"
                               required
+                              enableOcr
+                              expectedDocType="passport"
                             />
                             {hasPepOwners && (
                               <FileUploadZone
@@ -2644,6 +2652,7 @@ export default function KYC() {
                                 file={corpDocs.pepSelfDeclaration ?? null}
                                 testId="upload-pep-declaration"
                                 required
+                                corpDocType="pep_declaration"
                               />
                             )}
                           </div>
@@ -2658,6 +2667,8 @@ export default function KYC() {
                               onFile={(file) => setCorpDocs(prev => ({ ...prev, tradeLicense: file }))}
                               file={corpDocs.tradeLicense ?? null}
                               testId="upload-trade-license"
+                              corpDocType="trade_license"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="Board Resolution"
@@ -2666,6 +2677,8 @@ export default function KYC() {
                               onFile={(file) => setCorpDocs(prev => ({ ...prev, boardResolution: file }))}
                               file={corpDocs.boardResolution ?? null}
                               testId="upload-board-resolution"
+                              corpDocType="board_resolution"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="Bank Reference Letter"
@@ -2674,6 +2687,8 @@ export default function KYC() {
                               onFile={(file) => setCorpDocs(prev => ({ ...prev, bankReferenceLetter: file }))}
                               file={corpDocs.bankReferenceLetter ?? null}
                               testId="upload-bank-reference"
+                              corpDocType="bank_reference"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                             <FileUploadZone
                               label="Financial Statements (last 2 years)"
@@ -2682,6 +2697,8 @@ export default function KYC() {
                               onFile={(file) => setCorpDocs(prev => ({ ...prev, financialStatements: file }))}
                               file={corpDocs.financialStatements ?? null}
                               testId="upload-financial-statements"
+                              corpDocType="financial_statements"
+                              corpDocContext={{ companyName: companyName || undefined }}
                             />
                           </div>
                         </div>

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle, ScanLine, ShieldCheck, CircleCheck, CircleX, TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -50,6 +50,15 @@ export interface ScanVerification {
   declaredDob: string | null;
 }
 
+export interface CorpDocScanResult {
+  isCorrectType: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  companyNameFound: string | null;
+  companyNameMatch: boolean | null;
+  keyFieldFound: string | null;
+  issues: string[];
+}
+
 interface FileUploadZoneProps {
   label: string;
   description?: string;
@@ -66,6 +75,9 @@ interface FileUploadZoneProps {
   declaredDob?: string;
   onScanResult?: (result: ScanFields, verification?: ScanVerification | null) => void;
   onWrongDocType?: (detectedType: string, fields: ScanFields) => void;
+  corpDocType?: string;
+  corpDocContext?: { companyName?: string };
+  onCorpDocScanResult?: (result: CorpDocScanResult) => void;
 }
 
 type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete' | 'error';
@@ -74,6 +86,17 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   passport: 'Passport',
   national_id: 'National ID',
   driver_licence: 'Driver Licence',
+};
+
+const CORP_DOC_LABELS: Record<string, string> = {
+  certificate_of_incorporation: 'Certificate of Incorporation',
+  memorandum_articles: 'Memorandum & Articles of Association',
+  shareholder_list: 'List of Shareholders',
+  trade_license: 'Trade / Business License',
+  board_resolution: 'Board Resolution',
+  bank_reference: 'Bank Reference Letter',
+  financial_statements: 'Financial Statements',
+  pep_declaration: 'PEP Self-Declaration Form',
 };
 
 export function FileUploadZone({
@@ -92,6 +115,9 @@ export function FileUploadZone({
   declaredDob,
   onScanResult,
   onWrongDocType,
+  corpDocType,
+  corpDocContext,
+  onCorpDocScanResult,
 }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -102,6 +128,7 @@ export function FileUploadZone({
   const [scanFields, setScanFields] = useState<ScanFields | null>(null);
   const [verification, setVerification] = useState<ScanVerification | null>(null);
   const [wrongSlot, setWrongSlot] = useState<boolean>(false);
+  const [corpDocResult, setCorpDocResult] = useState<CorpDocScanResult | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -120,6 +147,7 @@ export function FileUploadZone({
       setScanFields(null);
       setVerification(null);
       setWrongSlot(false);
+      setCorpDocResult(null);
       if (progressRef.current) clearInterval(progressRef.current);
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     }
@@ -142,59 +170,53 @@ export function FileUploadZone({
     }, 80);
   }, []);
 
-  const callOcrApi = useCallback(async (f: File) => {
-    try {
-      // For PDFs: render first page to JPEG so Groq vision can read any PDF type
-      let base64: string;
-      let mimeType: string;
-      if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
-        console.log('[OCR] PDF detected — rendering first page to JPEG for vision scan...');
-        try {
-          base64 = await pdfFirstPageToJpegBase64(f);
-          mimeType = 'image/jpeg';
-          console.log('[OCR] PDF rendered to JPEG, base64 length:', base64.length);
-        } catch (pdfErr) {
-          console.warn('[OCR] PDF render failed, falling back to raw PDF:', pdfErr instanceof Error ? pdfErr.message : String(pdfErr));
-          base64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const b64 = (e.target?.result as string).split(',')[1];
-              if (b64) resolve(b64); else reject(new Error('Failed to read file'));
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(f);
-          });
-          mimeType = 'application/pdf';
-        }
-      } else {
-        base64 = await new Promise<string>((resolve, reject) => {
+  const getBase64AndMime = useCallback(async (f: File): Promise<{ base64: string; mimeType: string }> => {
+    if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        const base64 = await pdfFirstPageToJpegBase64(f);
+        return { base64, mimeType: 'image/jpeg' };
+      } catch {
+        const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
-            const result = e.target?.result as string;
-            const b64 = result.split(',')[1];
-            if (b64) resolve(b64);
-            else reject(new Error('Failed to read file'));
+            const b64 = (e.target?.result as string).split(',')[1];
+            if (b64) resolve(b64); else reject(new Error('Failed to read file'));
           };
           reader.onerror = reject;
           reader.readAsDataURL(f);
         });
-        mimeType = f.type || 'image/jpeg';
+        return { base64, mimeType: 'application/pdf' };
       }
+    } else {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          const b64 = result.split(',')[1];
+          if (b64) resolve(b64); else reject(new Error('Failed to read file'));
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+      return { base64, mimeType: f.type || 'image/jpeg' };
+    }
+  }, []);
 
-      // Fetch CSRF token from the server (same approach as Login/Security pages)
-      let csrfToken: string | null = null;
-      try {
-        console.log('[OCR] Fetching CSRF token...');
-        const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
-        const csrfData = await csrfRes.json();
-        csrfToken = csrfData?.csrfToken ?? null;
-        console.log('[OCR] CSRF token obtained:', csrfToken ? 'yes (' + csrfToken.slice(0, 6) + '...)' : 'null');
-      } catch (csrfErr) {
-        console.warn('[OCR] CSRF fetch failed, trying cookie:', csrfErr instanceof Error ? csrfErr.message : String(csrfErr));
-        const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-        csrfToken = m ? decodeURIComponent(m[1]) : null;
-        console.log('[OCR] Cookie fallback token:', csrfToken ? 'yes' : 'null');
-      }
+  const getCsrfToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
+      const csrfData = await csrfRes.json();
+      return csrfData?.csrfToken ?? null;
+    } catch {
+      const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+  }, []);
+
+  const callOcrApi = useCallback(async (f: File) => {
+    try {
+      const { base64, mimeType } = await getBase64AndMime(f);
+      const csrfToken = await getCsrfToken();
 
       const isAddressProofMode = expectedDocType === 'address_proof';
       const endpoint = isAddressProofMode ? '/api/kyc/scan-address-proof' : '/api/kyc/scan-document';
@@ -204,7 +226,6 @@ export function FileUploadZone({
         declaredName: declaredName || undefined,
         ...(isAddressProofMode ? {} : { declaredDob: declaredDob || undefined }),
       });
-      console.log('[OCR] Sending scan request to', endpoint, ', payload size:', bodyStr.length, 'bytes, mimeType:', mimeType);
 
       const resp = await fetch(endpoint, {
         method: 'POST',
@@ -217,11 +238,7 @@ export function FileUploadZone({
         body: bodyStr,
       });
 
-      console.log('[OCR] Response status:', resp.status, resp.ok ? 'OK' : 'NOT OK');
-      if (!resp.ok) {
-        const errBody = await resp.text().catch(() => '');
-        throw new Error(`Scan request failed: ${resp.status} ${errBody}`);
-      }
+      if (!resp.ok) throw new Error(`Scan request failed: ${resp.status}`);
       const data = await resp.json();
 
       if (isAddressProofMode) {
@@ -283,12 +300,52 @@ export function FileUploadZone({
     }
     setProgress(100);
     setScanStatus('complete');
-  }, [onScanResult, onFile, declaredName, declaredDob, expectedDocType, onWrongDocType]);
+  }, [onScanResult, onFile, declaredName, declaredDob, expectedDocType, onWrongDocType, getBase64AndMime, getCsrfToken]);
+
+  const callCorpDocOcrApi = useCallback(async (f: File) => {
+    try {
+      const { base64, mimeType } = await getBase64AndMime(f);
+      const csrfToken = await getCsrfToken();
+
+      const bodyStr = JSON.stringify({
+        base64,
+        mimeType,
+        documentType: corpDocType,
+        companyName: corpDocContext?.companyName || undefined,
+      });
+
+      const resp = await fetch('/api/kyc/scan-corporate-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+        },
+        credentials: 'include',
+        body: bodyStr,
+      });
+
+      if (!resp.ok) throw new Error(`Corp doc scan failed: ${resp.status}`);
+      const data = await resp.json();
+      const result: CorpDocScanResult = data.result ?? {
+        isCorrectType: true, confidence: 'low', companyNameFound: null,
+        companyNameMatch: null, keyFieldFound: null, issues: [],
+      };
+      setCorpDocResult(result);
+      onCorpDocScanResult?.(result);
+    } catch (err) {
+      console.error('[CorpDocOCR] Scan failed:', err);
+      setCorpDocResult({ isCorrectType: true, confidence: 'low', companyNameFound: null, companyNameMatch: null, keyFieldFound: null, issues: [] });
+    }
+    setProgress(100);
+    setScanStatus('complete');
+  }, [corpDocType, corpDocContext, onCorpDocScanResult, getBase64AndMime, getCsrfToken]);
 
   const processFile = useCallback(
     (f: File) => {
       setError(null);
       setScanFields(null);
+      setCorpDocResult(null);
       if (f.size > maxSizeMB * 1024 * 1024) {
         setError(`File too large. Maximum size is ${maxSizeMB}MB.`);
         return;
@@ -312,8 +369,10 @@ export function FileUploadZone({
       if (enableOcr) {
         startProgressAnimation(80);
         callOcrApi(f);
+      } else if (corpDocType) {
+        startProgressAnimation(80);
+        callCorpDocOcrApi(f);
       } else {
-        // For non-OCR uploads: animate quickly to 90%, then complete after a short pause
         startProgressAnimation(90, () => {
           scanTimerRef.current = setTimeout(() => {
             setProgress(100);
@@ -322,7 +381,7 @@ export function FileUploadZone({
         });
       }
     },
-    [accept, maxSizeMB, onFile, startProgressAnimation, enableOcr, callOcrApi]
+    [accept, maxSizeMB, onFile, startProgressAnimation, enableOcr, callOcrApi, corpDocType, callCorpDocOcrApi]
   );
 
   const handleDrop = useCallback(
@@ -347,6 +406,7 @@ export function FileUploadZone({
     setScanStatus('idle');
     setProgress(0);
     setScanFields(null);
+    setCorpDocResult(null);
     onFile(null);
     if (inputRef.current) inputRef.current.value = '';
     if (progressRef.current) clearInterval(progressRef.current);
@@ -357,6 +417,18 @@ export function FileUploadZone({
     .split(',')
     .map((t) => t.trim().replace('.', '').toUpperCase())
     .join(', ');
+
+  const scanningLabel = enableOcr
+    ? 'AI scanning document…'
+    : corpDocType
+      ? 'AI verifying document type…'
+      : 'Scanning document…';
+
+  const completeLabel = enableOcr
+    ? (scanFields?.source === 'mrz' ? 'MRZ scan complete' : 'AI document scan complete')
+    : corpDocType
+      ? (corpDocResult?.isCorrectType === false ? 'Document type mismatch flagged' : 'AI document check complete')
+      : 'Document received';
 
   return (
     <div>
@@ -406,6 +478,11 @@ export function FileUploadZone({
               <p className="text-xs text-muted-foreground mt-0.5">
                 {typeLabels} — max {maxSizeMB}MB
               </p>
+              {corpDocType && (
+                <p className="text-xs text-primary mt-1 font-medium">
+                  AI will verify this is a {CORP_DOC_LABELS[corpDocType] ?? corpDocType}
+                </p>
+              )}
             </div>
           </div>
           <input
@@ -421,9 +498,11 @@ export function FileUploadZone({
         <div
           className={cn(
             'border rounded-xl p-3 flex flex-col gap-2.5 group transition-colors',
-            scanStatus === 'complete'
-              ? 'bg-green-50/40 dark:bg-green-950/20 border-green-200 dark:border-green-800'
-              : 'bg-muted/20 border-border'
+            scanStatus === 'complete' && corpDocResult?.isCorrectType === false
+              ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700'
+              : scanStatus === 'complete'
+                ? 'bg-green-50/40 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                : 'bg-muted/20 border-border'
           )}
         >
           <div className="flex items-center gap-3">
@@ -444,7 +523,11 @@ export function FileUploadZone({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 {scanStatus === 'complete' ? (
-                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  corpDocResult?.isCorrectType === false ? (
+                    <TriangleAlert className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  )
                 ) : (
                   <ScanLine className="w-4 h-4 text-primary flex-shrink-0 animate-pulse" />
                 )}
@@ -476,7 +559,7 @@ export function FileUploadZone({
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <ScanLine className="w-3 h-3 animate-pulse" />
-                  {scanStatus === 'uploading' ? 'Uploading…' : enableOcr ? 'AI scanning document…' : 'Scanning document…'}
+                  {scanStatus === 'uploading' ? 'Uploading…' : scanningLabel}
                 </span>
                 <span>{Math.round(progress)}%</span>
               </div>
@@ -498,13 +581,99 @@ export function FileUploadZone({
               data-testid={testId ? `${testId}-scan-complete` : undefined}
             >
               {/* Header */}
-              <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {scanFields?.source === 'mrz' ? 'MRZ scan complete' : enableOcr ? 'AI document scan complete' : 'Document received'} — ready for submission
+              <div className={cn(
+                'flex items-center gap-1.5 text-xs font-medium',
+                corpDocResult?.isCorrectType === false
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-green-700 dark:text-green-400'
+              )}>
+                {corpDocResult?.isCorrectType === false ? (
+                  <TriangleAlert className="w-3.5 h-3.5" />
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                )}
+                {completeLabel} — ready for submission
                 {scanFields?.source === 'mrz' && (
                   <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 font-semibold">FREE</span>
                 )}
               </div>
+
+              {/* Corporate document type result */}
+              {corpDocType && corpDocResult && (
+                <div className={cn(
+                  'rounded-lg border divide-y text-xs overflow-hidden font-mono',
+                  corpDocResult.isCorrectType
+                    ? 'border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-gray-100 dark:divide-green-900/40'
+                    : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/10 divide-amber-100 dark:divide-amber-900/40'
+                )}>
+                  {/* Type check row */}
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-16 flex-shrink-0">TYPE</span>
+                    <span className={cn('font-semibold', corpDocResult.isCorrectType ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400')}>
+                      {corpDocResult.isCorrectType
+                        ? `✓ ${CORP_DOC_LABELS[corpDocType] ?? corpDocType}`
+                        : `⚠ Not a ${CORP_DOC_LABELS[corpDocType] ?? corpDocType}`}
+                    </span>
+                    <span className={cn(
+                      'ml-auto text-[10px] px-1.5 py-0.5 rounded font-semibold',
+                      corpDocResult.confidence === 'high'
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                        : corpDocResult.confidence === 'medium'
+                          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
+                          : 'bg-gray-100 dark:bg-gray-900/40 text-gray-600'
+                    )}>
+                      {corpDocResult.confidence.toUpperCase()} CONFIDENCE
+                    </span>
+                  </div>
+
+                  {/* Company name row */}
+                  {corpDocResult.companyNameFound && (
+                    <div className="flex items-center justify-between px-3 py-2 gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-16 flex-shrink-0">COMPANY</span>
+                        <span className="font-semibold text-foreground truncate">{corpDocResult.companyNameFound}</span>
+                      </div>
+                      {corpDocResult.companyNameMatch != null && (
+                        corpDocResult.companyNameMatch ? (
+                          <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold flex-shrink-0">
+                            <CircleCheck className="w-3.5 h-3.5" /> MATCHED
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold flex-shrink-0">
+                            <CircleX className="w-3.5 h-3.5" /> DIFFERS
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Key field row */}
+                  {corpDocResult.keyFieldFound && (
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-16 flex-shrink-0">REF</span>
+                      <span className="font-semibold text-foreground tracking-wider">{corpDocResult.keyFieldFound}</span>
+                    </div>
+                  )}
+
+                  {/* Wrong type warning */}
+                  {!corpDocResult.isCorrectType && (
+                    <div className="flex items-start gap-1.5 px-3 py-2 font-sans">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-amber-700 dark:text-amber-400">
+                        This document doesn't appear to be a <strong>{CORP_DOC_LABELS[corpDocType] ?? corpDocType}</strong>. Please upload the correct document. Your file has been flagged for manual review.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Issues */}
+                  {corpDocResult.isCorrectType && corpDocResult.issues.length > 0 && (
+                    <div className="flex items-start gap-1.5 px-3 py-2 font-sans">
+                      <AlertCircle className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-blue-700 dark:text-blue-400">{corpDocResult.issues[0]}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Wrong-slot advisory — passport uploaded to ID slot */}
               {wrongSlot && scanFields?.document_type === 'passport' && expectedDocType === 'national_id' && (
@@ -518,7 +687,6 @@ export function FileUploadZone({
 
               {enableOcr && scanFields && (
                 <div className="rounded-lg border border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-y divide-gray-100 dark:divide-green-900/40 text-xs overflow-hidden font-mono">
-                  {/* Document type row */}
                   {scanFields.document_type ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">TYPE</span>
@@ -526,7 +694,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Name row */}
                   {scanFields.full_name ? (
                     <div className="flex items-center justify-between px-3 py-2 gap-3">
                       <div className="flex items-center gap-2 min-w-0">
@@ -547,7 +714,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* DOB row */}
                   {scanFields.date_of_birth ? (
                     <div className="flex items-center justify-between px-3 py-2 gap-3">
                       <div className="flex items-center gap-2 min-w-0">
@@ -568,7 +734,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Nationality row */}
                   {scanFields.nationality ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">COUNTRY</span>
@@ -576,7 +741,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Address proof rows */}
                   {scanFields.document_type_label ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">TYPE</span>
@@ -629,7 +793,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Document number row */}
                   {scanFields.document_number ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">DOC #</span>
@@ -637,7 +800,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Expiry row */}
                   {scanFields.expiry_date ? (
                     <div className="flex items-center justify-between px-3 py-2 gap-3">
                       <div className="flex items-center gap-2">
@@ -656,7 +818,6 @@ export function FileUploadZone({
                     </div>
                   ) : null}
 
-                  {/* Mismatch warning */}
                   {(verification?.nameMatch === false || verification?.dobMatch === false) && (
                     <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 font-sans">
                       <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -666,7 +827,6 @@ export function FileUploadZone({
                     </div>
                   )}
 
-                  {/* No fields extracted */}
                   {!scanFields.full_name && !scanFields.date_of_birth && (
                     <div className="px-3 py-2 text-muted-foreground font-sans">
                       Document accepted — MRZ could not be read. An agent will verify manually.
