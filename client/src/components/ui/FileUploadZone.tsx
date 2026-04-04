@@ -125,20 +125,21 @@ export function FileUploadZone({
     }
   }, [file]);
 
-  const startProgressAnimation = useCallback((targetPct = 90) => {
+  const startProgressAnimation = useCallback((targetPct = 90, onReached?: () => void) => {
     setScanStatus('uploading');
     setProgress(0);
     if (progressRef.current) clearInterval(progressRef.current);
+    let current = 0;
     progressRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= targetPct) {
-          if (progressRef.current) clearInterval(progressRef.current);
-          setScanStatus('scanning');
-          return targetPct;
-        }
-        return prev + Math.random() * 12 + 5;
-      });
-    }, 100);
+      current = Math.min(current + Math.random() * 12 + 5, targetPct);
+      setProgress(current);
+      if (current >= targetPct) {
+        clearInterval(progressRef.current!);
+        progressRef.current = null;
+        setScanStatus('scanning');
+        onReached?.();
+      }
+    }, 80);
   }, []);
 
   const callOcrApi = useCallback(async (f: File) => {
@@ -312,11 +313,13 @@ export function FileUploadZone({
         startProgressAnimation(80);
         callOcrApi(f);
       } else {
-        startProgressAnimation(90);
-        scanTimerRef.current = setTimeout(() => {
-          setProgress(100);
-          setScanStatus('complete');
-        }, 900);
+        // For non-OCR uploads: animate quickly to 90%, then complete after a short pause
+        startProgressAnimation(90, () => {
+          scanTimerRef.current = setTimeout(() => {
+            setProgress(100);
+            setScanStatus('complete');
+          }, 300);
+        });
       }
     },
     [accept, maxSizeMB, onFile, startProgressAnimation, enableOcr, callOcrApi]
