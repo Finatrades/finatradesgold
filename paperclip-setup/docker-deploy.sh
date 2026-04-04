@@ -50,12 +50,12 @@ services:
     depends_on:
       - db
     command: >
-      sh -c "apk add --no-cache git python3 make g++ &&
+      sh -c "apk add --no-cache git python3 make g++ coreutils &&
              git clone https://github.com/paperclipai/paperclip.git /app &&
              npm install -g pnpm &&
-             pnpm install --frozen-lockfile &&
-             pnpm build &&
-             pnpm start"
+             NODE_ENV=development pnpm install &&
+             NODE_ENV=development pnpm build &&
+             NODE_ENV=production pnpm start"
     volumes:
       - appdata:/app
 
