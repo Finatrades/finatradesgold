@@ -23,7 +23,7 @@ import {
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
-  partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments,
+  partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments, dealMilestones, dealDiscrepancies, dealRooms as dealRoomsTable,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
   tradeRequests, tradeProposals, settlementHolds, tradeDocuments,
@@ -16822,6 +16822,21 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Not authorized to upload to this deal room" });
       }
       
+      // Version control: if parentDocumentId given, auto-increment version
+      let versionNumber = 1;
+      if (req.body.parentDocumentId) {
+        const siblings = await db.select({ versionNumber: dealRoomDocuments.versionNumber })
+          .from(dealRoomDocuments)
+          .where(
+            or(
+              eq(dealRoomDocuments.id, req.body.parentDocumentId),
+              eq(dealRoomDocuments.parentDocumentId, req.body.parentDocumentId)
+            )
+          );
+        const maxVersion = siblings.reduce((m, s) => Math.max(m, s.versionNumber ?? 1), 1);
+        versionNumber = maxVersion + 1;
+      }
+
       const [document] = await db.insert(dealRoomDocuments).values({
         id: crypto.randomUUID(),
         dealRoomId: dealRoom.id,
@@ -16835,6 +16850,8 @@ export async function registerRoutes(
         description,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         status: 'Pending',
+        versionNumber,
+        parentDocumentId: req.body.parentDocumentId || null,
       }).returning();
       
       res.json({ document, message: "Document uploaded successfully" });
@@ -16894,6 +16911,271 @@ export async function registerRoutes(
       res.json({ message: `Document ${status.toLowerCase()}` });
     } catch (error) {
       res.status(400).json({ message: "Failed to verify document" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - DOCUMENT REVIEW (admin approve/reject with notes)
+  // ============================================================================
+
+  app.patch("/api/deal-rooms/:dealRoomId/documents/:documentId/review", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can review documents" });
+
+      const { status, verificationNotes } = req.body;
+      if (!['Approved', 'Rejected', 'Under Review'].includes(status)) {
+        return res.status(400).json({ message: "Status must be Approved, Rejected, or Under Review" });
+      }
+
+      const [updated] = await db.update(dealRoomDocuments).set({
+        status,
+        verifiedBy: sessionUserId,
+        verifiedAt: new Date(),
+        verificationNotes: verificationNotes || null,
+        updatedAt: new Date(),
+      }).where(
+        and(
+          eq(dealRoomDocuments.id, req.params.documentId),
+          eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId)
+        )
+      ).returning();
+
+      if (!updated) return res.status(404).json({ message: "Document not found" });
+
+      // If rejected, auto-create a discrepancy entry
+      if (status === 'Rejected' && verificationNotes) {
+        await db.insert(dealDiscrepancies).values({
+          id: crypto.randomUUID(),
+          dealRoomId: req.params.dealRoomId,
+          documentId: req.params.documentId,
+          raisedByUserId: sessionUserId,
+          reasonType: 'Other',
+          description: `Document rejected: ${verificationNotes}`,
+          status: 'open',
+        });
+      }
+
+      res.json({ document: updated, message: `Document ${status.toLowerCase()}` });
+    } catch (error) {
+      console.error('[DealRoom] Document review error:', error);
+      res.status(400).json({ message: "Failed to review document" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - LC LIFECYCLE STATUS
+  // ============================================================================
+
+  app.patch("/api/deal-rooms/:dealRoomId/lc-status", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can update LC lifecycle status" });
+
+      const { lcLifecycleStatus, notes } = req.body;
+      const validStages = [
+        'Contract Signed', 'LC Issued', 'Docs Submitted', 'Under Review',
+        'Discrepancy Raised', 'Discrepancy Resolved', 'Approved', 'Funds Released', 'Closed'
+      ];
+      if (!validStages.includes(lcLifecycleStatus)) {
+        return res.status(400).json({ message: "Invalid LC lifecycle status" });
+      }
+
+      await db.update(dealRoomsTable).set({
+        lcLifecycleStatus,
+        updatedAt: new Date(),
+      }).where(eq(dealRoomsTable.id, req.params.dealRoomId));
+
+      // Auto-create milestone
+      const userRole = dealRoom.importerUserId === sessionUserId ? 'importer'
+        : dealRoom.exporterUserId === sessionUserId ? 'exporter' : 'admin';
+      await db.insert(dealMilestones).values({
+        id: crypto.randomUUID(),
+        dealRoomId: req.params.dealRoomId,
+        milestoneName: lcLifecycleStatus,
+        completedByUserId: sessionUserId,
+        completedByRole: userRole,
+        notes: notes || null,
+      });
+
+      res.json({ message: "LC lifecycle status updated", lcLifecycleStatus });
+    } catch (error) {
+      console.error('[DealRoom] LC status update error:', error);
+      res.status(400).json({ message: "Failed to update LC lifecycle status" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - MILESTONES
+  // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/milestones", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const milestones = await db.select().from(dealMilestones)
+        .where(eq(dealMilestones.dealRoomId, req.params.dealRoomId))
+        .orderBy(dealMilestones.completedAt);
+
+      res.json({ milestones });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch milestones" });
+    }
+  });
+
+  app.post("/api/deal-rooms/:dealRoomId/milestones", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can add milestones" });
+
+      const { milestoneName, notes } = req.body;
+      if (!milestoneName) return res.status(400).json({ message: "Milestone name required" });
+
+      const [milestone] = await db.insert(dealMilestones).values({
+        id: crypto.randomUUID(),
+        dealRoomId: req.params.dealRoomId,
+        milestoneName,
+        completedByUserId: sessionUserId,
+        completedByRole: 'admin',
+        notes: notes || null,
+      }).returning();
+
+      res.json({ milestone, message: "Milestone added" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add milestone" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - DISCREPANCIES
+  // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/discrepancies", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const discrepancies = await db.select().from(dealDiscrepancies)
+        .where(eq(dealDiscrepancies.dealRoomId, req.params.dealRoomId))
+        .orderBy(desc(dealDiscrepancies.createdAt));
+
+      res.json({ discrepancies });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch discrepancies" });
+    }
+  });
+
+  app.post("/api/deal-rooms/:dealRoomId/discrepancies", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can raise discrepancies" });
+
+      const { documentId, reasonType, description } = req.body;
+      const validReasons = ['Amount Mismatch', 'Date Discrepancy', 'Port of Loading Wrong', 'Missing Signature', 'Description Mismatch', 'Document Expired', 'Incorrect Document Type', 'Other'];
+      if (!validReasons.includes(reasonType)) {
+        return res.status(400).json({ message: "Invalid reason type" });
+      }
+
+      const [discrepancy] = await db.insert(dealDiscrepancies).values({
+        id: crypto.randomUUID(),
+        dealRoomId: req.params.dealRoomId,
+        documentId: documentId || null,
+        raisedByUserId: sessionUserId,
+        reasonType,
+        description: description || null,
+        status: 'open',
+      }).returning();
+
+      res.json({ discrepancy, message: "Discrepancy raised" });
+    } catch (error) {
+      console.error('[DealRoom] Discrepancy creation error:', error);
+      res.status(400).json({ message: "Failed to raise discrepancy" });
+    }
+  });
+
+  app.patch("/api/deal-rooms/:dealRoomId/discrepancies/:discrepancyId/resolve", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can resolve discrepancies" });
+
+      const { resolutionNotes } = req.body;
+
+      const [resolved] = await db.update(dealDiscrepancies).set({
+        status: 'resolved',
+        resolvedAt: new Date(),
+        resolvedByUserId: sessionUserId,
+        resolutionNotes: resolutionNotes || null,
+        updatedAt: new Date(),
+      }).where(
+        and(
+          eq(dealDiscrepancies.id, req.params.discrepancyId),
+          eq(dealDiscrepancies.dealRoomId, req.params.dealRoomId)
+        )
+      ).returning();
+
+      if (!resolved) return res.status(404).json({ message: "Discrepancy not found" });
+      res.json({ discrepancy: resolved, message: "Discrepancy resolved" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to resolve discrepancy" });
     }
   });
 

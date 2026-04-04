@@ -2577,11 +2577,12 @@ export type TradeDisputeComment = typeof tradeDisputeComments.$inferSelect;
 // Deal Room Documents - trade-related document uploads
 export const dealRoomDocumentTypeEnum = pgEnum('deal_room_document_type', [
   'Invoice', 'Bill of Lading', 'Insurance Certificate', 'Certificate of Origin', 
-  'Packing List', 'Quality Certificate', 'Customs Declaration', 'Other'
+  'Packing List', 'Quality Certificate', 'Customs Declaration',
+  'Inspection Report', 'LC Draft', 'Proof of Lading', 'Warehouse Receipt', 'Other'
 ]);
 
 export const dealRoomDocumentStatusEnum = pgEnum('deal_room_document_status', [
-  'Pending', 'Verified', 'Rejected', 'Expired'
+  'Pending', 'Under Review', 'Approved', 'Verified', 'Rejected', 'Expired'
 ]);
 
 export const dealRoomDocuments = pgTable("deal_room_documents", {
@@ -2600,6 +2601,8 @@ export const dealRoomDocuments = pgTable("deal_room_documents", {
   verifiedAt: timestamp("verified_at"),
   verificationNotes: text("verification_notes"),
   expiresAt: timestamp("expires_at"),
+  versionNumber: integer("version_number").default(1),
+  parentDocumentId: varchar("parent_document_id", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -2633,6 +2636,8 @@ export const dealRooms = pgTable("deal_rooms", {
   adminDisclaimer: text("admin_disclaimer"),
   adminDisclaimerUpdatedAt: timestamp("admin_disclaimer_updated_at"),
   adminDisclaimerUpdatedBy: varchar("admin_disclaimer_updated_by", { length: 255 }).references(() => users.id),
+  
+  lcLifecycleStatus: varchar("lc_lifecycle_status", { length: 50 }).default('Contract Signed'),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -2673,6 +2678,58 @@ export const dealRoomAgreementAcceptances = pgTable("deal_room_agreement_accepta
 export const insertDealRoomAgreementAcceptanceSchema = createInsertSchema(dealRoomAgreementAcceptances).omit({ id: true, acceptedAt: true });
 export type InsertDealRoomAgreementAcceptance = z.infer<typeof insertDealRoomAgreementAcceptanceSchema>;
 export type DealRoomAgreementAcceptance = typeof dealRoomAgreementAcceptances.$inferSelect;
+
+// ============================================
+// DEAL ROOM - MILESTONES
+// ============================================
+
+export const dealMilestones = pgTable("deal_milestones", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  milestoneName: varchar("milestone_name", { length: 100 }).notNull(),
+  completedByUserId: varchar("completed_by_user_id", { length: 255 }).references(() => users.id),
+  completedByRole: varchar("completed_by_role", { length: 20 }),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at").notNull().defaultNow(),
+});
+
+export const insertDealMilestoneSchema = createInsertSchema(dealMilestones).omit({ id: true, completedAt: true });
+export type InsertDealMilestone = z.infer<typeof insertDealMilestoneSchema>;
+export type DealMilestone = typeof dealMilestones.$inferSelect;
+
+// ============================================
+// DEAL ROOM - DISCREPANCIES
+// ============================================
+
+export const dealDiscrepancyReasonEnum = pgEnum('deal_discrepancy_reason', [
+  'Amount Mismatch',
+  'Date Discrepancy',
+  'Port of Loading Wrong',
+  'Missing Signature',
+  'Description Mismatch',
+  'Document Expired',
+  'Incorrect Document Type',
+  'Other'
+]);
+
+export const dealDiscrepancies = pgTable("deal_discrepancies", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  documentId: varchar("document_id", { length: 255 }).references(() => dealRoomDocuments.id),
+  raisedByUserId: varchar("raised_by_user_id", { length: 255 }).notNull().references(() => users.id),
+  reasonType: dealDiscrepancyReasonEnum("reason_type").notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 20 }).notNull().default('open'),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedByUserId: varchar("resolved_by_user_id", { length: 255 }).references(() => users.id),
+  resolutionNotes: text("resolution_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDealDiscrepancySchema = createInsertSchema(dealDiscrepancies).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDealDiscrepancy = z.infer<typeof insertDealDiscrepancySchema>;
+export type DealDiscrepancy = typeof dealDiscrepancies.$inferSelect;
 
 // ============================================
 // CHAT AGENTS
