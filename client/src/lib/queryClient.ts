@@ -4,7 +4,7 @@ export const SESSION_EXPIRED_EVENT = 'session:expired';
 
 function handleSessionExpired() {
   const currentPath = window.location.pathname;
-  const publicPaths = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
+  const publicPaths = ['/', '/login', '/sign-in', '/register', '/admin/login', '/forgot-password', '/reset-password', '/verify-email'];
   
   if (!publicPaths.some(path => currentPath === path || currentPath.startsWith('/reset-password'))) {
     console.log('[Session] Session expired, redirecting to login...');
