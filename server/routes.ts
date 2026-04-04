@@ -17068,14 +17068,29 @@ export async function registerRoutes(
 
       // Payment gate: enforce all required docs approved before Payment Triggered
       if (lcLifecycleStatus === 'Payment Triggered') {
-        const REQUIRED_DOC_TYPES = [
+        const BASE_REQUIRED_DOC_TYPES = [
           'Invoice', 'Bill of Lading', 'Packing List', 'Certificate of Origin',
-          'Insurance Certificate', 'Inspection Report', 'LC Draft', 'Proof of Lading', 'Warehouse Receipt',
+          'Insurance Certificate', 'Inspection Report', 'LC Draft',
         ];
+        const GOLD_ONLY_DOC_TYPES = ['Proof of Lading', 'Warehouse Receipt'];
+
         // Fetch LC terms to get custom required docs if set
         const [lcTermsRow] = await db.select({ requiredDocuments: lcTerms.requiredDocuments })
           .from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
-        const requiredTypes = lcTermsRow?.requiredDocuments || REQUIRED_DOC_TYPES;
+
+        let requiredTypes: string[];
+        if (lcTermsRow?.requiredDocuments && lcTermsRow.requiredDocuments.length > 0) {
+          // Use explicitly saved LC terms required docs (single source of truth when set)
+          requiredTypes = lcTermsRow.requiredDocuments;
+        } else {
+          // Derive required docs from deal goods name (same heuristic as frontend)
+          const tradeReq = await storage.getTradeRequest(dealRoom.tradeRequestId);
+          const goodsName = tradeReq?.goodsName || '';
+          const isGoldBacked = goodsName.toLowerCase().includes('gold');
+          requiredTypes = isGoldBacked
+            ? [...BASE_REQUIRED_DOC_TYPES, ...GOLD_ONLY_DOC_TYPES]
+            : BASE_REQUIRED_DOC_TYPES;
+        }
 
         // Get all approved docs for this deal room
         const allDocs = await db.select({

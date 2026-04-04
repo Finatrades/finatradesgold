@@ -466,10 +466,15 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [lcTermsData, setLcTermsData] = useState<LcTermsData | null>(null);
   const [showLcWizard, setShowLcWizard] = useState(false);
   const [lcWizardStep, setLcWizardStep] = useState(1);
+  // Base required documents (WR and POL are gold-backed only — unchecked by default)
+  const BASE_WIZARD_REQUIRED_DOCS = REQUIRED_DOCUMENTS
+    .filter(d => d.type !== 'Warehouse Receipt' && d.type !== 'Proof of Lading')
+    .map(d => d.type);
+
   const [lcWizardForm, setLcWizardForm] = useState({
     lcType: 'Irrevocable', expiryDate: '', expiryPlace: '', amount: '', currency: 'USD',
     partialShipment: false, transshipment: false,
-    requiredDocuments: REQUIRED_DOCUMENTS.map(d => d.type),
+    requiredDocuments: BASE_WIZARD_REQUIRED_DOCS,
   });
   const [savingLcTerms, setSavingLcTerms] = useState(false);
 
@@ -929,13 +934,21 @@ Version 1.0 - Effective Date: January 2025`.trim();
           {lcWizardStep === 3 && (
             <div className="space-y-3">
               <p className="text-sm font-medium">Required Documents</p>
+              <div className="text-xs text-muted-foreground p-2 bg-amber-50 border border-amber-200 rounded flex items-start gap-1.5">
+                <Info className="w-3 h-3 text-amber-600 flex-shrink-0 mt-0.5" />
+                Warehouse Receipt and Proof of Lading are for gold-backed commodity trades only. Enable them only if this deal involves physical gold.
+              </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {REQUIRED_DOCUMENTS.map(d => {
+                  const isGoldDoc = d.type === 'Warehouse Receipt' || d.type === 'Proof of Lading';
                   const checked = lcWizardForm.requiredDocuments.includes(d.type);
                   return (
-                    <div key={d.type} className="flex items-center gap-3 p-2 rounded border hover:bg-muted/30">
+                    <div key={d.type} className={`flex items-center gap-3 p-2 rounded border hover:bg-muted/30 ${isGoldDoc ? 'border-purple-200 bg-purple-50/30' : ''}`}>
                       <Checkbox checked={checked} onCheckedChange={c => setLcWizardForm(f => ({ ...f, requiredDocuments: c ? [...f.requiredDocuments, d.type] : f.requiredDocuments.filter(x => x !== d.type) }))} data-testid={`checkbox-doc-${d.type.toLowerCase().replace(/\s+/g, '-')}`} />
-                      <div><p className="text-sm font-medium">{d.label}</p><p className="text-xs text-muted-foreground">{d.responsibleLabel}</p></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{d.label}{isGoldDoc && <span className="ml-2 text-[10px] text-purple-600 font-normal">(gold-backed)</span>}</p>
+                        <p className="text-xs text-muted-foreground">{d.responsibleLabel}</p>
+                      </div>
                     </div>
                   );
                 })}
