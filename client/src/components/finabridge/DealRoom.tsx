@@ -184,7 +184,9 @@ function normalizeLcStage(rawStage: string | null | undefined): LcStage {
   return legacyMap[rawStage] || 'Draft';
 }
 
-function userDisplayName(u: { finatradesId: string | null; email: string; firstName: string | null; lastName: string | null } | null | undefined): string {
+type UserDisplayable = { finatradesId: string | null; email: string; firstName?: string | null; lastName?: string | null };
+
+function userDisplayName(u: UserDisplayable | null | undefined): string {
   if (!u) return 'Unknown';
   if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
   return u.finatradesId || u.email;
@@ -800,8 +802,18 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     return false;
   };
 
+  // Gold-backed deal detection: true if goods name contains "gold" OR if LC terms
+  // explicitly require WR/POL documents (indicating gold-backed commodity trade)
+  const isGoldBackedDeal = !!room?.tradeRequest?.goodsName?.toLowerCase().includes('gold')
+    || (lcTermsData?.requiredDocuments ?? []).some(d => d === 'Warehouse Receipt' || d === 'Proof of Lading');
+
+  // Effective required documents: for non-gold-backed deals, exclude WR and POL from checklist
+  const EFFECTIVE_REQUIRED_DOCUMENTS = isGoldBackedDeal
+    ? REQUIRED_DOCUMENTS
+    : REQUIRED_DOCUMENTS.filter(d => d.type !== 'Warehouse Receipt' && d.type !== 'Proof of Lading');
+
   // All required docs approved (payment gate)
-  const allDocsApproved = REQUIRED_DOCUMENTS.every(rd => {
+  const allDocsApproved = EFFECTIVE_REQUIRED_DOCUMENTS.every(rd => {
     const doc = getLatestDocByType(rd.type);
     return doc && ['Approved', 'Verified'].includes(doc.status);
   });
@@ -934,16 +946,24 @@ Version 1.0 - Effective Date: January 2025`.trim();
             <div className="space-y-4">
               <p className="text-sm font-medium">Shipment Terms</p>
               <div className="space-y-3">
-                {([['partialShipment', 'Partial Shipment', 'Allow goods in multiple instalments'], ['transshipment', 'Transshipment', 'Allow transshipment via intermediate ports']] as const).map(([key, label, desc]) => (
-                  <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
-                    <button onClick={() => setLcWizardForm(f => ({ ...f, [key]: !f[key] }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${(lcWizardForm as any)[key] ? 'bg-purple-500' : 'bg-border'}`}
-                      data-testid={`toggle-${key}`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${(lcWizardForm as any)[key] ? 'translate-x-6' : ''}`} />
-                    </button>
-                  </div>
-                ))}
+                {(['partialShipment', 'transshipment'] as const).map(key => {
+                  const meta: Record<'partialShipment' | 'transshipment', { label: string; desc: string }> = {
+                    partialShipment: { label: 'Partial Shipment', desc: 'Allow goods in multiple instalments' },
+                    transshipment:   { label: 'Transshipment',    desc: 'Allow transshipment via intermediate ports' },
+                  };
+                  const { label, desc } = meta[key];
+                  const isOn = lcWizardForm[key];
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
+                      <button onClick={() => setLcWizardForm(f => ({ ...f, [key]: !f[key] }))}
+                        className={`w-12 h-6 rounded-full transition-colors ${isOn ? 'bg-purple-500' : 'bg-border'}`}
+                        data-testid={`toggle-${key}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${isOn ? 'translate-x-6' : ''}`} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1241,7 +1261,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium leading-tight">{userDisplayName(u as any)}</p>
+                    <p className="text-sm font-medium leading-tight">{userDisplayName(u)}</p>
                     <p className={`text-xs leading-tight ${label === 'Deal Manager' ? 'text-purple-600' : 'text-primary'}`}>{label}</p>
                   </div>
                 </div>
@@ -1386,13 +1406,13 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       <p className="text-xs text-muted-foreground mt-0.5">Required per UCP 600 / ISBP 745 standards</p>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {documents.filter(d => ['Approved', 'Verified'].includes(d.status)).length} / {REQUIRED_DOCUMENTS.length} approved
+                      {EFFECTIVE_REQUIRED_DOCUMENTS.filter(rd => { const doc = getLatestDocByType(rd.type); return doc && ['Approved', 'Verified'].includes(doc.status); }).length} / {EFFECTIVE_REQUIRED_DOCUMENTS.length} approved
                     </div>
                   </div>
 
                   {docsLoading ? (
                     <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-                  ) : REQUIRED_DOCUMENTS.map((reqDoc) => {
+                  ) : EFFECTIVE_REQUIRED_DOCUMENTS.map((reqDoc) => {
                     const isWrOrPol = reqDoc.type === 'Warehouse Receipt' || reqDoc.type === 'Proof of Lading';
                     const primaryDoc = getLatestDocByType(reqDoc.type);
                     const status = primaryDoc?.status || 'Missing';

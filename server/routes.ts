@@ -17051,17 +17051,19 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid LC lifecycle status" });
       }
 
+      // Every target stage must have an explicit transition rule — stages with no rule (e.g. 'Draft') are terminal starting states and cannot be set via this endpoint
       const rule = TRANSITION_RULES[lcLifecycleStatus];
-      if (rule) {
-        // Normalize current stage before applying rules (handles legacy persisted values)
-        const rawCurrentStage = dealRoom.lcLifecycleStatus || 'Draft';
-        const currentStage = LEGACY_STAGE_MAP[rawCurrentStage] || rawCurrentStage;
-        if (!rule.fromStages.includes(currentStage)) {
-          return res.status(400).json({ message: `Cannot transition to ${lcLifecycleStatus} from ${currentStage}` });
-        }
-        if (!rule.allowedRoles.includes(userRoleInDeal)) {
-          return res.status(403).json({ message: `Only ${rule.allowedRoles.join(' or ')} can trigger this transition` });
-        }
+      if (!rule) {
+        return res.status(400).json({ message: `Transitioning to '${lcLifecycleStatus}' is not a permitted lifecycle action` });
+      }
+      // Normalize current stage before applying rules (handles legacy persisted values)
+      const rawCurrentStage = dealRoom.lcLifecycleStatus || 'Draft';
+      const currentStage = LEGACY_STAGE_MAP[rawCurrentStage] || rawCurrentStage;
+      if (!rule.fromStages.includes(currentStage)) {
+        return res.status(400).json({ message: `Cannot transition to ${lcLifecycleStatus} from ${currentStage}` });
+      }
+      if (!rule.allowedRoles.includes(userRoleInDeal)) {
+        return res.status(403).json({ message: `Only ${rule.allowedRoles.join(' or ')} can trigger this transition` });
       }
 
       // Payment gate: enforce all required docs approved before Payment Triggered
