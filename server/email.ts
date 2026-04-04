@@ -42,21 +42,29 @@ let brandingCache: { logoUrl?: string; companyName?: string; primaryColor?: stri
 let brandingCacheTime = 0;
 const BRANDING_CACHE_TTL = 60000; // 1 minute
 
+// Reliable fallback logo URL — served from the app's own public folder
+// This avoids dependency on external CDNs (R2, S3, etc.) which can go down
+function getReliableLogoUrl(): string {
+  const appUrl = process.env.APP_URL?.replace(/\/$/, '') ||
+    (process.env.REPLIT_DOMAINS?.split(',')[0]
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+      : '');
+  return appUrl ? `${appUrl}/finatrades-logo-purple.png` : '';
+}
+
 async function getBrandingForEmail(): Promise<{ logoUrl: string; companyName: string; primaryColor: string }> {
   const now = Date.now();
   
   // Helper to convert relative URLs to full URLs for email clients
   const getFullLogoUrl = (url: string): string => {
-    if (!url) return '';
+    if (!url) return getReliableLogoUrl();
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     // Use APP_URL or REPLIT_DOMAINS for full URL
-    const baseUrl = process.env.APP_URL || 
-                    (process.env.REPL_SLUG && process.env.REPL_OWNER 
-                      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER.toLowerCase()}.repl.co`
-                      : process.env.REPLIT_DOMAINS?.split(',')[0] 
-                        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-                        : '');
-    return baseUrl ? `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}` : '';
+    const baseUrl = process.env.APP_URL?.replace(/\/$/, '') || 
+                    (process.env.REPLIT_DOMAINS?.split(',')[0] 
+                      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+                      : '');
+    return baseUrl ? `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}` : getReliableLogoUrl();
   };
   
   if (brandingCache && (now - brandingCacheTime) < BRANDING_CACHE_TTL) {
