@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { 
-  Settings as SettingsIcon, Bell, Globe, DollarSign, Moon, Sun,
-  Smartphone, Mail, MessageSquare, TrendingUp, Shield, Palette,
-  Eye, EyeOff, Volume2, VolumeX, Save, Loader2, Check, ArrowDownLeft, Clock, Calendar, RefreshCw, IdCard, CheckCircle, XCircle, AlertTriangle
+import { Badge } from '@/components/ui/badge';
+import {
+  Settings as SettingsIcon, Bell, Moon, Sun, Monitor,
+  Smartphone, Mail, Shield, RefreshCw, Loader2, Save,
+  IdCard, CheckCircle, XCircle, AlertTriangle, Clock,
+  DollarSign, Calendar, MessageSquare,
 } from 'lucide-react';
 import { clearQueryCache, apiRequest } from '@/lib/queryClient';
 import { toast } from 'sonner';
@@ -24,20 +25,12 @@ interface UserPreferencesData {
   emailNotifications: boolean;
   pushNotifications: boolean;
   transactionAlerts: boolean;
-  priceAlerts: boolean;
   securityAlerts: boolean;
   marketingEmails: boolean;
   monthlySummaryEmails: boolean;
-  displayCurrency: string;
-  language: string;
   theme: string;
-  compactMode: boolean;
-  showBalance: boolean;
-  twoFactorReminder: boolean;
-  requireTransferApproval: boolean;
   transferApprovalTimeout: number;
 }
-
 
 function FinatradesIdSection() {
   const { user } = useAuth();
@@ -49,7 +42,10 @@ function FinatradesIdSection() {
   const { data: idInfo, isLoading: isLoadingInfo } = useQuery({
     queryKey: ['finatrades-id-info'],
     queryFn: async () => {
-      const res = await fetch('/api/finatrades-id/info', { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const res = await fetch('/api/finatrades-id/info', {
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
       if (!res.ok) throw new Error('Failed to fetch Finatrades ID info');
       return res.json();
     },
@@ -57,16 +53,11 @@ function FinatradesIdSection() {
   });
 
   const checkAvailability = async (id: string) => {
-    if (id.length < 4) {
-      setAvailability(null);
-      return;
-    }
-    
+    if (id.length < 4) { setAvailability(null); return; }
     setIsChecking(true);
     try {
       const res = await apiRequest('POST', '/api/finatrades-id/check-availability', { customId: id });
-      const data = await res.json();
-      setAvailability(data);
+      setAvailability(await res.json());
     } catch {
       setAvailability({ available: false, message: 'Failed to check availability' });
     } finally {
@@ -75,29 +66,24 @@ function FinatradesIdSection() {
   };
 
   const setIdMutation = useMutation({
-    mutationFn: async (customId: string) => {
-      const res = await apiRequest('POST', '/api/finatrades-id/set', { customId });
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('POST', '/api/finatrades-id/set', { customId: id });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finatrades-id-info'] });
-      toast.success('Your Finatrades ID has been updated!');
+      toast.success('Finatrades ID updated successfully');
       setCustomId('');
       setAvailability(null);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     setCustomId(value);
-    if (value.length >= 4) {
-      checkAvailability(value);
-    } else {
-      setAvailability(null);
-    }
+    if (value.length >= 4) checkAvailability(value);
+    else setAvailability(null);
   };
 
   return (
@@ -107,28 +93,28 @@ function FinatradesIdSection() {
           <IdCard className="w-5 h-5 text-primary" />
           Finatrades ID
         </CardTitle>
-        <CardDescription>Customize your unique identifier for easy login</CardDescription>
+        <CardDescription>
+          Set a custom ID for easy identification and passwordless login via OTP
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-4 rounded-lg border bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Current Finatrades ID</p>
-              <p className="text-lg font-mono font-semibold text-primary" data-testid="text-current-id">
-                {isLoadingInfo ? '...' : (idInfo?.displayId || user?.finatradesId || 'Not set')}
-              </p>
-            </div>
-            {idInfo?.customFinatradesId && (
-              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Custom</span>
-            )}
+        <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/40">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Your Current ID</p>
+            <p className="text-xl font-mono font-bold text-primary" data-testid="text-current-id">
+              {isLoadingInfo ? '···' : (idInfo?.displayId || user?.finatradesId || '—')}
+            </p>
           </div>
+          {idInfo?.customFinatradesId && (
+            <Badge variant="secondary" className="text-xs">Custom</Badge>
+          )}
         </div>
 
         {!idInfo?.canChange && idInfo?.canChangeIn > 0 && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              You can change your ID again in {idInfo.canChangeIn} days
+              ID can be changed again in {idInfo.canChangeIn} day{idInfo.canChangeIn !== 1 ? 's' : ''}
             </p>
           </div>
         )}
@@ -136,28 +122,30 @@ function FinatradesIdSection() {
         {(idInfo?.canChange || !idInfo?.customFinatradesId) && (
           <div className="space-y-3">
             <div>
-              <Label>Set Custom Finatrades ID</Label>
-              <p className="text-xs text-muted-foreground mb-2">4-15 letters/numbers. Changes allowed once per 30 days.</p>
+              <Label className="text-sm font-medium">Custom Finatrades ID</Label>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                4–15 characters · letters and numbers only · one change per 30 days
+              </p>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">FT-</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm select-none">
+                    FT-
+                  </span>
                   <Input
                     placeholder="YOURNAME"
                     value={customId}
                     onChange={handleInputChange}
                     maxLength={15}
-                    className="pl-12 font-mono uppercase"
+                    className="pl-11 font-mono uppercase tracking-wider"
                     data-testid="input-custom-id"
                   />
                   {isChecking && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                   )}
                   {!isChecking && availability && (
-                    availability.available ? (
-                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
-                    )
+                    availability.available
+                      ? <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                      : <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
                   )}
                 </div>
                 <Button
@@ -169,20 +157,48 @@ function FinatradesIdSection() {
                 </Button>
               </div>
               {availability && (
-                <p className={`text-xs mt-1 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-xs mt-1.5 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
                   {availability.message}
                 </p>
               )}
-            </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                Your Finatrades ID allows passwordless login. After setting a custom ID, you can login using just your ID and an OTP sent to your email.
-              </p>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function NotificationRow({
+  icon: Icon,
+  iconColor,
+  label,
+  description,
+  checked,
+  onCheckedChange,
+  testId,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+  testId: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconColor}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} data-testid={testId} className="shrink-0 ml-4" />
+    </div>
   );
 }
 
@@ -202,10 +218,12 @@ export default function Settings() {
   });
 
   const [localPrefs, setLocalPrefs] = useState<UserPreferencesData | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (data?.preferences) {
       setLocalPrefs(data.preferences);
+      setIsDirty(false);
       if (data.preferences.theme && data.preferences.theme !== theme) {
         setTheme(data.preferences.theme);
       }
@@ -220,14 +238,11 @@ export default function Settings() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['preferences'] });
-      toast.success('Settings saved successfully');
-      if (result.preferences?.theme) {
-        setTheme(result.preferences.theme);
-      }
+      setIsDirty(false);
+      toast.success('Settings saved');
+      if (result.preferences?.theme) setTheme(result.preferences.theme);
     },
-    onError: () => {
-      toast.error('Failed to save settings');
-    },
+    onError: () => toast.error('Failed to save settings'),
   });
 
   const handleSave = () => {
@@ -236,24 +251,24 @@ export default function Settings() {
       emailNotifications: localPrefs.emailNotifications,
       pushNotifications: localPrefs.pushNotifications,
       transactionAlerts: localPrefs.transactionAlerts,
-      priceAlerts: localPrefs.priceAlerts,
       securityAlerts: localPrefs.securityAlerts,
       marketingEmails: localPrefs.marketingEmails,
       monthlySummaryEmails: localPrefs.monthlySummaryEmails,
-      displayCurrency: localPrefs.displayCurrency,
-      language: localPrefs.language,
       theme: localPrefs.theme,
-      compactMode: localPrefs.compactMode,
-      showBalance: localPrefs.showBalance,
-      twoFactorReminder: localPrefs.twoFactorReminder,
-      requireTransferApproval: localPrefs.requireTransferApproval,
       transferApprovalTimeout: localPrefs.transferApprovalTimeout,
     });
   };
 
   const updatePref = <K extends keyof UserPreferencesData>(key: K, value: UserPreferencesData[K]) => {
     setLocalPrefs(prev => prev ? { ...prev, [key]: value } : null);
+    setIsDirty(true);
   };
+
+  const themeOptions = [
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'System', icon: Monitor },
+  ];
 
   if (!user) return null;
 
@@ -269,319 +284,155 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-6 pb-12">
-        
+      <div className="max-w-2xl mx-auto space-y-5 pb-12">
+
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <SettingsIcon className="w-5 h-5 text-white" />
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                <SettingsIcon className="w-4.5 h-4.5 text-white" />
               </div>
               Settings
             </h1>
-            <p className="text-muted-foreground mt-1">Customize your Finatrades experience</p>
+            <p className="text-sm text-muted-foreground mt-0.5 ml-11">Manage your account preferences</p>
           </div>
-          <Button onClick={handleSave} disabled={saveMutation.isPending} data-testid="button-save-settings">
+          <Button
+            onClick={handleSave}
+            disabled={saveMutation.isPending || !isDirty}
+            data-testid="button-save-settings"
+            size="sm"
+          >
             {saveMutation.isPending ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
             ) : (
-              <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+              <><Save className="w-4 h-4 mr-2" />Save</>
             )}
           </Button>
         </div>
 
+        {/* Notifications */}
         <Card data-testid="card-notifications">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" />
-              Notification Preferences
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell className="w-4.5 h-4.5 text-primary" />
+              Notifications
             </CardTitle>
-            <CardDescription>Choose how you want to receive updates</CardDescription>
+            <CardDescription>Choose how you want to be notified</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <Label className="text-base">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive updates via email</p>
-                </div>
-              </div>
-              <Switch 
+          <CardContent className="pt-0">
+            {/* Primary toggles */}
+            <div className="divide-y divide-border/60">
+              <NotificationRow
+                icon={Mail}
+                iconColor="bg-blue-500/10 text-blue-500"
+                label="Email Notifications"
+                description="Receive all account updates via email"
                 checked={localPrefs.emailNotifications}
                 onCheckedChange={(v) => updatePref('emailNotifications', v)}
-                data-testid="switch-email-notifications"
+                testId="switch-email-notifications"
               />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <Label className="text-base">Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Browser and mobile notifications</p>
-                </div>
-              </div>
-              <Switch 
+              <NotificationRow
+                icon={Smartphone}
+                iconColor="bg-violet-500/10 text-violet-500"
+                label="Push Notifications"
+                description="In-browser and mobile push alerts"
                 checked={localPrefs.pushNotifications}
                 onCheckedChange={(v) => updatePref('pushNotifications', v)}
-                data-testid="switch-push-notifications"
+                testId="switch-push-notifications"
               />
             </div>
 
-            <Separator />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Transaction Alerts</span>
-                </div>
-                <Switch 
-                  checked={localPrefs.transactionAlerts}
-                  onCheckedChange={(v) => updatePref('transactionAlerts', v)}
-                  data-testid="switch-transaction-alerts"
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Price Alerts</span>
-                </div>
-                <Switch 
-                  checked={localPrefs.priceAlerts}
-                  onCheckedChange={(v) => updatePref('priceAlerts', v)}
-                  data-testid="switch-price-alerts"
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Security Alerts</span>
-                </div>
-                <Switch 
-                  checked={localPrefs.securityAlerts}
-                  onCheckedChange={(v) => updatePref('securityAlerts', v)}
-                  data-testid="switch-security-alerts"
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Marketing & News</span>
-                </div>
-                <Switch 
-                  checked={localPrefs.marketingEmails}
-                  onCheckedChange={(v) => updatePref('marketingEmails', v)}
-                  data-testid="switch-marketing-emails"
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Monthly Summary</span>
-                </div>
-                <Switch 
-                  checked={localPrefs.monthlySummaryEmails}
-                  onCheckedChange={(v) => updatePref('monthlySummaryEmails', v)}
-                  data-testid="switch-monthly-summary"
-                />
+            {/* Granular toggles */}
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Alert types</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { icon: DollarSign, label: 'Transaction Alerts', key: 'transactionAlerts' as const, color: 'text-green-500' },
+                  { icon: Shield, label: 'Security Alerts', key: 'securityAlerts' as const, color: 'text-red-500' },
+                  { icon: MessageSquare, label: 'Marketing & News', key: 'marketingEmails' as const, color: 'text-orange-500' },
+                  { icon: Calendar, label: 'Monthly Summary', key: 'monthlySummaryEmails' as const, color: 'text-sky-500' },
+                ].map(({ icon: Icon, label, key, color }) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/50 border border-transparent hover:border-border/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-4 h-4 ${color}`} />
+                      <span className="text-sm">{label}</span>
+                    </div>
+                    <Switch
+                      checked={localPrefs[key] as boolean}
+                      onCheckedChange={(v) => updatePref(key, v)}
+                      data-testid={`switch-${key}`}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-display">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Display Settings
+        {/* Appearance */}
+        <Card data-testid="card-appearance">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sun className="w-4.5 h-4.5 text-primary" />
+              Appearance
             </CardTitle>
-            <CardDescription>Customize how information is displayed</CardDescription>
+            <CardDescription>Choose your preferred color theme</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Display Currency</Label>
-                <Select 
-                  value={localPrefs.displayCurrency}
-                  onValueChange={(v) => updatePref('displayCurrency', v)}
-                >
-                  <SelectTrigger data-testid="select-currency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="AED">AED (~~)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Gold is always stored in grams</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select 
-                  value={localPrefs.language}
-                  onValueChange={(v) => updatePref('language', v)}
-                >
-                  <SelectTrigger data-testid="select-language">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <Label className="text-base">Theme</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Button
-                  variant={localPrefs.theme === 'light' ? 'default' : 'outline'}
-                  className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updatePref('theme', 'light')}
-                  data-testid="button-theme-light"
-                >
-                  <Sun className="w-5 h-5" />
-                  <span>Light</span>
-                </Button>
-                <Button
-                  variant={localPrefs.theme === 'dark' ? 'default' : 'outline'}
-                  className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updatePref('theme', 'dark')}
-                  data-testid="button-theme-dark"
-                >
-                  <Moon className="w-5 h-5" />
-                  <span>Dark</span>
-                </Button>
-                <Button
-                  variant={localPrefs.theme === 'system' ? 'default' : 'outline'}
-                  className="h-auto py-4 flex-col gap-2"
-                  onClick={() => updatePref('theme', 'system')}
-                  data-testid="button-theme-system"
-                >
-                  <SettingsIcon className="w-5 h-5" />
-                  <span>System</span>
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div>
-                <Label className="text-base">Compact Mode</Label>
-                <p className="text-sm text-muted-foreground">Show more information in less space</p>
-              </div>
-              <Switch 
-                checked={localPrefs.compactMode}
-                onCheckedChange={(v) => updatePref('compactMode', v)}
-                data-testid="switch-compact-mode"
-              />
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {themeOptions.map(({ value, label, icon: Icon }) => {
+                const active = localPrefs.theme === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => updatePref('theme', value)}
+                    data-testid={`button-theme-${value}`}
+                    className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all cursor-pointer
+                      ${active
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border bg-muted/30 hover:bg-muted/60 hover:border-border'
+                      }`}
+                  >
+                    <Icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`text-sm font-medium ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
 
-
+        {/* Finatrades ID */}
         <FinatradesIdSection />
 
-        <Card data-testid="card-privacy">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-primary" />
-              Privacy Settings
-            </CardTitle>
-            <CardDescription>Control your privacy preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  {localPrefs.showBalance ? (
-                    <Eye className="w-5 h-5 text-primary" />
-                  ) : (
-                    <EyeOff className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div>
-                  <Label className="text-base">Show Balance</Label>
-                  <p className="text-sm text-muted-foreground">Display balance on dashboard</p>
-                </div>
-              </div>
-              <Switch 
-                checked={localPrefs.showBalance}
-                onCheckedChange={(v) => updatePref('showBalance', v)}
-                data-testid="switch-show-balance"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div>
-                  <Label className="text-base">2FA Reminder</Label>
-                  <p className="text-sm text-muted-foreground">Show reminder if 2FA is not enabled</p>
-                </div>
-              </div>
-              <Switch 
-                checked={localPrefs.twoFactorReminder}
-                onCheckedChange={(v) => updatePref('twoFactorReminder', v)}
-                data-testid="switch-2fa-reminder"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* Payment Settings */}
         <Card data-testid="card-payment">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowDownLeft className="w-5 h-5 text-primary" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="w-4.5 h-4.5 text-primary" />
               Payment Settings
             </CardTitle>
-            <CardDescription>Control how you receive payments and transfers</CardDescription>
+            <CardDescription>
+              Incoming transfers require your approval before funds are added to your wallet
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-green-50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <ArrowDownLeft className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-base">Transfer Approval</Label>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                      Always Enabled
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    For your security, you must accept or reject incoming transfers before they are added to your wallet
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <div className="flex items-center gap-3 mb-3">
-                <Clock className="w-5 h-5 text-muted-foreground" />
-                <Label className="text-base">Auto-Expire Timeout</Label>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Pending transfers will automatically be rejected after this time if not accepted
+            <div>
+              <Label className="text-sm font-medium">Auto-reject timeout</Label>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                Pending transfers will be automatically rejected if not reviewed within this time
               </p>
-              <Select 
+              <Select
                 value={String(localPrefs.transferApprovalTimeout)}
                 onValueChange={(v) => updatePref('transferApprovalTimeout', parseInt(v))}
               >
-                <SelectTrigger data-testid="select-transfer-timeout" className="w-full">
+                <SelectTrigger data-testid="select-transfer-timeout" className="w-full sm:w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -593,43 +444,32 @@ export default function Settings() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="p-3 bg-info-muted rounded-lg">
-              <p className="text-sm text-info-muted-foreground">
-                <strong>How it works:</strong> When someone sends you gold or money, you'll receive a notification. 
-                You can then accept (receive funds) or reject (return funds to sender) the transfer from your FinaPay page.
-              </p>
-            </div>
           </CardContent>
         </Card>
 
+        {/* Advanced */}
         <Card data-testid="card-advanced">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-primary" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <RefreshCw className="w-4.5 h-4.5 text-primary" />
               Advanced
             </CardTitle>
-            <CardDescription>Cache and data management options</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <RefreshCw className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <Label className="text-base">Refresh All Data</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Clear cached data and fetch fresh information from the server
-                  </p>
-                </div>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Refresh All Data</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Clear cached data and reload fresh information from the server
+                </p>
               </div>
-              <Button 
+              <Button
                 variant="outline"
+                size="sm"
                 onClick={() => {
                   clearQueryCache();
                   queryClient.invalidateQueries();
-                  toast.success('All data refreshed successfully');
+                  toast.success('Data refreshed');
                   window.location.reload();
                 }}
                 data-testid="button-refresh-data"
@@ -638,14 +478,9 @@ export default function Settings() {
                 Refresh
               </Button>
             </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                Use this if you notice outdated information on your dashboard or wallet balances. 
-                This will reload all your account data from the server.
-              </p>
-            </div>
           </CardContent>
         </Card>
+
       </div>
     </DashboardLayout>
   );
