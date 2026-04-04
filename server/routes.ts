@@ -24,6 +24,7 @@ import {
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments, dealMilestones, dealDiscrepancies, dealRooms as dealRoomsTable,
+  lcTerms, dealRoomDocumentMetadata, kycSubmissions, userRiskProfiles,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
   tradeRequests, tradeProposals, settlementHolds, tradeDocuments,
@@ -17013,16 +17014,42 @@ export async function registerRoutes(
       const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
       if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
 
-      const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
-      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can update LC lifecycle status" });
+      // Determine user role in this deal room
+      let userRoleInDeal: 'importer' | 'exporter' | 'admin' | null = null;
+      if (isAdmin || dealRoom.assignedAdminId === sessionUserId) userRoleInDeal = 'admin';
+      else if (dealRoom.importerUserId === sessionUserId) userRoleInDeal = 'importer';
+      else if (dealRoom.exporterUserId === sessionUserId) userRoleInDeal = 'exporter';
+      if (!userRoleInDeal) return res.status(403).json({ message: "Not authorized to update this deal room" });
 
       const { lcLifecycleStatus, notes } = req.body;
-      const validStages = [
-        'Contract Signed', 'LC Issued', 'Docs Submitted', 'Under Review',
-        'Discrepancy', 'Approved', 'Funds Released', 'Closed',
-      ];
-      if (!validStages.includes(lcLifecycleStatus)) {
+
+      // 9-stage state machine with role-based transition rules
+      type TransitionRule = { allowedRoles: string[]; fromStages: string[] };
+      const TRANSITION_RULES: Record<string, TransitionRule> = {
+        'LC Issued':             { allowedRoles: ['admin'], fromStages: ['Draft'] },
+        'Docs Submitted':        { allowedRoles: ['exporter', 'admin'], fromStages: ['LC Issued'] },
+        'Docs Under Review':     { allowedRoles: ['admin'], fromStages: ['Docs Submitted', 'Discrepancy Resolved'] },
+        'Discrepancy Raised':    { allowedRoles: ['admin'], fromStages: ['Docs Under Review'] },
+        'Discrepancy Resolved':  { allowedRoles: ['admin', 'exporter'], fromStages: ['Discrepancy Raised'] },
+        'Approved':              { allowedRoles: ['admin'], fromStages: ['Docs Under Review', 'Discrepancy Resolved'] },
+        'Payment Triggered':     { allowedRoles: ['importer', 'admin'], fromStages: ['Approved'] },
+        'Closed':                { allowedRoles: ['admin'], fromStages: ['Payment Triggered'] },
+      };
+
+      const allValidStages = ['Draft', 'LC Issued', 'Docs Submitted', 'Docs Under Review', 'Discrepancy Raised', 'Discrepancy Resolved', 'Approved', 'Payment Triggered', 'Closed'];
+      if (!allValidStages.includes(lcLifecycleStatus)) {
         return res.status(400).json({ message: "Invalid LC lifecycle status" });
+      }
+
+      const rule = TRANSITION_RULES[lcLifecycleStatus];
+      if (rule) {
+        const currentStage = dealRoom.lcLifecycleStatus || 'Draft';
+        if (!rule.fromStages.includes(currentStage)) {
+          return res.status(400).json({ message: `Cannot transition to ${lcLifecycleStatus} from ${currentStage}` });
+        }
+        if (!rule.allowedRoles.includes(userRoleInDeal)) {
+          return res.status(403).json({ message: `Only ${rule.allowedRoles.join(' or ')} can trigger this transition` });
+        }
       }
 
       await db.update(dealRoomsTable).set({
@@ -17031,14 +17058,12 @@ export async function registerRoutes(
       }).where(eq(dealRoomsTable.id, req.params.dealRoomId));
 
       // Auto-create milestone
-      const userRole = dealRoom.importerUserId === sessionUserId ? 'importer'
-        : dealRoom.exporterUserId === sessionUserId ? 'exporter' : 'admin';
       await db.insert(dealMilestones).values({
         id: crypto.randomUUID(),
         dealRoomId: req.params.dealRoomId,
         milestoneName: lcLifecycleStatus,
         completedByUserId: sessionUserId,
-        completedByRole: userRole,
+        completedByRole: userRoleInDeal,
         notes: notes || null,
       });
 
@@ -17217,6 +17242,193 @@ export async function registerRoutes(
       res.json({ discrepancy: resolved, message: "Discrepancy resolved" });
     } catch (error) {
       res.status(400).json({ message: "Failed to resolve discrepancy" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - LC TERMS (WIZARD)
+  // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/lc-terms", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const [terms] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+      res.json({ lcTerms: terms || null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch LC terms" });
+    }
+  });
+
+  app.post("/api/deal-rooms/:dealRoomId/lc-terms", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Only importer or admin can set LC terms" });
+      }
+      const { lcType, expiryDate, expiryPlace, amount, currency, partialShipment, transshipment, requiredDocuments } = req.body;
+      const existing = await db.select({ id: lcTerms.id }).from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+      let result;
+      if (existing.length > 0) {
+        [result] = await db.update(lcTerms).set({
+          lcType, expiryDate, expiryPlace, amount, currency, partialShipment, transshipment,
+          requiredDocuments: requiredDocuments || null, updatedAt: new Date(),
+        }).where(eq(lcTerms.dealRoomId, req.params.dealRoomId)).returning();
+      } else {
+        [result] = await db.insert(lcTerms).values({
+          id: crypto.randomUUID(),
+          dealRoomId: req.params.dealRoomId,
+          lcType: lcType || 'Irrevocable',
+          expiryDate: expiryDate || null,
+          expiryPlace: expiryPlace || null,
+          amount: amount || null,
+          currency: currency || 'USD',
+          partialShipment: partialShipment || false,
+          transshipment: transshipment || false,
+          requiredDocuments: requiredDocuments || null,
+        }).returning();
+      }
+      res.json({ lcTerms: result, message: "LC terms saved" });
+    } catch (error) {
+      console.error('[DealRoom] LC terms error:', error);
+      res.status(400).json({ message: "Failed to save LC terms" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - COUNTERPARTY RISK
+  // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/counterparty-risk", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const fetchPartyRisk = async (userId: string) => {
+        const [user] = await db.select({
+          id: users.id, email: users.email, kycStatus: users.kycStatus,
+          country: users.country, firstName: users.firstName, lastName: users.lastName,
+          finatradesId: users.finatradesId,
+        }).from(users).where(eq(users.id, userId));
+        if (!user) return null;
+
+        const [kyc] = await db.select({
+          riskLevel: kycSubmissions.riskLevel, riskScore: kycSubmissions.riskScore,
+          isSanctioned: kycSubmissions.isSanctioned, isPep: kycSubmissions.isPep,
+          country: kycSubmissions.country, status: kycSubmissions.status,
+          screeningResults: kycSubmissions.screeningResults,
+          screeningStatus: kycSubmissions.screeningStatus,
+        }).from(kycSubmissions).where(eq(kycSubmissions.userId, userId))
+          .orderBy(desc(kycSubmissions.createdAt)).limit(1);
+
+        const [riskProfile] = await db.select({
+          overallRiskScore: userRiskProfiles.overallRiskScore,
+          riskLevel: userRiskProfiles.riskLevel,
+          geographyRisk: userRiskProfiles.geographyRisk,
+          isSanctioned: userRiskProfiles.isSanctioned,
+          isPep: userRiskProfiles.isPep,
+        }).from(userRiskProfiles).where(eq(userRiskProfiles.userId, userId)).limit(1);
+
+        // Calculate KYC completion %
+        const kycFields = ['fullName', 'dateOfBirth', 'nationality', 'country', 'address', 'companyName', 'registrationNumber'];
+        const kycCompletion = kyc ? Math.round((kycFields.filter(f => (kyc as any)[f]).length / kycFields.length) * 100) : 0;
+
+        return {
+          userId: user.id,
+          email: user.email,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.finatradesId || user.email,
+          kycStatus: user.kycStatus,
+          country: user.country || kyc?.country || 'Unknown',
+          amlRiskLevel: riskProfile?.riskLevel || kyc?.riskLevel || 'Low',
+          riskScore: isAdmin ? (riskProfile?.overallRiskScore ?? kyc?.riskScore ?? 0) : undefined,
+          isSanctioned: kyc?.isSanctioned || riskProfile?.isSanctioned || false,
+          isPep: kyc?.isPep || riskProfile?.isPep || false,
+          sanctionsStatus: (kyc?.isSanctioned || riskProfile?.isSanctioned) ? 'Flagged' : 'Clear',
+          jurisdictionRisk: riskProfile?.geographyRisk ? (riskProfile.geographyRisk > 70 ? 'High' : riskProfile.geographyRisk > 40 ? 'Medium' : 'Low') : 'Unknown',
+          kycCompletion,
+        };
+      };
+
+      const [importerRisk, exporterRisk] = await Promise.all([
+        fetchPartyRisk(dealRoom.importerUserId),
+        fetchPartyRisk(dealRoom.exporterUserId),
+      ]);
+
+      res.json({ importerRisk, exporterRisk });
+    } catch (error) {
+      console.error('[DealRoom] Counterparty risk error:', error);
+      res.status(400).json({ message: "Failed to fetch counterparty risk" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - DOCUMENT METADATA (WR + POL)
+  // ============================================================================
+
+  app.post("/api/deal-rooms/:dealRoomId/documents/:documentId/metadata", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+      if (dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        const sessionUser = await storage.getUser(sessionUserId);
+        if (sessionUser?.role !== 'admin') return res.status(403).json({ message: "Not authorized" });
+      }
+      const {
+        warehouseName, wrNumber, goldQuantityGrams, issuanceDate, expiryDate,
+        carrierName, blNumber, portOfLoading, portOfDischarge, estimatedDeparture, estimatedArrival,
+      } = req.body;
+      const existing = await db.select({ id: dealRoomDocumentMetadata.id }).from(dealRoomDocumentMetadata)
+        .where(eq(dealRoomDocumentMetadata.documentId, req.params.documentId));
+      let result;
+      if (existing.length > 0) {
+        [result] = await db.update(dealRoomDocumentMetadata).set({
+          warehouseName, wrNumber, goldQuantityGrams, issuanceDate, expiryDate,
+          carrierName, blNumber, portOfLoading, portOfDischarge, estimatedDeparture, estimatedArrival,
+          updatedAt: new Date(),
+        }).where(eq(dealRoomDocumentMetadata.documentId, req.params.documentId)).returning();
+      } else {
+        [result] = await db.insert(dealRoomDocumentMetadata).values({
+          id: crypto.randomUUID(),
+          documentId: req.params.documentId,
+          warehouseName, wrNumber, goldQuantityGrams, issuanceDate, expiryDate,
+          carrierName, blNumber, portOfLoading, portOfDischarge, estimatedDeparture, estimatedArrival,
+        }).returning();
+      }
+      res.json({ metadata: result, message: "Document metadata saved" });
+    } catch (error) {
+      console.error('[DealRoom] Document metadata error:', error);
+      res.status(400).json({ message: "Failed to save document metadata" });
+    }
+  });
+
+  app.get("/api/deal-rooms/:dealRoomId/documents/:documentId/metadata", ensureAuthenticated, async (req, res) => {
+    try {
+      const [metadata] = await db.select().from(dealRoomDocumentMetadata)
+        .where(eq(dealRoomDocumentMetadata.documentId, req.params.documentId));
+      res.json({ metadata: metadata || null });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch document metadata" });
     }
   });
 

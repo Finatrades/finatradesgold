@@ -18,6 +18,8 @@ import {
   Shield, Lock, AlertTriangle, XCircle, Video,
   CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp,
   Upload, Eye, ClipboardList, Flag, Plus, RotateCcw, ArrowRight,
+  ShieldAlert, ShieldCheck, Info, Layers, Warehouse, Ship,
+  ChevronRight, Star,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -30,6 +32,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 
 // --- Types ---
 
@@ -130,6 +133,34 @@ interface DealDiscrepancy {
   createdAt: string;
 }
 
+interface LcTermsData {
+  id: string;
+  dealRoomId: string;
+  lcType: string;
+  expiryDate: string | null;
+  expiryPlace: string | null;
+  amount: string | null;
+  currency: string | null;
+  partialShipment: boolean | null;
+  transshipment: boolean | null;
+  requiredDocuments: string[] | null;
+}
+
+interface PartyRisk {
+  userId: string;
+  email: string;
+  name: string;
+  kycStatus: string;
+  country: string;
+  amlRiskLevel: string;
+  riskScore?: number;
+  isSanctioned: boolean;
+  isPep: boolean;
+  sanctionsStatus: string;
+  jurisdictionRisk: string;
+  kycCompletion: number;
+}
+
 interface DealRoomProps {
   dealRoomId: string;
   userRole: 'importer' | 'exporter' | 'admin';
@@ -139,17 +170,49 @@ interface DealRoomProps {
 // --- Constants ---
 
 const LC_STAGES = [
-  'Contract Signed',
+  'Draft',
   'LC Issued',
   'Docs Submitted',
-  'Under Review',
-  'Discrepancy',
+  'Docs Under Review',
+  'Discrepancy Raised',
+  'Discrepancy Resolved',
   'Approved',
-  'Funds Released',
+  'Payment Triggered',
   'Closed',
 ] as const;
 
 type LcStage = typeof LC_STAGES[number];
+
+// Stage actor labels
+const STAGE_ACTOR: Record<LcStage, { actor: string; color: string; description: string }> = {
+  'Draft':                { actor: 'Admin',    color: 'blue',   description: 'Admin will issue the Letter of Credit' },
+  'LC Issued':            { actor: 'Exporter', color: 'green',  description: 'Exporter must submit trade documents' },
+  'Docs Submitted':       { actor: 'Admin',    color: 'blue',   description: 'Admin will begin document review' },
+  'Docs Under Review':    { actor: 'Admin',    color: 'amber',  description: 'Admin is reviewing all documents' },
+  'Discrepancy Raised':   { actor: 'Exporter', color: 'red',    description: 'Exporter must resolve flagged discrepancies' },
+  'Discrepancy Resolved': { actor: 'Admin',    color: 'purple', description: 'Admin will re-review resolved documents' },
+  'Approved':             { actor: 'Importer', color: 'teal',   description: 'Importer must trigger payment release' },
+  'Payment Triggered':    { actor: 'Admin',    color: 'blue',   description: 'Admin will confirm payment and close deal' },
+  'Closed':               { actor: 'Done',     color: 'gray',   description: 'Trade completed and deal room closed' },
+};
+
+// Role-based allowed transitions
+const STAGE_TRANSITIONS: Record<string, { role: 'admin' | 'exporter' | 'importer' | 'admin_exporter' | 'admin_importer'; toStage: LcStage; label: string; variant?: string }[]> = {
+  'Draft':                [{ role: 'admin', toStage: 'LC Issued', label: 'Issue LC' }],
+  'LC Issued':            [{ role: 'exporter', toStage: 'Docs Submitted', label: 'Submit Documents' }],
+  'Docs Submitted':       [{ role: 'admin', toStage: 'Docs Under Review', label: 'Begin Review' }],
+  'Docs Under Review':    [
+    { role: 'admin', toStage: 'Approved', label: 'Approve All Docs', variant: 'success' },
+    { role: 'admin', toStage: 'Discrepancy Raised', label: 'Raise Discrepancy', variant: 'destructive' },
+  ],
+  'Discrepancy Raised':   [{ role: 'admin_exporter', toStage: 'Discrepancy Resolved', label: 'Mark Resolved' }],
+  'Discrepancy Resolved': [
+    { role: 'admin', toStage: 'Approved', label: 'Approve', variant: 'success' },
+    { role: 'admin', toStage: 'Docs Under Review', label: 'Re-review Docs' },
+  ],
+  'Approved':             [{ role: 'admin_importer', toStage: 'Payment Triggered', label: 'Trigger Payment' }],
+  'Payment Triggered':    [{ role: 'admin', toStage: 'Closed', label: 'Confirm & Close' }],
+};
 
 interface RequiredDocument {
   type: string;
@@ -171,25 +234,34 @@ const REQUIRED_DOCUMENTS: RequiredDocument[] = [
 ];
 
 const DISCREPANCY_REASONS = [
-  'Amount Mismatch',
-  'Date Discrepancy',
-  'Port of Loading Wrong',
-  'Missing Signature',
-  'Description Mismatch',
-  'Document Expired',
-  'Incorrect Document Type',
-  'Other',
+  'Amount Mismatch', 'Date Discrepancy', 'Port of Loading Wrong',
+  'Missing Signature', 'Description Mismatch', 'Document Expired',
+  'Incorrect Document Type', 'Other',
 ] as const;
 
+// --- Helpers ---
+
+function userDisplayName(u: { finatradesId: string | null; email: string; firstName: string | null; lastName: string | null } | null | undefined): string {
+  if (!u) return 'Unknown';
+  if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
+  return u.finatradesId || u.email;
+}
+
+function getRoleColor(role: string) {
+  if (role === 'importer') return 'bg-blue-500';
+  if (role === 'exporter') return 'bg-green-500';
+  if (role === 'admin') return 'bg-purple-500';
+  return 'bg-gray-500';
+}
+
 // --- LC Milestone Strip ---
-
 function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | null; isClosed: boolean }) {
-  const stage = (currentStage || 'Contract Signed') as LcStage;
+  const normalizedStage = currentStage || 'Draft';
+  const stage = normalizedStage as LcStage;
   const currentIndex = LC_STAGES.indexOf(stage);
-
   return (
     <div className="border-b bg-muted/30 px-4 py-3" data-testid="lc-milestone-strip">
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
         {LC_STAGES.map((s, i) => {
           const isCompleted = i < currentIndex || (isClosed && i <= currentIndex);
           const isActive = i === currentIndex && !isClosed;
@@ -203,14 +275,14 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
                 }`}>
                   {isCompleted ? <Check className="w-3 h-3" /> : i + 1}
                 </div>
-                <span className={`text-[9px] font-medium whitespace-nowrap max-w-[60px] text-center leading-tight ${
+                <span className={`text-[9px] font-medium whitespace-nowrap max-w-[58px] text-center leading-tight ${
                   isCompleted ? 'text-emerald-600' : isActive ? 'text-purple-600' : 'text-muted-foreground'
                 }`}>
                   {s}
                 </span>
               </div>
               {i < LC_STAGES.length - 1 && (
-                <div className={`h-0.5 flex-1 min-w-[12px] mt-[-10px] ${isCompleted ? 'bg-emerald-400' : 'bg-border'}`} />
+                <div className={`h-0.5 flex-1 min-w-[8px] mt-[-10px] ${isCompleted ? 'bg-emerald-400' : 'bg-border'}`} />
               )}
             </React.Fragment>
           );
@@ -220,6 +292,36 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
   );
 }
 
+// --- Status Banner ---
+function StageBanner({ stage, userRole, isClosed }: { stage: LcStage; userRole: 'importer' | 'exporter' | 'admin'; isClosed: boolean }) {
+  if (isClosed) return null;
+  const info = STAGE_ACTOR[stage];
+  const isMyTurn = info.actor === 'Admin' && userRole === 'admin'
+    || info.actor === 'Exporter' && userRole === 'exporter'
+    || info.actor === 'Importer' && userRole === 'importer'
+    || info.actor === 'Done';
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+    green: 'bg-green-50 border-green-200 text-green-700',
+    amber: 'bg-amber-50 border-amber-200 text-amber-700',
+    red: 'bg-red-50 border-red-200 text-red-700',
+    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    teal: 'bg-teal-50 border-teal-200 text-teal-700',
+    gray: 'bg-gray-50 border-gray-200 text-gray-700',
+  };
+  const cls = colorMap[info.color] || colorMap.blue;
+  return (
+    <div className={`px-4 py-2 border-b flex items-center gap-2 text-sm ${cls}`} data-testid="stage-banner">
+      {isMyTurn ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
+      <span>
+        <strong>{isMyTurn ? 'Your turn:' : `Waiting for ${info.actor}:`}</strong>{' '}
+        {info.description}
+      </span>
+    </div>
+  );
+}
+
+// --- DocumentStatusBadge ---
 function DocumentStatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; className: string }> = {
     Missing:        { label: 'Missing',      className: 'bg-gray-100 text-gray-500 border-gray-200' },
@@ -231,27 +333,28 @@ function DocumentStatusBadge({ status }: { status: string }) {
     Expired:        { label: 'Expired',      className: 'bg-orange-50 text-orange-600 border-orange-200' },
   };
   const c = cfg[status] || cfg['Missing'];
-  return (
-    <Badge variant="outline" className={`text-xs font-medium ${c.className}`}>
-      {c.label}
-    </Badge>
-  );
+  return <Badge variant="outline" className={`text-xs font-medium ${c.className}`}>{c.label}</Badge>;
 }
 
-// --- Helper: format user display name ---
-function userDisplayName(u: { finatradesId: string | null; email: string; firstName: string | null; lastName: string | null } | null | undefined): string {
-  if (!u) return 'Unknown';
-  if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
-  return u.finatradesId || u.email;
+// --- Risk Level Badge ---
+function RiskBadge({ level }: { level: string }) {
+  const cfg: Record<string, string> = {
+    Low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    Medium: 'bg-amber-50 text-amber-700 border-amber-200',
+    High: 'bg-red-50 text-red-700 border-red-200',
+    Critical: 'bg-red-100 text-red-900 border-red-300',
+    Unknown: 'bg-gray-50 text-gray-500 border-gray-200',
+  };
+  return <Badge variant="outline" className={`text-xs ${cfg[level] || cfg.Unknown}`}>{level}</Badge>;
 }
 
-// --- Main Component ---
-
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Chat state
   const [room, setRoom] = useState<DealRoomData | null>(null);
   const [messages, setMessages] = useState<DealRoomMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -264,6 +367,8 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const checklistFileInputRef = useRef<HTMLInputElement>(null);
+  const wrFileInputRef = useRef<HTMLInputElement>(null);
+  const polFileInputRef = useRef<HTMLInputElement>(null);
 
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [allAcceptances, setAllAcceptances] = useState<AgreementAcceptance[]>([]);
@@ -278,7 +383,6 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [showDisclaimerSection, setShowDisclaimerSection] = useState(false);
   const [selectedAcceptance, setSelectedAcceptance] = useState<AgreementAcceptance | null>(null);
 
-  // Documents state
   const [documents, setDocuments] = useState<DealRoomDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [reviewDocId, setReviewDocId] = useState<string | null>(null);
@@ -289,14 +393,13 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const [uploadParentId, setUploadParentId] = useState<string | null>(null);
 
-  // Timeline / LC Status state
   const [milestones, setMilestones] = useState<DealMilestone[]>([]);
   const [milestonesLoading, setMilestonesLoading] = useState(false);
   const [lcUpdateDialog, setLcUpdateDialog] = useState(false);
+  const [lcTargetStage, setLcTargetStage] = useState<LcStage | null>(null);
   const [lcNotes, setLcNotes] = useState('');
   const [updatingLc, setUpdatingLc] = useState(false);
 
-  // Discrepancies state
   const [discrepancies, setDiscrepancies] = useState<DealDiscrepancy[]>([]);
   const [discrepanciesLoading, setDiscrepanciesLoading] = useState(false);
   const [raiseDiscrepancyDialog, setRaiseDiscrepancyDialog] = useState(false);
@@ -308,12 +411,42 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolvingDiscrepancy, setResolvingDiscrepancy] = useState(false);
 
+  // LC Wizard state
+  const [lcTermsData, setLcTermsData] = useState<LcTermsData | null>(null);
+  const [showLcWizard, setShowLcWizard] = useState(false);
+  const [lcWizardStep, setLcWizardStep] = useState(1);
+  const [lcWizardForm, setLcWizardForm] = useState({
+    lcType: 'Irrevocable',
+    expiryDate: '',
+    expiryPlace: '',
+    amount: '',
+    currency: 'USD',
+    partialShipment: false,
+    transshipment: false,
+    requiredDocuments: REQUIRED_DOCUMENTS.map(d => d.type),
+  });
+  const [savingLcTerms, setSavingLcTerms] = useState(false);
+
+  // Counterparty Risk state
+  const [importerRisk, setImporterRisk] = useState<PartyRisk | null>(null);
+  const [exporterRisk, setExporterRisk] = useState<PartyRisk | null>(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+
+  // WR / POL structured upload state
+  const [showWrForm, setShowWrForm] = useState(false);
+  const [showPolForm, setShowPolForm] = useState(false);
+  const [wrForm, setWrForm] = useState({ warehouseName: '', wrNumber: '', goldQuantityGrams: '', issuanceDate: '', expiryDate: '' });
+  const [polForm, setPolForm] = useState({ carrierName: '', blNumber: '', portOfLoading: '', portOfDischarge: '', estimatedDeparture: '', estimatedArrival: '' });
+  const [uploadingWr, setUploadingWr] = useState(false);
+  const [uploadingPol, setUploadingPol] = useState(false);
+  const [pendingWrFile, setPendingWrFile] = useState<File | null>(null);
+  const [pendingPolFile, setPendingPolFile] = useState<File | null>(null);
+
   const [activeTab, setActiveTab] = useState('chat');
 
-  // Derived: next LC stage for progression
-  const currentLcStage = (room?.lcLifecycleStatus || 'Contract Signed') as LcStage;
+  const currentLcStage = ((room?.lcLifecycleStatus) || 'Draft') as LcStage;
   const currentLcIndex = LC_STAGES.indexOf(currentLcStage);
-  const nextLcStage: LcStage | null = currentLcIndex < LC_STAGES.length - 1 ? LC_STAGES[currentLcIndex + 1] : null;
+  const validCurrentIndex = currentLcIndex < 0 ? 0 : currentLcIndex;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -327,9 +460,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         setRoom(data.room);
         setAdminDisclaimer(data.room.adminDisclaimer || '');
       }
-    } catch (error) {
-      console.error('Failed to fetch deal room:', error);
-    }
+    } catch {}
   }, [dealRoomId]);
 
   const fetchAgreementStatus = useCallback(async () => {
@@ -342,9 +473,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         setAllAcceptances(data.allAcceptances || []);
         if (!data.hasAccepted && !room?.isClosed) setShowTermsDialog(true);
       }
-    } catch (error) {
-      console.error('Failed to fetch agreement:', error);
-    }
+    } catch {}
   }, [dealRoomId, user, room?.isClosed]);
 
   const fetchMessages = useCallback(async () => {
@@ -356,9 +485,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         setMessages(data.messages);
         scrollToBottom();
       }
-    } catch (error) {
-      console.error('Failed to fetch messages:', error);
-    } finally {
+    } catch {} finally {
       setLoading(false);
     }
   }, [dealRoomId, scrollToBottom, user]);
@@ -371,9 +498,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         const data = await response.json();
         setDocuments(data.documents || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch documents:', error);
-    } finally {
+    } catch {} finally {
       setDocsLoading(false);
     }
   }, [dealRoomId]);
@@ -386,9 +511,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         const data = await response.json();
         setMilestones(data.milestones || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch milestones:', error);
-    } finally {
+    } catch {} finally {
       setMilestonesLoading(false);
     }
   }, [dealRoomId]);
@@ -401,10 +524,36 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         const data = await response.json();
         setDiscrepancies(data.discrepancies || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch discrepancies:', error);
-    } finally {
+    } catch {} finally {
       setDiscrepanciesLoading(false);
+    }
+  }, [dealRoomId]);
+
+  const fetchLcTerms = useCallback(async () => {
+    try {
+      const response = await apiRequest('GET', `/api/deal-rooms/${dealRoomId}/lc-terms`);
+      if (response.ok) {
+        const data = await response.json();
+        setLcTermsData(data.lcTerms);
+        // Show wizard if no terms exist and user is importer or admin
+        if (!data.lcTerms && (userRole === 'importer' || userRole === 'admin')) {
+          setShowLcWizard(true);
+        }
+      }
+    } catch {}
+  }, [dealRoomId, userRole]);
+
+  const fetchRisk = useCallback(async () => {
+    setRiskLoading(true);
+    try {
+      const response = await apiRequest('GET', `/api/deal-rooms/${dealRoomId}/counterparty-risk`);
+      if (response.ok) {
+        const data = await response.json();
+        setImporterRisk(data.importerRisk);
+        setExporterRisk(data.exporterRisk);
+      }
+    } catch {} finally {
+      setRiskLoading(false);
     }
   }, [dealRoomId]);
 
@@ -415,13 +564,15 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     fetchDocuments();
     fetchMilestones();
     fetchDiscrepancies();
-  }, [fetchRoom, fetchMessages, fetchAgreementStatus, fetchDocuments, fetchMilestones, fetchDiscrepancies]);
+    fetchLcTerms();
+  }, [fetchRoom, fetchMessages, fetchAgreementStatus, fetchDocuments, fetchMilestones, fetchDiscrepancies, fetchLcTerms]);
 
   useEffect(() => {
     if (activeTab === 'documents') fetchDocuments();
     else if (activeTab === 'timeline') fetchMilestones();
     else if (activeTab === 'discrepancies') fetchDiscrepancies();
-  }, [activeTab, fetchDocuments, fetchMilestones, fetchDiscrepancies]);
+    else if (activeTab === 'risk') fetchRisk();
+  }, [activeTab, fetchDocuments, fetchMilestones, fetchDiscrepancies, fetchRisk]);
 
   // Socket
   useEffect(() => {
@@ -629,17 +780,16 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     }
   };
 
-  // Advance to next stage only (progression-oriented)
-  const advanceLcStage = async () => {
-    if (!nextLcStage) return;
+  const triggerLcTransition = async (targetStage: LcStage, notes?: string) => {
     setUpdatingLc(true);
     try {
       const res = await apiRequest('PATCH', `/api/deal-rooms/${dealRoomId}/lc-status`, {
-        lcLifecycleStatus: nextLcStage, notes: lcNotes,
+        lcLifecycleStatus: targetStage, notes: notes || lcNotes,
       });
       if (res.ok) {
-        toast({ title: 'Stage advanced', description: `→ ${nextLcStage}` });
+        toast({ title: 'Stage updated', description: `→ ${targetStage}` });
         setLcUpdateDialog(false);
+        setLcTargetStage(null);
         setLcNotes('');
         await fetchRoom();
         await fetchMilestones();
@@ -648,7 +798,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         toast({ title: 'Error', description: err.message, variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to advance stage', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to update stage', variant: 'destructive' });
     } finally {
       setUpdatingLc(false);
     }
@@ -704,11 +854,119 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     }
   };
 
-  const getRoleColor = (role: string) => {
-    if (role === 'importer') return 'bg-blue-500';
-    if (role === 'exporter') return 'bg-green-500';
-    if (role === 'admin') return 'bg-purple-500';
-    return 'bg-gray-500';
+  const saveLcTerms = async () => {
+    setSavingLcTerms(true);
+    try {
+      const res = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/lc-terms`, {
+        ...lcWizardForm,
+        amount: lcWizardForm.amount || null,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLcTermsData(data.lcTerms);
+        setShowLcWizard(false);
+        toast({ title: 'LC Terms saved', description: 'Letter of Credit terms recorded' });
+      } else {
+        const err = await res.json();
+        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save LC terms', variant: 'destructive' });
+    } finally {
+      setSavingLcTerms(false);
+    }
+  };
+
+  // WR Upload
+  const handleWrFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setPendingWrFile(file);
+    if (wrFileInputRef.current) wrFileInputRef.current.value = '';
+  };
+
+  const handlePolFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setPendingPolFile(file);
+    if (polFileInputRef.current) polFileInputRef.current.value = '';
+  };
+
+  const submitWrUpload = async () => {
+    if (!pendingWrFile) { toast({ title: 'Select a file first', variant: 'destructive' }); return; }
+    setUploadingWr(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', pendingWrFile);
+      const uploadRes = await fetch('/api/documents/upload', {
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData, credentials: 'include',
+      });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const uploadData = await uploadRes.json();
+      const docRes = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents`, {
+        documentType: 'Warehouse Receipt',
+        fileName: pendingWrFile.name,
+        fileUrl: uploadData.url,
+        fileSize: pendingWrFile.size,
+      });
+      if (!docRes.ok) throw new Error('Failed to register document');
+      const docData = await docRes.json();
+      await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents/${docData.document.id}/metadata`, {
+        warehouseName: wrForm.warehouseName || null,
+        wrNumber: wrForm.wrNumber || null,
+        goldQuantityGrams: wrForm.goldQuantityGrams || null,
+        issuanceDate: wrForm.issuanceDate || null,
+        expiryDate: wrForm.expiryDate || null,
+      });
+      toast({ title: 'Warehouse Receipt uploaded', description: 'WR submitted for review' });
+      setShowWrForm(false);
+      setPendingWrFile(null);
+      setWrForm({ warehouseName: '', wrNumber: '', goldQuantityGrams: '', issuanceDate: '', expiryDate: '' });
+      await fetchDocuments();
+    } catch {
+      toast({ title: 'Upload failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setUploadingWr(false);
+    }
+  };
+
+  const submitPolUpload = async () => {
+    if (!pendingPolFile) { toast({ title: 'Select a file first', variant: 'destructive' }); return; }
+    setUploadingPol(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', pendingPolFile);
+      const uploadRes = await fetch('/api/documents/upload', {
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData, credentials: 'include',
+      });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const uploadData = await uploadRes.json();
+      const docRes = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents`, {
+        documentType: 'Proof of Lading',
+        fileName: pendingPolFile.name,
+        fileUrl: uploadData.url,
+        fileSize: pendingPolFile.size,
+      });
+      if (!docRes.ok) throw new Error('Failed to register document');
+      const docData = await docRes.json();
+      await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents/${docData.document.id}/metadata`, {
+        carrierName: polForm.carrierName || null,
+        blNumber: polForm.blNumber || null,
+        portOfLoading: polForm.portOfLoading || null,
+        portOfDischarge: polForm.portOfDischarge || null,
+        estimatedDeparture: polForm.estimatedDeparture || null,
+        estimatedArrival: polForm.estimatedArrival || null,
+      });
+      toast({ title: 'Proof of Lading uploaded', description: 'POL submitted for review' });
+      setShowPolForm(false);
+      setPendingPolFile(null);
+      setPolForm({ carrierName: '', blNumber: '', portOfLoading: '', portOfDischarge: '', estimatedDeparture: '', estimatedArrival: '' });
+      await fetchDocuments();
+    } catch {
+      toast({ title: 'Upload failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setUploadingPol(false);
+    }
   };
 
   const getLatestDocByType = (docType: string): DealRoomDocument | undefined => {
@@ -731,10 +989,31 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     return false;
   };
 
+  // Role-based action gate check
+  const getAllowedTransitions = () => {
+    const transitions = STAGE_TRANSITIONS[currentLcStage] || [];
+    return transitions.filter(t => {
+      if (t.role === 'admin') return userRole === 'admin';
+      if (t.role === 'exporter') return userRole === 'exporter';
+      if (t.role === 'importer') return userRole === 'importer';
+      if (t.role === 'admin_exporter') return userRole === 'admin' || userRole === 'exporter';
+      if (t.role === 'admin_importer') return userRole === 'admin' || userRole === 'importer';
+      return false;
+    });
+  };
+
+  // Check if importer can proceed (all docs approved + LC in Approved)
+  const allDocsApproved = REQUIRED_DOCUMENTS.every(rd => {
+    const doc = getLatestDocByType(rd.type);
+    return doc && ['Approved', 'Verified'].includes(doc.status);
+  });
+  const canTriggerPayment = currentLcStage === 'Approved' && allDocsApproved && (userRole === 'importer' || userRole === 'admin');
+
   const canCloseRoom = userRole === 'admin' && room && !room.isClosed &&
     room.tradeRequest && ['Settled', 'Completed', 'Cancelled'].includes(room.tradeRequest.status);
 
   const openDiscrepancies = discrepancies.filter(d => d.status === 'open');
+  const allowedTransitions = getAllowedTransitions();
 
   const termsContent = `FINABRIDGE TRADE FINANCE - TERMS AND CONDITIONS
 
@@ -780,19 +1059,173 @@ Version 1.0 - Effective Date: January 2025`.trim();
     );
   }
 
+  // ============ LC WIZARD MODAL ============
+  const lcWizardModal = (
+    <Dialog open={showLcWizard} onOpenChange={setShowLcWizard}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-purple-500" />
+            LC Wizard — Step {lcWizardStep} of 4
+          </DialogTitle>
+          <DialogDescription>
+            Set the Letter of Credit terms for this trade deal.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Progress */}
+        <div className="flex gap-1 mb-4">
+          {[1,2,3,4].map(s => (
+            <div key={s} className={`flex-1 h-1.5 rounded-full ${s <= lcWizardStep ? 'bg-purple-500' : 'bg-border'}`} />
+          ))}
+        </div>
+
+        {lcWizardStep === 1 && (
+          <div className="space-y-4">
+            <p className="text-sm font-medium">LC Type</p>
+            <div className="grid grid-cols-3 gap-3">
+              {['Irrevocable', 'Transferable', 'Standby'].map(t => (
+                <button key={t} onClick={() => setLcWizardForm(f => ({ ...f, lcType: t }))}
+                  className={`p-3 rounded-lg border-2 text-sm font-medium text-center transition-colors ${lcWizardForm.lcType === t ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-border hover:border-purple-300'}`}
+                  data-testid={`lc-type-${t.toLowerCase()}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {lcWizardForm.lcType === 'Irrevocable' ? 'Cannot be changed without consent of all parties. Most secure.' 
+                : lcWizardForm.lcType === 'Transferable' ? 'Can be transferred to secondary beneficiaries.'
+                : 'Used as payment guarantee. Does not require document presentation.'}
+            </p>
+          </div>
+        )}
+
+        {lcWizardStep === 2 && (
+          <div className="space-y-4">
+            <p className="text-sm font-medium">Expiry & Amount</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Expiry Date</label>
+                <Input type="date" value={lcWizardForm.expiryDate}
+                  onChange={e => setLcWizardForm(f => ({ ...f, expiryDate: e.target.value }))}
+                  data-testid="input-lc-expiry-date" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Expiry Place</label>
+                <Input placeholder="e.g. Dubai" value={lcWizardForm.expiryPlace}
+                  onChange={e => setLcWizardForm(f => ({ ...f, expiryPlace: e.target.value }))}
+                  data-testid="input-lc-expiry-place" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Amount</label>
+                <Input type="number" placeholder="e.g. 500000" value={lcWizardForm.amount}
+                  onChange={e => setLcWizardForm(f => ({ ...f, amount: e.target.value }))}
+                  data-testid="input-lc-amount" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Currency</label>
+                <Select value={lcWizardForm.currency} onValueChange={v => setLcWizardForm(f => ({ ...f, currency: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['USD', 'EUR', 'GBP', 'AED', 'CHF'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {lcWizardStep === 3 && (
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Required Documents</p>
+            <p className="text-xs text-muted-foreground">Select which documents are required under this LC.</p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {REQUIRED_DOCUMENTS.map(d => {
+                const checked = lcWizardForm.requiredDocuments.includes(d.type);
+                return (
+                  <div key={d.type} className="flex items-center gap-3 p-2 rounded border hover:bg-muted/30">
+                    <Checkbox checked={checked}
+                      onCheckedChange={c => setLcWizardForm(f => ({
+                        ...f,
+                        requiredDocuments: c ? [...f.requiredDocuments, d.type] : f.requiredDocuments.filter(x => x !== d.type),
+                      }))}
+                      data-testid={`checkbox-doc-${d.type.toLowerCase().replace(/\s+/g, '-')}`} />
+                    <div>
+                      <p className="text-sm font-medium">{d.label}</p>
+                      <p className="text-xs text-muted-foreground">{d.responsibleLabel}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {lcWizardStep === 4 && (
+          <div className="space-y-4">
+            <p className="text-sm font-medium">Shipment Terms</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">Partial Shipment</p>
+                  <p className="text-xs text-muted-foreground">Allow goods to be shipped in multiple instalments</p>
+                </div>
+                <button onClick={() => setLcWizardForm(f => ({ ...f, partialShipment: !f.partialShipment }))}
+                  className={`w-12 h-6 rounded-full transition-colors ${lcWizardForm.partialShipment ? 'bg-purple-500' : 'bg-border'}`}
+                  data-testid="toggle-partial-shipment">
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${lcWizardForm.partialShipment ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">Transshipment</p>
+                  <p className="text-xs text-muted-foreground">Allow goods to be transshipped via intermediate ports</p>
+                </div>
+                <button onClick={() => setLcWizardForm(f => ({ ...f, transshipment: !f.transshipment }))}
+                  className={`w-12 h-6 rounded-full transition-colors ${lcWizardForm.transshipment ? 'bg-purple-500' : 'bg-border'}`}
+                  data-testid="toggle-transshipment">
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${lcWizardForm.transshipment ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="flex items-center justify-between gap-2">
+          <div className="flex gap-2">
+            {lcWizardStep > 1 && (
+              <Button variant="outline" onClick={() => setLcWizardStep(s => s - 1)}>Back</Button>
+            )}
+            <Button variant="ghost" onClick={() => setShowLcWizard(false)}>Skip for now</Button>
+          </div>
+          {lcWizardStep < 4 ? (
+            <Button onClick={() => setLcWizardStep(s => s + 1)} data-testid="btn-lc-wizard-next">
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          ) : (
+            <Button onClick={saveLcTerms} disabled={savingLcTerms} data-testid="btn-lc-wizard-save">
+              {savingLcTerms ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              Save LC Terms
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
+      {/* LC Wizard */}
+      {lcWizardModal}
+
       {/* Terms Dialog */}
       <AlertDialog open={showTermsDialog && !hasAcceptedTerms && !room?.isClosed} onOpenChange={setShowTermsDialog}>
         <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-500" />
-              FinaBridge Terms & Conditions
+              <Shield className="w-5 h-5 text-purple-500" />FinaBridge Terms & Conditions
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Please read and accept the following terms before accessing the Deal Room.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Please read and accept the following terms before accessing the Deal Room.</AlertDialogDescription>
           </AlertDialogHeader>
           <ScrollArea className="h-[300px] border rounded-md p-4 my-4">
             <pre className="whitespace-pre-wrap text-sm font-sans">{termsContent}</pre>
@@ -834,7 +1267,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
       {/* Acceptance Details Dialog */}
       <Dialog open={!!selectedAcceptance} onOpenChange={(open) => !open && setSelectedAcceptance(null)}>
-        <DialogContent className="max-w-md" data-testid="dialog-acceptance-details">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-success" />Terms Acceptance Details</DialogTitle>
           </DialogHeader>
@@ -863,13 +1296,10 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <label className="text-sm font-medium mb-2 block">Decision</label>
               <div className="flex gap-2">
                 {(['Under Review', 'Approved', 'Rejected'] as const).map(s => (
-                  <Button key={s} size="sm"
-                    variant={reviewStatus === s ? 'default' : 'outline'}
+                  <Button key={s} size="sm" variant={reviewStatus === s ? 'default' : 'outline'}
                     onClick={() => setReviewStatus(s)}
                     className={reviewStatus === s && s === 'Approved' ? 'bg-emerald-600 hover:bg-emerald-700' : reviewStatus === s && s === 'Rejected' ? 'bg-red-600 hover:bg-red-700' : ''}
-                    data-testid={`btn-review-${s.toLowerCase().replace(' ', '-')}`}>
-                    {s}
-                  </Button>
+                    data-testid={`btn-review-${s.toLowerCase().replace(' ', '-')}`}>{s}</Button>
                 ))}
               </div>
             </div>
@@ -883,21 +1313,18 @@ Version 1.0 - Effective Date: January 2025`.trim();
             <Button onClick={submitDocumentReview}
               disabled={reviewSubmitting || (reviewStatus === 'Rejected' && !reviewNotes.trim())}
               data-testid="btn-submit-review">
-              {reviewSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Submit Review
+              {reviewSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Submit Review
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Advance Stage Dialog (progression-oriented: always advances to next stage) */}
+      {/* LC Stage Transition Dialog */}
       <Dialog open={lcUpdateDialog} onOpenChange={setLcUpdateDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Advance LC Stage</DialogTitle>
-            <DialogDescription>
-              Mark the current stage as complete and advance to the next stage in the lifecycle.
-            </DialogDescription>
+            <DialogTitle>Confirm Stage Transition</DialogTitle>
+            <DialogDescription>This action will advance the LC lifecycle to the next stage.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
@@ -908,19 +1335,20 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-1">Next</p>
-                <Badge className="text-xs bg-purple-600">{nextLcStage || 'Final stage reached'}</Badge>
+                <Badge className="text-xs bg-purple-600">{lcTargetStage}</Badge>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Notes (Optional)</label>
-              <Textarea placeholder="Add notes about this stage completion..." value={lcNotes} onChange={(e) => setLcNotes(e.target.value)} data-testid="textarea-lc-notes" />
+              <Textarea placeholder="Add notes about this stage transition..." value={lcNotes} onChange={(e) => setLcNotes(e.target.value)} data-testid="textarea-lc-notes" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLcUpdateDialog(false)}>Cancel</Button>
-            <Button onClick={advanceLcStage} disabled={updatingLc || !nextLcStage} data-testid="btn-advance-lc-stage">
+            <Button variant="outline" onClick={() => { setLcUpdateDialog(false); setLcTargetStage(null); }}>Cancel</Button>
+            <Button onClick={() => lcTargetStage && triggerLcTransition(lcTargetStage)} disabled={updatingLc || !lcTargetStage}
+              data-testid="btn-confirm-lc-transition">
               {updatingLc && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              <Check className="w-4 h-4 mr-1" />Mark Complete & Advance
+              <Check className="w-4 h-4 mr-1" />Confirm
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -984,8 +1412,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
           <DialogFooter>
             <Button variant="outline" onClick={() => setResolveDiscrepancyId(null)}>Cancel</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={resolveDiscrepancy} disabled={resolvingDiscrepancy} data-testid="btn-resolve-discrepancy">
-              {resolvingDiscrepancy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-              Mark Resolved
+              {resolvingDiscrepancy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}Mark Resolved
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -994,6 +1421,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
       {/* Hidden file inputs */}
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc" />
       <input type="file" ref={checklistFileInputRef} onChange={handleChecklistUpload} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+      <input type="file" ref={wrFileInputRef} onChange={handleWrFileSelect} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+      <input type="file" ref={polFileInputRef} onChange={handlePolFileSelect} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
 
       <Card className="h-full flex flex-col" data-testid="deal-room-container">
         {/* Closed banner */}
@@ -1006,9 +1435,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 : room.tradeRequest?.status === 'Settled' ? 'Trade Settled — Deal Room Closed'
                 : 'This Deal Room is closed'}
             </span>
-            {room.closedAt && (
-              <span className="text-sm opacity-75">— Closed on {format(new Date(room.closedAt), 'MMM d, yyyy h:mm a')}</span>
-            )}
+            {room.closedAt && <span className="text-sm opacity-75">— Closed on {format(new Date(room.closedAt), 'MMM d, yyyy h:mm a')}</span>}
           </div>
         )}
 
@@ -1033,8 +1460,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   onClick={() => setShowDisclaimerSection(!showDisclaimerSection)}
                   className={allAcceptances.length > 0 ? 'ml-auto text-xs' : 'text-xs'}
                   data-testid="button-toggle-disclaimer">
-                  <FileText className="w-3 h-3 mr-1" />
-                  {showDisclaimerSection ? 'Hide' : 'Add/View'} Disclaimer
+                  <FileText className="w-3 h-3 mr-1" />{showDisclaimerSection ? 'Hide' : 'Add/View'} Disclaimer
                 </Button>
               )}
             </div>
@@ -1047,9 +1473,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
             <div className="flex items-center gap-2 mb-2">
               <FileText className="w-4 h-4 text-primary" />
               <span className="font-medium text-sm">Admin Disclaimer</span>
-              {room?.adminDisclaimerUpdatedAt && (
-                <span className="text-xs text-muted-foreground">Last updated: {format(new Date(room.adminDisclaimerUpdatedAt), 'MMM d, yyyy h:mm a')}</span>
-              )}
+              {room?.adminDisclaimerUpdatedAt && <span className="text-xs text-muted-foreground">Last updated: {format(new Date(room.adminDisclaimerUpdatedAt), 'MMM d, yyyy h:mm a')}</span>}
             </div>
             <Textarea value={adminDisclaimer} onChange={(e) => setAdminDisclaimer(e.target.value)}
               placeholder="Enter admin disclaimer..." className="mb-2 text-sm" rows={3} data-testid="textarea-admin-disclaimer" />
@@ -1087,6 +1511,13 @@ Version 1.0 - Effective Date: January 2025`.trim();
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {(userRole === 'importer' || userRole === 'admin') && (
+                <Button variant="outline" size="sm" onClick={() => { setLcWizardStep(1); setShowLcWizard(true); }}
+                  data-testid="button-lc-wizard">
+                  <FileText className="w-4 h-4 mr-1" />
+                  {lcTermsData ? 'LC Terms' : 'LC Wizard'}
+                </Button>
+              )}
               {canCloseRoom && (
                 <Button variant="outline" size="sm" onClick={() => setShowCloseDialog(true)}
                   className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -1134,10 +1565,41 @@ Version 1.0 - Effective Date: January 2025`.trim();
         {/* LC Milestone Strip */}
         <LcMilestoneStrip currentStage={room?.lcLifecycleStatus ?? null} isClosed={room?.isClosed ?? false} />
 
+        {/* Stage Status Banner */}
+        <StageBanner stage={currentLcStage} userRole={userRole} isClosed={room?.isClosed ?? false} />
+
+        {/* Role-based action buttons */}
+        {!room?.isClosed && allowedTransitions.length > 0 && (
+          <div className="border-b px-4 py-2 bg-purple-50/50 flex items-center gap-2 flex-wrap" data-testid="action-buttons-bar">
+            <span className="text-xs font-medium text-purple-700 mr-1">Your Actions:</span>
+            {allowedTransitions.map((t, idx) => (
+              <Button key={idx} size="sm"
+                variant={t.variant === 'destructive' ? 'destructive' : t.variant === 'success' ? 'default' : 'outline'}
+                className={t.variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
+                onClick={() => {
+                  setLcTargetStage(t.toStage);
+                  setLcNotes('');
+                  setLcUpdateDialog(true);
+                }}
+                data-testid={`btn-transition-${t.toStage.toLowerCase().replace(/\s+/g, '-')}`}>
+                <ChevronRight className="w-3 h-3 mr-1" />{t.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Payment gate banner for importer */}
+        {currentLcStage === 'Approved' && userRole === 'importer' && !allDocsApproved && (
+          <div className="border-b px-4 py-2 bg-amber-50 flex items-center gap-2 text-amber-700 text-sm">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>Some documents still need admin approval before you can trigger payment.</span>
+          </div>
+        )}
+
         {/* TABS */}
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full rounded-none border-b bg-background px-4 h-10 justify-start gap-0">
+            <TabsList className="w-full rounded-none border-b bg-background px-4 h-10 justify-start gap-0 flex-shrink-0">
               <TabsTrigger value="chat" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-chat">
                 <MessageCircle className="w-4 h-4 mr-2" />Chat
               </TabsTrigger>
@@ -1155,6 +1617,9 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 {openDiscrepancies.length > 0 && (
                   <Badge className="ml-1 bg-red-500 text-white text-xs py-0 px-1">{openDiscrepancies.length}</Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="risk" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-risk">
+                <ShieldAlert className="w-4 h-4 mr-2" />Risk
               </TabsTrigger>
             </TabsList>
 
@@ -1217,16 +1682,12 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
-
               <Separator />
-
               {room?.isClosed ? (
                 <div className="p-4 bg-muted/50 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Lock className="w-4 h-4" />
-                    <span>{room.tradeRequest?.status === 'Completed' ? 'This trade has been completed. The deal room is now closed.'
-                      : room.tradeRequest?.status === 'Cancelled' ? 'This trade was cancelled. The deal room is now closed.'
-                      : 'This deal room is closed. No new messages can be sent.'}</span>
+                    <span>This deal room is closed. No new messages can be sent.</span>
                   </div>
                   {room.closureNotes && <p className="text-sm text-muted-foreground mt-2 italic">"{room.closureNotes}"</p>}
                 </div>
@@ -1273,6 +1734,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
                 ) : (
                   REQUIRED_DOCUMENTS.map((reqDoc) => {
+                    const isWrOrPol = reqDoc.type === 'Warehouse Receipt' || reqDoc.type === 'Proof of Lading';
                     const primaryDoc = getLatestDocByType(reqDoc.type);
                     const status = primaryDoc?.status || 'Missing';
                     const versionHistory = getDocVersionHistory(reqDoc.type);
@@ -1290,7 +1752,9 @@ Version 1.0 - Effective Date: January 2025`.trim();
                             isApproved ? 'bg-emerald-100' : isRejected ? 'bg-red-100'
                               : status === 'Missing' ? 'bg-muted' : status === 'Under Review' ? 'bg-amber-100' : 'bg-blue-100'
                           }`}>
-                            {isApproved ? <CheckCircle className="w-4 h-4 text-emerald-600" />
+                            {reqDoc.type === 'Warehouse Receipt' ? <Warehouse className={`w-4 h-4 ${isApproved ? 'text-emerald-600' : isRejected ? 'text-red-600' : 'text-muted-foreground'}`} />
+                              : reqDoc.type === 'Proof of Lading' ? <Ship className={`w-4 h-4 ${isApproved ? 'text-emerald-600' : isRejected ? 'text-red-600' : 'text-muted-foreground'}`} />
+                              : isApproved ? <CheckCircle className="w-4 h-4 text-emerald-600" />
                               : isRejected ? <XCircle className="w-4 h-4 text-red-600" />
                               : status === 'Missing' ? <FileText className="w-4 h-4 text-muted-foreground" />
                               : status === 'Under Review' ? <Eye className="w-4 h-4 text-amber-600" />
@@ -1300,6 +1764,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium text-sm">{reqDoc.label}</span>
                               <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">{reqDoc.responsibleLabel}</Badge>
+                              {isWrOrPol && <Badge variant="outline" className="text-[10px] px-1 py-0 text-purple-600 border-purple-300">Gold-backed</Badge>}
                             </div>
                             {primaryDoc && (
                               <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -1330,7 +1795,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 <Eye className="w-3 h-3 mr-1" />Review
                               </Button>
                             )}
-                            {canUploadThis && (
+                            {canUploadThis && !isWrOrPol && (
                               <Button size="sm"
                                 variant={status === 'Missing' ? 'default' : 'outline'}
                                 className={`text-xs h-7 px-2 ${status === 'Missing' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
@@ -1341,6 +1806,20 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 }}
                                 data-testid={`btn-upload-${reqDoc.type.toLowerCase().replace(/[^a-z]/g, '-')}`}>
                                 {status === 'Missing' ? <><Upload className="w-3 h-3 mr-1" />Upload</>
+                                  : isRejected ? <><RotateCcw className="w-3 h-3 mr-1" />Re-upload</>
+                                  : <><Upload className="w-3 h-3 mr-1" />Update</>}
+                              </Button>
+                            )}
+                            {canUploadThis && isWrOrPol && (
+                              <Button size="sm"
+                                variant={status === 'Missing' ? 'default' : 'outline'}
+                                className={`text-xs h-7 px-2 ${status === 'Missing' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                                onClick={() => {
+                                  if (reqDoc.type === 'Warehouse Receipt') setShowWrForm(true);
+                                  else setShowPolForm(true);
+                                }}
+                                data-testid={`btn-upload-structured-${reqDoc.type === 'Warehouse Receipt' ? 'wr' : 'pol'}`}>
+                                {status === 'Missing' ? <><Upload className="w-3 h-3 mr-1" />Upload WR</>
                                   : isRejected ? <><RotateCcw className="w-3 h-3 mr-1" />Re-upload</>
                                   : <><Upload className="w-3 h-3 mr-1" />Update</>}
                               </Button>
@@ -1376,6 +1855,132 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       </div>
                     );
                   })
+                )}
+
+                {/* WR Structured Upload Form */}
+                {showWrForm && (
+                  <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50/30 mt-4" data-testid="wr-upload-form">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Warehouse className="w-5 h-5 text-purple-600" />
+                      <h4 className="font-semibold text-purple-700">Warehouse Receipt — Structured Upload</h4>
+                      <Button variant="ghost" size="icon" className="ml-auto w-7 h-7" onClick={() => { setShowWrForm(false); setPendingWrFile(null); }}>
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Warehouse Name *</label>
+                        <Input placeholder="e.g. Dubai Gold Vault" value={wrForm.warehouseName}
+                          onChange={e => setWrForm(f => ({ ...f, warehouseName: e.target.value }))}
+                          data-testid="input-wr-warehouse-name" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">WR Number *</label>
+                        <Input placeholder="e.g. WR-2025-00123" value={wrForm.wrNumber}
+                          onChange={e => setWrForm(f => ({ ...f, wrNumber: e.target.value }))}
+                          data-testid="input-wr-number" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Gold Quantity (grams)</label>
+                        <Input type="number" placeholder="e.g. 1000.00" value={wrForm.goldQuantityGrams}
+                          onChange={e => setWrForm(f => ({ ...f, goldQuantityGrams: e.target.value }))}
+                          data-testid="input-wr-gold-grams" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Issuance Date</label>
+                        <Input type="date" value={wrForm.issuanceDate}
+                          onChange={e => setWrForm(f => ({ ...f, issuanceDate: e.target.value }))}
+                          data-testid="input-wr-issuance-date" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Expiry Date</label>
+                        <Input type="date" value={wrForm.expiryDate}
+                          onChange={e => setWrForm(f => ({ ...f, expiryDate: e.target.value }))}
+                          data-testid="input-wr-expiry-date" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">WR Document *</label>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" className="text-xs"
+                            onClick={() => wrFileInputRef.current?.click()}
+                            data-testid="btn-select-wr-file">
+                            <Upload className="w-3 h-3 mr-1" />Select File
+                          </Button>
+                          {pendingWrFile && <span className="text-xs text-muted-foreground truncate max-w-[120px]">{pendingWrFile.name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <Button onClick={submitWrUpload} disabled={uploadingWr} className="bg-purple-600 hover:bg-purple-700" data-testid="btn-submit-wr">
+                      {uploadingWr ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                      Submit Warehouse Receipt
+                    </Button>
+                  </div>
+                )}
+
+                {/* POL Structured Upload Form */}
+                {showPolForm && (
+                  <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30 mt-4" data-testid="pol-upload-form">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Ship className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-semibold text-blue-700">Proof of Lading — Structured Upload</h4>
+                      <Button variant="ghost" size="icon" className="ml-auto w-7 h-7" onClick={() => { setShowPolForm(false); setPendingPolFile(null); }}>
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Carrier Name *</label>
+                        <Input placeholder="e.g. Maersk Line" value={polForm.carrierName}
+                          onChange={e => setPolForm(f => ({ ...f, carrierName: e.target.value }))}
+                          data-testid="input-pol-carrier" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">BL/AWB Number *</label>
+                        <Input placeholder="e.g. MSKU1234567890" value={polForm.blNumber}
+                          onChange={e => setPolForm(f => ({ ...f, blNumber: e.target.value }))}
+                          data-testid="input-pol-bl-number" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Port of Loading *</label>
+                        <Input placeholder="e.g. Port of Dubai" value={polForm.portOfLoading}
+                          onChange={e => setPolForm(f => ({ ...f, portOfLoading: e.target.value }))}
+                          data-testid="input-pol-loading-port" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Port of Discharge *</label>
+                        <Input placeholder="e.g. Port of Shanghai" value={polForm.portOfDischarge}
+                          onChange={e => setPolForm(f => ({ ...f, portOfDischarge: e.target.value }))}
+                          data-testid="input-pol-discharge-port" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Estimated Departure</label>
+                        <Input type="date" value={polForm.estimatedDeparture}
+                          onChange={e => setPolForm(f => ({ ...f, estimatedDeparture: e.target.value }))}
+                          data-testid="input-pol-departure" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Estimated Arrival</label>
+                        <Input type="date" value={polForm.estimatedArrival}
+                          onChange={e => setPolForm(f => ({ ...f, estimatedArrival: e.target.value }))}
+                          data-testid="input-pol-arrival" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">POL Document *</label>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" className="text-xs"
+                            onClick={() => polFileInputRef.current?.click()}
+                            data-testid="btn-select-pol-file">
+                            <Upload className="w-3 h-3 mr-1" />Select File
+                          </Button>
+                          {pendingPolFile && <span className="text-xs text-muted-foreground truncate max-w-[120px]">{pendingPolFile.name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <Button onClick={submitPolUpload} disabled={uploadingPol} className="bg-blue-600 hover:bg-blue-700" data-testid="btn-submit-pol">
+                      {uploadingPol ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                      Submit Proof of Lading
+                    </Button>
+                  </div>
                 )}
 
                 {/* Other (non-checklist) documents */}
@@ -1414,11 +2019,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     <h3 className="font-semibold">Deal Timeline</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Stage transition history</p>
                   </div>
-                  {userRole === 'admin' && !room?.isClosed && nextLcStage && (
-                    <Button size="sm" onClick={() => { setLcNotes(''); setLcUpdateDialog(true); }} data-testid="btn-advance-stage">
-                      <ArrowRight className="w-4 h-4 mr-1" />Advance to {nextLcStage}
-                    </Button>
-                  )}
                 </div>
 
                 <div className="p-4 border rounded-lg bg-purple-50 border-purple-200">
@@ -1430,7 +2030,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       <p className="text-xs text-muted-foreground">Current LC Stage</p>
                       <p className="font-bold text-purple-700">{currentLcStage}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">Stage {currentLcIndex + 1} of {LC_STAGES.length}</p>
+                    <p className="text-xs text-muted-foreground">Stage {validCurrentIndex + 1} of {LC_STAGES.length}</p>
                   </div>
                 </div>
 
@@ -1440,7 +2040,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <div className="text-center py-8 text-muted-foreground">
                     <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No stage transitions recorded yet.</p>
-                    {userRole === 'admin' && <p className="text-xs mt-1">Advance the LC stage to begin tracking.</p>}
                   </div>
                 ) : (
                   <div className="relative">
@@ -1487,7 +2086,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     <p className="text-xs text-muted-foreground mt-0.5">Track and resolve document or deal discrepancies</p>
                   </div>
                   {userRole === 'admin' && !room?.isClosed && (
-                    <Button size="sm" variant="destructive" onClick={() => { setDiscrepancyDocId('none'); setDiscrepancyReason(''); setDiscrepancyDescription(''); setRaiseDiscrepancyDialog(true); }}
+                    <Button size="sm" variant="destructive"
+                      onClick={() => { setDiscrepancyDocId('none'); setDiscrepancyReason(''); setDiscrepancyDescription(''); setRaiseDiscrepancyDialog(true); }}
                       data-testid="btn-open-raise-discrepancy">
                       <Flag className="w-4 h-4 mr-1" />Raise Discrepancy
                     </Button>
@@ -1537,7 +2137,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                       </div>
                                     )}
                                   </div>
-                                  {userRole === 'admin' && (
+                                  {(userRole === 'admin' || userRole === 'exporter') && (
                                     <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
                                       onClick={() => { setResolveDiscrepancyId(d.id); setResolutionNotes(''); }}
                                       data-testid={`btn-resolve-${d.id}`}>
@@ -1573,6 +2173,112 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       </div>
                     )}
                   </>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Risk Tab */}
+            <TabsContent value="risk" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-risk">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold">Counterparty Risk Assessment</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">AML/KYC risk profile for all deal parties</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={fetchRisk} disabled={riskLoading} data-testid="btn-refresh-risk">
+                    {riskLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4 mr-1" />}
+                    Refresh
+                  </Button>
+                </div>
+
+                {riskLoading ? (
+                  <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : !importerRisk && !exporterRisk ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <ShieldAlert className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="font-medium">Risk data unavailable</p>
+                    <p className="text-sm mt-1">Click Refresh to load counterparty risk profiles.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Importer', data: importerRisk },
+                      { label: 'Exporter', data: exporterRisk },
+                    ].map(({ label, data }) => data && (
+                      <div key={label} className="border rounded-lg p-4" data-testid={`risk-card-${label.toLowerCase()}`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${label === 'Importer' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                              <Shield className={`w-5 h-5 ${label === 'Importer' ? 'text-blue-600' : 'text-green-600'}`} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm">{data.name}</p>
+                              <p className="text-xs text-muted-foreground">{label} · {data.email}</p>
+                            </div>
+                          </div>
+                          <RiskBadge level={data.amlRiskLevel} />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">KYC Status</p>
+                            <Badge variant="outline" className={`text-xs ${data.kycStatus === 'Approved' ? 'border-emerald-300 text-emerald-700' : 'border-amber-300 text-amber-700'}`}>
+                              {data.kycStatus}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Country / Jurisdiction</p>
+                            <p className="text-sm font-medium">{data.country}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Sanctions Status</p>
+                            <div className="flex items-center gap-1.5">
+                              {data.sanctionsStatus === 'Clear' ? (
+                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                              ) : (
+                                <ShieldAlert className="w-4 h-4 text-red-500" />
+                              )}
+                              <span className={`text-sm font-medium ${data.sanctionsStatus === 'Clear' ? 'text-emerald-700' : 'text-red-700'}`}>
+                                {data.sanctionsStatus}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Jurisdiction Risk</p>
+                            <RiskBadge level={data.jurisdictionRisk} />
+                          </div>
+                          {data.isPep && (
+                            <div className="col-span-2">
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs">PEP — Politically Exposed Person</Badge>
+                            </div>
+                          )}
+                          {userRole === 'admin' && data.riskScore !== undefined && (
+                            <div className="col-span-2 space-y-1">
+                              <p className="text-xs text-muted-foreground">Overall Risk Score (Admin Only)</p>
+                              <div className="flex items-center gap-3">
+                                <Progress value={data.riskScore} className="flex-1 h-2" />
+                                <span className="text-sm font-bold">{data.riskScore}/100</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="col-span-2 space-y-1">
+                            <p className="text-xs text-muted-foreground">KYC Completion</p>
+                            <div className="flex items-center gap-3">
+                              <Progress value={data.kycCompletion} className="flex-1 h-2" />
+                              <span className="text-sm font-medium">{data.kycCompletion}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="p-3 bg-muted/30 rounded-lg border">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5" />
+                        Risk data is derived from KYC submissions and AML screening results. Risk scores are visible to admin only.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </TabsContent>

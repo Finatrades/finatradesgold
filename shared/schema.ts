@@ -2732,6 +2732,55 @@ export type InsertDealDiscrepancy = z.infer<typeof insertDealDiscrepancySchema>;
 export type DealDiscrepancy = typeof dealDiscrepancies.$inferSelect;
 
 // ============================================
+// DEAL ROOM - LC TERMS (LC WIZARD)
+// ============================================
+
+export const lcTerms = pgTable("lc_terms", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().unique().references(() => dealRooms.id),
+  lcType: varchar("lc_type", { length: 50 }).notNull().default('Irrevocable'),
+  expiryDate: varchar("expiry_date", { length: 50 }),
+  expiryPlace: varchar("expiry_place", { length: 255 }),
+  amount: decimal("amount", { precision: 18, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  partialShipment: boolean("partial_shipment").default(false),
+  transshipment: boolean("transshipment").default(false),
+  requiredDocuments: text("required_documents").array(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertLcTermsSchema = createInsertSchema(lcTerms).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertLcTerms = z.infer<typeof insertLcTermsSchema>;
+export type LcTerms = typeof lcTerms.$inferSelect;
+
+// ============================================
+// DEAL ROOM - DOCUMENT METADATA (WR + POL)
+// ============================================
+
+export const dealRoomDocumentMetadata = pgTable("deal_room_document_metadata", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id", { length: 255 }).notNull().unique().references(() => dealRoomDocuments.id),
+  warehouseName: varchar("warehouse_name", { length: 255 }),
+  wrNumber: varchar("wr_number", { length: 100 }),
+  goldQuantityGrams: decimal("gold_quantity_grams", { precision: 18, scale: 6 }),
+  issuanceDate: varchar("issuance_date", { length: 50 }),
+  expiryDate: varchar("expiry_date", { length: 50 }),
+  carrierName: varchar("carrier_name", { length: 255 }),
+  blNumber: varchar("bl_number", { length: 100 }),
+  portOfLoading: varchar("port_of_loading", { length: 255 }),
+  portOfDischarge: varchar("port_of_discharge", { length: 255 }),
+  estimatedDeparture: varchar("estimated_departure", { length: 50 }),
+  estimatedArrival: varchar("estimated_arrival", { length: 50 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomDocumentMetadataSchema = createInsertSchema(dealRoomDocumentMetadata).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDealRoomDocumentMetadata = z.infer<typeof insertDealRoomDocumentMetadataSchema>;
+export type DealRoomDocumentMetadata = typeof dealRoomDocumentMetadata.$inferSelect;
+
+// ============================================
 // CHAT AGENTS
 // ============================================
 
