@@ -500,7 +500,7 @@ export function FileUploadZone({
               {/* Header */}
               <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                {scanFields?.source === 'mrz' ? 'MRZ scan complete' : enableOcr ? 'AI document scan complete' : 'Document scan complete'} — ready for submission
+                {scanFields?.source === 'mrz' ? 'MRZ scan complete' : enableOcr ? 'AI document scan complete' : 'Document received'} — ready for submission
                 {scanFields?.source === 'mrz' && (
                   <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 font-semibold">FREE</span>
                 )}
