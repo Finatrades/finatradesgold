@@ -17019,7 +17019,7 @@ export async function registerRoutes(
       const { lcLifecycleStatus, notes } = req.body;
       const validStages = [
         'Contract Signed', 'LC Issued', 'Docs Submitted', 'Under Review',
-        'Discrepancy Raised', 'Discrepancy Resolved', 'Approved', 'Funds Released', 'Closed'
+        'Discrepancy', 'Approved', 'Funds Released', 'Closed',
       ];
       if (!validStages.includes(lcLifecycleStatus)) {
         return res.status(400).json({ message: "Invalid LC lifecycle status" });
@@ -17067,9 +17067,22 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const milestones = await db.select().from(dealMilestones)
+      const milestoneRows = await db.select().from(dealMilestones)
         .where(eq(dealMilestones.dealRoomId, req.params.dealRoomId))
         .orderBy(dealMilestones.completedAt);
+
+      // Resolve user identity for milestone display
+      const userIds = [...new Set(milestoneRows.map(m => m.completedByUserId).filter(Boolean) as string[])];
+      const completedByUsers: Record<string, { finatradesId: string | null; email: string; firstName: string | null; lastName: string | null }> = {};
+      for (const uid of userIds) {
+        const u = await storage.getUser(uid);
+        if (u) completedByUsers[uid] = { finatradesId: u.finatradesId ?? null, email: u.email, firstName: u.firstName ?? null, lastName: u.lastName ?? null };
+      }
+
+      const milestones = milestoneRows.map(m => ({
+        ...m,
+        completedByUser: m.completedByUserId ? (completedByUsers[m.completedByUserId] ?? null) : null,
+      }));
 
       res.json({ milestones });
     } catch (error) {

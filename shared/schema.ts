@@ -2,7 +2,7 @@
 
 
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date, unique, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -2602,7 +2602,7 @@ export const dealRoomDocuments = pgTable("deal_room_documents", {
   verificationNotes: text("verification_notes"),
   expiresAt: timestamp("expires_at"),
   versionNumber: integer("version_number").default(1),
-  parentDocumentId: varchar("parent_document_id", { length: 255 }).references((): any => dealRoomDocuments.id),
+  parentDocumentId: varchar("parent_document_id", { length: 255 }).references((): AnyPgColumn => dealRoomDocuments.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -17,33 +17,21 @@ import {
   FileText, Image, Download, Loader2, Check, CheckCheck,
   Shield, Lock, AlertTriangle, XCircle, Video,
   CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp,
-  Upload, Eye, ClipboardList, Flag, Plus, RotateCcw
+  Upload, Eye, ClipboardList, Flag, Plus, RotateCcw, ArrowRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 
-// ============================================================
-// TYPES
-// ============================================================
+// --- Types ---
 
 interface DealRoomMessage {
   id: string;
@@ -91,7 +79,6 @@ interface AgreementAcceptance {
   agreementVersion: string;
   acceptedAt: string;
   ipAddress?: string | null;
-  userAgent?: string | null;
 }
 
 interface DealRoomDocument {
@@ -121,6 +108,12 @@ interface DealMilestone {
   completedByRole: string | null;
   notes: string | null;
   completedAt: string;
+  completedByUser?: {
+    finatradesId: string | null;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
 }
 
 interface DealDiscrepancy {
@@ -143,17 +136,14 @@ interface DealRoomProps {
   onClose?: () => void;
 }
 
-// ============================================================
-// CONSTANTS
-// ============================================================
+// --- Constants ---
 
 const LC_STAGES = [
   'Contract Signed',
   'LC Issued',
   'Docs Submitted',
   'Under Review',
-  'Discrepancy Raised',
-  'Discrepancy Resolved',
+  'Discrepancy',
   'Approved',
   'Funds Released',
   'Closed',
@@ -191,13 +181,11 @@ const DISCREPANCY_REASONS = [
   'Other',
 ] as const;
 
-// ============================================================
-// SUB-COMPONENTS
-// ============================================================
+// --- LC Milestone Strip ---
 
 function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | null; isClosed: boolean }) {
-  const stage = currentStage || 'Contract Signed';
-  const currentIndex = LC_STAGES.indexOf(stage as LcStage);
+  const stage = (currentStage || 'Contract Signed') as LcStage;
+  const currentIndex = LC_STAGES.indexOf(stage);
 
   return (
     <div className="border-b bg-muted/30 px-4 py-3" data-testid="lc-milestone-strip">
@@ -216,9 +204,7 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
                   {isCompleted ? <Check className="w-3 h-3" /> : i + 1}
                 </div>
                 <span className={`text-[9px] font-medium whitespace-nowrap max-w-[60px] text-center leading-tight ${
-                  isCompleted ? 'text-emerald-600'
-                    : isActive ? 'text-purple-600'
-                    : 'text-muted-foreground'
+                  isCompleted ? 'text-emerald-600' : isActive ? 'text-purple-600' : 'text-muted-foreground'
                 }`}>
                   {s}
                 </span>
@@ -236,13 +222,13 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
 
 function DocumentStatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; className: string }> = {
-    Missing:      { label: 'Missing',      className: 'bg-gray-100 text-gray-500 border-gray-200' },
-    Pending:      { label: 'Uploaded',     className: 'bg-blue-50 text-blue-600 border-blue-200' },
+    Missing:        { label: 'Missing',      className: 'bg-gray-100 text-gray-500 border-gray-200' },
+    Pending:        { label: 'Uploaded',     className: 'bg-blue-50 text-blue-600 border-blue-200' },
     'Under Review': { label: 'Under Review', className: 'bg-amber-50 text-amber-600 border-amber-200' },
-    Approved:     { label: 'Approved',     className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    Verified:     { label: 'Approved',     className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    Rejected:     { label: 'Rejected',     className: 'bg-red-50 text-red-600 border-red-200' },
-    Expired:      { label: 'Expired',      className: 'bg-orange-50 text-orange-600 border-orange-200' },
+    Approved:       { label: 'Approved',     className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+    Verified:       { label: 'Approved',     className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+    Rejected:       { label: 'Rejected',     className: 'bg-red-50 text-red-600 border-red-200' },
+    Expired:        { label: 'Expired',      className: 'bg-orange-50 text-orange-600 border-orange-200' },
   };
   const c = cfg[status] || cfg['Missing'];
   return (
@@ -252,15 +238,20 @@ function DocumentStatusBadge({ status }: { status: string }) {
   );
 }
 
-// ============================================================
-// MAIN COMPONENT
-// ============================================================
+// --- Helper: format user display name ---
+function userDisplayName(u: { finatradesId: string | null; email: string; firstName: string | null; lastName: string | null } | null | undefined): string {
+  if (!u) return 'Unknown';
+  if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
+  return u.finatradesId || u.email;
+}
+
+// --- Main Component ---
 
 export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // ---- Existing chat state ----
+  // Chat state
   const [room, setRoom] = useState<DealRoomData | null>(null);
   const [messages, setMessages] = useState<DealRoomMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -287,7 +278,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [showDisclaimerSection, setShowDisclaimerSection] = useState(false);
   const [selectedAcceptance, setSelectedAcceptance] = useState<AgreementAcceptance | null>(null);
 
-  // ---- New state: Documents ----
+  // Documents state
   const [documents, setDocuments] = useState<DealRoomDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [reviewDocId, setReviewDocId] = useState<string | null>(null);
@@ -298,19 +289,18 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const [uploadParentId, setUploadParentId] = useState<string | null>(null);
 
-  // ---- New state: Timeline / LC Status ----
+  // Timeline / LC Status state
   const [milestones, setMilestones] = useState<DealMilestone[]>([]);
   const [milestonesLoading, setMilestonesLoading] = useState(false);
   const [lcUpdateDialog, setLcUpdateDialog] = useState(false);
-  const [newLcStage, setNewLcStage] = useState<string>('');
   const [lcNotes, setLcNotes] = useState('');
   const [updatingLc, setUpdatingLc] = useState(false);
 
-  // ---- New state: Discrepancies ----
+  // Discrepancies state
   const [discrepancies, setDiscrepancies] = useState<DealDiscrepancy[]>([]);
   const [discrepanciesLoading, setDiscrepanciesLoading] = useState(false);
   const [raiseDiscrepancyDialog, setRaiseDiscrepancyDialog] = useState(false);
-  const [discrepancyDocId, setDiscrepancyDocId] = useState<string>('');
+  const [discrepancyDocId, setDiscrepancyDocId] = useState<string>('none');
   const [discrepancyReason, setDiscrepancyReason] = useState<string>('');
   const [discrepancyDescription, setDiscrepancyDescription] = useState('');
   const [raisingDiscrepancy, setRaisingDiscrepancy] = useState(false);
@@ -318,12 +308,12 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolvingDiscrepancy, setResolvingDiscrepancy] = useState(false);
 
-  // ---- Active tab ----
   const [activeTab, setActiveTab] = useState('chat');
 
-  // ============================================================
-  // FETCH FUNCTIONS
-  // ============================================================
+  // Derived: next LC stage for progression
+  const currentLcStage = (room?.lcLifecycleStatus || 'Contract Signed') as LcStage;
+  const currentLcIndex = LC_STAGES.indexOf(currentLcStage);
+  const nextLcStage: LcStage | null = currentLcIndex < LC_STAGES.length - 1 ? LC_STAGES[currentLcIndex + 1] : null;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -350,12 +340,10 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         const data = await response.json();
         setHasAcceptedTerms(data.hasAccepted);
         setAllAcceptances(data.allAcceptances || []);
-        if (!data.hasAccepted && !room?.isClosed) {
-          setShowTermsDialog(true);
-        }
+        if (!data.hasAccepted && !room?.isClosed) setShowTermsDialog(true);
       }
     } catch (error) {
-      console.error('Failed to fetch agreement status:', error);
+      console.error('Failed to fetch agreement:', error);
     }
   }, [dealRoomId, user, room?.isClosed]);
 
@@ -429,48 +417,32 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     fetchDiscrepancies();
   }, [fetchRoom, fetchMessages, fetchAgreementStatus, fetchDocuments, fetchMilestones, fetchDiscrepancies]);
 
-  // Refresh appropriate data when tab switches
   useEffect(() => {
     if (activeTab === 'documents') fetchDocuments();
-    if (activeTab === 'timeline') fetchMilestones();
-    if (activeTab === 'discrepancies') fetchDiscrepancies();
+    else if (activeTab === 'timeline') fetchMilestones();
+    else if (activeTab === 'discrepancies') fetchDiscrepancies();
   }, [activeTab, fetchDocuments, fetchMilestones, fetchDiscrepancies]);
 
-  // ============================================================
-  // SOCKET
-  // ============================================================
-
+  // Socket
   useEffect(() => {
     if (!user || !dealRoomId) return;
     const socket = io({ transports: ['websocket', 'polling'] });
     socketRef.current = socket;
-
-    socket.on('connect', () => {
-      socket.emit('dealroom:join', { dealRoomId, userId: user.id });
-    });
+    socket.on('connect', () => socket.emit('dealroom:join', { dealRoomId, userId: user.id }));
     socket.on('dealroom:message', (message: DealRoomMessage) => {
       setMessages(prev => [...prev, message]);
       scrollToBottom();
     });
-    socket.on('dealroom:user-joined', ({ userId }) => {
-      setOnlineUsers(prev => prev.includes(userId) ? prev : [...prev, userId]);
-    });
-    socket.on('dealroom:user-left', ({ userId }) => {
-      setOnlineUsers(prev => prev.filter(id => id !== userId));
-    });
+    socket.on('dealroom:user-joined', ({ userId }) => setOnlineUsers(prev => prev.includes(userId) ? prev : [...prev, userId]));
+    socket.on('dealroom:user-left', ({ userId }) => setOnlineUsers(prev => prev.filter(id => id !== userId)));
     socket.on('dealroom:typing', ({ userId, isTyping }) => {
-      if (isTyping) {
-        setTypingUsers(prev => prev.includes(userId) ? prev : [...prev, userId]);
-      } else {
-        setTypingUsers(prev => prev.filter(id => id !== userId));
-      }
+      if (isTyping) setTypingUsers(prev => prev.includes(userId) ? prev : [...prev, userId]);
+      else setTypingUsers(prev => prev.filter(id => id !== userId));
     });
     socket.on('dealroom:read', ({ userId }) => {
       if (userId !== user.id) setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
     });
-    socket.on('dealroom:error', ({ message }) => {
-      toast({ title: 'Error', description: message, variant: 'destructive' });
-    });
+    socket.on('dealroom:error', ({ message }) => toast({ title: 'Error', description: message, variant: 'destructive' }));
     return () => {
       socket.emit('dealroom:leave', { dealRoomId, userId: user.id });
       socket.disconnect();
@@ -481,10 +453,6 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     if (!user || !socketRef.current) return;
     socketRef.current.emit('dealroom:read', { dealRoomId, userId: user.id });
   }, [messages, user, dealRoomId]);
-
-  // ============================================================
-  // CHAT ACTIONS
-  // ============================================================
 
   const handleTyping = useCallback(() => {
     if (!socketRef.current || !user) return;
@@ -517,7 +485,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
           scrollToBottom();
         }
       }
-    } catch (error) {
+    } catch {
       toast({ title: 'Error', description: 'Failed to send message', variant: 'destructive' });
     } finally {
       setSending(false);
@@ -531,10 +499,8 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     formData.append('file', file);
     try {
       const response = await fetch('/api/documents/upload', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData,
-        credentials: 'include',
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData, credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -548,15 +514,9 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSend = () => sendMessage(newMessage);
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(newMessage); }
   };
-
-  // ============================================================
-  // TERMS / CLOSE / DISCLAIMER
-  // ============================================================
 
   const acceptTerms = async () => {
     if (!termsAgreed) return;
@@ -584,12 +544,12 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     try {
       const response = await apiRequest('POST', `/api/admin/deal-rooms/${dealRoomId}/close`, { closureNotes });
       if (response.ok) {
-        toast({ title: 'Deal Room Closed', description: 'The deal room has been closed successfully' });
+        toast({ title: 'Deal Room Closed' });
         setShowCloseDialog(false);
         await fetchRoom();
       } else {
         const error = await response.json();
-        toast({ title: 'Error', description: error.message || 'Failed to close deal room', variant: 'destructive' });
+        toast({ title: 'Error', description: error.message || 'Failed to close', variant: 'destructive' });
       }
     } catch {
       toast({ title: 'Error', description: 'Failed to close deal room', variant: 'destructive' });
@@ -611,26 +571,18 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     }
   };
 
-  // ============================================================
-  // DOCUMENT ACTIONS
-  // ============================================================
-
   const handleChecklistUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadingDocType) return;
-
     const formData = new FormData();
     formData.append('file', file);
     try {
       const uploadRes = await fetch('/api/documents/upload', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData,
-        credentials: 'include',
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData, credentials: 'include',
       });
       if (!uploadRes.ok) throw new Error('Upload failed');
       const uploadData = await uploadRes.json();
-
       const body: Record<string, unknown> = {
         documentType: uploadingDocType,
         fileName: file.name,
@@ -638,7 +590,6 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         fileSize: file.size,
       };
       if (uploadParentId) body.parentDocumentId = uploadParentId;
-
       const docRes = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents`, body);
       if (docRes.ok) {
         toast({ title: 'Document uploaded', description: `${uploadingDocType} submitted for review` });
@@ -646,7 +597,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       } else {
         throw new Error('Failed to register document');
       }
-    } catch (error) {
+    } catch {
       toast({ title: 'Upload failed', description: 'Please try again', variant: 'destructive' });
     }
     setUploadingDocType(null);
@@ -659,8 +610,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     setReviewSubmitting(true);
     try {
       const res = await apiRequest('PATCH', `/api/deal-rooms/${dealRoomId}/documents/${reviewDocId}/review`, {
-        status: reviewStatus,
-        verificationNotes: reviewNotes,
+        status: reviewStatus, verificationNotes: reviewNotes,
       });
       if (res.ok) {
         toast({ title: `Document ${reviewStatus}` });
@@ -679,20 +629,16 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     }
   };
 
-  // ============================================================
-  // LC STATUS ACTIONS
-  // ============================================================
-
-  const updateLcStatus = async () => {
-    if (!newLcStage) return;
+  // Advance to next stage only (progression-oriented)
+  const advanceLcStage = async () => {
+    if (!nextLcStage) return;
     setUpdatingLc(true);
     try {
       const res = await apiRequest('PATCH', `/api/deal-rooms/${dealRoomId}/lc-status`, {
-        lcLifecycleStatus: newLcStage,
-        notes: lcNotes,
+        lcLifecycleStatus: nextLcStage, notes: lcNotes,
       });
       if (res.ok) {
-        toast({ title: 'LC stage updated', description: newLcStage });
+        toast({ title: 'Stage advanced', description: `→ ${nextLcStage}` });
         setLcUpdateDialog(false);
         setLcNotes('');
         await fetchRoom();
@@ -702,15 +648,11 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
         toast({ title: 'Error', description: err.message, variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to update stage', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to advance stage', variant: 'destructive' });
     } finally {
       setUpdatingLc(false);
     }
   };
-
-  // ============================================================
-  // DISCREPANCY ACTIONS
-  // ============================================================
 
   const raiseDiscrepancy = async () => {
     if (!discrepancyReason) return;
@@ -724,7 +666,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       if (res.ok) {
         toast({ title: 'Discrepancy raised' });
         setRaiseDiscrepancyDialog(false);
-        setDiscrepancyDocId('');
+        setDiscrepancyDocId('none');
         setDiscrepancyReason('');
         setDiscrepancyDescription('');
         await fetchDiscrepancies();
@@ -762,10 +704,6 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     }
   };
 
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
   const getRoleColor = (role: string) => {
     if (role === 'importer') return 'bg-blue-500';
     if (role === 'exporter') return 'bg-green-500';
@@ -773,36 +711,23 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     return 'bg-gray-500';
   };
 
-  const getAttachmentIcon = (type: string | null) => {
-    if (!type) return <FileText className="w-4 h-4" />;
-    if (type.startsWith('image/')) return <Image className="w-4 h-4" />;
-    return <FileText className="w-4 h-4" />;
-  };
-
-  // Group documents by type: latest version per type is the "primary"
   const getLatestDocByType = (docType: string): DealRoomDocument | undefined => {
     const byType = documents.filter(d => d.documentType === docType);
     if (!byType.length) return undefined;
-    // Sort by versionNumber descending, then createdAt
     return byType.sort((a, b) => {
-      const vA = a.versionNumber ?? 1;
-      const vB = b.versionNumber ?? 1;
-      if (vB !== vA) return vB - vA;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const diff = (b.versionNumber ?? 1) - (a.versionNumber ?? 1);
+      return diff !== 0 ? diff : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     })[0];
   };
 
-  const getDocVersionHistory = (primaryDoc: DealRoomDocument): DealRoomDocument[] => {
-    return documents
-      .filter(d => d.documentType === primaryDoc.documentType)
+  const getDocVersionHistory = (docType: string): DealRoomDocument[] =>
+    documents.filter(d => d.documentType === docType)
       .sort((a, b) => (b.versionNumber ?? 1) - (a.versionNumber ?? 1));
-  };
 
   const canUpload = (responsible: string): boolean => {
     if (userRole === 'admin') return true;
     if (responsible === 'exporter' && userRole === 'exporter') return true;
     if (responsible === 'importer' && userRole === 'importer') return true;
-    if (responsible === 'third_party') return userRole === 'admin';
     return false;
   };
 
@@ -837,7 +762,7 @@ FinaBridge acts as a facilitator and does not guarantee the performance of any c
 You warrant that all documents uploaded to this Deal Room are authentic and have not been altered or falsified in any way.
 
 8. DATA PROTECTION
-Your personal and business information will be processed in accordance with our Privacy Policy. By using FinaBridge, you consent to the collection and use of your data for transaction processing and compliance purposes.
+Your personal and business information will be processed in accordance with our Privacy Policy.
 
 9. TERMINATION
 FinaBridge reserves the right to terminate access to this Deal Room if any party is found to be in violation of these terms or applicable laws.
@@ -854,10 +779,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
       </Card>
     );
   }
-
-  // ============================================================
-  // RENDER
-  // ============================================================
 
   return (
     <>
@@ -916,7 +837,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
         <DialogContent className="max-w-md" data-testid="dialog-acceptance-details">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-success" />Terms Acceptance Details</DialogTitle>
-            <DialogDescription>Full details of this agreement acceptance</DialogDescription>
           </DialogHeader>
           {selectedAcceptance && (
             <div className="space-y-4">
@@ -943,11 +863,11 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <label className="text-sm font-medium mb-2 block">Decision</label>
               <div className="flex gap-2">
                 {(['Under Review', 'Approved', 'Rejected'] as const).map(s => (
-                  <Button key={s} size="sm" variant={reviewStatus === s ? 'default' : 'outline'}
+                  <Button key={s} size="sm"
+                    variant={reviewStatus === s ? 'default' : 'outline'}
                     onClick={() => setReviewStatus(s)}
                     className={reviewStatus === s && s === 'Approved' ? 'bg-emerald-600 hover:bg-emerald-700' : reviewStatus === s && s === 'Rejected' ? 'bg-red-600 hover:bg-red-700' : ''}
-                    data-testid={`btn-review-${s.toLowerCase().replace(' ', '-')}`}
-                  >
+                    data-testid={`btn-review-${s.toLowerCase().replace(' ', '-')}`}>
                     {s}
                   </Button>
                 ))}
@@ -960,41 +880,47 @@ Version 1.0 - Effective Date: January 2025`.trim();
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReviewDocId(null)}>Cancel</Button>
-            <Button onClick={submitDocumentReview} disabled={reviewSubmitting || (reviewStatus === 'Rejected' && !reviewNotes.trim())} data-testid="btn-submit-review">
-              {reviewSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            <Button onClick={submitDocumentReview}
+              disabled={reviewSubmitting || (reviewStatus === 'Rejected' && !reviewNotes.trim())}
+              data-testid="btn-submit-review">
+              {reviewSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Submit Review
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* LC Stage Update Dialog */}
+      {/* Advance Stage Dialog (progression-oriented: always advances to next stage) */}
       <Dialog open={lcUpdateDialog} onOpenChange={setLcUpdateDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Advance LC Stage</DialogTitle>
-            <DialogDescription>Update the deal's Letter of Credit lifecycle stage.</DialogDescription>
+            <DialogDescription>
+              Mark the current stage as complete and advance to the next stage in the lifecycle.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">New Stage</label>
-              <Select value={newLcStage} onValueChange={setNewLcStage}>
-                <SelectTrigger data-testid="select-lc-stage"><SelectValue placeholder="Select stage..." /></SelectTrigger>
-                <SelectContent>
-                  {LC_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-1">Current</p>
+                <Badge variant="outline" className="text-xs">{currentLcStage}</Badge>
+              </div>
+              <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-1">Next</p>
+                <Badge className="text-xs bg-purple-600">{nextLcStage || 'Final stage reached'}</Badge>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Notes (Optional)</label>
-              <Textarea placeholder="Add notes about this stage..." value={lcNotes} onChange={(e) => setLcNotes(e.target.value)} data-testid="textarea-lc-notes" />
+              <Textarea placeholder="Add notes about this stage completion..." value={lcNotes} onChange={(e) => setLcNotes(e.target.value)} data-testid="textarea-lc-notes" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLcUpdateDialog(false)}>Cancel</Button>
-            <Button onClick={updateLcStatus} disabled={updatingLc || !newLcStage} data-testid="btn-update-lc-stage">
-              {updatingLc ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Update Stage
+            <Button onClick={advanceLcStage} disabled={updatingLc || !nextLcStage} data-testid="btn-advance-lc-stage">
+              {updatingLc && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              <Check className="w-4 h-4 mr-1" />Mark Complete & Advance
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1014,7 +940,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 <SelectTrigger data-testid="select-discrepancy-doc"><SelectValue placeholder="Select document..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No specific document</SelectItem>
-                  {documents.map(d => <SelectItem key={d.id} value={d.id}>{d.documentType} - {d.fileName}</SelectItem>)}
+                  {documents.map(d => <SelectItem key={d.id} value={d.id}>{d.documentType} — {d.fileName}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -1069,20 +995,20 @@ Version 1.0 - Effective Date: January 2025`.trim();
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc" />
       <input type="file" ref={checklistFileInputRef} onChange={handleChecklistUpload} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
 
-      {/* MAIN CARD */}
       <Card className="h-full flex flex-col" data-testid="deal-room-container">
-
         {/* Closed banner */}
         {room?.isClosed && (
           <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex items-center gap-2 text-destructive">
             <Lock className="w-4 h-4" />
             <span className="font-medium">
-              {room.tradeRequest?.status === 'Completed' ? 'Trade Completed - Deal Room Closed'
-                : room.tradeRequest?.status === 'Cancelled' ? 'Trade Cancelled - Deal Room Closed'
-                : room.tradeRequest?.status === 'Settled' ? 'Trade Settled - Deal Room Closed'
+              {room.tradeRequest?.status === 'Completed' ? 'Trade Completed — Deal Room Closed'
+                : room.tradeRequest?.status === 'Cancelled' ? 'Trade Cancelled — Deal Room Closed'
+                : room.tradeRequest?.status === 'Settled' ? 'Trade Settled — Deal Room Closed'
                 : 'This Deal Room is closed'}
             </span>
-            {room.closedAt && <span className="text-sm opacity-75">- Closed on {format(new Date(room.closedAt), 'MMM d, yyyy h:mm a')}</span>}
+            {room.closedAt && (
+              <span className="text-sm opacity-75">— Closed on {format(new Date(room.closedAt), 'MMM d, yyyy h:mm a')}</span>
+            )}
           </div>
         )}
 
@@ -1097,7 +1023,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   {allAcceptances.map((a) => (
                     <Badge key={a.id} variant="outline" className="text-xs cursor-pointer hover:bg-success/10"
                       onClick={() => setSelectedAcceptance(a)} data-testid={`badge-acceptance-${a.role}`}>
-                      {a.role.charAt(0).toUpperCase() + a.role.slice(1)} - {format(new Date(a.acceptedAt), 'MMM d, yyyy')}
+                      {a.role.charAt(0).toUpperCase() + a.role.slice(1)} — {format(new Date(a.acceptedAt), 'MMM d, yyyy')}
                     </Badge>
                   ))}
                 </>
@@ -1105,7 +1031,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
               {userRole === 'admin' && (
                 <Button variant="ghost" size="sm"
                   onClick={() => setShowDisclaimerSection(!showDisclaimerSection)}
-                  className={allAcceptances.length > 0 ? "ml-auto text-xs" : "text-xs"}
+                  className={allAcceptances.length > 0 ? 'ml-auto text-xs' : 'text-xs'}
                   data-testid="button-toggle-disclaimer">
                   <FileText className="w-3 h-3 mr-1" />
                   {showDisclaimerSection ? 'Hide' : 'Add/View'} Disclaimer
@@ -1155,7 +1081,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 </CardTitle>
                 {room?.tradeRequest && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {room.tradeRequest.tradeRefId} - {room.tradeRequest.goodsName}
+                    {room.tradeRequest.tradeRefId} — {room.tradeRequest.goodsName}
                   </p>
                 )}
               </div>
@@ -1168,7 +1094,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <Lock className="w-4 h-4 mr-1" />Close Room
                 </Button>
               )}
-              <Button variant="outline" size="sm" disabled title="Video conferencing — coming soon" data-testid="button-video-call-coming-soon" className="opacity-60 cursor-not-allowed">
+              <Button variant="outline" size="sm" disabled title="Video conferencing — coming soon"
+                data-testid="button-video-call-coming-soon" className="opacity-60 cursor-not-allowed">
                 <Video className="w-4 h-4 mr-1" />Video Call
                 <Badge variant="secondary" className="ml-1 text-xs py-0 px-1">Soon</Badge>
               </Button>
@@ -1179,64 +1106,28 @@ Version 1.0 - Effective Date: January 2025`.trim();
           </div>
 
           {/* Participants */}
-          <div className="flex gap-4 mt-3 flex-wrap">
-            {room?.importer && (
-              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-importer">
-                <Avatar className="w-10 h-10 border-2 border-primary">
-                  {room.importer.profilePhoto && <AvatarImage src={room.importer.profilePhoto} alt="Importer" />}
-                  <AvatarFallback className="bg-primary text-white text-sm font-medium">
-                    {(room.importer.firstName?.charAt(0) || room.importer.email.charAt(0)).toUpperCase()}
-                    {(room.importer.lastName?.charAt(0) || '').toUpperCase()}
+          <div className="flex gap-3 mt-3 flex-wrap">
+            {[
+              { user: room?.importer, label: 'Importer', color: 'border-primary' },
+              { user: room?.exporter, label: 'Exporter', color: 'border-primary' },
+              { user: room?.assignedAdmin, label: 'Deal Manager', color: 'border-purple-500' },
+            ].filter(p => p.user).map(({ user: u, label, color }) => u && (
+              <div key={u.id} className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid={`participant-${label.toLowerCase().replace(' ', '-')}`}>
+                <Avatar className={`w-9 h-9 border-2 ${color}`}>
+                  {u.profilePhoto && <AvatarImage src={u.profilePhoto} alt={label} />}
+                  <AvatarFallback className={`text-white text-sm font-medium ${label === 'Deal Manager' ? 'bg-purple-500' : 'bg-primary'}`}>
+                    {(u.firstName?.charAt(0) || u.email.charAt(0)).toUpperCase()}
+                    {(u.lastName?.charAt(0) || '').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {room.importer.firstName && room.importer.lastName
-                      ? `${room.importer.firstName} ${room.importer.lastName}`
-                      : room.importer.finatradesId || room.importer.email}
-                  </span>
-                  <span className="text-xs text-primary">{room.importer.accountType === 'business' ? 'Business' : 'Personal'} · Importer</span>
+                <div>
+                  <p className="text-sm font-medium leading-tight">
+                    {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.finatradesId || u.email}
+                  </p>
+                  <p className={`text-xs leading-tight ${label === 'Deal Manager' ? 'text-purple-600' : 'text-primary'}`}>{label}</p>
                 </div>
               </div>
-            )}
-            {room?.exporter && (
-              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-exporter">
-                <Avatar className="w-10 h-10 border-2 border-primary">
-                  {room.exporter.profilePhoto && <AvatarImage src={room.exporter.profilePhoto} alt="Exporter" />}
-                  <AvatarFallback className="bg-primary text-white text-sm font-medium">
-                    {(room.exporter.firstName?.charAt(0) || room.exporter.email.charAt(0)).toUpperCase()}
-                    {(room.exporter.lastName?.charAt(0) || '').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {room.exporter.firstName && room.exporter.lastName
-                      ? `${room.exporter.firstName} ${room.exporter.lastName}`
-                      : room.exporter.finatradesId || room.exporter.email}
-                  </span>
-                  <span className="text-xs text-primary">{room.exporter.accountType === 'business' ? 'Business' : 'Personal'} · Exporter</span>
-                </div>
-              </div>
-            )}
-            {room?.assignedAdmin && (
-              <div className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid="participant-admin">
-                <Avatar className="w-10 h-10 border-2 border-purple-500">
-                  {room.assignedAdmin.profilePhoto && <AvatarImage src={room.assignedAdmin.profilePhoto} alt="Admin" />}
-                  <AvatarFallback className="bg-purple-500 text-white text-sm font-medium">
-                    {(room.assignedAdmin.firstName?.charAt(0) || room.assignedAdmin.email.charAt(0)).toUpperCase()}
-                    {(room.assignedAdmin.lastName?.charAt(0) || '').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {room.assignedAdmin.firstName && room.assignedAdmin.lastName
-                      ? `${room.assignedAdmin.firstName} ${room.assignedAdmin.lastName}`
-                      : room.assignedAdmin.finatradesId || 'Admin'}
-                  </span>
-                  <span className="text-xs text-purple-600">Deal Manager</span>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         </CardHeader>
 
@@ -1267,9 +1158,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
               </TabsTrigger>
             </TabsList>
 
-            {/* ============================================================ */}
-            {/* CHAT TAB                                                       */}
-            {/* ============================================================ */}
+            {/* Chat Tab */}
             <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden m-0 data-[state=inactive]:hidden" data-testid="tab-content-chat">
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
@@ -1299,7 +1188,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 {msg.attachmentUrl && (
                                   <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer"
                                     className={`flex items-center gap-2 mt-2 p-2 rounded border ${isOwn ? 'border-white/30 hover:bg-white/10' : 'border-border hover:bg-muted/50'}`}>
-                                    {getAttachmentIcon(msg.attachmentType)}
+                                    <FileText className="w-4 h-4" />
                                     <span className="text-xs truncate max-w-[150px]">{msg.attachmentName || 'Attachment'}</span>
                                     <Download className="w-3 h-3 ml-auto" />
                                   </a>
@@ -1317,12 +1206,12 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   )}
                   {typingUsers.length > 0 && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="flex gap-1">
+                      <span className="flex gap-1">
                         <span className="animate-bounce">.</span>
                         <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
                         <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
-                      </div>
-                      <span>Someone is typing</span>
+                      </span>
+                      Someone is typing
                     </div>
                   )}
                   <div ref={messagesEndRef} />
@@ -1335,18 +1224,17 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 <div className="p-4 bg-muted/50 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Lock className="w-4 h-4" />
-                    <span>{room.tradeRequest?.status === 'Completed' ? 'This trade has been completed successfully. The deal room is now closed.'
+                    <span>{room.tradeRequest?.status === 'Completed' ? 'This trade has been completed. The deal room is now closed.'
                       : room.tradeRequest?.status === 'Cancelled' ? 'This trade was cancelled. The deal room is now closed.'
-                      : room.tradeRequest?.status === 'Settled' ? 'This trade has been settled. The deal room is now closed.'
                       : 'This deal room is closed. No new messages can be sent.'}</span>
                   </div>
                   {room.closureNotes && <p className="text-sm text-muted-foreground mt-2 italic">"{room.closureNotes}"</p>}
                 </div>
-              ) : !hasAcceptedTerms && !room?.isClosed ? (
-                <div className="p-4 bg-warning-muted text-center">
-                  <div className="flex items-center justify-center gap-2 text-warning">
+              ) : !hasAcceptedTerms ? (
+                <div className="p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-amber-600">
                     <AlertTriangle className="w-4 h-4" />
-                    <span>Please accept the Terms & Conditions to participate in this deal room.</span>
+                    <span>Please accept the Terms & Conditions to participate.</span>
                   </div>
                   <Button variant="outline" size="sm" className="mt-2" onClick={() => setShowTermsDialog(true)} data-testid="button-view-terms">
                     View Terms & Conditions
@@ -1360,7 +1248,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     </Button>
                     <Input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
                       onKeyPress={handleKeyPress} placeholder="Type a message..." className="flex-1" data-testid="input-message" />
-                    <Button onClick={handleSend} disabled={!newMessage.trim() || sending} data-testid="button-send-message">
+                    <Button onClick={() => sendMessage(newMessage)} disabled={!newMessage.trim() || sending} data-testid="button-send-message">
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
@@ -1368,15 +1256,13 @@ Version 1.0 - Effective Date: January 2025`.trim();
               )}
             </TabsContent>
 
-            {/* ============================================================ */}
-            {/* DOCUMENTS TAB                                                  */}
-            {/* ============================================================ */}
+            {/* Documents Tab */}
             <TabsContent value="documents" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-documents">
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-foreground">Trade Document Checklist</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Required documents per UCP 600 / ISBP 745 standards</p>
+                    <h3 className="font-semibold">Trade Document Checklist</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Required per UCP 600 / ISBP 745 standards</p>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {documents.filter(d => ['Approved', 'Verified'].includes(d.status)).length} / {REQUIRED_DOCUMENTS.length} approved
@@ -1389,19 +1275,17 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   REQUIRED_DOCUMENTS.map((reqDoc) => {
                     const primaryDoc = getLatestDocByType(reqDoc.type);
                     const status = primaryDoc?.status || 'Missing';
-                    const versionHistory = primaryDoc ? getDocVersionHistory(primaryDoc) : [];
+                    const versionHistory = getDocVersionHistory(reqDoc.type);
                     const isVersionExpanded = primaryDoc ? expandedVersions.includes(primaryDoc.id) : false;
                     const canUploadThis = canUpload(reqDoc.responsible) && !room?.isClosed && hasAcceptedTerms;
-
                     const isApproved = ['Approved', 'Verified'].includes(status);
                     const isRejected = status === 'Rejected';
 
                     return (
                       <div key={reqDoc.type}
-                        className={`border rounded-lg overflow-hidden ${isApproved ? 'border-emerald-200 bg-emerald-50/30' : isRejected ? 'border-red-200 bg-red-50/30' : status === 'Missing' ? 'border-dashed border-border' : 'border-border'}`}
+                        className={`border rounded-lg overflow-hidden ${isApproved ? 'border-emerald-200 bg-emerald-50/30' : isRejected ? 'border-red-200 bg-red-50/30' : status === 'Missing' ? 'border-dashed' : ''}`}
                         data-testid={`doc-row-${reqDoc.type.toLowerCase().replace(/[^a-z]/g, '-')}`}>
                         <div className="p-3 flex items-center gap-3">
-                          {/* Status icon */}
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                             isApproved ? 'bg-emerald-100' : isRejected ? 'bg-red-100'
                               : status === 'Missing' ? 'bg-muted' : status === 'Under Review' ? 'bg-amber-100' : 'bg-blue-100'
@@ -1412,30 +1296,26 @@ Version 1.0 - Effective Date: January 2025`.trim();
                               : status === 'Under Review' ? <Eye className="w-4 h-4 text-amber-600" />
                               : <Upload className="w-4 h-4 text-blue-600" />}
                           </div>
-
-                          {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium text-sm">{reqDoc.label}</span>
                               <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">{reqDoc.responsibleLabel}</Badge>
                             </div>
                             {primaryDoc && (
-                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                                {primaryDoc.fileName} {primaryDoc.versionNumber && primaryDoc.versionNumber > 1 ? `· v${primaryDoc.versionNumber}` : ''}
-                                {primaryDoc.createdAt && ` · ${format(new Date(primaryDoc.createdAt), 'MMM d, HH:mm')}`}
-                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {primaryDoc.fileName}
+                                {primaryDoc.versionNumber && primaryDoc.versionNumber > 1 ? ` · v${primaryDoc.versionNumber}` : ''}
+                                {` · ${format(new Date(primaryDoc.createdAt), 'MMM d, HH:mm')}`}
+                              </p>
                             )}
                             {primaryDoc?.verificationNotes && (
-                              <div className={`text-xs mt-1 ${isRejected ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                {isRejected ? '↳ Rejection: ' : '↳ '}{primaryDoc.verificationNotes}
-                              </div>
+                              <p className={`text-xs mt-1 ${isRejected ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                {isRejected ? '↳ Rejected: ' : '↳ '}{primaryDoc.verificationNotes}
+                              </p>
                             )}
                           </div>
-
-                          {/* Status + Actions */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <DocumentStatusBadge status={status} />
-
                             {primaryDoc && (
                               <a href={primaryDoc.fileUrl} target="_blank" rel="noopener noreferrer">
                                 <Button variant="ghost" size="icon" className="w-7 h-7" data-testid={`btn-view-doc-${primaryDoc.id}`}>
@@ -1443,19 +1323,16 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 </Button>
                               </a>
                             )}
-
-                            {/* Admin review button */}
-                            {userRole === 'admin' && primaryDoc && !['Approved', 'Verified'].includes(status) && (
+                            {userRole === 'admin' && primaryDoc && !isApproved && (
                               <Button size="sm" variant="outline" className="text-xs h-7 px-2"
                                 onClick={() => { setReviewDocId(primaryDoc.id); setReviewStatus('Approved'); setReviewNotes(''); }}
                                 data-testid={`btn-review-doc-${primaryDoc.id}`}>
                                 <Eye className="w-3 h-3 mr-1" />Review
                               </Button>
                             )}
-
-                            {/* Upload / Re-upload */}
                             {canUploadThis && (
-                              <Button size="sm" variant={status === 'Missing' ? 'default' : 'outline'}
+                              <Button size="sm"
+                                variant={status === 'Missing' ? 'default' : 'outline'}
                                 className={`text-xs h-7 px-2 ${status === 'Missing' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
                                 onClick={() => {
                                   setUploadingDocType(reqDoc.type);
@@ -1468,8 +1345,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                   : <><Upload className="w-3 h-3 mr-1" />Update</>}
                               </Button>
                             )}
-
-                            {/* Version history toggle */}
                             {versionHistory.length > 1 && (
                               <Button variant="ghost" size="icon" className="w-7 h-7"
                                 onClick={() => setExpandedVersions(prev =>
@@ -1482,7 +1357,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
                           </div>
                         </div>
 
-                        {/* Version history */}
                         {isVersionExpanded && versionHistory.length > 1 && (
                           <div className="border-t bg-muted/20 px-4 py-2 space-y-1">
                             <p className="text-xs font-medium text-muted-foreground mb-2">Version History</p>
@@ -1492,8 +1366,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 <span className="font-medium truncate flex-1">{ver.fileName}</span>
                                 <DocumentStatusBadge status={ver.status} />
                                 <span className="text-muted-foreground">{format(new Date(ver.createdAt), 'MMM d, HH:mm')}</span>
-                                <a href={ver.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                  <Download className="w-3 h-3" />
+                                <a href={ver.fileUrl} target="_blank" rel="noopener noreferrer">
+                                  <Download className="w-3 h-3 text-primary" />
                                 </a>
                               </div>
                             ))}
@@ -1504,7 +1378,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   })
                 )}
 
-                {/* Other documents (non-checklist) */}
+                {/* Other (non-checklist) documents */}
                 {documents.filter(d => !REQUIRED_DOCUMENTS.find(r => r.type === d.documentType)).length > 0 && (
                   <div className="mt-6">
                     <p className="text-sm font-medium text-muted-foreground mb-3">Other Documents</p>
@@ -1513,7 +1387,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                         <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-medium">{doc.documentType}</span>
-                          <span className="text-xs text-muted-foreground ml-2 truncate">{doc.fileName}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{doc.fileName}</span>
                         </div>
                         <DocumentStatusBadge status={doc.status} />
                         <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
@@ -1532,41 +1406,34 @@ Version 1.0 - Effective Date: January 2025`.trim();
               </div>
             </TabsContent>
 
-            {/* ============================================================ */}
-            {/* TIMELINE TAB                                                   */}
-            {/* ============================================================ */}
+            {/* Timeline Tab */}
             <TabsContent value="timeline" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-timeline">
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-foreground">Deal Milestone Timeline</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Full history of stage transitions and events</p>
+                    <h3 className="font-semibold">Deal Timeline</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Stage transition history</p>
                   </div>
-                  {userRole === 'admin' && !room?.isClosed && (
-                    <Button size="sm" onClick={() => { setNewLcStage(''); setLcUpdateDialog(true); }}
-                      data-testid="btn-advance-stage">
-                      <Plus className="w-4 h-4 mr-1" />Advance Stage
+                  {userRole === 'admin' && !room?.isClosed && nextLcStage && (
+                    <Button size="sm" onClick={() => { setLcNotes(''); setLcUpdateDialog(true); }} data-testid="btn-advance-stage">
+                      <ArrowRight className="w-4 h-4 mr-1" />Advance to {nextLcStage}
                     </Button>
                   )}
                 </div>
 
-                {/* Current stage card */}
                 <div className="p-4 border rounded-lg bg-purple-50 border-purple-200">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
                       <Clock className="w-5 h-5 text-purple-600" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-muted-foreground">Current LC Stage</p>
-                      <p className="font-bold text-purple-700">{room?.lcLifecycleStatus || 'Contract Signed'}</p>
+                      <p className="font-bold text-purple-700">{currentLcStage}</p>
                     </div>
-                    <div className="ml-auto text-xs text-muted-foreground">
-                      Stage {(LC_STAGES.indexOf((room?.lcLifecycleStatus || 'Contract Signed') as LcStage) + 1)} of {LC_STAGES.length}
-                    </div>
+                    <p className="text-xs text-muted-foreground">Stage {currentLcIndex + 1} of {LC_STAGES.length}</p>
                   </div>
                 </div>
 
-                {/* Milestone history */}
                 {milestonesLoading ? (
                   <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
                 ) : milestones.length === 0 ? (
@@ -1579,43 +1446,49 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <div className="relative">
                     <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
                     <div className="space-y-4">
-                      {milestones.map((m, i) => (
-                        <div key={m.id} className="flex gap-4 relative" data-testid={`milestone-${m.id}`}>
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-2 ${
-                            i === milestones.length - 1 ? 'bg-purple-500 border-purple-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white'
-                          }`}>
-                            {i === milestones.length - 1 ? <Clock className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-sm">{m.milestoneName}</span>
-                              {m.completedByRole && (
-                                <Badge variant="outline" className="text-xs capitalize">{m.completedByRole}</Badge>
-                              )}
+                      {milestones.map((m, i) => {
+                        const isLatest = i === milestones.length - 1;
+                        const displayName = userDisplayName(m.completedByUser);
+                        return (
+                          <div key={m.id} className="flex gap-4 relative" data-testid={`milestone-${m.id}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-2 ${
+                              isLatest ? 'bg-purple-500 border-purple-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white'
+                            }`}>
+                              {isLatest ? <Clock className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{format(new Date(m.completedAt), 'MMMM d, yyyy HH:mm')}</p>
-                            {m.notes && <p className="text-sm text-muted-foreground mt-1 italic">"{m.notes}"</p>}
+                            <div className="flex-1 pb-4">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm">{m.milestoneName}</span>
+                                {m.completedByRole && (
+                                  <Badge variant="outline" className="text-xs capitalize">{m.completedByRole}</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {format(new Date(m.completedAt), 'MMMM d, yyyy HH:mm')}
+                                {m.completedByUser && ` · ${displayName}`}
+                              </p>
+                              {m.notes && <p className="text-sm text-muted-foreground mt-1 italic">"{m.notes}"</p>}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            {/* ============================================================ */}
-            {/* DISCREPANCIES TAB                                              */}
-            {/* ============================================================ */}
+            {/* Discrepancies Tab */}
             <TabsContent value="discrepancies" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-discrepancies">
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-foreground">Discrepancy Management</h3>
+                    <h3 className="font-semibold">Discrepancy Management</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Track and resolve document or deal discrepancies</p>
                   </div>
                   {userRole === 'admin' && !room?.isClosed && (
-                    <Button size="sm" variant="destructive" onClick={() => setRaiseDiscrepancyDialog(true)} data-testid="btn-open-raise-discrepancy">
+                    <Button size="sm" variant="destructive" onClick={() => { setDiscrepancyDocId('none'); setDiscrepancyReason(''); setDiscrepancyDescription(''); setRaiseDiscrepancyDialog(true); }}
+                      data-testid="btn-open-raise-discrepancy">
                       <Flag className="w-4 h-4 mr-1" />Raise Discrepancy
                     </Button>
                   )}
@@ -1626,12 +1499,11 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 ) : discrepancies.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <CheckCircle className="w-12 h-12 mx-auto mb-4 text-emerald-300" />
-                    <p className="font-medium">No Discrepancies Found</p>
+                    <p className="font-medium">No Discrepancies</p>
                     <p className="text-sm mt-1">All documents appear to be in order.</p>
                   </div>
                 ) : (
                   <>
-                    {/* Open */}
                     {openDiscrepancies.length > 0 && (
                       <div>
                         <p className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
@@ -1648,21 +1520,16 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                       <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">{d.reasonType}</Badge>
                                       {relatedDoc && <span className="text-xs text-muted-foreground">on {relatedDoc.documentType}</span>}
                                     </div>
-                                    {d.description && <p className="text-sm text-foreground mt-2">{d.description}</p>}
+                                    {d.description && <p className="text-sm mt-2">{d.description}</p>}
                                     <p className="text-xs text-muted-foreground mt-2">Raised: {format(new Date(d.createdAt), 'MMM d, yyyy HH:mm')}</p>
-                                    {relatedDoc && d.documentId && (
-                                      <div className="mt-2 flex items-center gap-2">
-                                        <span className="text-xs text-muted-foreground">Document:</span>
+                                    {relatedDoc && (
+                                      <div className="mt-2 flex items-center gap-2 flex-wrap">
                                         <a href={relatedDoc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
                                           <Download className="w-3 h-3" />{relatedDoc.fileName}
                                         </a>
                                         {userRole === 'exporter' && relatedDoc.status === 'Rejected' && (
-                                          <Button size="sm" variant="outline" className="text-xs h-6 px-2 ml-2"
-                                            onClick={() => {
-                                              setUploadingDocType(relatedDoc.documentType);
-                                              setUploadParentId(relatedDoc.id);
-                                              checklistFileInputRef.current?.click();
-                                            }}
+                                          <Button size="sm" variant="outline" className="text-xs h-6 px-2"
+                                            onClick={() => { setUploadingDocType(relatedDoc.documentType); setUploadParentId(relatedDoc.id); checklistFileInputRef.current?.click(); }}
                                             data-testid={`btn-reupload-${relatedDoc.id}`}>
                                             <RotateCcw className="w-3 h-3 mr-1" />Re-upload
                                           </Button>
@@ -1685,7 +1552,6 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       </div>
                     )}
 
-                    {/* Resolved */}
                     {discrepancies.filter(d => d.status === 'resolved').length > 0 && (
                       <div className="mt-6">
                         <p className="text-sm font-semibold text-emerald-600 mb-3 flex items-center gap-2">
