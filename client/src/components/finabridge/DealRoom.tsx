@@ -483,6 +483,10 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskSidebarOpen, setRiskSidebarOpen] = useState(false);
 
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [mt700Validation, setMt700Validation] = useState<Record<string, { tag: string; name: string; description: string; present: boolean }[]>>({});
+  const [validatingMt700, setValidatingMt700] = useState<string | null>(null);
+
   const [showWrForm, setShowWrForm] = useState(false);
   const [showPolForm, setShowPolForm] = useState(false);
   const [wrForm, setWrForm] = useState({ warehouseName: '', wrNumber: '', goldQuantityGrams: '', issuanceDate: '', expiryDate: '' });
@@ -754,6 +758,41 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
       else { const e = await r.json(); toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
     } catch { toast({ title: 'Error', description: 'Failed to save LC terms', variant: 'destructive' }); }
     finally { setSavingLcTerms(false); }
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      const r = await fetch(`/api/deal-rooms/${dealRoomId}/export-pdf`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!r.ok) throw new Error('Export failed');
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `deal-summary-${room?.tradeRequest?.tradeRefId || dealRoomId}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Deal Summary exported', description: 'Open the downloaded file in a browser and use print-to-PDF.' });
+    } catch { toast({ title: 'Export failed', description: 'Please try again', variant: 'destructive' }); }
+    finally { setExportingPdf(false); }
+  };
+
+  const handleValidateMt700 = async (docId: string) => {
+    setValidatingMt700(docId);
+    try {
+      const r = await apiRequest('POST', `/api/deal-rooms/${dealRoomId}/documents/${docId}/validate-mt700`, {});
+      if (r.ok) {
+        const d = await r.json();
+        setMt700Validation(prev => ({ ...prev, [docId]: d.validationResult?.fields || [] }));
+        toast({ title: 'MT700 Validation Complete', description: `${d.validationResult?.summary?.present}/${d.validationResult?.summary?.total} fields present` });
+      } else {
+        const e = await r.json();
+        toast({ title: 'Validation failed', description: e.message, variant: 'destructive' });
+      }
+    } catch { toast({ title: 'Validation failed', variant: 'destructive' }); }
+    finally { setValidatingMt700(null); }
   };
 
   const handleWrFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) setPendingWrFile(f); if (wrFileInputRef.current) wrFileInputRef.current.value = ''; };
@@ -1247,6 +1286,11 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     <FileText className="w-4 h-4 mr-1" />{lcTermsData ? 'LC Terms' : 'LC Wizard'}
                   </Button>
                 )}
+                {/* Export Deal Summary */}
+                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={exportingPdf} data-testid="button-export-pdf">
+                  {exportingPdf ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+                  Export PDF
+                </Button>
                 {/* Risk Sidebar Toggle */}
                 <Button variant={riskSidebarOpen ? 'default' : 'outline'} size="sm"
                   onClick={() => setRiskSidebarOpen(o => !o)} data-testid="button-toggle-risk-sidebar"
@@ -1551,6 +1595,47 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       </Button>
                     </div>
                   )}
+
+                  {/* MT700 Validation Panel — shown for LC Draft documents */}
+                  {documents.filter(d => d.documentType === 'LC Draft').map(doc => (
+                    <div key={doc.id} className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50/30 mt-4" data-testid={`mt700-panel-${doc.id}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-indigo-700 text-sm">MT700 Field Validator — {doc.fileName}</h4>
+                          <p className="text-xs text-muted-foreground">Validate mandatory SWIFT MT700 fields for LC compliance</p>
+                        </div>
+                        <Button size="sm" variant="outline" className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-100"
+                          onClick={() => handleValidateMt700(doc.id)} disabled={validatingMt700 === doc.id}
+                          data-testid={`btn-validate-mt700-${doc.id}`}>
+                          {validatingMt700 === doc.id ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Validating...</> : <><Check className="w-3 h-3 mr-1" />Validate MT700</>}
+                        </Button>
+                      </div>
+                      {mt700Validation[doc.id] && (
+                        <div className="space-y-1.5" data-testid={`mt700-results-${doc.id}`}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-medium text-indigo-700">
+                              {mt700Validation[doc.id].filter(f => f.present).length}/{mt700Validation[doc.id].length} fields present
+                            </span>
+                            <div className="flex-1 bg-indigo-100 rounded-full h-1.5">
+                              <div className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                                style={{ width: `${(mt700Validation[doc.id].filter(f => f.present).length / mt700Validation[doc.id].length) * 100}%` }} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
+                            {mt700Validation[doc.id].map(field => (
+                              <div key={field.tag} className={`flex items-center gap-2 p-1.5 rounded text-xs ${field.present ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}
+                                data-testid={`mt700-field-${field.tag}`}>
+                                {field.present ? <Check className="w-3 h-3 flex-shrink-0" /> : <XCircle className="w-3 h-3 flex-shrink-0" />}
+                                <span className="font-mono font-medium">{field.tag}</span>
+                                <span className="truncate">{field.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
                   {/* POL Structured Upload Form */}
                   {showPolForm && (

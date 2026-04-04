@@ -2603,6 +2603,7 @@ export const dealRoomDocuments = pgTable("deal_room_documents", {
   expiresAt: timestamp("expires_at"),
   versionNumber: integer("version_number").default(1),
   parentDocumentId: varchar("parent_document_id", { length: 255 }).references((): AnyPgColumn => dealRoomDocuments.id),
+  mt700ValidationResult: jsonb("mt700_validation_result"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -2788,6 +2789,23 @@ export const dealRoomDocumentMetadata = pgTable("deal_room_document_metadata", {
 export const insertDealRoomDocumentMetadataSchema = createInsertSchema(dealRoomDocumentMetadata).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDealRoomDocumentMetadata = z.infer<typeof insertDealRoomDocumentMetadataSchema>;
 export type DealRoomDocumentMetadata = typeof dealRoomDocumentMetadata.$inferSelect;
+
+// ============================================
+// DEAL ROOM - INTERNAL ADMIN NOTES
+// ============================================
+
+export const dealRoomInternalNotes = pgTable("deal_room_internal_notes", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).notNull().references(() => dealRooms.id),
+  adminUserId: varchar("admin_user_id", { length: 255 }).notNull().references(() => users.id),
+  note: text("note").notNull(),
+  isEscalated: boolean("is_escalated").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDealRoomInternalNoteSchema = createInsertSchema(dealRoomInternalNotes).omit({ id: true, createdAt: true });
+export type InsertDealRoomInternalNote = z.infer<typeof insertDealRoomInternalNoteSchema>;
+export type DealRoomInternalNote = typeof dealRoomInternalNotes.$inferSelect;
 
 // ============================================
 // CHAT AGENTS

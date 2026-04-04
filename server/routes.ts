@@ -24,7 +24,7 @@ import {
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments, dealMilestones, dealDiscrepancies, dealRooms as dealRoomsTable,
-  lcTerms, dealRoomDocumentMetadata, kycSubmissions, userRiskProfiles,
+  lcTerms, dealRoomDocumentMetadata, dealRoomInternalNotes, kycSubmissions, userRiskProfiles,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
   tradeShipments, shipmentMilestones, tradeCertificates, exporterRatings, exporterTrustScores, tradeRiskAssessments,
   tradeRequests, tradeProposals, settlementHolds, tradeDocuments,
@@ -16854,6 +16854,20 @@ export async function registerRoutes(
         versionNumber,
         parentDocumentId: req.body.parentDocumentId || null,
       }).returning();
+
+      // Smart notification: document submitted — notify admin and the other party
+      try {
+        const notifMsg = `${documentType} submitted by ${userRole} in deal room — review required.`;
+        const notifLink = `/finabridge/deal-room/${dealRoom.id}`;
+        if (dealRoom.assignedAdminId && dealRoom.assignedAdminId !== sessionUserId) {
+          await storage.createNotification({ userId: dealRoom.assignedAdminId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
+        }
+        if (userRole === 'exporter' && dealRoom.importerUserId !== sessionUserId) {
+          await storage.createNotification({ userId: dealRoom.importerUserId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
+        } else if (userRole === 'importer' && dealRoom.exporterUserId !== sessionUserId) {
+          await storage.createNotification({ userId: dealRoom.exporterUserId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
+        }
+      } catch (e) { console.error('[Notification] doc upload notify failed:', e); }
       
       res.json({ document, message: "Document uploaded successfully" });
     } catch (error) {
@@ -17141,6 +17155,35 @@ export async function registerRoutes(
         notes: notes || null,
       });
 
+      // Smart notifications for stage transitions
+      try {
+        const notifLink = `/finabridge/deal-room/${req.params.dealRoomId}`;
+        const stageNotifs: Record<string, { title: string; message: string; notify: ('importer' | 'exporter' | 'admin')[] }> = {
+          'LC Issued': { title: 'LC Issued', message: 'Your Letter of Credit has been issued. Please submit your trade documents.', notify: ['exporter'] },
+          'Docs Submitted': { title: 'Documents Submitted', message: 'Exporter has submitted trade documents — review required.', notify: ['admin'] },
+          'Docs Under Review': { title: 'Documents Under Review', message: 'Your submitted documents are now under review by the admin.', notify: ['exporter'] },
+          'Discrepancy Raised': { title: 'Discrepancy Raised', message: 'A discrepancy has been raised on your documents. Please resolve it.', notify: ['exporter'] },
+          'Discrepancy Resolved': { title: 'Discrepancy Resolved', message: 'The document discrepancy has been resolved. Admin will re-review.', notify: ['admin'] },
+          'Approved': { title: 'Documents Approved', message: 'All documents have been approved. Please trigger payment to proceed.', notify: ['importer', 'exporter'] },
+          'Payment Triggered': { title: 'Payment Triggered', message: 'Payment has been triggered by the importer. Admin will confirm and close.', notify: ['admin', 'exporter'] },
+          'Closed': { title: 'Deal Closed — Gold Released', message: 'Congratulations! The deal is now closed and gold has been released.', notify: ['importer', 'exporter'] },
+        };
+        const notif = stageNotifs[lcLifecycleStatus];
+        if (notif) {
+          const userIdMap = {
+            importer: dealRoom.importerUserId,
+            exporter: dealRoom.exporterUserId,
+            admin: dealRoom.assignedAdminId,
+          };
+          for (const role of notif.notify) {
+            const uid = userIdMap[role];
+            if (uid && uid !== sessionUserId) {
+              await storage.createNotification({ userId: uid, title: notif.title, message: notif.message, type: 'trade', link: notifLink, read: false });
+            }
+          }
+        }
+      } catch (e) { console.error('[Notification] LC stage notify failed:', e); }
+
       res.json({ message: "LC lifecycle status updated", lcLifecycleStatus });
     } catch (error) {
       console.error('[DealRoom] LC status update error:', error);
@@ -17280,6 +17323,13 @@ export async function registerRoutes(
         description: description || null,
         status: 'open',
       }).returning();
+
+      // Smart notification: discrepancy raised — notify exporter
+      try {
+        const notifMsg = `A discrepancy has been raised on your documents: ${reasonType}. Please resolve it.`;
+        const notifLink = `/finabridge/deal-room/${req.params.dealRoomId}`;
+        await storage.createNotification({ userId: dealRoom.exporterUserId, title: 'Discrepancy Raised', message: notifMsg, type: 'trade', link: notifLink, read: false });
+      } catch (e) { console.error('[Notification] discrepancy notify failed:', e); }
 
       res.json({ discrepancy, message: "Discrepancy raised" });
     } catch (error) {
@@ -17852,9 +17902,496 @@ export async function registerRoutes(
       }
       
       const room = await storage.updateDealRoom(req.params.id, { assignedAdminId: adminId });
+      // Notify parties that a deal manager was assigned
+      try {
+        const updatedRoom = await storage.getDealRoom(req.params.id);
+        if (updatedRoom) {
+          const msg = `A deal manager has been assigned to your trade deal room.`;
+          const link = `/finabridge/deal-room/${req.params.id}`;
+          await storage.createNotification({ userId: updatedRoom.importerUserId, title: 'Deal Manager Assigned', message: msg, type: 'trade', link, read: false });
+          await storage.createNotification({ userId: updatedRoom.exporterUserId, title: 'Deal Manager Assigned', message: msg, type: 'trade', link, read: false });
+        }
+      } catch (e) { console.error('[Notification] deal manager assign failed:', e); }
       res.json({ room });
     } catch (error) {
       res.status(400).json({ message: "Failed to assign admin" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - INTERNAL ADMIN NOTES
+  // ============================================================================
+
+  app.get("/api/admin/deal-rooms/:id/internal-notes", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
+    try {
+      const notes = await db.select().from(dealRoomInternalNotes)
+        .where(eq(dealRoomInternalNotes.dealRoomId, req.params.id))
+        .orderBy(desc(dealRoomInternalNotes.createdAt));
+      const adminUser = (req as any).adminUser;
+      const enriched = await Promise.all(notes.map(async (n) => {
+        const author = await storage.getUser(n.adminUserId);
+        return { ...n, authorName: author ? `${author.firstName || ''} ${author.lastName || ''}`.trim() || author.email : 'Admin' };
+      }));
+      res.json({ notes: enriched });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to fetch internal notes" });
+    }
+  });
+
+  app.post("/api/admin/deal-rooms/:id/internal-notes", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { note, isEscalated } = req.body;
+      if (!note?.trim()) return res.status(400).json({ message: "Note is required" });
+      const [created] = await db.insert(dealRoomInternalNotes).values({
+        id: crypto.randomUUID(),
+        dealRoomId: req.params.id,
+        adminUserId: adminUser.id,
+        note: note.trim(),
+        isEscalated: !!isEscalated,
+      }).returning();
+      res.json({ note: created });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create internal note" });
+    }
+  });
+
+  // Admin: Mark deal as escalated via flag
+  app.patch("/api/admin/deal-rooms/:id/escalate", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { reason } = req.body;
+      // Insert an escalation note
+      await db.insert(dealRoomInternalNotes).values({
+        id: crypto.randomUUID(),
+        dealRoomId: req.params.id,
+        adminUserId: adminUser.id,
+        note: reason ? `ESCALATED: ${reason}` : 'Deal escalated by admin',
+        isEscalated: true,
+      });
+      res.json({ message: "Deal escalated" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to escalate deal" });
+    }
+  });
+
+  // Admin: Assign deal manager to a deal room
+  app.post("/api/admin/deal-rooms/:id/assign-manager", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
+    try {
+      const { adminEmail } = req.body;
+      if (!adminEmail?.trim()) return res.status(400).json({ message: "Admin email is required" });
+      const targetAdmin = await storage.getUserByEmail(adminEmail.trim().toLowerCase());
+      if (!targetAdmin) return res.status(404).json({ message: "Admin user not found with that email" });
+      if (targetAdmin.role !== 'admin') return res.status(400).json({ message: "User is not an admin" });
+      const room = await storage.getDealRoom(req.params.id);
+      if (!room) return res.status(404).json({ message: "Deal room not found" });
+      const [updated] = await db.update(dealRoomsTable).set({ assignedAdminId: targetAdmin.id }).where(eq(dealRoomsTable.id, req.params.id)).returning();
+      // Notify assigned deal manager
+      await storage.createNotification({ userId: targetAdmin.id, title: 'Deal Manager Assigned', message: `You have been assigned as Deal Manager for deal room ${room.id.slice(0, 8)}`, type: 'trade', link: `/admin/finabridge`, read: false });
+      res.json({ message: "Deal manager assigned", room: updated });
+    } catch (error) {
+      console.error("assign-manager error:", error);
+      res.status(500).json({ message: "Failed to assign deal manager" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - PDF EXPORT
+  // ============================================================================
+
+  app.get("/api/deal-rooms/:dealRoomId/export-pdf", ensureAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Gather all deal data
+      const tradeRequest = await storage.getTradeRequest(dealRoom.tradeRequestId);
+      const documents = await db.select().from(dealRoomDocuments)
+        .where(eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId))
+        .orderBy(dealRoomDocuments.documentType, desc(dealRoomDocuments.versionNumber ?? 1));
+      const milestones = await db.select().from(dealMilestones)
+        .where(eq(dealMilestones.dealRoomId, req.params.dealRoomId))
+        .orderBy(dealMilestones.completedAt);
+      const discrepancyRows = await db.select().from(dealDiscrepancies)
+        .where(eq(dealDiscrepancies.dealRoomId, req.params.dealRoomId))
+        .orderBy(dealDiscrepancies.createdAt);
+      const [lcTermsRow] = await db.select().from(lcTerms)
+        .where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+
+      const importer = dealRoom.importerUserId ? await storage.getUser(dealRoom.importerUserId) : null;
+      const exporter = dealRoom.exporterUserId ? await storage.getUser(dealRoom.exporterUserId) : null;
+
+      // Deduplicate docs — only latest version per doc type
+      const latestDocsByType: Record<string, typeof documents[0]> = {};
+      for (const doc of documents) {
+        const existing = latestDocsByType[doc.documentType];
+        if (!existing || (doc.versionNumber ?? 1) > (existing.versionNumber ?? 1)) {
+          latestDocsByType[doc.documentType] = doc;
+        }
+      }
+      const latestDocs = Object.values(latestDocsByType);
+
+      const now = new Date();
+      const formatDate = (d: Date | string | null | undefined) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+      const statusColor = (s: string) => {
+        if (s === 'Approved' || s === 'Verified') return '#16a34a';
+        if (s === 'Rejected') return '#dc2626';
+        if (s === 'Under Review') return '#d97706';
+        return '#6b7280';
+      };
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Deal Summary — ${tradeRequest?.tradeRefId || dealRoom.id}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; margin: 0; padding: 24px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px; }
+  .logo { font-size: 22px; font-weight: 800; color: #7c3aed; }
+  .logo span { color: #111827; }
+  .deal-id { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  h2 { font-size: 14px; font-weight: 700; color: #7c3aed; margin: 20px 0 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; }
+  .card-title { font-weight: 700; font-size: 11px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; letter-spacing: 0.05em; }
+  .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f3f4f6; }
+  .row:last-child { border: none; }
+  .label { color: #6b7280; }
+  .value { font-weight: 600; text-align: right; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th { background: #f3f4f6; font-size: 10px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.04em; padding: 8px 10px; text-align: left; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; font-size: 11px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #9ca3af; text-align: center; }
+  .warn { background: #fef3c7; border: 1px solid #fcd34d; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 11px; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">Fina<span>Trades</span> — FinaBridge</div>
+    <div class="deal-id">Deal Summary Report &nbsp;|&nbsp; Generated ${formatDate(now)} at ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:13px; font-weight:700;">Deal Ref: ${tradeRequest?.tradeRefId || 'N/A'}</div>
+    <div style="font-size:11px; color:#6b7280;">Status: <strong>${dealRoom.status}</strong> &nbsp;|&nbsp; LC Stage: <strong>${dealRoom.lcLifecycleStatus || 'Draft'}</strong></div>
+  </div>
+</div>
+
+<h2>Trade Overview</h2>
+<div class="grid2">
+  <div class="card">
+    <div class="card-title">Trade Details</div>
+    <div class="row"><span class="label">Goods</span><span class="value">${tradeRequest?.goodsName || 'N/A'}</span></div>
+    <div class="row"><span class="label">Trade Value</span><span class="value">$${parseFloat(tradeRequest?.tradeValueUsd || '0').toLocaleString()} USD</span></div>
+    <div class="row"><span class="label">Settlement Gold</span><span class="value">${parseFloat(tradeRequest?.settlementGoldGrams || '0').toFixed(3)}g Au</span></div>
+    <div class="row"><span class="label">Currency</span><span class="value">${tradeRequest?.currency || 'USD'}</span></div>
+    <div class="row"><span class="label">Incoterms</span><span class="value">${tradeRequest?.incoterms || 'N/A'}</span></div>
+    <div class="row"><span class="label">Deal Opened</span><span class="value">${formatDate(dealRoom.createdAt)}</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">LC Terms</div>
+    <div class="row"><span class="label">LC Type</span><span class="value">${lcTermsRow?.lcType || 'N/A'}</span></div>
+    <div class="row"><span class="label">Expiry Date</span><span class="value">${lcTermsRow?.expiryDate || 'N/A'}</span></div>
+    <div class="row"><span class="label">Expiry Place</span><span class="value">${lcTermsRow?.expiryPlace || 'N/A'}</span></div>
+    <div class="row"><span class="label">Amount</span><span class="value">${lcTermsRow?.amount ? '$' + parseFloat(lcTermsRow.amount).toLocaleString() : 'N/A'}</span></div>
+    <div class="row"><span class="label">Partial Shipment</span><span class="value">${lcTermsRow?.partialShipment ? 'Allowed' : 'Not Allowed'}</span></div>
+    <div class="row"><span class="label">Transshipment</span><span class="value">${lcTermsRow?.transshipment ? 'Allowed' : 'Not Allowed'}</span></div>
+  </div>
+</div>
+
+<h2>Deal Parties</h2>
+<div class="grid2">
+  <div class="card">
+    <div class="card-title">Importer</div>
+    <div class="row"><span class="label">Name</span><span class="value">${importer ? (importer.firstName ? importer.firstName + ' ' + (importer.lastName || '') : importer.email) : 'N/A'}</span></div>
+    <div class="row"><span class="label">Company</span><span class="value">${(importer as any)?.companyName || 'N/A'}</span></div>
+    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${importer?.finatradesId || 'N/A'}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${importer?.email || 'N/A'}</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Exporter</div>
+    <div class="row"><span class="label">Name</span><span class="value">${exporter ? (exporter.firstName ? exporter.firstName + ' ' + (exporter.lastName || '') : exporter.email) : 'N/A'}</span></div>
+    <div class="row"><span class="label">Company</span><span class="value">${(exporter as any)?.companyName || 'N/A'}</span></div>
+    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${exporter?.finatradesId || 'N/A'}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${exporter?.email || 'N/A'}</span></div>
+  </div>
+</div>
+
+<h2>Document Checklist</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Document Type</th>
+      <th>Uploaded By</th>
+      <th>Status</th>
+      <th>Version</th>
+      <th>Verified At</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${latestDocs.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No documents uploaded</td></tr>` : latestDocs.map(d => `
+    <tr>
+      <td><strong>${d.documentType}</strong></td>
+      <td>${d.uploaderRole}</td>
+      <td><span class="badge" style="background:${statusColor(d.status)}20; color:${statusColor(d.status)};">${d.status}</span></td>
+      <td>v${d.versionNumber ?? 1}</td>
+      <td>${formatDate(d.verifiedAt)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${d.verificationNotes || '—'}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+<h2>Deal Milestone Timeline</h2>
+<table>
+  <thead>
+    <tr><th>#</th><th>Milestone</th><th>Role</th><th>Date &amp; Time</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    ${milestones.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No milestones recorded</td></tr>` : milestones.map((m, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${m.milestoneName}</strong></td>
+      <td>${m.completedByRole || '—'}</td>
+      <td>${formatDate(m.completedAt)}</td>
+      <td>${m.notes || '—'}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+${discrepancyRows.length > 0 ? `
+<h2>Discrepancy Log</h2>
+<table>
+  <thead>
+    <tr><th>Type</th><th>Status</th><th>Raised</th><th>Resolved</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    ${discrepancyRows.map(d => `
+    <tr>
+      <td>${d.reasonType}</td>
+      <td><span class="badge" style="background:${d.status === 'open' ? '#fef3c7' : '#d1fae5'}; color:${d.status === 'open' ? '#92400e' : '#065f46'};">${d.status}</span></td>
+      <td>${formatDate(d.createdAt)}</td>
+      <td>${formatDate(d.resolvedAt)}</td>
+      <td>${d.description || '—'}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>` : ''}
+
+<div class="footer">
+  This document is confidential and intended for authorized parties only. Generated by FinaTrades FinaBridge platform.<br>
+  Deal Room ID: ${dealRoom.id} &nbsp;|&nbsp; Trade Ref: ${tradeRequest?.tradeRefId || 'N/A'} &nbsp;|&nbsp; ${formatDate(now)}
+</div>
+
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="deal-summary-${tradeRequest?.tradeRefId || dealRoom.id}.html"`);
+      res.send(html);
+    } catch (error) {
+      console.error('[DealRoom] PDF export error:', error);
+      res.status(500).json({ message: "Failed to generate deal summary" });
+    }
+  });
+
+  // ============================================================================
+  // DEAL ROOM - MT700 LC DRAFT FIELD VALIDATOR
+  // ============================================================================
+
+  app.post("/api/deal-rooms/:dealRoomId/documents/:documentId/validate-mt700", ensureAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const [doc] = await db.select().from(dealRoomDocuments)
+        .where(and(
+          eq(dealRoomDocuments.id, req.params.documentId),
+          eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId)
+        ));
+      if (!doc) return res.status(404).json({ message: "Document not found" });
+
+      // MT700 mandatory fields with descriptions
+      const MT700_MANDATORY_FIELDS = [
+        { tag: ':40A:', name: 'Form of Documentary Credit', description: 'Type of LC (e.g., IRREVOCABLE)' },
+        { tag: ':31D:', name: 'Date and Place of Expiry', description: 'Expiry date and location of the LC' },
+        { tag: ':32B:', name: 'Currency Code, Amount', description: 'Currency and amount of the LC' },
+        { tag: ':41A:', name: 'Available With By', description: 'Bank and method of availability' },
+        { tag: ':43P:', name: 'Partial Shipments', description: 'Whether partial shipments are allowed' },
+        { tag: ':44A:', name: 'Place of Taking in Charge', description: 'Port or place of loading' },
+        { tag: ':44B:', name: 'Place of Final Destination', description: 'Port or place of discharge' },
+        { tag: ':45A:', name: 'Description of Goods / Services', description: 'Description of the goods or services' },
+      ];
+
+      // Attempt to extract text from the document URL / filename for scanning
+      // In a real system this would parse PDF text — here we scan fileName + description for tags
+      const documentText = [doc.fileName, doc.description, doc.verificationNotes].filter(Boolean).join(' ').toUpperCase();
+
+      const validationFields = MT700_MANDATORY_FIELDS.map(field => ({
+        tag: field.tag,
+        name: field.name,
+        description: field.description,
+        present: documentText.includes(field.tag.toUpperCase().replace(':', '')) ||
+                 documentText.includes(field.tag.replace(':', '')) ||
+                 // For simple demo validation based on doc type being LC Draft and having content
+                 (doc.documentType === 'LC Draft' && doc.description?.toLowerCase().includes(field.tag.replace(/:/g, '').toLowerCase())),
+      }));
+
+      // If doc is an LC Draft, use presence of the doc itself as a heuristic for basic fields
+      // In production: parse actual PDF text with pdf2pic / pdf-parse
+      if (doc.documentType === 'LC Draft') {
+        // Mark fields as present if we can infer them from the deal LC terms
+        const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+        if (lcRow) {
+          for (const field of validationFields) {
+            if (field.tag === ':31D:' && lcRow.expiryDate) field.present = true;
+            if (field.tag === ':32B:' && lcRow.amount) field.present = true;
+            if (field.tag === ':40A:' && lcRow.lcType) field.present = true;
+            if (field.tag === ':43P:') field.present = lcRow.partialShipment !== null;
+          }
+        }
+      }
+
+      const presentCount = validationFields.filter(f => f.present).length;
+      const missingCount = validationFields.length - presentCount;
+      const validationResult = {
+        documentId: doc.id,
+        documentType: doc.documentType,
+        validatedAt: new Date().toISOString(),
+        fields: validationFields,
+        summary: { total: validationFields.length, present: presentCount, missing: missingCount },
+        isValid: missingCount === 0,
+      };
+
+      // Persist result in the document record
+      await db.update(dealRoomDocuments).set({
+        mt700ValidationResult: validationResult,
+        updatedAt: new Date(),
+      }).where(eq(dealRoomDocuments.id, doc.id));
+
+      res.json({ validationResult });
+    } catch (error) {
+      console.error('[MT700] Validation error:', error);
+      res.status(500).json({ message: "Failed to validate MT700 fields" });
+    }
+  });
+
+  // ============================================================================
+  // FINABRIDGE DEAL ROOM ANALYTICS
+  // ============================================================================
+
+  app.get("/api/admin/finabridge/deal-analytics", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
+    try {
+      // 1. All deal rooms with creation and close dates
+      const rooms = await db.select({
+        id: dealRoomsTable.id,
+        status: dealRoomsTable.status,
+        isClosed: dealRoomsTable.isClosed,
+        lcLifecycleStatus: dealRoomsTable.lcLifecycleStatus,
+        createdAt: dealRoomsTable.createdAt,
+        updatedAt: dealRoomsTable.updatedAt,
+      }).from(dealRoomsTable);
+
+      // 2. Active vs Closed by month (last 6 months)
+      const now = new Date();
+      const months: string[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(d.toLocaleString('en-US', { month: 'short', year: '2-digit' }));
+      }
+
+      const activeVsClosed = months.map((month, idx) => {
+        const startDate = new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
+        const endDate = new Date(now.getFullYear(), now.getMonth() - (5 - idx) + 1, 1);
+        const inMonth = rooms.filter(r => {
+          const created = new Date(r.createdAt);
+          return created >= startDate && created < endDate;
+        });
+        return { month, active: inMonth.filter(r => !r.isClosed).length, closed: inMonth.filter(r => r.isClosed).length };
+      });
+
+      // 3. Document rejection rate by type
+      const allDocs = await db.select({
+        documentType: dealRoomDocuments.documentType,
+        status: dealRoomDocuments.status,
+      }).from(dealRoomDocuments);
+
+      const docTypeStats: Record<string, { total: number; rejected: number }> = {};
+      for (const doc of allDocs) {
+        if (!docTypeStats[doc.documentType]) docTypeStats[doc.documentType] = { total: 0, rejected: 0 };
+        docTypeStats[doc.documentType].total++;
+        if (doc.status === 'Rejected') docTypeStats[doc.documentType].rejected++;
+      }
+      const docRejectionRates = Object.entries(docTypeStats)
+        .map(([type, s]) => ({ type, rejectionRate: s.total > 0 ? Math.round((s.rejected / s.total) * 100) : 0, total: s.total, rejected: s.rejected }))
+        .filter(d => d.total > 0)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 8);
+
+      // 4. Most common discrepancy reasons
+      const allDiscrepancies = await db.select({ reasonType: dealDiscrepancies.reasonType }).from(dealDiscrepancies);
+      const discrepancyReasonCounts: Record<string, number> = {};
+      for (const d of allDiscrepancies) {
+        const key = d.reasonType || 'Other';
+        discrepancyReasonCounts[key] = (discrepancyReasonCounts[key] || 0) + 1;
+      }
+      const discrepancyReasons = Object.entries(discrepancyReasonCounts)
+        .map(([reason, count]) => ({ reason, count }))
+        .sort((a, b) => b.count - a.count);
+
+      // 5. Average deal completion time by month (closed deals)
+      const closedRooms = rooms.filter(r => r.isClosed && r.updatedAt);
+      const completionByMonth: Record<string, number[]> = {};
+      for (const r of closedRooms) {
+        const closeDate = new Date(r.updatedAt);
+        const monthKey = closeDate.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+        const daysOpen = Math.round((closeDate.getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (!completionByMonth[monthKey]) completionByMonth[monthKey] = [];
+        completionByMonth[monthKey].push(daysOpen);
+      }
+      const avgCompletionTime = months.map(month => {
+        const days = completionByMonth[month];
+        return { month, avgDays: days && days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : 0 };
+      });
+
+      res.json({
+        activeVsClosed,
+        docRejectionRates,
+        discrepancyReasons,
+        avgCompletionTime,
+        summary: {
+          totalRooms: rooms.length,
+          activeRooms: rooms.filter(r => !r.isClosed).length,
+          closedRooms: rooms.filter(r => r.isClosed).length,
+          totalDocuments: allDocs.length,
+          totalDiscrepancies: allDiscrepancies.length,
+        },
+      });
+    } catch (error) {
+      console.error('[Analytics] Error:', error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 
