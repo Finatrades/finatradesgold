@@ -68,7 +68,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
 };
 
 export default function Dashboard() {
@@ -346,18 +346,18 @@ export default function Dashboard() {
   const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || '';
     if (s === 'completed' || s === 'complete') {
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Completed</span>;
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Completed</span>;
     }
     if (s === 'pending') {
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-100"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Pending</span>;
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Pending</span>;
     }
     if (s === 'processing' || s === 'in progress') {
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />Processing</span>;
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />Processing</span>;
     }
     if (s === 'failed' || s === 'rejected') {
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-100"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed</span>;
+      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed</span>;
     }
-    return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-50 text-gray-600 border border-gray-100"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
+    return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-100"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
   };
 
   return (
@@ -393,7 +393,7 @@ export default function Dashboard() {
               <span className="text-gray-800">{getGreeting()}, </span>
               <span className="gradient-text-purple font-extrabold">{userName}</span>
             </h1>
-            <p className="text-gray-400 text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
+            <p className="text-gray-500 text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
           </div>
           <motion.div
             whileHover={{ scale: 1.03 }}
@@ -407,48 +407,51 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
-        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2.5" data-testid="quick-actions">
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2" data-testid="quick-actions">
           <span className="text-[15px] font-bold text-gray-900 whitespace-nowrap">Quick Access :</span>
+          {/* Primary buy action — purple brand */}
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1"
             data-testid="button-buy-gold">
             <Package className="w-3.5 h-3.5" /> Buy Gold Bar
           </motion.button>
+          {/* Sell — rose, signals outflow */}
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1"
             data-testid="button-sell-gold">
             <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
           </motion.button>
+          {/* Neutral secondary actions — consistent gray styling */}
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 hover:shadow-md hover:shadow-orange-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
             data-testid="button-withdraw-gold">
-            <ArrowUpRight className="w-3.5 h-3.5" /> Withdraw Gold
+            <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:shadow-md hover:shadow-blue-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
             data-testid="button-send-gold">
-            <Send className="w-3.5 h-3.5" /> Send Gold
+            <Send className="w-3.5 h-3.5 text-blue-500" /> Send Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-cyan-200 bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 hover:shadow-md hover:shadow-cyan-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
             data-testid="button-request-gold">
-            <ArrowDownLeft className="w-3.5 h-3.5" /> Request Gold
+            <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
             data-testid="button-lock-gold">
-            <Shield className="w-3.5 h-3.5" /> Lock Gold Price
+            <Shield className="w-3.5 h-3.5 text-emerald-500" /> Lock Gold Price
           </motion.button>
           <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1"
             data-testid="button-deposit-gold-quick">
             <Vault className="w-3.5 h-3.5" /> Deposit Gold
           </motion.button>
           {isBusinessUser && (
             <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 hover:shadow-md hover:shadow-indigo-100/50 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
               data-testid="button-create-trade-quick">
-              <Landmark className="w-3.5 h-3.5" /> Create Trade
+              <Landmark className="w-3.5 h-3.5 text-indigo-500" /> Create Trade
             </motion.button>
           )}
         </motion.div>
