@@ -2637,7 +2637,7 @@ export const dealRooms = pgTable("deal_rooms", {
   adminDisclaimerUpdatedAt: timestamp("admin_disclaimer_updated_at"),
   adminDisclaimerUpdatedBy: varchar("admin_disclaimer_updated_by", { length: 255 }).references(() => users.id),
   
-  lcLifecycleStatus: varchar("lc_lifecycle_status", { length: 50 }).default('Contract Signed'),
+  lcLifecycleStatus: varchar("lc_lifecycle_status", { length: 50 }).default('Draft'),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

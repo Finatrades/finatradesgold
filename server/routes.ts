@@ -17052,6 +17052,41 @@ export async function registerRoutes(
         }
       }
 
+      // Payment gate: enforce all required docs approved before Payment Triggered
+      if (lcLifecycleStatus === 'Payment Triggered') {
+        const REQUIRED_DOC_TYPES = [
+          'Invoice', 'Bill of Lading', 'Packing List', 'Certificate of Origin',
+          'Insurance Certificate', 'Inspection Report', 'LC Draft', 'Proof of Lading', 'Warehouse Receipt',
+        ];
+        // Fetch LC terms to get custom required docs if set
+        const [lcTermsRow] = await db.select({ requiredDocuments: lcTerms.requiredDocuments })
+          .from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+        const requiredTypes = lcTermsRow?.requiredDocuments || REQUIRED_DOC_TYPES;
+
+        // Get all approved docs for this deal room
+        const allDocs = await db.select({
+          documentType: dealRoomDocuments.documentType,
+          status: dealRoomDocuments.status,
+          versionNumber: dealRoomDocuments.versionNumber,
+        }).from(dealRoomDocuments).where(eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId));
+
+        // For each required type, check latest version is Approved/Verified
+        const unapprovedDocs: string[] = [];
+        for (const reqType of requiredTypes) {
+          const docsOfType = allDocs.filter(d => d.documentType === reqType);
+          if (docsOfType.length === 0) { unapprovedDocs.push(reqType); continue; }
+          const latest = docsOfType.sort((a, b) => (b.versionNumber ?? 1) - (a.versionNumber ?? 1))[0];
+          if (!['Approved', 'Verified'].includes(latest.status ?? '')) {
+            unapprovedDocs.push(reqType);
+          }
+        }
+        if (unapprovedDocs.length > 0) {
+          return res.status(400).json({
+            message: `Cannot trigger payment: the following documents are not yet approved: ${unapprovedDocs.join(', ')}`,
+          });
+        }
+      }
+
       await db.update(dealRoomsTable).set({
         lcLifecycleStatus,
         updatedAt: new Date(),
@@ -17220,8 +17255,12 @@ export async function registerRoutes(
       const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
       if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
 
+      // Admins and exporters (the party responsible for resolving discrepancies) can resolve
       const isAssignedAdmin = dealRoom.assignedAdminId === sessionUserId;
-      if (!isAdmin && !isAssignedAdmin) return res.status(403).json({ message: "Only admins can resolve discrepancies" });
+      const isExporter = dealRoom.exporterUserId === sessionUserId;
+      if (!isAdmin && !isAssignedAdmin && !isExporter) {
+        return res.status(403).json({ message: "Only admins or the exporter can resolve discrepancies" });
+      }
 
       const { resolutionNotes } = req.body;
 
@@ -17337,6 +17376,13 @@ export async function registerRoutes(
           country: kycSubmissions.country, status: kycSubmissions.status,
           screeningResults: kycSubmissions.screeningResults,
           screeningStatus: kycSubmissions.screeningStatus,
+          // KYC completion fields
+          fullName: kycSubmissions.fullName,
+          dateOfBirth: kycSubmissions.dateOfBirth,
+          nationality: kycSubmissions.nationality,
+          address: kycSubmissions.address,
+          companyName: kycSubmissions.companyName,
+          registrationNumber: kycSubmissions.registrationNumber,
         }).from(kycSubmissions).where(eq(kycSubmissions.userId, userId))
           .orderBy(desc(kycSubmissions.createdAt)).limit(1);
 
@@ -17348,9 +17394,15 @@ export async function registerRoutes(
           isPep: userRiskProfiles.isPep,
         }).from(userRiskProfiles).where(eq(userRiskProfiles.userId, userId)).limit(1);
 
-        // Calculate KYC completion %
-        const kycFields = ['fullName', 'dateOfBirth', 'nationality', 'country', 'address', 'companyName', 'registrationNumber'];
-        const kycCompletion = kyc ? Math.round((kycFields.filter(f => (kyc as any)[f]).length / kycFields.length) * 100) : 0;
+        // Calculate KYC completion % using properly selected fields
+        let kycCompletion = 0;
+        if (kyc) {
+          const completionChecks = [
+            !!kyc.fullName, !!kyc.dateOfBirth, !!kyc.nationality,
+            !!(kyc.country), !!kyc.address, !!kyc.companyName, !!kyc.registrationNumber,
+          ];
+          kycCompletion = Math.round((completionChecks.filter(Boolean).length / completionChecks.length) * 100);
+        }
 
         return {
           userId: user.id,
@@ -17384,16 +17436,32 @@ export async function registerRoutes(
   // DEAL ROOM - DOCUMENT METADATA (WR + POL)
   // ============================================================================
 
+  // Helper to verify document belongs to deal room (IDOR prevention)
+  const verifyDocumentOwnership = async (dealRoomId: string, documentId: string): Promise<boolean> => {
+    const [doc] = await db.select({ id: dealRoomDocuments.id })
+      .from(dealRoomDocuments)
+      .where(and(eq(dealRoomDocuments.id, documentId), eq(dealRoomDocuments.dealRoomId, dealRoomId)));
+    return !!doc;
+  };
+
   app.post("/api/deal-rooms/:dealRoomId/documents/:documentId/metadata", ensureAuthenticated, async (req, res) => {
     try {
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
       const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
       if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
-      if (dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
-        const sessionUser = await storage.getUser(sessionUserId);
-        if (sessionUser?.role !== 'admin') return res.status(403).json({ message: "Not authorized" });
-      }
+
+      // Enforce deal room membership
+      const isMember = isAdmin || dealRoom.importerUserId === sessionUserId
+        || dealRoom.exporterUserId === sessionUserId || dealRoom.assignedAdminId === sessionUserId;
+      if (!isMember) return res.status(403).json({ message: "Not authorized" });
+
+      // Verify document belongs to this deal room (prevents IDOR)
+      const docBelongs = await verifyDocumentOwnership(req.params.dealRoomId, req.params.documentId);
+      if (!docBelongs) return res.status(404).json({ message: "Document not found in this deal room" });
+
       const {
         warehouseName, wrNumber, goldQuantityGrams, issuanceDate, expiryDate,
         carrierName, blNumber, portOfLoading, portOfDischarge, estimatedDeparture, estimatedArrival,
@@ -17424,6 +17492,22 @@ export async function registerRoutes(
 
   app.get("/api/deal-rooms/:dealRoomId/documents/:documentId/metadata", ensureAuthenticated, async (req, res) => {
     try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });
+      const sessionUser = await storage.getUser(sessionUserId);
+      const isAdmin = sessionUser?.role === 'admin';
+      const dealRoom = await storage.getDealRoom(req.params.dealRoomId);
+      if (!dealRoom) return res.status(404).json({ message: "Deal room not found" });
+
+      // Enforce deal room membership
+      const isMember = isAdmin || dealRoom.importerUserId === sessionUserId
+        || dealRoom.exporterUserId === sessionUserId || dealRoom.assignedAdminId === sessionUserId;
+      if (!isMember) return res.status(403).json({ message: "Not authorized" });
+
+      // Verify document belongs to this deal room (prevents IDOR)
+      const docBelongs = await verifyDocumentOwnership(req.params.dealRoomId, req.params.documentId);
+      if (!docBelongs) return res.status(404).json({ message: "Document not found in this deal room" });
+
       const [metadata] = await db.select().from(dealRoomDocumentMetadata)
         .where(eq(dealRoomDocumentMetadata.documentId, req.params.documentId));
       res.json({ metadata: metadata || null });

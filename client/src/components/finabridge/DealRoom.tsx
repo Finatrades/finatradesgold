@@ -254,10 +254,23 @@ function getRoleColor(role: string) {
   return 'bg-gray-500';
 }
 
+// Normalize legacy stage values to the new 9-stage model
+function normalizeLcStage(rawStage: string | null | undefined): LcStage {
+  if (!rawStage) return 'Draft';
+  if ((LC_STAGES as readonly string[]).includes(rawStage)) return rawStage as LcStage;
+  // Map legacy values
+  const legacyMap: Record<string, LcStage> = {
+    'Contract Signed': 'Draft',
+    'Under Review': 'Docs Under Review',
+    'Discrepancy': 'Discrepancy Raised',
+    'Funds Released': 'Payment Triggered',
+  };
+  return legacyMap[rawStage] || 'Draft';
+}
+
 // --- LC Milestone Strip ---
 function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | null; isClosed: boolean }) {
-  const normalizedStage = currentStage || 'Draft';
-  const stage = normalizedStage as LcStage;
+  const stage = normalizeLcStage(currentStage);
   const currentIndex = LC_STAGES.indexOf(stage);
   return (
     <div className="border-b bg-muted/30 px-4 py-3" data-testid="lc-milestone-strip">
@@ -293,8 +306,9 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
 }
 
 // --- Status Banner ---
-function StageBanner({ stage, userRole, isClosed }: { stage: LcStage; userRole: 'importer' | 'exporter' | 'admin'; isClosed: boolean }) {
+function StageBanner({ stage: rawStage, userRole, isClosed }: { stage: string; userRole: 'importer' | 'exporter' | 'admin'; isClosed: boolean }) {
   if (isClosed) return null;
+  const stage = normalizeLcStage(rawStage);
   const info = STAGE_ACTOR[stage];
   const isMyTurn = info.actor === 'Admin' && userRole === 'admin'
     || info.actor === 'Exporter' && userRole === 'exporter'
@@ -444,7 +458,7 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
 
   const [activeTab, setActiveTab] = useState('chat');
 
-  const currentLcStage = ((room?.lcLifecycleStatus) || 'Draft') as LcStage;
+  const currentLcStage = normalizeLcStage(room?.lcLifecycleStatus);
   const currentLcIndex = LC_STAGES.indexOf(currentLcStage);
   const validCurrentIndex = currentLcIndex < 0 ? 0 : currentLcIndex;
 
