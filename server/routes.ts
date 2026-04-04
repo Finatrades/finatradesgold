@@ -17056,12 +17056,58 @@ export async function registerRoutes(
             { tag: ':44B:', name: 'Place of Final Destination', description: 'Port or place of discharge' },
             { tag: ':45A:', name: 'Description of Goods / Services', description: 'Description of the goods or services' },
           ];
-          const documentText = [updated.fileName, updated.description, updated.verificationNotes].filter(Boolean).join(' ').toUpperCase();
-          const validationFields = MT700_MANDATORY_FIELDS.map(field => ({
-            tag: field.tag, name: field.name, description: field.description,
-            present: documentText.includes(field.tag.replace(/:/g, '')) || documentText.includes(field.tag),
-          }));
-          // Cross-check with LC terms stored in DB
+
+          // Extract actual document text (same pipeline as manual validation endpoint)
+          let extractedText = '';
+          try {
+            const fileUrl = updated.fileUrl;
+            if (fileUrl) {
+              let fileBuffer: Buffer | null = null;
+              if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+                const r2PublicBase = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+                const isTrustedOrigin = r2PublicBase && fileUrl.startsWith(r2PublicBase);
+                if (isTrustedOrigin) {
+                  const resp = await fetch(fileUrl, { headers: { 'User-Agent': 'FinaTrades-MT700-Validator/1.0' } });
+                  if (resp.ok) {
+                    fileBuffer = Buffer.from(await resp.arrayBuffer());
+                  }
+                }
+              } else if (fileUrl.startsWith('/uploads/')) {
+                const { readFile } = await import('fs/promises');
+                const path = await import('path');
+                fileBuffer = await readFile(path.join(process.cwd(), 'public', fileUrl)).catch(() => null);
+              }
+              if (fileBuffer) {
+                const isPdf = updated.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25;
+                if (isPdf) {
+                  try {
+                    const pdfParse = (await import('pdf-parse')).default;
+                    extractedText = (await pdfParse(fileBuffer)).text || '';
+                  } catch {
+                    extractedText = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+                  }
+                } else {
+                  extractedText = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+                }
+              }
+            }
+          } catch (extractErr) {
+            console.error('[MT700] Auto-validation file extraction error (non-blocking):', extractErr);
+          }
+
+          const upperText = extractedText.toUpperCase();
+          const metaText = [updated.fileName, updated.description, updated.verificationNotes].filter(Boolean).join(' ').toUpperCase();
+          const fullText = `${upperText} ${metaText}`;
+
+          const validationFields = MT700_MANDATORY_FIELDS.map(field => {
+            const tagNoColon = field.tag.replace(/:/g, '');
+            return {
+              tag: field.tag, name: field.name, description: field.description,
+              present: fullText.includes(tagNoColon) || fullText.includes(field.tag),
+            };
+          });
+
+          // Cross-check with LC terms stored in DB — confirmed terms count as present
           const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
           if (lcRow) {
             for (const field of validationFields) {
@@ -18099,8 +18145,17 @@ export async function registerRoutes(
       const room = await storage.getDealRoom(req.params.id);
       if (!room) return res.status(404).json({ message: "Deal room not found" });
       const [updated] = await db.update(dealRoomsTable).set({ assignedAdminId: targetAdmin.id }).where(eq(dealRoomsTable.id, req.params.id)).returning();
-      // Notify assigned deal manager
-      await storage.createNotification({ userId: targetAdmin.id, title: 'Deal Manager Assigned', message: `You have been assigned as Deal Manager for deal room ${room.id.slice(0, 8)}`, type: 'trade', link: `/admin/finabridge`, read: false });
+      const shortId = room.id.slice(0, 8);
+      // Notify assigned deal manager (admin)
+      await storage.createNotification({ userId: targetAdmin.id, title: 'Deal Manager Assigned', message: `You have been assigned as Deal Manager for deal room ${shortId}`, type: 'trade', link: `/admin/finabridge`, read: false });
+      // Notify deal parties (importer + exporter)
+      const partyMsg = `A deal manager has been assigned to your deal room ${shortId}. You will be contacted shortly.`;
+      if (room.importerUserId) {
+        await storage.createNotification({ userId: room.importerUserId, title: 'Deal Manager Assigned', message: partyMsg, type: 'trade', link: `/finabridge`, read: false }).catch(() => {});
+      }
+      if (room.exporterUserId) {
+        await storage.createNotification({ userId: room.exporterUserId, title: 'Deal Manager Assigned', message: partyMsg, type: 'trade', link: `/finabridge`, read: false }).catch(() => {});
+      }
       res.json({ message: "Deal manager assigned", room: updated });
     } catch (error) {
       console.error("assign-manager error:", error);
@@ -18350,12 +18405,18 @@ export async function registerRoutes(
         if (fileUrl) {
           let fileBuffer: Buffer | null = null;
           if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-            // R2 / CDN file — fetch the content
-            const resp = await fetch(fileUrl, { headers: { 'User-Agent': 'FinaTrades-MT700-Validator/1.0' } });
-            if (resp.ok) {
-              const arrayBuf = await resp.arrayBuffer();
-              fileBuffer = Buffer.from(arrayBuf);
-              extractionSource = 'remote-fetch';
+            // R2 / CDN file — only fetch from trusted R2 origin (SSRF protection)
+            const r2PublicBase = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+            const isTrustedOrigin = r2PublicBase && fileUrl.startsWith(r2PublicBase);
+            if (isTrustedOrigin) {
+              const resp = await fetch(fileUrl, { headers: { 'User-Agent': 'FinaTrades-MT700-Validator/1.0' } });
+              if (resp.ok) {
+                const arrayBuf = await resp.arrayBuffer();
+                fileBuffer = Buffer.from(arrayBuf);
+                extractionSource = 'remote-fetch';
+              }
+            } else {
+              console.warn(`[MT700] Blocked fetch of untrusted URL: ${fileUrl.slice(0, 80)}`);
             }
           } else if (fileUrl.startsWith('/uploads/')) {
             // Local upload file

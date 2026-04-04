@@ -1652,12 +1652,13 @@ export default function FinaBridgeManagement() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b bg-muted/40">
-                              <th className="text-left px-4 py-2 font-medium">Deal Ref</th>
-                              <th className="text-left px-4 py-2 font-medium">Goods</th>
-                              <th className="text-left px-4 py-2 font-medium">Status</th>
+                              <th className="text-left px-4 py-2 font-medium">Deal ID</th>
+                              <th className="text-left px-4 py-2 font-medium">Importer</th>
+                              <th className="text-left px-4 py-2 font-medium">Exporter</th>
+                              <th className="text-left px-4 py-2 font-medium">LC Stage</th>
                               <th className="text-right px-4 py-2 font-medium">Days Open</th>
                               <th className="text-left px-4 py-2 font-medium">Last Activity</th>
-                              <th className="text-center px-4 py-2 font-medium">Docs</th>
+                              <th className="text-center px-4 py-2 font-medium">Docs Status</th>
                               <th className="text-center px-4 py-2 font-medium">SLA</th>
                               <th className="text-center px-4 py-2 font-medium">Actions</th>
                             </tr>
@@ -1672,16 +1673,21 @@ export default function FinaBridgeManagement() {
                               const slaBadge = daysOpen <= 7 ? { label: 'On Track', cls: 'bg-emerald-100 text-emerald-700' }
                                 : daysOpen <= 14 ? { label: 'At Risk', cls: 'bg-amber-100 text-amber-700' }
                                 : { label: 'Overdue', cls: 'bg-red-100 text-red-700' };
+                              const lcStage = (room as any).lcLifecycleStatus || 'Draft';
+                              const lcStageCls = lcStage === 'Active' ? 'bg-emerald-100 text-emerald-700'
+                                : lcStage === 'Expired' ? 'bg-red-100 text-red-700'
+                                : 'bg-slate-100 text-slate-600';
                               return (
                                 <tr key={room.id} className="border-b hover:bg-muted/20 transition-colors" data-testid={`sla-row-${room.id}`}>
                                   <td className="px-4 py-2 font-mono text-xs">{room.tradeRequest?.tradeRefId || room.id.slice(0, 8)}</td>
-                                  <td className="px-4 py-2 max-w-[140px] truncate">{room.tradeRequest?.goodsName || '—'}</td>
+                                  <td className="px-4 py-2 text-xs max-w-[120px] truncate" data-testid={`sla-importer-${room.id}`}>{room.importer?.email || '—'}</td>
+                                  <td className="px-4 py-2 text-xs max-w-[120px] truncate" data-testid={`sla-exporter-${room.id}`}>{room.exporter?.email || '—'}</td>
                                   <td className="px-4 py-2">
-                                    <Badge variant={room.status === 'open' ? 'default' : 'secondary'} className="capitalize text-xs">{room.status}</Badge>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${lcStageCls}`} data-testid={`sla-lc-stage-${room.id}`}>{lcStage}</span>
                                   </td>
                                   <td className="px-4 py-2 text-right font-medium" data-testid={`sla-days-${room.id}`}>{daysOpen}d</td>
                                   <td className="px-4 py-2 text-xs text-muted-foreground">{daysSinceActivity === 0 ? 'Today' : `${daysSinceActivity}d ago`}</td>
-                                  <td className="px-4 py-2 text-center text-xs" data-testid={`sla-docs-${room.id}`}>{docsApproved}/{docsTotal}</td>
+                                  <td className="px-4 py-2 text-center text-xs" data-testid={`sla-docs-${room.id}`}>{docsApproved}/{docsTotal} approved</td>
                                   <td className="px-4 py-2 text-center">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${slaBadge.cls}`} data-testid={`sla-badge-${room.id}`}>
                                       {slaBadge.label}
