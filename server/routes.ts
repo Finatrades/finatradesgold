@@ -1757,6 +1757,50 @@ export async function registerRoutes(
   { const { startMonthlyStatementScheduler } = await import('./jobs/monthly-statement.job'); startMonthlyStatementScheduler(storage); }
   { const { startAnnualStatementScheduler } = await import('./jobs/annual-statement.job'); startAnnualStatementScheduler(storage); }
 
+  // FinaBridge LC Expiry Notification Cron — runs every 12 hours
+  // Notifies admin for open deal rooms where LC expires within 3 days
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const openRooms = await db.select().from(dealRoomsTable).where(eq(dealRoomsTable.status, 'open'));
+      for (const room of openRooms) {
+        const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, room.id));
+        if (!lcRow?.expiryDate) continue;
+        const expiryDate = new Date(lcRow.expiryDate);
+        if (expiryDate > now && expiryDate <= threeDaysFromNow) {
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          console.log(`[FinaBridge] LC Expiry Alert: Deal Room ${room.id} expires in ${daysUntilExpiry} day(s) (${lcRow.expiryDate})`);
+          // Notify assigned admin if present, otherwise notify all admins
+          const adminUsers = await db.select().from(users).where(eq(users.role, 'admin'));
+          const targets = adminUsers.filter(u => !room.assignedAdminId || u.id === room.assignedAdminId);
+          for (const admin of targets) {
+            if (!admin.email) continue;
+            try {
+              const { sendEmail } = await import('./email');
+              await sendEmail({
+                to: admin.email,
+                subject: `[FinaBridge] LC Expiry Alert — ${daysUntilExpiry} day(s) remaining`,
+                html: `
+                  <p>Dear ${admin.firstName || admin.email},</p>
+                  <p>This is an automated alert from the FinaBridge Deal Manager.</p>
+                  <p>Deal Room <strong>${room.id}</strong> has an LC that will expire in <strong>${daysUntilExpiry} day(s)</strong> on <strong>${lcRow.expiryDate}</strong>.</p>
+                  <p>Please review the deal and take appropriate action before the LC expires.</p>
+                  <p>Log in to the admin panel to manage this deal: <a href="${process.env.BASE_URL || 'https://finatrades.com'}/admin/finabridge">FinaBridge Admin</a></p>
+                  <p>— FinaTrades FinaBridge System</p>
+                `,
+              });
+            } catch (emailErr) {
+              console.error(`[FinaBridge] Failed to send LC expiry email to ${admin.email}:`, emailErr);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[FinaBridge] LC expiry cron error:', err);
+    }
+  }, 12 * 60 * 60 * 1000);
+
   // Login with rate limiting
   app.post("/api/auth/login", geoRestrictionMiddleware(), authRateLimiter, async (req, res) => {
     try {
@@ -16983,6 +17027,51 @@ export async function registerRoutes(
         });
       }
 
+      // Auto-trigger MT700 validation when an LC Draft document is approved
+      if (status === 'Approved' && updated.documentType === 'LC Draft') {
+        try {
+          const MT700_MANDATORY_FIELDS = [
+            { tag: ':40A:', name: 'Form of Documentary Credit', description: 'Type of LC (e.g., IRREVOCABLE)' },
+            { tag: ':31D:', name: 'Date and Place of Expiry', description: 'Expiry date and location of the LC' },
+            { tag: ':32B:', name: 'Currency Code, Amount', description: 'Currency and amount of the LC' },
+            { tag: ':41A:', name: 'Available With By', description: 'Bank and method of availability' },
+            { tag: ':43P:', name: 'Partial Shipments', description: 'Whether partial shipments are allowed' },
+            { tag: ':44A:', name: 'Place of Taking in Charge', description: 'Port or place of loading' },
+            { tag: ':44B:', name: 'Place of Final Destination', description: 'Port or place of discharge' },
+            { tag: ':45A:', name: 'Description of Goods / Services', description: 'Description of the goods or services' },
+          ];
+          const documentText = [updated.fileName, updated.description, updated.verificationNotes].filter(Boolean).join(' ').toUpperCase();
+          const validationFields = MT700_MANDATORY_FIELDS.map(field => ({
+            tag: field.tag, name: field.name, description: field.description,
+            present: documentText.includes(field.tag.replace(/:/g, '')) || documentText.includes(field.tag),
+          }));
+          // Cross-check with LC terms stored in DB
+          const [lcRow] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
+          if (lcRow) {
+            for (const field of validationFields) {
+              if (field.tag === ':31D:' && lcRow.expiryDate) field.present = true;
+              if (field.tag === ':32B:' && lcRow.amount) field.present = true;
+              if (field.tag === ':40A:' && lcRow.lcType) field.present = true;
+              if (field.tag === ':43P:') field.present = lcRow.partialShipment !== null;
+            }
+          }
+          const presentCount = validationFields.filter(f => f.present).length;
+          const missingCount = validationFields.length - presentCount;
+          const validationResult = {
+            documentId: updated.id, documentType: updated.documentType,
+            triggeredBy: 'auto-approval', validatedAt: new Date().toISOString(),
+            fields: validationFields,
+            summary: { total: validationFields.length, present: presentCount, missing: missingCount },
+            isValid: missingCount === 0,
+          };
+          await db.update(dealRoomDocuments).set({ mt700ValidationResult: validationResult, updatedAt: new Date() })
+            .where(eq(dealRoomDocuments.id, updated.id));
+          console.log(`[MT700] Auto-validated LC Draft ${updated.id} on approval — ${presentCount}/${validationFields.length} fields present`);
+        } catch (mt700Err) {
+          console.error('[MT700] Auto-validation failed (non-blocking):', mt700Err);
+        }
+      }
+
       res.json({ document: updated, message: `Document ${status.toLowerCase()}` });
     } catch (error) {
       console.error('[DealRoom] Document review error:', error);
@@ -18042,6 +18131,7 @@ export async function registerRoutes(
 
       const now = new Date();
       const formatDate = (d: Date | string | null | undefined) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+      const esc = (s: string | null | undefined): string => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
       const statusColor = (s: string) => {
         if (s === 'Approved' || s === 'Verified') return '#16a34a';
@@ -18095,18 +18185,18 @@ export async function registerRoutes(
 <div class="grid2">
   <div class="card">
     <div class="card-title">Trade Details</div>
-    <div class="row"><span class="label">Goods</span><span class="value">${tradeRequest?.goodsName || 'N/A'}</span></div>
+    <div class="row"><span class="label">Goods</span><span class="value">${esc(tradeRequest?.goodsName)}</span></div>
     <div class="row"><span class="label">Trade Value</span><span class="value">$${parseFloat(tradeRequest?.tradeValueUsd || '0').toLocaleString()} USD</span></div>
     <div class="row"><span class="label">Settlement Gold</span><span class="value">${parseFloat(tradeRequest?.settlementGoldGrams || '0').toFixed(3)}g Au</span></div>
-    <div class="row"><span class="label">Currency</span><span class="value">${tradeRequest?.currency || 'USD'}</span></div>
-    <div class="row"><span class="label">Incoterms</span><span class="value">${tradeRequest?.incoterms || 'N/A'}</span></div>
+    <div class="row"><span class="label">Currency</span><span class="value">${esc(tradeRequest?.currency) || 'USD'}</span></div>
+    <div class="row"><span class="label">Incoterms</span><span class="value">${esc(tradeRequest?.incoterms) || 'N/A'}</span></div>
     <div class="row"><span class="label">Deal Opened</span><span class="value">${formatDate(dealRoom.createdAt)}</span></div>
   </div>
   <div class="card">
     <div class="card-title">LC Terms</div>
-    <div class="row"><span class="label">LC Type</span><span class="value">${lcTermsRow?.lcType || 'N/A'}</span></div>
-    <div class="row"><span class="label">Expiry Date</span><span class="value">${lcTermsRow?.expiryDate || 'N/A'}</span></div>
-    <div class="row"><span class="label">Expiry Place</span><span class="value">${lcTermsRow?.expiryPlace || 'N/A'}</span></div>
+    <div class="row"><span class="label">LC Type</span><span class="value">${esc(lcTermsRow?.lcType) || 'N/A'}</span></div>
+    <div class="row"><span class="label">Expiry Date</span><span class="value">${esc(lcTermsRow?.expiryDate) || 'N/A'}</span></div>
+    <div class="row"><span class="label">Expiry Place</span><span class="value">${esc(lcTermsRow?.expiryPlace) || 'N/A'}</span></div>
     <div class="row"><span class="label">Amount</span><span class="value">${lcTermsRow?.amount ? '$' + parseFloat(lcTermsRow.amount).toLocaleString() : 'N/A'}</span></div>
     <div class="row"><span class="label">Partial Shipment</span><span class="value">${lcTermsRow?.partialShipment ? 'Allowed' : 'Not Allowed'}</span></div>
     <div class="row"><span class="label">Transshipment</span><span class="value">${lcTermsRow?.transshipment ? 'Allowed' : 'Not Allowed'}</span></div>
@@ -18117,17 +18207,17 @@ export async function registerRoutes(
 <div class="grid2">
   <div class="card">
     <div class="card-title">Importer</div>
-    <div class="row"><span class="label">Name</span><span class="value">${importer ? (importer.firstName ? importer.firstName + ' ' + (importer.lastName || '') : importer.email) : 'N/A'}</span></div>
-    <div class="row"><span class="label">Company</span><span class="value">${(importer as any)?.companyName || 'N/A'}</span></div>
-    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${importer?.finatradesId || 'N/A'}</span></div>
-    <div class="row"><span class="label">Email</span><span class="value">${importer?.email || 'N/A'}</span></div>
+    <div class="row"><span class="label">Name</span><span class="value">${importer ? esc(importer.firstName ? importer.firstName + ' ' + (importer.lastName || '') : importer.email) : 'N/A'}</span></div>
+    <div class="row"><span class="label">Company</span><span class="value">${esc(importer?.companyName) || 'N/A'}</span></div>
+    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${esc(importer?.finatradesId) || 'N/A'}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${esc(importer?.email) || 'N/A'}</span></div>
   </div>
   <div class="card">
     <div class="card-title">Exporter</div>
-    <div class="row"><span class="label">Name</span><span class="value">${exporter ? (exporter.firstName ? exporter.firstName + ' ' + (exporter.lastName || '') : exporter.email) : 'N/A'}</span></div>
-    <div class="row"><span class="label">Company</span><span class="value">${(exporter as any)?.companyName || 'N/A'}</span></div>
-    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${exporter?.finatradesId || 'N/A'}</span></div>
-    <div class="row"><span class="label">Email</span><span class="value">${exporter?.email || 'N/A'}</span></div>
+    <div class="row"><span class="label">Name</span><span class="value">${exporter ? esc(exporter.firstName ? exporter.firstName + ' ' + (exporter.lastName || '') : exporter.email) : 'N/A'}</span></div>
+    <div class="row"><span class="label">Company</span><span class="value">${esc(exporter?.companyName) || 'N/A'}</span></div>
+    <div class="row"><span class="label">FinaTrades ID</span><span class="value">${esc(exporter?.finatradesId) || 'N/A'}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${esc(exporter?.email) || 'N/A'}</span></div>
   </div>
 </div>
 
@@ -18146,12 +18236,12 @@ export async function registerRoutes(
   <tbody>
     ${latestDocs.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No documents uploaded</td></tr>` : latestDocs.map(d => `
     <tr>
-      <td><strong>${d.documentType}</strong></td>
-      <td>${d.uploaderRole}</td>
-      <td><span class="badge" style="background:${statusColor(d.status)}20; color:${statusColor(d.status)};">${d.status}</span></td>
+      <td><strong>${esc(d.documentType)}</strong></td>
+      <td>${esc(d.uploaderRole)}</td>
+      <td><span class="badge" style="background:${statusColor(d.status)}20; color:${statusColor(d.status)};">${esc(d.status)}</span></td>
       <td>v${d.versionNumber ?? 1}</td>
       <td>${formatDate(d.verifiedAt)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${d.verificationNotes || '—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(d.verificationNotes) || '—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
@@ -18165,10 +18255,10 @@ export async function registerRoutes(
     ${milestones.length === 0 ? `<tr><td colspan="5" style="text-align:center;color:#9ca3af;">No milestones recorded</td></tr>` : milestones.map((m, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${m.milestoneName}</strong></td>
-      <td>${m.completedByRole || '—'}</td>
+      <td><strong>${esc(m.milestoneName)}</strong></td>
+      <td>${esc(m.completedByRole) || '—'}</td>
       <td>${formatDate(m.completedAt)}</td>
-      <td>${m.notes || '—'}</td>
+      <td>${esc(m.notes) || '—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
@@ -18182,18 +18272,18 @@ ${discrepancyRows.length > 0 ? `
   <tbody>
     ${discrepancyRows.map(d => `
     <tr>
-      <td>${d.reasonType}</td>
-      <td><span class="badge" style="background:${d.status === 'open' ? '#fef3c7' : '#d1fae5'}; color:${d.status === 'open' ? '#92400e' : '#065f46'};">${d.status}</span></td>
+      <td>${esc(d.reasonType)}</td>
+      <td><span class="badge" style="background:${d.status === 'open' ? '#fef3c7' : '#d1fae5'}; color:${d.status === 'open' ? '#92400e' : '#065f46'};">${esc(d.status)}</span></td>
       <td>${formatDate(d.createdAt)}</td>
       <td>${formatDate(d.resolvedAt)}</td>
-      <td>${d.description || '—'}</td>
+      <td>${esc(d.description) || '—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>` : ''}
 
 <div class="footer">
   This document is confidential and intended for authorized parties only. Generated by FinaTrades FinaBridge platform.<br>
-  Deal Room ID: ${dealRoom.id} &nbsp;|&nbsp; Trade Ref: ${tradeRequest?.tradeRefId || 'N/A'} &nbsp;|&nbsp; ${formatDate(now)}
+  Deal Room ID: ${dealRoom.id} &nbsp;|&nbsp; Trade Ref: ${esc(tradeRequest?.tradeRefId) || 'N/A'} &nbsp;|&nbsp; ${formatDate(now)}
 </div>
 
 </body>

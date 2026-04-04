@@ -538,7 +538,21 @@ export default function DealRoom({ dealRoomId, userRole, onClose }: DealRoomProp
     setDocsLoading(true);
     try {
       const r = await apiRequest('GET', `/api/deal-rooms/${dealRoomId}/documents`);
-      if (r.ok) { const d = await r.json(); setDocuments(d.documents || []); }
+      if (r.ok) {
+        const d = await r.json();
+        const docs = d.documents || [];
+        setDocuments(docs);
+        // Auto-populate MT700 validation results from persisted data
+        const validationMap: Record<string, { tag: string; name: string; description: string; present: boolean }[]> = {};
+        for (const doc of docs) {
+          if (doc.documentType === 'LC Draft' && doc.mt700ValidationResult?.fields) {
+            validationMap[doc.id] = doc.mt700ValidationResult.fields;
+          }
+        }
+        if (Object.keys(validationMap).length > 0) {
+          setMt700Validation(prev => ({ ...prev, ...validationMap }));
+        }
+      }
     } catch {} finally { setDocsLoading(false); }
   }, [dealRoomId]);
 
@@ -1603,12 +1617,17 @@ Version 1.0 - Effective Date: January 2025`.trim();
                         <FileText className="w-5 h-5 text-indigo-600" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-indigo-700 text-sm">MT700 Field Validator — {doc.fileName}</h4>
-                          <p className="text-xs text-muted-foreground">Validate mandatory SWIFT MT700 fields for LC compliance</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground">Validate mandatory SWIFT MT700 fields for LC compliance</p>
+                            {(doc as any).mt700ValidationResult?.triggeredBy === 'auto-approval' && (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium" data-testid={`mt700-auto-badge-${doc.id}`}>Auto-validated on approval</span>
+                            )}
+                          </div>
                         </div>
                         <Button size="sm" variant="outline" className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-100"
                           onClick={() => handleValidateMt700(doc.id)} disabled={validatingMt700 === doc.id}
                           data-testid={`btn-validate-mt700-${doc.id}`}>
-                          {validatingMt700 === doc.id ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Validating...</> : <><Check className="w-3 h-3 mr-1" />Validate MT700</>}
+                          {validatingMt700 === doc.id ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Validating...</> : <><Check className="w-3 h-3 mr-1" />{mt700Validation[doc.id] ? 'Re-validate' : 'Validate MT700'}</>}
                         </Button>
                       </div>
                       {mt700Validation[doc.id] && (

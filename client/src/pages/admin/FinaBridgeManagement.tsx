@@ -14,7 +14,7 @@ import {
   Shield, ShieldAlert, ShieldCheck, ShieldX, Brain, Bot, User, Award, ExternalLink, FileText,
   BarChart3, Activity, Clock, StickyNote, Flag, UserCheck
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import DealRoom from '@/components/finabridge/DealRoom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
@@ -367,7 +367,7 @@ export default function FinaBridgeManagement() {
   // Deal Manager Portal state
   const [dealManagerRooms, setDealManagerRooms] = useState<AdminDealRoom[]>([]);
   const [dealManagerLoading, setDealManagerLoading] = useState(false);
-  const [internalNotes, setInternalNotes] = useState<Record<string, { id: string; note: string; createdAt: string; adminEmail: string }[]>>({});
+  const [internalNotes, setInternalNotes] = useState<Record<string, { id: string; note: string; createdAt: string; authorName: string; isEscalated?: boolean }[]>>({});
   const [newNote, setNewNote] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [assigningManager, setAssigningManager] = useState<string | null>(null);
@@ -567,6 +567,23 @@ export default function FinaBridgeManagement() {
       toast({ title: 'Failed to assign manager', variant: 'destructive' });
     } finally {
       setAssigningManager(null);
+    }
+  };
+
+  const escalateDealRoom = async (roomId: string) => {
+    const reason = window.prompt('Enter escalation reason (optional):');
+    if (reason === null) return;
+    try {
+      const res = await apiRequest('PATCH', `/api/admin/deal-rooms/${roomId}/escalate`, { reason: reason.trim() || 'Flagged for senior review' });
+      if (res.ok) {
+        toast({ title: 'Deal escalated', description: 'Senior admin has been notified.' });
+        await fetchDealManagerRooms();
+      } else {
+        const err = await res.json();
+        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      }
+    } catch (err) {
+      toast({ title: 'Failed to escalate', variant: 'destructive' });
     }
   };
 
@@ -1619,100 +1636,171 @@ export default function FinaBridgeManagement() {
                 <Card><CardContent className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" /></CardContent></Card>
               ) : dealManagerRooms.length === 0 ? (
                 <Card><CardContent className="p-12 text-center text-muted-foreground"><MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No deal rooms found.</p></CardContent></Card>
-              ) : dealManagerRooms.map(room => (
-                <Card key={room.id} className="overflow-hidden" data-testid={`deal-manager-room-${room.id}`}>
-                  <CardHeader className="pb-3 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-purple-500" />
-                          {room.tradeRequest?.tradeRefId || room.id.slice(0, 8)} — {room.tradeRequest?.goodsName || 'Unknown Goods'}
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Importer: {room.importer?.email || 'N/A'} · Exporter: {room.exporter?.email || 'N/A'}
-                        </p>
+              ) : (
+                <>
+                  {/* SLA Table */}
+                  <Card data-testid="deal-manager-sla-table">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">SLA Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/40">
+                              <th className="text-left px-4 py-2 font-medium">Deal Ref</th>
+                              <th className="text-left px-4 py-2 font-medium">Goods</th>
+                              <th className="text-left px-4 py-2 font-medium">Status</th>
+                              <th className="text-right px-4 py-2 font-medium">Days Open</th>
+                              <th className="text-left px-4 py-2 font-medium">Last Activity</th>
+                              <th className="text-center px-4 py-2 font-medium">Docs</th>
+                              <th className="text-center px-4 py-2 font-medium">SLA</th>
+                              <th className="text-center px-4 py-2 font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dealManagerRooms.map(room => {
+                              const daysOpen = Math.floor((Date.now() - new Date(room.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+                              const docs = (room as any).documents || [];
+                              const docsApproved = docs.filter((d: any) => d.status === 'Approved').length;
+                              const docsTotal = docs.length;
+                              const lastActivity = room.updatedAt ? new Date(room.updatedAt) : new Date(room.createdAt);
+                              const daysSinceActivity = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+                              const slaBadge = daysOpen <= 7 ? { label: 'On Track', cls: 'bg-emerald-100 text-emerald-700' }
+                                : daysOpen <= 14 ? { label: 'At Risk', cls: 'bg-amber-100 text-amber-700' }
+                                : { label: 'Overdue', cls: 'bg-red-100 text-red-700' };
+                              return (
+                                <tr key={room.id} className="border-b hover:bg-muted/20 transition-colors" data-testid={`sla-row-${room.id}`}>
+                                  <td className="px-4 py-2 font-mono text-xs">{room.tradeRequest?.tradeRefId || room.id.slice(0, 8)}</td>
+                                  <td className="px-4 py-2 max-w-[140px] truncate">{room.tradeRequest?.goodsName || '—'}</td>
+                                  <td className="px-4 py-2">
+                                    <Badge variant={room.status === 'open' ? 'default' : 'secondary'} className="capitalize text-xs">{room.status}</Badge>
+                                  </td>
+                                  <td className="px-4 py-2 text-right font-medium" data-testid={`sla-days-${room.id}`}>{daysOpen}d</td>
+                                  <td className="px-4 py-2 text-xs text-muted-foreground">{daysSinceActivity === 0 ? 'Today' : `${daysSinceActivity}d ago`}</td>
+                                  <td className="px-4 py-2 text-center text-xs" data-testid={`sla-docs-${room.id}`}>{docsApproved}/{docsTotal}</td>
+                                  <td className="px-4 py-2 text-center">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${slaBadge.cls}`} data-testid={`sla-badge-${room.id}`}>
+                                      {slaBadge.label}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedDealRoom(room.id)} data-testid={`btn-open-sla-${room.id}`}>
+                                        <Eye className="w-3 h-3" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500" onClick={() => escalateDealRoom(room.id)} data-testid={`btn-escalate-sla-${room.id}`}>
+                                        <Flag className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={room.status === 'open' ? 'default' : 'secondary'} className="capitalize">{room.status}</Badge>
-                        {room.tradeRequest?.tradeValueUsd && (
-                          <Badge variant="outline">${parseFloat(room.tradeRequest.tradeValueUsd).toLocaleString()}</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    {/* Assign Deal Manager */}
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-purple-500" />Assign Deal Manager</p>
-                      <div className="flex gap-2">
-                        <Input placeholder="Admin email (e.g. demo1@finatrades.com)"
-                          value={assignManagerEmail[room.id] || ''}
-                          onChange={e => setAssignManagerEmail(prev => ({ ...prev, [room.id]: e.target.value }))}
-                          className="text-sm" data-testid={`input-assign-manager-${room.id}`} />
-                        <Button size="sm" onClick={() => assignDealManager(room.id)} disabled={assigningManager === room.id || !assignManagerEmail[room.id]?.trim()}
-                          data-testid={`btn-assign-manager-${room.id}`}>
-                          {assigningManager === room.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4 mr-1" />}Assign
-                        </Button>
-                      </div>
-                      {room.assignedAdminId && (
-                        <p className="text-xs text-emerald-600 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />Deal Manager assigned
-                        </p>
-                      )}
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Internal Notes */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium flex items-center gap-1.5"><StickyNote className="w-4 h-4 text-amber-500" />Internal Notes (Admin-only)</p>
-                        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => fetchInternalNotes(room.id)} disabled={loadingNotes[room.id]}
-                          data-testid={`btn-load-notes-${room.id}`}>
-                          {loadingNotes[room.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Load Notes'}
-                        </Button>
-                      </div>
-                      {internalNotes[room.id] && (
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {internalNotes[room.id].length === 0 ? (
-                            <p className="text-xs text-muted-foreground italic">No notes yet.</p>
-                          ) : internalNotes[room.id].map(note => (
-                            <div key={note.id} className="p-2 bg-amber-50 border border-amber-200 rounded text-xs" data-testid={`note-item-${note.id}`}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-amber-700">{note.adminEmail}</span>
-                                <span className="text-muted-foreground">{new Date(note.createdAt).toLocaleDateString()}</span>
-                              </div>
-                              <p>{note.note}</p>
-                            </div>
-                          ))}
+                  {/* Expanded deal cards for notes/assignment */}
+                  {dealManagerRooms.map(room => (
+                    <Card key={room.id} className="overflow-hidden" data-testid={`deal-manager-room-${room.id}`}>
+                      <CardHeader className="pb-3 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <MessageCircle className="w-4 h-4 text-purple-500" />
+                              {room.tradeRequest?.tradeRefId || room.id.slice(0, 8)} — {room.tradeRequest?.goodsName || 'Unknown Goods'}
+                            </CardTitle>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Importer: {room.importer?.email || 'N/A'} · Exporter: {room.exporter?.email || 'N/A'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={room.status === 'open' ? 'default' : 'secondary'} className="capitalize">{room.status}</Badge>
+                            {room.tradeRequest?.tradeValueUsd && (
+                              <Badge variant="outline">${parseFloat(room.tradeRequest.tradeValueUsd).toLocaleString()}</Badge>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Textarea placeholder="Add internal note..." value={newNote[room.id] || ''} rows={2}
-                          onChange={e => setNewNote(prev => ({ ...prev, [room.id]: e.target.value }))}
-                          className="text-sm" data-testid={`input-note-${room.id}`} />
-                        <Button size="sm" className="self-end" onClick={() => saveInternalNote(room.id)}
-                          disabled={savingNote === room.id || !newNote[room.id]?.trim()}
-                          data-testid={`btn-save-note-${room.id}`}>
-                          {savingNote === room.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
+                      </CardHeader>
+                      <CardContent className="p-4 space-y-4">
+                        {/* Assign Deal Manager */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-purple-500" />Assign Deal Manager</p>
+                          <div className="flex gap-2">
+                            <Input placeholder="Admin email (e.g. demo1@finatrades.com)"
+                              value={assignManagerEmail[room.id] || ''}
+                              onChange={e => setAssignManagerEmail(prev => ({ ...prev, [room.id]: e.target.value }))}
+                              className="text-sm" data-testid={`input-assign-manager-${room.id}`} />
+                            <Button size="sm" onClick={() => assignDealManager(room.id)} disabled={assigningManager === room.id || !assignManagerEmail[room.id]?.trim()}
+                              data-testid={`btn-assign-manager-${room.id}`}>
+                              {assigningManager === room.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4 mr-1" />}Assign
+                            </Button>
+                          </div>
+                          {room.assignedAdminId && (
+                            <p className="text-xs text-emerald-600 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />Deal Manager assigned
+                            </p>
+                          )}
+                        </div>
 
-                    {/* Escalate button */}
-                    <div className="flex items-center gap-2 pt-1 border-t">
-                      <Button variant="outline" size="sm" className="text-xs text-red-600 border-red-300 hover:bg-red-50"
-                        onClick={() => { setSelectedDealRoom(room.id); }}
-                        data-testid={`btn-open-dealroom-${room.id}`}>
-                        <Eye className="w-3 h-3 mr-1" />Open Deal Room
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground ml-auto"
-                        data-testid={`btn-escalate-${room.id}`}
-                        onClick={() => toast({ title: 'Escalation raised', description: `Deal Room ${room.id.slice(0, 8)} has been flagged for senior review.` })}>
-                        <Flag className="w-3 h-3 mr-1" />Escalate
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        {/* Internal Notes */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium flex items-center gap-1.5"><StickyNote className="w-4 h-4 text-amber-500" />Internal Notes (Admin-only)</p>
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => fetchInternalNotes(room.id)} disabled={loadingNotes[room.id]}
+                              data-testid={`btn-load-notes-${room.id}`}>
+                              {loadingNotes[room.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Load Notes'}
+                            </Button>
+                          </div>
+                          {internalNotes[room.id] && (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {internalNotes[room.id].length === 0 ? (
+                                <p className="text-xs text-muted-foreground italic">No notes yet.</p>
+                              ) : internalNotes[room.id].map(note => (
+                                <div key={note.id} className={`p-2 border rounded text-xs ${note.isEscalated ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`} data-testid={`note-item-${note.id}`}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-amber-700">{note.authorName}</span>
+                                    {note.isEscalated && <span className="text-red-600 text-[10px] font-bold">ESCALATED</span>}
+                                    <span className="text-muted-foreground">{new Date(note.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <p>{note.note}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Textarea placeholder="Add internal note..." value={newNote[room.id] || ''} rows={2}
+                              onChange={e => setNewNote(prev => ({ ...prev, [room.id]: e.target.value }))}
+                              className="text-sm" data-testid={`input-note-${room.id}`} />
+                            <Button size="sm" className="self-end" onClick={() => saveInternalNote(room.id)}
+                              disabled={savingNote === room.id || !newNote[room.id]?.trim()}
+                              data-testid={`btn-save-note-${room.id}`}>
+                              {savingNote === room.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Escalate button */}
+                        <div className="flex items-center gap-2 pt-1 border-t">
+                          <Button variant="outline" size="sm" className="text-xs text-red-600 border-red-300 hover:bg-red-50"
+                            onClick={() => { setSelectedDealRoom(room.id); }}
+                            data-testid={`btn-open-dealroom-${room.id}`}>
+                            <Eye className="w-3 h-3 mr-1" />Open Deal Room
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground ml-auto"
+                            data-testid={`btn-escalate-${room.id}`}
+                            onClick={() => escalateDealRoom(room.id)}>
+                            <Flag className="w-3 h-3 mr-1" />Escalate
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
             </div>
           </TabsContent>
 
@@ -1757,24 +1845,24 @@ export default function FinaBridgeManagement() {
 
                   {/* Charts grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Active vs Closed — Stacked Bar chart */}
+                    {/* Active vs Closed — Line chart */}
                     <Card data-testid="chart-active-vs-closed">
                       <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Activity className="w-4 h-4 text-purple-500" />Active vs Closed by Month</CardTitle></CardHeader>
                       <CardContent>
                         <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={analyticsData.activeVsClosed} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                          <LineChart data={analyticsData.activeVsClosed} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                             <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip />
                             <Legend />
-                            <Bar dataKey="active" fill="#7c3aed" name="Active" stackId="a" />
-                            <Bar dataKey="closed" fill="#10b981" name="Closed" stackId="a" radius={[3, 3, 0, 0]} />
-                          </BarChart>
+                            <Line type="monotone" dataKey="active" stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} name="Active" />
+                            <Line type="monotone" dataKey="closed" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Closed" />
+                          </LineChart>
                         </ResponsiveContainer>
                       </CardContent>
                     </Card>
 
-                    {/* Document Rejection Rate — Bar chart */}
+                    {/* Document Rejection Rate — Pie chart */}
                     <Card data-testid="chart-doc-rejection">
                       <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><XCircle className="w-4 h-4 text-red-500" />Document Rejection Rate (%)</CardTitle></CardHeader>
                       <CardContent>
@@ -1782,12 +1870,23 @@ export default function FinaBridgeManagement() {
                           <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">No documents found</div>
                         ) : (
                           <ResponsiveContainer width="100%" height={200}>
-                            <BarChart data={analyticsData.docRejectionRates} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                              <XAxis dataKey="type" tick={{ fontSize: 8 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
+                            <PieChart>
+                              <Pie
+                                data={analyticsData.docRejectionRates}
+                                dataKey="rejectionRate"
+                                nameKey="type"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={70}
+                                label={({ type, rejectionRate }: any) => `${type.split('_')[0]}: ${rejectionRate}%`}
+                                labelLine={false}
+                              >
+                                {analyticsData.docRejectionRates.map((_: any, idx: number) => (
+                                  <Cell key={idx} fill={['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#7c3aed', '#ec4899', '#14b8a6'][idx % 7]} />
+                                ))}
+                              </Pie>
                               <Tooltip formatter={(v: number) => `${v}%`} />
-                              <Bar dataKey="rejectionRate" fill="#ef4444" radius={[3, 3, 0, 0]} name="Rejection %" />
-                            </BarChart>
+                            </PieChart>
                           </ResponsiveContainer>
                         )}
                       </CardContent>
