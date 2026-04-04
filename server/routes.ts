@@ -16994,8 +16994,18 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Not authorized" });
       }
 
+      // Normalize legacy persisted stage values to the 9-stage model
+      const LC_LEGACY_STAGE_MAP: Record<string, string> = {
+        'Contract Signed': 'Draft',
+        'Under Review': 'Docs Under Review',
+        'Discrepancy': 'Discrepancy Raised',
+        'Funds Released': 'Payment Triggered',
+      };
+      const rawStage = dealRoom.lcLifecycleStatus || 'Draft';
+      const normalizedStage = LC_LEGACY_STAGE_MAP[rawStage] || rawStage;
+
       res.json({
-        lcLifecycleStatus: dealRoom.lcLifecycleStatus || 'Contract Signed',
+        lcLifecycleStatus: normalizedStage,
         dealRoomId: dealRoom.id,
         isClosed: dealRoom.isClosed,
       });
@@ -17005,7 +17015,7 @@ export async function registerRoutes(
   });
 
   // LC stage transition handler — shared logic
-  const handleLcStageTransition = async (req: any, res: any) => {
+  const handleLcStageTransition = async (req: Request, res: Response) => {
     try {
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) return res.status(401).json({ message: "Not authenticated" });

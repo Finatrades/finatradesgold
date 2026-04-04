@@ -2637,13 +2637,22 @@ export const dealRooms = pgTable("deal_rooms", {
   adminDisclaimerUpdatedAt: timestamp("admin_disclaimer_updated_at"),
   adminDisclaimerUpdatedBy: varchar("admin_disclaimer_updated_by", { length: 255 }).references(() => users.id),
   
+  // DB CHECK constraint: deal_rooms_lc_lifecycle_status_check enforces only these 9 values or NULL (applied directly to DB)
   lcLifecycleStatus: varchar("lc_lifecycle_status", { length: 50 }).default('Draft'),
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertDealRoomSchema = createInsertSchema(dealRooms).omit({ id: true, createdAt: true, updatedAt: true, adminDisclaimerUpdatedAt: true });
+export const LC_LIFECYCLE_STAGES = [
+  'Draft', 'LC Issued', 'Docs Submitted', 'Docs Under Review',
+  'Discrepancy Raised', 'Discrepancy Resolved', 'Approved', 'Payment Triggered', 'Closed',
+] as const;
+export type LcLifecycleStage = typeof LC_LIFECYCLE_STAGES[number];
+
+export const insertDealRoomSchema = createInsertSchema(dealRooms).omit({ id: true, createdAt: true, updatedAt: true, adminDisclaimerUpdatedAt: true }).extend({
+  lcLifecycleStatus: z.enum(LC_LIFECYCLE_STAGES).default('Draft').optional(),
+});
 export type InsertDealRoom = z.infer<typeof insertDealRoomSchema>;
 export type DealRoom = typeof dealRooms.$inferSelect;
 
