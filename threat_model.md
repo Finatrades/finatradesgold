@@ -149,31 +149,49 @@ Summary: 0 critical, 3 high, 3 moderate, 1 low
 
 ## SAST Findings Summary (Main App Only, Excluding Agent Skills)
 
-**Total main-app findings:** 93 (4 HIGH false-positives or in non-main-app files; 58 MEDIUM; 34 LOW)
+**Total main-app findings:** 93 (HIGH: 1; MEDIUM: 58; LOW: 34) — scanned with Semgrep; agent skill files excluded.
 
-| Severity | Rule | Location | Notes |
-|----------|------|----------|-------|
-| HIGH | `private-key` | `server/sso-routes.ts:38` | False positive — PEM header string template with `// gitleaks:allow` |
-| MEDIUM | `html-in-template-string` | `KYCReview.tsx:622-733` (14 instances) | User data rendered as unencoded HTML |
-| MEDIUM | `html-in-template-string` | `AttachmentsManagement.tsx:164-238` | User data in HTML + script context |
-| MEDIUM | `detect-non-literal-regexp` | `CMSManagement.tsx:1051,1073,1193` | Admin-only ReDoS risk |
-| MEDIUM | `react-href-var` | `Sidebar.tsx:89` | Potential open redirect |
-| LOW | `unsafe-formatstring` | Multiple server files (34 instances) | Log injection via format specifier |
+Note on control status: "Currently enforced" controls are those already implemented in the codebase at time of scan. "Recommended" controls indicate gaps requiring remediation.
+
+| Severity | Rule | Location | Status | Notes |
+|----------|------|----------|--------|-------|
+| HIGH | `private-key` | `server/sso-routes.ts:38` | **FALSE POSITIVE** | PEM header string template only (not a real key); `// gitleaks:allow` comment present |
+| MEDIUM | `html-in-template-string` | `KYCReview.tsx:622-733` (14 instances) | **REAL — Recommended** | User-submitted KYC data rendered as unencoded HTML in admin pages |
+| MEDIUM | `html-in-template-string` + `unknown-value-with-script-tag` | `AttachmentsManagement.tsx:164-238` (4 instances) | **REAL — Recommended** | User data in HTML + `<script>` tag context |
+| MEDIUM | `detect-non-literal-regexp` | `CMSManagement.tsx:1051,1073,1193` | **REAL — Recommended** | Admin-only; user-controlled RegExp pattern without escaping |
+| MEDIUM | `react-href-var` | `Sidebar.tsx:89` | **REAL — Recommended** | Variable href; potential open redirect if not validated |
+| LOW | `unsafe-formatstring` | Multiple server files (34 instances) | **REAL — Low priority** | Log format injection via user-controlled strings in console.log calls |
 
 ---
 
 ## HoundDog Data-Flow Findings Summary
 
-**Total findings:** 38 | **Critical:** 1 | **Medium:** 5
+**Total findings:** 38 | **Critical:** 1 (likely false positive — see note) | **Medium:** 5
 
-| Severity | Rule | Location | Finding |
-|----------|------|----------|---------|
-| CRITICAL | `AUTH-TOKEN` | `ocr-service.ts:445` | AI model config logged to stdout |
-| MEDIUM | `IP-ADDRESS` | `geo-restriction-middleware.ts:101` | Raw IP logged |
-| MEDIUM | `IP-ADDRESS` | `routes.ts:29033` | Raw IP logged |
-| MEDIUM | `IP-ADDRESS` | `wingold-security.ts:193` | Raw IP logged |
-| MEDIUM | `IP-ADDRESS` | `email.ts:192` | Raw IP logged |
-| MEDIUM | `IP-ADDRESS` | `security-middleware.ts:61` | Raw IP logged |
+| Severity | Rule | Location | Status | Finding |
+|----------|------|----------|--------|---------|
+| CRITICAL | `AUTH-TOKEN` | `ocr-service.ts:445` | **LIKELY FALSE POSITIVE** | HoundDog flagged `console.log(\`Vision model: ${visionModel}\`)` as auth token exposure. `visionModel` is the AI model name string (e.g., `meta-llama/llama-4-scout-17b-16e-instruct`), not a credential. However, unconditional logging of service configuration in production violates GDPR-A5-32 and NIST-800-53; recommend removing in production. |
+| MEDIUM | `IP-ADDRESS` | `geo-restriction-middleware.ts:101` | **REAL — Recommended** | Raw IP logged to stdout |
+| MEDIUM | `IP-ADDRESS` | `routes.ts:29033` | **REAL — Recommended** | Raw IP logged to stdout |
+| MEDIUM | `IP-ADDRESS` | `wingold-security.ts:193` | **REAL — Recommended** | Raw IP logged to stdout |
+| MEDIUM | `IP-ADDRESS` | `email.ts:192` | **REAL — Recommended** | Raw IP logged to stdout |
+| MEDIUM | `IP-ADDRESS` | `security-middleware.ts:61` | **REAL — Recommended** | Raw IP logged on CSRF mismatch |
+
+---
+
+## Audit Traceability — Finding to Vulnerability File
+
+| Finding | Vulnerability File |
+|---------|-------------------|
+| path-to-regexp@0.1.12 HIGH ReDoS | `.local/potential_vulnerabilities/dep-path-to-regexp-redos.md` |
+| @xmldom/xmldom@0.8.11 HIGH XML injection | `.local/potential_vulnerabilities/dep-xmldom-xml-injection.md` |
+| lodash@4.17.23 HIGH code injection | `.local/potential_vulnerabilities/dep-lodash-code-injection.md` |
+| lodash@4.17.23 Moderate prototype deletion | `.local/potential_vulnerabilities/dep-lodash-prototype-pollution.md` |
+| nodemailer@7.0.11 Low SMTP injection | `.local/potential_vulnerabilities/dep-nodemailer-vulnerability.md` |
+| SAST: Unencoded HTML in KYCReview + Attachments | `.local/potential_vulnerabilities/xss-html-template-strings-admin.md` |
+| SAST: Non-literal RegExp in CMSManagement | `.local/potential_vulnerabilities/redos-non-literal-regexp-cms.md` |
+| HoundDog: AI config logging (ocr-service.ts) | `.local/potential_vulnerabilities/info-disclosure-ocr-api-config-logging.md` |
+| HoundDog: IP address logging (5 files) | `.local/potential_vulnerabilities/gdpr-ip-address-logging.md` |
 
 ---
 
