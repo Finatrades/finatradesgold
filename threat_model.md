@@ -130,17 +130,20 @@ All admin actions (KYC approvals, balance adjustments, setting changes) are hash
 
 ---
 
-## Dependency Vulnerabilities (Full Scanner Output)
+## Dependency Vulnerabilities (Full Scanner Output — verbatim from osv-scanner)
 
-| Package | Installed | Fixed In | Severity | CVE Aliases | Description |
+Source: `.local/security-scan-results/dependency-audit-report.md`
+Summary: 0 critical, 3 high, 3 moderate, 1 low
+
+| Package | Installed | Fixed In | **Scanner Severity** | CVE Aliases | Description |
 |---------|-----------|----------|----------|-------------|-------------|
-| `path-to-regexp` | 0.1.12 | **0.1.13** | High | — | ReDoS — catastrophic backtracking on crafted URLs |
-| `lodash` | 4.17.23 | **4.18.0** | High | CVE-2026-4800 | Code injection via `_.template` imports key names |
-| `nodemailer` | 7.0.11 | **8.0.4** (major) | High | GHSA-c7w3-x93f-qmm8 | Email library vulnerability |
-| `lodash` | 4.17.23 | **4.18.0** | Moderate | CVE-2026-2950 | Prototype deletion via array path bypass |
-| `esbuild` | 0.18.20 | **0.25.0** | Moderate | GHSA-67mh-4wv8-2f99 | Build-tool; not a runtime risk |
-| `@xmldom/xmldom` | 0.8.11 | **0.8.12** | Moderate | GHSA-wh4c-j3r5-mjhp | XML parsing vulnerability |
-| `brace-expansion` | 5.0.3 | **5.0.5** | Low | GHSA-f886-m6hf-6m8v | Glob pattern matching |
+| `path-to-regexp` | 0.1.12 | **0.1.13** | **HIGH** | CVE-2026-4867 | ReDoS via multiple route parameters in a single segment |
+| `@xmldom/xmldom` | 0.8.11 | **0.8.12** | **HIGH** | CVE-2026-34601 | XML injection via unsafe CDATA serialization |
+| `lodash` | 4.17.23 | **4.18.0** | **HIGH** | CVE-2026-4800 | Code injection via `_.template` imports key names |
+| `brace-expansion` | 5.0.3 | **5.0.5** | Moderate | CVE-2026-33750 | Zero-step sequence causes process hang + memory exhaustion |
+| `esbuild` | 0.18.20 | **0.25.0** | Moderate | GHSA-67mh-4wv8-2f99 | Dev server CORS allows cross-site request reading |
+| `lodash` | 4.17.23 | **4.18.0** | Moderate | CVE-2026-2950 | Prototype deletion via array path bypass in `_.unset`/`_.omit` |
+| `nodemailer` | 7.0.11 | **8.0.4** (major) | Low | GHSA-c7w3-x93f-qmm8 | SMTP injection via unsanitized `envelope.size` parameter |
 
 ---
 
@@ -177,17 +180,18 @@ All admin actions (KYC approvals, balance adjustments, setting changes) are hash
 ## Prioritised Remediation Plan
 
 ### Immediate (P1 — before next production deployment)
-1. **Upgrade Express** to v4.21.2+ → fixes `path-to-regexp` ReDoS (`npm install express@latest`)
-2. **Upgrade lodash** to 4.18.0 → patches code injection AND prototype deletion (`npm install lodash@4.18.0`)
-3. **Upgrade nodemailer** to 8.0.4 → review breaking changes, test all email flows
+1. **Upgrade Express** to v4.21.2+ → fixes `path-to-regexp` HIGH ReDoS (`npm install express@latest`)
+2. **Upgrade lodash** to 4.18.0 → patches HIGH code injection AND Moderate prototype deletion (`npm install lodash@4.18.0`)
+3. **Upgrade `@xmldom/xmldom`** to 0.8.12 → patches HIGH XML injection (`npm install @xmldom/xmldom@0.8.12`)
 4. **Add DOMPurify** to `KYCReview.tsx` and `AttachmentsManagement.tsx` → blocks stored XSS admin escalation
 
 ### Short-term (P2 — within 2 weeks)
 5. **Anonymise IP addresses in logs** → GDPR compliance (truncate or hash before logging)
 6. **Guard AI config logging** in `ocr-service.ts` behind `NODE_ENV !== 'production'`
 7. **Escape user input** in `CMSManagement.tsx` `RegExp()` calls with `escape-string-regexp`
-8. **Upgrade `@xmldom/xmldom`** to 0.8.12, `brace-expansion` to 5.0.5
+8. **Upgrade `brace-expansion`** to 5.0.5 (Moderate — zero-step sequence DoS)
+9. **Upgrade `nodemailer`** to 8.0.4 (Low severity — SMTP injection; major version, review breaking changes first)
 
 ### Ongoing
-9. **Enable `npm audit` in CI** to catch new CVEs before deployment
-10. **Implement a log scrubber** that redacts PII (email, IP, names, gold amounts) at the transport layer
+10. **Enable `npm audit` in CI** to catch new CVEs before deployment
+11. **Implement a log scrubber** that redacts PII (email, IP, names, gold amounts) at the transport layer
