@@ -1,63 +1,69 @@
 # Threat Model — FinaTrades
 
+**Produced by:** Full three-layer security audit (dependency scan, SAST, HoundDog data-flow analysis)
+**Scan artifacts:** `.local/security-scan-results/` (dependency-audit-report.md, sast-scan-report.md, hounddog-scan-report.md)
+**Vulnerability files:** `.local/potential_vulnerabilities/`
+
+---
+
 ## Project Overview
 
-FinaTrades is a gold-backed digital finance platform built on Node.js/Express with a React frontend and PostgreSQL database. It allows individuals and businesses to buy, store, and trade physical gold digitally, send gold-backed payments (FinaPay), conduct import/export trade finance (FinaBridge), obtain FinaCard prepaid accounts, complete KYC verification, and access gold-backed lending (BNSL).
+FinaTrades is a gold-backed digital finance platform built on Node.js/Express with a React frontend and PostgreSQL database. Users can buy and store physical gold digitally, send gold-backed payments (FinaPay), conduct import/export trade finance (FinaBridge), obtain FinaCard prepaid accounts, complete KYC verification, and access gold-backed lending (BNSL).
 
-**Tech stack:** Node.js/Express, React (Vite), PostgreSQL (Drizzle ORM), Express sessions (pg-backed), bcryptjs, PASETO tokens, multer (R2/local uploads), Nodemailer (SMTP/Brevo), Groq/GPT-4o (KYC OCR), Metals-API (gold price), Stripe/Binance Pay/NGenius (payments), Helmet, express-rate-limit.
+**Tech stack:** Node.js/Express, React (Vite), PostgreSQL (Drizzle ORM), Express sessions (pg-backed), bcryptjs, PASETO tokens, multer (Cloudflare R2/local uploads), Nodemailer/SMTP (Brevo), Groq/GPT-4o Vision (KYC OCR), Metals-API (gold price), Stripe/Binance Pay/NGenius (payments), Helmet, express-rate-limit, Redis (idempotency).
 
-**Users:** Retail individuals (personal KYC), business entities (corporate KYC), and platform admins/reviewers (separate admin portal login).
+**User roles:** Retail individuals (personal KYC), business entities (corporate KYC), platform admins/reviewers (separate `/admin/login` portal with `adminPortal: true` session flag), and super-admins.
 
 ---
 
 ## Assets
 
 ### User Credentials & Sessions
-Email/password pairs, bcrypt hashes, session tokens, TOTP secrets, backup codes, and step-up auth tokens. Compromise grants full account access, enabling fund theft, identity impersonation, and trading manipulation.
+Email/password pairs (bcrypt hashes), session tokens (PostgreSQL-backed), TOTP secrets (for MFA), backup codes, and step-up auth tokens. Compromise grants full account access, enabling fund theft, identity impersonation, and trading manipulation.
 
 ### Financial Balances & Transaction Records
-Gold gram balances, USD/fiat equivalents, wallet locks, FinaCard balances, BNSL plan states, FinaBridge trade escrows, and FinaPay transfer records. These are the core monetary assets of the platform. Unauthorised modification constitutes fraud.
+Gold gram balances (in `wallets` table with `finacard_gold_grams` and other wallet types), USD/fiat equivalents, FinaBridge trade escrows, and FinaPay transfer records. These represent the core monetary assets of the platform. Unauthorised modification constitutes financial fraud.
 
 ### KYC Documents & Identity Data
-Passport scans, national ID images, proof of address, company incorporation documents, UBO declarations, and extracted biographic data. Governed by GDPR and CCPA. Exposure or leakage is a regulatory violation with significant liability.
+Passport scans, national ID images, proof of address, company incorporation documents, UBO declarations, and OCR-extracted biographic data. Governed by GDPR and CCPA. Unauthorised exposure is a regulatory violation with significant legal liability.
 
 ### API Keys & Application Secrets
-Groq API key, SMTP credentials (Brevo), Metals-API key, Gold-API key, NGenius API key, Stripe secret key, Cloudflare R2 credentials, PostgreSQL connection string, session signing secret, SSO/SAML private key, PASETO signing key. Compromise of payment provider keys enables fraudulent charges or fund diversion.
+Groq API key, SMTP credentials (Brevo), Metals-API key, Gold-API key, NGenius API key, Stripe secret key, Cloudflare R2 credentials, PostgreSQL connection string, session signing secret, SSO/SAML private key, PASETO signing key. Compromise of payment provider keys enables fraudulent charges or direct fund diversion.
 
 ### Admin Capabilities
-Ability to approve/reject KYC, adjust balances, manage platform settings, view all user data, create/cancel trades. Admin session compromise is equivalent to full platform compromise.
+The ability to approve/reject KYC, adjust balances, manage platform settings, view all user data, and create/cancel trades. An admin session compromise is equivalent to full platform compromise.
 
 ### Gold Price Feed
-The real-time gold price is used for all balance calculations, trade valuations, and settlement amounts. Manipulation or poisoning of this feed could enable users to buy gold at artificially low prices.
+Real-time gold prices used for all balance calculations, trade valuations, and settlement amounts. A manipulated or poisoned feed could allow users to buy gold at artificially low prices or corrupt settlement calculations.
 
 ---
 
 ## Trust Boundaries
 
 ### Browser ↔ API (Primary boundary)
-All user and admin interactions cross this boundary via HTTPS. The browser is untrusted — session tokens authenticate requests, but the server must independently authorise every operation. Client-supplied IDs, amounts, and role claims must never be trusted without server-side verification.
+All user and admin interactions cross this boundary via HTTPS. The browser is untrusted — session tokens authenticate requests, but the server independently authorises every operation. Client-supplied IDs, amounts, and role claims are never trusted without server-side verification.
 
 ### User ↔ Admin (Privilege boundary)
-Admins log in through a dedicated `/admin/login` route that sets `adminPortal: true` in the session. A regular user session — even with admin role — cannot access admin routes without this flag. Role checks are enforced server-side via `ensureAdmin` middleware.
+Admins log in through `/admin/login` which sets `adminPortal: true` in the session. A regular user session — even with an admin `userRole` — cannot access admin routes without this flag. Role checks are enforced server-side via `ensureAdmin` middleware.
 
 ### Authenticated ↔ Public (Auth boundary)
-Financial operations, wallet access, KYC submission, FinaBridge, and FinaPay all require authentication. Public routes are limited to marketing pages and the gold price ticker. This boundary is enforced by `ensureAuthenticated` middleware on all sensitive routes.
+Financial operations, wallet access, KYC submission, FinaBridge, and FinaPay all require authentication. Public routes are limited to marketing pages and the gold price ticker. Enforced by `ensureAuthenticated` middleware on all sensitive routes.
 
 ### User ↔ Own Resources (IDOR boundary)
-Users must only access their own wallets, transactions, KYC records, and FinaBridge requests. Enforced by `ensureOwnerOrAdmin` middleware that compares `req.params.userId` to `req.session.userId`. Violation would be an IDOR (Insecure Direct Object Reference) attack.
+Users may only access their own wallets, transactions, KYC records, and FinaBridge requests. Enforced by `ensureOwnerOrAdmin` middleware comparing `req.params.userId` to `req.session.userId`. Violation is an Insecure Direct Object Reference (IDOR) attack.
 
 ### API ↔ Database (Data boundary)
-The Express server has full database access via Drizzle ORM. All queries use parameterised statements. SQL injection at this boundary would expose the entire database.
+The Express server has full database access via Drizzle ORM. All queries use parameterised statements, preventing SQL injection at this boundary.
 
 ### API ↔ External Services (External boundary)
-The backend calls Metals-API, Gold-API, Groq, GPT-4o, Brevo SMTP, Stripe, NGenius, Binance Pay, and Cloudflare R2. Credentials are stored in environment variables. SSRF or key leakage would give an attacker control over financial operations or storage.
+The backend calls Metals-API, Gold-API, Groq, GPT-4o Vision, Brevo SMTP, Stripe, NGenius, Binance Pay, and Cloudflare R2. Credentials are stored in environment variables. SSRF or key leakage would give an attacker control over financial operations or storage.
 
 ### File Upload ↔ Storage (Upload boundary)
-KYC documents are uploaded via multer with MIME type and extension validation. Files are stored in Cloudflare R2 (production) or local `uploads/` (dev). Uploaded content must not be executable and must only be served to authorised requesters.
+KYC documents are uploaded via multer with MIME type and extension validation (PDF, DOC, JPEG, PNG; 10 MB limit). Files are stored in Cloudflare R2 (production) or local `uploads/` (dev). The `/uploads` route is session-authenticated.
 
 ---
 
-## Threat Categories
+## Threat Analysis (STRIDE)
 
 ### Spoofing
 FinaTrades authenticates users via bcrypt-hashed passwords with sessions persisted in PostgreSQL. TOTP MFA is available and enforceable for admins. Step-up authentication is required for sensitive operations (large transfers, security setting changes).
@@ -65,32 +71,32 @@ FinaTrades authenticates users via bcrypt-hashed passwords with sessions persist
 **Required guarantees:**
 - All protected API endpoints MUST check `req.session.userId` exists; absence returns 401.
 - Admin routes MUST additionally check `req.session.adminPortal === true`.
-- TOTP secrets MUST be stored encrypted at rest; OTP codes MUST expire after 30 seconds.
-- Password reset tokens MUST be single-use, time-limited (≤15 min), and HMAC-signed.
-- PASETO tokens used for service-to-service auth MUST be verified with the stored public key on every use.
+- TOTP secrets MUST be stored encrypted at rest; OTP codes expire after 30 seconds (TOTP window).
+- Password reset tokens MUST be single-use, HMAC-signed, and expire within 15 minutes.
+- PASETO tokens for service-to-service auth MUST be verified with the stored public key on every use.
 
 ### Tampering
-Gold balances and trade settlement amounts are calculated server-side. The client sends intent (e.g., "buy 5g of gold") but the server independently looks up the current gold price and computes the deduction. Client-supplied amounts or prices MUST NOT be trusted.
+Gold balances and trade settlement amounts are computed server-side. The client sends intent (e.g., "buy 5g of gold") while the server independently fetches the current gold price and computes the deduction.
 
 **Required guarantees:**
 - Gold purchase/sale amounts MUST be computed from `currentGoldPrice × gramAmount` server-side; client-supplied totals MUST be ignored.
 - FinaBridge trade escrow amounts MUST be validated against the locked wallet balance before settlement.
 - Idempotency keys (`x-idempotency-key`) MUST be validated against a Redis/DB store to prevent double-spend on network retries.
-- CSRF protection (custom header + double-submit cookie) MUST be enforced on all state-changing routes.
+- CSRF protection (custom `x-requested-with` header + double-submit cookie) MUST be enforced on all state-changing routes.
 
 ### Repudiation
 All admin actions (KYC approvals, balance adjustments, setting changes) are hashed and written to an audit log table with timestamps and the acting user's ID. Financial transactions are immutably recorded.
 
 **Required guarantees:**
 - The audit log MUST be append-only; rows MUST NOT be updatable or deletable by any application role.
-- All financial state transitions (deposit, withdrawal, trade settlement, FinaPay transfer) MUST create a transaction record before the balance is changed.
-- Admin login events MUST be logged separately from user logins with IP address and timestamp.
+- All financial state transitions MUST create a transaction record before the balance is changed.
+- Admin login events MUST be logged with IP address and timestamp separately from user logins.
 
 ### Information Disclosure
-**Current gaps identified:**
-- Server logs expose client IP addresses in multiple middleware files (`geo-restriction-middleware.ts`, `security-middleware.ts`, `email.ts`, `routes.ts`, `wingold-security.ts`). Under GDPR, IP addresses are personal data.
-- AI model configuration is logged in `ocr-service.ts:445`, revealing implementation details to anyone with log access.
-- HTML template strings in `KYCReview.tsx` and `AttachmentsManagement.tsx` construct HTML from user-submitted KYC data without encoding, creating XSS risk that could expose admin session tokens.
+**Identified gaps (confirmed by HoundDog scan):**
+- **5 locations** log raw client IP addresses to stdout without anonymisation — violating GDPR Article 5(1)(f): `geo-restriction-middleware.ts:101`, `routes.ts:29033`, `wingold-security.ts:193`, `email.ts:192`, `security-middleware.ts:61`.
+- AI service configuration (model name) logged unconditionally in `ocr-service.ts:445`.
+- **14 instances** in `KYCReview.tsx` and **4** in `AttachmentsManagement.tsx` render user-submitted data via unencoded HTML template strings, enabling stored XSS that could exfiltrate admin session cookies.
 
 **Required guarantees:**
 - API error responses in production MUST NOT include stack traces, database error details, or internal service names.
@@ -99,58 +105,89 @@ All admin actions (KYC approvals, balance adjustments, setting changes) are hash
 - IP addresses in logs MUST be truncated or hashed in production environments.
 
 ### Denial of Service
-**Current gaps identified:**
-- `path-to-regexp@0.1.12` contains a ReDoS vulnerability that can hang the Express event loop on malformed URLs.
-- `new RegExp(userInput)` in `CMSManagement.tsx` allows admin users to construct catastrophic patterns.
+**Identified gaps (confirmed by SAST + dependency scan):**
+- `path-to-regexp@0.1.12` (GHSA-37ch-88jc-xwx2) — crafted URL paths can hang the Express event loop.
+- `new RegExp(userInput)` in `CMSManagement.tsx` (lines 1051, 1073, 1193) — admin user could construct catastrophic patterns.
 
 **Required guarantees:**
-- Rate limiting MUST be applied to all public and authentication endpoints (currently configured: 10 auth attempts/15 min, 5 OTP attempts/5 min, 100 general/min).
-- File upload size MUST be capped (currently 10MB via multer) and validated before processing.
-- All external API calls (gold price, OCR, payment) MUST have explicit timeouts to prevent event loop starvation.
-- `path-to-regexp` MUST be updated to the patched version via Express upgrade.
+- Rate limiting MUST be applied to all public and authentication endpoints (current config: 10 auth attempts/15 min, 5 OTP/5 min, 10 withdrawals/hour, 100 general/min).
+- File upload size is capped at 10 MB via multer.
+- All external API calls MUST have explicit timeouts to prevent event loop starvation.
+- `path-to-regexp` MUST be updated to ≥0.1.13 via Express upgrade.
 
 ### Elevation of Privilege
-**Current gaps identified:**
-- `lodash@4.17.23` contains prototype pollution vulnerabilities. If lodash `merge`/`defaultsDeep` is called with user-controlled data, an attacker could inject into `Object.prototype` and potentially bypass property-based auth checks.
-- HTML template string injection in admin KYC review pages could allow a malicious KYC applicant to execute JavaScript in an admin session (stored XSS → privilege escalation).
+**Identified gaps (confirmed by SAST + dependency scan):**
+- `lodash@4.17.23` (GHSA-r5fr-rjxr-66jc) — code injection via `_.template` imports key names; fix is lodash 4.18.0.
+- `lodash@4.17.23` (GHSA-f23m-r3pf-42rh) — prototype deletion via array path bypass in `_.unset`/`_.omit`; fix is lodash 4.18.0.
+- Stored XSS in admin KYC/Attachments pages — a malicious KYC applicant can execute JavaScript in an admin session, achieving full privilege escalation.
 
 **Required guarantees:**
-- All admin routes MUST check `req.session.userRole === 'admin'` AND `req.session.adminPortal === true` server-side.
-- No client-supplied `role`, `permissions`, or `adminPortal` values MUST ever be written to the session; these MUST only be set during authenticated login by server-side lookup.
-- File uploads MUST be served with `Content-Disposition: attachment` to prevent MIME-sniffing execution of uploaded PDFs as HTML.
-- `dangerouslySetInnerHTML` MUST only be used with DOMPurify-sanitised content in admin pages that render user-submitted data.
-- Lodash MUST be updated to ≥4.17.21 to patch prototype pollution.
+- Admin routes MUST check `req.session.userRole === 'admin'` AND `req.session.adminPortal === true`.
+- No client-supplied `role`, `permissions`, or `adminPortal` values MUST ever be written to the session.
+- File uploads MUST be served with `Content-Disposition: attachment` to prevent MIME-sniffing execution.
+- `dangerouslySetInnerHTML` MUST only be used with DOMPurify-sanitised content in admin pages.
+- Lodash MUST be upgraded to 4.18.0 to patch both prototype and code-injection vulnerabilities.
 
 ---
 
-## Dependency Vulnerabilities Summary
+## Dependency Vulnerabilities (Full Scanner Output)
 
-| Package | Version | CVE | Severity | Impact |
-|---------|---------|-----|----------|--------|
-| `path-to-regexp` | 0.1.12 | GHSA-37ch-88jc-xwx2 | High | ReDoS — server hang |
-| `lodash` | 4.17.23 | GHSA-f23m-r3pf-42rh | High | Prototype pollution |
-| `lodash` | 4.17.23 | GHSA-r5fr-rjxr-66jc | High | Prototype pollution |
-| `nodemailer` | 7.0.11 | GHSA-c7w3-x93f-qmm8 | High | Email library vulnerability |
-| `esbuild` | 0.18.20 | GHSA-67mh-4wv8-2f99 | Moderate | Build-tool only, not runtime |
-| `@xmldom/xmldom` | 0.8.11 | GHSA-wh4c-j3r5-mjhp | Moderate | XML parsing (if used in prod) |
-| `brace-expansion` | 5.0.3 | GHSA-f886-m6hf-6m8v | Low | Glob pattern matching |
+| Package | Installed | Fixed In | Severity | CVE Aliases | Description |
+|---------|-----------|----------|----------|-------------|-------------|
+| `path-to-regexp` | 0.1.12 | **0.1.13** | High | — | ReDoS — catastrophic backtracking on crafted URLs |
+| `lodash` | 4.17.23 | **4.18.0** | High | CVE-2026-4800 | Code injection via `_.template` imports key names |
+| `nodemailer` | 7.0.11 | **8.0.4** (major) | High | GHSA-c7w3-x93f-qmm8 | Email library vulnerability |
+| `lodash` | 4.17.23 | **4.18.0** | Moderate | CVE-2026-2950 | Prototype deletion via array path bypass |
+| `esbuild` | 0.18.20 | **0.25.0** | Moderate | GHSA-67mh-4wv8-2f99 | Build-tool; not a runtime risk |
+| `@xmldom/xmldom` | 0.8.11 | **0.8.12** | Moderate | GHSA-wh4c-j3r5-mjhp | XML parsing vulnerability |
+| `brace-expansion` | 5.0.3 | **5.0.5** | Low | GHSA-f886-m6hf-6m8v | Glob pattern matching |
+
+---
+
+## SAST Findings Summary (Main App Only, Excluding Agent Skills)
+
+**Total main-app findings:** 93 (4 HIGH false-positives or in non-main-app files; 58 MEDIUM; 34 LOW)
+
+| Severity | Rule | Location | Notes |
+|----------|------|----------|-------|
+| HIGH | `private-key` | `server/sso-routes.ts:38` | False positive — PEM header string template with `// gitleaks:allow` |
+| MEDIUM | `html-in-template-string` | `KYCReview.tsx:622-733` (14 instances) | User data rendered as unencoded HTML |
+| MEDIUM | `html-in-template-string` | `AttachmentsManagement.tsx:164-238` | User data in HTML + script context |
+| MEDIUM | `detect-non-literal-regexp` | `CMSManagement.tsx:1051,1073,1193` | Admin-only ReDoS risk |
+| MEDIUM | `react-href-var` | `Sidebar.tsx:89` | Potential open redirect |
+| LOW | `unsafe-formatstring` | Multiple server files (34 instances) | Log injection via format specifier |
+
+---
+
+## HoundDog Data-Flow Findings Summary
+
+**Total findings:** 38 | **Critical:** 1 | **Medium:** 5
+
+| Severity | Rule | Location | Finding |
+|----------|------|----------|---------|
+| CRITICAL | `AUTH-TOKEN` | `ocr-service.ts:445` | AI model config logged to stdout |
+| MEDIUM | `IP-ADDRESS` | `geo-restriction-middleware.ts:101` | Raw IP logged |
+| MEDIUM | `IP-ADDRESS` | `routes.ts:29033` | Raw IP logged |
+| MEDIUM | `IP-ADDRESS` | `wingold-security.ts:193` | Raw IP logged |
+| MEDIUM | `IP-ADDRESS` | `email.ts:192` | Raw IP logged |
+| MEDIUM | `IP-ADDRESS` | `security-middleware.ts:61` | Raw IP logged |
 
 ---
 
 ## Prioritised Remediation Plan
 
 ### Immediate (P1 — before next production deployment)
-1. **Upgrade Express** to v4.21.2+ to patch `path-to-regexp` ReDoS
-2. **Upgrade lodash** to ≥4.17.21 to patch prototype pollution
-3. **Upgrade nodemailer** to latest to address GHSA-c7w3-x93f-qmm8
-4. **Add DOMPurify** to KYC Review and Attachments Management admin pages to prevent stored XSS
+1. **Upgrade Express** to v4.21.2+ → fixes `path-to-regexp` ReDoS (`npm install express@latest`)
+2. **Upgrade lodash** to 4.18.0 → patches code injection AND prototype deletion (`npm install lodash@4.18.0`)
+3. **Upgrade nodemailer** to 8.0.4 → review breaking changes, test all email flows
+4. **Add DOMPurify** to `KYCReview.tsx` and `AttachmentsManagement.tsx` → blocks stored XSS admin escalation
 
 ### Short-term (P2 — within 2 weeks)
-5. **Remove or guard IP address logging** in production (truncate or hash IPs)
-6. **Remove verbose AI config logging** from `ocr-service.ts` in production
-7. **Add `escape-string-regexp`** guard to all `new RegExp(userInput)` calls in CMS Management
-8. **Review all `dangerouslySetInnerHTML` usages** and wrap with DOMPurify
+5. **Anonymise IP addresses in logs** → GDPR compliance (truncate or hash before logging)
+6. **Guard AI config logging** in `ocr-service.ts` behind `NODE_ENV !== 'production'`
+7. **Escape user input** in `CMSManagement.tsx` `RegExp()` calls with `escape-string-regexp`
+8. **Upgrade `@xmldom/xmldom`** to 0.8.12, `brace-expansion` to 5.0.5
 
 ### Ongoing
 9. **Enable `npm audit` in CI** to catch new CVEs before deployment
-10. **Enable log scrubbing** to ensure no PII (names, emails, gold amounts) appears in server logs
+10. **Implement a log scrubber** that redacts PII (email, IP, names, gold amounts) at the transport layer
