@@ -40,3 +40,23 @@ build/
 
 # Test coverage
 coverage/
+
+# Database backups (never commit — contain production data)
+*.sql
+*.sql.gz
+
+# Key and credential reference files (store secrets in env vars only)
+*SSO_KEYS*.txt
+*KEYS*.txt
+*.ppk
+*.pem
+
+# Screenshots / generated media dumped in root
+dashboard-*.png
+dashboard-*.jpg
+
+# Mockup sandbox artifacts
+artifacts/
+
+# Large generated PDFs (VC proposals, guides)
+FinaBridge_*Chairman*.pdf
