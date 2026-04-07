@@ -61,7 +61,7 @@ SMTP_USER = "928966001@smtp-brevo.com"
 SMTP_HOST = "smtp-relay.brevo.com"
 SMTP_PORT = "587"
 SMTP_SECURE = "false"
-SMTP_PASS = "xsmtpsib-cf6fcd5067867ec4b280cafbbf086ba71748c5b87b0c973b3e802bbf8df30aaa-iXUS6RM8xKuEZCr5"
+SMTP_PASS = "xsmtpsib-cf6fcd5067867ec4b280cafbbf086ba71748c5b87b0c973b3e802bbf8df30aaa-XxUEkPS5nfKZlGSS"
 
 [userenv.production]
 PRODUCTION_IP = "13.229.145.249"
