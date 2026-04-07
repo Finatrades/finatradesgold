@@ -9,24 +9,23 @@ function DisclaimerContent() {
       <Navbar />
       <main className="pt-24 pb-20">
 
-        {/* Page Header */}
+        {/* Document Header with Logo */}
         <div className="bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] py-16">
-          <div className="max-w-4xl mx-auto px-6 flex flex-col items-start gap-6">
+          <div className="max-w-4xl mx-auto px-6">
             <img
               src={finatradesLogo}
               alt="Finatrades"
-              className="h-14 w-auto brightness-0 invert"
+              className="h-14 w-auto brightness-0 invert mb-6"
             />
-            <div>
-              <h1 className="text-4xl font-bold text-white mb-2">Disclaimer</h1>
-              <p className="text-white/60 text-sm tracking-wide uppercase">FINATRADES.COM &nbsp;•&nbsp; Last Updated: 07/04/2026</p>
-            </div>
+            <h1 className="text-4xl font-bold text-white mb-2">Disclaimer</h1>
+            <p className="text-white/60 text-sm tracking-wide uppercase">
+              FINATRADES.COM &nbsp;·&nbsp; Last Updated: 07/04/2026
+            </p>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 pt-12">
-          <div className="mb-4">
-
+        {/* Document Body */}
+        <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="prose prose-lg max-w-none">
             <p className="text-[#0D0D0D]/80 leading-relaxed mb-6">
               This Disclaimer ("Disclaimer") governs your use of the website https://finatrades.com (the "Site") and the Finatrades Platform (the "Platform") operated by Finatrades Finance SA ("Finatrades," "we," "us," "our"). By accessing the Site or using the Platform, you expressly acknowledge and agree to the terms set forth below.
@@ -175,12 +174,35 @@ function DisclaimerContent() {
               </p>
             </section>
 
-            <div className="border-t border-gray-200 pt-8 mt-12">
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <p className="font-semibold text-[#0D0D0D]">Finatrades Finance SA</p>
-                <p className="text-[#0D0D0D]/70">Rue Robert-Céard 6</p>
-                <p className="text-[#0D0D0D]/70">1204 Geneva</p>
-                <p className="text-[#0D0D0D]/70">Switzerland</p>
+            {/* Footer Address Block */}
+            <div className="border-t border-gray-200 pt-10 mt-12">
+              <div className="bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] rounded-2xl p-8">
+                <img
+                  src={finatradesLogo}
+                  alt="Finatrades"
+                  className="h-10 w-auto brightness-0 invert mb-5"
+                />
+                <div className="grid sm:grid-cols-2 gap-6 text-white/70 text-sm">
+                  <div>
+                    <p className="font-semibold text-white mb-1">Finatrades Finance SA</p>
+                    <p>Rue Robert-Céard 6</p>
+                    <p>1204 Geneva</p>
+                    <p>Switzerland</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white mb-1">Contact &amp; Registry</p>
+                    <p>LEI: <span className="text-purple-300">894500AF89I6QWOX2V69</span></p>
+                    <p>SWIFT: <span className="text-purple-300">FNFNCHG2</span></p>
+                    <p>
+                      <a href="https://www.finatrades.com" className="text-purple-300 hover:text-purple-200 transition-colors">
+                        www.finatrades.com
+                      </a>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-white/40 text-xs mt-6 pt-6 border-t border-white/20">
+                  © {new Date().getFullYear()} Finatrades Finance SA. All rights reserved. This Disclaimer was last revised on 07/04/2026.
+                </p>
               </div>
             </div>
           </div>
