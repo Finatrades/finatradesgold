@@ -82,6 +82,14 @@ async function buildAll() {
     await cp("certs", "dist/certs", { recursive: true });
     console.log("SSL certificates copied to dist/certs");
   }
+
+  // Copy migrations folder so startup migration runner works in production
+  if (existsSync("migrations")) {
+    console.log("copying migrations...");
+    await mkdir("dist/migrations", { recursive: true });
+    await cp("migrations", "dist/migrations", { recursive: true });
+    console.log("Migrations copied to dist/migrations");
+  }
 }
 
 buildAll().catch((err) => {

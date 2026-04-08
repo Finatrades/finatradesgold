@@ -16,6 +16,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import { csrfProtection, getCsrfTokenHandler, sanitizeRequest } from "./security-middleware";
+import { runMigrations } from "./migrate";
 
 // Rate limiting configurations for different security levels
 // Uses default IP-based key generator which properly handles IPv6
@@ -439,6 +440,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run pending database migrations at startup
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('[Migrations] Startup migration failed:', err);
+    // Non-fatal in development; fatal in production to avoid running on broken schema
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  }
+
   // Initialize Redis connection
   try {
     const redis = getRedisClient();
