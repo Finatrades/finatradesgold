@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 import { 
   transactions, wallets, users, auditLogs, withdrawalRequests, depositRequests,
   amlCases, amlScreeningLogs, userRiskProfiles, kycSubmissions, vaultOwnershipSummary,
-  storageFees, bnslPayouts, bnslWallets, finabridgeWallets, bnslPlans
+  storageFees, bnslPayouts, bnslWallets, finabridgeWallets, bnslPlans, platformConfig
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 import { logAdminAction } from "./security-middleware";
@@ -1150,6 +1150,7 @@ export function registerComplianceRoutes(
           activeBnslPlansInPeriod,
           confirmedDepositsInPeriod,
           completedTxns,
+          allPlatformConfigs,
         ] = await Promise.all([
           getGoldPricePerGram().catch(() => 0),
           // 4004 Revenue: Storage fees collected from users in the period (Paid status)
@@ -1240,12 +1241,46 @@ export function registerComplianceRoutes(
                 lte(transactions.createdAt, toDate),
               ),
             ),
+          // Platform spread configuration — used to estimate 4001/4003 spread income
+          db.select({ key: platformConfig.key, value: platformConfig.value }).from(platformConfig),
         ]);
+
+        // ── PLATFORM SPREAD CONFIG ────────────────────────────────────────────────
+        const configMap = new Map(allPlatformConfigs.map(c => [c.key, c.value]));
+        const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
+        const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
+        const transferFeePercent = parseFloat(configMap.get('transfer_fee') || configMap.get('transfer_fee_percent') || '0');
 
         // ── REVENUE LINES ────────────────────────────────────────────────────────
 
-        // 4001: Gold purchase service fees — actual fee collected from confirmed deposits
-        // Source: depositRequests.feePercentSnapshot × amountUsd for Confirmed requests in period
+        // 4001: Gold Spread Income — platform earn on Buy/Sell transactions
+        // Buy spread: goldBuyUsd × buySpreadPercent/100
+        // Sell spread: goldSellUsd × sellSpreadPercent/100
+        // Sourced from: platform_config (buy_spread_percent, sell_spread_percent) × transaction volumes
+        const goldBuyTxns = completedTxns.filter(t => t.type === 'Buy');
+        const goldBuyGold = goldBuyTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldBuyUsd = goldBuyTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
+
+        const goldSellTxns = completedTxns.filter(t => t.type === 'Sell');
+        const goldSellGold = goldSellTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldSellUsd = goldSellTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
+
+        const buySpreadIncome = buySpreadPercent > 0
+          ? goldBuyUsd.times(new Decimal(buySpreadPercent).div(100))
+          : new Decimal(0);
+        const sellSpreadIncome = sellSpreadPercent > 0
+          ? goldSellUsd.times(new Decimal(sellSpreadPercent).div(100))
+          : new Decimal(0);
+        const totalSpreadIncome = buySpreadIncome.plus(sellSpreadIncome);
+
+        // 4001b: Deposit service fees (supplementary) — actual fee from depositRequests.feePercentSnapshot
+        // Provides a cross-check against the spread config estimate above
         const depositFeeIncome = confirmedDepositsInPeriod.reduce((sum, d) => {
           if (!d.feePercentSnapshot || !d.amountUsd) return sum;
           const feeAmount = new Decimal(d.feePercentSnapshot).div(100).times(new Decimal(d.amountUsd));
@@ -1291,17 +1326,7 @@ export function registerComplianceRoutes(
           return sum.plus(usd);
         }, new Decimal(0));
 
-        // ── VOLUME CONTEXT (informational, NOT P&L income) ─────────────────────
-        // 4001 context: Gold trading volume — Buy transactions show gross gold sale volume.
-        // NOTE: Platform's true spread income (4001) = sale revenue minus Wingold acquisition cost.
-        // Wingold COGS is not tracked in the platform DB; include gross volume for context only.
-        const goldBuyTxns = completedTxns.filter(t => t.type === 'Buy');
-        const goldBuyGold = goldBuyTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
-        const goldBuyUsd = goldBuyTxns.reduce((sum, t) => {
-          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
-          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
-        }, new Decimal(0));
-
+        // ── VOLUME CONTEXT (informational, for reference) ─────────────────────
         // All inflow context: Deposit + Buy
         const goldTradingTxns = completedTxns.filter(t => t.type === 'Deposit' || t.type === 'Buy');
         const goldTradingGold = goldTradingTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
@@ -1341,13 +1366,20 @@ export function registerComplianceRoutes(
         );
 
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Revenue: all lines sourced from real fee/margin data (not transaction principal)
-        //   4001 Deposit service fee: depositRequests.feePercentSnapshot × amountUsd (actual fee at Confirmed)
+        // Revenue lines included in totals:
+        //   4001 Gold spread income: platform_config spread % × Buy/Sell transaction volumes
         //   4002 BNSL margin accrual: basePriceComponentUsd × agreedMarginAnnualPercent/100 × overlapDays/365
+        //   4003 Transfer/service fee: transfer_fee config % × Send/Swap volumes (if configured)
         //   4004 Storage fee income: storageFees.feeAmountUsd (Paid status) in period
-        // Excluded from totals (only principal available, fee not isolable without fee_amount column):
-        //   4003 Transfer fee: Send/Swap principal — shown in volumeContext
-        const totalRevenueUsd = depositFeeIncome.plus(bnslMarginIncome).plus(storageFeeIncome);
+        // Note: deposit service fee from depositRequests.feePercentSnapshot is shown as a supplementary
+        //   cross-check line (may overlap with 4001 spread; NOT double-counted in total)
+        const transferFeeIncome = transferFeePercent > 0
+          ? transferFeeUsd.times(new Decimal(transferFeePercent).div(100))
+          : new Decimal(0);
+        const totalRevenueUsd = totalSpreadIncome
+          .plus(bnslMarginIncome)
+          .plus(transferFeeIncome)
+          .plus(storageFeeIncome);
         // Costs: storage fees paid to custodian (derived proxy) + BNSL payouts disbursed
         const totalCostUsd = storageFeePaidCustodian.plus(bnslPayoutCost);
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
@@ -1403,17 +1435,27 @@ export function registerComplianceRoutes(
               to: toDate.toISOString(),
             },
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
-            // Platform P&L revenue — each line sourced from real fee/margin data, not transaction principal
+            // Platform P&L revenue — each line sourced from real fee/margin data
+            spreadConfig: {
+              buySpreadPercent,
+              sellSpreadPercent,
+              transferFeePercent,
+              source: 'platform_config table',
+            },
             revenue: {
-              depositServiceFeeIncome: {
+              goldSpreadIncome: {
                 glCode: '4001',
-                accountName: 'Deposit Service Fee Income',
-                description: 'Platform service fee on confirmed gold purchases: feePercentSnapshot × depositAmountUsd from depositRequests',
-                totalDeposits: confirmedDepositsInPeriod.length,
-                depositsWithFee: depositFeeIncomeDepositsCount,
-                totalUsd: depositFeeIncome.toFixed(2),
+                accountName: 'Gold Spread Income',
+                description: `Buy spread (${buySpreadPercent}% of Buy volume) + Sell spread (${sellSpreadPercent}% of Sell volume)`,
+                buyTransactions: goldBuyTxns.length,
+                buyVolumeUsd: goldBuyUsd.toFixed(2),
+                buySpreadIncomeUsd: buySpreadIncome.toFixed(2),
+                sellTransactions: goldSellTxns.length,
+                sellVolumeUsd: goldSellUsd.toFixed(2),
+                sellSpreadIncomeUsd: sellSpreadIncome.toFixed(2),
+                totalUsd: totalSpreadIncome.toFixed(2),
                 includedInTotals: true,
-                dataSource: 'depositRequests.feePercentSnapshot × amountUsd (Confirmed, processedAt in period)',
+                dataSource: 'platform_config (buy_spread_percent, sell_spread_percent) × Completed Buy/Sell transaction volumes',
               },
               bnslMarginIncome: {
                 glCode: '4002',
@@ -1422,7 +1464,17 @@ export function registerComplianceRoutes(
                 activePlansInPeriod: activeBnslPlansInPeriod.length,
                 totalUsd: bnslMarginIncome.toFixed(2),
                 includedInTotals: true,
-                dataSource: 'bnslPlans.basePriceComponentUsd × agreedMarginAnnualPercent (Active/Matured/Settled, overlapping period)',
+                dataSource: 'bnslPlans (Active/Maturing/Completed/EarlyTermination, overlapping period)',
+              },
+              transferServiceFeeIncome: {
+                glCode: '4003',
+                accountName: 'Transfer / Service Fee Income',
+                description: `Transfer fee (${transferFeePercent}% of Send/Swap volume) — 0 if transfer_fee not configured`,
+                transferTransactions: transferTxns.length,
+                transferVolumeUsd: transferFeeUsd.toFixed(2),
+                totalUsd: transferFeeIncome.toFixed(2),
+                includedInTotals: true,
+                dataSource: 'platform_config (transfer_fee) × Completed Send/Swap transaction volumes',
               },
               storageFeeIncome: {
                 glCode: '4004',
@@ -1433,6 +1485,16 @@ export function registerComplianceRoutes(
                 totalGoldGrams: storageFeeIncomeGold.toFixed(6),
                 includedInTotals: true,
                 dataSource: 'storageFees.feeAmountUsd (status=Paid)',
+              },
+              depositServiceFeeCheck: {
+                glCode: '4001x',
+                accountName: 'Deposit Service Fee (Cross-Check)',
+                description: 'Actual fee from depositRequests.feePercentSnapshot — cross-check for 4001 spread; NOT double-counted in totalRevenueUsd',
+                totalDeposits: confirmedDepositsInPeriod.length,
+                depositsWithFee: depositFeeIncomeDepositsCount,
+                totalUsd: depositFeeIncome.toFixed(2),
+                includedInTotals: false,
+                dataSource: 'depositRequests.feePercentSnapshot × amountUsd (Confirmed, processedAt in period)',
               },
             },
             costs: {
