@@ -1,10 +1,17 @@
 import { storage } from "./storage";
 import type { Transaction, AmlMonitoringRule, User, AmlCase } from "@shared/schema";
 import { HIGH_RISK_COUNTRIES } from "./risk-scoring";
+import Decimal from "decimal.js";
 
-function parseAmount(value: string | null | undefined): number {
-  const raw = parseFloat(value || '0');
-  return isNaN(raw) ? 0 : Math.round(raw * 100) / 100;
+// Precision-safe amount parser — avoids float accumulation errors in AML sums
+function parseDecimalAmount(value: string | null | undefined): Decimal {
+  const raw = value?.trim() || '0';
+  try {
+    const d = new Decimal(raw);
+    return d.isNaN() ? new Decimal(0) : d;
+  } catch {
+    return new Decimal(0);
+  }
 }
 
 interface RuleViolation {
@@ -147,7 +154,8 @@ async function checkThresholdRule(
   const threshold = conditions.amountThreshold as number;
   const timeWindowHours = conditions.timeWindowHours as number | undefined;
   
-  const txnAmount = parseAmount(transaction.amountUsd);
+  const txnAmount = parseDecimalAmount(transaction.amountUsd);
+  const thresholdDec = new Decimal(threshold);
   
   if (timeWindowHours) {
     const since = new Date();
@@ -159,10 +167,10 @@ async function checkThresholdRule(
     );
     
     const cumulativeAmount = recentTxns.reduce((sum, t) => {
-      return sum + parseAmount(t.amountUsd);
-    }, 0) + txnAmount;
+      return sum.plus(parseDecimalAmount(t.amountUsd));
+    }, new Decimal(0)).plus(txnAmount);
     
-    if (cumulativeAmount >= threshold) {
+    if (cumulativeAmount.gte(thresholdDec)) {
       return {
         ruleId: rule.id,
         ruleName: rule.ruleName,
@@ -173,7 +181,7 @@ async function checkThresholdRule(
       };
     }
   } else {
-    if (txnAmount >= threshold) {
+    if (txnAmount.gte(thresholdDec)) {
       return {
         ruleId: rule.id,
         ruleName: rule.ruleName,
@@ -257,16 +265,19 @@ async function checkPatternRule(
     const since = new Date();
     since.setHours(since.getHours() - hours);
     
+    const minAmountDec = new Decimal(minAmount);
+    const maxAmountDec = new Decimal(maxAmount);
+
     const userTxns = await storage.getUserTransactions(user.id);
     const suspiciousTxns = userTxns.filter(t => {
       if (new Date(t.createdAt) <= since) return false;
       if (t.status === 'Cancelled' || t.status === 'Failed') return false;
-      const amt = parseAmount(t.amountUsd);
-      return amt >= minAmount && amt <= maxAmount;
+      const amt = parseDecimalAmount(t.amountUsd);
+      return amt.gte(minAmountDec) && amt.lte(maxAmountDec);
     });
     
-    const currentAmt = parseAmount(transaction.amountUsd);
-    if (currentAmt >= minAmount && currentAmt <= maxAmount) {
+    const currentAmt = parseDecimalAmount(transaction.amountUsd);
+    if (currentAmt.gte(minAmountDec) && currentAmt.lte(maxAmountDec)) {
       if (suspiciousTxns.length + 1 >= count) {
         return {
           ruleId: rule.id,
@@ -294,22 +305,22 @@ async function checkPatternRule(
     
     const deposits = recentTxns
       .filter(t => t.type === 'Deposit' || t.type === 'Buy')
-      .reduce((sum, t) => sum + parseAmount(t.amountUsd), 0);
+      .reduce((sum, t) => sum.plus(parseDecimalAmount(t.amountUsd)), new Decimal(0));
     
     const withdrawals = recentTxns
       .filter(t => t.type === 'Withdrawal' || t.type === 'Sell')
-      .reduce((sum, t) => sum + parseAmount(t.amountUsd), 0);
+      .reduce((sum, t) => sum.plus(parseDecimalAmount(t.amountUsd)), new Decimal(0));
     
-    if (deposits > 0) {
-      const ratio = withdrawals / deposits;
-      if (ratio >= ratioThreshold) {
+    if (deposits.gt(0)) {
+      const ratio = withdrawals.div(deposits);
+      if (ratio.gte(new Decimal(ratioThreshold))) {
         return {
           ruleId: rule.id,
           ruleName: rule.ruleName,
           ruleCode: rule.ruleCode,
           actionType: rule.actionType,
           priority: rule.priority,
-          details: `Withdrawal to deposit ratio ${(ratio * 100).toFixed(1)}% exceeds ${(ratioThreshold * 100)}% threshold`
+          details: `Withdrawal to deposit ratio ${ratio.mul(100).toFixed(1)}% exceeds ${(ratioThreshold * 100)}% threshold`
         };
       }
     }
@@ -381,7 +392,7 @@ export async function evaluateTransaction(
       triggerDetails: {
         reason: topViolation.details,
         ruleId: topViolation.ruleId,
-        amount: parseAmount(transaction.amountUsd)
+        amount: parseDecimalAmount(transaction.amountUsd).toNumber()
       }
     });
     

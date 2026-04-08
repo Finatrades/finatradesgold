@@ -27019,7 +27019,22 @@ export async function registerRoutes(
       if (!walletConfig || !walletConfig.isActive) {
         return res.status(400).json({ message: "Invalid or inactive crypto wallet" });
       }
-      
+
+      // Server-side gold price verification: reject if client price deviates > 2% from live
+      const liveGoldPrice = await getGoldPricePerGram().catch(() => 0);
+      if (liveGoldPrice && liveGoldPrice > 0) {
+        const clientPrice = parseFloat(String(goldPriceAtTime));
+        if (clientPrice > 0) {
+          const deviation = Math.abs(clientPrice - liveGoldPrice) / liveGoldPrice;
+          if (deviation > 0.02) {
+            return res.status(409).json({
+              message: 'Gold price has changed. Please refresh and try again.',
+              livePrice: liveGoldPrice.toFixed(2),
+            });
+          }
+        }
+      }
+
       // Set expiry to 24 hours from now
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);

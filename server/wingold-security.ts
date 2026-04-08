@@ -16,8 +16,7 @@ const WINGOLD_ALLOWED_IPS = IS_PRODUCTION
   ? WINGOLD_PRODUCTION_IPS
   : ['127.0.0.1', '::1', '::ffff:127.0.0.1', '0.0.0.0/0'];
 
-const processedWebhooks = new Map<string, number>();
-const IDEMPOTENCY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
 const webhookRequestCounts = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -141,38 +140,19 @@ export class WingoldSecurityService {
   }
 
   static async checkIdempotency(orderId: string, eventType: string): Promise<{ isDuplicate: boolean; processedAt?: number }> {
-    const key = `wingold:webhook:${orderId}_${eventType}`;
-    try {
-      const cached = await cacheGet(key);
-      if (cached) {
-        const processedAt = parseInt(cached, 10);
-        return { isDuplicate: true, processedAt };
-      }
-    } catch {
-      // Redis unavailable: fall back to in-memory map
-      const processedAt = processedWebhooks.get(key);
-      if (processedAt && Date.now() - processedAt < IDEMPOTENCY_WINDOW_MS) {
-        return { isDuplicate: true, processedAt };
-      }
+    const key = `webhook:processed:${orderId}_${eventType}`;
+    const cached = await cacheGet(key);
+    if (cached) {
+      const processedAt = parseInt(cached, 10);
+      return { isDuplicate: true, processedAt };
     }
     return { isDuplicate: false };
   }
 
   static async markAsProcessed(orderId: string, eventType: string): Promise<void> {
-    const key = `wingold:webhook:${orderId}_${eventType}`;
+    const key = `webhook:processed:${orderId}_${eventType}`;
     const now = Date.now();
-    try {
-      await cacheSet(key, String(now), Math.floor(IDEMPOTENCY_WINDOW_MS / 1000));
-    } catch {
-      // Redis unavailable: fall back to in-memory map
-      processedWebhooks.set(key, now);
-      if (processedWebhooks.size > 10000) {
-        const cutoff = now - IDEMPOTENCY_WINDOW_MS;
-        for (const [k, v] of processedWebhooks.entries()) {
-          if (v < cutoff) processedWebhooks.delete(k);
-        }
-      }
-    }
+    await cacheSet(key, String(now), IDEMPOTENCY_TTL_SECONDS);
   }
 
   static checkTransactionLimits(grams: number, usdAmount: number): { allowed: boolean; reason?: string } {
@@ -216,7 +196,7 @@ export class WingoldSecurityService {
       blockRate: totalCount > 0 ? (blockedCount / totalCount * 100).toFixed(2) + '%' : '0%',
       last24hTotal: last24h.length,
       last24hBlocked: last24h.filter(e => e.blocked).length,
-      activeIdempotencyKeys: processedWebhooks.size,
+      activeIdempotencyKeys: 'redis-backed',
       rateLimitBuckets: webhookRequestCounts.size
     };
   }

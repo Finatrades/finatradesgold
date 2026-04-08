@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { z } from "zod";
+import Decimal from "decimal.js";
 import { 
   transactions, wallets, users, auditLogs, withdrawalRequests, depositRequests,
   amlCases, amlScreeningLogs, userRiskProfiles
@@ -51,25 +52,25 @@ export async function generateDailyReconciliation(date: Date): Promise<Reconcili
   // Get all wallet balances
   const allWallets = await db.select().from(wallets);
   
-  // Calculate totals
-  let totalGoldGrams = 0;
-  let totalUsdValue = 0;
+  // Calculate totals — using Decimal to avoid float accumulation errors
+  let totalGoldGrams = new Decimal(0);
+  let totalUsdValue = new Decimal(0);
   
   for (const wallet of allWallets) {
-    totalGoldGrams += parseFloat(wallet.goldGrams || '0');
-    totalUsdValue += parseFloat(wallet.usdBalance || '0');
+    totalGoldGrams = totalGoldGrams.plus(new Decimal(wallet.goldGrams || '0'));
+    totalUsdValue = totalUsdValue.plus(new Decimal(wallet.usdBalance || '0'));
   }
   
   // Calculate transaction totals
-  let transactionGoldIn = 0;
-  let transactionGoldOut = 0;
+  let transactionGoldIn = new Decimal(0);
+  let transactionGoldOut = new Decimal(0);
   
   for (const tx of dayTransactions) {
-    const amount = parseFloat(tx.amountGold || '0');
+    const amount = new Decimal(tx.amountGold || '0');
     if (['Buy', 'Receive', 'Deposit'].includes(tx.type)) {
-      transactionGoldIn += amount;
+      transactionGoldIn = transactionGoldIn.plus(amount);
     } else if (['Sell', 'Send', 'Withdrawal'].includes(tx.type)) {
-      transactionGoldOut += amount;
+      transactionGoldOut = transactionGoldOut.plus(amount);
     }
   }
   
@@ -327,22 +328,23 @@ export async function detectFraudPatterns(userId: string, transactionId?: string
     alerts.push(alert);
   }
   
-  // Unusual amount check
-  const amounts = recentTransactions.map(t => parseFloat(t.amountUsd || '0'));
-  const avgAmount = amounts.reduce((a, b) => a + b, 0) / (amounts.length || 1);
+  // Unusual amount check — using Decimal for precision
+  const amountsDecimal = recentTransactions.map(t => new Decimal(t.amountUsd || '0'));
+  const sumAmount = amountsDecimal.reduce((a, b) => a.plus(b), new Decimal(0));
+  const avgAmount = amountsDecimal.length > 0 ? sumAmount.div(amountsDecimal.length) : new Decimal(0);
   
   if (transactionId) {
     const currentTx = recentTransactions.find(t => t.id === transactionId);
     if (currentTx) {
-      const currentAmount = parseFloat(currentTx.amountUsd || '0');
-      if (currentAmount > avgAmount * 5 && currentAmount > 5000) {
+      const currentAmount = new Decimal(currentTx.amountUsd || '0');
+      if (currentAmount.gt(avgAmount.mul(5)) && currentAmount.gt(5000)) {
         // Save to database
         const dbAlert = await storage.createFraudAlert({
           userId,
           transactionId,
           alertType: 'unusual_amount',
           severity: 'medium',
-          description: `Transaction amount $${currentAmount.toFixed(2)} is ${(currentAmount / avgAmount).toFixed(1)}x higher than average`,
+          description: `Transaction amount $${currentAmount.toFixed(2)} is ${currentAmount.div(avgAmount.gt(new Decimal(0)) ? avgAmount : new Decimal(1)).toFixed(1)}x higher than average`,
           status: 'new',
         });
         
@@ -352,7 +354,7 @@ export async function detectFraudPatterns(userId: string, transactionId?: string
           transactionId,
           alertType: 'unusual_amount',
           severity: 'medium',
-          description: `Transaction amount $${currentAmount.toFixed(2)} is ${(currentAmount / avgAmount).toFixed(1)}x higher than average`,
+          description: `Transaction amount $${currentAmount.toFixed(2)} is ${currentAmount.div(avgAmount.gt(new Decimal(0)) ? avgAmount : new Decimal(1)).toFixed(1)}x higher than average`,
           detectedAt: dbAlert.created_at,
           status: 'new',
         };
