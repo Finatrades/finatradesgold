@@ -220,7 +220,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden dashboard-gradient-bg">
+        <main className="flex-1 overflow-x-hidden bg-muted">
           <KycStatusBanner kycStatus={user.kycStatus} />
           <div className="p-6">
             {children}

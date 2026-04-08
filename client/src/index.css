@@ -344,151 +344,31 @@ input[type="number"] {
   animation-play-state: paused;
 }
 
-/* ── Gentle float animation for hero card ── */
-@keyframes float-up-down {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-6px); }
-}
-.animate-float {
-  animation: float-up-down 4.5s ease-in-out infinite;
-}
-
-/* ── Card border glow pulse ── */
-@keyframes border-glow {
-  0%, 100% { box-shadow: 0 8px 48px rgba(13,6,32,0.22), 0 0 0 1px rgba(139,92,246,0.12); }
-  50%       { box-shadow: 0 8px 48px rgba(13,6,32,0.28), 0 0 0 1px rgba(139,92,246,0.22), 0 0 24px rgba(109,40,217,0.06); }
-}
-
-/* ── Subtle shimmer sweep on glass cards ── */
-@keyframes glass-sweep {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
 /* ============================================
    CREATIVE UI ENHANCEMENTS — PREMIUM FINTECH
    ============================================ */
 
-/* ── Dashboard page background — deep violet mesh (matches ref images) ── */
-.dashboard-bg,
-.dashboard-gradient-bg {
-  background:
-    radial-gradient(ellipse at 8%  15%,  rgba(109,  40, 217, 0.55) 0%, transparent 42%),
-    radial-gradient(ellipse at 88%  80%,  rgba(212, 175,  55, 0.28) 0%, transparent 44%),
-    radial-gradient(ellipse at 55%  0%,   rgba(139,  92, 246, 0.45) 0%, transparent 38%),
-    radial-gradient(ellipse at 20%  90%,  rgba( 79,  70, 229, 0.35) 0%, transparent 45%),
-    radial-gradient(ellipse at 95%   8%,  rgba(212, 175,  55, 0.22) 0%, transparent 36%),
-    radial-gradient(ellipse at 42%  55%,  rgba(124,  58, 237, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse at 72%  30%,  rgba(168,  85, 247, 0.20) 0%, transparent 50%),
-    #0D0620;
-  min-height: 100vh;
-}
-
-/* ── Frosted glass panel — true translucency on deep purple bg ── */
-.glass-panel {
-  background: rgba(248, 244, 255, 0.78);
-  backdrop-filter: blur(40px) saturate(180%) brightness(1.04);
-  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.60);
-  box-shadow:
-    0 8px 48px rgba(13, 6, 32, 0.22),
-    0 1px 0   rgba(255, 255, 255, 0.90) inset,
-    0 0 0 1px rgba(139, 92, 246, 0.12);
-}
-
-/* ── Elevated panel — hero card ── */
-.glass-panel-hero {
-  background: rgba(252, 249, 255, 0.84);
-  backdrop-filter: blur(52px) saturate(200%) brightness(1.05);
-  -webkit-backdrop-filter: blur(52px) saturate(200%) brightness(1.05);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow:
-    0 20px 80px rgba(13, 6, 32, 0.30),
-    0 2px  0   rgba(255, 255, 255, 1.00) inset,
-    0 0  0 1px rgba(139, 92, 246, 0.16),
-    0 0 60px   rgba(109, 40, 217, 0.08);
-}
-
-/* ── Dark glass panel — FinaCard holographic ── */
-.glass-panel-dark {
-  background: linear-gradient(135deg, rgba(15, 10, 30, 0.92) 0%, rgba(30, 14, 60, 0.90) 50%, rgba(15, 10, 30, 0.92) 100%);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 20px 80px rgba(0, 0, 0, 0.50),
-    0 0 0 1px rgba(139, 92, 246, 0.15),
-    0 0 40px  rgba(109, 40, 217, 0.12) inset;
-}
-
-/* ── Hover elevation utility ── */
-.glass-hover {
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.22s ease,
-              background 0.22s ease;
-}
-.glass-hover:hover {
-  transform: translateY(-6px) scale(1.014);
-  box-shadow:
-    0 24px 70px rgba(13, 6, 32, 0.28),
-    0 8px 24px rgba(109, 40, 217, 0.16);
-}
-
-/* ── Quick Access bar button tokens (muted palette) ── */
-.qa-btn-base {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.45rem 0.80rem;
-  border-radius: 0.625rem;
-  font-size: 0.74rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
-  border: 1px solid transparent;
-}
-.qa-btn-purple {
-  background: rgba(109, 40, 217, 0.09);
-  border-color: rgba(109, 40, 217, 0.18);
-  color: #5b21b6;
-}
-.qa-btn-rose {
-  background: rgba(190, 50, 80, 0.07);
-  border-color: rgba(190, 50, 80, 0.18);
-  color: #9f1239;
-}
-.qa-btn-gold {
-  background: rgba(180, 140, 20, 0.09);
-  border-color: rgba(180, 140, 20, 0.24);
-  color: #78350f;
-}
-.qa-btn-default {
-  background: rgba(255, 255, 255, 0.50);
-  border-color: rgba(0, 0, 0, 0.07);
-  color: #4b5563;
-}
-
-/* Glassmorphism Card — Base (kept for backward compat) */
+/* Glassmorphism Card — Base */
 .glass-card {
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
   -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     0 4px 32px rgba(124, 58, 237, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
     0 0 0 1px rgba(124, 58, 237, 0.06);
 }
 
 /* Glassmorphism — Elevated variant */
 .glass-card-elevated {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.62);
   backdrop-filter: blur(32px) saturate(220%) brightness(1.06);
   -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.06);
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   box-shadow:
     0 8px 48px rgba(124, 58, 237, 0.12),
-    0 2px 0 rgba(255, 255, 255, 0.95) inset,
+    0 2px 0 rgba(255, 255, 255, 0.9) inset,
     0 0 0 1px rgba(124, 58, 237, 0.07),
     0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -900,38 +780,38 @@ input[type="number"] {
 
 /* Hero / Wallet balance — light violet mesh glass */
 .glass-hero {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(40px) saturate(220%) brightness(1.05);
-  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.05);
-  border: 1px solid rgba(255, 255, 255, 0.88);
+  background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(248,244,255,0.94) 50%, rgba(255,253,255,0.96) 100%);
+  backdrop-filter: blur(40px) saturate(220%) brightness(1.04);
+  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.04);
+  border: 1px solid rgba(139, 92, 246, 0.14);
   box-shadow:
-    0 16px 60px rgba(124, 58, 237, 0.12),
+    0 12px 56px rgba(124, 58, 237, 0.10),
     0 2px 0 rgba(255, 255, 255, 1) inset,
-    0 0 0 1px rgba(124, 58, 237, 0.08);
+    0 0 0 1px rgba(124, 58, 237, 0.06);
 }
 
 /* Institutional blue glass — referral, bridge */
 .glass-indigo {
-  background: rgba(248, 248, 255, 0.70);
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(239,246,255,0.92) 50%, rgba(238,242,255,0.95) 100%);
   backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
   -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(99, 102, 241, 0.14);
   box-shadow:
-    0 8px 40px rgba(99, 102, 241, 0.10),
-    0 2px 0 rgba(255, 255, 255, 0.92) inset,
-    0 0 0 1px rgba(99, 102, 241, 0.07);
+    0 10px 48px rgba(99, 102, 241, 0.09),
+    0 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(99, 102, 241, 0.06);
 }
 
 /* Institutional teal glass — BNSL, yield */
 .glass-teal {
-  background: rgba(246, 255, 253, 0.70);
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,253,250,0.92) 50%, rgba(236,253,245,0.95) 100%);
   backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
   -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(13, 148, 136, 0.14);
   box-shadow:
-    0 8px 40px rgba(13, 148, 136, 0.10),
-    0 2px 0 rgba(255, 255, 255, 0.92) inset,
-    0 0 0 1px rgba(13, 148, 136, 0.07);
+    0 10px 48px rgba(13, 148, 136, 0.09),
+    0 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 0 1px rgba(13, 148, 136, 0.06);
 }
 
 /* Animated mesh background for light hero cards */
