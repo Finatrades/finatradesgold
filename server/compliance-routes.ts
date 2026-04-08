@@ -1205,8 +1205,10 @@ export function registerComplianceRoutes(
                 gte(bnslPlans.maturityDate, fromDate),
                 or(
                   eq(bnslPlans.status, 'Active'),
-                  eq(bnslPlans.status, 'Matured'),
-                  eq(bnslPlans.status, 'Settled'),
+                  eq(bnslPlans.status, 'Maturing'),
+                  eq(bnslPlans.status, 'Completed'),
+                  eq(bnslPlans.status, 'Early Termination Requested'),
+                  eq(bnslPlans.status, 'Early Terminated'),
                 ),
               ),
             ),

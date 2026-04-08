@@ -1,8 +1,8 @@
 import { cacheGet, cacheSet } from '../redis-client';
 import { sendEmail, EMAIL_TEMPLATES } from '../email';
 import { db } from '../db';
-import { users, userAccountStatus } from '../../shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, userAccountStatus, transactions } from '../../shared/schema';
+import { eq, and, gte, lte, isNotNull, asc, desc } from 'drizzle-orm';
 import type { IStorage } from '../storage';
 import type { Transaction } from '../../shared/schema';
 import { getGoldPricePerGram } from '../gold-price-service';
@@ -35,12 +35,60 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
     .where(eq(userAccountStatus.isFrozen, true));
   const frozenIds = new Set(frozenRows.map(r => r.userId));
 
-  // Fetch live gold price once for the entire batch (used as portfolio context only)
+  // Fetch live gold price once for the entire batch (used as portfolio context and period-end price)
   const liveGoldPrice: number | null = await getGoldPricePerGram().catch(() => null);
   if (liveGoldPrice !== null) {
     console.log(`[Monthly Statement] Live gold price: $${liveGoldPrice.toFixed(2)}/g`);
   } else {
     console.warn('[Monthly Statement] Live gold price unavailable; portfolio_value_usd will show N/A');
+  }
+
+  // Compute platform-level gold market movement for the previous month
+  // Uses earliest and latest transaction price across ALL users in the period (platform-wide snapshot)
+  // This gives a consistent market-context value for all user statements
+  let goldMarketChangePct: string = 'N/A';
+  try {
+    const [firstPriceRow] = await db
+      .select({ price: transactions.goldPriceUsdPerGram })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.status, 'Completed'),
+          isNotNull(transactions.goldPriceUsdPerGram),
+          gte(transactions.createdAt, prevMonthStart),
+          lte(transactions.createdAt, prevMonthEnd),
+        ),
+      )
+      .orderBy(asc(transactions.createdAt))
+      .limit(1);
+    const [lastPriceRow] = await db
+      .select({ price: transactions.goldPriceUsdPerGram })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.status, 'Completed'),
+          isNotNull(transactions.goldPriceUsdPerGram),
+          gte(transactions.createdAt, prevMonthStart),
+          lte(transactions.createdAt, prevMonthEnd),
+        ),
+      )
+      .orderBy(desc(transactions.createdAt))
+      .limit(1);
+
+    const startPrice = firstPriceRow?.price ? parseFloat(firstPriceRow.price.toString()) : null;
+    // Period-end: prefer last transaction price, fall back to live price fetched today (start of new month)
+    const endPrice = lastPriceRow?.price ? parseFloat(lastPriceRow.price.toString()) : liveGoldPrice;
+
+    if (startPrice && startPrice > 0 && endPrice && endPrice > 0) {
+      const changePct = ((endPrice - startPrice) / startPrice) * 100;
+      goldMarketChangePct = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+      console.log(`[Monthly Statement] Gold market movement ${monthName}: ${goldMarketChangePct} (open $${startPrice.toFixed(2)}/g → close $${endPrice.toFixed(2)}/g)`);
+    } else if (liveGoldPrice !== null) {
+      // No transaction price data for the month — report live price context only
+      console.warn(`[Monthly Statement] No platform transaction prices found for ${monthName} — gold_price_change_pct will show N/A`);
+    }
+  } catch (e) {
+    console.warn('[Monthly Statement] Could not compute gold market change:', e);
   }
 
   let sent = 0;
@@ -113,30 +161,9 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
         );
       }
 
-      // Compute gold market movement % for the month using first/last transaction prices
-      const pricesInMonth = monthTxns
-        .filter(t => {
-          const p = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram.toString()) : 0;
-          return p > 0;
-        })
-        .sort((a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime());
-
-      let goldPriceChangePct: string = 'N/A';
-      if (pricesInMonth.length >= 2) {
-        const openPrice = parseFloat(pricesInMonth[0].goldPriceUsdPerGram!.toString());
-        const closePrice = parseFloat(pricesInMonth[pricesInMonth.length - 1].goldPriceUsdPerGram!.toString());
-        if (openPrice > 0) {
-          const changePct = ((closePrice - openPrice) / openPrice) * 100;
-          goldPriceChangePct = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
-        }
-      } else if (pricesInMonth.length === 1 && liveGoldPrice !== null) {
-        // Only one price point — compare start-of-month price vs live price
-        const openPrice = parseFloat(pricesInMonth[0].goldPriceUsdPerGram!.toString());
-        if (openPrice > 0) {
-          const changePct = ((liveGoldPrice - openPrice) / openPrice) * 100;
-          goldPriceChangePct = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
-        }
-      }
+      // Use platform-level gold market movement computed once before the loop
+      // (first/last Completed transaction price across all users in the month — consistent for all statements)
+      const goldPriceChangePct = goldMarketChangePct;
 
       const openingUsd = goldPrice !== null ? (openingGold * goldPrice).toFixed(2) : 'N/A';
       const closingUsd = goldPrice !== null ? (closingGold * goldPrice).toFixed(2) : 'N/A';
