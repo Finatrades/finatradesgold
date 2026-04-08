@@ -1469,12 +1469,15 @@ export function registerComplianceRoutes(
               transferServiceFeeIncome: {
                 glCode: '4003',
                 accountName: 'Transfer / Service Fee Income',
-                description: `Transfer fee (${transferFeePercent}% of Send/Swap volume) — 0 if transfer_fee not configured`,
+                description: transferFeePercent > 0
+                  ? `Estimated transfer fee: ${transferFeePercent}% of Send/Swap transaction volume (sourced from platform_config)`
+                  : 'Transfer fee not configured (transfer_fee = 0 in platform_config) — value is $0.00',
                 transferTransactions: transferTxns.length,
                 transferVolumeUsd: transferFeeUsd.toFixed(2),
+                configuredFeePercent: transferFeePercent,
                 totalUsd: transferFeeIncome.toFixed(2),
                 includedInTotals: true,
-                dataSource: 'platform_config (transfer_fee) × Completed Send/Swap transaction volumes',
+                dataSource: 'platform_config (transfer_fee or transfer_fee_percent) × Completed Send/Swap transaction volumes',
               },
               storageFeeIncome: {
                 glCode: '4004',
