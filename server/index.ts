@@ -490,6 +490,8 @@ app.use((req, res, next) => {
   try {
     const { initializeJobQueues } = await import('./job-queue');
     initializeJobQueues();
+    const { startEmailQueueProcessor } = await import('./email');
+    startEmailQueueProcessor();
     console.log('[Enterprise] Background job processing enabled');
   } catch (error) {
     console.warn('[Enterprise] Job queue initialization skipped:', error);

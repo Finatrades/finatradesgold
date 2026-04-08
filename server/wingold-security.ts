@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
+import { cacheGet, cacheSet } from './redis-client';
 
 const WINGOLD_WEBHOOK_SECRET = process.env.WINGOLD_WEBHOOK_SECRET;
 const TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
@@ -139,29 +140,36 @@ export class WingoldSecurityService {
     return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - record.count, resetAt: record.resetAt };
   }
 
-  static checkIdempotency(orderId: string, eventType: string): { isDuplicate: boolean; processedAt?: number } {
-    const key = `${orderId}_${eventType}`;
-    const processedAt = processedWebhooks.get(key);
-    
-    if (processedAt) {
-      if (Date.now() - processedAt < IDEMPOTENCY_WINDOW_MS) {
+  static async checkIdempotency(orderId: string, eventType: string): Promise<{ isDuplicate: boolean; processedAt?: number }> {
+    const key = `wingold:webhook:${orderId}_${eventType}`;
+    try {
+      const cached = await cacheGet(key);
+      if (cached) {
+        const processedAt = parseInt(cached, 10);
         return { isDuplicate: true, processedAt };
       }
-      processedWebhooks.delete(key);
+    } catch {
+      // Redis unavailable: fall back to in-memory map
+      const processedAt = processedWebhooks.get(key);
+      if (processedAt && Date.now() - processedAt < IDEMPOTENCY_WINDOW_MS) {
+        return { isDuplicate: true, processedAt };
+      }
     }
-    
     return { isDuplicate: false };
   }
 
-  static markAsProcessed(orderId: string, eventType: string): void {
-    const key = `${orderId}_${eventType}`;
-    processedWebhooks.set(key, Date.now());
-    
-    if (processedWebhooks.size > 10000) {
-      const cutoff = Date.now() - IDEMPOTENCY_WINDOW_MS;
-      for (const [k, v] of processedWebhooks.entries()) {
-        if (v < cutoff) {
-          processedWebhooks.delete(k);
+  static async markAsProcessed(orderId: string, eventType: string): Promise<void> {
+    const key = `wingold:webhook:${orderId}_${eventType}`;
+    const now = Date.now();
+    try {
+      await cacheSet(key, String(now), Math.floor(IDEMPOTENCY_WINDOW_MS / 1000));
+    } catch {
+      // Redis unavailable: fall back to in-memory map
+      processedWebhooks.set(key, now);
+      if (processedWebhooks.size > 10000) {
+        const cutoff = now - IDEMPOTENCY_WINDOW_MS;
+        for (const [k, v] of processedWebhooks.entries()) {
+          if (v < cutoff) processedWebhooks.delete(k);
         }
       }
     }
@@ -214,7 +222,7 @@ export class WingoldSecurityService {
   }
 }
 
-export function wingoldSecurityMiddleware(req: Request, res: Response, next: NextFunction): void {
+export async function wingoldSecurityMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'];
   const signature = (req.headers['x-wingold-signature'] || req.headers['x-webhook-signature'] || '') as string;
@@ -300,7 +308,7 @@ export function wingoldSecurityMiddleware(req: Request, res: Response, next: Nex
   }
 
   if (payload.orderId && payload.event) {
-    const idempotencyCheck = WingoldSecurityService.checkIdempotency(payload.orderId, payload.event);
+    const idempotencyCheck = await WingoldSecurityService.checkIdempotency(payload.orderId, payload.event);
     if (idempotencyCheck.isDuplicate) {
       WingoldSecurityService.logAuditEvent({
         timestamp: new Date(),
@@ -358,5 +366,7 @@ export function wingoldSecurityMiddleware(req: Request, res: Response, next: Nex
 }
 
 export function wingoldSecurityPostProcessor(orderId: string, eventType: string): void {
-  WingoldSecurityService.markAsProcessed(orderId, eventType);
+  WingoldSecurityService.markAsProcessed(orderId, eventType).catch(err =>
+    console.error('[Security] Failed to persist idempotency key:', err)
+  );
 }

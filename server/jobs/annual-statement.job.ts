@@ -45,7 +45,24 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
       });
       if (yearTxns.length === 0) continue;
 
-      // Compute summary values from transactions
+      // Compute weighted-average cost basis per gram from ALL buy transactions (not just this year)
+      const allBuyTxns = txns.filter(t =>
+        (t.type === 'Receive' || t.type === 'Deposit') && parseFloat(t.amountGold?.toString() || '0') > 0
+      );
+      let wacgTotalGold = 0;
+      let wacgTotalUsd = 0;
+      for (const bt of allBuyTxns) {
+        const g = parseFloat(bt.amountGold?.toString() || '0');
+        // Prefer stored goldPriceUsdPerGram; fall back to amountUsd / amountGold ratio
+        const pricePerGram = bt.goldPriceUsdPerGram
+          ? parseFloat(bt.goldPriceUsdPerGram.toString())
+          : (g > 0 ? parseFloat(bt.amountUsd?.toString() || '0') / g : 0);
+        wacgTotalGold += g;
+        wacgTotalUsd += g * pricePerGram;
+      }
+      const wacgPerGram = wacgTotalGold > 0 ? wacgTotalUsd / wacgTotalGold : 0;
+
+      // Compute summary values from this year's transactions
       let totalPurchasesGold = 0;
       let totalSalesGold = 0;
       let realizedGains = 0;
@@ -56,8 +73,7 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
           totalPurchasesGold += g;
         } else if (t.type === 'Send' || t.type === 'Withdrawal') {
           totalSalesGold += g;
-          // Realized gain/loss: proceeds (usd) compared to cost at current gold price (~90/g fallback)
-          const costBasis = g * 90;
+          const costBasis = g * wacgPerGram;
           realizedGains += usd - costBasis;
         }
       }

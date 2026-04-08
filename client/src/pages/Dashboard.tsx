@@ -914,7 +914,7 @@ export default function Dashboard() {
                   {/* Top row */}
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-8 brightness-0 invert opacity-90" />
+                      <img src={finatradesLogo} alt="Finatrades" className="h-8 brightness-0 invert opacity-90" loading="lazy" />
                     </div>
                     <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.30)' }}>
                       <CreditCard className="w-3 h-3 text-purple-300/80" />

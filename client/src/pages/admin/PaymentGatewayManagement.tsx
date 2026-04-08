@@ -1000,6 +1000,7 @@ export default function PaymentGatewayManagement() {
                     src={walletForm.qrCodeImage} 
                     alt="Wallet QR Code" 
                     className="w-32 h-32 object-contain border rounded-lg"
+                    loading="lazy"
                   />
                   <Button
                     type="button"

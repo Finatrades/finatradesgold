@@ -59,7 +59,30 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
       }
       const openingGold = closingGold - netChange;
 
-      const goldPrice = 90; // Approximate fallback; jobs don't have price fn access
+      // Derive gold price from most recent transaction with goldPriceUsdPerGram,
+      // falling back to amountUsd/amountGold ratio, then to 0 with a warning.
+      const recentWithPrice = [...monthTxns, ...txns]
+        .filter(t => t.goldPriceUsdPerGram && parseFloat(t.goldPriceUsdPerGram.toString()) > 0)
+        .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+      let goldPrice = 0;
+      if (recentWithPrice.length > 0) {
+        goldPrice = parseFloat(recentWithPrice[0].goldPriceUsdPerGram!.toString());
+      } else {
+        // Fall back to amountUsd / amountGold from any completed transaction
+        const fallback = txns.find(t => {
+          const g = parseFloat(t.amountGold?.toString() || '0');
+          const u = parseFloat(t.amountUsd?.toString() || '0');
+          return g > 0 && u > 0;
+        });
+        if (fallback) {
+          const fg = parseFloat(fallback.amountGold!.toString());
+          const fu = parseFloat(fallback.amountUsd!.toString());
+          goldPrice = fg > 0 ? fu / fg : 0;
+        }
+        if (goldPrice === 0) {
+          console.warn(`[Monthly Statement] No gold price found for user ${user.id}; USD values will be zero`);
+        }
+      }
       const openingUsd = (openingGold * goldPrice).toFixed(2);
       const closingUsd = (closingGold * goldPrice).toFixed(2);
       const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);

@@ -826,7 +826,7 @@ function BlockDialog({
         );
       case 'image':
         return displayContent.startsWith('http') ? (
-          <img src={displayContent} alt="Preview" className="max-w-full h-auto rounded" />
+          <img src={displayContent} alt="Preview" className="max-w-full h-auto rounded" loading="lazy" />
         ) : (
           <div className="text-gray-500 italic">Enter a valid image URL to preview</div>
         );
@@ -2560,7 +2560,7 @@ function BrandingTab({
               </div>
               {formData.logoUrl && (
                 <div className="mt-2 p-4 bg-gray-100 rounded flex items-center justify-center">
-                  <img src={formData.logoUrl} alt="Logo preview" className="max-h-16 max-w-full" />
+                  <img src={formData.logoUrl} alt="Logo preview" className="max-h-16 max-w-full" loading="lazy" />
                 </div>
               )}
             </div>

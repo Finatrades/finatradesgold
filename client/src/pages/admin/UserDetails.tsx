@@ -464,7 +464,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front</p>
                               <div className="p-2">
-                                <img src={kycSubmission.idFrontUrl} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idFrontUrl, '_blank')} />
+                                <img src={kycSubmission.idFrontUrl} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idFrontUrl, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -472,7 +472,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back</p>
                               <div className="p-2">
-                                <img src={kycSubmission.idBackUrl} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idBackUrl, '_blank')} />
+                                <img src={kycSubmission.idBackUrl} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idBackUrl, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -480,7 +480,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Passport</p>
                               <div className="p-2">
-                                <img src={kycSubmission.passportUrl} alt="Passport" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.passportUrl, '_blank')} />
+                                <img src={kycSubmission.passportUrl} alt="Passport" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.passportUrl, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -488,7 +488,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address</p>
                               <div className="p-2">
-                                <img src={kycSubmission.addressProofUrl} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.addressProofUrl, '_blank')} />
+                                <img src={kycSubmission.addressProofUrl} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.addressProofUrl, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -496,7 +496,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Liveness Verification</p>
                               <div className="p-2">
-                                <img src={kycSubmission.livenessCapture} alt="Liveness Capture" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.livenessCapture, '_blank')} />
+                                <img src={kycSubmission.livenessCapture} alt="Liveness Capture" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.livenessCapture, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -504,7 +504,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front (Documents)</p>
                               <div className="p-2">
-                                <img src={kycSubmission.documents.idFront.url} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idFront.url, '_blank')} />
+                                <img src={kycSubmission.documents.idFront.url} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idFront.url, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -512,7 +512,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back (Documents)</p>
                               <div className="p-2">
-                                <img src={kycSubmission.documents.idBack.url} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idBack.url, '_blank')} />
+                                <img src={kycSubmission.documents.idBack.url} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idBack.url, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -520,7 +520,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Selfie</p>
                               <div className="p-2">
-                                <img src={kycSubmission.documents.selfie.url} alt="Selfie" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.selfie.url, '_blank')} />
+                                <img src={kycSubmission.documents.selfie.url} alt="Selfie" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.selfie.url, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
@@ -528,7 +528,7 @@ export default function UserDetails() {
                             <div className="border rounded-lg overflow-hidden">
                               <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address (Documents)</p>
                               <div className="p-2">
-                                <img src={kycSubmission.documents.proofOfAddress.url} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.proofOfAddress.url, '_blank')} />
+                                <img src={kycSubmission.documents.proofOfAddress.url} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.proofOfAddress.url, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}

@@ -997,6 +997,7 @@ export default function UnifiedPaymentManagement() {
                   src={proofViewerUrl} 
                   alt="Payment Proof" 
                   className="max-w-full max-h-[60vh] object-contain rounded"
+                  loading="lazy"
                 />
               ) : proofViewerUrl ? (
                 <div className="text-center">

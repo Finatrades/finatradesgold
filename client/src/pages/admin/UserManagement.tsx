@@ -325,6 +325,7 @@ export default function UserManagement() {
                                   src={user.profilePhoto} 
                                   alt={`${user.firstName} ${user.lastName}`}
                                   className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                  loading="lazy"
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">

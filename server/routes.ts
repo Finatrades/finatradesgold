@@ -7150,7 +7150,7 @@ export async function registerRoutes(
       const userId = req.session.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       
-      const { goldGrams, goldPricePerGram } = req.body;
+      const { goldGrams } = req.body;
       const amount = parseFloat(goldGrams);
       if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
       if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
@@ -7161,7 +7161,7 @@ export async function registerRoutes(
       const available = parseFloat(wallet.goldGrams || '0');
       if (amount > available) return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
 
-      const price = parseFloat(goldPricePerGram || '0');
+      const price = await getGoldPricePerGram() || 0;
       const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
 
       await db.transaction(async (tx) => {
@@ -7200,7 +7200,7 @@ export async function registerRoutes(
       const userId = req.session.userId;
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
 
-      const { goldGrams, goldPricePerGram } = req.body;
+      const { goldGrams } = req.body;
       const amount = parseFloat(goldGrams);
       if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
       if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
@@ -7211,7 +7211,7 @@ export async function registerRoutes(
       const finacardBalance = parseFloat(wallet.finacardGoldGrams || '0');
       if (amount > finacardBalance) return res.status(400).json({ message: "Insufficient FinaCard balance" });
 
-      const price = parseFloat(goldPricePerGram || '0');
+      const price = await getGoldPricePerGram() || 0;
       const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
 
       await db.transaction(async (tx) => {
@@ -15742,22 +15742,19 @@ export async function registerRoutes(
   // Fund FinaBridge wallet (transfer from main wallet) - PROTECTED
   app.post("/api/finabridge/wallet/:userId/fund", ensureOwnerOrAdmin, async (req, res) => {
     try {
-      const { amountGrams, goldPricePerGram } = req.body;
+      const { amountGrams } = req.body;
       const amount = parseFloat(amountGrams);
-      
-      // Get gold price from request or fetch from API as fallback
-      let goldPrice = parseFloat(goldPricePerGram) || 0;
-      if (!goldPrice) {
-        try {
-          const { getGoldPricePerGram } = await import('./gold-price');
-          goldPrice = await getGoldPricePerGram() || 0;
-        } catch (e) {
-          console.log('Could not fetch gold price for ledger entry');
-        }
-      }
       
       if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Always fetch gold price from trusted server-side source
+      let goldPrice = 0;
+      try {
+        goldPrice = await getGoldPricePerGram() || 0;
+      } catch (e) {
+        console.log('Could not fetch gold price for ledger entry');
       }
       
       // Get main wallet
@@ -15829,21 +15826,19 @@ export async function registerRoutes(
   // Withdraw from FinaBridge wallet (transfer to FinaPay) - PROTECTED
   app.post("/api/finabridge/wallet/:userId/withdraw", ensureOwnerOrAdmin, async (req, res) => {
     try {
-      const { amountGrams, goldPricePerGram } = req.body;
+      const { amountGrams } = req.body;
       const amount = parseFloat(amountGrams);
-      
-      // Get gold price from request or fetch from API as fallback
-      let goldPrice = parseFloat(goldPricePerGram) || 0;
-      if (!goldPrice) {
-        try {
-          goldPrice = await getGoldPricePerGram() || 0;
-        } catch (e) {
-          console.log('Could not fetch gold price for ledger entry');
-        }
-      }
-      
+
       if (isNaN(amount) || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Always fetch gold price from trusted server-side source
+      let goldPrice = 0;
+      try {
+        goldPrice = await getGoldPricePerGram() || 0;
+      } catch (e) {
+        console.log('Could not fetch gold price for ledger entry');
       }
       
       // Get FinaBridge wallet

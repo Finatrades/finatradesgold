@@ -219,7 +219,7 @@ async function createTransporter() {
     socketTimeout: 60000,
     tls: {
       servername: SMTP_HOST,
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
     },
   } as any;
   
@@ -228,12 +228,23 @@ async function createTransporter() {
 
 async function sendMailWithRetry(mailOptions: nodemailer.SendMailOptions, maxRetries = 3): Promise<nodemailer.SentMessageInfo> {
   let lastError: Error | null = null;
-  
+
+  const recipientEmail = Array.isArray(mailOptions.to) ? mailOptions.to[0] : (mailOptions.to as string);
+  const unsubscribeUrl = buildUnsubscribeUrl(recipientEmail);
+  const enrichedOptions: nodemailer.SendMailOptions = {
+    ...mailOptions,
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:unsubscribe@finatrades.com?subject=unsubscribe>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      ...(mailOptions.headers as Record<string, string> | undefined),
+    },
+  };
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[Email] Attempt ${attempt}/${maxRetries} to send email to ${mailOptions.to}`);
+      console.log(`[Email] Attempt ${attempt}/${maxRetries} to send email to ${enrichedOptions.to}`);
       const transporter = await createTransporter();
-      const result = await transporter.sendMail(mailOptions);
+      const result = await transporter.sendMail(enrichedOptions);
       transporter.close();
       return result;
     } catch (error) {
@@ -685,42 +696,58 @@ export async function sendEmailDirect(
   }
 }
 
-// Queue-based async email sending that doesn't block registration
-const emailQueue: Array<{ to: string; subject: string; html: string }> = [];
-let isProcessingQueue = false;
+// In-memory fallback queue (used only when Redis/Bull is unavailable)
+const emailFallbackQueue: Array<{ to: string; subject: string; html: string }> = [];
+let isProcessingFallbackQueue = false;
 
-async function processEmailQueue() {
-  if (isProcessingQueue || emailQueue.length === 0) return;
-  
-  isProcessingQueue = true;
-  
-  while (emailQueue.length > 0) {
-    const email = emailQueue.shift();
+async function processFallbackEmailQueue() {
+  if (isProcessingFallbackQueue || emailFallbackQueue.length === 0) return;
+  isProcessingFallbackQueue = true;
+  while (emailFallbackQueue.length > 0) {
+    const email = emailFallbackQueue.shift();
     if (!email) continue;
-    
     try {
-      await sendMailWithRetry({
-        from: SMTP_FROM,
-        to: email.to,
-        subject: email.subject,
-        html: email.html,
-      });
-      console.log(`[Email Queue] Successfully sent to ${email.to}`);
+      await sendMailWithRetry({ from: SMTP_FROM, to: email.to, subject: email.subject, html: email.html });
+      console.log(`[Email Fallback] Sent to ${email.to}`);
     } catch (error) {
-      console.error(`[Email Queue] Failed to send to ${email.to}:`, error);
+      console.error(`[Email Fallback] Failed to send to ${email.to}:`, error);
     }
-    
-    // Small delay between emails
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  
-  isProcessingQueue = false;
+  isProcessingFallbackQueue = false;
 }
 
 export function queueEmail(to: string, subject: string, html: string) {
-  emailQueue.push({ to, subject, html });
-  // Process queue in background without blocking
-  setImmediate(() => processEmailQueue().catch(console.error));
+  // Try Bull/Redis-backed queue first for durability across restarts
+  import('./job-queue').then(({ addRawEmailJob }) => {
+    return addRawEmailJob({ to, subject, html });
+  }).then(jobId => {
+    if (!jobId) {
+      // Bull queue unavailable — fall back to in-memory
+      emailFallbackQueue.push({ to, subject, html });
+      setImmediate(() => processFallbackEmailQueue().catch(console.error));
+    }
+  }).catch(() => {
+    emailFallbackQueue.push({ to, subject, html });
+    setImmediate(() => processFallbackEmailQueue().catch(console.error));
+  });
+}
+
+// Called from index.ts after initializeJobQueues() to register the Bull processor
+export function startEmailQueueProcessor(): void {
+  import('./job-queue').then(({ getQueue }) => {
+    const queue = getQueue('email');
+    if (!queue) return;
+    queue.process(async (job: any) => {
+      const { to, subject, html, _raw } = job.data;
+      if (!_raw || !to || !subject || !html) return;
+      await sendMailWithRetry({ from: SMTP_FROM, to, subject, html });
+      console.log(`[Email Queue] Bull job ${job.id} delivered to ${to}`);
+    });
+    console.log('[Email Queue] Bull processor registered');
+  }).catch(err => {
+    console.warn('[Email Queue] Could not register Bull processor:', err.message);
+  });
 }
 
 export async function queueEmailWithTemplate(

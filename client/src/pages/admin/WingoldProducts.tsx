@@ -310,7 +310,7 @@ export default function WingoldProducts() {
                       <TableCell>
                         <div className="w-12 h-12 rounded bg-amber-50 flex items-center justify-center overflow-hidden">
                           {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
                           ) : (
                             <Package className="w-6 h-6 text-amber-600" />
                           )}
@@ -509,6 +509,7 @@ export default function WingoldProducts() {
                       src={form.imageUrl} 
                       alt="Preview" 
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}

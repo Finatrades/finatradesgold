@@ -78,7 +78,7 @@ export function initializeJobQueues(): void {
   queues.fileUpload = createQueue('finatrades:file-upload');
   queues.notification = createQueue('finatrades:notification');
   queues.certificate = createQueue('finatrades:certificate');
-  
+
   console.log('[JobQueue] Job queue system ready');
 }
 
@@ -91,6 +91,13 @@ export interface EmailJobData {
   subject: string;
   template: string;
   data: Record<string, any>;
+  priority?: 'high' | 'normal' | 'low';
+}
+
+export interface RawEmailJobData {
+  to: string;
+  subject: string;
+  html: string;
   priority?: 'high' | 'normal' | 'low';
 }
 
@@ -133,6 +140,15 @@ export async function addEmailJob(data: EmailJobData): Promise<string | null> {
   const priority = data.priority === 'high' ? 1 : data.priority === 'low' ? 10 : 5;
   const job = await queue.add(data, { priority });
   console.log(`[JobQueue] Email job ${job.id} added for ${data.to}`);
+  return job.id.toString();
+}
+
+export async function addRawEmailJob(data: RawEmailJobData): Promise<string | null> {
+  const queue = queues.email;
+  if (!queue) return null;
+  const priority = data.priority === 'high' ? 1 : data.priority === 'low' ? 10 : 5;
+  const job = await queue.add({ ...data, _raw: true }, { priority });
+  console.log(`[Email Queue] Bull job ${job.id} queued for ${data.to}`);
   return job.id.toString();
 }
 

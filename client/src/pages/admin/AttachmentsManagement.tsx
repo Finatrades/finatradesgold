@@ -371,6 +371,7 @@ export default function AttachmentsManagement() {
                             src={attachment.fileUrl} 
                             alt={attachment.fileName}
                             className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80"
+                            loading="lazy"
                             onClick={() => setSelectedAttachment(attachment)}
                           />
                         ) : (
@@ -486,6 +487,7 @@ export default function AttachmentsManagement() {
                     src={selectedAttachment.fileUrl} 
                     alt={selectedAttachment.fileName}
                     className="max-w-full max-h-[60vh] object-contain mx-auto"
+                    loading="lazy"
                   />
                 ) : selectedAttachment.fileType === 'document' && getDocumentDownloadUrl(selectedAttachment.fileUrl, true) ? (
                   <object 

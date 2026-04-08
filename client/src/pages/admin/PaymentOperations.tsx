@@ -1459,6 +1459,7 @@ export default function FinaPayManagement() {
                         src={selectedDeposit.proofOfPayment} 
                         alt="Proof of Payment" 
                         className="max-w-full max-h-80 object-contain cursor-pointer rounded"
+                        loading="lazy"
                         onClick={() => {
                           const newWindow = window.open('', '_blank');
                           if (newWindow) {

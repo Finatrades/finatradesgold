@@ -220,6 +220,7 @@ function HeroSection() {
               alt="Finatrades Ecosystem - Raminvest Holding, Finatrades, WinGold & Metals, WinCommodities, WinLogistics" 
               className="w-full h-auto rounded-2xl shadow-2xl"
               data-testid="hero-ecosystem-diagram"
+              loading="lazy"
             />
           </motion.div>
         </motion.div>
@@ -246,7 +247,7 @@ function RaminvestSection() {
           <motion.div variants={fadeIn} className="text-center mb-16">
             <div className="inline-flex items-center justify-center mb-6">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1A002F] to-[#2A0055] shadow-lg">
-                <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" />
+                <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" loading="lazy" />
               </div>
             </div>
             <p className="text-gray-400 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
@@ -318,7 +319,7 @@ function FinatradesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-6">
-                <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" />
+                <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" loading="lazy" />
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
                 <span className="text-white text-sm font-bold">+</span>
@@ -400,7 +401,7 @@ function WingoldSection() {
             <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-5 inline-flex items-center justify-center lg:justify-start">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A1A2E] to-[#16213E] shadow-lg">
-                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" />
+                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" loading="lazy" />
                 </div>
               </div>
               <p className="text-amber-600 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
@@ -446,7 +447,7 @@ function WinCommoditiesSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-5">
-                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" />
+                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" loading="lazy" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
               <p className="text-gray-600 text-base leading-relaxed mb-6">
@@ -531,7 +532,7 @@ function WinLogisticsSection() {
 
             <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
               <div className="mb-5">
-                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" />
+                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" loading="lazy" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-2">Comprehensive Logistics Solutions Built for Global Trade</p>
               <p className="text-gray-400 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
@@ -605,6 +606,7 @@ function EcosystemFooter() {
                 src={finatradesLogo} 
                 alt="Finatrades Ecosystem" 
                 className="h-14 w-auto mb-2 brightness-0 invert"
+                loading="lazy"
               />
               <p className="text-white/60 text-sm">Integrated Trade & Finance Ecosystem</p>
             </div>

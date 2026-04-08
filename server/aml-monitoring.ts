@@ -2,6 +2,11 @@ import { storage } from "./storage";
 import type { Transaction, AmlMonitoringRule, User, AmlCase } from "@shared/schema";
 import { HIGH_RISK_COUNTRIES } from "./risk-scoring";
 
+function parseAmount(value: string | null | undefined): number {
+  const raw = parseFloat(value || '0');
+  return isNaN(raw) ? 0 : Math.round(raw * 100) / 100;
+}
+
 interface RuleViolation {
   ruleId: string;
   ruleName: string;
@@ -142,7 +147,7 @@ async function checkThresholdRule(
   const threshold = conditions.amountThreshold as number;
   const timeWindowHours = conditions.timeWindowHours as number | undefined;
   
-  const txnAmount = parseFloat(transaction.amountUsd || '0');
+  const txnAmount = parseAmount(transaction.amountUsd);
   
   if (timeWindowHours) {
     const since = new Date();
@@ -154,7 +159,7 @@ async function checkThresholdRule(
     );
     
     const cumulativeAmount = recentTxns.reduce((sum, t) => {
-      return sum + parseFloat(t.amountUsd || '0');
+      return sum + parseAmount(t.amountUsd);
     }, 0) + txnAmount;
     
     if (cumulativeAmount >= threshold) {
@@ -256,11 +261,11 @@ async function checkPatternRule(
     const suspiciousTxns = userTxns.filter(t => {
       if (new Date(t.createdAt) <= since) return false;
       if (t.status === 'Cancelled' || t.status === 'Failed') return false;
-      const amt = parseFloat(t.amountUsd || '0');
+      const amt = parseAmount(t.amountUsd);
       return amt >= minAmount && amt <= maxAmount;
     });
     
-    const currentAmt = parseFloat(transaction.amountUsd || '0');
+    const currentAmt = parseAmount(transaction.amountUsd);
     if (currentAmt >= minAmount && currentAmt <= maxAmount) {
       if (suspiciousTxns.length + 1 >= count) {
         return {
@@ -289,11 +294,11 @@ async function checkPatternRule(
     
     const deposits = recentTxns
       .filter(t => t.type === 'Deposit' || t.type === 'Buy')
-      .reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0);
+      .reduce((sum, t) => sum + parseAmount(t.amountUsd), 0);
     
     const withdrawals = recentTxns
       .filter(t => t.type === 'Withdrawal' || t.type === 'Sell')
-      .reduce((sum, t) => sum + parseFloat(t.amountUsd || '0'), 0);
+      .reduce((sum, t) => sum + parseAmount(t.amountUsd), 0);
     
     if (deposits > 0) {
       const ratio = withdrawals / deposits;
@@ -376,7 +381,7 @@ export async function evaluateTransaction(
       triggerDetails: {
         reason: topViolation.details,
         ruleId: topViolation.ruleId,
-        amount: parseFloat(transaction.amountUsd || '0')
+        amount: parseAmount(transaction.amountUsd)
       }
     });
     

@@ -467,6 +467,7 @@ function MyPhysicalDeposits() {
                                     src={toProxyUrl(item.photoFrontUrl) || ''} 
                                     alt="Front view" 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    loading="lazy"
                                   />
                                 </a>
                               )}
@@ -476,6 +477,7 @@ function MyPhysicalDeposits() {
                                     src={toProxyUrl(item.photoBackUrl) || ''} 
                                     alt="Back view" 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    loading="lazy"
                                   />
                                 </a>
                               )}
@@ -485,6 +487,7 @@ function MyPhysicalDeposits() {
                                     src={toProxyUrl(photoUrl) || ''} 
                                     alt={`Photo ${photoIdx + 1}`} 
                                     className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    loading="lazy"
                                   />
                                 </a>
                               ))}

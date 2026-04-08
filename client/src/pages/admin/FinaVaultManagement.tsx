@@ -678,6 +678,7 @@ export default function FinaVaultManagement() {
                                 src={doc} 
                                 alt={`Document ${idx + 1}`}
                                 className="w-full h-40 object-contain cursor-pointer rounded hover:opacity-80 transition-opacity"
+                                loading="lazy"
                                 onClick={() => {
                                   const newWindow = window.open('', '_blank');
                                   if (newWindow) {
