@@ -290,7 +290,28 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
     setTouched({ firstName: true, lastName: true, email: true, password: true, confirmPassword: true, companyName: true });
     
     if (Object.keys(errors).length > 0) {
-      toast.error("Please fill in all required fields");
+      const fieldLabels: Record<string, string> = {
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        email: 'Email Address',
+        password: 'Password',
+        confirmPassword: 'Confirm Password',
+        companyName: 'Company Name',
+      };
+      const failedFields = Object.keys(errors).map(k => fieldLabels[k] || k);
+      toast.error(`${failedFields.length} field${failedFields.length > 1 ? 's' : ''} need${failedFields.length === 1 ? 's' : ''} attention`, {
+        description: (
+          <ul className="mt-1 space-y-0.5">
+            {failedFields.map(f => (
+              <li key={f} className="flex items-center gap-1.5 text-sm">
+                <span className="text-red-400">›</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        ) as unknown as string,
+        duration: 6000,
+      });
       return false;
     }
     return true;
