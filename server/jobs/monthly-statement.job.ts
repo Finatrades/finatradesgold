@@ -83,6 +83,11 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
           console.warn(`[Monthly Statement] No gold price found for user ${user.id}; USD values will be zero`);
         }
       }
+      if (goldPrice > 0 && (goldPrice < 30 || goldPrice > 500)) {
+        console.warn(
+          `[Monthly Statement] Anomalous gold price for user ${user.id}: $${goldPrice.toFixed(4)}/g — verify transaction data (expected $30–$500/g range)`
+        );
+      }
       const openingUsd = (openingGold * goldPrice).toFixed(2);
       const closingUsd = (closingGold * goldPrice).toFixed(2);
       const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);

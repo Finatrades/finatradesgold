@@ -61,6 +61,11 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
         wacgTotalUsd += g * pricePerGram;
       }
       const wacgPerGram = wacgTotalGold > 0 ? wacgTotalUsd / wacgTotalGold : 0;
+      if (wacgPerGram > 0 && (wacgPerGram < 30 || wacgPerGram > 500)) {
+        console.warn(
+          `[Annual Statement] Anomalous WACG price for user ${user.id}: $${wacgPerGram.toFixed(4)}/g — verify transaction data (expected $30–$500/g range)`
+        );
+      }
 
       // Compute summary values from this year's transactions
       let totalPurchasesGold = 0;
