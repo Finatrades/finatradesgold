@@ -63,21 +63,21 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.09, delayChildren: 0.05 }
+    transition: { staggerChildren: 0.07, delayChildren: 0.04 }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 22, scale: 0.98 },
+  hidden: { opacity: 0, y: 28, scale: 0.97, filter: 'blur(4px)' },
   visible: {
-    opacity: 1, y: 0, scale: 1,
-    transition: { type: 'spring', stiffness: 280, damping: 28, mass: 0.9 }
+    opacity: 1, y: 0, scale: 1, filter: 'blur(0px)',
+    transition: { type: 'spring', stiffness: 260, damping: 26, mass: 0.85 }
   }
 };
 
 const cardHoverProps = {
-  whileHover: { y: -5, scale: 1.012, transition: { type: 'spring', stiffness: 400, damping: 22 } },
-  whileTap: { scale: 0.98, transition: { duration: 0.12 } },
+  whileHover: { y: -6, scale: 1.014, transition: { type: 'spring', stiffness: 380, damping: 20 } },
+  whileTap: { scale: 0.975, transition: { duration: 0.10 } },
 };
 
 export default function Dashboard() {
@@ -514,11 +514,10 @@ export default function Dashboard() {
                       </button>
                     </div>
                     <motion.p
-                      className="text-[38px] font-extrabold leading-none num-hero"
-                      style={{ background: 'linear-gradient(135deg, #5b21b6, #7c3aed, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                      initial={{ opacity: 0, scale: 0.95 }}
+                      className="text-[26px] font-bold leading-none num-hero tracking-tight gradient-text-purple"
+                      initial={{ opacity: 0, scale: 0.94 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
+                      transition={{ type: 'spring', stiffness: 280, damping: 28, delay: 0.15 }}
                       data-testid="text-total-balance"
                     >
                       {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
@@ -597,14 +596,28 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <button onClick={() => setActiveModal('deposit')} className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%)', boxShadow: '0 4px 20px rgba(124,58,237,0.30), 0 1px 0 rgba(255,255,255,0.15) inset' }} data-testid="button-add-funds">
+                  <motion.button
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setActiveModal('deposit')}
+                    className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-semibold transition-shadow"
+                    style={{ background: 'linear-gradient(135deg, rgba(88,28,220,0.82) 0%, rgba(124,58,237,0.75) 50%, rgba(147,51,234,0.72) 100%)', boxShadow: '0 4px 18px rgba(88,28,220,0.22), 0 1px 0 rgba(255,255,255,0.18) inset', border: '1px solid rgba(255,255,255,0.20)' }}
+                    data-testid="button-add-funds"
+                  >
                     <Plus className="w-4 h-4" />
                     Add Funds
-                  </button>
-                  <button onClick={() => setShowTransferModal(true)} className="flex-1 flex items-center justify-center gap-2 text-purple-700 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'rgba(124,58,237,0.08)', border: '1.5px solid rgba(124,58,237,0.22)', backdropFilter: 'blur(12px)' }} data-testid="button-int-transfer">
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowTransferModal(true)}
+                    className="flex-1 flex items-center justify-center gap-2 text-purple-700 py-3 px-4 rounded-2xl text-sm font-semibold transition-shadow"
+                    style={{ background: 'rgba(109,40,217,0.07)', border: '1px solid rgba(109,40,217,0.18)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
+                    data-testid="button-int-transfer"
+                  >
                     <Send className="w-4 h-4" />
                     Int. Transfer
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
@@ -812,8 +825,8 @@ export default function Dashboard() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setActiveModal('lock')}
-                className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+                className="w-full py-2.5 rounded-xl text-[12px] font-semibold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, rgba(88,28,220,0.80), rgba(139,92,246,0.72))', boxShadow: '0 3px 14px rgba(88,28,220,0.18)', border: '1px solid rgba(255,255,255,0.18)' }}
                 data-testid="button-lock-price-card"
               >
                 Lock Gold Price →
@@ -866,8 +879,8 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setDepositGoldModalOpen(true)}
-                  className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', boxShadow: '0 4px 16px rgba(217,119,6,0.25)' }}
+                  className="w-full py-2.5 rounded-xl text-[12px] font-semibold text-white transition-all"
+                  style={{ background: 'linear-gradient(135deg, rgba(180,110,10,0.80), rgba(212,145,20,0.72))', boxShadow: '0 3px 14px rgba(180,110,10,0.18)', border: '1px solid rgba(255,255,255,0.18)' }}
                   data-testid="button-deposit-gold-card"
                 >
                   Deposit Gold →
@@ -1206,8 +1219,8 @@ export default function Dashboard() {
                       {finaBridge.activeCases === 0 ? (
                         <button
                           onClick={() => setShowTradeModal(true)}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
-                          style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 3px 14px rgba(59,130,246,0.28)' }}
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold text-white transition-all hover:scale-[1.02] active:scale-95"
+                          style={{ background: 'linear-gradient(135deg, rgba(55,100,220,0.75), rgba(88,88,210,0.70))', boxShadow: '0 3px 14px rgba(55,100,220,0.16)', border: '1px solid rgba(255,255,255,0.18)' }}
                           data-testid="button-quick-trade-create"
                         >
                           <Landmark className="w-3.5 h-3.5" />
