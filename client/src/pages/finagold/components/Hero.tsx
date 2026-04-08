@@ -248,9 +248,11 @@ export default function Hero() {
               </motion.div>
 
               {/* Pink/Magenta gradient title */}
-              <motion.h1 variants={itemVariants} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
-                <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">{c.headline}</span>
-              </motion.h1>
+              <motion.div variants={itemVariants}>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1]">
+                  <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">{c.headline}</span>
+                </h1>
+              </motion.div>
 
               {/* Dark subtitle */}
               <motion.h2 variants={itemVariants} className="text-xl sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight text-balance">

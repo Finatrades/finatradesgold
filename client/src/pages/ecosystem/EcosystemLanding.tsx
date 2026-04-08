@@ -182,11 +182,13 @@ function HeroSection() {
             </div>
           </motion.div>
 
-          <motion.h1 variants={fadeIn} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-4">
-            <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
-            <br />
-            <span className="text-[#0D0D0D]">ECOSYSTEM</span>
-          </motion.h1>
+          <motion.div variants={fadeIn}>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-4">
+              <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
+              <br />
+              <span className="text-[#0D0D0D]">ECOSYSTEM</span>
+            </h1>
+          </motion.div>
 
           <motion.h2 variants={fadeIn} className="text-lg sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight mb-6">
             Securing International Commodities Transactions

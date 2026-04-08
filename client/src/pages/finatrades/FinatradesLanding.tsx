@@ -124,7 +124,7 @@ export default function FinatradesLanding() {
       <PageSeo
         title="Finatrades — Gold-Backed Trade Finance Platform"
         description="Swiss-regulated gold trade finance platform connecting commodity traders, importers, and exporters with FinaBridge LC financing, FinaGold savings plans, and gold-backed payments."
-        canonical="/"
+        canonical="/finatrades"
       />
       <FinatradesContent />
     </ModeProvider>

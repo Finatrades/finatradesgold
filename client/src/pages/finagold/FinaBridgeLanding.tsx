@@ -532,21 +532,22 @@ function HeroSection() {
               <span className="text-sm font-medium text-purple-700">FinaBridge Trade Platform</span>
             </motion.div>
 
-            <motion.h1
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
             >
-              Gold-Backed{' '}
-              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-                Trade
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-                Infrastructure
-              </span>
-            </motion.h1>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Gold-Backed{' '}
+                <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                  Trade
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                  Infrastructure
+                </span>
+              </h1>
+            </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
