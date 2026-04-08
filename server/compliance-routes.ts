@@ -1286,9 +1286,13 @@ export function registerComplianceRoutes(
         );
 
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Revenue: true fee-based income only (BNSL margin + transfer service + storage collection)
-        // Gold spread revenue (4001) requires Wingold COGS; excluded from totals, shown in volumeContext
-        const totalRevenueUsd = bnslMarginIncome.plus(transferFeeUsd).plus(storageFeeIncome);
+        // Revenue: only lines sourced from true fee/margin data
+        //   4002 BNSL margin: from scheduled bnslPayouts table (real obligation data)
+        //   4004 Storage fee income: from storageFees.feeAmountUsd with Paid status (real collection data)
+        // Excluded from totals (principal-valued, cannot isolate fee component without fee field):
+        //   4001 Gold spread (Buy volume) — Wingold COGS required; shown in volumeContext
+        //   4003 Transfer fee (Send/Swap volume) — no separate fee amount column on transactions table
+        const totalRevenueUsd = bnslMarginIncome.plus(storageFeeIncome);
         // Costs: storage fees paid to custodian (derived proxy) + BNSL payouts disbursed
         const totalCostUsd = storageFeePaidCustodian.plus(bnslPayoutCost);
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
@@ -1344,24 +1348,21 @@ export function registerComplianceRoutes(
               to: toDate.toISOString(),
             },
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
-            // True platform P&L lines — fee-based income only
-            // NOTE: Gold spread income (4001) requires Wingold COGS data; see volumeContext.goldSaleVolume
+            // True platform P&L revenue — only lines sourced from real fee/margin tables
+            // Lines in totalRevenueUsd:
+            //   4002 BNSL margin income (from bnslPayouts scheduled dates)
+            //   4004 Storage fee income (from storageFees.feeAmountUsd, Paid status)
+            // Excluded from totals (only transaction principal available, no separate fee field):
+            //   4001 Gold spread, 4003 Transfer fee — see volumeContext for gross volumes
             revenue: {
               bnslMarginIncome: {
                 glCode: '4002',
                 accountName: 'BNSL Margin Income',
-                description: 'Payouts scheduled to BNSL holders in period — reflects accrued platform margin commitment',
+                description: 'Payouts scheduled to BNSL holders in period — accrued platform margin commitment',
                 count: scheduledBnslPayoutsInPeriod.length,
                 totalUsd: bnslMarginIncome.toFixed(2),
                 totalGoldGrams: bnslMarginIncomeGold.toFixed(6),
-              },
-              transferFeeIncome: {
-                glCode: '4003',
-                accountName: 'Transfer Fee Income',
-                description: 'Spread income on Send/Swap transactions',
-                count: transferTxns.length,
-                totalUsd: transferFeeUsd.toFixed(2),
-                totalGoldGrams: transferFeeGold.toFixed(6),
+                includedInTotals: true,
               },
               storageFeeIncome: {
                 glCode: '4004',
@@ -1370,6 +1371,7 @@ export function registerComplianceRoutes(
                 count: paidStorageFees.length,
                 totalUsd: storageFeeIncome.toFixed(2),
                 totalGoldGrams: storageFeeIncomeGold.toFixed(6),
+                includedInTotals: true,
               },
             },
             costs: {
@@ -1398,17 +1400,30 @@ export function registerComplianceRoutes(
               totalCostUsd: totalCostUsd.toFixed(2),
               netPnlUsd: netPnlUsd.toFixed(2),
             },
-            // Volume context — informational reference (not included in P&L totals)
+            // Volume context — gross principal volumes for reference (NOT included in P&L totals)
+            // 4001 and 4003 excluded from revenue totals: transactions table stores principal only,
+            // no separate fee field exists to isolate platform take from customer principal.
             volumeContext: {
-              note: 'Gross gold inflow/outflow are user transaction principal volumes, not platform revenue/cost. Gold spread income (4001) = goldSaleVolume.totalUsd minus Wingold acquisition cost; COGS requires Wingold billing data not stored in this database.',
+              note: 'Gross volumes shown for reference. Gold spread (4001) and transfer fee (4003) require a separate fee/cost field not yet present in the transactions table. Reconcile with Wingold COGS and fee configuration data.',
               goldSaleVolume: {
                 glCode: '4001',
-                accountName: 'Gold Sale Revenue (Gross Volume Context)',
-                description: 'Gross USD value of Buy transactions — true spread income requires deducting Wingold COGS',
+                accountName: 'Gold Sale Revenue (Gross Volume — excluded from P&L totals)',
+                description: 'Gross USD value of Buy transactions. True 4001 spread = this minus Wingold acquisition cost (COGS).',
                 types: ['Buy'],
                 count: goldBuyTxns.length,
                 totalGoldGrams: goldBuyGold.toFixed(6),
                 totalUsd: goldBuyUsd.toFixed(2),
+                includedInTotals: false,
+              },
+              transferServiceVolume: {
+                glCode: '4003',
+                accountName: 'Transfer / Service Volume (Gross — excluded from P&L totals)',
+                description: 'Gross gold value of Send/Swap transactions. True 4003 fee income requires a fee_amount column not yet on the transactions table.',
+                types: ['Send', 'Swap'],
+                count: transferTxns.length,
+                totalGoldGrams: transferFeeGold.toFixed(6),
+                totalUsd: transferFeeUsd.toFixed(2),
+                includedInTotals: false,
               },
               goldInflow: {
                 types: ['Deposit', 'Buy'],
@@ -1417,7 +1432,7 @@ export function registerComplianceRoutes(
                 totalUsd: goldTradingUsd.toFixed(2),
               },
               goldOutflow: {
-                description: 'Gross gold returned to users via Withdrawal/Sell — not a direct P&L cost without knowing acquisition cost',
+                description: 'Gross gold returned to users via Withdrawal/Sell — not a direct P&L cost without acquisition cost basis',
                 types: ['Withdrawal', 'Sell'],
                 count: goldOutflowTxns.length,
                 totalGoldGrams: goldOutflowGold.toFixed(6),
@@ -1499,7 +1514,7 @@ export function registerComplianceRoutes(
           portfolioValueUsd: liveGoldPrice > 0 ? ((grams + lockedGrams) * liveGoldPrice).toFixed(2) : null,
         });
 
-        const openAmlCases = amlCasesList.filter(c => c.status === 'Open' || c.status === 'Under Review');
+        const openAmlCases = amlCasesList.filter(c => c.status === 'Open' || c.status === 'Under Investigation');
 
         const txSummary = recentTxns.reduce(
           (acc, tx) => {
