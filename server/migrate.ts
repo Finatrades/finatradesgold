@@ -31,11 +31,18 @@ const IDEMPOTENT_ERROR_CODES = new Set([
 ]);
 
 function splitSqlStatements(sql: string): string[] {
-  // Simple splitter: split on semicolons, keeping non-empty statements
+  // Split on semicolons, strip leading comment lines from each chunk,
+  // then discard chunks that have no actual SQL left.
   return sql
     .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("--"));
+    .map((chunk) =>
+      chunk
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("--"))
+        .join("\n")
+        .trim()
+    )
+    .filter((s) => s.length > 0);
 }
 
 export async function runMigrations(): Promise<void> {
