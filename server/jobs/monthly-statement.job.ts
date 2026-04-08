@@ -5,6 +5,7 @@ import { users, userAccountStatus } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 import type { IStorage } from '../storage';
 import type { Transaction } from '../../shared/schema';
+import { getGoldPricePerGram } from '../gold-price-service';
 
 const MONTHLY_STMT_IDEMPOTENCY_TTL = 25 * 24 * 60 * 60; // 25 days
 
@@ -33,6 +34,14 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
     .from(userAccountStatus)
     .where(eq(userAccountStatus.isFrozen, true));
   const frozenIds = new Set(frozenRows.map(r => r.userId));
+
+  // Fetch live gold price once for the entire batch (used as portfolio context only)
+  const liveGoldPrice: number | null = await getGoldPricePerGram().catch(() => null);
+  if (liveGoldPrice !== null) {
+    console.log(`[Monthly Statement] Live gold price: $${liveGoldPrice.toFixed(2)}/g`);
+  } else {
+    console.warn('[Monthly Statement] Live gold price unavailable; portfolio_value_usd will show N/A');
+  }
 
   let sent = 0;
   for (const user of allUsers) {
@@ -109,6 +118,13 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
       const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);
       const userName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
 
+      // Portfolio context: use live gold price for "current value as of sending" snapshot
+      const currentGoldPriceUsd = liveGoldPrice !== null ? liveGoldPrice.toFixed(2) : 'N/A';
+      const portfolioValueUsd =
+        liveGoldPrice !== null && closingGold > 0
+          ? (closingGold * liveGoldPrice).toFixed(2)
+          : 'N/A';
+
       sendEmail(user.email, EMAIL_TEMPLATES.MONTHLY_STATEMENT, {
         user_name: userName,
         month: monthName,
@@ -119,6 +135,8 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
         closing_usd: closingUsd,
         total_transactions: String(monthTxns.length),
         net_change_gold: netChangeGold,
+        current_gold_price_usd: currentGoldPriceUsd,
+        portfolio_value_usd: portfolioValueUsd,
       }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
       sent++;
     } catch (e) {

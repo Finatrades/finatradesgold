@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, Mail, Phone, MapPin, Shield, Calendar, 
   Ban, Lock, FileText, Activity, Building, CheckCircle2, 
-  AlertCircle, Clock, User, Wallet, RefreshCw
+  AlertCircle, Clock, User, Wallet, RefreshCw, TrendingUp, BookOpen
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/context/AuthContext';
@@ -38,6 +38,18 @@ export default function UserDetails() {
   const transactions = data?.transactions || [];
   const kycSubmission = data?.kycSubmission;
   const auditLogs = data?.auditLogs || [];
+
+  // Client brief
+  const { data: briefData, isLoading: briefLoading } = useQuery({
+    queryKey: ['admin-user-brief', userId],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/admin/users/${userId}/brief`);
+      if (!res.ok) throw new Error('Failed to fetch brief');
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+  const brief = briefData?.brief;
 
   // Admin actions
   const handleVerifyEmail = async () => {
@@ -245,6 +257,9 @@ export default function UserDetails() {
             </TabsTrigger>
             <TabsTrigger value="activity" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
               Activity Log ({auditLogs.length})
+            </TabsTrigger>
+            <TabsTrigger value="brief" data-testid="tab-client-brief" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1">
+              Client Brief
             </TabsTrigger>
           </TabsList>
 
@@ -589,6 +604,271 @@ export default function UserDetails() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Client Brief Tab */}
+            <TabsContent value="brief">
+              {briefLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+              ) : !brief ? (
+                <div className="text-center py-12 text-gray-500">
+                  <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                  <p>Client brief unavailable.</p>
+                </div>
+              ) : (
+                <div className="space-y-6" data-testid="client-brief-container">
+
+                  {/* Portfolio Snapshot */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" /> Portfolio Snapshot
+                      </CardTitle>
+                      <CardDescription>Current holdings at live gold price.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                          <p className="text-xs text-yellow-700 mb-1">Gold Holdings</p>
+                          <p className="text-lg font-bold text-yellow-800" data-testid="brief-gold-grams">
+                            {parseFloat(brief.wallet?.goldGrams || '0').toFixed(4)}g
+                          </p>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                          <p className="text-xs text-green-700 mb-1">Portfolio Value (Live)</p>
+                          <p className="text-lg font-bold text-green-800" data-testid="brief-portfolio-value">
+                            {brief.wallet?.portfolioValueUsd ? `$${parseFloat(brief.wallet.portfolioValueUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'N/A'}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-xs text-blue-700 mb-1">Live Gold Price</p>
+                          <p className="text-lg font-bold text-blue-800" data-testid="brief-gold-price">
+                            {brief.wallet?.liveGoldPriceUsdPerGram ? `$${parseFloat(brief.wallet.liveGoldPriceUsdPerGram).toFixed(2)}/g` : 'N/A'}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                          <p className="text-xs text-purple-700 mb-1">USD Balance</p>
+                          <p className="text-lg font-bold text-purple-800" data-testid="brief-usd-balance">
+                            ${parseFloat(brief.wallet?.usdBalance || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Risk & AML Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Shield className="w-4 h-4" /> Risk Profile
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {brief.riskProfile ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Risk Level</span>
+                              <Badge
+                                data-testid="brief-risk-level"
+                                variant={
+                                  brief.riskProfile.riskLevel === 'Critical' || brief.riskProfile.riskLevel === 'High'
+                                    ? 'destructive'
+                                    : brief.riskProfile.riskLevel === 'Medium'
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                              >
+                                {brief.riskProfile.riskLevel}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Overall Score</span>
+                              <span className="text-sm font-medium" data-testid="brief-risk-score">
+                                {brief.riskProfile.overallRiskScore ?? 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Last Assessed</span>
+                              <span className="text-sm text-gray-600">
+                                {brief.riskProfile.lastAssessedAt
+                                  ? new Date(brief.riskProfile.lastAssessedAt).toLocaleDateString()
+                                  : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400">No risk profile on record.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" /> AML Cases
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Total Cases</span>
+                            <span className="text-sm font-medium" data-testid="brief-aml-total">{brief.aml.totalCases}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Open Cases</span>
+                            <Badge
+                              data-testid="brief-aml-open"
+                              variant={brief.aml.openCases > 0 ? 'destructive' : 'outline'}
+                            >
+                              {brief.aml.openCases}
+                            </Badge>
+                          </div>
+                          {brief.aml.cases.slice(0, 3).map((c: any) => (
+                            <div key={c.id} className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                              <span className="font-mono">{c.caseNumber}</span> —{' '}
+                              <Badge variant="outline" className="text-xs">{c.status}</Badge>{' '}
+                              <span className="text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* 30-Day Activity Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Activity className="w-4 h-4" /> 30-Day Activity Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Total Transactions</p>
+                          <p className="text-xl font-bold" data-testid="brief-tx-total">{brief.recentActivity.transactionCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Completed</p>
+                          <p className="text-xl font-bold text-green-600" data-testid="brief-tx-completed">{brief.recentActivity.completedCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Pending</p>
+                          <p className="text-xl font-bold text-yellow-600" data-testid="brief-tx-pending">{brief.recentActivity.pendingCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Gold Inflow</p>
+                          <p className="text-lg font-bold text-green-700" data-testid="brief-inflow">{parseFloat(brief.recentActivity.inflowGoldGrams).toFixed(4)}g</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Gold Outflow</p>
+                          <p className="text-lg font-bold text-red-600" data-testid="brief-outflow">{parseFloat(brief.recentActivity.outflowGoldGrams).toFixed(4)}g</p>
+                        </div>
+                      </div>
+                      {brief.recentActivity.transactions.length > 0 && (
+                        <div className="overflow-x-auto border rounded-lg">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                              <tr>
+                                <th className="px-3 py-2 text-left">Type</th>
+                                <th className="px-3 py-2 text-left">Gold (g)</th>
+                                <th className="px-3 py-2 text-left">USD</th>
+                                <th className="px-3 py-2 text-left">Status</th>
+                                <th className="px-3 py-2 text-left">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {brief.recentActivity.transactions.map((tx: any) => (
+                                <tr key={tx.id} className="border-t hover:bg-gray-50" data-testid={`brief-tx-row-${tx.id}`}>
+                                  <td className="px-3 py-2">
+                                    <Badge variant="outline" className="text-xs">{tx.type}</Badge>
+                                  </td>
+                                  <td className="px-3 py-2 text-yellow-700 font-mono">
+                                    {tx.amountGold ? parseFloat(tx.amountGold).toFixed(4) : '—'}
+                                  </td>
+                                  <td className="px-3 py-2 text-green-700 font-mono">
+                                    {tx.amountUsd ? `$${parseFloat(tx.amountUsd).toFixed(2)}` : '—'}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <Badge
+                                      variant={tx.status === 'Completed' ? 'default' : tx.status === 'Failed' ? 'destructive' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {tx.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* KYC & Identity Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="w-4 h-4" /> Identity & KYC Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between py-1 border-b border-gray-50">
+                            <span className="text-sm text-gray-500">Full Name</span>
+                            <span className="text-sm font-medium">{brief.identity.firstName} {brief.identity.lastName}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-gray-50">
+                            <span className="text-sm text-gray-500">Country</span>
+                            <span className="text-sm font-medium">{brief.identity.country || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-gray-50">
+                            <span className="text-sm text-gray-500">Account Type</span>
+                            <span className="text-sm font-medium capitalize">{brief.identity.accountType}</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-sm text-gray-500">Member Since</span>
+                            <span className="text-sm font-medium">
+                              {new Date(brief.identity.memberSince).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between py-1 border-b border-gray-50">
+                            <span className="text-sm text-gray-500">KYC Status</span>
+                            {brief.kyc ? getKycStatusBadge(brief.kyc.status) : <Badge variant="outline">Not Submitted</Badge>}
+                          </div>
+                          {brief.kyc && (
+                            <>
+                              <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-sm text-gray-500">KYC Full Name</span>
+                                <span className="text-sm font-medium">{brief.kyc.fullName || 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-sm text-gray-500">Nationality</span>
+                                <span className="text-sm font-medium">{brief.kyc.nationality || 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between py-1">
+                                <span className="text-sm text-gray-500">Submitted</span>
+                                <span className="text-sm font-medium">
+                                  {brief.kyc.submittedAt ? new Date(brief.kyc.submittedAt).toLocaleDateString() : 'N/A'}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                </div>
+              )}
             </TabsContent>
           </div>
         </Tabs>

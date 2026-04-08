@@ -5,12 +5,18 @@ import { z } from "zod";
 import Decimal from "decimal.js";
 import { 
   transactions, wallets, users, auditLogs, withdrawalRequests, depositRequests,
-  amlCases, amlScreeningLogs, userRiskProfiles
+  amlCases, amlScreeningLogs, userRiskProfiles, kycSubmissions, vaultOwnershipSummary
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 import { logAdminAction } from "./security-middleware";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import PDFDocument from "pdfkit";
+import { getGoldPricePerGram } from "./gold-price-service";
+import {
+  REVENUE_TRANSACTION_TYPES,
+  COST_TRANSACTION_TYPES,
+  getTransactionGlEntry,
+} from "./chart-of-accounts";
 
 // ============================================================================
 // RECONCILIATION ENDPOINTS
@@ -1072,4 +1078,315 @@ export function registerComplianceRoutes(
       res.status(500).json({ message: "Failed to verify" });
     }
   });
+
+  // ============================================================================
+  // PLATFORM P&L REPORT
+  // GET /api/admin/reports/platform-pnl?from=YYYY-MM-DD&to=YYYY-MM-DD
+  // ============================================================================
+  app.get(
+    "/api/admin/reports/platform-pnl",
+    ensureAdminAsync,
+    requirePermission('view_reports'),
+    async (req: Request, res: Response) => {
+      try {
+        const fromStr = req.query.from as string;
+        const toStr = req.query.to as string;
+
+        const fromDate = fromStr ? startOfDay(new Date(fromStr)) : startOfDay(subDays(new Date(), 30));
+        const toDate = toStr ? endOfDay(new Date(toStr)) : endOfDay(new Date());
+
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+          return res.status(400).json({ message: "Invalid date range" });
+        }
+
+        const [liveGoldPrice, completedTxns] = await Promise.all([
+          getGoldPricePerGram().catch(() => 0),
+          db
+            .select()
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.status, 'Completed'),
+                gte(transactions.createdAt, fromDate),
+                lte(transactions.createdAt, toDate),
+              ),
+            ),
+        ]);
+
+        interface GlLineAcc {
+          code: string;
+          name: string;
+          type: string;
+          description: string;
+          transactionCount: number;
+          totalGoldGrams: Decimal;
+          totalUsdValue: Decimal;
+        }
+
+        const glLines: Record<string, GlLineAcc> = {};
+
+        const accumulate = (entry: ReturnType<typeof getTransactionGlEntry>, txType: string, goldGrams: Decimal, usdValue: Decimal) => {
+          for (const side of ['debit', 'credit'] as const) {
+            const acct = entry[side];
+            const key = `${side}-${acct.code}`;
+            if (!glLines[key]) {
+              glLines[key] = {
+                code: acct.code,
+                name: acct.name,
+                type: acct.type,
+                description: entry.description,
+                transactionCount: 0,
+                totalGoldGrams: new Decimal(0),
+                totalUsdValue: new Decimal(0),
+              };
+            }
+            glLines[key].transactionCount += 1;
+            glLines[key].totalGoldGrams = glLines[key].totalGoldGrams.plus(goldGrams);
+            glLines[key].totalUsdValue = glLines[key].totalUsdValue.plus(usdValue);
+          }
+        };
+
+        let totalRevenueUsd = new Decimal(0);
+        let totalCostUsd = new Decimal(0);
+        let totalRevenueGold = new Decimal(0);
+        let totalCostGold = new Decimal(0);
+
+        const byType: Record<string, { count: number; goldGrams: Decimal; usdValue: Decimal }> = {};
+
+        for (const tx of completedTxns) {
+          const gold = new Decimal(tx.amountGold || '0');
+          const priceAtTime = tx.goldPriceUsdPerGram ? parseFloat(tx.goldPriceUsdPerGram) : liveGoldPrice;
+          const usd = tx.amountUsd ? new Decimal(tx.amountUsd) : gold.times(priceAtTime);
+
+          const glEntry = getTransactionGlEntry(tx.type);
+          accumulate(glEntry, tx.type, gold, usd);
+
+          if (!byType[tx.type]) {
+            byType[tx.type] = { count: 0, goldGrams: new Decimal(0), usdValue: new Decimal(0) };
+          }
+          byType[tx.type].count += 1;
+          byType[tx.type].goldGrams = byType[tx.type].goldGrams.plus(gold);
+          byType[tx.type].usdValue = byType[tx.type].usdValue.plus(usd);
+
+          if (REVENUE_TRANSACTION_TYPES.includes(tx.type)) {
+            totalRevenueUsd = totalRevenueUsd.plus(usd);
+            totalRevenueGold = totalRevenueGold.plus(gold);
+          } else if (COST_TRANSACTION_TYPES.includes(tx.type)) {
+            totalCostUsd = totalCostUsd.plus(usd);
+            totalCostGold = totalCostGold.plus(gold);
+          }
+        }
+
+        const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
+        const netPnlGold = totalRevenueGold.minus(totalCostGold);
+
+        const glLineArray = Object.values(glLines).map(l => ({
+          glCode: l.code,
+          accountName: l.name,
+          accountType: l.type,
+          description: l.description,
+          transactionCount: l.transactionCount,
+          totalGoldGrams: l.totalGoldGrams.toFixed(6),
+          totalUsdValue: l.totalUsdValue.toFixed(2),
+        })).sort((a, b) => a.glCode.localeCompare(b.glCode));
+
+        const byTypeArray = Object.entries(byType).map(([type, v]) => ({
+          type,
+          glEntry: {
+            debitAccount: getTransactionGlEntry(type).debit.code + ' ' + getTransactionGlEntry(type).debit.name,
+            creditAccount: getTransactionGlEntry(type).credit.code + ' ' + getTransactionGlEntry(type).credit.name,
+          },
+          transactionCount: v.count,
+          totalGoldGrams: v.goldGrams.toFixed(6),
+          totalUsdValue: v.usdValue.toFixed(2),
+        }));
+
+        res.json({
+          report: {
+            period: {
+              from: fromDate.toISOString(),
+              to: toDate.toISOString(),
+            },
+            liveGoldPriceUsdPerGram: liveGoldPrice.toFixed(2),
+            summary: {
+              totalTransactions: completedTxns.length,
+              revenueTransactions: completedTxns.filter(t => REVENUE_TRANSACTION_TYPES.includes(t.type)).length,
+              costTransactions: completedTxns.filter(t => COST_TRANSACTION_TYPES.includes(t.type)).length,
+              totalRevenueUsd: totalRevenueUsd.toFixed(2),
+              totalCostUsd: totalCostUsd.toFixed(2),
+              netPnlUsd: netPnlUsd.toFixed(2),
+              netPnlGold: netPnlGold.toFixed(6),
+              totalRevenueGold: totalRevenueGold.toFixed(6),
+              totalCostGold: totalCostGold.toFixed(6),
+            },
+            byTransactionType: byTypeArray,
+            glBreakdown: glLineArray,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to generate platform P&L report:", error);
+        res.status(500).json({ message: "Failed to generate report" });
+      }
+    },
+  );
+
+  // ============================================================================
+  // CONSOLIDATED CLIENT BRIEF
+  // GET /api/admin/users/:userId/brief
+  // ============================================================================
+  app.get(
+    "/api/admin/users/:userId/brief",
+    ensureAdminAsync,
+    requirePermission('view_reports'),
+    async (req: Request, res: Response) => {
+      try {
+        const { userId } = req.params;
+
+        const thirtyDaysAgo = subDays(new Date(), 30);
+
+        const [
+          user,
+          wallet,
+          kyc,
+          riskProfile,
+          vaultSummary,
+          recentTxns,
+          amlCasesList,
+          liveGoldPrice,
+        ] = await Promise.all([
+          storage.getUser(userId),
+          storage.getWalletByUserId(userId),
+          db.select().from(kycSubmissions).where(eq(kycSubmissions.userId, userId)).then(r => r[0] ?? null),
+          db.select().from(userRiskProfiles).where(eq(userRiskProfiles.userId, userId)).then(r => r[0] ?? null),
+          db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId)).then(r => r[0] ?? null),
+          db
+            .select()
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.userId, userId),
+                gte(transactions.createdAt, thirtyDaysAgo),
+              ),
+            )
+            .orderBy(desc(transactions.createdAt))
+            .limit(30),
+          storage.getUserAmlCases(userId),
+          getGoldPricePerGram().catch(() => 0),
+        ]);
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        const goldGrams = parseFloat(wallet?.goldGrams || '0');
+        const portfolioValueUsd = liveGoldPrice > 0 ? goldGrams * liveGoldPrice : null;
+
+        const openAmlCases = amlCasesList.filter(c => c.status === 'Open' || c.status === 'Under Review');
+
+        const txSummary = recentTxns.reduce(
+          (acc, tx) => {
+            acc.total += 1;
+            if (tx.status === 'Completed') acc.completed += 1;
+            if (tx.status === 'Pending') acc.pending += 1;
+            if (tx.status === 'Failed') acc.failed += 1;
+            const gold = parseFloat(tx.amountGold || '0');
+            if (REVENUE_TRANSACTION_TYPES.includes(tx.type)) acc.inflowGold += gold;
+            if (COST_TRANSACTION_TYPES.includes(tx.type)) acc.outflowGold += gold;
+            return acc;
+          },
+          { total: 0, completed: 0, pending: 0, failed: 0, inflowGold: 0, outflowGold: 0 },
+        );
+
+        res.json({
+          brief: {
+            identity: {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              phoneNumber: user.phoneNumber ?? null,
+              country: user.country ?? null,
+              accountType: user.accountType,
+              role: user.role,
+              isEmailVerified: user.isEmailVerified,
+              companyName: (user as any).companyName ?? null,
+              registrationNumber: (user as any).registrationNumber ?? null,
+              memberSince: user.createdAt,
+            },
+            kyc: kyc
+              ? {
+                  status: kyc.status,
+                  fullName: kyc.fullName ?? null,
+                  dateOfBirth: kyc.dateOfBirth ?? null,
+                  nationality: kyc.nationality ?? null,
+                  address: kyc.address ?? null,
+                  submittedAt: kyc.createdAt,
+                  reviewedAt: (kyc as any).reviewedAt ?? null,
+                }
+              : null,
+            riskProfile: riskProfile
+              ? {
+                  riskLevel: riskProfile.riskLevel,
+                  overallRiskScore: riskProfile.overallRiskScore,
+                  lastAssessedAt: riskProfile.updatedAt,
+                }
+              : null,
+            vault: vaultSummary
+              ? {
+                  mpgwAvailableGrams: vaultSummary.mpgwAvailableGrams,
+                  mpgwPendingGrams: vaultSummary.mpgwPendingGrams,
+                  mpgwLockedBnslGrams: vaultSummary.mpgwLockedBnslGrams,
+                  fpgwAvailableGrams: vaultSummary.fpgwAvailableGrams ?? '0',
+                  fpgwPendingGrams: vaultSummary.fpgwPendingGrams ?? '0',
+                  lastUpdated: vaultSummary.updatedAt,
+                }
+              : null,
+            wallet: wallet
+              ? {
+                  goldGrams: wallet.goldGrams,
+                  usdBalance: wallet.usdBalance,
+                  eurBalance: wallet.eurBalance,
+                  portfolioValueUsd: portfolioValueUsd !== null ? portfolioValueUsd.toFixed(2) : null,
+                  liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
+                }
+              : null,
+            recentActivity: {
+              windowDays: 30,
+              transactionCount: txSummary.total,
+              completedCount: txSummary.completed,
+              pendingCount: txSummary.pending,
+              failedCount: txSummary.failed,
+              inflowGoldGrams: txSummary.inflowGold.toFixed(6),
+              outflowGoldGrams: txSummary.outflowGold.toFixed(6),
+              transactions: recentTxns.map(tx => ({
+                id: tx.id,
+                type: tx.type,
+                status: tx.status,
+                amountGold: tx.amountGold,
+                amountUsd: tx.amountUsd,
+                goldPriceUsdPerGram: tx.goldPriceUsdPerGram,
+                sourceModule: tx.sourceModule,
+                createdAt: tx.createdAt,
+              })),
+            },
+            aml: {
+              totalCases: amlCasesList.length,
+              openCases: openAmlCases.length,
+              cases: amlCasesList.slice(0, 10).map(c => ({
+                id: c.id,
+                caseNumber: c.caseNumber,
+                status: c.status,
+                riskLevel: c.riskLevel,
+                caseType: c.caseType,
+                createdAt: c.createdAt,
+              })),
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to generate client brief:", error);
+        res.status(500).json({ message: "Failed to generate client brief" });
+      }
+    },
+  );
 }
