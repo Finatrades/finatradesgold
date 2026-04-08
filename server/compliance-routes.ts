@@ -5,7 +5,8 @@ import { z } from "zod";
 import Decimal from "decimal.js";
 import { 
   transactions, wallets, users, auditLogs, withdrawalRequests, depositRequests,
-  amlCases, amlScreeningLogs, userRiskProfiles, kycSubmissions, vaultOwnershipSummary
+  amlCases, amlScreeningLogs, userRiskProfiles, kycSubmissions, vaultOwnershipSummary,
+  storageFees, bnslPayouts, bnslWallets, finabridgeWallets
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 import { logAdminAction } from "./security-middleware";
@@ -393,8 +394,46 @@ export function registerComplianceRoutes(
       const date = dateParam ? new Date(dateParam) : new Date();
       
       const report = await generateDailyReconciliation(date);
-      
-      res.json({ report });
+
+      // Augment report with GL-code breakdown for the day
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
+
+      const dayTxns = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.status, 'Completed'),
+            gte(transactions.createdAt, dayStart),
+            lte(transactions.createdAt, dayEnd),
+          ),
+        );
+
+      const glTotals: Record<string, { accountName: string; accountType: string; goldGrams: string; usdValue: string; count: number }> = {};
+
+      for (const tx of dayTxns) {
+        const entry = getTransactionGlEntry(tx.type);
+        const gold = parseFloat(tx.amountGold || '0');
+        const usd = tx.amountUsd ? parseFloat(tx.amountUsd) : 0;
+
+        for (const side of ['debit', 'credit'] as const) {
+          const acct = entry[side];
+          const key = `${side}:${acct.code}`;
+          if (!glTotals[key]) {
+            glTotals[key] = { accountName: `(${side.toUpperCase()}) ${acct.name}`, accountType: acct.type, goldGrams: '0', usdValue: '0', count: 0 };
+          }
+          glTotals[key].goldGrams = (parseFloat(glTotals[key].goldGrams) + gold).toFixed(6);
+          glTotals[key].usdValue = (parseFloat(glTotals[key].usdValue) + usd).toFixed(2);
+          glTotals[key].count += 1;
+        }
+      }
+
+      const glBreakdown = Object.entries(glTotals)
+        .map(([key, v]) => ({ glCode: key.split(':')[1], ...v }))
+        .sort((a, b) => a.glCode.localeCompare(b.glCode));
+
+      res.json({ report, glBreakdown });
     } catch (error) {
       console.error("Failed to generate reconciliation report:", error);
       res.status(500).json({ message: "Failed to generate reconciliation report" });
@@ -1099,8 +1138,37 @@ export function registerComplianceRoutes(
           return res.status(400).json({ message: "Invalid date range" });
         }
 
-        const [liveGoldPrice, completedTxns] = await Promise.all([
+        // Query all P&L-relevant data sources concurrently
+        const [
+          liveGoldPrice,
+          paidStorageFees,
+          paidBnslPayouts,
+          completedTxns,
+        ] = await Promise.all([
           getGoldPricePerGram().catch(() => 0),
+          // Storage fees collected from users in the period (platform revenue)
+          db
+            .select()
+            .from(storageFees)
+            .where(
+              and(
+                eq(storageFees.status, 'Paid'),
+                gte(storageFees.paidAt, fromDate),
+                lte(storageFees.paidAt, toDate),
+              ),
+            ),
+          // BNSL payouts made to users in the period (platform cost)
+          db
+            .select()
+            .from(bnslPayouts)
+            .where(
+              and(
+                eq(bnslPayouts.status, 'Paid'),
+                gte(bnslPayouts.paidAt, fromDate),
+                lte(bnslPayouts.paidAt, toDate),
+              ),
+            ),
+          // All completed transactions in the period for GL-breakdown and volume context
           db
             .select()
             .from(transactions)
@@ -1113,93 +1181,106 @@ export function registerComplianceRoutes(
             ),
         ]);
 
-        interface GlLineAcc {
-          code: string;
-          name: string;
-          type: string;
-          description: string;
-          transactionCount: number;
-          totalGoldGrams: Decimal;
-          totalUsdValue: Decimal;
-        }
+        // ── REVENUE LINES ────────────────────────────────────────────────────────
+        // 4004: Storage fee income — collected from users
+        const storageFeeIncome = paidStorageFees.reduce(
+          (sum, f) => sum.plus(f.feeAmountUsd || '0'),
+          new Decimal(0),
+        );
+        const storageFeeIncomeGold = paidStorageFees.reduce(
+          (sum, f) => sum.plus(f.feeAmountGoldGrams || '0'),
+          new Decimal(0),
+        );
 
-        const glLines: Record<string, GlLineAcc> = {};
+        // 4003: Transfer fee income — Send/Swap transactions generate spread income
+        const transferTxns = completedTxns.filter(t => t.type === 'Send' || t.type === 'Swap');
+        const transferFeeGold = transferTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const transferFeeUsd = transferTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          const usd = t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price);
+          return sum.plus(usd);
+        }, new Decimal(0));
 
-        const accumulate = (entry: ReturnType<typeof getTransactionGlEntry>, txType: string, goldGrams: Decimal, usdValue: Decimal) => {
-          for (const side of ['debit', 'credit'] as const) {
-            const acct = entry[side];
-            const key = `${side}-${acct.code}`;
-            if (!glLines[key]) {
-              glLines[key] = {
-                code: acct.code,
-                name: acct.name,
-                type: acct.type,
-                description: entry.description,
-                transactionCount: 0,
-                totalGoldGrams: new Decimal(0),
-                totalUsdValue: new Decimal(0),
-              };
-            }
-            glLines[key].transactionCount += 1;
-            glLines[key].totalGoldGrams = glLines[key].totalGoldGrams.plus(goldGrams);
-            glLines[key].totalUsdValue = glLines[key].totalUsdValue.plus(usdValue);
-          }
-        };
+        // 4001: Gold Trading Revenue — Deposit and Buy transactions represent
+        // the notional gold flow where platform earns the spread
+        const goldTradingTxns = completedTxns.filter(t => t.type === 'Deposit' || t.type === 'Buy');
+        const goldTradingGold = goldTradingTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldTradingUsd = goldTradingTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
 
-        let totalRevenueUsd = new Decimal(0);
-        let totalCostUsd = new Decimal(0);
-        let totalRevenueGold = new Decimal(0);
-        let totalCostGold = new Decimal(0);
+        // ── COST LINES ───────────────────────────────────────────────────────────
+        // 5003: BNSL Payout Cost — actual payouts disbursed to users
+        const bnslPayoutCost = paidBnslPayouts.reduce(
+          (sum, p) => sum.plus(p.monetaryAmountUsd || '0'),
+          new Decimal(0),
+        );
+        const bnslPayoutCostGold = paidBnslPayouts.reduce(
+          (sum, p) => sum.plus(p.gramsCredited || '0'),
+          new Decimal(0),
+        );
 
-        const byType: Record<string, { count: number; goldGrams: Decimal; usdValue: Decimal }> = {};
+        // 5002: Gold Purchase / Payout Cost — Withdrawal and Sell represent
+        // platform outflows (gold returned to users)
+        const goldOutflowTxns = completedTxns.filter(t => t.type === 'Withdrawal' || t.type === 'Sell');
+        const goldOutflowGold = goldOutflowTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldOutflowUsd = goldOutflowTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
+
+        // ── TOTALS ───────────────────────────────────────────────────────────────
+        // Platform-earned revenue: storage fees + BNSL plans spread + transfer fees
+        // Note: gold trading revenue is shown as gross volume for context; net spread
+        // is implicitly embedded in the difference between inflow and outflow grams.
+        const totalRevenueUsd = storageFeeIncome.plus(transferFeeUsd);
+        const totalCostUsd = bnslPayoutCost;
+        const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
+
+        // ── GL BREAKDOWN from all completed transactions ──────────────────────────
+        const glTotals: Record<string, {
+          glCode: string; accountName: string; accountType: string;
+          description: string; count: number; goldGrams: Decimal; usdValue: Decimal;
+        }> = {};
 
         for (const tx of completedTxns) {
+          const entry = getTransactionGlEntry(tx.type);
           const gold = new Decimal(tx.amountGold || '0');
-          const priceAtTime = tx.goldPriceUsdPerGram ? parseFloat(tx.goldPriceUsdPerGram) : liveGoldPrice;
-          const usd = tx.amountUsd ? new Decimal(tx.amountUsd) : gold.times(priceAtTime);
+          const price = tx.goldPriceUsdPerGram ? parseFloat(tx.goldPriceUsdPerGram) : liveGoldPrice;
+          const usd = tx.amountUsd ? new Decimal(tx.amountUsd) : gold.times(price);
 
-          const glEntry = getTransactionGlEntry(tx.type);
-          accumulate(glEntry, tx.type, gold, usd);
-
-          if (!byType[tx.type]) {
-            byType[tx.type] = { count: 0, goldGrams: new Decimal(0), usdValue: new Decimal(0) };
-          }
-          byType[tx.type].count += 1;
-          byType[tx.type].goldGrams = byType[tx.type].goldGrams.plus(gold);
-          byType[tx.type].usdValue = byType[tx.type].usdValue.plus(usd);
-
-          if (REVENUE_TRANSACTION_TYPES.includes(tx.type)) {
-            totalRevenueUsd = totalRevenueUsd.plus(usd);
-            totalRevenueGold = totalRevenueGold.plus(gold);
-          } else if (COST_TRANSACTION_TYPES.includes(tx.type)) {
-            totalCostUsd = totalCostUsd.plus(usd);
-            totalCostGold = totalCostGold.plus(gold);
+          for (const side of ['debit', 'credit'] as const) {
+            const acct = entry[side];
+            const key = `${side}:${acct.code}`;
+            if (!glTotals[key]) {
+              glTotals[key] = {
+                glCode: acct.code,
+                accountName: `(${side.toUpperCase()}) ${acct.code} ${acct.name}`,
+                accountType: acct.type,
+                description: entry.description,
+                count: 0,
+                goldGrams: new Decimal(0),
+                usdValue: new Decimal(0),
+              };
+            }
+            glTotals[key].count += 1;
+            glTotals[key].goldGrams = glTotals[key].goldGrams.plus(gold);
+            glTotals[key].usdValue = glTotals[key].usdValue.plus(usd);
           }
         }
 
-        const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
-        const netPnlGold = totalRevenueGold.minus(totalCostGold);
-
-        const glLineArray = Object.values(glLines).map(l => ({
-          glCode: l.code,
-          accountName: l.name,
-          accountType: l.type,
-          description: l.description,
-          transactionCount: l.transactionCount,
-          totalGoldGrams: l.totalGoldGrams.toFixed(6),
-          totalUsdValue: l.totalUsdValue.toFixed(2),
-        })).sort((a, b) => a.glCode.localeCompare(b.glCode));
-
-        const byTypeArray = Object.entries(byType).map(([type, v]) => ({
-          type,
-          glEntry: {
-            debitAccount: getTransactionGlEntry(type).debit.code + ' ' + getTransactionGlEntry(type).debit.name,
-            creditAccount: getTransactionGlEntry(type).credit.code + ' ' + getTransactionGlEntry(type).credit.name,
-          },
-          transactionCount: v.count,
-          totalGoldGrams: v.goldGrams.toFixed(6),
-          totalUsdValue: v.usdValue.toFixed(2),
-        }));
+        const glBreakdown = Object.values(glTotals)
+          .map(l => ({
+            glCode: l.glCode,
+            accountName: l.accountName,
+            accountType: l.accountType,
+            description: l.description,
+            transactionCount: l.count,
+            totalGoldGrams: l.goldGrams.toFixed(6),
+            totalUsdValue: l.usdValue.toFixed(2),
+          }))
+          .sort((a, b) => a.glCode.localeCompare(b.glCode));
 
         res.json({
           report: {
@@ -1207,20 +1288,61 @@ export function registerComplianceRoutes(
               from: fromDate.toISOString(),
               to: toDate.toISOString(),
             },
-            liveGoldPriceUsdPerGram: liveGoldPrice.toFixed(2),
+            liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
+            // True platform P&L lines
+            revenue: {
+              storageFeeIncome: {
+                glCode: '4004',
+                accountName: 'Storage Fee Income (Collected)',
+                description: 'Storage fees charged to users and paid in the period',
+                count: paidStorageFees.length,
+                totalUsd: storageFeeIncome.toFixed(2),
+                totalGoldGrams: storageFeeIncomeGold.toFixed(6),
+              },
+              transferFeeIncome: {
+                glCode: '4003',
+                accountName: 'Transfer Fee Income',
+                description: 'Spread income on Send/Swap transactions',
+                count: transferTxns.length,
+                totalUsd: transferFeeUsd.toFixed(2),
+                totalGoldGrams: transferFeeGold.toFixed(6),
+              },
+            },
+            costs: {
+              bnslPayoutCost: {
+                glCode: '5003',
+                accountName: 'BNSL Payout Cost',
+                description: 'Monetary payouts disbursed to BNSL plan holders',
+                count: paidBnslPayouts.length,
+                totalUsd: bnslPayoutCost.toFixed(2),
+                totalGoldGrams: bnslPayoutCostGold.toFixed(6),
+              },
+            },
+            // Net platform P&L (true earned income minus platform costs)
             summary: {
-              totalTransactions: completedTxns.length,
-              revenueTransactions: completedTxns.filter(t => REVENUE_TRANSACTION_TYPES.includes(t.type)).length,
-              costTransactions: completedTxns.filter(t => COST_TRANSACTION_TYPES.includes(t.type)).length,
               totalRevenueUsd: totalRevenueUsd.toFixed(2),
               totalCostUsd: totalCostUsd.toFixed(2),
               netPnlUsd: netPnlUsd.toFixed(2),
-              netPnlGold: netPnlGold.toFixed(6),
-              totalRevenueGold: totalRevenueGold.toFixed(6),
-              totalCostGold: totalCostGold.toFixed(6),
             },
-            byTransactionType: byTypeArray,
-            glBreakdown: glLineArray,
+            // Volume context — informational, not platform P&L
+            volumeContext: {
+              note: 'Gold inflow/outflow are user transaction volumes, not platform revenue/cost.',
+              goldInflow: {
+                types: ['Deposit', 'Buy'],
+                count: goldTradingTxns.length,
+                totalGoldGrams: goldTradingGold.toFixed(6),
+                totalUsd: goldTradingUsd.toFixed(2),
+              },
+              goldOutflow: {
+                types: ['Withdrawal', 'Sell'],
+                count: goldOutflowTxns.length,
+                totalGoldGrams: goldOutflowGold.toFixed(6),
+                totalUsd: goldOutflowUsd.toFixed(2),
+              },
+              totalCompletedTransactions: completedTxns.length,
+            },
+            // GL journal breakdown from transaction ledger
+            glBreakdown,
           },
         });
       } catch (error) {
@@ -1253,6 +1375,8 @@ export function registerComplianceRoutes(
           recentTxns,
           amlCasesList,
           liveGoldPrice,
+          bnslWalletRow,
+          finabridgeWalletRow,
         ] = await Promise.all([
           storage.getUser(userId),
           storage.getWalletByUserId(userId),
@@ -1272,6 +1396,8 @@ export function registerComplianceRoutes(
             .limit(30),
           storage.getUserAmlCases(userId),
           getGoldPricePerGram().catch(() => 0),
+          db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId)).then(r => r[0] ?? null),
+          db.select().from(finabridgeWallets).where(eq(finabridgeWallets.userId, userId)).then(r => r[0] ?? null),
         ]);
 
         if (!user) {
@@ -1280,6 +1406,14 @@ export function registerComplianceRoutes(
 
         const goldGrams = parseFloat(wallet?.goldGrams || '0');
         const portfolioValueUsd = liveGoldPrice > 0 ? goldGrams * liveGoldPrice : null;
+
+        // Per-wallet type holdings with USD values at live price
+        const buildWalletHolding = (grams: number, lockedGrams: number = 0) => ({
+          availableGrams: grams.toFixed(6),
+          lockedGrams: lockedGrams.toFixed(6),
+          totalGrams: (grams + lockedGrams).toFixed(6),
+          portfolioValueUsd: liveGoldPrice > 0 ? ((grams + lockedGrams) * liveGoldPrice).toFixed(2) : null,
+        });
 
         const openAmlCases = amlCasesList.filter(c => c.status === 'Open' || c.status === 'Under Review');
 
@@ -1338,9 +1472,11 @@ export function registerComplianceRoutes(
                   mpgwLockedBnslGrams: vaultSummary.mpgwLockedBnslGrams,
                   fpgwAvailableGrams: vaultSummary.fpgwAvailableGrams ?? '0',
                   fpgwPendingGrams: vaultSummary.fpgwPendingGrams ?? '0',
+                  fpgwLockedBnslGrams: vaultSummary.fpgwLockedBnslGrams ?? '0',
                   lastUpdated: vaultSummary.updatedAt,
                 }
               : null,
+            // Main FinaPay wallet
             wallet: wallet
               ? {
                   goldGrams: wallet.goldGrams,
@@ -1350,6 +1486,41 @@ export function registerComplianceRoutes(
                   liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
                 }
               : null,
+            // Consolidated holdings table across all wallet types
+            holdingsByWalletType: {
+              liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
+              finapay: wallet
+                ? buildWalletHolding(
+                    parseFloat(wallet.goldGrams || '0'),
+                  )
+                : null,
+              mpgw: vaultSummary
+                ? buildWalletHolding(
+                    parseFloat(vaultSummary.mpgwAvailableGrams || '0'),
+                    parseFloat(vaultSummary.mpgwPendingGrams || '0') +
+                      parseFloat(vaultSummary.mpgwLockedBnslGrams || '0'),
+                  )
+                : null,
+              fpgw: vaultSummary
+                ? buildWalletHolding(
+                    parseFloat(vaultSummary.fpgwAvailableGrams || '0'),
+                    parseFloat(vaultSummary.fpgwPendingGrams || '0') +
+                      parseFloat(vaultSummary.fpgwLockedBnslGrams || '0'),
+                  )
+                : null,
+              bnsl: bnslWalletRow
+                ? buildWalletHolding(
+                    parseFloat(bnslWalletRow.availableGoldGrams || '0'),
+                    parseFloat(bnslWalletRow.lockedGoldGrams || '0'),
+                  )
+                : null,
+              finabridge: finabridgeWalletRow
+                ? buildWalletHolding(
+                    parseFloat(finabridgeWalletRow.availableGoldGrams || '0'),
+                    parseFloat(finabridgeWalletRow.lockedGoldGrams || '0'),
+                  )
+                : null,
+            },
             recentActivity: {
               windowDays: 30,
               transactionCount: txSummary.total,

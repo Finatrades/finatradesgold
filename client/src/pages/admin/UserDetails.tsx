@@ -623,29 +623,36 @@ export default function UserDetails() {
                   {/* Portfolio Snapshot */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" /> Portfolio Snapshot
-                      </CardTitle>
-                      <CardDescription>Current holdings at live gold price.</CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" /> Portfolio Snapshot
+                          </CardTitle>
+                          <CardDescription>Current holdings at live gold price.</CardDescription>
+                        </div>
+                        {brief.holdingsByWalletType?.liveGoldPriceUsdPerGram && (
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">Live Gold Price</p>
+                            <p className="text-lg font-bold text-blue-700" data-testid="brief-gold-price">
+                              ${parseFloat(brief.holdingsByWalletType.liveGoldPriceUsdPerGram).toFixed(2)}/g
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <CardContent className="space-y-4">
+                      {/* Summary row */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                          <p className="text-xs text-yellow-700 mb-1">Gold Holdings</p>
+                          <p className="text-xs text-yellow-700 mb-1">FinaPay Gold</p>
                           <p className="text-lg font-bold text-yellow-800" data-testid="brief-gold-grams">
                             {parseFloat(brief.wallet?.goldGrams || '0').toFixed(4)}g
                           </p>
                         </div>
                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-                          <p className="text-xs text-green-700 mb-1">Portfolio Value (Live)</p>
+                          <p className="text-xs text-green-700 mb-1">FinaPay Portfolio Value</p>
                           <p className="text-lg font-bold text-green-800" data-testid="brief-portfolio-value">
                             {brief.wallet?.portfolioValueUsd ? `$${parseFloat(brief.wallet.portfolioValueUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'N/A'}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          <p className="text-xs text-blue-700 mb-1">Live Gold Price</p>
-                          <p className="text-lg font-bold text-blue-800" data-testid="brief-gold-price">
-                            {brief.wallet?.liveGoldPriceUsdPerGram ? `$${parseFloat(brief.wallet.liveGoldPriceUsdPerGram).toFixed(2)}/g` : 'N/A'}
                           </p>
                         </div>
                         <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
@@ -655,6 +662,53 @@ export default function UserDetails() {
                           </p>
                         </div>
                       </div>
+
+                      {/* Holdings breakdown by wallet type */}
+                      {brief.holdingsByWalletType && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Holdings by Wallet Type</p>
+                          <div className="border rounded-lg overflow-x-auto">
+                            <table className="w-full text-sm" data-testid="brief-holdings-table">
+                              <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                                <tr>
+                                  <th className="px-3 py-2 text-left">Wallet</th>
+                                  <th className="px-3 py-2 text-right">Available (g)</th>
+                                  <th className="px-3 py-2 text-right">Locked (g)</th>
+                                  <th className="px-3 py-2 text-right">Total (g)</th>
+                                  <th className="px-3 py-2 text-right">Value (USD)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[
+                                  { key: 'finapay', label: 'FinaPay (LGPW)', data: brief.holdingsByWalletType.finapay },
+                                  { key: 'mpgw', label: 'MPGW (Vault)', data: brief.holdingsByWalletType.mpgw },
+                                  { key: 'fpgw', label: 'FPGW (Vault)', data: brief.holdingsByWalletType.fpgw },
+                                  { key: 'bnsl', label: 'BNSL', data: brief.holdingsByWalletType.bnsl },
+                                  { key: 'finabridge', label: 'FinaBridge', data: brief.holdingsByWalletType.finabridge },
+                                ].filter(w => w.data !== null).map(w => (
+                                  <tr key={w.key} className="border-t hover:bg-gray-50" data-testid={`brief-holding-${w.key}`}>
+                                    <td className="px-3 py-2 font-medium text-gray-700">{w.label}</td>
+                                    <td className="px-3 py-2 text-right font-mono text-yellow-700">
+                                      {parseFloat(w.data!.availableGrams).toFixed(4)}
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-mono text-orange-600">
+                                      {parseFloat(w.data!.lockedGrams).toFixed(4)}
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-mono font-semibold">
+                                      {parseFloat(w.data!.totalGrams).toFixed(4)}
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-mono text-green-700">
+                                      {w.data!.portfolioValueUsd
+                                        ? `$${parseFloat(w.data!.portfolioValueUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                                        : 'N/A'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 

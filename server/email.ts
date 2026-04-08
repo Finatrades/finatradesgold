@@ -3519,17 +3519,34 @@ export const DEFAULT_EMAIL_TEMPLATES = [
           </tr>
         </table>
       </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-size: 12px; color: #92400e; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 14px 0; font-weight: 700;">Portfolio Value Today</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Live Gold Price</td>
+            <td style="padding: 9px 0; text-align: right; color: #92400e; font-weight: 600;">${`$`}{{current_gold_price_usd}}/g</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 0; color: #78350f;">Current Portfolio Value</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e;">${`$`}{{portfolio_value_usd}}</td>
+          </tr>
+        </table>
+        <p style="font-size: 11px; color: #a16207; margin: 10px 0 0 0;">Live gold price as of statement delivery. Past performance is not indicative of future results.</p>
+      </div>
     `,
     variables: [
       { name: 'user_name', description: "User's full name" },
       { name: 'month', description: 'Statement month' },
       { name: 'year', description: 'Statement year' },
-      { name: 'opening_gold', description: 'Opening gold balance' },
-      { name: 'opening_usd', description: 'Opening USD value' },
-      { name: 'closing_gold', description: 'Closing gold balance' },
-      { name: 'closing_usd', description: 'Closing USD value' },
-      { name: 'total_transactions', description: 'Total transactions' },
-      { name: 'net_change_gold', description: 'Net change in gold' },
+      { name: 'opening_gold', description: 'Opening gold balance in grams' },
+      { name: 'opening_usd', description: 'Opening USD value at historical price' },
+      { name: 'closing_gold', description: 'Closing gold balance in grams' },
+      { name: 'closing_usd', description: 'Closing USD value at historical price' },
+      { name: 'total_transactions', description: 'Total transactions in the month' },
+      { name: 'net_change_gold', description: 'Net change in gold grams' },
+      { name: 'current_gold_price_usd', description: 'Live gold price per gram at statement delivery (USD)' },
+      { name: 'portfolio_value_usd', description: 'Current portfolio value at live gold price (USD)' },
     ],
     status: 'published' as const,
   },
