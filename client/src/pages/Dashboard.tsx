@@ -156,6 +156,7 @@ export default function Dashboard() {
   const tiltGoldWallets   = useTilt(6);
   const tiltLocked        = useTilt(6);
   const tiltGoldChart     = useTilt(5);
+  const tiltFinaCard      = useTilt(8);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -919,54 +920,81 @@ export default function Dashboard() {
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
           <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start" style={{ perspective: 1200 }}>
 
-            {/* FinaCard — Premium dark card with holographic effect */}
+            {/* FinaCard — Dark glass metal card */}
             <Link href="/finacard">
               <motion.div
+                ref={tiltFinaCard.ref}
                 variants={itemVariants}
-                whileHover={{ scale: 1.015, y: -4 }}
-                transition={{ duration: 0.35 }}
-                className="relative w-full aspect-[1.586/1] rounded-[20px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
-                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
+                onMouseMove={tiltFinaCard.onMouseMove}
+                onMouseLeave={tiltFinaCard.onMouseLeave}
+                className="relative w-full aspect-[1.586/1] rounded-[22px] overflow-hidden cursor-pointer"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(17,7,40,0.92) 0%, rgba(36,14,72,0.88) 40%, rgba(10,5,30,0.93) 75%, rgba(36,14,72,0.88) 100%)',
+                  backdropFilter: 'blur(40px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                  border: '1px solid rgba(139,92,246,0.30)',
+                  boxShadow: '0 8px 40px rgba(109,40,217,0.30), 0 2px 8px rgba(109,40,217,0.15), inset 0 1px 0 rgba(255,255,255,0.07)',
+                  ...tiltFinaCard.motionStyle,
+                }}
                 data-testid="card-dashboard-finacard"
               >
-                <div className="absolute inset-0 holo-shimmer" />
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-amber-900/10" />
-                <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-purple-600/10 blur-3xl" />
-                <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-amber-400/8 blur-2xl" />
-                <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                {/* Purple→gold colour mesh matching orbs */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(139,92,246,0.28) 0%, transparent 55%)' }} />
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 90% 85%, rgba(212,175,55,0.22) 0%, transparent 50%)' }} />
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(168,85,247,0.16) 0%, transparent 45%)' }} />
+                {/* Top accent stripe — purple→gold */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[22px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
+                {/* Holo shimmer overlay */}
+                <div className="absolute inset-0 holo-shimmer opacity-30" />
+                {/* Glass shine sweep */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.10) 0%, transparent 40%, rgba(255,255,255,0.04) 100%)' }} />
+                {/* Mouse glare */}
+                <motion.div className="pointer-events-none absolute inset-0 rounded-[22px]" style={{ background: 'linear-gradient(105deg, transparent 25%, rgba(168,85,247,0.28) 50%, rgba(212,175,55,0.16) 65%, transparent 85%)', opacity: tiltFinaCard.glare, zIndex: 25 }} />
+
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                  {/* Top row */}
                   <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-10 brightness-0 invert" />
+                    <div className="flex items-center gap-2">
+                      <img src={finatradesLogo} alt="Finatrades" className="h-8 brightness-0 invert opacity-90" />
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1 border border-white/8">
-                      <CreditCard className="w-3 h-3 text-white/60" />
-                      <span className="text-white/60 text-[12px] font-bold">GOLD CARD</span>
+                    <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.30)' }}>
+                      <CreditCard className="w-3 h-3 text-purple-300/80" />
+                      <span className="text-purple-200/80 text-[11px] font-bold tracking-wide">GOLD CARD</span>
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-7 bg-gradient-to-r from-yellow-200 to-yellow-500 rounded-[4px] opacity-80 flex items-center justify-center">
-                        <div className="w-5 h-4 border border-yellow-700/30 rounded-[2px]" />
+
+                  {/* Middle — chip + NFC */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-7 rounded-[4px] flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #d4af37, #f5e17a, #b8941f)', boxShadow: '0 2px 8px rgba(212,175,55,0.40)' }}>
+                      <div className="absolute inset-0 flex flex-col justify-center gap-[3px] py-[3px]">
+                        <div className="h-px bg-yellow-900/25 mx-1.5" />
+                        <div className="h-px bg-yellow-900/25 mx-1.5" />
+                        <div className="h-px bg-yellow-900/25 mx-1.5" />
                       </div>
-                      <Zap className="w-4 h-4 text-white/20 rotate-90" />
+                      <div className="absolute inset-y-0 left-[38%] right-[38%] border-x border-yellow-900/20 rounded-sm" />
                     </div>
-                    <p className="font-mono text-base text-white/80 tracking-[0.25em]">•••• •••• •••• ••••</p>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-[11px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Card Holder</p>
-                        <p className="text-white/90 text-xs font-bold uppercase tracking-wide">
-                          {user?.firstName || ''} {user?.lastName || ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[11px] uppercase font-bold text-white/30 tracking-widest mb-0.5">Balance</p>
-                        <p className="text-white/90 text-sm font-extrabold">
-                          {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
-                        </p>
-                        <p className="text-white/30 text-[11px] font-medium">
-                          {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
-                        </p>
-                      </div>
+                    <Zap className="w-4 h-4 rotate-90" style={{ color: 'rgba(212,175,55,0.40)' }} />
+                  </div>
+
+                  {/* Card number dots */}
+                  <p className="font-mono text-[13px] tracking-[0.28em]" style={{ color: 'rgba(255,255,255,0.55)' }}>•••• •••• •••• ••••</p>
+
+                  {/* Bottom row */}
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: 'rgba(139,92,246,0.65)' }}>Card Holder</p>
+                      <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.88)' }}>
+                        {user?.firstName || ''} {user?.lastName || ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: 'rgba(139,92,246,0.65)' }}>Balance</p>
+                      <p className="text-[13px] font-extrabold" style={{ color: 'rgba(255,255,255,0.92)' }}>
+                        {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
+                      </p>
+                      <p className="text-[10px] font-medium" style={{ color: 'rgba(212,175,55,0.65)' }}>
+                        {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
+                      </p>
                     </div>
                   </div>
                 </div>
