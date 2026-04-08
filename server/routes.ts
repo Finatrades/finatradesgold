@@ -916,6 +916,16 @@ export async function registerRoutes(
   // Brevo sends POST events: hard_bounce, soft_bounce, complaint, invalid_email
   app.post("/api/webhooks/email-bounce", async (req: Request, res: Response) => {
     try {
+      // Authenticate webhook request using shared secret
+      const webhookSecret = process.env.BREVO_WEBHOOK_SECRET;
+      if (webhookSecret) {
+        const providedToken = req.headers['x-brevo-webhook-token'] as string | undefined;
+        if (!providedToken || providedToken !== webhookSecret) {
+          console.warn('[EmailBounce] Webhook rejected: invalid or missing token');
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+      }
+
       // Brevo sends an array of events or a single event object
       const events: any[] = Array.isArray(req.body) ? req.body : [req.body];
 

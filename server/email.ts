@@ -560,6 +560,28 @@ export async function sendEmail(
   }
 
   try {
+    // Bounce suppression: skip send if recipient has a recent Bounced log entry
+    const isSecuritySlug = SECURITY_EMAIL_SLUGS.has(templateSlug);
+    if (!isSecuritySlug) {
+      try {
+        const { db: dbInst } = await import('./db');
+        const { emailLogs: emailLogsTable } = await import('@shared/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const recentLogs = await dbInst
+          .select({ status: emailLogsTable.status })
+          .from(emailLogsTable)
+          .where(eq(emailLogsTable.recipientEmail, to.toLowerCase()))
+          .orderBy(desc(emailLogsTable.createdAt))
+          .limit(1);
+        if (recentLogs.length > 0 && recentLogs[0].status === 'Bounced') {
+          console.warn(`[Email] Suppressed send to bounced address: ${to}`);
+          return { success: false, error: 'Recipient address previously bounced' };
+        }
+      } catch (bounceCheckErr: any) {
+        console.error('[Email] Bounce check failed, proceeding with send:', bounceCheckErr.message);
+      }
+    }
+
     // Get branding for email
     const branding = await getBrandingForEmail();
     
@@ -724,41 +746,20 @@ export async function sendEmailDirect(
   }
 }
 
-// In-memory fallback queue (used only when Redis/Bull is unavailable)
-const emailFallbackQueue: Array<{ to: string; subject: string; html: string }> = [];
-let isProcessingFallbackQueue = false;
-
-async function processFallbackEmailQueue() {
-  if (isProcessingFallbackQueue || emailFallbackQueue.length === 0) return;
-  isProcessingFallbackQueue = true;
-  while (emailFallbackQueue.length > 0) {
-    const email = emailFallbackQueue.shift();
-    if (!email) continue;
-    try {
-      await sendMailWithRetry({ from: SMTP_FROM, to: email.to, subject: email.subject, html: email.html });
-      console.log(`[Email Fallback] Sent to ${email.to}`);
-    } catch (error) {
-      console.error(`[Email Fallback] Failed to send to ${email.to}:`, error);
-    }
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-  isProcessingFallbackQueue = false;
-}
-
-export function queueEmail(to: string, subject: string, html: string) {
-  // Try Bull/Redis-backed queue first for durability across restarts
-  import('./job-queue').then(({ addRawEmailJob }) => {
-    return addRawEmailJob({ to, subject, html });
-  }).then(jobId => {
+export async function queueEmail(to: string, subject: string, html: string): Promise<string | null> {
+  try {
+    const { addRawEmailJob } = await import('./job-queue');
+    const jobId = await addRawEmailJob({ to, subject, html });
     if (!jobId) {
-      // Bull queue unavailable — fall back to in-memory
-      emailFallbackQueue.push({ to, subject, html });
-      setImmediate(() => processFallbackEmailQueue().catch(console.error));
+      // Bull queue unavailable (Redis not configured) — log prominently, do not silently drop
+      console.error(`[Email Queue] CRITICAL: Bull queue unavailable. Email to ${to} NOT queued. Configure UPSTASH_REDIS_URL for production durability.`);
+      return null;
     }
-  }).catch(() => {
-    emailFallbackQueue.push({ to, subject, html });
-    setImmediate(() => processFallbackEmailQueue().catch(console.error));
-  });
+    return jobId;
+  } catch (err: any) {
+    console.error(`[Email Queue] Failed to enqueue email to ${to}:`, err.message);
+    return null;
+  }
 }
 
 // Called from index.ts after initializeJobQueues() to register the Bull processor
@@ -794,14 +795,19 @@ export async function queueEmailWithTemplate(
   const htmlBody = replaceVariables(template.body, data);
 
   const branding = await getBrandingForEmail();
-  const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to);
+  const isSecurityTemplate = SECURITY_EMAIL_SLUGS.has(templateSlug);
+  const preheader = subject.length > 10 ? subject : undefined;
+  const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to, {
+    suppressUnsubscribe: isSecurityTemplate,
+    preheader,
+  });
 
   // Log to email_logs table if notificationType is provided (for duplicate prevention)
   if (options?.notificationType) {
     try {
-      const { emailLogs } = await import('@shared/schema');
-      const { db } = await import('./db');
-      await db.insert(emailLogs).values({
+      const { emailLogs: emailLogsTable } = await import('@shared/schema');
+      const { db: dbInst } = await import('./db');
+      await dbInst.insert(emailLogsTable).values({
         recipientEmail: to,
         userId: options.userId || null,
         notificationType: options.notificationType,
@@ -815,7 +821,7 @@ export async function queueEmailWithTemplate(
     }
   }
   
-  queueEmail(to, subject, wrappedHtml);
+  await queueEmail(to, subject, wrappedHtml);
 }
 
 export const EMAIL_TEMPLATES = {
