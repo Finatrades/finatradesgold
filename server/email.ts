@@ -707,9 +707,36 @@ export async function sendEmailViaTemplate(
     }
     const subject = replaceVariables(template.subject, enrichedData);
     const htmlBody = replaceVariables(template.body, enrichedData);
-    return sendEmailDirect(to, subject, htmlBody);
+    // Wrap with security/preheader options since we have the template slug
+    const isSecurityTemplate = SECURITY_EMAIL_SLUGS.has(templateSlug);
+    const preheader = subject.length > 10 ? subject : undefined;
+    const wrappedHtml = wrapEmailWithBranding(htmlBody, branding, to, {
+      suppressUnsubscribe: isSecurityTemplate,
+      preheader,
+    });
+    return sendEmailSmtp(to, subject, wrappedHtml);
   } catch (error) {
     console.error(`[Email] sendEmailViaTemplate failed for ${to}:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/** Low-level SMTP sender: sends pre-wrapped HTML without additional wrapping. */
+async function sendEmailSmtp(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    if (!SMTP_USER || !SMTP_PASS) {
+      console.log(`[Email Preview] To: ${to} | Subject: ${subject}`);
+      return { success: true, messageId: 'preview-mode' };
+    }
+    const info = await sendMailWithRetry({ from: SMTP_FROM, to, subject, html });
+    console.log(`[Email] SMTP delivered to ${to}: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`[Email] SMTP failed for ${to}:`, error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -770,6 +797,26 @@ export function startEmailQueueProcessor(): void {
     queue.process(async (job: any) => {
       const { to, subject, html, _raw } = job.data;
       if (!_raw || !to || !subject || !html) return;
+
+      // Bounce suppression at the worker level — single source of truth
+      try {
+        const { db: dbInst } = await import('./db');
+        const { emailLogs: emailLogsTable } = await import('@shared/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const recentLogs = await dbInst
+          .select({ status: emailLogsTable.status })
+          .from(emailLogsTable)
+          .where(eq(emailLogsTable.recipientEmail, (to as string).toLowerCase()))
+          .orderBy(desc(emailLogsTable.createdAt))
+          .limit(1);
+        if (recentLogs.length > 0 && recentLogs[0].status === 'Bounced') {
+          console.warn(`[Email Queue] Suppressed Bull job ${job.id} — recipient ${to} previously bounced`);
+          return;
+        }
+      } catch (bounceCheckErr: any) {
+        console.error('[Email Queue] Bounce check failed, proceeding with send:', bounceCheckErr.message);
+      }
+
       await sendMailWithRetry({ from: SMTP_FROM, to, subject, html });
       console.log(`[Email Queue] Bull job ${job.id} delivered to ${to}`);
     });
