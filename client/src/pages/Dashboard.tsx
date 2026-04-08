@@ -433,51 +433,43 @@ export default function Dashboard() {
           <span className="text-[13px] font-bold text-gray-600 whitespace-nowrap tracking-wide uppercase">Quick Access</span>
           <span className="w-px h-4 bg-gray-200 mx-1" />
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('buybar')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-            style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.20)', color: '#6d28d9' }}
+            className="qa-btn-base qa-btn-purple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
             data-testid="button-buy-gold">
             <Package className="w-3.5 h-3.5" /> Buy Gold Bar
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('sell')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-            style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)', color: '#e11d48' }}
+            className="qa-btn-base qa-btn-rose focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
             data-testid="button-sell-gold">
             <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('withdraw')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+            className="qa-btn-base qa-btn-default"
             data-testid="button-withdraw-gold">
             <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('send')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+            className="qa-btn-base qa-btn-default"
             data-testid="button-send-gold">
             <Send className="w-3.5 h-3.5 text-blue-500" /> Send Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('request')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+            className="qa-btn-base qa-btn-default"
             data-testid="button-request-gold">
             <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request Gold
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('lock')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+            className="qa-btn-base qa-btn-default"
             data-testid="button-lock-gold">
             <Shield className="w-3.5 h-3.5 text-emerald-500" /> Lock Gold Price
           </motion.button>
           <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setDepositGoldModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-            style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.30)', color: '#92400e' }}
+            className="qa-btn-base qa-btn-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
             data-testid="button-deposit-gold-quick">
             <Vault className="w-3.5 h-3.5" /> Deposit Gold
           </motion.button>
           {isBusinessUser && (
             <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setShowTradeModal(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+              className="qa-btn-base qa-btn-default"
               data-testid="button-create-trade-quick">
               <Landmark className="w-3.5 h-3.5 text-indigo-500" /> Create Trade
             </motion.button>
@@ -488,7 +480,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-5">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
-          <div className="col-span-12 xl:col-span-5 space-y-5">
+          <motion.div layout className="col-span-12 xl:col-span-5 space-y-5">
 
             {/* Hero Balance Card */}
             <motion.div
@@ -738,10 +730,10 @@ export default function Dashboard() {
               )}
             </motion.div>
 
-          </div>
+          </motion.div>
 
           {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
+          <motion.div layout className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
             {/* Gold Price Lock Status */}
             <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel rounded-[20px] p-6" data-testid="card-price-lock-status">
@@ -849,10 +841,10 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-          </div>
+          </motion.div>
 
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
+          <motion.div layout className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
 
             {/* FinaCard — Premium dark card with holographic effect */}
             <Link href="/finacard">
@@ -984,7 +976,7 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-          </div>
+          </motion.div>
         </div>
 
         {/* ═══ ZONE 2 — BUSINESS MODULES (business users only) ═══ */}
