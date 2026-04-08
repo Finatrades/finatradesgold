@@ -128,8 +128,6 @@ export default function Dashboard() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const isMobile = useIsMobile();
   
-  const [walletView, setWalletView] = useState<'currency' | 'weight'>('currency');
-  const [weightUnit, setWeightUnit] = useState<'g' | 'oz' | 'kg'>('g');
   const [copiedId, setCopiedId] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activitySearch, setActivitySearch] = useState('');
@@ -145,7 +143,6 @@ export default function Dashboard() {
 
   /* 3D tilt instances — one per major glass card */
   const tiltHero          = useTilt(9);
-  const tiltWallet        = useTilt(7);
   const tiltPriceLock     = useTilt(8);
   const tiltDepositGold   = useTilt(8);
   const tiltReferral      = useTilt(7);
@@ -692,6 +689,40 @@ export default function Dashboard() {
                     Int. Transfer
                   </button>
                 </div>
+
+                {/* ── Currency conversion strip ── */}
+                <div className="mt-4 pt-4 border-t border-white/30">
+                  <p className="text-[10px] font-bold text-gray-400/70 uppercase tracking-widest mb-2.5">Balance in currencies</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* USD */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }} data-testid="wallet-usd">
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[9px] text-white font-black flex-shrink-0">$</div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wide">USD</p>
+                        <p className="text-[13px] font-extrabold text-blue-900 num-metric leading-tight truncate">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
+                      </div>
+                    </div>
+                    {/* AED */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }} data-testid="wallet-aed">
+                      <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0" style={{ fontSize: 8, color: 'white', fontWeight: 900 }}>د</div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wide">AED</p>
+                        <p className="text-[13px] font-extrabold text-amber-900 num-metric leading-tight truncate flex items-center gap-0.5">
+                          <DirhamSymbol size="0.85em" />{showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
+                        </p>
+                      </div>
+                    </div>
+                    {/* EUR */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }} data-testid="wallet-eur">
+                      <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-black flex-shrink-0">€</div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wide">EUR</p>
+                        <p className="text-[13px] font-extrabold text-indigo-900 num-metric leading-tight truncate">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </motion.div>
 
@@ -701,134 +732,6 @@ export default function Dashboard() {
                 <PendingItemsStrip />
               </motion.div>
             </AnimatePresence>
-
-            {/* Gold Wallet Conversion Card */}
-            <motion.div
-              ref={tiltWallet.ref}
-              variants={itemVariants}
-              style={tiltWallet.motionStyle}
-              onMouseMove={tiltWallet.onMouseMove}
-              onMouseLeave={tiltWallet.onMouseLeave}
-              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
-            >
-              <div className="glass-shine-layer" />
-              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 55%, transparent 80%)', opacity: tiltWallet.glare, zIndex: 25 }} />
-              {/* Header row */}
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <span className="text-[13px] text-gray-700 font-bold">Gold Wallet</span>
-                  <span className="text-[12px] text-gray-400 font-medium ml-1.5">Conversion</span>
-                </div>
-                {/* Currency ↔ Weight toggle */}
-                <div className="flex items-center bg-gray-100 rounded-xl p-0.5 gap-0.5">
-                  <button
-                    onClick={() => setWalletView('currency')}
-                    className={`px-2.5 py-1 rounded-[10px] text-[12px] font-bold transition-all ${walletView === 'currency' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
-                    data-testid="toggle-wallet-currency"
-                  >
-                    $ Currency
-                  </button>
-                  <button
-                    onClick={() => setWalletView('weight')}
-                    className={`px-2.5 py-1 rounded-[10px] text-[12px] font-bold transition-all ${walletView === 'weight' ? 'bg-white shadow text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
-                    data-testid="toggle-wallet-weight"
-                  >
-                    ⚖ Weight
-                  </button>
-                </div>
-              </div>
-
-              {walletView === 'currency' ? (
-                /* ── Currency mode ── */
-                <div className="grid grid-cols-3 gap-3">
-                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(59,130,246,0.18)', boxShadow: '0 4px 16px rgba(59,130,246,0.08)' }} data-testid="wallet-usd">
-                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(59,130,246,0.12)' }} />
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[8px] text-white font-black">$</div>
-                        <span className="text-[11px] font-bold text-blue-700">USD</span>
-                      </div>
-                      <p className="text-[15px] font-extrabold text-blue-900 num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
-                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(59,130,246,0.10)', color: '#1d4ed8' }}><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />Active</span>
-                    </div>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(245,158,11,0.22)', boxShadow: '0 4px 16px rgba(245,158,11,0.08)' }} data-testid="wallet-aed">
-                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(245,158,11,0.12)' }} />
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center" style={{ fontSize: 7, color: 'white', fontWeight: 900 }}>د</div>
-                        <span className="text-[11px] font-bold text-amber-700">AED</span>
-                      </div>
-                      <p className="text-[15px] font-extrabold text-amber-900 num-metric flex items-center gap-[3px]">
-                        <DirhamSymbol size="0.95em" />
-                        {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
-                      </p>
-                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.10)', color: '#92400e' }}><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Active</span>
-                    </div>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(99,102,241,0.18)', boxShadow: '0 4px 16px rgba(99,102,241,0.08)' }} data-testid="wallet-eur">
-                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(99,102,241,0.12)' }} />
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] text-white font-black">€</div>
-                        <span className="text-[11px] font-bold text-indigo-700">EUR</span>
-                      </div>
-                      <p className="text-[15px] font-extrabold text-indigo-900 num-metric">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(99,102,241,0.10)', color: '#3730a3' }}><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />Active</span>
-                    </div>
-                  </motion.div>
-                </div>
-              ) : (
-                /* ── Weight mode ── */
-                <>
-                  {/* Unit sub-toggle */}
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <span className="text-[12px] text-gray-400 font-medium mr-0.5">Unit:</span>
-                    {(['g', 'oz', 'kg'] as const).map(unit => (
-                      <button
-                        key={unit}
-                        onClick={() => setWeightUnit(unit)}
-                        className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all border ${weightUnit === unit ? 'bg-amber-500 text-white border-amber-500' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-amber-300'}`}
-                        data-testid={`toggle-unit-${unit}`}
-                      >
-                        {unit === 'g' ? 'Gram' : unit === 'oz' ? 'Ounce' : 'Kilogram'}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Weight tiles */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Wallet Gold', icon: '🥇', color: { bg: 'linear-gradient(135deg, #fef9c3, #fef08a)', border: 'border-yellow-200/60', text: 'text-yellow-800', sub: 'text-yellow-700' } },
-                      { label: 'FinaCard', icon: '💳', color: { bg: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: 'border-emerald-100/60', text: 'text-emerald-900', sub: 'text-emerald-700' } },
-                      { label: 'Total', icon: '📊', color: { bg: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: 'border-indigo-100/60', text: 'text-indigo-900', sub: 'text-indigo-700' } },
-                    ].map(({ label, icon, color }) => {
-                      const grams = label === 'Wallet Gold' ? (totals.walletGoldGrams || 0)
-                        : label === 'FinaCard' ? (totals.finacardGoldGrams || 0)
-                        : (totals.walletGoldGrams || 0) + (totals.finacardGoldGrams || 0);
-                      const converted = weightUnit === 'g' ? grams
-                        : weightUnit === 'oz' ? grams / 31.1035
-                        : grams / 1000;
-                      const suffix = weightUnit;
-                      return (
-                        <motion.div key={label} whileHover={{ y: -3 }} className={`rounded-2xl p-3.5 relative border ${color.border} hover:shadow-lg transition-all cursor-default overflow-hidden`} style={{ background: color.bg }}>
-                          <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-20 blur-xl bg-yellow-400" />
-                          <div className="relative z-10">
-                            <div className="flex items-center gap-1 mb-2">
-                              <span className="text-[11px]">{icon}</span>
-                              <span className={`text-[12px] font-bold ${color.sub}`}>{label}</span>
-                            </div>
-                            <p className={`text-[14px] font-extrabold ${color.text} leading-tight`}>
-                              {showBalance ? `${formatNumber(converted, weightUnit === 'kg' ? 4 : 3)}` : '••••'}
-                            </p>
-                            <p className={`text-[11px] font-bold ${color.sub} mt-0.5`}>{suffix}</p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </motion.div>
 
           </motion.div>
 
