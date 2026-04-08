@@ -2439,6 +2439,7 @@ export default function FinaBridgeManagement() {
                                 src={url}
                                 alt="Supporting Document"
                                 className="max-w-full h-auto"
+                                loading="lazy"
                                 data-testid="img-supporting-document"
                               />
                             </div>

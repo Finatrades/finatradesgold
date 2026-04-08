@@ -421,6 +421,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                 alt="Finatrades"
                 className="h-36 w-auto object-contain"
                 style={{ filter: 'brightness(0) invert(1)', opacity: 0.85 }}
+                loading="lazy"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>

@@ -824,7 +824,7 @@ export default function Security() {
               <div className="space-y-4 py-4">
                 <div className="flex justify-center">
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-48 h-48 rounded-lg border" />
+                    <img src={qrCode} alt="QR Code" className="w-48 h-48 rounded-lg border" loading="lazy" />
                   ) : (
                     <div className="w-48 h-48 rounded-lg border flex items-center justify-center bg-muted">
                       <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />

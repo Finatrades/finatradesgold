@@ -734,6 +734,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                     src={profilePhoto}
                     alt="Profile selfie"
                     className="w-40 h-40 mx-auto rounded-full object-cover border-4 border-primary"
+                    loading="lazy"
                   />
                   <Button
                     type="button"

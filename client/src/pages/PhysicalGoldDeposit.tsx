@@ -651,6 +651,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                             src={URL.createObjectURL(photo)}
                             alt={`Item ${index + 1} photo ${photoIdx + 1}`}
                             className="w-16 h-16 object-cover rounded-lg border"
+                            loading="lazy"
                           />
                           <button
                             type="button"

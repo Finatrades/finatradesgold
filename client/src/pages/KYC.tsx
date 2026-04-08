@@ -1956,7 +1956,7 @@ export default function KYC() {
                          {capturedSelfie && (
                            <div className="text-center">
                              <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
-                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                               <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" loading="lazy" />
                              </div>
                              <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
                                <CheckCircle2 className="w-5 h-5" />
@@ -2937,7 +2937,7 @@ export default function KYC() {
                               {capturedSelfie ? (
                                 <div className="text-center">
                                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-3">
-                                    <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" />
+                                    <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" loading="lazy" />
                                   </div>
                                   <div className="flex items-center justify-center gap-2 text-green-600 mb-3">
                                     <CheckCircle2 className="w-5 h-5" />

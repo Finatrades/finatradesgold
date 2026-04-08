@@ -656,6 +656,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   src={profilePhoto} 
                   alt="Profile" 
                   className="w-full aspect-[4/3] object-cover rounded-xl"
+                  loading="lazy"
                 />
                 <Button
                   type="button"

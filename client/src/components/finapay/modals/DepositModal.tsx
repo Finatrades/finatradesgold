@@ -2716,6 +2716,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         src={selectedCryptoWallet.qrCodeImage} 
                         alt="Scan to pay" 
                         className="w-32 h-32 object-contain"
+                        loading="lazy"
                         data-testid="img-crypto-qrcode"
                       />
                     </div>

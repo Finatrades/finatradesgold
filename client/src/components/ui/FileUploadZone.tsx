@@ -512,6 +512,7 @@ export function FileUploadZone({
                   src={preview}
                   alt="Preview"
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               </div>

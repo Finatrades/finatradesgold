@@ -560,6 +560,7 @@ function FloatingAgentChatContent() {
                           src={agent.image}
                           alt={agent.name}
                           className="w-full h-full object-cover object-top"
+                          loading="lazy"
                         />
                       </div>
                       <div className="flex-1">
@@ -783,6 +784,7 @@ function FloatingAgentChatContent() {
                     src={comingSoonAgent.image}
                     alt={comingSoonAgent.name}
                     className="w-full h-full object-cover object-top"
+                    loading="lazy"
                   />
                 </div>
               </div>

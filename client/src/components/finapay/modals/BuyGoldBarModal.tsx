@@ -225,6 +225,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                           src={getProductImage(product)}
                           alt={product.name}
                           className="max-w-full max-h-full object-contain"
+                          loading="lazy"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&h=400&fit=crop';
                           }}

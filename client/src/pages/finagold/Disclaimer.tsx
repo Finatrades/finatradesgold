@@ -17,6 +17,7 @@ function DisclaimerContent() {
               src={finatradesLogo}
               alt="Finatrades"
               className="h-14 w-auto brightness-0 invert mb-6"
+              loading="lazy"
             />
             <h1 className="text-4xl font-bold text-white mb-2">Disclaimer</h1>
             <p className="text-white/60 text-sm tracking-wide uppercase">
@@ -182,6 +183,7 @@ function DisclaimerContent() {
                   src={finatradesLogo}
                   alt="Finatrades"
                   className="h-10 w-auto brightness-0 invert mb-5"
+                  loading="lazy"
                 />
                 <div className="grid sm:grid-cols-2 gap-6 text-white/70 text-sm">
                   <div>

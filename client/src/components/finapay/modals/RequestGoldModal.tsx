@@ -399,7 +399,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 
                 {myQrCode ? (
                   <div className="bg-white p-4 rounded-xl border border-border inline-block mx-auto">
-                    <img src={myQrCode} alt="Your payment QR Code" className="w-48 h-48" data-testid="img-my-qr-code" />
+                    <img src={myQrCode} alt="Your payment QR Code" className="w-48 h-48" loading="lazy" data-testid="img-my-qr-code" />
                   </div>
                 ) : (
                   <div className="w-48 h-48 mx-auto bg-muted rounded-xl flex items-center justify-center">
@@ -467,7 +467,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
             {qrCodeDataUrl && (
               <div className="bg-white p-4 rounded-xl border border-border inline-block mx-auto">
-                <img src={qrCodeDataUrl} alt="Payment Request QR Code" className="w-48 h-48" />
+                <img src={qrCodeDataUrl} alt="Payment Request QR Code" className="w-48 h-48" loading="lazy" />
               </div>
             )}
 
