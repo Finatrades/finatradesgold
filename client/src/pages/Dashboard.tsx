@@ -464,55 +464,88 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
-        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2" data-testid="quick-actions">
-          <span className="text-[15px] font-bold text-gray-900 whitespace-nowrap">Quick Access :</span>
-          {/* Primary buy action — purple brand */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1"
-            data-testid="button-buy-gold">
-            <Package className="w-3.5 h-3.5" /> Buy Gold Bar
-          </motion.button>
-          {/* Sell — rose, signals outflow */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1"
-            data-testid="button-sell-gold">
-            <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
-          </motion.button>
-          {/* Neutral secondary actions — consistent gray styling */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
-            data-testid="button-withdraw-gold">
-            <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw Gold
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
-            data-testid="button-send-gold">
-            <Send className="w-3.5 h-3.5 text-blue-500" /> Send Gold
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
-            data-testid="button-request-gold">
-            <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request Gold
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
-            data-testid="button-lock-gold">
-            <Shield className="w-3.5 h-3.5 text-emerald-500" /> Lock Gold Price
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1"
-            data-testid="button-deposit-gold-quick">
-            <Vault className="w-3.5 h-3.5" /> Deposit Gold
-          </motion.button>
-          {isBusinessUser && (
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
-              data-testid="button-create-trade-quick">
-              <Landmark className="w-3.5 h-3.5 text-indigo-500" /> Create Trade
-            </motion.button>
-          )}
+        <motion.div variants={itemVariants} data-testid="quick-actions">
+          {/* Section header row */}
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
+              <Zap className="w-3 h-3 text-purple-600" />
+            </div>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Quick Actions</span>
+            <div className="flex-1 h-px bg-gray-100" />
+          </div>
+
+          {/* Grouped pill rows */}
+          <div className="flex flex-wrap gap-2.5">
+
+            {/* ── Trade group (Buy / Sell) ── */}
+            <div className="flex items-center gap-1 p-1 rounded-2xl" style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.12)' }}>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1"
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)', boxShadow: '0 2px 10px rgba(124,58,237,0.30)' }}
+                data-testid="button-buy-gold">
+                <Package className="w-3.5 h-3.5" /> Buy Gold
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1"
+                style={{ background: 'linear-gradient(135deg,#e11d48,#f43f5e)', boxShadow: '0 2px 10px rgba(225,29,72,0.28)' }}
+                data-testid="button-sell-gold">
+                <TrendingUp className="w-3.5 h-3.5" /> Sell
+              </motion.button>
+            </div>
+
+            {/* ── Transfer group (Withdraw / Send / Request) ── */}
+            <div className="flex items-center gap-1 p-1 rounded-2xl bg-gray-50 border border-gray-100">
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
+                data-testid="button-withdraw-gold">
+                <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
+                data-testid="button-send-gold">
+                <Send className="w-3.5 h-3.5 text-blue-500" /> Send
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
+                data-testid="button-request-gold">
+                <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request
+              </motion.button>
+            </div>
+
+            {/* ── Manage group (Lock / Deposit / Business) ── */}
+            <div className="flex items-center gap-1 p-1 rounded-2xl" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.14)' }}>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
+                data-testid="button-lock-gold">
+                <Shield className="w-3.5 h-3.5" /> Lock Price
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-amber-800 transition-all duration-200"
+                style={{ background: 'linear-gradient(135deg,rgba(251,191,36,0.18),rgba(245,158,11,0.14))', border: '1px solid rgba(245,158,11,0.30)' }}
+                data-testid="button-deposit-gold-quick">
+                <Vault className="w-3.5 h-3.5" /> Deposit Gold
+              </motion.button>
+              {isBusinessUser && (
+                <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 transition-all duration-200"
+                  data-testid="button-create-trade-quick">
+                  <Landmark className="w-3.5 h-3.5" /> Create Trade
+                </motion.button>
+              )}
+            </div>
+
+          </div>
         </motion.div>
 
+
+        {/* Zone 1 header */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
+            <Sparkles className="w-3 h-3 text-amber-600" />
+          </div>
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Portfolio Overview</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </motion.div>
 
         <motion.div layout className="grid grid-cols-12 gap-5">
 
@@ -570,6 +603,19 @@ export default function Dashboard() {
                       </div>
                       <span className="text-gray-400 text-[11px] font-medium">available in wallet</span>
                     </div>
+                    {walletGoldValue === 0 && (
+                      <motion.button
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.4 }}
+                        onClick={() => setActiveModal('deposit')}
+                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all hover:scale-[1.03]"
+                        style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.22)', color: '#7c3aed' }}
+                        data-testid="cta-empty-balance"
+                      >
+                        <Plus className="w-3 h-3" /> Deposit funds to start trading →
+                      </motion.button>
+                    )}
                   </div>
 
                   {/* Right: Gold ARC gauge — wallet grams only (matches balance shown) */}
@@ -695,40 +741,40 @@ export default function Dashboard() {
               {walletView === 'currency' ? (
                 /* ── Currency mode ── */
                 <div className="grid grid-cols-3 gap-3">
-                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-blue-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)' }} data-testid="wallet-usd">
-                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-blue-400/10 blur-xl" />
+                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(59,130,246,0.18)', boxShadow: '0 4px 16px rgba(59,130,246,0.08)' }} data-testid="wallet-usd">
+                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(59,130,246,0.12)' }} />
                     <div className="relative z-10">
                       <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[11px]">🇺🇸</span>
+                        <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[8px] text-white font-black">$</div>
                         <span className="text-[11px] font-bold text-blue-700">USD</span>
                       </div>
                       <p className="text-[15px] font-extrabold text-blue-900 num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
-                      <Badge className="mt-2 bg-blue-200/50 text-blue-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
+                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(59,130,246,0.10)', color: '#1d4ed8' }}><span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />Active</span>
                     </div>
                   </motion.div>
-                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-amber-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }} data-testid="wallet-aed">
-                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-amber-400/10 blur-xl" />
+                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(245,158,11,0.22)', boxShadow: '0 4px 16px rgba(245,158,11,0.08)' }} data-testid="wallet-aed">
+                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(245,158,11,0.12)' }} />
                     <div className="relative z-10">
                       <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[11px]">🇦🇪</span>
+                        <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center" style={{ fontSize: 7, color: 'white', fontWeight: 900 }}>د</div>
                         <span className="text-[11px] font-bold text-amber-700">AED</span>
                       </div>
                       <p className="text-[15px] font-extrabold text-amber-900 num-metric flex items-center gap-[3px]">
                         <DirhamSymbol size="0.95em" />
                         {showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
                       </p>
-                      <Badge className="mt-2 bg-amber-200/50 text-amber-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
+                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.10)', color: '#92400e' }}><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Active</span>
                     </div>
                   </motion.div>
-                  <motion.div whileHover={{ y: -3 }} className="rounded-2xl p-3.5 relative border border-indigo-100/60 hover:shadow-lg transition-all cursor-default overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }} data-testid="wallet-eur">
-                    <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-indigo-400/10 blur-xl" />
+                  <motion.div whileHover={{ y: -2, scale: 1.02 }} className="rounded-2xl p-3.5 relative overflow-hidden cursor-default transition-all duration-200" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(16px) saturate(180%)', border: '1.5px solid rgba(99,102,241,0.18)', boxShadow: '0 4px 16px rgba(99,102,241,0.08)' }} data-testid="wallet-eur">
+                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl" style={{ background: 'rgba(99,102,241,0.12)' }} />
                     <div className="relative z-10">
                       <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-[11px]">🇪🇺</span>
+                        <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] text-white font-black">€</div>
                         <span className="text-[11px] font-bold text-indigo-700">EUR</span>
                       </div>
                       <p className="text-[15px] font-extrabold text-indigo-900 num-metric">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                      <Badge className="mt-2 bg-indigo-200/50 text-indigo-700 border-0 text-[11px] px-1.5 py-0 font-bold">Active</Badge>
+                      <span className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(99,102,241,0.10)', color: '#3730a3' }}><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />Active</span>
                     </div>
                   </motion.div>
                 </div>
@@ -839,14 +885,16 @@ export default function Dashboard() {
                 <span className="font-bold text-gray-800 num-metric">${formatNumber(goldPrice, 2)}/g</span>
               </div>
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setActiveModal('lock')}
-                className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+                className="w-full py-3 rounded-2xl text-[13px] font-bold text-white transition-all flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, #6d28d9, #7c3aed, #9333ea)', boxShadow: '0 6px 24px rgba(109,40,217,0.38), 0 1px 0 rgba(255,255,255,0.12) inset' }}
                 data-testid="button-lock-price-card"
               >
-                Lock Gold Price →
+                <Shield className="w-4 h-4" />
+                Lock Gold Price
+                <span className="ml-auto text-purple-200 text-[11px] font-semibold">24–72h →</span>
               </motion.button>
             </motion.div>
 
@@ -887,8 +935,14 @@ export default function Dashboard() {
                 {/* Live spot price + vault balance */}
                 <div className="grid grid-cols-2 gap-2.5 mb-4">
                   <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
-                    <p className="label-caps text-amber-700/70">Spot Price</p>
-                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">${formatNumber(goldPrice, 2)}<span className="text-[11px] font-semibold text-amber-600">/g</span></p>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                      <p className="label-caps text-amber-700/70">Live Spot Price</p>
+                    </div>
+                    <p className="text-[15px] font-extrabold text-amber-900 num-metric">${formatNumber(goldPrice, 2)}<span className="text-[11px] font-semibold text-amber-600">/g</span></p>
                   </div>
                   <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
                     <p className="label-caps text-amber-700/70">Gold Vault Balance</p>
@@ -1389,6 +1443,15 @@ export default function Dashboard() {
           </motion.section>
         )}
 
+        {/* Zone 3 header — Vault Distribution */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
+            <Vault className="w-3 h-3 text-purple-600" />
+          </div>
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Vault Distribution</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </motion.div>
+
         {/* ═══ WALLET BREAKDOWN CARDS (2-panel) ═══ */}
         {(() => {
           const mpgwAvail = totals.mpgwAvailableGrams || 0;
@@ -1732,6 +1795,15 @@ export default function Dashboard() {
           );
         })()}
 
+        {/* Zone 4 header — Market Analytics */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
+            <TrendingUp className="w-3 h-3 text-amber-600" />
+          </div>
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Market Analytics</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </motion.div>
+
         {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
         <motion.div
           ref={tiltGoldChart.ref}
@@ -1747,20 +1819,27 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">XAU/USD · Per gram</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+                <p className="text-[11px] text-gray-400">XAU/USD · Per gram · Live</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              <div className="flex items-center gap-0.5 rounded-xl p-0.5" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.14)' }}>
                 {(['7D', '30D', '90D'] as const).map(p => (
                   <button key={p} onClick={() => setChartPeriod(p)}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${chartPeriod === p ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                    className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${chartPeriod === p ? 'text-white shadow-sm' : 'text-gray-400 hover:text-purple-600'}`}
+                    style={chartPeriod === p ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : {}}>
                     {p}
                   </button>
                 ))}
               </div>
               <div className="text-right">
-                <p className="text-[15px] font-extrabold text-gray-900">${formatNumber(goldPrice, 2)}</p>
-                <p className="text-[12px] text-gray-400">/gram now</p>
+                <p className="text-[17px] font-extrabold num-metric" style={{ background: 'linear-gradient(135deg,#D4AF37,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>${formatNumber(goldPrice, 2)}</p>
+                <p className="text-[11px] text-gray-400">/gram now</p>
               </div>
             </div>
           </div>
@@ -1768,19 +1847,26 @@ export default function Dashboard() {
             <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.22} />
+                  <stop offset="55%" stopColor="#D4AF37" stopOpacity={0.08} />
+                  <stop offset="100%" stopColor="#D4AF37" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="goldStroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#7c3aed" />
+                  <stop offset="60%" stopColor="#9333ea" />
+                  <stop offset="100%" stopColor="#D4AF37" />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
               <Tooltip
-                contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                contentStyle={{ background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: '14px', fontSize: '12px', boxShadow: '0 8px 32px rgba(124,58,237,0.12), 0 2px 8px rgba(0,0,0,0.06)' }}
+                labelStyle={{ color: '#6b7280', fontWeight: 600, marginBottom: 4 }}
                 formatter={(v: any) => [`$${Number(v).toFixed(2)}/g`, 'Gold Price']}
               />
-              <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="4 3" strokeWidth={1.5}
-                label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#D4AF37' }} />
-              <Area type="monotone" dataKey="price" stroke="#7c3aed" strokeWidth={2} fill="url(#goldGradient)" dot={false} activeDot={{ r: 4, fill: '#7c3aed', strokeWidth: 0 }} />
+              <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="5 3" strokeWidth={1.5}
+                label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#B8860B', fontWeight: 700 }} />
+              <Area type="monotone" dataKey="price" stroke="url(#goldStroke)" strokeWidth={2.5} fill="url(#goldGradient)" dot={false} activeDot={{ r: 5, fill: '#7c3aed', stroke: 'rgba(124,58,237,0.30)', strokeWidth: 3 }} />
             </AreaChart>
           </ResponsiveContainer>
           <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
@@ -1801,6 +1887,15 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
+        </motion.div>
+
+        {/* Zone 5 header — Activity */}
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)' }}>
+            <TrendingUp className="w-3 h-3 text-emerald-600" />
+          </div>
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
+          <div className="flex-1 h-px bg-gray-100" />
         </motion.div>
 
         {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
