@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContai
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
 import { useFpgwLocks } from '@/hooks/useDualWallet';
+import { usePendingItems } from '@/hooks/usePendingItems';
 import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -100,6 +101,7 @@ export default function Dashboard() {
   const { data: fpgwLocksData } = useFpgwLocks(user?.id);
   const activeFpgwLocks = fpgwLocksData?.locks ?? [];
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const { total: pendingTotal } = usePendingItems();
   const isMobile = useIsMobile();
   
   const [walletView, setWalletView] = useState<'currency' | 'weight'>('currency');
@@ -606,10 +608,23 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Pending Actions Strip — hidden when count is zero */}
-            <motion.div variants={itemVariants}>
-              <PendingItemsStrip />
-            </motion.div>
+            {/* Pending Actions Strip — fully removed from DOM when count is zero */}
+            <AnimatePresence mode="popLayout">
+              {pendingTotal > 0 && (
+                <motion.div
+                  key="pending-strip"
+                  variants={itemVariants}
+                  layout
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <PendingItemsStrip />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Gold Wallet Conversion Card */}
             <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel card-3d-subtle rounded-[20px] p-6">

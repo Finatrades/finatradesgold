@@ -352,37 +352,38 @@ input[type="number"] {
 .dashboard-bg,
 .dashboard-gradient-bg {
   background:
-    radial-gradient(ellipse at 12% 18%, rgba(124, 58, 237, 0.18) 0%, transparent 48%),
-    radial-gradient(ellipse at 82% 75%, rgba(212, 175, 55, 0.13) 0%, transparent 46%),
-    radial-gradient(ellipse at 60% 2%, rgba(168, 85, 247, 0.15) 0%, transparent 42%),
-    radial-gradient(ellipse at 28% 88%, rgba(99, 102, 241, 0.11) 0%, transparent 44%),
-    radial-gradient(ellipse at 92% 10%, rgba(212, 175, 55, 0.09) 0%, transparent 38%),
-    #F0EEF9;
+    radial-gradient(ellipse at 12% 18%, rgba(109, 40, 217, 0.32) 0%, transparent 52%),
+    radial-gradient(ellipse at 82% 75%, rgba(212, 175, 55, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 2%, rgba(139, 92, 246, 0.28) 0%, transparent 46%),
+    radial-gradient(ellipse at 28% 88%, rgba(79, 70, 229, 0.20) 0%, transparent 48%),
+    radial-gradient(ellipse at 92% 10%, rgba(212, 175, 55, 0.16) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.10) 0%, transparent 70%),
+    #EDE8FF;
 }
 
 /* ── True frosted-glass panel — works on the purple gradient bg ── */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.68);
-  backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
-  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(36px) saturate(200%) brightness(1.05);
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.70);
   box-shadow:
-    0 8px 40px rgba(124, 58, 237, 0.10),
-    0 2px 0 rgba(255, 255, 255, 0.92) inset,
-    0 0 0 1px rgba(124, 58, 237, 0.08);
+    0 8px 40px rgba(124, 58, 237, 0.14),
+    0 2px 0 rgba(255, 255, 255, 0.88) inset,
+    0 0 0 1px rgba(124, 58, 237, 0.10);
 }
 
 /* ── Elevated panel — hero card ── */
 .glass-panel-hero {
-  background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(36px) saturate(200%) brightness(1.05);
-  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.05);
-  border: 1px solid rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(44px) saturate(220%) brightness(1.06);
+  -webkit-backdrop-filter: blur(44px) saturate(220%) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.80);
   box-shadow:
-    0 16px 64px rgba(124, 58, 237, 0.14),
+    0 16px 64px rgba(124, 58, 237, 0.18),
     0 2px 0 rgba(255, 255, 255, 1) inset,
-    0 0 0 1px rgba(124, 58, 237, 0.09),
-    0 1px 3px rgba(0, 0, 0, 0.03);
+    0 0 0 1px rgba(124, 58, 237, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Dark glass panel — for dark/holographic cards ── */
