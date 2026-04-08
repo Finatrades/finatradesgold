@@ -221,7 +221,6 @@ function HeroSection() {
               alt="Finatrades Ecosystem - Raminvest Holding, Finatrades, WinGold & Metals, WinCommodities, WinLogistics" 
               className="w-full h-auto rounded-2xl shadow-2xl"
               data-testid="hero-ecosystem-diagram"
-              loading="lazy"
             />
           </motion.div>
         </motion.div>

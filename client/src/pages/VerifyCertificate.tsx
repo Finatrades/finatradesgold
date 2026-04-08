@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -202,6 +203,11 @@ export default function VerifyCertificate() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+      <PageSeo
+        title="Verify Gold Certificate — Finatrades"
+        description="Verify the authenticity of your Finatrades gold ownership certificate. Enter your certificate number to confirm allocation, weight, and purity of your gold holding."
+        canonical="/verify-certificate"
+      />
       <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/">

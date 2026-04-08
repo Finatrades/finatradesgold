@@ -2,6 +2,7 @@ import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import PageSeo from '@/components/PageSeo';
 
 function DisclaimerContent() {
   return (
@@ -216,6 +217,11 @@ function DisclaimerContent() {
 export default function Disclaimer() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="Disclaimer — Finatrades"
+        description="Read the Finatrades platform disclaimer covering investment risk, regulatory status, gold price volatility, and the limitations of financial information provided on this site."
+        canonical="/disclaimer"
+      />
       <DisclaimerContent />
     </ModeProvider>
   );
