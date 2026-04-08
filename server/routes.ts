@@ -842,6 +842,40 @@ function requirePinVerification(action: string) {
   };
 }
 
+/**
+ * Server-side gold price validator.
+ * Fetches live gold price and checks whether a client-supplied price is within tolerance.
+ *
+ * @param clientPrice  Price submitted by the client (0 or null means "not provided")
+ * @param tolerance    Allowed deviation fraction (default 0.02 = 2%)
+ * @returns livePrice, the server-authoritative price to use, and whether the client price is valid
+ */
+async function validateAndFetchGoldPrice(
+  clientPrice: number | null | undefined,
+  tolerance = 0.02,
+): Promise<{ livePrice: number; priceToUse: number; valid: boolean; deviation: number }> {
+  const livePrice = await getGoldPricePerGram().catch(() => 0);
+
+  // If live price unavailable, accept client price with a warning
+  if (!livePrice || livePrice <= 0) {
+    console.warn('[GoldPrice] Live price unavailable, accepting client-provided price as fallback');
+    return { livePrice: 0, priceToUse: clientPrice || 0, valid: true, deviation: 0 };
+  }
+
+  // If no client price provided, use live price
+  if (!clientPrice || clientPrice <= 0) {
+    return { livePrice, priceToUse: livePrice, valid: true, deviation: 0 };
+  }
+
+  const deviation = Math.abs(clientPrice - livePrice) / livePrice;
+  return {
+    livePrice,
+    priceToUse: livePrice,        // Always authoritative: server-fetched price used in calculations
+    valid: deviation <= tolerance,
+    deviation,
+  };
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -8385,7 +8419,17 @@ export async function registerRoutes(
           }
           
           const goldGrams = parseFloat(adminGoldGrams);
-          const goldPrice = parseFloat(adminGoldPrice);
+          // Validate admin-supplied price against live price (20% tolerance for OTC/manual approvals)
+          const { livePrice: livePriceAdmin, priceToUse: _adminLiveRef, valid: adminPriceValid, deviation: adminDev } =
+            await validateAndFetchGoldPrice(parseFloat(adminGoldPrice), 0.20);
+          if (!adminPriceValid) {
+            console.warn(`[Admin] Buy-gold-bar approval: admin price ${adminGoldPrice} deviates ${(adminDev * 100).toFixed(1)}% from live ${livePriceAdmin.toFixed(2)}`);
+            return res.status(409).json({
+              message: `Admin gold price deviates ${(adminDev * 100).toFixed(1)}% from live price (${livePriceAdmin.toFixed(2)}/g). Use live price or confirm override.`,
+              livePrice: livePriceAdmin.toFixed(2),
+            });
+          }
+          const goldPrice = parseFloat(adminGoldPrice); // Admin-set price used for this specific transaction
           const usdAmount = adminAmountUsd ? parseFloat(adminAmountUsd) : goldGrams * goldPrice;
           
           // Process the approval with full wallet/vault/certificate creation
@@ -27020,20 +27064,19 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid or inactive crypto wallet" });
       }
 
-      // Server-side gold price verification: reject if client price deviates > 2% from live
-      const liveGoldPrice = await getGoldPricePerGram().catch(() => 0);
-      if (liveGoldPrice && liveGoldPrice > 0) {
-        const clientPrice = parseFloat(String(goldPriceAtTime));
-        if (clientPrice > 0) {
-          const deviation = Math.abs(clientPrice - liveGoldPrice) / liveGoldPrice;
-          if (deviation > 0.02) {
-            return res.status(409).json({
-              message: 'Gold price has changed. Please refresh and try again.',
-              livePrice: liveGoldPrice.toFixed(2),
-            });
-          }
-        }
+      // Server-side gold price verification (±2%): uses live price, not client price
+      const { livePrice: livePriceForCrypto, priceToUse: verifiedCryptoPrice, valid: cryptoPriceValid } =
+        await validateAndFetchGoldPrice(parseFloat(String(goldPriceAtTime)));
+      if (!cryptoPriceValid) {
+        return res.status(409).json({
+          message: 'Gold price has changed. Please refresh and try again.',
+          livePrice: livePriceForCrypto.toFixed(2),
+        });
       }
+      // Recalculate goldGrams server-side from USD amount and live price
+      const verifiedGoldGrams = verifiedCryptoPrice > 0
+        ? (parseFloat(String(amountUsd)) / verifiedCryptoPrice).toFixed(6)
+        : String(goldGrams);
 
       // Set expiry to 24 hours from now
       const expiresAt = new Date();
@@ -27044,8 +27087,8 @@ export async function registerRoutes(
         userId,
         walletConfigId,
         amountUsd,
-        goldGrams,
-        goldPriceAtTime,
+        goldGrams: verifiedGoldGrams,
+        goldPriceAtTime: verifiedCryptoPrice.toFixed(6),
         cryptoAmount: cryptoAmount || null,
         status: 'Pending',
         expiresAt,
@@ -27060,8 +27103,8 @@ export async function registerRoutes(
         amountUsd: amountUsd.toString(),
         currency: 'USD',
         paymentMethod: 'Crypto',
-        expectedGoldGrams: goldGrams.toString(),
-        priceSnapshotUsdPerGram: goldPriceAtTime.toString(),
+        expectedGoldGrams: verifiedGoldGrams.toString(),
+        priceSnapshotUsdPerGram: verifiedCryptoPrice.toFixed(6),
         notes: `Crypto payment via ${walletConfig.networkLabel || walletConfig.cryptoCurrency}`,
         cryptoNetwork: walletConfig.networkLabel || walletConfig.cryptoCurrency,
         cryptoWalletConfigId: walletConfigId,
@@ -27628,7 +27671,17 @@ export async function registerRoutes(
       if (!wallet) return res.status(400).json({ message: "User wallet not found" });
       
       const finalGoldGrams = adminGoldGrams ? adminGoldGrams : paymentRequest.goldGrams;
-      const finalGoldPrice = adminGoldPrice ? adminGoldPrice : paymentRequest.goldPriceAtTime;
+      // Validate admin-supplied price against live (20% tolerance); fall back to stored snapshot price
+      const { livePrice: legacyLivePrice, priceToUse: legacyLivePriceRef, valid: legacyPriceValid, deviation: legacyDev } =
+        await validateAndFetchGoldPrice(adminGoldPrice ? parseFloat(adminGoldPrice) : null, 0.20);
+      if (adminGoldPrice && !legacyPriceValid) {
+        console.warn(`[Admin] Legacy crypto approval: admin price ${adminGoldPrice} deviates ${(legacyDev * 100).toFixed(1)}% from live ${legacyLivePrice.toFixed(2)}`);
+        return res.status(409).json({
+          message: `Admin gold price deviates ${(legacyDev * 100).toFixed(1)}% from live price (${legacyLivePrice.toFixed(2)}/g). Use live price or confirm override.`,
+          livePrice: legacyLivePrice.toFixed(2),
+        });
+      }
+      const finalGoldPrice = adminGoldPrice ? adminGoldPrice : (paymentRequest.goldPriceAtTime || legacyLivePriceRef.toFixed(6));
       
       const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
       const newGoldGrams = currentGoldGrams + parseFloat(finalGoldGrams);
@@ -28087,12 +28140,18 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
       }
       
-      // Get gold price (from admin input or fetch live)
-      let goldPrice = parseFloat(goldPriceAtTime || '0');
-      if (goldPrice <= 0) {
-        const priceData = await getGoldPrice();
-        goldPrice = priceData.pricePerGram;
+      // Get gold price: validate admin-supplied price against live (20% tolerance for manual approvals)
+      const { livePrice: bgLivePrice, priceToUse: bgLivePriceToUse, valid: bgPriceValid, deviation: bgDev } =
+        await validateAndFetchGoldPrice(parseFloat(goldPriceAtTime || '0'), 0.20);
+      if (!bgPriceValid) {
+        console.warn(`[Admin] Buy-gold approval: admin price ${goldPriceAtTime} deviates ${(bgDev * 100).toFixed(1)}% from live ${bgLivePrice.toFixed(2)}`);
+        return res.status(409).json({
+          message: `Admin gold price deviates ${(bgDev * 100).toFixed(1)}% from live price (${bgLivePrice.toFixed(2)}/g). Use live price or confirm override.`,
+          livePrice: bgLivePrice.toFixed(2),
+        });
       }
+      // Use admin-supplied price if within tolerance; otherwise live price
+      const goldPrice = parseFloat(goldPriceAtTime || '0') > 0 ? parseFloat(goldPriceAtTime!) : bgLivePriceToUse;
       
       // Calculate USD amount
       const finalAmountUsd = parseFloat(amountUsd || '0') || (finalGoldGrams * goldPrice);
