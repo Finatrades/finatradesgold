@@ -10,7 +10,7 @@ import {
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 import { logAdminAction } from "./security-middleware";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, differenceInDays } from "date-fns";
 import PDFDocument from "pdfkit";
 import { getGoldPricePerGram } from "./gold-price-service";
 import {
@@ -1138,13 +1138,17 @@ export function registerComplianceRoutes(
           return res.status(400).json({ message: "Invalid date range" });
         }
 
+        // Compute period length (inclusive) for BNSL margin accrual
+        const periodDays = differenceInDays(toDate, fromDate) + 1;
+
         // Query all P&L-relevant data sources concurrently
         const [
           liveGoldPrice,
           paidStorageFees,
           billedStorageFeesInPeriod,
           paidBnslPayouts,
-          scheduledBnslPayoutsInPeriod,
+          activeBnslPlansInPeriod,
+          confirmedDepositsInPeriod,
           completedTxns,
         ] = await Promise.all([
           getGoldPricePerGram().catch(() => 0),
@@ -1159,8 +1163,7 @@ export function registerComplianceRoutes(
                 lte(storageFees.paidAt, toDate),
               ),
             ),
-          // 5001 Cost proxy: All storage fees billed in the period (any status) —
-          // fees billed to users approximate what the platform owes to Wingold custodian
+          // 5001 Cost proxy: Storage fees billed in the period — approximate custodian obligation
           db
             .select()
             .from(storageFees)
@@ -1181,15 +1184,47 @@ export function registerComplianceRoutes(
                 lte(bnslPayouts.paidAt, toDate),
               ),
             ),
-          // 4002 Revenue: BNSL scheduled payouts in period = accrued margin income
-          // (platform commits to paying these from its margin; scheduled date shows accrual timing)
+          // 4002 Revenue: BNSL plans active (overlapping) in the period for margin accrual
+          // Active during period means: plan started on or before toDate AND matures on or after fromDate
           db
-            .select()
-            .from(bnslPayouts)
+            .select({
+              id: bnslPlans.id,
+              startDate: bnslPlans.startDate,
+              maturityDate: bnslPlans.maturityDate,
+              tenorMonths: bnslPlans.tenorMonths,
+              agreedMarginAnnualPercent: bnslPlans.agreedMarginAnnualPercent,
+              basePriceComponentUsd: bnslPlans.basePriceComponentUsd,
+              goldSoldGrams: bnslPlans.goldSoldGrams,
+              enrollmentPriceUsdPerGram: bnslPlans.enrollmentPriceUsdPerGram,
+              status: bnslPlans.status,
+            })
+            .from(bnslPlans)
             .where(
               and(
-                gte(bnslPayouts.scheduledDate, fromDate),
-                lte(bnslPayouts.scheduledDate, toDate),
+                lte(bnslPlans.startDate, toDate),
+                gte(bnslPlans.maturityDate, fromDate),
+                or(
+                  eq(bnslPlans.status, 'Active'),
+                  eq(bnslPlans.status, 'Matured'),
+                  eq(bnslPlans.status, 'Settled'),
+                ),
+              ),
+            ),
+          // 4001 Revenue: Deposit service fees collected — platform fee on confirmed gold purchases
+          // feePercentSnapshot captures the actual fee percentage applied at time of submission
+          db
+            .select({
+              id: depositRequests.id,
+              amountUsd: depositRequests.amountUsd,
+              feePercentSnapshot: depositRequests.feePercentSnapshot,
+              processedAt: depositRequests.processedAt,
+            })
+            .from(depositRequests)
+            .where(
+              and(
+                eq(depositRequests.status, 'Confirmed'),
+                gte(depositRequests.processedAt, fromDate),
+                lte(depositRequests.processedAt, toDate),
               ),
             ),
           // All completed transactions in the period for GL-breakdown and volume context
@@ -1206,7 +1241,36 @@ export function registerComplianceRoutes(
         ]);
 
         // ── REVENUE LINES ────────────────────────────────────────────────────────
-        // 4004: Storage fee income — collected from users
+
+        // 4001: Gold purchase service fees — actual fee collected from confirmed deposits
+        // Source: depositRequests.feePercentSnapshot × amountUsd for Confirmed requests in period
+        const depositFeeIncome = confirmedDepositsInPeriod.reduce((sum, d) => {
+          if (!d.feePercentSnapshot || !d.amountUsd) return sum;
+          const feeAmount = new Decimal(d.feePercentSnapshot).div(100).times(new Decimal(d.amountUsd));
+          return sum.plus(feeAmount);
+        }, new Decimal(0));
+        const depositFeeIncomeDepositsCount = confirmedDepositsInPeriod.filter(
+          d => d.feePercentSnapshot && parseFloat(d.feePercentSnapshot) > 0,
+        ).length;
+
+        // 4002: BNSL margin income — time-proportional accrual from plans active in the period
+        // Formula per plan: basePriceComponentUsd × agreedMarginAnnualPercent/100 × overlapDays/365
+        // This properly attributes the margin the platform earns on the BNSL structure to the period
+        let bnslMarginIncome = new Decimal(0);
+        for (const plan of activeBnslPlansInPeriod) {
+          const overlapStart = plan.startDate > fromDate ? plan.startDate : fromDate;
+          const overlapEnd = plan.maturityDate < toDate ? plan.maturityDate : toDate;
+          const overlapDays = Math.max(0, differenceInDays(overlapEnd, overlapStart) + 1);
+          if (overlapDays > 0 && plan.basePriceComponentUsd && plan.agreedMarginAnnualPercent) {
+            const accrued = new Decimal(plan.basePriceComponentUsd)
+              .times(new Decimal(plan.agreedMarginAnnualPercent).div(100))
+              .times(overlapDays)
+              .div(365);
+            bnslMarginIncome = bnslMarginIncome.plus(accrued);
+          }
+        }
+
+        // 4004: Storage fee income — collected from users (Paid status, paidAt in period)
         const storageFeeIncome = paidStorageFees.reduce(
           (sum, f) => sum.plus(f.feeAmountUsd || '0'),
           new Decimal(0),
@@ -1216,18 +1280,7 @@ export function registerComplianceRoutes(
           new Decimal(0),
         );
 
-        // 4002: BNSL margin income — payouts scheduled in the period represent
-        // accrued platform margin committed to BNSL plan holders
-        const bnslMarginIncome = scheduledBnslPayoutsInPeriod.reduce(
-          (sum, p) => sum.plus(p.monetaryAmountUsd || '0'),
-          new Decimal(0),
-        );
-        const bnslMarginIncomeGold = scheduledBnslPayoutsInPeriod.reduce(
-          (sum, p) => sum.plus(p.gramsCredited || '0'),
-          new Decimal(0),
-        );
-
-        // 4003: Transfer fee income — Send/Swap transactions generate spread income
+        // Volume context: Send/Swap transaction principal (4003 fee cannot be isolated without fee_amount column)
         const transferTxns = completedTxns.filter(t => t.type === 'Send' || t.type === 'Swap');
         const transferFeeGold = transferTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
         const transferFeeUsd = transferTxns.reduce((sum, t) => {
@@ -1286,13 +1339,13 @@ export function registerComplianceRoutes(
         );
 
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Revenue: only lines sourced from true fee/margin data
-        //   4002 BNSL margin: from scheduled bnslPayouts table (real obligation data)
-        //   4004 Storage fee income: from storageFees.feeAmountUsd with Paid status (real collection data)
-        // Excluded from totals (principal-valued, cannot isolate fee component without fee field):
-        //   4001 Gold spread (Buy volume) — Wingold COGS required; shown in volumeContext
-        //   4003 Transfer fee (Send/Swap volume) — no separate fee amount column on transactions table
-        const totalRevenueUsd = bnslMarginIncome.plus(storageFeeIncome);
+        // Revenue: all lines sourced from real fee/margin data (not transaction principal)
+        //   4001 Deposit service fee: depositRequests.feePercentSnapshot × amountUsd (actual fee at Confirmed)
+        //   4002 BNSL margin accrual: basePriceComponentUsd × agreedMarginAnnualPercent/100 × overlapDays/365
+        //   4004 Storage fee income: storageFees.feeAmountUsd (Paid status) in period
+        // Excluded from totals (only principal available, fee not isolable without fee_amount column):
+        //   4003 Transfer fee: Send/Swap principal — shown in volumeContext
+        const totalRevenueUsd = depositFeeIncome.plus(bnslMarginIncome).plus(storageFeeIncome);
         // Costs: storage fees paid to custodian (derived proxy) + BNSL payouts disbursed
         const totalCostUsd = storageFeePaidCustodian.plus(bnslPayoutCost);
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
@@ -1348,30 +1401,36 @@ export function registerComplianceRoutes(
               to: toDate.toISOString(),
             },
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
-            // True platform P&L revenue — only lines sourced from real fee/margin tables
-            // Lines in totalRevenueUsd:
-            //   4002 BNSL margin income (from bnslPayouts scheduled dates)
-            //   4004 Storage fee income (from storageFees.feeAmountUsd, Paid status)
-            // Excluded from totals (only transaction principal available, no separate fee field):
-            //   4001 Gold spread, 4003 Transfer fee — see volumeContext for gross volumes
+            // Platform P&L revenue — each line sourced from real fee/margin data, not transaction principal
             revenue: {
+              depositServiceFeeIncome: {
+                glCode: '4001',
+                accountName: 'Deposit Service Fee Income',
+                description: 'Platform service fee on confirmed gold purchases: feePercentSnapshot × depositAmountUsd from depositRequests',
+                totalDeposits: confirmedDepositsInPeriod.length,
+                depositsWithFee: depositFeeIncomeDepositsCount,
+                totalUsd: depositFeeIncome.toFixed(2),
+                includedInTotals: true,
+                dataSource: 'depositRequests.feePercentSnapshot × amountUsd (Confirmed, processedAt in period)',
+              },
               bnslMarginIncome: {
                 glCode: '4002',
-                accountName: 'BNSL Margin Income',
-                description: 'Payouts scheduled to BNSL holders in period — accrued platform margin commitment',
-                count: scheduledBnslPayoutsInPeriod.length,
+                accountName: 'BNSL Margin Income (Accrual Basis)',
+                description: 'Time-proportional accrual: basePriceComponentUsd × agreedMarginAnnualPercent/100 × overlapDays/365 for plans active in period',
+                activePlansInPeriod: activeBnslPlansInPeriod.length,
                 totalUsd: bnslMarginIncome.toFixed(2),
-                totalGoldGrams: bnslMarginIncomeGold.toFixed(6),
                 includedInTotals: true,
+                dataSource: 'bnslPlans.basePriceComponentUsd × agreedMarginAnnualPercent (Active/Matured/Settled, overlapping period)',
               },
               storageFeeIncome: {
                 glCode: '4004',
                 accountName: 'Storage Fee Income (Collected)',
-                description: 'Storage fees charged to users and paid in the period',
+                description: 'Storage fees charged to users and collected (Paid status, paidAt in period)',
                 count: paidStorageFees.length,
                 totalUsd: storageFeeIncome.toFixed(2),
                 totalGoldGrams: storageFeeIncomeGold.toFixed(6),
                 includedInTotals: true,
+                dataSource: 'storageFees.feeAmountUsd (status=Paid)',
               },
             },
             costs: {
@@ -1401,29 +1460,26 @@ export function registerComplianceRoutes(
               netPnlUsd: netPnlUsd.toFixed(2),
             },
             // Volume context — gross principal volumes for reference (NOT included in P&L totals)
-            // 4001 and 4003 excluded from revenue totals: transactions table stores principal only,
-            // no separate fee field exists to isolate platform take from customer principal.
+            // 4003 Transfer fee: excluded because transactions table stores principal only;
+            // no separate fee_amount column to isolate fee from customer transfer amount.
             volumeContext: {
-              note: 'Gross volumes shown for reference. Gold spread (4001) and transfer fee (4003) require a separate fee/cost field not yet present in the transactions table. Reconcile with Wingold COGS and fee configuration data.',
-              goldSaleVolume: {
-                glCode: '4001',
-                accountName: 'Gold Sale Revenue (Gross Volume — excluded from P&L totals)',
-                description: 'Gross USD value of Buy transactions. True 4001 spread = this minus Wingold acquisition cost (COGS).',
-                types: ['Buy'],
-                count: goldBuyTxns.length,
-                totalGoldGrams: goldBuyGold.toFixed(6),
-                totalUsd: goldBuyUsd.toFixed(2),
-                includedInTotals: false,
-              },
+              note: 'Gross transaction volumes for reference. Transfer service fee (4003) excluded from revenue totals — transactions table stores principal only; add a fee_amount column to isolate fee income.',
               transferServiceVolume: {
                 glCode: '4003',
                 accountName: 'Transfer / Service Volume (Gross — excluded from P&L totals)',
-                description: 'Gross gold value of Send/Swap transactions. True 4003 fee income requires a fee_amount column not yet on the transactions table.',
+                description: 'Gross gold value of Send/Swap transactions. Fee income requires a separate fee_amount column on the transactions table.',
                 types: ['Send', 'Swap'],
                 count: transferTxns.length,
                 totalGoldGrams: transferFeeGold.toFixed(6),
                 totalUsd: transferFeeUsd.toFixed(2),
                 includedInTotals: false,
+              },
+              goldBuyVolume: {
+                description: 'Total value of completed Buy transactions in the period (gross principal)',
+                types: ['Buy'],
+                count: goldBuyTxns.length,
+                totalGoldGrams: goldBuyGold.toFixed(6),
+                totalUsd: goldBuyUsd.toFixed(2),
               },
               goldInflow: {
                 types: ['Deposit', 'Buy'],
