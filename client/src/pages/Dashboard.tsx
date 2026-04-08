@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
@@ -20,7 +20,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
@@ -79,6 +79,32 @@ const cardHoverVariants = {
   hover: { y: -5, scale: 1.012, transition: { type: 'spring', stiffness: 400, damping: 22 } },
 };
 
+/* ── Mouse-tracking 3D tilt hook ── */
+function useTilt(intensity = 10) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const springConfig = { stiffness: 280, damping: 28, mass: 0.6 };
+  const rotateX = useSpring(useTransform(rawY, [-0.5, 0.5], [intensity, -intensity]), springConfig);
+  const rotateY = useSpring(useTransform(rawX, [-0.5, 0.5], [-intensity, intensity]), springConfig);
+  const scale   = useSpring(1, { stiffness: 320, damping: 26 });
+  const glare   = useTransform(rawX, [-0.5, 0.5], [0, 0.18]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    rawX.set((e.clientX - rect.left) / rect.width - 0.5);
+    rawY.set((e.clientY - rect.top)  / rect.height - 0.5);
+    scale.set(1.03);
+  }, [rawX, rawY, scale]);
+
+  const onMouseLeave = useCallback(() => {
+    rawX.set(0); rawY.set(0); scale.set(1);
+  }, [rawX, rawY, scale]);
+
+  return { ref, motionStyle: { rotateX, rotateY, scale, transformStyle: 'preserve-3d' as const }, glare, onMouseMove, onMouseLeave };
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const dashData = useDashboardData();
@@ -116,6 +142,13 @@ export default function Dashboard() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
+
+  /* 3D tilt instances — one per major glass card */
+  const tiltHero        = useTilt(9);
+  const tiltWallet      = useTilt(7);
+  const tiltPriceLock   = useTilt(8);
+  const tiltDepositGold = useTilt(8);
+  const tiltReferral    = useTilt(7);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -476,12 +509,16 @@ export default function Dashboard() {
         <motion.div layout className="grid grid-cols-12 gap-5">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
-          <motion.div layout className="col-span-12 xl:col-span-5 space-y-5">
+          <motion.div layout className="col-span-12 xl:col-span-5 space-y-5" style={{ perspective: 1200 }}>
 
             {/* Hero Balance Card */}
             <motion.div
+              ref={tiltHero.ref}
               variants={itemVariants}
-              className="relative rounded-[28px] overflow-hidden glass-hero card-3d"
+              style={tiltHero.motionStyle}
+              onMouseMove={tiltHero.onMouseMove}
+              onMouseLeave={tiltHero.onMouseLeave}
+              className="relative rounded-[28px] overflow-hidden glass-hero"
               data-testid="card-total-balance"
             >
               {/* Light mesh orbs */}
@@ -490,6 +527,8 @@ export default function Dashboard() {
               <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(-20%, 25%)' }} />
               {/* Top accent stripe */}
               <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
+              {/* Mouse-tracking glare */}
+              <motion.div className="pointer-events-none absolute inset-0 rounded-[28px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 55%, transparent 80%)', opacity: tiltHero.glare, zIndex: 25 }} />
               {/* Glass shine sweep */}
               <div className="glass-shine-layer" />
 
@@ -610,8 +649,16 @@ export default function Dashboard() {
             </AnimatePresence>
 
             {/* Gold Wallet Conversion Card */}
-            <motion.div variants={itemVariants} className="glass-card-elevated card-3d-subtle rounded-[20px] p-6 relative overflow-hidden">
+            <motion.div
+              ref={tiltWallet.ref}
+              variants={itemVariants}
+              style={tiltWallet.motionStyle}
+              onMouseMove={tiltWallet.onMouseMove}
+              onMouseLeave={tiltWallet.onMouseLeave}
+              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
+            >
               <div className="glass-shine-layer" />
+              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 55%, transparent 80%)', opacity: tiltWallet.glare, zIndex: 25 }} />
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -732,11 +779,20 @@ export default function Dashboard() {
           </motion.div>
 
           {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start" style={{ perspective: 1200 }}>
 
             {/* Gold Price Lock Status */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-price-lock-status">
+            <motion.div
+              ref={tiltPriceLock.ref}
+              variants={itemVariants}
+              style={tiltPriceLock.motionStyle}
+              onMouseMove={tiltPriceLock.onMouseMove}
+              onMouseLeave={tiltPriceLock.onMouseLeave}
+              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
+              data-testid="card-price-lock-status"
+            >
               <div className="glass-shine-layer" />
+              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 55%, transparent 80%)', opacity: tiltPriceLock.glare, zIndex: 25 }} />
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
                   <Lock className="w-4 h-4 text-purple-600" />
@@ -787,8 +843,17 @@ export default function Dashboard() {
             </motion.div>
 
             {/* ── Deposit Gold for Sale Card ── */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-deposit-gold-sale">
+            <motion.div
+              ref={tiltDepositGold.ref}
+              variants={itemVariants}
+              style={tiltDepositGold.motionStyle}
+              onMouseMove={tiltDepositGold.onMouseMove}
+              onMouseLeave={tiltDepositGold.onMouseLeave}
+              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
+              data-testid="card-deposit-gold-sale"
+            >
               <div className="glass-shine-layer" />
+              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,215,0,0.22) 55%, transparent 80%)', opacity: tiltDepositGold.glare, zIndex: 25 }} />
               {/* Subtle gold mesh accent */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.10) 0%, transparent 65%)' }} />
               <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
@@ -845,7 +910,7 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start">
+          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start" style={{ perspective: 1200 }}>
 
             {/* FinaCard — Premium dark card with holographic effect */}
             <Link href="/finacard">
@@ -902,12 +967,21 @@ export default function Dashboard() {
             </Link>
 
             {/* Referral Card */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden glass-indigo card-3d-subtle" data-testid="card-referral">
+            <motion.div
+              ref={tiltReferral.ref}
+              variants={itemVariants}
+              style={tiltReferral.motionStyle}
+              onMouseMove={tiltReferral.onMouseMove}
+              onMouseLeave={tiltReferral.onMouseLeave}
+              className="relative rounded-[20px] p-6 overflow-hidden glass-indigo"
+              data-testid="card-referral"
+            >
               <div className="absolute inset-0 mesh-indigo pointer-events-none" />
               <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08), transparent)', transform: 'translate(-20%, 25%)' }} />
               {/* Top accent */}
               <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)' }} />
+              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(168,85,247,0.22) 55%, transparent 80%)', opacity: tiltReferral.glare, zIndex: 25 }} />
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
