@@ -349,6 +349,7 @@ input[type="number"] {
    ============================================ */
 
 /* ── Dashboard page background gradient ── */
+.dashboard-bg,
 .dashboard-gradient-bg {
   background:
     radial-gradient(ellipse at 12% 18%, rgba(124, 58, 237, 0.18) 0%, transparent 48%),

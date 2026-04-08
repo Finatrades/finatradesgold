@@ -746,30 +746,48 @@ export default function Dashboard() {
                   <p className="text-[12px] text-gray-400">Protect your buying rate</p>
                 </div>
               </div>
-              {activeFpgwLocks.length > 0 ? (
-                <div className="space-y-1.5 mb-3">
-                  {activeFpgwLocks.map((lock) => (
-                    <div key={lock.id} className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                        <div>
-                          <span className="text-[11px] font-bold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
-                          <span className="text-[12px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+              <AnimatePresence mode="wait">
+                {activeFpgwLocks.length > 0 ? (
+                  <motion.div
+                    key="active-locks"
+                    layout
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    className="space-y-1.5 mb-3"
+                  >
+                    {activeFpgwLocks.map((lock) => (
+                      <div key={lock.id} className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <div>
+                            <span className="text-[11px] font-bold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
+                            <span className="text-[12px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
+                          </div>
                         </div>
+                        <span className="text-[11px] font-bold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
-                      <span className="text-[11px] font-bold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="no-lock"
+                    layout
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-300" />
+                      <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-300" />
-                    <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
-                  </div>
-                  <span className="text-[12px] text-gray-400">Lock price for 24–72h</span>
-                </div>
-              )}
+                    <span className="text-[12px] text-gray-400">Lock price for 24–72h</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="flex items-center justify-between text-[12px] text-gray-500 mb-3 font-medium">
                 <span>Current rate</span>
                 <span className="font-bold text-gray-800 num-metric">${formatNumber(goldPrice, 2)}/g</span>
@@ -853,8 +871,7 @@ export default function Dashboard() {
                 layout
                 whileHover={{ scale: 1.02, y: -5, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
                 whileTap={{ scale: 0.98, transition: { duration: 0.12 } }}
-                className="relative w-full aspect-[1.586/1] rounded-[20px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
-                style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
+                className="glass-panel-dark relative w-full aspect-[1.586/1] rounded-[20px] overflow-hidden cursor-pointer"
                 data-testid="card-dashboard-finacard"
               >
                 <div className="absolute inset-0 holo-shimmer" />
