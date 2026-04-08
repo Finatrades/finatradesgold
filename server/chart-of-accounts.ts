@@ -68,6 +68,7 @@ export const GL_ACCOUNTS: Record<string, GlAccount> = {
 // ============================================================
 
 export const TRANSACTION_GL_MAP: Record<string, GlEntry> = {
+  // ── Core FinaTrades transaction types (DB enum values) ─────────────────────
   Deposit: {
     debit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
     credit: GL_ACCOUNTS.GOLD_TRADING_REVENUE,
@@ -102,6 +103,59 @@ export const TRANSACTION_GL_MAP: Record<string, GlEntry> = {
     debit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
     credit: GL_ACCOUNTS.OTHER_FEE_INCOME,
     description: 'Gold swap — recognised at fair value, spread is fee income',
+  },
+
+  // ── Business-term aliases (auditor-facing names → GL entries) ─────────────
+  // These cover required terminology: Fee, Transfer, Storage Fee, Payout, Adjustment, BNSL Lock/Unlock
+  Fee: {
+    debit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
+    credit: GL_ACCOUNTS.OTHER_FEE_INCOME,
+    description: 'General fee deduction from user holding',
+  },
+  Transfer: {
+    debit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
+    credit: GL_ACCOUNTS.TRANSFER_FEE_INCOME,
+    description: 'Gold transfer — alias for Send; may attract transfer fee revenue',
+  },
+  'Storage Fee': {
+    debit: GL_ACCOUNTS.STORAGE_FEE_PAID,
+    credit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
+    description: 'Storage fee collected from user / paid to Wingold custodian',
+  },
+  'Storage_Fee': {
+    debit: GL_ACCOUNTS.STORAGE_FEE_PAID,
+    credit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
+    description: 'Storage fee collected from user / paid to Wingold custodian',
+  },
+  Payout: {
+    debit: GL_ACCOUNTS.BNSL_PAYOUT_OBLIGATION,
+    credit: GL_ACCOUNTS.BNSL_PAYOUT_COST,
+    description: 'BNSL or plan payout disbursed to user — cost of revenue',
+  },
+  Adjustment: {
+    debit: GL_ACCOUNTS.ADJUSTMENT_EXPENSE,
+    credit: GL_ACCOUNTS.USER_GOLD_HOLDINGS,
+    description: 'Balance adjustment or write-off entry',
+  },
+  'BNSL Lock': {
+    debit: GL_ACCOUNTS.BNSL_GOLD_RESERVE,
+    credit: GL_ACCOUNTS.BNSL_PAYOUT_OBLIGATION,
+    description: 'BNSL plan gold locked — obligation created for payout schedule',
+  },
+  'BNSL_Lock': {
+    debit: GL_ACCOUNTS.BNSL_GOLD_RESERVE,
+    credit: GL_ACCOUNTS.BNSL_PAYOUT_OBLIGATION,
+    description: 'BNSL plan gold locked — obligation created for payout schedule',
+  },
+  'BNSL Unlock': {
+    debit: GL_ACCOUNTS.BNSL_PAYOUT_OBLIGATION,
+    credit: GL_ACCOUNTS.BNSL_GOLD_RESERVE,
+    description: 'BNSL plan gold unlocked — obligation released on termination',
+  },
+  'BNSL_Unlock': {
+    debit: GL_ACCOUNTS.BNSL_PAYOUT_OBLIGATION,
+    credit: GL_ACCOUNTS.BNSL_GOLD_RESERVE,
+    description: 'BNSL plan gold unlocked — obligation released on termination',
   },
 };
 

@@ -1236,8 +1236,10 @@ export function registerComplianceRoutes(
           return sum.plus(usd);
         }, new Decimal(0));
 
-        // 4001: Gold Sale Revenue — Buy transactions are the platform's core revenue
-        // (the user pays USD/gold to acquire gold; this is the platform's gross sale revenue)
+        // ── VOLUME CONTEXT (informational, NOT P&L income) ─────────────────────
+        // 4001 context: Gold trading volume — Buy transactions show gross gold sale volume.
+        // NOTE: Platform's true spread income (4001) = sale revenue minus Wingold acquisition cost.
+        // Wingold COGS is not tracked in the platform DB; include gross volume for context only.
         const goldBuyTxns = completedTxns.filter(t => t.type === 'Buy');
         const goldBuyGold = goldBuyTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
         const goldBuyUsd = goldBuyTxns.reduce((sum, t) => {
@@ -1245,7 +1247,7 @@ export function registerComplianceRoutes(
           return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
         }, new Decimal(0));
 
-        // Volume context: all Deposit/Buy inflow and Withdrawal/Sell outflow
+        // All inflow context: Deposit + Buy
         const goldTradingTxns = completedTxns.filter(t => t.type === 'Deposit' || t.type === 'Buy');
         const goldTradingGold = goldTradingTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
         const goldTradingUsd = goldTradingTxns.reduce((sum, t) => {
@@ -1253,9 +1255,17 @@ export function registerComplianceRoutes(
           return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
         }, new Decimal(0));
 
+        // All outflow context: Withdrawal + Sell (gross gold returned to users)
+        const goldOutflowTxns = completedTxns.filter(t => t.type === 'Withdrawal' || t.type === 'Sell');
+        const goldOutflowGold = goldOutflowTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldOutflowUsd = goldOutflowTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
+
         // ── COST LINES ───────────────────────────────────────────────────────────
         // 5001: Storage Fees Paid to Wingold custodian — derived proxy from
-        // storage fees billed to users in the period (fees billed approximate custodian obligation)
+        // storage fees billed to users in the period (billed fees approximate custodian obligation)
         const storageFeePaidCustodian = billedStorageFeesInPeriod.reduce(
           (sum, f) => sum.plus(f.feeAmountUsd || '0'),
           new Decimal(0),
@@ -1275,19 +1285,11 @@ export function registerComplianceRoutes(
           new Decimal(0),
         );
 
-        // 5002: Gold Purchase / Payout Cost — Withdrawal and Sell represent
-        // platform outflows (gold returned to users)
-        const goldOutflowTxns = completedTxns.filter(t => t.type === 'Withdrawal' || t.type === 'Sell');
-        const goldOutflowGold = goldOutflowTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
-        const goldOutflowUsd = goldOutflowTxns.reduce((sum, t) => {
-          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
-          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
-        }, new Decimal(0));
-
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Revenue: gold sale (Buy spread) + BNSL margin + transfer fees + storage fee income
-        const totalRevenueUsd = goldBuyUsd.plus(bnslMarginIncome).plus(transferFeeUsd).plus(storageFeeIncome);
-        // Costs: storage fees paid to custodian (proxy) + BNSL payouts disbursed
+        // Revenue: true fee-based income only (BNSL margin + transfer service + storage collection)
+        // Gold spread revenue (4001) requires Wingold COGS; excluded from totals, shown in volumeContext
+        const totalRevenueUsd = bnslMarginIncome.plus(transferFeeUsd).plus(storageFeeIncome);
+        // Costs: storage fees paid to custodian (derived proxy) + BNSL payouts disbursed
         const totalCostUsd = storageFeePaidCustodian.plus(bnslPayoutCost);
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
 
@@ -1342,16 +1344,9 @@ export function registerComplianceRoutes(
               to: toDate.toISOString(),
             },
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
-            // True platform P&L lines
+            // True platform P&L lines — fee-based income only
+            // NOTE: Gold spread income (4001) requires Wingold COGS data; see volumeContext.goldSaleVolume
             revenue: {
-              goldSaleRevenue: {
-                glCode: '4001',
-                accountName: 'Gold Sale Revenue',
-                description: 'Gross revenue from Buy transactions — platform sells gold to users at spot price',
-                count: goldBuyTxns.length,
-                totalUsd: goldBuyUsd.toFixed(2),
-                totalGoldGrams: goldBuyGold.toFixed(6),
-              },
               bnslMarginIncome: {
                 glCode: '4002',
                 accountName: 'BNSL Margin Income',
@@ -1403,9 +1398,18 @@ export function registerComplianceRoutes(
               totalCostUsd: totalCostUsd.toFixed(2),
               netPnlUsd: netPnlUsd.toFixed(2),
             },
-            // Volume context — informational, not platform P&L
+            // Volume context — informational reference (not included in P&L totals)
             volumeContext: {
-              note: 'Gold inflow/outflow are user transaction volumes, not platform revenue/cost.',
+              note: 'Gross gold inflow/outflow are user transaction principal volumes, not platform revenue/cost. Gold spread income (4001) = goldSaleVolume.totalUsd minus Wingold acquisition cost; COGS requires Wingold billing data not stored in this database.',
+              goldSaleVolume: {
+                glCode: '4001',
+                accountName: 'Gold Sale Revenue (Gross Volume Context)',
+                description: 'Gross USD value of Buy transactions — true spread income requires deducting Wingold COGS',
+                types: ['Buy'],
+                count: goldBuyTxns.length,
+                totalGoldGrams: goldBuyGold.toFixed(6),
+                totalUsd: goldBuyUsd.toFixed(2),
+              },
               goldInflow: {
                 types: ['Deposit', 'Buy'],
                 count: goldTradingTxns.length,
@@ -1413,6 +1417,7 @@ export function registerComplianceRoutes(
                 totalUsd: goldTradingUsd.toFixed(2),
               },
               goldOutflow: {
+                description: 'Gross gold returned to users via Withdrawal/Sell — not a direct P&L cost without knowing acquisition cost',
                 types: ['Withdrawal', 'Sell'],
                 count: goldOutflowTxns.length,
                 totalGoldGrams: goldOutflowGold.toFixed(6),
