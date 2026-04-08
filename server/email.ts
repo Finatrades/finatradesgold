@@ -285,8 +285,20 @@ function buildUnsubscribeUrl(recipientEmail?: string): string {
   return `${baseUrl}/api/unsubscribe?token=${token}`;
 }
 
+// Security email template slugs — unsubscribe footer is suppressed for these
+const SECURITY_EMAIL_SLUGS = new Set([
+  'password_reset', 'password_changed', 'new_device_login', 'account_locked',
+  'suspicious_activity', 'mfa_enabled', 'email_verification',
+  'finatrades_id_login_otp', 'fraud_alert', 'account_frozen',
+]);
+
 // Creative purple email template wrapper with logo header and footer
-function wrapEmailWithBranding(body: string, branding: { logoUrl: string; companyName: string; primaryColor: string }, recipientEmail?: string): string {
+function wrapEmailWithBranding(
+  body: string,
+  branding: { logoUrl: string; companyName: string; primaryColor: string },
+  recipientEmail?: string,
+  options?: { suppressUnsubscribe?: boolean; preheader?: string }
+): string {
   const primaryColor = '#8A2BE2'; // Official Finatrades purple
   const secondaryColor = '#A78BFA'; // Light purple
   const darkPurple = '#4B0082'; // Dark purple for accents
@@ -331,6 +343,12 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
     }
   }
 
+  const preheaderHtml = options?.preheader
+    ? `<span style="display:none;font-size:0px;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${options.preheader}</span>`
+    : '';
+
+  const showUnsubscribe = !options?.suppressUnsubscribe;
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -340,6 +358,7 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
   <title>Finatrades</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+  ${preheaderHtml}
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f3f4f6;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
@@ -438,11 +457,13 @@ function wrapEmailWithBranding(body: string, branding: { logoUrl: string; compan
                       Need help? Contact us at <a href="mailto:support@finatrades.com" style="color: ${secondaryColor}; text-decoration: none;">support@finatrades.com</a>
                     </p>
                     
-                    <!-- Unsubscribe -->
-                    <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 5px;">
+                    <!-- Unsubscribe (suppressed for security/OTP emails) -->
+                    ${showUnsubscribe ? `<p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 5px;">
                       You are receiving this email because you have an account on the FinaTrades platform.<br/>
                       <a href="${buildUnsubscribeUrl(recipientEmail)}" style="color: rgba(167,139,250,0.7); text-decoration: underline;">Unsubscribe</a> from marketing emails
-                    </p>
+                    </p>` : `<p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 5px;">
+                      This is an automated security notification from FinaTrades. Do not share the contents of this email with anyone.
+                    </p>`}
                     
                     <!-- Legal -->
                     <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 10px 0 0; line-height: 1.5;">
@@ -571,8 +592,15 @@ export async function sendEmail(
     const subject = replaceVariables(template.subject, enrichedData);
     let htmlBody = replaceVariables(template.body, enrichedData);
     
+    // Determine security email suppression and generate preheader from subject
+    const isSecurityTemplate = SECURITY_EMAIL_SLUGS.has(templateSlug);
+    const preheader = subject.length > 10 ? subject : undefined;
+
     // Add logo and branding to email
-    htmlBody = wrapEmailWithBranding(htmlBody, branding, to);
+    htmlBody = wrapEmailWithBranding(htmlBody, branding, to, {
+      suppressUnsubscribe: isSecurityTemplate,
+      preheader,
+    });
 
     if (!SMTP_USER || !SMTP_PASS) {
       console.log(`[Email Preview] To: ${to}`);

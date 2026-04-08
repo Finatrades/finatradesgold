@@ -41,7 +41,8 @@ import {
   reportExports, insertReportExportSchema,
   finacardTransfers,
   finacardCards,
-  finacardSpending
+  finacardSpending,
+  emailLogs
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -910,6 +911,43 @@ export async function registerRoutes(
   registerWingoldPartnerRoutes(app);
   // Register Wingold Admin Approval Webhook routes
   registerWingoldWebhookRoutes(app);
+
+  // Brevo Email Bounce / Complaint Webhook
+  // Brevo sends POST events: hard_bounce, soft_bounce, complaint, invalid_email
+  app.post("/api/webhooks/email-bounce", async (req: Request, res: Response) => {
+    try {
+      // Brevo sends an array of events or a single event object
+      const events: any[] = Array.isArray(req.body) ? req.body : [req.body];
+
+      for (const event of events) {
+        const eventType: string = event.event || '';
+        const recipientEmail: string = (event.email || '').toLowerCase().trim();
+
+        if (!recipientEmail) continue;
+
+        const bouncingEvents = ['hard_bounce', 'soft_bounce', 'complaint', 'invalid_email'];
+        if (!bouncingEvents.includes(eventType)) continue;
+
+        // Update most recent email_log entry for this recipient to 'Bounced'
+        await db.update(emailLogs)
+          .set({ status: 'Bounced', errorMessage: `Brevo event: ${eventType}` })
+          .where(
+            and(
+              eq(emailLogs.recipientEmail, recipientEmail),
+              eq(emailLogs.status, 'Sent')
+            )
+          );
+
+        console.log(`[EmailBounce] Marked bounce for ${recipientEmail} — event: ${eventType}`);
+      }
+
+      res.json({ received: true });
+    } catch (err: any) {
+      console.error('[EmailBounce] Webhook error:', err.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Register Wingold B2B integration routes
   app.use("/api/wingold", wingoldRoutes);
   // Register Admin Vault Exposure routes
