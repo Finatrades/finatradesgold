@@ -46,11 +46,9 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
       });
       if (monthTxns.length === 0) continue;
 
-      // Compute opening and closing balances from transaction history
+      // Compute opening and closing gold balances
       const wallet = await storage.getWallet(user.id);
       const closingGold = parseFloat(wallet?.goldGrams?.toString() || '0');
-
-      // Net change: sum of credited amounts minus debited amounts in the month
       let netChange = 0;
       for (const t of monthTxns) {
         const g = parseFloat(t.amountGold?.toString() || '0');
@@ -59,37 +57,55 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
       }
       const openingGold = closingGold - netChange;
 
-      // Derive gold price from most recent transaction with goldPriceUsdPerGram,
-      // falling back to amountUsd/amountGold ratio, then to 0 with a warning.
-      const recentWithPrice = [...monthTxns, ...txns]
-        .filter(t => t.goldPriceUsdPerGram && parseFloat(t.goldPriceUsdPerGram.toString()) > 0)
-        .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
-      let goldPrice = 0;
-      if (recentWithPrice.length > 0) {
-        goldPrice = parseFloat(recentWithPrice[0].goldPriceUsdPerGram!.toString());
-      } else {
-        // Fall back to amountUsd / amountGold from any completed transaction
-        const fallback = txns.find(t => {
-          const g = parseFloat(t.amountGold?.toString() || '0');
-          const u = parseFloat(t.amountUsd?.toString() || '0');
-          return g > 0 && u > 0;
-        });
-        if (fallback) {
-          const fg = parseFloat(fallback.amountGold!.toString());
-          const fu = parseFloat(fallback.amountUsd!.toString());
-          goldPrice = fg > 0 ? fu / fg : 0;
-        }
-        if (goldPrice === 0) {
-          console.warn(`[Monthly Statement] No gold price found for user ${user.id}; USD values will be zero`);
+      // Step 1: Average goldPriceUsdPerGram from this month's transactions
+      const monthPrices = monthTxns
+        .map(t => t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram.toString()) : 0)
+        .filter(p => p > 0);
+      let goldPrice: number | null = null;
+      if (monthPrices.length > 0) {
+        goldPrice = monthPrices.reduce((sum, p) => sum + p, 0) / monthPrices.length;
+      }
+
+      // Step 2: If no monthly price, fall back to most recent historical transaction with a price
+      if (goldPrice === null) {
+        const historicalWithPrice = txns
+          .filter(t => {
+            const p = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram.toString()) : 0;
+            return p > 0;
+          })
+          .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+
+        if (historicalWithPrice.length > 0) {
+          goldPrice = parseFloat(historicalWithPrice[0].goldPriceUsdPerGram!.toString());
+        } else {
+          // Step 3: Derive from amountUsd / amountGold — use most recent applicable record
+          const derivable = txns
+            .filter(t => {
+              const g = parseFloat(t.amountGold?.toString() || '0');
+              const u = parseFloat(t.amountUsd?.toString() || '0');
+              return g > 0 && u > 0;
+            })
+            .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+
+          if (derivable.length > 0) {
+            const g = parseFloat(derivable[0].amountGold!.toString());
+            const u = parseFloat(derivable[0].amountUsd!.toString());
+            goldPrice = g > 0 ? u / g : null;
+          }
         }
       }
-      if (goldPrice > 0 && (goldPrice < 30 || goldPrice > 500)) {
+
+      if (goldPrice === null || goldPrice === 0) {
+        console.warn(`[Monthly Statement] No gold price found for user ${user.id}; USD balance fields will show N/A`);
+        goldPrice = null;
+      } else if (goldPrice < 30 || goldPrice > 500) {
         console.warn(
           `[Monthly Statement] Anomalous gold price for user ${user.id}: $${goldPrice.toFixed(4)}/g — verify transaction data (expected $30–$500/g range)`
         );
       }
-      const openingUsd = (openingGold * goldPrice).toFixed(2);
-      const closingUsd = (closingGold * goldPrice).toFixed(2);
+
+      const openingUsd = goldPrice !== null ? (openingGold * goldPrice).toFixed(2) : 'N/A';
+      const closingUsd = goldPrice !== null ? (closingGold * goldPrice).toFixed(2) : 'N/A';
       const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);
       const userName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
 

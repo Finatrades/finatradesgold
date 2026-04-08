@@ -8,6 +8,24 @@ import type { Transaction } from '../../shared/schema';
 
 const ANNUAL_STMT_IDEMPOTENCY_TTL = 360 * 24 * 60 * 60; // 360 days
 
+/**
+ * Derives the per-gram gold price from a transaction record.
+ * Uses goldPriceUsdPerGram if present; otherwise derives from amountUsd / amountGold.
+ * Returns 0 if neither is computable.
+ */
+function derivePricePerGram(t: Transaction): number {
+  const g = parseFloat(t.amountGold?.toString() || '0');
+  if (t.goldPriceUsdPerGram) {
+    const p = parseFloat(t.goldPriceUsdPerGram.toString());
+    if (p > 0) return p;
+  }
+  if (g > 0) {
+    const u = parseFloat(t.amountUsd?.toString() || '0');
+    if (u > 0) return u / g;
+  }
+  return 0;
+}
+
 export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
   const now = new Date();
   if (now.getMonth() !== 0 || now.getDate() !== 1) return; // Only January 1st
@@ -45,20 +63,21 @@ export async function runAnnualStatementJob(storage: IStorage): Promise<void> {
       });
       if (yearTxns.length === 0) continue;
 
-      // Compute weighted-average cost basis per gram from ALL buy transactions (not just this year)
-      const allBuyTxns = txns.filter(t =>
+      // Compute weighted-average cost basis per gram from this YEAR'S buy transactions only.
+      // Using year-scoped buys ensures that realized gains reflect the cost of gold acquired
+      // in the same fiscal year, matching standard WACG tax accounting.
+      const yearBuyTxns = yearTxns.filter(t =>
         (t.type === 'Receive' || t.type === 'Deposit') && parseFloat(t.amountGold?.toString() || '0') > 0
       );
       let wacgTotalGold = 0;
       let wacgTotalUsd = 0;
-      for (const bt of allBuyTxns) {
-        const g = parseFloat(bt.amountGold?.toString() || '0');
-        // Prefer stored goldPriceUsdPerGram; fall back to amountUsd / amountGold ratio
-        const pricePerGram = bt.goldPriceUsdPerGram
-          ? parseFloat(bt.goldPriceUsdPerGram.toString())
-          : (g > 0 ? parseFloat(bt.amountUsd?.toString() || '0') / g : 0);
-        wacgTotalGold += g;
-        wacgTotalUsd += g * pricePerGram;
+      for (const bt of yearBuyTxns) {
+        const g = parseFloat(bt.amountGold!.toString());
+        const pricePerGram = derivePricePerGram(bt);
+        if (pricePerGram > 0) {
+          wacgTotalGold += g;
+          wacgTotalUsd += g * pricePerGram;
+        }
       }
       const wacgPerGram = wacgTotalGold > 0 ? wacgTotalUsd / wacgTotalGold : 0;
       if (wacgPerGram > 0 && (wacgPerGram < 30 || wacgPerGram > 500)) {
