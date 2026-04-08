@@ -1,35 +1,34 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 
-function SkeletonPulse({ className = '' }: { className?: string }) {
+function SkeletonPulse({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded ${className}`} />
+    <div className={`skeleton-shimmer rounded ${className}`} style={style} />
   );
 }
 
 export function KpiCardSkeleton() {
   return (
-    <Card className="p-4 bg-white border border-purple-200 shadow-sm rounded-lg">
+    <div className="glass-card rounded-[20px] p-5 relative overflow-hidden">
       <div className="flex items-start justify-between">
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-2.5">
           <SkeletonPulse className="h-3 w-16" />
-          <SkeletonPulse className="h-6 w-24" />
+          <SkeletonPulse className="h-7 w-28" />
           <SkeletonPulse className="h-3 w-20" />
         </div>
-        <SkeletonPulse className="w-10 h-10 rounded-lg" />
+        <SkeletonPulse className="w-10 h-10 rounded-xl flex-shrink-0 ml-3" />
       </div>
-    </Card>
+    </div>
   );
 }
 
 export function TransactionRowSkeleton() {
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+    <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(139,92,246,0.03)' }}>
       <div className="flex items-center gap-3">
         <SkeletonPulse className="w-10 h-10 rounded-full" />
         <div className="space-y-1.5">
-          <SkeletonPulse className="h-4 w-20" />
-          <SkeletonPulse className="h-3 w-24" />
+          <SkeletonPulse className="h-4 w-24" />
+          <SkeletonPulse className="h-3 w-32" />
         </div>
       </div>
       <div className="text-right space-y-1.5">
@@ -42,9 +41,9 @@ export function TransactionRowSkeleton() {
 
 export function TransactionsTableSkeleton() {
   return (
-    <Card className="p-6 bg-white/70 backdrop-blur-xl shadow-lg border border-white/50 min-h-[300px] rounded-2xl">
+    <div className="glass-card-elevated rounded-[20px] p-6 min-h-[300px]">
       <div className="flex justify-between items-center mb-6">
-        <SkeletonPulse className="h-5 w-36" />
+        <SkeletonPulse className="h-5 w-40" />
         <SkeletonPulse className="h-4 w-16" />
       </div>
       <div className="space-y-3">
@@ -52,68 +51,99 @@ export function TransactionsTableSkeleton() {
           <TransactionRowSkeleton key={i} />
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
 export function WalletCardSkeleton() {
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200/50 rounded-2xl">
-      <div className="space-y-4">
+    <div className="glass-hero rounded-[28px] p-7 relative overflow-hidden">
+      <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <SkeletonPulse className="h-5 w-24" />
-          <SkeletonPulse className="w-8 h-8 rounded-full" />
+          <div className="space-y-1.5">
+            <SkeletonPulse className="h-3 w-28" />
+            <SkeletonPulse className="h-10 w-44" />
+          </div>
+          <SkeletonPulse className="w-[152px] h-[88px] rounded-xl" />
         </div>
-        <SkeletonPulse className="h-8 w-32" />
         <div className="flex gap-2">
-          <SkeletonPulse className="h-9 w-20 rounded-lg" />
-          <SkeletonPulse className="h-9 w-20 rounded-lg" />
+          <SkeletonPulse className="h-10 flex-1 rounded-xl" />
+          <SkeletonPulse className="h-10 flex-1 rounded-xl" />
+          <SkeletonPulse className="h-10 flex-1 rounded-xl" />
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
 export function CreditCardSkeleton() {
   return (
-    <Card className="p-6 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-2xl h-full min-h-[180px]">
+    <div className="rounded-[20px] p-6 h-full min-h-[180px]" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <div className="flex flex-col justify-between h-full">
         <div className="flex justify-between">
-          <SkeletonPulse className="h-6 w-20 bg-zinc-700" />
-          <SkeletonPulse className="h-6 w-10 bg-zinc-700" />
+          <SkeletonPulse className="h-6 w-24" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <SkeletonPulse className="h-6 w-10" style={{ background: 'rgba(255,255,255,0.08)' }} />
         </div>
-        <div className="space-y-2">
-          <SkeletonPulse className="h-5 w-48 bg-zinc-700" />
+        <div className="space-y-2 mt-auto">
+          <SkeletonPulse className="h-5 w-48" style={{ background: 'rgba(255,255,255,0.08)' }} />
           <div className="flex justify-between">
-            <SkeletonPulse className="h-4 w-24 bg-zinc-700" />
-            <SkeletonPulse className="h-4 w-12 bg-zinc-700" />
+            <SkeletonPulse className="h-4 w-24" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <SkeletonPulse className="h-4 w-12" style={{ background: 'rgba(255,255,255,0.08)' }} />
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
 export function DashboardSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <SkeletonPulse className="h-10 w-48 mb-2" />
-      <SkeletonPulse className="h-4 w-64" />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <KpiCardSkeleton key={i} />
-          ))}
+    <div className="max-w-[1420px] mx-auto px-6 space-y-5">
+      <div className="flex items-center justify-between mb-1">
+        <div className="space-y-2">
+          <SkeletonPulse className="h-8 w-52" />
+          <SkeletonPulse className="h-4 w-72" />
         </div>
-        <div className="lg:col-span-1">
-          <CreditCardSkeleton />
-        </div>
+        <SkeletonPulse className="h-9 w-32 rounded-xl" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <WalletCardSkeleton />
-        <WalletCardSkeleton />
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 xl:col-span-5 space-y-5">
+          <WalletCardSkeleton />
+          <div className="glass-card-elevated rounded-[20px] p-5 space-y-3">
+            <SkeletonPulse className="h-4 w-36" />
+            <div className="grid grid-cols-3 gap-3">
+              {[...Array(3)].map((_, i) => (
+                <SkeletonPulse key={i} className="h-16 rounded-xl" />
+              ))}
+            </div>
+          </div>
+          <div className="glass-card-elevated rounded-[20px] p-5 space-y-3">
+            <SkeletonPulse className="h-4 w-28" />
+            <SkeletonPulse className="h-20 rounded-xl" />
+          </div>
+        </div>
+
+        <div className="col-span-12 xl:col-span-4 flex flex-col gap-5">
+          <div className="glass-card-elevated rounded-[20px] p-6 space-y-3">
+            <SkeletonPulse className="h-4 w-32" />
+            <SkeletonPulse className="h-24 rounded-xl" />
+            <SkeletonPulse className="h-10 w-full rounded-xl" />
+          </div>
+          <div className="glass-card-elevated rounded-[20px] p-6 space-y-3">
+            <SkeletonPulse className="h-4 w-40" />
+            <SkeletonPulse className="h-28 rounded-xl" />
+          </div>
+        </div>
+
+        <div className="col-span-12 xl:col-span-3 flex flex-col gap-5">
+          <CreditCardSkeleton />
+          <div className="glass-indigo rounded-[20px] p-6 space-y-3">
+            <SkeletonPulse className="h-4 w-24" />
+            <SkeletonPulse className="h-8 w-36" />
+            <SkeletonPulse className="h-10 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
 
       <TransactionsTableSkeleton />

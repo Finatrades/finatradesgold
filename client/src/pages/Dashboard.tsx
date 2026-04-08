@@ -20,7 +20,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
@@ -62,13 +62,21 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.07, delayChildren: 0.08 }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+  hidden: { opacity: 0, y: 22, scale: 0.97 },
+  visible: {
+    opacity: 1, y: 0, scale: 1,
+    transition: { type: 'spring', stiffness: 320, damping: 26, mass: 0.8 }
+  }
+};
+
+const cardHoverVariants = {
+  rest: { y: 0, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 30 } },
+  hover: { y: -5, scale: 1.012, transition: { type: 'spring', stiffness: 400, damping: 22 } },
 };
 
 export default function Dashboard() {
@@ -369,23 +377,31 @@ export default function Dashboard() {
         animate="visible"
       >
 
-        {pendingPhysicalDeposits.length > 0 && (
-          <motion.div variants={itemVariants}>
-            <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border-amber-200/60 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
-              <Package className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-amber-800" data-testid="text-physical-deposit-count">
-                  You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
-                </span>
-                <Link href="/finavault">
-                  <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
-                    View Status
-                  </Button>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {pendingPhysicalDeposits.length > 0 && (
+            <motion.div
+              key="physical-deposit-alert"
+              layout
+              initial={{ opacity: 0, y: -10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 340, damping: 26 } }}
+              exit={{ opacity: 0, y: -10, scale: 0.96, transition: { duration: 0.22 } }}
+            >
+              <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border-amber-200/60 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
+                <Package className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span className="text-amber-800" data-testid="text-physical-deposit-count">
+                    You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
+                  </span>
+                  <Link href="/finavault">
+                    <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
+                      View Status
+                    </Button>
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
@@ -457,10 +473,10 @@ export default function Dashboard() {
         </motion.div>
 
 
-        <div className="grid grid-cols-12 gap-5">
+        <motion.div layout className="grid grid-cols-12 gap-5">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
-          <div className="col-span-12 xl:col-span-5 space-y-5">
+          <motion.div layout className="col-span-12 xl:col-span-5 space-y-5">
 
             {/* Hero Balance Card */}
             <motion.div
@@ -474,6 +490,8 @@ export default function Dashboard() {
               <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(-20%, 25%)' }} />
               {/* Top accent stripe */}
               <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
+              {/* Glass shine sweep */}
+              <div className="glass-shine-layer" />
 
               <div className="relative z-10 p-7">
                 <div className="flex items-start justify-between mb-2">
@@ -585,12 +603,15 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Pending Actions Strip — hidden when count is zero */}
-            <motion.div variants={itemVariants}>
-              <PendingItemsStrip />
-            </motion.div>
+            <AnimatePresence>
+              <motion.div layout key="pending-strip" variants={itemVariants}>
+                <PendingItemsStrip />
+              </motion.div>
+            </AnimatePresence>
 
             {/* Gold Wallet Conversion Card */}
-            <motion.div variants={itemVariants} className="glass-card-elevated card-3d-subtle rounded-[20px] p-6">
+            <motion.div variants={itemVariants} className="glass-card-elevated card-3d-subtle rounded-[20px] p-6 relative overflow-hidden">
+              <div className="glass-shine-layer" />
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -708,13 +729,14 @@ export default function Dashboard() {
               )}
             </motion.div>
 
-          </div>
+          </motion.div>
 
           {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
             {/* Gold Price Lock Status */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6" data-testid="card-price-lock-status">
+            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-price-lock-status">
+              <div className="glass-shine-layer" />
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
                   <Lock className="w-4 h-4 text-purple-600" />
@@ -766,6 +788,7 @@ export default function Dashboard() {
 
             {/* ── Deposit Gold for Sale Card ── */}
             <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-deposit-gold-sale">
+              <div className="glass-shine-layer" />
               {/* Subtle gold mesh accent */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.10) 0%, transparent 65%)' }} />
               <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
@@ -954,7 +977,7 @@ export default function Dashboard() {
             </motion.div>
 
           </div>
-        </div>
+        </motion.div>
 
         {/* ═══ ZONE 2 — BUSINESS MODULES (business users only) ═══ */}
         {isBusinessUser && (
