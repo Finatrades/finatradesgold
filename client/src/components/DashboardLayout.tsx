@@ -142,8 +142,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
           
-          {/* Row 2: White User Bar */}
-          <div className="h-14 px-6 flex items-center justify-between bg-white border-b border-gray-200">
+          {/* Row 2: User Bar — matches dashboard bg */}
+          <div className="h-14 px-6 flex items-center justify-between border-b border-gray-100/80" style={{ background: '#FAFBFF' }}>
             
             <div className="flex items-center gap-4">
               <button 
