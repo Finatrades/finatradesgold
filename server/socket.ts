@@ -137,11 +137,21 @@ export function setupSocketIO(httpServer: HttpServer) {
           // For registered users
           session = await storage.getChatSession(userId);
           if (!session) {
-            session = await storage.createChatSession({
-              userId: userId,
-              status: 'active',
-              lastMessageAt: new Date(),
-            });
+            try {
+              session = await storage.createChatSession({
+                userId: userId,
+                status: 'active',
+                lastMessageAt: new Date(),
+              });
+            } catch (err: any) {
+              // User may not exist (e.g. DB was wiped but browser session cookie is stale)
+              if (err?.code === '23503') {
+                console.warn(`[Socket] Stale session for unknown userId=${userId} — skipping chat session creation`);
+                socket.emit("joined", { sessionId: null, error: "session_expired" });
+                return;
+              }
+              throw err;
+            }
           }
         }
       }
