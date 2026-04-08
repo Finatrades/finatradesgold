@@ -578,27 +578,29 @@ export default function Dashboard() {
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.18)' }}>
                         <Sparkles className="w-4 h-4 text-purple-600" />
                       </div>
-                      <span className="text-[13px] text-gray-500 font-semibold tracking-wide">Wallet Balance</span>
+                      <span className="text-[13px] text-gray-500 font-semibold tracking-wide">Gold Balance</span>
                       <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-purple-50 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
                         {balanceVisible ? <Eye className="w-4 h-4 text-gray-400" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
                       </button>
                     </div>
+                    {/* Gold grams — primary hero number */}
                     <motion.p
-                      className="text-[38px] font-extrabold leading-none num-hero"
-                      style={{ background: 'linear-gradient(135deg, #5b21b6, #7c3aed, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                      className="text-[42px] font-extrabold leading-none num-hero flex items-end gap-2"
+                      style={{ background: 'linear-gradient(135deg, #B8860B, #D4AF37, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.6, delay: 0.2 }}
                       data-testid="text-total-balance"
                     >
-                      {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
+                      {showBalance ? `${formatNumber(totals.walletGoldGrams || 0, 3)}` : hiddenValue}
+                      {showBalance && <span className="text-[22px] font-bold" style={{ background: 'linear-gradient(135deg, #B8860B, #D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>g</span>}
                     </motion.p>
+                    {/* USD equivalent as sub-line */}
                     <div className="flex items-center gap-2 mt-2.5">
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.20)' }}>
-                        <TrendingUp className="w-3 h-3 text-emerald-600" />
-                        <span className="text-emerald-700 text-[11px] font-bold">{formatNumber(totals.walletGoldGrams || 0, 2)}g</span>
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
+                        <span className="text-purple-700 text-[11px] font-bold num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</span>
                       </div>
-                      <span className="text-gray-400 text-[11px] font-medium">available in wallet</span>
+                      <span className="text-gray-400 text-[11px] font-medium">wallet value</span>
                     </div>
                     {walletGoldValue === 0 && (
                       <motion.button
