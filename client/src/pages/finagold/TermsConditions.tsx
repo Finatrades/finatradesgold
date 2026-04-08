@@ -1,6 +1,7 @@
 import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PageSeo from '@/components/PageSeo';
 
 function TermsContent() {
   return (
@@ -255,6 +256,11 @@ function TermsContent() {
 export default function TermsConditions() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="Terms & Conditions — Finatrades"
+        description="Review the terms and conditions governing the use of Finatrades platform, FinaGold savings plans, FinaBridge trade finance, and related gold-backed financial services."
+        canonical="/terms"
+      />
       <TermsContent />
     </ModeProvider>
   );

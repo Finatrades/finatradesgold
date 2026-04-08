@@ -1,5 +1,6 @@
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { 
   Shield, Lock, Wallet, ArrowRight, CheckCircle, Fingerprint, 
   Globe, BarChart3, FileCheck, Scan, QrCode, Building2,
@@ -925,6 +926,11 @@ function FinalCTASection() {
 export default function FinaVaultLanding() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="FinaVault — Secure Allocated Gold Storage"
+        description="Store your gold in Swiss-regulated FinaVault. Fully allocated, insured, and audited physical gold storage with instant liquidity and digital certificate of ownership."
+        canonical="/finagold/finavault"
+      />
       <div className="finavault-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finavault-landing">
         <style>{`
           .finavault-landing {

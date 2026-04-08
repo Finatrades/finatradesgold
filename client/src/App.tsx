@@ -4,6 +4,7 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { HelmetProvider } from 'react-helmet-async';
 // Light mode only - dark mode disabled
 import NotFound from "@/pages/not-found";
 import MaintenancePage from "@/pages/MaintenancePage";
@@ -392,6 +393,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
         <BrandingProvider>
           <CMSProvider>
@@ -431,6 +433,7 @@ function App() {
           </CMSProvider>
         </BrandingProvider>
       </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

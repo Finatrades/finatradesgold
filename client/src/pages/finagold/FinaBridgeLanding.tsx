@@ -1,5 +1,6 @@
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { 
   Globe, FileText, Shield, ArrowRight, CheckCircle, Users, 
   Ship, Package, Coins, Lock, Zap, MessageSquare, MapPin,
@@ -1828,6 +1829,11 @@ function FinaBridgeContent() {
 export default function FinaBridgeLanding() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="FinaBridge — Gold-Backed Trade Finance & Letters of Credit"
+        description="Finance international commodity trade with FinaBridge gold-backed Letters of Credit. Reduce counterparty risk, access pre-shipment finance, and settle in gold or fiat."
+        canonical="/finagold/finabridge"
+      />
       <FinaBridgeContent />
     </ModeProvider>
   );

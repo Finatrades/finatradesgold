@@ -1,6 +1,7 @@
 import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PageSeo from '@/components/PageSeo';
 
 function PrivacyContent() {
   return (
@@ -191,6 +192,11 @@ function PrivacyContent() {
 export default function PrivacyPolicy() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="Privacy Policy — Finatrades"
+        description="Read Finatrades' privacy policy: how we collect, use, and protect your personal data in compliance with GDPR and Swiss data protection regulations."
+        canonical="/privacy"
+      />
       <PrivacyContent />
     </ModeProvider>
   );

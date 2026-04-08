@@ -1,5 +1,6 @@
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useRef, useState, useEffect, useMemo } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { 
   Coins, Lock, Clock, Calendar, Shield, Vault, ArrowRight, 
   ChevronDown, ChevronUp, AlertTriangle, FileText, ExternalLink,
@@ -1365,6 +1366,11 @@ function FinalCTASection() {
 export default function BNSLLanding() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="BNSL Gold Savings Plans — Structured Gold Investment"
+        description="Structured gold savings plans (BNSL) by FinaGold. Lock in real gold at today's prices with flexible terms from 3 to 36 months. Swiss-regulated, fully allocated gold ownership."
+        canonical="/finagold/bnsl"
+      />
       <div className="bnsl-landing min-h-screen bg-[#FAFBFF]" data-testid="bnsl-landing">
         <style>{`
           .bnsl-landing {

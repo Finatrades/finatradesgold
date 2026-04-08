@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -122,6 +123,11 @@ function FinagoldContent() {
 export default function FinagoldLanding() {
   return (
     <ModeProvider defaultMode="personal">
+      <PageSeo
+        title="FinaGold — Gold Savings & Investment Plans"
+        description="Invest in real gold through FinaGold's BNSL structured savings plans, FinaVault storage, FinaBridge trade finance, and FinaCard gold-backed payment solutions."
+        canonical="/finagold"
+      />
       <FinagoldContent />
     </ModeProvider>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, Shield, Globe, Building2, Gem, Ship, 
@@ -700,6 +701,11 @@ export default function EcosystemLanding() {
 
   return (
     <>
+    <PageSeo
+      title="Finatrades Ecosystem — Gold Trade Finance Network"
+      description="Explore the Finatrades ecosystem: FinaGold savings, FinaBridge trade finance, Wingold physical gold, WinCommodities sourcing, and WinLogistics for global commodity trade."
+      canonical="/ecosystem"
+    />
     <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden">
       <style>{`
         .finagold-landing {

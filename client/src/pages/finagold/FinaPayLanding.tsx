@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import MobileBottomNav from './components/MobileBottomNav';
 import { ModeProvider } from './context/ModeContext';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
+import PageSeo from '@/components/PageSeo';
 
 function FloatingParticles({ count = 30 }: { count?: number }) {
   return (
@@ -1098,6 +1099,11 @@ function FinalCTASection() {
 export default function FinaPayLanding() {
   return (
     <ModeProvider>
+      <PageSeo
+        title="FinaPay — Gold-Backed Payments & Digital Wallet"
+        description="Send and receive gold-backed payments with FinaPay. Instant transfers, QR-code payments, multi-currency support, and zero hidden fees for individuals and businesses."
+        canonical="/finagold/finapay"
+      />
       <div className="finapay-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finapay-landing">
         <style>{`
           .finapay-landing {

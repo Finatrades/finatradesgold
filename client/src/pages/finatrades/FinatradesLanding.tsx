@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 import { useEffect } from 'react';
+import PageSeo from '@/components/PageSeo';
 import { ModeProvider } from '../finagold/context/ModeContext';
 import Navbar from '../finagold/components/Navbar';
 import Hero from '../finagold/components/Hero';
@@ -120,6 +121,11 @@ function FinatradesContent() {
 export default function FinatradesLanding() {
   return (
     <ModeProvider defaultMode="business">
+      <PageSeo
+        title="Finatrades — Gold-Backed Trade Finance Platform"
+        description="Swiss-regulated gold trade finance platform connecting commodity traders, importers, and exporters with FinaBridge LC financing, FinaGold savings plans, and gold-backed payments."
+        canonical="/"
+      />
       <FinatradesContent />
     </ModeProvider>
   );
