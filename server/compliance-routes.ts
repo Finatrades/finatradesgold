@@ -1242,7 +1242,7 @@ export function registerComplianceRoutes(
               ),
             ),
           // Platform spread configuration — used to estimate 4001/4003 spread income
-          db.select({ key: platformConfig.key, value: platformConfig.value }).from(platformConfig),
+          db.select({ key: platformConfig.configKey, value: platformConfig.configValue }).from(platformConfig),
         ]);
 
         // ── PLATFORM SPREAD CONFIG ────────────────────────────────────────────────
