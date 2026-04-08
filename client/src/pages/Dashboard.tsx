@@ -20,7 +20,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import MobileDashboard from '@/components/mobile/MobileDashboard';
 import { format, isValid } from 'date-fns';
 import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
 import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
@@ -62,13 +62,21 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.09, delayChildren: 0.05 }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+  hidden: { opacity: 0, y: 22, scale: 0.98 },
+  visible: {
+    opacity: 1, y: 0, scale: 1,
+    transition: { type: 'spring', stiffness: 280, damping: 28, mass: 0.9 }
+  }
+};
+
+const cardHoverProps = {
+  whileHover: { y: -5, scale: 1.012, transition: { type: 'spring', stiffness: 400, damping: 22 } },
+  whileTap: { scale: 0.98, transition: { duration: 0.12 } },
 };
 
 export default function Dashboard() {
@@ -369,23 +377,32 @@ export default function Dashboard() {
         animate="visible"
       >
 
-        {pendingPhysicalDeposits.length > 0 && (
-          <motion.div variants={itemVariants}>
-            <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border-amber-200/60 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
-              <Package className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-amber-800" data-testid="text-physical-deposit-count">
-                  You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
-                </span>
-                <Link href="/finavault">
-                  <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
-                    View Status
-                  </Button>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {pendingPhysicalDeposits.length > 0 && (
+            <motion.div
+              key="physical-deposit-alert"
+              layout
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <Alert className="border-amber-200/60 rounded-2xl shadow-sm" style={{ background: 'rgba(255,251,235,0.82)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} data-testid="alert-physical-deposit">
+                <Package className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span className="text-amber-800" data-testid="text-physical-deposit-count">
+                    You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
+                  </span>
+                  <Link href="/finavault">
+                    <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
+                      View Status
+                    </Button>
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
@@ -407,49 +424,60 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
-        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2" data-testid="quick-actions">
-          <span className="text-[15px] font-bold text-gray-900 whitespace-nowrap">Quick Access :</span>
-          {/* Primary buy action — purple brand */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 hover:shadow-md hover:shadow-purple-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1"
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.60)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.75)', boxShadow: '0 4px 20px rgba(124,58,237,0.08)' }}
+          data-testid="quick-actions"
+        >
+          <span className="text-[13px] font-bold text-gray-600 whitespace-nowrap tracking-wide uppercase">Quick Access</span>
+          <span className="w-px h-4 bg-gray-200 mx-1" />
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('buybar')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+            style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.20)', color: '#6d28d9' }}
             data-testid="button-buy-gold">
             <Package className="w-3.5 h-3.5" /> Buy Gold Bar
           </motion.button>
-          {/* Sell — rose, signals outflow */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-600 hover:shadow-md hover:shadow-rose-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('sell')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+            style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)', color: '#e11d48' }}
             data-testid="button-sell-gold">
             <TrendingUp className="w-3.5 h-3.5" /> Sell Gold
           </motion.button>
-          {/* Neutral secondary actions — consistent gray styling */}
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('withdraw')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
             data-testid="button-withdraw-gold">
             <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw Gold
           </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('send')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
             data-testid="button-send-gold">
             <Send className="w-3.5 h-3.5 text-blue-500" /> Send Gold
           </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('request')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
             data-testid="button-request-gold">
             <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request Gold
           </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setActiveModal('lock')}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
             data-testid="button-lock-gold">
             <Shield className="w-3.5 h-3.5 text-emerald-500" /> Lock Gold Price
           </motion.button>
-          <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 hover:shadow-md hover:shadow-amber-100/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1"
+          <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setDepositGoldModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.30)', color: '#92400e' }}
             data-testid="button-deposit-gold-quick">
             <Vault className="w-3.5 h-3.5" /> Deposit Gold
           </motion.button>
           {isBusinessUser && (
-            <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm hover:border-gray-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+            <motion.button whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => setShowTradeModal(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer transition-all duration-200"
+              style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
               data-testid="button-create-trade-quick">
               <Landmark className="w-3.5 h-3.5 text-indigo-500" /> Create Trade
             </motion.button>
@@ -465,7 +493,9 @@ export default function Dashboard() {
             {/* Hero Balance Card */}
             <motion.div
               variants={itemVariants}
-              className="relative rounded-[28px] overflow-hidden glass-hero card-3d"
+              layout
+              {...cardHoverProps}
+              className="relative rounded-[28px] overflow-hidden glass-panel-hero card-3d"
               data-testid="card-total-balance"
             >
               {/* Light mesh orbs */}
@@ -590,7 +620,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Gold Wallet Conversion Card */}
-            <motion.div variants={itemVariants} className="glass-card-elevated card-3d-subtle rounded-[20px] p-6">
+            <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel card-3d-subtle rounded-[20px] p-6">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -714,7 +744,7 @@ export default function Dashboard() {
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start">
 
             {/* Gold Price Lock Status */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6" data-testid="card-price-lock-status">
+            <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel rounded-[20px] p-6" data-testid="card-price-lock-status">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
                   <Lock className="w-4 h-4 text-purple-600" />
@@ -765,7 +795,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* ── Deposit Gold for Sale Card ── */}
-            <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden" data-testid="card-deposit-gold-sale">
+            <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel rounded-[20px] p-6 relative overflow-hidden" data-testid="card-deposit-gold-sale">
               {/* Subtle gold mesh accent */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.10) 0%, transparent 65%)' }} />
               <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
@@ -828,8 +858,9 @@ export default function Dashboard() {
             <Link href="/finacard">
               <motion.div
                 variants={itemVariants}
-                whileHover={{ scale: 1.015, y: -4 }}
-                transition={{ duration: 0.35 }}
+                layout
+                whileHover={{ scale: 1.02, y: -5, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.12 } }}
                 className="relative w-full aspect-[1.586/1] rounded-[20px] shadow-2xl overflow-hidden border border-white/[0.06] cursor-pointer"
                 style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0e35 30%, #0d0820 70%, #1a0e35 100%)' }}
                 data-testid="card-dashboard-finacard"
@@ -879,7 +910,7 @@ export default function Dashboard() {
             </Link>
 
             {/* Referral Card */}
-            <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden glass-indigo card-3d-subtle" data-testid="card-referral">
+            <motion.div variants={itemVariants} layout {...cardHoverProps} className="relative rounded-[20px] p-6 overflow-hidden glass-panel card-3d-subtle" data-testid="card-referral">
               <div className="absolute inset-0 mesh-indigo pointer-events-none" />
               <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
               <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08), transparent)', transform: 'translate(-20%, 25%)' }} />
@@ -975,7 +1006,7 @@ export default function Dashboard() {
 
               {/* ── BNSL card — Quick Join or Yield Summary ── */}
               {totals.activeBnslPlans === 0 ? (
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden h-full glass-teal card-3d-subtle" data-testid="card-quick-bnsl">
+                <motion.div variants={itemVariants} layout {...cardHoverProps} className="relative rounded-[20px] p-6 overflow-hidden h-full glass-panel card-3d-subtle" data-testid="card-quick-bnsl">
                   <div className="absolute inset-0 mesh-teal pointer-events-none" />
                   <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
                   <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(0,0)' }} />
@@ -1023,7 +1054,7 @@ export default function Dashboard() {
                 </motion.div>
               ) : (
                 <Link href="/bnsl">
-                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-teal card-3d-subtle" data-testid="card-bnsl-summary">
+                  <motion.div variants={itemVariants} layout {...cardHoverProps} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-panel card-3d-subtle" data-testid="card-bnsl-summary">
                     <div className="absolute inset-0 mesh-teal pointer-events-none" />
                     <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
                     {/* Top accent */}
@@ -1097,8 +1128,8 @@ export default function Dashboard() {
               )}
 
               {/* ── FinaBridge Quick Trade Card ── */}
-              <motion.div variants={itemVariants} data-testid="card-quick-trade" className="h-full">
-                <div className="relative rounded-[20px] p-5 overflow-hidden h-full glass-indigo card-3d-subtle">
+              <motion.div variants={itemVariants} layout {...cardHoverProps} data-testid="card-quick-trade" className="h-full">
+                <div className="relative rounded-[20px] p-5 overflow-hidden h-full glass-panel card-3d-subtle">
                   <div className="absolute inset-0 mesh-indigo pointer-events-none" />
                   <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
                   {/* Top accent */}
@@ -1333,7 +1364,9 @@ export default function Dashboard() {
                 return (
                   <motion.div
                     variants={itemVariants}
-                    className="glass-card-elevated rounded-[20px] p-5"
+                    layout
+                    {...cardHoverProps}
+                    className="glass-panel rounded-[20px] p-5"
                     data-testid="card-gold-wallets"
                   >
                     <div className="flex items-center justify-between mb-4">
@@ -1452,7 +1485,9 @@ export default function Dashboard() {
                 return (
                   <motion.div
                     variants={itemVariants}
-                    className="glass-card-elevated rounded-[20px] p-5"
+                    layout
+                    {...cardHoverProps}
+                    className="glass-panel rounded-[20px] p-5"
                     data-testid="card-locked-positions"
                   >
                     <div className="flex items-center justify-between mb-4">
@@ -1555,7 +1590,7 @@ export default function Dashboard() {
         })()}
 
         {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
-        <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
+        <motion.div variants={itemVariants} layout {...cardHoverProps} className="glass-panel rounded-[20px] p-5" data-testid="card-gold-price-chart">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
@@ -1621,9 +1656,9 @@ export default function Dashboard() {
           {/* Panel 1 — Recent Transactions */}
           <motion.div
             variants={itemVariants}
-            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
+            layout
+            {...cardHoverProps}
+            className="glass-panel rounded-[20px] overflow-hidden cursor-default"
             data-testid="card-recent-activities"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
@@ -1699,9 +1734,9 @@ export default function Dashboard() {
           {/* Panel 2 — Certificates */}
           <motion.div
             variants={itemVariants}
-            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
+            layout
+            {...cardHoverProps}
+            className="glass-panel rounded-[20px] overflow-hidden cursor-default"
             data-testid="card-certificates"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
