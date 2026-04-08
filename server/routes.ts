@@ -27053,7 +27053,7 @@ export async function registerRoutes(
     try {
       const { userId, walletConfigId, amountUsd, goldGrams, goldPriceAtTime, cryptoAmount } = req.body;
       
-      if (!userId || !walletConfigId || !amountUsd || !goldGrams || !goldPriceAtTime) {
+      if (!userId || !walletConfigId || !amountUsd || !goldGrams) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
