@@ -544,10 +544,10 @@ export default function Dashboard() {
           <div className="flex-1 h-px bg-gray-100" />
         </motion.div>
 
-        <motion.div layout className="grid grid-cols-12 gap-5">
+        <motion.div layout className="grid grid-cols-12 gap-4">
 
           {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
-          <motion.div layout className="col-span-12 xl:col-span-5 space-y-5" style={{ perspective: 1200 }}>
+          <motion.div layout className="col-span-12 xl:col-span-5 flex flex-col gap-4" style={{ perspective: 1200 }}>
 
             {/* Hero Balance Card */}
             <motion.div
@@ -570,7 +570,7 @@ export default function Dashboard() {
               {/* Glass shine sweep */}
               <div className="glass-shine-layer" />
 
-              <div className="relative z-10 p-7">
+              <div className="relative z-10 p-6">
                 <div className="flex items-start justify-between mb-2">
                   {/* Left: balance info */}
                   <div className="flex-1 min-w-0">
@@ -738,7 +738,7 @@ export default function Dashboard() {
           </motion.div>
 
           {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-5 self-start" style={{ perspective: 1200 }}>
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-4 self-start" style={{ perspective: 1200 }}>
 
             {/* Gold Price Lock Status */}
             <motion.div
@@ -877,7 +877,7 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-5 self-start" style={{ perspective: 1200 }}>
+          <div className="col-span-12 xl:col-span-3 flex flex-col gap-4 self-start" style={{ perspective: 1200 }}>
 
             {/* FinaCard — Dark glass metal card */}
             <Link href="/finacard">
@@ -1062,7 +1062,7 @@ export default function Dashboard() {
             </div>
 
             {/* Cards row — BNSL (left) + FinaBridge Quick Trade (right) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5" style={{ perspective: 1200 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4" style={{ perspective: 1200 }}>
 
               {/* ── BNSL card — Quick Join or Yield Summary ── */}
               {totals.activeBnslPlans === 0 ? (

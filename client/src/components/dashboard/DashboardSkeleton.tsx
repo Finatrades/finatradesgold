@@ -98,7 +98,7 @@ export function CreditCardSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="max-w-[1420px] mx-auto px-6 space-y-5">
+    <div className="max-w-[1420px] mx-auto px-6 space-y-4">
       <div className="flex items-center justify-between mb-1">
         <div className="space-y-2">
           <SkeletonPulse className="h-8 w-52" />
@@ -107,8 +107,8 @@ export function DashboardSkeleton() {
         <SkeletonPulse className="h-9 w-32 rounded-xl" />
       </div>
 
-      <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-12 xl:col-span-5 space-y-5">
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 xl:col-span-5 flex flex-col gap-4">
           <WalletCardSkeleton />
           <div className="glass-card-elevated rounded-[20px] p-5 space-y-3">
             <SkeletonPulse className="h-4 w-36" />
@@ -124,7 +124,7 @@ export function DashboardSkeleton() {
           </div>
         </div>
 
-        <div className="col-span-12 xl:col-span-4 flex flex-col gap-5">
+        <div className="col-span-12 xl:col-span-4 flex flex-col gap-4">
           <div className="glass-card-elevated rounded-[20px] p-6 space-y-3">
             <SkeletonPulse className="h-4 w-32" />
             <SkeletonPulse className="h-24 rounded-xl" />
@@ -136,7 +136,7 @@ export function DashboardSkeleton() {
           </div>
         </div>
 
-        <div className="col-span-12 xl:col-span-3 flex flex-col gap-5">
+        <div className="col-span-12 xl:col-span-3 flex flex-col gap-4">
           <CreditCardSkeleton />
           <div className="glass-indigo rounded-[20px] p-6 space-y-3">
             <SkeletonPulse className="h-4 w-24" />
