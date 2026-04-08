@@ -220,10 +220,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden bg-muted">
-          <KycStatusBanner kycStatus={user.kycStatus} />
-          <div className="p-6">
-            {children}
+        <main className="flex-1 overflow-x-hidden bg-muted relative">
+          {/* ── Decorative colour orbs — give backdrop-filter something to blur ── */}
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+            {/* Violet — top-left */}
+            <div style={{
+              position: 'absolute', top: '-10%', left: '4%',
+              width: 560, height: 560,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(124,58,237,0.14) 40%, transparent 70%)',
+              filter: 'blur(80px)',
+            }} />
+            {/* Gold — top-right */}
+            <div style={{
+              position: 'absolute', top: '5%', right: '2%',
+              width: 420, height: 420,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.22) 0%, rgba(245,158,11,0.10) 45%, transparent 70%)',
+              filter: 'blur(72px)',
+            }} />
+            {/* Indigo — centre-right */}
+            <div style={{
+              position: 'absolute', top: '38%', right: '8%',
+              width: 380, height: 380,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, rgba(79,70,229,0.10) 50%, transparent 72%)',
+              filter: 'blur(70px)',
+            }} />
+            {/* Teal — bottom-left */}
+            <div style={{
+              position: 'absolute', bottom: '5%', left: '6%',
+              width: 440, height: 440,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(13,148,136,0.20) 0%, rgba(5,150,105,0.10) 48%, transparent 70%)',
+              filter: 'blur(75px)',
+            }} />
+            {/* Rose — bottom-right accent */}
+            <div style={{
+              position: 'absolute', bottom: '10%', right: '14%',
+              width: 300, height: 300,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(244,63,94,0.12) 0%, rgba(239,68,68,0.06) 55%, transparent 72%)',
+              filter: 'blur(64px)',
+            }} />
+          </div>
+
+          <div className="relative" style={{ zIndex: 1 }}>
+            <KycStatusBanner kycStatus={user.kycStatus} />
+            <div className="p-6">
+              {children}
+            </div>
           </div>
         </main>
         
