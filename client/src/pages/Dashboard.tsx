@@ -144,11 +144,18 @@ export default function Dashboard() {
   const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
 
   /* 3D tilt instances — one per major glass card */
-  const tiltHero        = useTilt(9);
-  const tiltWallet      = useTilt(7);
-  const tiltPriceLock   = useTilt(8);
-  const tiltDepositGold = useTilt(8);
-  const tiltReferral    = useTilt(7);
+  const tiltHero          = useTilt(9);
+  const tiltWallet        = useTilt(7);
+  const tiltPriceLock     = useTilt(8);
+  const tiltDepositGold   = useTilt(8);
+  const tiltReferral      = useTilt(7);
+  const tiltBNSL          = useTilt(7);
+  const tiltBNSLSummary   = useTilt(7);
+  const tiltTrade         = useTilt(7);
+  const tiltFinaBridge    = useTilt(6);
+  const tiltGoldWallets   = useTilt(6);
+  const tiltLocked        = useTilt(6);
+  const tiltGoldChart     = useTilt(5);
 
   const transactions = unifiedTx.map(tx => ({
     id: tx.id,
@@ -1068,16 +1075,25 @@ export default function Dashboard() {
             </div>
 
             {/* Cards row — BNSL (left) + FinaBridge Quick Trade (right) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5" style={{ perspective: 1200 }}>
 
               {/* ── BNSL card — Quick Join or Yield Summary ── */}
               {totals.activeBnslPlans === 0 ? (
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden h-full glass-teal card-3d-subtle" data-testid="card-quick-bnsl">
+                <motion.div
+                  ref={tiltBNSL.ref}
+                  variants={itemVariants}
+                  style={tiltBNSL.motionStyle}
+                  onMouseMove={tiltBNSL.onMouseMove}
+                  onMouseLeave={tiltBNSL.onMouseLeave}
+                  className="relative rounded-[20px] p-6 overflow-hidden h-full glass-teal"
+                  data-testid="card-quick-bnsl"
+                >
                   <div className="absolute inset-0 mesh-teal pointer-events-none" />
                   <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
                   <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(0,0)' }} />
                   {/* Top accent */}
                   <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
+                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(16,185,129,0.22) 55%, transparent 80%)', opacity: tiltBNSL.glare, zIndex: 25 }} />
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -1120,11 +1136,20 @@ export default function Dashboard() {
                 </motion.div>
               ) : (
                 <Link href="/bnsl">
-                  <motion.div variants={itemVariants} className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-teal card-3d-subtle" data-testid="card-bnsl-summary">
+                  <motion.div
+                    ref={tiltBNSLSummary.ref}
+                    variants={itemVariants}
+                    style={tiltBNSLSummary.motionStyle}
+                    onMouseMove={tiltBNSLSummary.onMouseMove}
+                    onMouseLeave={tiltBNSLSummary.onMouseLeave}
+                    className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-teal"
+                    data-testid="card-bnsl-summary"
+                  >
                     <div className="absolute inset-0 mesh-teal pointer-events-none" />
                     <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
                     {/* Top accent */}
                     <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
+                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(16,185,129,0.22) 55%, transparent 80%)', opacity: tiltBNSLSummary.glare, zIndex: 25 }} />
                     <div className="relative z-10 h-full flex flex-col">
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-[12px] text-teal-800 font-bold tracking-wide">BNSL Yield Plans</span>
@@ -1194,12 +1219,20 @@ export default function Dashboard() {
               )}
 
               {/* ── FinaBridge Quick Trade Card ── */}
-              <motion.div variants={itemVariants} data-testid="card-quick-trade" className="h-full">
-                <div className="relative rounded-[20px] p-5 overflow-hidden h-full glass-indigo card-3d-subtle">
+              <motion.div
+                ref={tiltTrade.ref}
+                variants={itemVariants}
+                style={tiltTrade.motionStyle}
+                onMouseMove={tiltTrade.onMouseMove}
+                onMouseLeave={tiltTrade.onMouseLeave}
+                data-testid="card-quick-trade"
+                className="relative rounded-[20px] p-5 overflow-hidden h-full glass-indigo"
+              >
                   <div className="absolute inset-0 mesh-indigo pointer-events-none" />
                   <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
                   {/* Top accent */}
                   <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6)' }} />
+                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(99,102,241,0.22) 55%, transparent 80%)', opacity: tiltTrade.glare, zIndex: 25 }} />
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1278,7 +1311,6 @@ export default function Dashboard() {
                       </Link>
                     </div>
                   </div>
-                </div>
               </motion.div>
 
             </div>
@@ -1286,7 +1318,16 @@ export default function Dashboard() {
             {/* FinaBridge Trade Stats — full-width below, only when active trades */}
             {finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
               <Link href="/finabridge">
-                <motion.div variants={itemVariants} className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group" style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)' }} data-testid="card-finabridge-summary">
+                <motion.div
+                  ref={tiltFinaBridge.ref}
+                  variants={itemVariants}
+                  style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)', ...tiltFinaBridge.motionStyle }}
+                  onMouseMove={tiltFinaBridge.onMouseMove}
+                  onMouseLeave={tiltFinaBridge.onMouseLeave}
+                  className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group"
+                  data-testid="card-finabridge-summary"
+                >
+                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.20) 55%, transparent 80%)', opacity: tiltFinaBridge.glare, zIndex: 25 }} />
                   <div className="absolute inset-0 holo-shimmer" />
                   <div className="relative z-10 flex items-center justify-between">
                     <div>
@@ -1410,7 +1451,7 @@ export default function Dashboard() {
           ];
 
           return (
-            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ perspective: 1200 }}>
               {/* Gold Wallets card — concentric ring chart */}
               {!allWalletZero && (() => {
                 const walletTotal = WALLET_ROWS.reduce((s, r) => s + r.grams, 0);
@@ -1429,10 +1470,16 @@ export default function Dashboard() {
                 });
                 return (
                   <motion.div
+                    ref={tiltGoldWallets.ref}
                     variants={itemVariants}
-                    className="glass-card-elevated rounded-[20px] p-5"
+                    style={tiltGoldWallets.motionStyle}
+                    onMouseMove={tiltGoldWallets.onMouseMove}
+                    onMouseLeave={tiltGoldWallets.onMouseLeave}
+                    className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
                     data-testid="card-gold-wallets"
                   >
+                    <div className="glass-shine-layer" />
+                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltGoldWallets.glare, zIndex: 25 }} />
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-[15px] font-bold text-gray-900">Gold Wallets</h3>
@@ -1548,10 +1595,16 @@ export default function Dashboard() {
                 });
                 return (
                   <motion.div
+                    ref={tiltLocked.ref}
                     variants={itemVariants}
-                    className="glass-card-elevated rounded-[20px] p-5"
+                    style={tiltLocked.motionStyle}
+                    onMouseMove={tiltLocked.onMouseMove}
+                    onMouseLeave={tiltLocked.onMouseLeave}
+                    className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
                     data-testid="card-locked-positions"
                   >
+                    <div className="glass-shine-layer" />
+                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltLocked.glare, zIndex: 25 }} />
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-[15px] font-bold text-gray-900">Locked Positions</h3>
@@ -1652,7 +1705,17 @@ export default function Dashboard() {
         })()}
 
         {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
-        <motion.div variants={itemVariants} className="glass-card-elevated rounded-[20px] p-5" data-testid="card-gold-price-chart">
+        <motion.div
+          ref={tiltGoldChart.ref}
+          variants={itemVariants}
+          style={tiltGoldChart.motionStyle}
+          onMouseMove={tiltGoldChart.onMouseMove}
+          onMouseLeave={tiltGoldChart.onMouseLeave}
+          className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
+          data-testid="card-gold-price-chart"
+        >
+          <div className="glass-shine-layer" />
+          <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(212,175,55,0.18) 55%, transparent 80%)', opacity: tiltGoldChart.glare, zIndex: 25 }} />
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
@@ -1713,7 +1776,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ perspective: 1200 }}>
 
           {/* Panel 1 — Recent Transactions */}
           <motion.div
