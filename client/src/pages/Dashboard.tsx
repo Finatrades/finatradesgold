@@ -101,6 +101,7 @@ export default function Dashboard() {
   const { data: fpgwLocksData } = useFpgwLocks(user?.id);
   const activeFpgwLocks = fpgwLocksData?.locks ?? [];
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  // usePendingItems is React Query backed; same query keys → shared cache, no duplicate fetch
   const { total: pendingTotal } = usePendingItems();
   const isMobile = useIsMobile();
   
