@@ -1142,12 +1142,13 @@ export function registerComplianceRoutes(
         const [
           liveGoldPrice,
           paidStorageFees,
+          billedStorageFeesInPeriod,
           paidBnslPayouts,
           scheduledBnslPayoutsInPeriod,
           completedTxns,
         ] = await Promise.all([
           getGoldPricePerGram().catch(() => 0),
-          // 4004 Revenue: Storage fees collected from users in the period
+          // 4004 Revenue: Storage fees collected from users in the period (Paid status)
           db
             .select()
             .from(storageFees)
@@ -1156,6 +1157,17 @@ export function registerComplianceRoutes(
                 eq(storageFees.status, 'Paid'),
                 gte(storageFees.paidAt, fromDate),
                 lte(storageFees.paidAt, toDate),
+              ),
+            ),
+          // 5001 Cost proxy: All storage fees billed in the period (any status) —
+          // fees billed to users approximate what the platform owes to Wingold custodian
+          db
+            .select()
+            .from(storageFees)
+            .where(
+              and(
+                gte(storageFees.billingPeriodStart, format(fromDate, 'yyyy-MM-dd')),
+                lte(storageFees.billingPeriodEnd, format(toDate, 'yyyy-MM-dd')),
               ),
             ),
           // 5003 Cost: BNSL payouts actually disbursed to users in the period
@@ -1224,8 +1236,16 @@ export function registerComplianceRoutes(
           return sum.plus(usd);
         }, new Decimal(0));
 
-        // 4001: Gold Trading Revenue — Deposit and Buy transactions represent
-        // the notional gold flow where platform earns the spread
+        // 4001: Gold Sale Revenue — Buy transactions are the platform's core revenue
+        // (the user pays USD/gold to acquire gold; this is the platform's gross sale revenue)
+        const goldBuyTxns = completedTxns.filter(t => t.type === 'Buy');
+        const goldBuyGold = goldBuyTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
+        const goldBuyUsd = goldBuyTxns.reduce((sum, t) => {
+          const price = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram) : liveGoldPrice;
+          return sum.plus(t.amountUsd ? new Decimal(t.amountUsd) : new Decimal(t.amountGold || '0').times(price));
+        }, new Decimal(0));
+
+        // Volume context: all Deposit/Buy inflow and Withdrawal/Sell outflow
         const goldTradingTxns = completedTxns.filter(t => t.type === 'Deposit' || t.type === 'Buy');
         const goldTradingGold = goldTradingTxns.reduce((sum, t) => sum.plus(t.amountGold || '0'), new Decimal(0));
         const goldTradingUsd = goldTradingTxns.reduce((sum, t) => {
@@ -1234,6 +1254,17 @@ export function registerComplianceRoutes(
         }, new Decimal(0));
 
         // ── COST LINES ───────────────────────────────────────────────────────────
+        // 5001: Storage Fees Paid to Wingold custodian — derived proxy from
+        // storage fees billed to users in the period (fees billed approximate custodian obligation)
+        const storageFeePaidCustodian = billedStorageFeesInPeriod.reduce(
+          (sum, f) => sum.plus(f.feeAmountUsd || '0'),
+          new Decimal(0),
+        );
+        const storageFeePaidCustodianGold = billedStorageFeesInPeriod.reduce(
+          (sum, f) => sum.plus(f.feeAmountGoldGrams || '0'),
+          new Decimal(0),
+        );
+
         // 5003: BNSL Payout Cost — actual payouts disbursed to users
         const bnslPayoutCost = paidBnslPayouts.reduce(
           (sum, p) => sum.plus(p.monetaryAmountUsd || '0'),
@@ -1254,11 +1285,10 @@ export function registerComplianceRoutes(
         }, new Decimal(0));
 
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Platform-earned revenue: storage fee income + BNSL margin (scheduled) + transfer/service fees
-        const totalRevenueUsd = storageFeeIncome.plus(bnslMarginIncome).plus(transferFeeUsd);
-        // Platform costs: BNSL payouts actually disbursed + storage fees paid to custodian
-        // Note: 5001 storage fees paid to custodian require external reconciliation (not stored in DB)
-        const totalCostUsd = bnslPayoutCost;  // storageFeesPaid not tracked in DB
+        // Revenue: gold sale (Buy spread) + BNSL margin + transfer fees + storage fee income
+        const totalRevenueUsd = goldBuyUsd.plus(bnslMarginIncome).plus(transferFeeUsd).plus(storageFeeIncome);
+        // Costs: storage fees paid to custodian (proxy) + BNSL payouts disbursed
+        const totalCostUsd = storageFeePaidCustodian.plus(bnslPayoutCost);
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
 
         // ── GL BREAKDOWN from all completed transactions ──────────────────────────
@@ -1314,6 +1344,14 @@ export function registerComplianceRoutes(
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
             // True platform P&L lines
             revenue: {
+              goldSaleRevenue: {
+                glCode: '4001',
+                accountName: 'Gold Sale Revenue',
+                description: 'Gross revenue from Buy transactions — platform sells gold to users at spot price',
+                count: goldBuyTxns.length,
+                totalUsd: goldBuyUsd.toFixed(2),
+                totalGoldGrams: goldBuyGold.toFixed(6),
+              },
               bnslMarginIncome: {
                 glCode: '4002',
                 accountName: 'BNSL Margin Income',
@@ -1343,11 +1381,12 @@ export function registerComplianceRoutes(
               storageFeePaidToCustodian: {
                 glCode: '5001',
                 accountName: 'Storage Fees Paid (Wingold Custodian)',
-                description: 'Custodian vault fees paid to Wingold — requires external invoice reconciliation (not stored in platform DB)',
-                count: 0,
-                totalUsd: '0.00',
-                totalGoldGrams: '0.000000',
-                dataGapNote: 'External custodian invoices are not recorded in the platform database. Reconcile from Wingold billing statements.',
+                description: 'Derived proxy: storage fees billed to users in period approximate custodian vault obligation (Wingold)',
+                count: billedStorageFeesInPeriod.length,
+                totalUsd: storageFeePaidCustodian.toFixed(2),
+                totalGoldGrams: storageFeePaidCustodianGold.toFixed(6),
+                derivedProxy: true,
+                proxyNote: 'Fees billed to users within period used as proxy for custodian obligation; reconcile against Wingold invoices for exact figures.',
               },
               bnslPayoutCost: {
                 glCode: '5003',
