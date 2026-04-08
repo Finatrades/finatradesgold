@@ -350,10 +350,10 @@ input[type="number"] {
 
 /* Glassmorphism Card — Base (defrosted glass on light bg) */
 .glass-card {
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(28px) saturate(180%) brightness(1.03);
   -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.03);
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     0 4px 24px rgba(124, 58, 237, 0.09),
     0 1px 0 rgba(255, 255, 255, 1) inset,
@@ -372,10 +372,10 @@ input[type="number"] {
 
 /* Glassmorphism — Elevated variant (defrosted) */
 .glass-card-elevated {
-  background: rgba(255, 255, 255, 0.44);
+  background: rgba(255, 255, 255, 0.24);
   backdrop-filter: blur(36px) saturate(190%) brightness(1.04);
   -webkit-backdrop-filter: blur(36px) saturate(190%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
     0 8px 40px rgba(124, 58, 237, 0.11),
     0 2px 0 rgba(255, 255, 255, 1) inset,
@@ -834,9 +834,9 @@ input[type="number"] {
 /* Hero / Wallet balance — defrosted violet glass */
 .glass-hero {
   background: linear-gradient(135deg,
-    rgba(255,255,255,0.46) 0%,
-    rgba(248,244,255,0.40) 40%,
-    rgba(243,240,255,0.44) 100%);
+    rgba(255,255,255,0.26) 0%,
+    rgba(248,244,255,0.20) 40%,
+    rgba(243,240,255,0.24) 100%);
   backdrop-filter: blur(44px) saturate(200%) brightness(1.03);
   -webkit-backdrop-filter: blur(44px) saturate(200%) brightness(1.03);
   border: 1px solid rgba(255,255,255,0.88);
@@ -860,9 +860,9 @@ input[type="number"] {
 /* Institutional indigo glass — referral, bridge (defrosted) */
 .glass-indigo {
   background: linear-gradient(135deg,
-    rgba(255,255,255,0.40) 0%,
-    rgba(238,242,255,0.34) 50%,
-    rgba(237,239,255,0.38) 100%);
+    rgba(255,255,255,0.20) 0%,
+    rgba(238,242,255,0.15) 50%,
+    rgba(237,239,255,0.18) 100%);
   backdrop-filter: blur(36px) saturate(185%) brightness(1.03);
   -webkit-backdrop-filter: blur(36px) saturate(185%) brightness(1.03);
   border: 1px solid rgba(255,255,255,0.84);
@@ -886,9 +886,9 @@ input[type="number"] {
 /* Institutional teal glass — BNSL, yield (defrosted) */
 .glass-teal {
   background: linear-gradient(135deg,
-    rgba(255,255,255,0.40) 0%,
-    rgba(240,253,250,0.34) 50%,
-    rgba(235,252,243,0.38) 100%);
+    rgba(255,255,255,0.20) 0%,
+    rgba(240,253,250,0.14) 50%,
+    rgba(235,252,243,0.18) 100%);
   backdrop-filter: blur(36px) saturate(185%) brightness(1.03);
   -webkit-backdrop-filter: blur(36px) saturate(185%) brightness(1.03);
   border: 1px solid rgba(255,255,255,0.84);
