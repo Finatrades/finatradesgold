@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 import { 
   transactions, wallets, users, auditLogs, withdrawalRequests, depositRequests,
   amlCases, amlScreeningLogs, userRiskProfiles, kycSubmissions, vaultOwnershipSummary,
-  storageFees, bnslPayouts, bnslWallets, finabridgeWallets
+  storageFees, bnslPayouts, bnslWallets, finabridgeWallets, bnslPlans
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, or, like } from "drizzle-orm";
 import { logAdminAction } from "./security-middleware";
@@ -234,7 +234,7 @@ export async function performSanctionsCheck(userId: string): Promise<SanctionsCh
   }
   
   // Also check country if user has one set
-  const userCountry = (user as any).country?.toUpperCase();
+  const userCountry = user.country?.toUpperCase();
   const highRiskCountries = ['IR', 'KP', 'SY', 'CU']; // Iran, North Korea, Syria, Cuba
   if (userCountry && highRiskCountries.includes(userCountry)) {
     matchDetails.push({
@@ -1143,10 +1143,11 @@ export function registerComplianceRoutes(
           liveGoldPrice,
           paidStorageFees,
           paidBnslPayouts,
+          scheduledBnslPayoutsInPeriod,
           completedTxns,
         ] = await Promise.all([
           getGoldPricePerGram().catch(() => 0),
-          // Storage fees collected from users in the period (platform revenue)
+          // 4004 Revenue: Storage fees collected from users in the period
           db
             .select()
             .from(storageFees)
@@ -1157,7 +1158,7 @@ export function registerComplianceRoutes(
                 lte(storageFees.paidAt, toDate),
               ),
             ),
-          // BNSL payouts made to users in the period (platform cost)
+          // 5003 Cost: BNSL payouts actually disbursed to users in the period
           db
             .select()
             .from(bnslPayouts)
@@ -1166,6 +1167,17 @@ export function registerComplianceRoutes(
                 eq(bnslPayouts.status, 'Paid'),
                 gte(bnslPayouts.paidAt, fromDate),
                 lte(bnslPayouts.paidAt, toDate),
+              ),
+            ),
+          // 4002 Revenue: BNSL scheduled payouts in period = accrued margin income
+          // (platform commits to paying these from its margin; scheduled date shows accrual timing)
+          db
+            .select()
+            .from(bnslPayouts)
+            .where(
+              and(
+                gte(bnslPayouts.scheduledDate, fromDate),
+                lte(bnslPayouts.scheduledDate, toDate),
               ),
             ),
           // All completed transactions in the period for GL-breakdown and volume context
@@ -1189,6 +1201,17 @@ export function registerComplianceRoutes(
         );
         const storageFeeIncomeGold = paidStorageFees.reduce(
           (sum, f) => sum.plus(f.feeAmountGoldGrams || '0'),
+          new Decimal(0),
+        );
+
+        // 4002: BNSL margin income — payouts scheduled in the period represent
+        // accrued platform margin committed to BNSL plan holders
+        const bnslMarginIncome = scheduledBnslPayoutsInPeriod.reduce(
+          (sum, p) => sum.plus(p.monetaryAmountUsd || '0'),
+          new Decimal(0),
+        );
+        const bnslMarginIncomeGold = scheduledBnslPayoutsInPeriod.reduce(
+          (sum, p) => sum.plus(p.gramsCredited || '0'),
           new Decimal(0),
         );
 
@@ -1231,11 +1254,11 @@ export function registerComplianceRoutes(
         }, new Decimal(0));
 
         // ── TOTALS ───────────────────────────────────────────────────────────────
-        // Platform-earned revenue: storage fees + BNSL plans spread + transfer fees
-        // Note: gold trading revenue is shown as gross volume for context; net spread
-        // is implicitly embedded in the difference between inflow and outflow grams.
-        const totalRevenueUsd = storageFeeIncome.plus(transferFeeUsd);
-        const totalCostUsd = bnslPayoutCost;
+        // Platform-earned revenue: storage fee income + BNSL margin (scheduled) + transfer/service fees
+        const totalRevenueUsd = storageFeeIncome.plus(bnslMarginIncome).plus(transferFeeUsd);
+        // Platform costs: BNSL payouts actually disbursed + storage fees paid to custodian
+        // Note: 5001 storage fees paid to custodian require external reconciliation (not stored in DB)
+        const totalCostUsd = bnslPayoutCost;  // storageFeesPaid not tracked in DB
         const netPnlUsd = totalRevenueUsd.minus(totalCostUsd);
 
         // ── GL BREAKDOWN from all completed transactions ──────────────────────────
@@ -1291,13 +1314,13 @@ export function registerComplianceRoutes(
             liveGoldPriceUsdPerGram: liveGoldPrice > 0 ? liveGoldPrice.toFixed(2) : null,
             // True platform P&L lines
             revenue: {
-              storageFeeIncome: {
-                glCode: '4004',
-                accountName: 'Storage Fee Income (Collected)',
-                description: 'Storage fees charged to users and paid in the period',
-                count: paidStorageFees.length,
-                totalUsd: storageFeeIncome.toFixed(2),
-                totalGoldGrams: storageFeeIncomeGold.toFixed(6),
+              bnslMarginIncome: {
+                glCode: '4002',
+                accountName: 'BNSL Margin Income',
+                description: 'Payouts scheduled to BNSL holders in period — reflects accrued platform margin commitment',
+                count: scheduledBnslPayoutsInPeriod.length,
+                totalUsd: bnslMarginIncome.toFixed(2),
+                totalGoldGrams: bnslMarginIncomeGold.toFixed(6),
               },
               transferFeeIncome: {
                 glCode: '4003',
@@ -1307,8 +1330,25 @@ export function registerComplianceRoutes(
                 totalUsd: transferFeeUsd.toFixed(2),
                 totalGoldGrams: transferFeeGold.toFixed(6),
               },
+              storageFeeIncome: {
+                glCode: '4004',
+                accountName: 'Storage Fee Income (Collected)',
+                description: 'Storage fees charged to users and paid in the period',
+                count: paidStorageFees.length,
+                totalUsd: storageFeeIncome.toFixed(2),
+                totalGoldGrams: storageFeeIncomeGold.toFixed(6),
+              },
             },
             costs: {
+              storageFeePaidToCustodian: {
+                glCode: '5001',
+                accountName: 'Storage Fees Paid (Wingold Custodian)',
+                description: 'Custodian vault fees paid to Wingold — requires external invoice reconciliation (not stored in platform DB)',
+                count: 0,
+                totalUsd: '0.00',
+                totalGoldGrams: '0.000000',
+                dataGapNote: 'External custodian invoices are not recorded in the platform database. Reconcile from Wingold billing statements.',
+              },
               bnslPayoutCost: {
                 glCode: '5003',
                 accountName: 'BNSL Payout Cost',
@@ -1443,19 +1483,20 @@ export function registerComplianceRoutes(
               accountType: user.accountType,
               role: user.role,
               isEmailVerified: user.isEmailVerified,
-              companyName: (user as any).companyName ?? null,
-              registrationNumber: (user as any).registrationNumber ?? null,
+              companyName: user.companyName ?? null,
+              registrationNumber: user.registrationNumber ?? null,
               memberSince: user.createdAt,
             },
             kyc: kyc
               ? {
                   status: kyc.status,
+                  tier: kyc.tier,
                   fullName: kyc.fullName ?? null,
                   dateOfBirth: kyc.dateOfBirth ?? null,
                   nationality: kyc.nationality ?? null,
                   address: kyc.address ?? null,
                   submittedAt: kyc.createdAt,
-                  reviewedAt: (kyc as any).reviewedAt ?? null,
+                  reviewedAt: kyc.reviewedAt ?? null,
                 }
               : null,
             riskProfile: riskProfile
@@ -1543,7 +1584,7 @@ export function registerComplianceRoutes(
             aml: {
               totalCases: amlCasesList.length,
               openCases: openAmlCases.length,
-              cases: amlCasesList.slice(0, 10).map(c => ({
+              cases: openAmlCases.slice(0, 10).map(c => ({
                 id: c.id,
                 caseNumber: c.caseNumber,
                 status: c.status,

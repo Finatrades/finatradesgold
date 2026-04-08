@@ -113,6 +113,31 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
         );
       }
 
+      // Compute gold market movement % for the month using first/last transaction prices
+      const pricesInMonth = monthTxns
+        .filter(t => {
+          const p = t.goldPriceUsdPerGram ? parseFloat(t.goldPriceUsdPerGram.toString()) : 0;
+          return p > 0;
+        })
+        .sort((a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime());
+
+      let goldPriceChangePct: string = 'N/A';
+      if (pricesInMonth.length >= 2) {
+        const openPrice = parseFloat(pricesInMonth[0].goldPriceUsdPerGram!.toString());
+        const closePrice = parseFloat(pricesInMonth[pricesInMonth.length - 1].goldPriceUsdPerGram!.toString());
+        if (openPrice > 0) {
+          const changePct = ((closePrice - openPrice) / openPrice) * 100;
+          goldPriceChangePct = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+        }
+      } else if (pricesInMonth.length === 1 && liveGoldPrice !== null) {
+        // Only one price point — compare start-of-month price vs live price
+        const openPrice = parseFloat(pricesInMonth[0].goldPriceUsdPerGram!.toString());
+        if (openPrice > 0) {
+          const changePct = ((liveGoldPrice - openPrice) / openPrice) * 100;
+          goldPriceChangePct = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+        }
+      }
+
       const openingUsd = goldPrice !== null ? (openingGold * goldPrice).toFixed(2) : 'N/A';
       const closingUsd = goldPrice !== null ? (closingGold * goldPrice).toFixed(2) : 'N/A';
       const netChangeGold = netChange >= 0 ? `+${netChange.toFixed(4)}` : netChange.toFixed(4);
@@ -137,6 +162,7 @@ export async function runMonthlyStatementJob(storage: IStorage): Promise<void> {
         net_change_gold: netChangeGold,
         current_gold_price_usd: currentGoldPriceUsd,
         portfolio_value_usd: portfolioValueUsd,
+        gold_price_change_pct: goldPriceChangePct,
       }, { userId: user.id }).catch(e => console.error(`[Monthly Statement] Email failed for ${user.email}:`, e));
       sent++;
     } catch (e) {

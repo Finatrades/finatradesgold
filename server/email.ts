@@ -3527,6 +3527,10 @@ export const DEFAULT_EMAIL_TEMPLATES = [
             <td style="padding: 9px 0; color: #78350f;">Live Gold Price</td>
             <td style="padding: 9px 0; text-align: right; color: #92400e; font-weight: 600;">${`$`}{{current_gold_price_usd}}/g</td>
           </tr>
+          <tr style="border-bottom: 1px solid #fde68a;">
+            <td style="padding: 9px 0; color: #78350f;">Gold Market This Month</td>
+            <td style="padding: 9px 0; text-align: right; font-weight: 600; color: #92400e;">{{gold_price_change_pct}}</td>
+          </tr>
           <tr>
             <td style="padding: 9px 0; color: #78350f;">Current Portfolio Value</td>
             <td style="padding: 9px 0; text-align: right; font-weight: 700; color: #92400e;">${`$`}{{portfolio_value_usd}}</td>
@@ -3546,6 +3550,7 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'total_transactions', description: 'Total transactions in the month' },
       { name: 'net_change_gold', description: 'Net change in gold grams' },
       { name: 'current_gold_price_usd', description: 'Live gold price per gram at statement delivery (USD)' },
+      { name: 'gold_price_change_pct', description: 'Gold market price change % for the month (first vs last transaction price)' },
       { name: 'portfolio_value_usd', description: 'Current portfolio value at live gold price (USD)' },
     ],
     status: 'published' as const,

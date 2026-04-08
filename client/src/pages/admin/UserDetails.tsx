@@ -16,6 +16,44 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
+interface BriefTransaction {
+  id: string;
+  type: string;
+  status: string;
+  amountGold: string | null;
+  amountUsd: string | null;
+  goldPriceUsdPerGram: string | null;
+  sourceModule: string | null;
+  createdAt: string;
+}
+
+interface BriefAmlCase {
+  id: string;
+  caseNumber: string;
+  status: string;
+  riskLevel: string | null;
+  caseType: string | null;
+  createdAt: string;
+}
+
+interface AdminTransaction {
+  id: string;
+  type: string;
+  status: string;
+  amountGold: string | null;
+  amountUsd: string | null;
+  sourceModule: string | null;
+  createdAt: string;
+}
+
+interface AdminAuditLog {
+  id: string;
+  actionType: string;
+  details: string | null;
+  actorRole: string | null;
+  createdAt: string;
+}
+
 export default function UserDetails() {
   const [, params] = useRoute("/admin/users/:id");
   const userId = params?.id;
@@ -378,7 +416,7 @@ export default function UserDetails() {
                           </tr>
                         </thead>
                         <tbody>
-                          {transactions.map((tx: any) => (
+                          {transactions.map((tx: AdminTransaction) => (
                             <tr key={tx.id} className="border-b hover:bg-gray-50">
                               <td className="px-4 py-3">
                                 <Badge variant="outline">{tx.type}</Badge>
@@ -586,7 +624,7 @@ export default function UserDetails() {
                     <p className="text-center text-gray-500 py-8">No activity logs found.</p>
                   ) : (
                     <div className="space-y-4">
-                      {auditLogs.map((log: any, i: number) => (
+                      {auditLogs.map((log: AdminAuditLog, i: number) => (
                         <div key={log.id || i} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
                           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                             <Activity className="w-5 h-5" />
@@ -780,7 +818,7 @@ export default function UserDetails() {
                               {brief.aml.openCases}
                             </Badge>
                           </div>
-                          {brief.aml.cases.slice(0, 3).map((c: any) => (
+                          {brief.aml.cases.slice(0, 3).map((c: BriefAmlCase) => (
                             <div key={c.id} className="text-xs text-gray-500 bg-gray-50 rounded p-2">
                               <span className="font-mono">{c.caseNumber}</span> —{' '}
                               <Badge variant="outline" className="text-xs">{c.status}</Badge>{' '}
@@ -835,7 +873,7 @@ export default function UserDetails() {
                               </tr>
                             </thead>
                             <tbody>
-                              {brief.recentActivity.transactions.map((tx: any) => (
+                              {brief.recentActivity.transactions.map((tx: BriefTransaction) => (
                                 <tr key={tx.id} className="border-t hover:bg-gray-50" data-testid={`brief-tx-row-${tx.id}`}>
                                   <td className="px-3 py-2">
                                     <Badge variant="outline" className="text-xs">{tx.type}</Badge>
@@ -900,6 +938,12 @@ export default function UserDetails() {
                           </div>
                           {brief.kyc && (
                             <>
+                              <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-sm text-gray-500">KYC Tier</span>
+                                <Badge variant="outline" data-testid="brief-kyc-tier" className="text-xs capitalize">
+                                  {brief.kyc.tier?.replace(/_/g, ' ') || 'N/A'}
+                                </Badge>
+                              </div>
                               <div className="flex justify-between py-1 border-b border-gray-50">
                                 <span className="text-sm text-gray-500">KYC Full Name</span>
                                 <span className="text-sm font-medium">{brief.kyc.fullName || 'N/A'}</span>
