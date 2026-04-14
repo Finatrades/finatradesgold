@@ -12,3 +12,9 @@ id = "10MU4T3_-hNnWBsy99n6B"
 uri = "file://FinaBridge_OptionD_Chairman_Brief.pdf"
 type = "pdf"
 title = "FinaBridge Option D — Chairman Briefing (v2 — Full HTML Render)"
+
+[[outputs]]
+id = "AurPg2hqaYYvOgDVy8n4l"
+uri = "file://email-template-catalog.pdf"
+type = "pdf"
+title = "FinaTrades Email Template Catalog (77 Templates)"
