@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
+import { AuroraBackground } from '@/components/ui/aurora-background';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
@@ -90,8 +91,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-muted text-foreground font-['Inter',sans-serif] selection:bg-primary selection:text-primary-foreground relative">
+    <div className="min-h-screen bg-background text-foreground font-['Inter',sans-serif] selection:bg-primary selection:text-primary-foreground relative isolate">
       
+      <AuroraBackground />
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} collapsed={sidebarCollapsed} setCollapsed={handleSetCollapsed} />
 
       <div className={`du-stage ${sidebarCollapsed ? 'lg:ml-[100px]' : 'lg:ml-[304px]'} min-h-screen flex flex-col transition-all duration-300`}>
