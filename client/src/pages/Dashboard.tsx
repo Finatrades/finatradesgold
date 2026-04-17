@@ -386,7 +386,7 @@ export default function Dashboard() {
     if (t.includes('card')) {
       return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center"><CreditCard className="w-4 h-4 text-purple-600" /></div>;
     }
-    return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-gray-500" /></div>;
+    return <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><ArrowUpRight className="w-4 h-4 text-muted-foreground" /></div>;
   };
 
   const getStatusBadge = (status: string) => {
@@ -403,7 +403,7 @@ export default function Dashboard() {
     if (s === 'failed' || s === 'rejected') {
       return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed</span>;
     }
-    return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-100"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
+    return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted/50 text-muted-foreground border border-border/60"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
   };
 
   return (
@@ -444,19 +444,19 @@ export default function Dashboard() {
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
             <h1 className="text-[30px] font-bold" style={{ letterSpacing: '-0.025em', lineHeight: '1.15' }} data-testid="text-welcome">
-              <span className="text-gray-800">{getGreeting()}, </span>
+              <span className="text-foreground">{getGreeting()}, </span>
               <span className="gradient-text-purple font-extrabold">{userName}</span>
             </h1>
-            <p className="text-gray-500 text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
+            <p className="text-muted-foreground text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
           </div>
           <motion.div
             whileHover={{ scale: 1.03 }}
-            className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-200/60 shadow-sm cursor-default"
+            className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-border/60 shadow-sm cursor-default"
           >
-            <span className="text-[12px] text-gray-400 uppercase tracking-widest font-bold">ID</span>
-            <span className="text-sm font-bold text-gray-800 font-mono tracking-wide">{finatradesId}</span>
+            <span className="text-[12px] text-muted-foreground/70 uppercase tracking-widest font-bold">ID</span>
+            <span className="text-sm font-bold text-foreground font-mono tracking-wide">{finatradesId}</span>
             <button onClick={copyFinatradesId} className="p-1.5 hover:bg-purple-50 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
-              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground/70" />}
             </button>
           </motion.div>
         </motion.section>
@@ -467,8 +467,8 @@ export default function Dashboard() {
             <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
               <Zap className="w-3 h-3 text-purple-600" />
             </div>
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Quick Actions</span>
-            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Quick Actions</span>
+            <div className="flex-1 h-px bg-muted" />
           </div>
 
           {/* Grouped pill rows */}
@@ -491,19 +491,19 @@ export default function Dashboard() {
             </div>
 
             {/* ── Transfer group (Withdraw / Send / Request) ── */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-gray-50 border border-gray-100">
+            <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border/60">
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
                 data-testid="button-withdraw-gold">
                 <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw
               </motion.button>
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
                 data-testid="button-send-gold">
                 <Send className="w-3.5 h-3.5 text-blue-500" /> Send
               </motion.button>
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-gray-200 bg-white text-gray-700 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
                 data-testid="button-request-gold">
                 <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request
               </motion.button>
@@ -540,8 +540,8 @@ export default function Dashboard() {
           <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
             <Sparkles className="w-3 h-3 text-amber-600" />
           </div>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Portfolio Overview</span>
-          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Portfolio Overview</span>
+          <div className="flex-1 h-px bg-muted" />
         </motion.div>
 
         <motion.div layout className="grid grid-cols-12 gap-4">
@@ -578,9 +578,9 @@ export default function Dashboard() {
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.18)' }}>
                         <Sparkles className="w-4 h-4 text-purple-600" />
                       </div>
-                      <span className="text-[13px] text-gray-500 font-semibold tracking-wide">Gold Balance</span>
+                      <span className="text-[13px] text-muted-foreground font-semibold tracking-wide">Gold Balance</span>
                       <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-purple-50 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
-                        {balanceVisible ? <Eye className="w-4 h-4 text-gray-400" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
+                        {balanceVisible ? <Eye className="w-4 h-4 text-muted-foreground/70" /> : <EyeOff className="w-4 h-4 text-muted-foreground/70" />}
                       </button>
                     </div>
                     {/* Gold grams — primary hero number */}
@@ -600,7 +600,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
                         <span className="text-purple-700 text-[11px] font-bold num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</span>
                       </div>
-                      <span className="text-gray-400 text-[11px] font-medium">wallet value</span>
+                      <span className="text-muted-foreground/70 text-[11px] font-medium">wallet value</span>
                     </div>
                     {walletGoldValue === 0 && (
                       <motion.button
@@ -693,8 +693,8 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Currency conversion strip ── */}
-                <div className="mt-4 pt-4 border-t border-white/30">
-                  <p className="text-[10px] font-bold text-gray-400/70 uppercase tracking-widest mb-2.5">Balance in currencies</p>
+                <div className="mt-4 pt-4 border-t border-border/40">
+                  <p className="text-[10px] font-bold text-muted-foreground/70/70 uppercase tracking-widest mb-2.5">Balance in currencies</p>
                   <div className="grid grid-cols-3 gap-2">
                     {/* USD */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }} data-testid="wallet-usd">
@@ -757,8 +757,8 @@ export default function Dashboard() {
                   <Lock className="w-4 h-4 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold text-gray-900">Gold Price Lock</h3>
-                  <p className="text-[12px] text-gray-400">Protect your buying rate</p>
+                  <h3 className="text-[13px] font-bold text-foreground">Gold Price Lock</h3>
+                  <p className="text-[12px] text-muted-foreground/70">Protect your buying rate</p>
                 </div>
               </div>
               {activeFpgwLocks.length > 0 ? (
@@ -777,17 +777,17 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 mb-3">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60 mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-gray-300" />
-                    <span className="text-[11px] text-gray-500 font-medium">No active lock</span>
+                    <span className="text-[11px] text-muted-foreground font-medium">No active lock</span>
                   </div>
-                  <span className="text-[12px] text-gray-400">Lock price for 24–72h</span>
+                  <span className="text-[12px] text-muted-foreground/70">Lock price for 24–72h</span>
                 </div>
               )}
-              <div className="flex items-center justify-between text-[12px] text-gray-500 mb-3 font-medium">
+              <div className="flex items-center justify-between text-[12px] text-muted-foreground mb-3 font-medium">
                 <span>Current rate</span>
-                <span className="font-bold text-gray-800 num-metric">${formatNumber(goldPrice, 2)}/g</span>
+                <span className="font-bold text-foreground num-metric">${formatNumber(goldPrice, 2)}/g</span>
               </div>
               <motion.button
                 whileHover={{ scale: 1.02, y: -1 }}
@@ -826,8 +826,8 @@ export default function Dashboard() {
                       <Vault className="w-4 h-4 text-amber-700" />
                     </div>
                     <div>
-                      <h3 className="text-[13px] font-bold text-gray-900">Deposit Physical Gold</h3>
-                      <p className="text-[12px] text-gray-400">Submit physical gold to vault</p>
+                      <h3 className="text-[13px] font-bold text-foreground">Deposit Physical Gold</h3>
+                      <p className="text-[12px] text-muted-foreground/70">Submit physical gold to vault</p>
                     </div>
                   </div>
                   <Link href="/physical-gold-deposit">
@@ -856,7 +856,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Description */}
-                <p className="text-[12px] text-gray-500 mb-4 leading-relaxed">
+                <p className="text-[12px] text-muted-foreground mb-4 leading-relaxed">
                   Deposit physical gold bars, coins, or raw gold into our secure vault. Receive digital gold credits upon verification.
                 </p>
 
@@ -983,8 +983,8 @@ export default function Dashboard() {
                       <Gift className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-[12px] font-bold text-gray-800">Refer & Earn</p>
-                      <p className="text-[11px] text-gray-400 font-medium">Invite friends, earn rewards</p>
+                      <p className="text-[12px] font-bold text-foreground">Refer & Earn</p>
+                      <p className="text-[11px] text-muted-foreground/70 font-medium">Invite friends, earn rewards</p>
                     </div>
                   </div>
                   <Link href="/referrals">
@@ -997,7 +997,7 @@ export default function Dashboard() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 min-w-0 rounded-xl px-3 py-2.5" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.14)' }}>
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">Your referral code</p>
+                        <p className="text-[11px] text-muted-foreground/70 font-medium mb-0.5">Your referral code</p>
                         <p className="text-[13px] font-extrabold text-indigo-800 tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
                       </div>
                       <button
@@ -1018,14 +1018,14 @@ export default function Dashboard() {
                       <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.10)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
                           <Users className="w-3 h-3 text-indigo-500" />
-                          <p className="text-[11px] text-gray-400 font-medium">Referred</p>
+                          <p className="text-[11px] text-muted-foreground/70 font-medium">Referred</p>
                         </div>
                         <p className="text-[16px] font-extrabold text-indigo-800">{referralData.stats?.totalReferrals ?? 0}</p>
                       </div>
                       <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.12)' }}>
                         <div className="flex items-center gap-1 mb-0.5 justify-center">
                           <TrendingUp className="w-3 h-3 text-emerald-600" />
-                          <p className="text-[11px] text-gray-400 font-medium">Earned</p>
+                          <p className="text-[11px] text-muted-foreground/70 font-medium">Earned</p>
                         </div>
                         <p className="text-[16px] font-extrabold text-emerald-700">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
                       </div>
@@ -1033,7 +1033,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="text-center py-2">
-                    <p className="text-[11px] text-gray-400">No referral code yet</p>
+                    <p className="text-[11px] text-muted-foreground/70">No referral code yet</p>
                     <Link href="/referrals">
                       <button className="mt-2 px-4 py-1.5 rounded-xl text-white text-[11px] font-bold transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                         Get your code
@@ -1056,9 +1056,9 @@ export default function Dashboard() {
                 <div className="w-6 h-6 rounded-lg bg-blue-600/10 border border-blue-200 flex items-center justify-center">
                   <Landmark className="w-3.5 h-3.5 text-blue-600" />
                 </div>
-                <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">Business Modules</span>
+                <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">Business Modules</span>
               </div>
-              <div className="flex-1 h-px bg-gray-100" />
+              <div className="flex-1 h-px bg-muted" />
             </div>
 
             {/* Cards row — BNSL (left) + FinaBridge Quick Trade (right) */}
@@ -1088,9 +1088,9 @@ export default function Dashboard() {
                           <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(13,148,136,0.14), rgba(16,185,129,0.08))', border: '1px solid rgba(13,148,136,0.22)' }}>
                             <Zap className="w-3.5 h-3.5 text-teal-600" />
                           </div>
-                          <p className="text-[13px] font-extrabold text-gray-800">Gold Yield Plan</p>
+                          <p className="text-[13px] font-extrabold text-foreground">Gold Yield Plan</p>
                         </div>
-                        <p className="text-[12px] text-gray-500 font-medium">Earn passive income on your gold</p>
+                        <p className="text-[12px] text-muted-foreground font-medium">Earn passive income on your gold</p>
                       </div>
                       <div className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
                         <span className="text-[11px] font-extrabold text-amber-700">Up to 8%</span>
@@ -1104,7 +1104,7 @@ export default function Dashboard() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <span className="text-teal-500 text-[12px]">{item.icon}</span>
-                          <span className="text-[11px] text-gray-600 font-medium">{item.text}</span>
+                          <span className="text-[11px] text-muted-foreground font-medium">{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -1156,13 +1156,13 @@ export default function Dashboard() {
                           </svg>
                           <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
                             <span className="text-[13px] font-extrabold text-teal-800 leading-none">{Math.round(bnslPlanProgress)}%</span>
-                            <span className="text-[11px] text-gray-400 font-medium leading-none mt-0.5">complete</span>
+                            <span className="text-[11px] text-muted-foreground/70 font-medium leading-none mt-0.5">complete</span>
                           </div>
                         </div>
                         <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
                           <div>
                             <span className="label-caps">Locked Gold</span>
-                            <p className="text-[15px] font-extrabold text-gray-800 leading-tight num-metric mt-0.5">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
+                            <p className="text-[15px] font-extrabold text-foreground leading-tight num-metric mt-0.5">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
                           </div>
                           <div>
                             <span className="label-caps">Total Earned</span>
@@ -1176,13 +1176,13 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <span className="label-caps">Next Payout</span>
-                            <p className="text-[13px] font-bold text-gray-800 leading-tight num-metric mt-0.5">{bnslDaysToNextPayout}d</p>
+                            <p className="text-[13px] font-bold text-foreground leading-tight num-metric mt-0.5">{bnslDaysToNextPayout}d</p>
                           </div>
                         </div>
                       </div>
                       <div className="mb-3 flex-1">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[12px] text-gray-500 font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
+                          <span className="text-[12px] text-muted-foreground font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
                           <span className="text-[12px] text-amber-700 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
                         </div>
                         <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.12)' }}>
@@ -1194,7 +1194,7 @@ export default function Dashboard() {
                             transition={{ duration: 1, ease: 'easeOut' }}
                           />
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
+                        <p className="text-[11px] text-muted-foreground/70 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
                       </div>
                       <div className="flex items-center gap-1.5 text-teal-600 group-hover:text-teal-800 transition-colors">
                         <span className="text-[11px] font-semibold">View plans</span>
@@ -1227,14 +1227,14 @@ export default function Dashboard() {
                           <ArrowLeftRight className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-gray-800 font-extrabold text-[14px] leading-tight">Trade Finance</h3>
+                          <h3 className="text-foreground font-extrabold text-[14px] leading-tight">Trade Finance</h3>
                           <p className="text-blue-500 text-[12px] font-medium">FinaBridge Platform</p>
                         </div>
                       </div>
                       {finaBridge.activeCases > 0 && (
                         <div className="text-right">
                           <span className="text-[22px] font-extrabold text-blue-700 leading-none">{finaBridge.activeCases}</span>
-                          <p className="text-[12px] text-gray-400 leading-tight">active trades</p>
+                          <p className="text-[12px] text-muted-foreground/70 leading-tight">active trades</p>
                         </div>
                       )}
                     </div>
@@ -1245,7 +1245,7 @@ export default function Dashboard() {
                           'Global buyer-seller matching network',
                           'Secure gold escrow & deal room',
                         ].map(txt => (
-                          <li key={txt} className="flex items-center gap-2 text-[11px] text-gray-600">
+                          <li key={txt} className="flex items-center gap-2 text-[11px] text-muted-foreground">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                             {txt}
                           </li>
@@ -1254,11 +1254,11 @@ export default function Dashboard() {
                     ) : (
                       <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
                         <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[12px] text-gray-400 font-medium">Volume</p>
+                          <p className="text-[12px] text-muted-foreground/70 font-medium">Volume</p>
                           <p className="text-[14px] font-extrabold text-blue-800">${formatNumber(finaBridge.tradeVolume)}</p>
                         </div>
                         <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[12px] text-gray-400 font-medium">Gold Locked</p>
+                          <p className="text-[12px] text-muted-foreground/70 font-medium">Gold Locked</p>
                           <p className="text-[14px] font-extrabold text-blue-800">{formatNumber(finaBridge.goldGrams)}g</p>
                         </div>
                       </div>
@@ -1353,8 +1353,8 @@ export default function Dashboard() {
           <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
             <Vault className="w-3 h-3 text-purple-600" />
           </div>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Vault Distribution</span>
-          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Vault Distribution</span>
+          <div className="flex-1 h-px bg-muted" />
         </motion.div>
 
         {/* ═══ WALLET BREAKDOWN CARDS (2-panel) ═══ */}
@@ -1478,11 +1478,11 @@ export default function Dashboard() {
                     <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltGoldWallets.glare, zIndex: 25 }} />
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-[15px] font-bold text-gray-900">Gold Wallets</h3>
-                        <p className="text-[11px] text-gray-400 mt-0.5">Breakdown across wallet types</p>
+                        <h3 className="text-[15px] font-bold text-foreground">Gold Wallets</h3>
+                        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Breakdown across wallet types</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(walletTotal, 3)}g` : hiddenValue}</span>
+                        <span className="text-[13px] font-extrabold text-foreground">{showBalance ? `${formatNumber(walletTotal, 3)}g` : hiddenValue}</span>
                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
                           <Vault className="w-4 h-4 text-purple-600" />
                         </div>
@@ -1541,12 +1541,12 @@ export default function Dashboard() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[12px] font-semibold text-gray-700">{row.label}</span>
-                                <span className="text-[12px] font-bold text-gray-900">
+                                <span className="text-[12px] font-semibold text-foreground/85">{row.label}</span>
+                                <span className="text-[12px] font-bold text-foreground">
                                   {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
                                 </span>
                               </div>
-                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                 <motion.div
                                   className="h-full rounded-full"
                                   style={{ background: row.color }}
@@ -1556,13 +1556,13 @@ export default function Dashboard() {
                                 />
                               </div>
                               {row.sublabels.length > 0 && (
-                                <p className="text-[12px] text-gray-400 mt-0.5">{row.sublabels.join(' · ')}</p>
+                                <p className="text-[12px] text-muted-foreground/70 mt-0.5">{row.sublabels.join(' · ')}</p>
                               )}
                               {row.extra && (
                                 <p className="text-[12px] font-medium mt-0.5" style={{ color: row.color }}>{row.extra}</p>
                               )}
                             </div>
-                            <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
+                            <span className="text-[11px] text-muted-foreground/70 font-semibold w-10 text-right flex-shrink-0">
                               {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
                             </span>
                           </div>
@@ -1603,11 +1603,11 @@ export default function Dashboard() {
                     <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltLocked.glare, zIndex: 25 }} />
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-[15px] font-bold text-gray-900">Locked Positions</h3>
-                        <p className="text-[11px] text-gray-400 mt-0.5">Gold locked in plans &amp; escrow</p>
+                        <h3 className="text-[15px] font-bold text-foreground">Locked Positions</h3>
+                        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Gold locked in plans &amp; escrow</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-extrabold text-gray-900">{showBalance ? `${formatNumber(lockedTotal, 3)}g` : hiddenValue}</span>
+                        <span className="text-[13px] font-extrabold text-foreground">{showBalance ? `${formatNumber(lockedTotal, 3)}g` : hiddenValue}</span>
                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 flex items-center justify-center">
                           <Lock className="w-4 h-4 text-cyan-600" />
                         </div>
@@ -1666,12 +1666,12 @@ export default function Dashboard() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[12px] font-semibold text-gray-700">{row.label}</span>
-                                <span className="text-[12px] font-bold text-gray-900">
+                                <span className="text-[12px] font-semibold text-foreground/85">{row.label}</span>
+                                <span className="text-[12px] font-bold text-foreground">
                                   {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
                                 </span>
                               </div>
-                              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                 <motion.div
                                   className="h-full rounded-full"
                                   style={{ background: row.color }}
@@ -1681,12 +1681,12 @@ export default function Dashboard() {
                                 />
                               </div>
                               {!isZero && (
-                                <p className="text-[12px] text-gray-400 mt-0.5">
+                                <p className="text-[12px] text-muted-foreground/70 mt-0.5">
                                   {showBalance ? `$${formatNumber(row.usd)}` : ''}
                                 </p>
                               )}
                             </div>
-                            <span className="text-[11px] text-gray-400 font-semibold w-10 text-right flex-shrink-0">
+                            <span className="text-[11px] text-muted-foreground/70 font-semibold w-10 text-right flex-shrink-0">
                               {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
                             </span>
                           </div>
@@ -1705,8 +1705,8 @@ export default function Dashboard() {
           <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
             <TrendingUp className="w-3 h-3 text-amber-600" />
           </div>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Market Analytics</span>
-          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Market Analytics</span>
+          <div className="flex-1 h-px bg-muted" />
         </motion.div>
 
         {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
@@ -1723,20 +1723,20 @@ export default function Dashboard() {
           <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(212,175,55,0.18) 55%, transparent 80%)', opacity: tiltGoldChart.glare, zIndex: 25 }} />
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-[15px] font-bold text-gray-900">Gold Price Trend</h3>
+              <h3 className="text-[15px] font-bold text-foreground">Gold Price Trend</h3>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                 </span>
-                <p className="text-[11px] text-gray-400">XAU/USD · Per gram · Live</p>
+                <p className="text-[11px] text-muted-foreground/70">XAU/USD · Per gram · Live</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-0.5 rounded-xl p-0.5" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.14)' }}>
                 {(['7D', '30D', '90D'] as const).map(p => (
                   <button key={p} onClick={() => setChartPeriod(p)}
-                    className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${chartPeriod === p ? 'text-white shadow-sm' : 'text-gray-400 hover:text-purple-600'}`}
+                    className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${chartPeriod === p ? 'text-white shadow-sm' : 'text-muted-foreground/70 hover:text-purple-600'}`}
                     style={chartPeriod === p ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : {}}>
                     {p}
                   </button>
@@ -1744,7 +1744,7 @@ export default function Dashboard() {
               </div>
               <div className="text-right">
                 <p className="text-[17px] font-extrabold num-metric" style={{ background: 'linear-gradient(135deg,#D4AF37,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>${formatNumber(goldPrice, 2)}</p>
-                <p className="text-[11px] text-gray-400">/gram now</p>
+                <p className="text-[11px] text-muted-foreground/70">/gram now</p>
               </div>
             </div>
           </div>
@@ -1774,14 +1774,14 @@ export default function Dashboard() {
               <Area type="monotone" dataKey="price" stroke="url(#goldStroke)" strokeWidth={2.5} fill="url(#goldGradient)" dot={false} activeDot={{ r: 5, fill: '#7c3aed', stroke: 'rgba(124,58,237,0.30)', strokeWidth: 3 }} />
             </AreaChart>
           </ResponsiveContainer>
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/60">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 bg-purple-600 rounded" />
-              <span className="text-[11px] text-gray-500">Market Price</span>
+              <span className="text-[11px] text-muted-foreground">Market Price</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 bg-amber-400 rounded border-dashed" style={{ borderTop: '2px dashed #D4AF37', background: 'transparent' }} />
-              <span className="text-[11px] text-gray-500">Your Avg Buy</span>
+              <span className="text-[11px] text-muted-foreground">Your Avg Buy</span>
             </div>
             <div className="ml-auto flex items-center gap-1">
               {unrealizedGain >= 0
@@ -1799,8 +1799,8 @@ export default function Dashboard() {
           <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)' }}>
             <TrendingUp className="w-3 h-3 text-emerald-600" />
           </div>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
-          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Recent Activity</span>
+          <div className="flex-1 h-px bg-muted" />
         </motion.div>
 
         {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
@@ -1815,7 +1815,7 @@ export default function Dashboard() {
             data-testid="card-recent-activities"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
-              <h3 className="text-[15px] font-bold text-gray-900">Recent Transactions</h3>
+              <h3 className="text-[15px] font-bold text-foreground">Recent Transactions</h3>
               <Link href="/transactions">
                 <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer" data-testid="button-view-all-activities">View All</span>
               </Link>
@@ -1856,15 +1856,15 @@ export default function Dashboard() {
                       {getActivityIcon(tx.type, tx.sourceModule)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-800 truncate">{displayName}</p>
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[13px] font-semibold text-foreground truncate">{displayName}</p>
+                      <p className="text-[11px] text-muted-foreground/70">
                         {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
                         {tx.sourceModule && <span className="ml-1.5 text-[10px] text-purple-400 font-medium uppercase">{tx.sourceModule}</span>}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : isNeutral ? 'text-gray-600' : 'text-gray-800'}`}>{grams}</p>}
-                      {usd && <p className="text-[11px] text-gray-400">{usd}</p>}
+                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : isNeutral ? 'text-muted-foreground' : 'text-foreground'}`}>{grams}</p>}
+                      {usd && <p className="text-[11px] text-muted-foreground/70">{usd}</p>}
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${statusColor}`}>
                       {tx.status}
@@ -1872,10 +1872,10 @@ export default function Dashboard() {
                   </motion.div>
                 );
               }) : (
-                <div className="py-10 text-center text-gray-400 text-[13px]">
+                <div className="py-10 text-center text-muted-foreground/70 text-[13px]">
                   <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-                      <Search className="w-5 h-5 text-gray-300" />
+                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+                      <Search className="w-5 h-5 text-muted-foreground/50" />
                     </div>
                     <span>No recent transactions found</span>
                   </div>
@@ -1893,7 +1893,7 @@ export default function Dashboard() {
             data-testid="card-certificates"
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
-              <h3 className="text-[15px] font-bold text-gray-900">Certificates</h3>
+              <h3 className="text-[15px] font-bold text-foreground">Certificates</h3>
               <Link href="/finavault">
                 <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
               </Link>
@@ -1913,17 +1913,17 @@ export default function Dashboard() {
                       <Shield className="w-4 h-4 text-purple-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-800 truncate">
+                      <p className="text-[13px] font-semibold text-foreground truncate">
                         {cert.type === 'DIGITAL_OWNERSHIP' || cert.type === 'Digital Ownership' ? 'Digital Ownership'
                           : cert.type === 'PHYSICAL_STORAGE' || cert.type === 'Physical Storage' ? 'Physical Storage'
                           : cert.type}
                       </p>
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-muted-foreground/70">
                         {cert.issuedAt && isValid(new Date(cert.issuedAt)) ? format(new Date(cert.issuedAt), 'MMM dd, yyyy') : '—'}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[13px] font-bold text-gray-800">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
+                      <p className="text-[13px] font-bold text-foreground">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${
                       cert.status === 'Active' || cert.status === 'ACTIVE'
@@ -1931,17 +1931,17 @@ export default function Dashboard() {
                         : cert.status === 'Locked'
                         ? 'bg-amber-50 text-amber-600 border-amber-100'
                         : cert.status === 'Superseded'
-                        ? 'bg-gray-100 text-gray-400 border-gray-200'
-                        : 'bg-gray-100 text-gray-500 border-gray-200'
+                        ? 'bg-muted text-muted-foreground/70 border-border'
+                        : 'bg-muted text-muted-foreground border-border'
                     }`}>
                       {cert.status === 'Active' || cert.status === 'ACTIVE' ? 'Active' : cert.status}
                     </span>
                   </motion.div>
               )) : (
-                <div className="py-10 text-center text-gray-400 text-[13px]">
+                <div className="py-10 text-center text-muted-foreground/70 text-[13px]">
                   <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-gray-300" />
+                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-muted-foreground/50" />
                     </div>
                     <span>No certificates yet</span>
                   </div>

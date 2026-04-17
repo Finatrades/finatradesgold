@@ -144,12 +144,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           {/* Row 2: User Bar — matches dashboard bg */}
-          <div className="h-14 px-6 flex items-center justify-between border-b border-gray-100/80" style={{ background: '#FAFBFF' }}>
+          <div className="h-14 px-6 flex items-center justify-between border-b border-border/60 bg-background">
             
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors"
+                className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="button-mobile-sidebar"
               >
                 <Menu className="w-5 h-5" />
@@ -163,14 +163,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               <NotificationCenter />
               
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px bg-border" />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" data-testid="button-user-menu">
                     <div className="text-right hidden sm:block">
-                      <p className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-violet-600 capitalize font-medium">{accountType} Account</p>
+                      <p className="text-sm font-semibold text-foreground">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-primary capitalize font-medium">{accountType} Account</p>
                     </div>
                     <Avatar className="h-10 w-10 border-2 border-violet-200 ring-2 ring-violet-100">
                       <AvatarImage 
@@ -223,9 +223,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden bg-muted relative">
+        <main className="flex-1 overflow-x-hidden bg-background relative">
           {/* ── Decorative colour orbs — give backdrop-filter something to blur ── */}
-          <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+          <div aria-hidden="true" className="decorative-orbs pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
             {/* Violet — top-left */}
             <div style={{
               position: 'absolute', top: '-10%', left: '4%',
