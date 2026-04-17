@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HelmetProvider } from 'react-helmet-async';
-// Light mode only - dark mode disabled
+import { ThemeProvider } from "next-themes";
 import NotFound from "@/pages/not-found";
 import MaintenancePage from "@/pages/MaintenancePage";
 import FinaVault from "@/pages/FinaVault";
@@ -394,6 +394,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <HelmetProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="finatrades-theme" disableTransitionOnChange={false}>
     <QueryClientProvider client={queryClient}>
         <BrandingProvider>
           <CMSProvider>
@@ -433,6 +434,7 @@ function App() {
           </CMSProvider>
         </BrandingProvider>
       </QueryClientProvider>
+    </ThemeProvider>
     </HelmetProvider>
   );
 }

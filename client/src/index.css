@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Light mode only - dark variant removed */
+/* Enable class-based dark mode for Tailwind v4 (next-themes uses .dark on html) */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -151,7 +152,108 @@
   --error-muted-foreground: #991b1b;
 }
 
-/* Light mode only - .dark class removed */
+/* ============================================
+   DARK MODE — Premium Fintech Dark
+   Inspired by Hynex / Mercury / Linear
+   ============================================ */
+.dark {
+  /* Brand variables retuned for dark — purple stays brand-true, gold pops more */
+  --brand-purple: #A342FF;
+  --brand-purple-light: #C084FC;
+  --brand-pink: #FF4CD6;
+  --brand-gold: #FFD700;
+  --brand-gold-bright: #FFEB3B;
+  --brand-gold-light: #FFF59D;
+
+  --brand-bg-darkest: #050507;
+  --brand-bg-dark: #0A0A0F;
+  --brand-bg-medium: #131318;
+  --brand-bg-indigo: #1E1B3A;
+
+  --brand-primary: #A342FF;
+  --brand-primary-foreground: #ffffff;
+  --brand-secondary: #1A1A1F;
+  --brand-secondary-foreground: #fafafa;
+  --brand-accent: #FFD700;
+  --brand-button-primary-bg: linear-gradient(135deg, #A342FF 0%, #7C3AED 100%);
+  --brand-button-primary-text: #ffffff;
+  --brand-button-secondary-bg: #18181B;
+  --brand-button-secondary-text: #FAFAFA;
+  --brand-background: #09090B;
+  --brand-card-background: #131318;
+  --brand-sidebar-background: #0F0F13;
+  --brand-border-color: rgba(255, 255, 255, 0.08);
+  --brand-header-gradient: linear-gradient(90deg, #050507 0%, #0F0A1F 50%, #1E1B3A 100%);
+
+  /* Core surface — deep zinc with subtle warm undertone */
+  --background: #09090B;
+  --foreground: #FAFAFA;
+
+  /* Cards — elevated surface, very dark slate */
+  --card: #131318;
+  --card-foreground: #FAFAFA;
+
+  --popover: #18181C;
+  --popover-foreground: #FAFAFA;
+
+  --sidebar-background: #0F0F13;
+
+  /* Primary — brighter purple for dark contrast */
+  --primary: #A342FF;
+  --primary-foreground: #ffffff;
+
+  /* Secondary — dark slate */
+  --secondary: #1F1F25;
+  --secondary-foreground: #FAFAFA;
+
+  /* Muted — slightly lighter than card for nesting */
+  --muted: #1A1A20;
+  --muted-foreground: #A1A1AA;
+
+  /* Accent — gold whisper for highlights */
+  --accent: #2A1F0D;
+  --accent-foreground: #FFD700;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.10);
+  --ring: #A342FF;
+
+  /* Status colors retuned for dark — desaturated, accessible */
+  --success: #34D399;
+  --success-foreground: #052e1c;
+  --success-muted: rgba(52, 211, 153, 0.12);
+  --success-muted-foreground: #6EE7B7;
+
+  --warning: #FBBF24;
+  --warning-foreground: #1f1300;
+  --warning-muted: rgba(251, 191, 36, 0.12);
+  --warning-muted-foreground: #FCD34D;
+
+  --info: #60A5FA;
+  --info-foreground: #001226;
+  --info-muted: rgba(96, 165, 250, 0.12);
+  --info-muted-foreground: #93C5FD;
+
+  --error: #F87171;
+  --error-foreground: #1a0202;
+  --error-muted: rgba(248, 113, 113, 0.12);
+  --error-muted-foreground: #FCA5A5;
+}
+
+/* Smooth transition when switching themes */
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+html * {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+/* Don't transition things that should be instant (animations, transforms) */
+html *::before, html *::after {
+  transition: none;
+}
 
 @layer base {
   * {

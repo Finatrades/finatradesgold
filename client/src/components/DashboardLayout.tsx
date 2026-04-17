@@ -3,6 +3,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { useAccountType } from '@/context/AccountTypeContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
+import ThemeToggle from '@/components/ThemeToggle';
 import IdleTimeoutWarning from '@/components/IdleTimeoutWarning';
 import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
@@ -158,6 +159,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex items-center gap-4">
               
+              <ThemeToggle />
+
               <NotificationCenter />
               
               <div className="h-8 w-px bg-gray-200" />
