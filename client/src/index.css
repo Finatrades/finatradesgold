@@ -79,10 +79,11 @@
   --brand-button-primary-text: #ffffff;
   --brand-button-secondary-bg: #ffffff;
   --brand-button-secondary-text: #8A2BE2;
-  --brand-font-family: 'Inter', system-ui, sans-serif;
+  --brand-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --brand-display-font-family: 'Geist', 'Inter', system-ui, sans-serif;
   --brand-mono-font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
-  --brand-heading-font-family: var(--brand-display-font-family);
+  --brand-heading-font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  --brand-font-size-body: 1rem;
   --brand-background: #FAFBFF;
   --brand-card-background: #ffffff;
   --brand-sidebar-background: #ffffff;
@@ -1481,4 +1482,67 @@ input[type="number"] {
 /* Tone down the decorative orbs in dark mode (lower opacity) */
 .dark .decorative-orbs > div {
   opacity: 0.45;
+}
+
+/* ═══════════════════════════════════════════════
+   DU Design System — Premium Dashboard Tokens
+   ═══════════════════════════════════════════════ */
+.du-stage {
+  --du-bg-canvas: hsl(var(--background));
+  --du-surface-1: hsl(var(--card));
+  --du-surface-2: hsl(var(--muted));
+  --du-text-primary: hsl(var(--foreground));
+  --du-text-muted: hsl(var(--muted-foreground));
+  --du-border: hsl(var(--border));
+  --du-accent-primary: #7c3aed;
+  --du-accent-gold: #d4af37;
+}
+.dark .du-stage {
+  --du-bg-canvas: #0a0d16;
+  --du-surface-1: #121827;
+  --du-surface-2: #161D2F;
+  --du-text-primary: #f5f7ff;
+  --du-text-muted: rgba(245, 247, 255, 0.6);
+  --du-border: rgba(255, 255, 255, 0.08);
+}
+
+.du-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  .du-overview-grid { grid-template-columns: 1fr; }
+}
+
+.du-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  .du-workspace-grid { grid-template-columns: 1fr; }
+}
+
+.du-section-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.du-card {
+  background: var(--du-surface-1);
+  border: 1px solid var(--du-border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  transition: transform 220ms cubic-bezier(.2,.7,.2,1), box-shadow 220ms ease, border-color 220ms ease;
+}
+.dark .du-card {
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.32);
+}
+.du-card:hover {
+  border-color: rgba(124, 58, 237, 0.20);
 }
