@@ -177,9 +177,9 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
       <aside
         className={`fixed top-3 left-3 bottom-3 ${sidebarWidth} z-50 transition-all duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-[110%]'
-        } hynex-card overflow-hidden`}
+        } ${collapsed ? 'bg-transparent border-0 shadow-none' : 'hynex-card'} overflow-hidden`}
         data-testid="sidebar"
-        style={{ borderRadius: 24 }}
+        style={collapsed ? { background: 'transparent', boxShadow: 'none', border: 'none' } : { borderRadius: 24 }}
       >
         <div className="flex flex-col h-full">
 
